@@ -4,22 +4,24 @@
 // ---------------------------------------------------------------------------
 
 import { Music2, Mic, LayoutList, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useUIStore, type ActivePanel } from '../../stores/uiStore';
 
 interface NavItem {
   panel: ActivePanel;
   icon: React.ComponentType<{ size?: number; className?: string }>;
-  label: string;
+  labelKey: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { panel: 'sfx', icon: Music2, label: 'SFX' },
-  { panel: 'voice', icon: Mic, label: 'Voice' },
-  { panel: 'timeline', icon: LayoutList, label: 'Timeline' },
+  { panel: 'sfx', icon: Music2, labelKey: 'nav.sfx' },
+  { panel: 'voice', icon: Mic, labelKey: 'nav.voice' },
+  { panel: 'timeline', icon: LayoutList, labelKey: 'nav.timeline' },
 ];
 
 export function Sidebar() {
-  const { activePanel, setActivePanel } = useUIStore();
+  const { t } = useTranslation();
+  const { activePanel, setActivePanel, openModal } = useUIStore();
 
   return (
     <aside
@@ -52,8 +54,9 @@ export function Sidebar() {
 
       {/* Panel nav */}
       <nav className="flex flex-col items-center gap-1 flex-1">
-        {NAV_ITEMS.map(({ panel, icon: Icon, label }) => {
+        {NAV_ITEMS.map(({ panel, icon: Icon, labelKey }) => {
           const isActive = activePanel === panel;
+          const label = t(labelKey);
           return (
             <div key={panel} className="relative group">
               <button
@@ -107,7 +110,8 @@ export function Sidebar() {
       {/* Settings at bottom */}
       <div className="relative group">
         <button
-          title="Settings"
+          onClick={() => openModal('settings')}
+          title={t('nav.settings')}
           className="flex items-center justify-center rounded-lg transition-all duration-150"
           style={{
             width: 40,
@@ -138,7 +142,7 @@ export function Sidebar() {
             fontSize: 11,
           }}
         >
-          Settings
+          {t('nav.settings')}
         </div>
       </div>
     </aside>

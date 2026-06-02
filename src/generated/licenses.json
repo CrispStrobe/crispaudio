@@ -1,0 +1,78 @@
+[
+  {
+    "name": "@tauri-apps/api",
+    "version": "2.11.0",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/tauri-apps/tauri",
+    "homepage": "https://github.com/tauri-apps/tauri#readme"
+  },
+  {
+    "name": "@tauri-apps/plugin-opener",
+    "version": "2.5.4",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/tauri-apps/plugins-workspace"
+  },
+  {
+    "name": "i18next",
+    "version": "26.3.0",
+    "license": "MIT",
+    "repository": "https://github.com/i18next/i18next",
+    "homepage": "https://www.i18next.com"
+  },
+  {
+    "name": "i18next-browser-languagedetector",
+    "version": "8.2.1",
+    "license": "MIT",
+    "repository": "https://github.com/i18next/i18next-browser-languageDetector",
+    "homepage": "https://github.com/i18next/i18next-browser-languageDetector"
+  },
+  {
+    "name": "immer",
+    "version": "11.1.8",
+    "license": "MIT",
+    "repository": "https://github.com/immerjs/immer",
+    "homepage": "https://github.com/immerjs/immer#readme"
+  },
+  {
+    "name": "lucide-react",
+    "version": "1.17.0",
+    "license": "ISC",
+    "repository": "https://github.com/lucide-icons/lucide",
+    "homepage": "https://lucide.dev"
+  },
+  {
+    "name": "react",
+    "version": "19.2.7",
+    "license": "MIT",
+    "repository": "https://github.com/facebook/react",
+    "homepage": "https://react.dev/"
+  },
+  {
+    "name": "react-dom",
+    "version": "19.2.7",
+    "license": "MIT",
+    "repository": "https://github.com/facebook/react",
+    "homepage": "https://react.dev/"
+  },
+  {
+    "name": "react-i18next",
+    "version": "17.0.8",
+    "license": "MIT",
+    "repository": "https://github.com/i18next/react-i18next",
+    "homepage": "https://github.com/i18next/react-i18next"
+  },
+  {
+    "name": "zundo",
+    "version": "2.3.0",
+    "license": "MIT",
+    "repository": "https://github.com/charkour/zundo",
+    "homepage": "https://github.com/charkour/zundo"
+  },
+  {
+    "name": "zustand",
+    "version": "5.0.14",
+    "license": "MIT",
+    "repository": "https://github.com/pmndrs/zustand",
+    "homepage": "https://github.com/pmndrs/zustand"
+  }
+]

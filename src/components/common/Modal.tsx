@@ -6,10 +6,18 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  /** Tailwind max-width class for the panel (default `max-w-md`). */
+  widthClass?: string;
   children: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  widthClass = 'max-w-md',
+  children,
+}) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -87,13 +95,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
       {/* Panel */}
       <div
         ref={panelRef}
-        className="
-          relative z-10 w-full max-w-md
+        className={`
+          relative z-10 w-full ${widthClass}
           bg-gray-900 border border-gray-700
           rounded-xl shadow-2xl shadow-black/60
           flex flex-col max-h-[90vh]
           animate-in fade-in zoom-in-95 duration-150
-        "
+        `}
         style={{ animation: 'modalIn 0.15s ease-out both' }}
       >
         {/* Header */}

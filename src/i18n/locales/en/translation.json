@@ -94,5 +94,28 @@
     "save": "Save",
     "open": "Open",
     "settings": "Settings"
+  },
+  "nav": {
+    "sfx": "SFX",
+    "voice": "Voice",
+    "timeline": "Timeline",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "exportDefaults": "Default Export Format",
+    "sampleRate": "Sample Rate",
+    "bitDepth": "Bit Depth"
+  },
+  "about": {
+    "title": "About",
+    "version": "Version",
+    "description": "Cross-platform audio workstation combining sound synthesis, voice effects, and a timeline waveform editor.",
+    "repository": "View on GitHub"
+  },
+  "licenses": {
+    "title": "Third-Party Licenses",
+    "intro": "CrispAudio is built with the following open-source packages."
   }
 }

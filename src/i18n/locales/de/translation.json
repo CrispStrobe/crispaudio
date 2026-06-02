@@ -94,5 +94,28 @@
     "save": "Speichern",
     "open": "Öffnen",
     "settings": "Einstellungen"
+  },
+  "nav": {
+    "sfx": "SFX",
+    "voice": "Stimme",
+    "timeline": "Timeline",
+    "settings": "Einstellungen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "language": "Sprache",
+    "exportDefaults": "Standard-Exportformat",
+    "sampleRate": "Abtastrate",
+    "bitDepth": "Bittiefe"
+  },
+  "about": {
+    "title": "Über",
+    "version": "Version",
+    "description": "Plattformübergreifende Audio-Workstation mit Klangsynthese, Stimmeffekten und einem Timeline-Wellenform-Editor.",
+    "repository": "Auf GitHub ansehen"
+  },
+  "licenses": {
+    "title": "Drittanbieter-Lizenzen",
+    "intro": "CrispAudio verwendet die folgenden Open-Source-Pakete."
   }
 }
