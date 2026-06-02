@@ -12,6 +12,7 @@ import {
   SkipForward,
   Repeat,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ function formatTime(seconds: number): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const TransportControls: React.FC = () => {
+  const { t } = useTranslation();
   const {
     isPlaying,
     loopEnabled,
@@ -65,8 +67,8 @@ export const TransportControls: React.FC = () => {
         type="button"
         onClick={handleSkipStart}
         className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-        title="Skip to start"
-        aria-label="Skip to start"
+        title={t('timeline.skipToStart')}
+        aria-label={t('timeline.skipToStart')}
       >
         <SkipBack className="w-4 h-4" />
       </button>
@@ -76,8 +78,8 @@ export const TransportControls: React.FC = () => {
         type="button"
         onClick={handlePlayPause}
         className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow"
-        title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
-        aria-label={isPlaying ? 'Pause' : 'Play'}
+        title={isPlaying ? t('timeline.pauseTooltip') : t('timeline.playTooltip')}
+        aria-label={isPlaying ? t('timeline.pause') : t('timeline.play')}
       >
         {isPlaying ? (
           <Pause className="w-4 h-4" />
@@ -91,8 +93,8 @@ export const TransportControls: React.FC = () => {
         type="button"
         onClick={handleStop}
         className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-        title="Stop"
-        aria-label="Stop"
+        title={t('timeline.stop')}
+        aria-label={t('timeline.stop')}
       >
         <Square className="w-4 h-4" />
       </button>
@@ -102,8 +104,8 @@ export const TransportControls: React.FC = () => {
         type="button"
         onClick={handleSkipEnd}
         className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-        title="Skip to end"
-        aria-label="Skip to end"
+        title={t('timeline.skipToEnd')}
+        aria-label={t('timeline.skipToEnd')}
       >
         <SkipForward className="w-4 h-4" />
       </button>
@@ -117,8 +119,8 @@ export const TransportControls: React.FC = () => {
             ? 'text-indigo-400 bg-indigo-900/40 hover:bg-indigo-900/60'
             : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'
         }`}
-        title="Loop"
-        aria-label={loopEnabled ? 'Disable loop' : 'Enable loop'}
+        title={t('timeline.loop')}
+        aria-label={loopEnabled ? t('timeline.disableLoop') : t('timeline.enableLoop')}
         aria-pressed={loopEnabled}
       >
         <Repeat className="w-4 h-4" />
@@ -130,7 +132,7 @@ export const TransportControls: React.FC = () => {
       {/* Current time */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-gray-500 uppercase tracking-wide">
-          POS
+          {t('timeline.positionShort')}
         </span>
         <span className="font-mono text-sm text-white bg-gray-800 border border-gray-700 px-2 py-0.5 rounded min-w-[6rem] text-center tabular-nums">
           {formatTime(playheadPosition)}
@@ -140,7 +142,7 @@ export const TransportControls: React.FC = () => {
       {/* Duration */}
       <div className="flex items-center gap-2">
         <span className="text-xs text-gray-500 uppercase tracking-wide">
-          DUR
+          {t('timeline.durationShort')}
         </span>
         <span className="font-mono text-sm text-gray-400 bg-gray-800/50 border border-gray-700/50 px-2 py-0.5 rounded min-w-[6rem] text-center tabular-nums">
           {formatTime(project.duration)}

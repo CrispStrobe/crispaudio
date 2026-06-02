@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { useCallback, useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Upload,
   Play,
@@ -34,18 +35,6 @@ const PRESET_NAMES: VoicePresetName[] = [
   'chipmunk',
 ];
 
-const PRESET_LABELS: Record<VoicePresetName, string> = {
-  original: 'Original',
-  classicRobot: 'Robot',
-  deepRobot: 'Deep Robot',
-  alien: 'Alien',
-  cyborg: 'Cyborg',
-  radio: 'Radio',
-  metallic: 'Metallic',
-  demon: 'Demon',
-  chipmunk: 'Chipmunk',
-};
-
 // ---------------------------------------------------------------------------
 // Parameter tab definitions
 // ---------------------------------------------------------------------------
@@ -54,64 +43,66 @@ type TabId = 'pitch' | 'modulation' | 'effects' | 'dynamics';
 
 interface ParamDef {
   key: keyof VoiceSettings;
-  label: string;
+  // i18n key resolved at render time (voice.* namespace).
+  labelKey: string;
   min: number;
   max: number;
   step?: number;
   formatValue?: (v: number) => string;
 }
 
-const TABS: { id: TabId; label: string; params: ParamDef[] }[] = [
+// Each tab's `labelKey` resolves to an existing voice.* key at render time.
+const TABS: { id: TabId; labelKey: string; params: ParamDef[] }[] = [
   {
     id: 'pitch',
-    label: 'Pitch',
+    labelKey: 'voice.pitch',
     params: [
-      { key: 'pitchShift', label: 'Pitch Shift', min: -24, max: 24, step: 0.5, formatValue: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)} st` },
-      { key: 'formantShift', label: 'Formant Shift', min: -1, max: 1, step: 0.01 },
-      { key: 'speedChange', label: 'Speed', min: 0.5, max: 2, step: 0.01, formatValue: (v) => `${v.toFixed(2)}x` },
-      { key: 'vocoderFreq', label: 'Vocoder Freq', min: 50, max: 2000, step: 1, formatValue: (v) => `${Math.round(v)} Hz` },
-      { key: 'vocoderMix', label: 'Vocoder Mix', min: 0, max: 1, step: 0.01 },
+      { key: 'pitchShift', labelKey: 'voice.pitchShift', min: -24, max: 24, step: 0.5, formatValue: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)} st` },
+      { key: 'formantShift', labelKey: 'voice.formantShift', min: -1, max: 1, step: 0.01 },
+      { key: 'speedChange', labelKey: 'voice.speed', min: 0.5, max: 2, step: 0.01, formatValue: (v) => `${v.toFixed(2)}x` },
+      { key: 'vocoderFreq', labelKey: 'voice.vocoderFreq', min: 50, max: 2000, step: 1, formatValue: (v) => `${Math.round(v)} Hz` },
+      { key: 'vocoderMix', labelKey: 'voice.vocoderMix', min: 0, max: 1, step: 0.01 },
     ],
   },
   {
     id: 'modulation',
-    label: 'Modulation',
+    labelKey: 'voice.modulation',
     params: [
-      { key: 'ringModFreq', label: 'Ring Mod Freq', min: 1, max: 500, step: 1, formatValue: (v) => `${Math.round(v)} Hz` },
-      { key: 'ringModMix', label: 'Ring Mod Mix', min: 0, max: 1, step: 0.01 },
-      { key: 'tremoloRate', label: 'Tremolo Rate', min: 0, max: 20, step: 0.1, formatValue: (v) => `${v.toFixed(1)} Hz` },
-      { key: 'tremoloDepth', label: 'Tremolo Depth', min: 0, max: 1, step: 0.01 },
-      { key: 'chorusRate', label: 'Chorus Rate', min: 0.1, max: 10, step: 0.1, formatValue: (v) => `${v.toFixed(1)} Hz` },
-      { key: 'chorusDepth', label: 'Chorus Depth', min: 0, max: 1, step: 0.01 },
-      { key: 'chorusMix', label: 'Chorus Mix', min: 0, max: 1, step: 0.01 },
+      { key: 'ringModFreq', labelKey: 'voice.ringModFreq', min: 1, max: 500, step: 1, formatValue: (v) => `${Math.round(v)} Hz` },
+      { key: 'ringModMix', labelKey: 'voice.ringModMix', min: 0, max: 1, step: 0.01 },
+      { key: 'tremoloRate', labelKey: 'voice.tremoloRate', min: 0, max: 20, step: 0.1, formatValue: (v) => `${v.toFixed(1)} Hz` },
+      { key: 'tremoloDepth', labelKey: 'voice.tremoloDepth', min: 0, max: 1, step: 0.01 },
+      { key: 'chorusRate', labelKey: 'voice.chorusRate', min: 0.1, max: 10, step: 0.1, formatValue: (v) => `${v.toFixed(1)} Hz` },
+      { key: 'chorusDepth', labelKey: 'voice.chorusDepth', min: 0, max: 1, step: 0.01 },
+      { key: 'chorusMix', labelKey: 'voice.chorusMix', min: 0, max: 1, step: 0.01 },
     ],
   },
   {
     id: 'effects',
-    label: 'Effects',
+    labelKey: 'voice.effects',
     params: [
-      { key: 'delayTime', label: 'Delay Time', min: 0, max: 1, step: 0.01, formatValue: (v) => `${(v * 1000).toFixed(0)} ms` },
-      { key: 'delayFeedback', label: 'Delay Feedback', min: 0, max: 0.99, step: 0.01 },
-      { key: 'delayMix', label: 'Delay Mix', min: 0, max: 1, step: 0.01 },
-      { key: 'reverbSize', label: 'Reverb Size', min: 0, max: 1, step: 0.01 },
-      { key: 'reverbDecay', label: 'Reverb Decay', min: 0.1, max: 10, step: 0.1, formatValue: (v) => `${v.toFixed(1)}s` },
-      { key: 'reverbMix', label: 'Reverb Mix', min: 0, max: 1, step: 0.01 },
-      { key: 'lowpassFreq', label: 'Low Pass', min: 200, max: 22000, step: 10, formatValue: (v) => `${Math.round(v)} Hz` },
-      { key: 'highpassFreq', label: 'High Pass', min: 0, max: 8000, step: 10, formatValue: (v) => `${Math.round(v)} Hz` },
+      { key: 'delayTime', labelKey: 'voice.delayTime', min: 0, max: 1, step: 0.01, formatValue: (v) => `${(v * 1000).toFixed(0)} ms` },
+      { key: 'delayFeedback', labelKey: 'voice.delayFeedback', min: 0, max: 0.99, step: 0.01 },
+      { key: 'delayMix', labelKey: 'voice.delayMix', min: 0, max: 1, step: 0.01 },
+      { key: 'reverbSize', labelKey: 'voice.reverbSize', min: 0, max: 1, step: 0.01 },
+      { key: 'reverbDecay', labelKey: 'voice.reverbDecay', min: 0.1, max: 10, step: 0.1, formatValue: (v) => `${v.toFixed(1)}s` },
+      { key: 'reverbMix', labelKey: 'voice.reverbMix', min: 0, max: 1, step: 0.01 },
+      { key: 'lowpassFreq', labelKey: 'voice.lowPass', min: 200, max: 22000, step: 10, formatValue: (v) => `${Math.round(v)} Hz` },
+      { key: 'highpassFreq', labelKey: 'voice.highPass', min: 0, max: 8000, step: 10, formatValue: (v) => `${Math.round(v)} Hz` },
     ],
   },
   {
     id: 'dynamics',
-    label: 'Dynamics',
+    labelKey: 'voice.dynamics',
     params: [
-      { key: 'compThreshold', label: 'Comp Threshold', min: -60, max: 0, step: 0.5, formatValue: (v) => `${v.toFixed(1)} dB` },
-      { key: 'compRatio', label: 'Comp Ratio', min: 1, max: 20, step: 0.5, formatValue: (v) => `${v.toFixed(1)}:1` },
-      { key: 'distortionDrive', label: 'Distortion Drive', min: 0, max: 1, step: 0.01 },
-      { key: 'distortionMix', label: 'Distortion Mix', min: 0, max: 1, step: 0.01 },
-      { key: 'bitCrushBits', label: 'Bit Crush Bits', min: 1, max: 16, step: 1, formatValue: (v) => `${Math.round(v)}-bit` },
-      { key: 'bitCrushMix', label: 'Bit Crush Mix', min: 0, max: 1, step: 0.01 },
-      { key: 'noiseGateThreshold', label: 'Noise Gate', min: -96, max: 0, step: 1, formatValue: (v) => `${v.toFixed(0)} dB` },
-      { key: 'masterGain', label: 'Master Gain', min: 0, max: 2, step: 0.01, formatValue: (v) => `${v.toFixed(2)}x` },
+      { key: 'compThreshold', labelKey: 'voice.compThreshold', min: -60, max: 0, step: 0.5, formatValue: (v) => `${v.toFixed(1)} dB` },
+      { key: 'compRatio', labelKey: 'voice.compRatio', min: 1, max: 20, step: 0.5, formatValue: (v) => `${v.toFixed(1)}:1` },
+      { key: 'distortionDrive', labelKey: 'voice.distortionDrive', min: 0, max: 1, step: 0.01 },
+      { key: 'distortionMix', labelKey: 'voice.distortionMix', min: 0, max: 1, step: 0.01 },
+      { key: 'bitCrushBits', labelKey: 'voice.bitCrushBits', min: 1, max: 16, step: 1, formatValue: (v) => `${Math.round(v)}-bit` },
+      { key: 'bitCrushMix', labelKey: 'voice.bitCrushMix', min: 0, max: 1, step: 0.01 },
+      { key: 'noiseGateThreshold', labelKey: 'voice.noiseGate', min: -96, max: 0, step: 1, formatValue: (v) => `${v.toFixed(0)} dB` },
+      { key: 'masterGain', labelKey: 'voice.masterGain', min: 0, max: 2, step: 0.01, formatValue: (v) => `${v.toFixed(2)}x` },
     ],
   },
 ];
@@ -151,6 +142,7 @@ function SliderRow({
   value: number;
   onChange: (key: keyof VoiceSettings, v: number) => void;
 }) {
+  const { t } = useTranslation();
   const display = def.formatValue ? def.formatValue(value) : value.toFixed(3);
   return (
     <div className="flex items-center gap-2" style={{ height: 22 }}>
@@ -165,7 +157,7 @@ function SliderRow({
           textOverflow: 'ellipsis',
         }}
       >
-        {def.label}
+        {t(def.labelKey)}
       </span>
       <input
         type="range"
@@ -312,6 +304,7 @@ function SpectrumCanvas({
 // ---------------------------------------------------------------------------
 
 function ABControls() {
+  const { t } = useTranslation();
   const { activeSlot, morphAmount, setActiveSlot, setMorphAmount, swapSlots } =
     useVoiceStore();
 
@@ -338,7 +331,7 @@ function ABControls() {
           {slot}
         </button>
       ))}
-      <span style={{ fontSize: 10, color: '#475569' }}>Morph</span>
+      <span style={{ fontSize: 10, color: '#475569' }}>{t('common.morph')}</span>
       <input
         type="range"
         min={0}
@@ -353,7 +346,7 @@ function ABControls() {
       </span>
       <button
         onClick={swapSlots}
-        title="Swap A ↔ B"
+        title={t('voice.swapAB')}
         className="flex items-center justify-center rounded"
         style={{
           width: 28,
@@ -375,6 +368,7 @@ function ABControls() {
 // ---------------------------------------------------------------------------
 
 function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
+  const { t } = useTranslation();
   const [dragging, setDragging] = useState(false);
   const [filename, setFilename] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -423,7 +417,7 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
       />
       <Upload size={20} style={{ marginBottom: 4, opacity: 0.7 }} />
       <span style={{ fontSize: 11 }}>
-        {filename ?? 'Drop audio file or click to browse'}
+        {filename ?? t('voice.loadFile')}
       </span>
       {filename && (
         <span style={{ fontSize: 9, color: '#22c55e', marginTop: 2 }}>{filename}</span>
@@ -437,6 +431,7 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
 // ---------------------------------------------------------------------------
 
 export function VoicePanel() {
+  const { t } = useTranslation();
   const store = useVoiceStore();
   const {
     settingsA,
@@ -548,7 +543,7 @@ export function VoicePanel() {
             color: '#22c55e',
           }}
         >
-          Voice Processor
+          {t('panels.voice')}
         </span>
         <div style={{ flex: 1 }} />
         <button
@@ -564,7 +559,7 @@ export function VoicePanel() {
           }}
         >
           {isPlaying ? <Square size={12} /> : <Play size={12} />}
-          {isPlaying ? 'Stop' : 'Play'}
+          {isPlaying ? t('voice.stop') : t('voice.play')}
         </button>
         <button
           onClick={handleProcess}
@@ -578,7 +573,7 @@ export function VoicePanel() {
             cursor: sourceBuffer && !isProcessing ? 'pointer' : 'not-allowed',
           }}
         >
-          {isProcessing ? 'Processing…' : 'Process'}
+          {isProcessing ? t('voice.processing') : t('voice.process')}
         </button>
         <button
           onClick={downloadProcessed}
@@ -593,7 +588,7 @@ export function VoicePanel() {
           }}
         >
           <Download size={12} />
-          Export
+          {t('voice.export')}
         </button>
       </div>
 
@@ -636,7 +631,7 @@ export function VoicePanel() {
               }
             }}
           >
-            {PRESET_LABELS[name]}
+            {t(`voice.preset_${name}`)}
           </button>
         ))}
       </div>
@@ -672,14 +667,14 @@ export function VoicePanel() {
                   marginBottom: -1,
                 }}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </button>
             ))}
           </div>
 
           {/* Parameter sliders */}
           <div className="flex-1 overflow-y-auto px-4 py-3">
-            <Section title={currentTab.label}>
+            <Section title={t(currentTab.labelKey)}>
               {currentTab.params.map((def) => (
                 <SliderRow
                   key={def.key}
@@ -697,7 +692,7 @@ export function VoicePanel() {
           className="flex flex-col gap-3 px-3 py-3"
           style={{ width: 220, borderLeft: '1px solid #1e2d40', flexShrink: 0 }}
         >
-          <Section title="Source">
+          <Section title={t('voice.source')}>
             <WaveformCanvas
               buffer={sourceBuffer}
               width={196}
@@ -705,7 +700,7 @@ export function VoicePanel() {
               color="#64748b"
             />
           </Section>
-          <Section title="Processed">
+          <Section title={t('voice.processed')}>
             <WaveformCanvas
               buffer={processedBuffer}
               width={196}
@@ -713,7 +708,7 @@ export function VoicePanel() {
               color="#22c55e"
             />
           </Section>
-          <Section title="Spectrum">
+          <Section title={t('voice.spectrum')}>
             <SpectrumCanvas buffer={processedBuffer ?? sourceBuffer} width={196} height={52} />
           </Section>
         </div>

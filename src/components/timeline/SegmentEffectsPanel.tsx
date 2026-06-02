@@ -13,6 +13,7 @@ import {
   Trash2,
   Plus,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
 import type {
   AudioSegment,
@@ -139,6 +140,7 @@ interface EffectRowProps {
 }
 
 const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove }) => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const specs = EFFECT_PARAMS[effect.type] ?? [];
 
@@ -150,7 +152,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
           type="button"
           onClick={() => setExpanded((x) => !x)}
           className="text-gray-400 hover:text-gray-200 transition-colors"
-          aria-label={expanded ? 'Collapse' : 'Expand'}
+          aria-label={expanded ? t('timeline.collapse') : t('timeline.expand')}
         >
           {expanded ? (
             <ChevronDown className="w-3.5 h-3.5" />
@@ -160,7 +162,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
         </button>
 
         <span className="text-xs font-medium text-gray-200 flex-1">
-          {EFFECT_LABELS[effect.type]}
+          {t(`timeline.effectNames.${effect.type}`, EFFECT_LABELS[effect.type])}
         </span>
 
         <button
@@ -171,8 +173,8 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
               ? 'text-green-400 hover:text-green-300'
               : 'text-gray-600 hover:text-gray-400'
           }`}
-          aria-label={effect.enabled ? 'Disable effect' : 'Enable effect'}
-          title={effect.enabled ? 'Enabled' : 'Disabled'}
+          aria-label={effect.enabled ? t('timeline.disableEffect') : t('timeline.enableEffect')}
+          title={effect.enabled ? t('timeline.enabled') : t('timeline.disabled')}
         >
           <Power className="w-3.5 h-3.5" />
         </button>
@@ -181,7 +183,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
           type="button"
           onClick={() => onRemove(index)}
           className="text-gray-600 hover:text-red-400 transition-colors"
-          aria-label="Remove effect"
+          aria-label={t('timeline.removeEffect')}
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -193,7 +195,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
           {specs.map((spec) => (
             <ParamSlider
               key={spec.key}
-              label={spec.label}
+              label={t(`timeline.effectParams.${spec.label.toLowerCase()}`, spec.label)}
               value={effect.params[spec.key] ?? 0}
               min={spec.min}
               max={spec.max}
@@ -216,6 +218,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 export const SegmentEffectsPanel: React.FC = () => {
+  const { t } = useTranslation();
   const store = useProjectStore();
   const [addMenuOpen, setAddMenuOpen] = useState(false);
 
@@ -280,12 +283,12 @@ export const SegmentEffectsPanel: React.FC = () => {
     <div className="flex flex-col h-full bg-gray-900 border-l border-gray-700 w-64 flex-shrink-0 overflow-hidden">
       {/* Panel header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700 flex-shrink-0">
-        <span className="text-sm font-semibold text-gray-200">Segment</span>
+        <span className="text-sm font-semibold text-gray-200">{t('timeline.segment')}</span>
         <button
           type="button"
           onClick={handleClose}
           className="p-1 rounded text-gray-500 hover:text-gray-200 hover:bg-gray-700 transition-colors"
-          aria-label="Close panel"
+          aria-label={t('timeline.closePanel')}
         >
           <X className="w-4 h-4" />
         </button>
@@ -294,7 +297,7 @@ export const SegmentEffectsPanel: React.FC = () => {
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
         {/* Name */}
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-400">Name</label>
+          <label className="text-xs font-medium text-gray-400">{t('timeline.name')}</label>
           <input
             type="text"
             value={seg.name}
@@ -305,7 +308,7 @@ export const SegmentEffectsPanel: React.FC = () => {
 
         {/* Color */}
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-400">Color</label>
+          <label className="text-xs font-medium text-gray-400">{t('timeline.color')}</label>
           <div className="flex flex-wrap gap-1.5">
             {COLOR_SWATCHES.map((color) => (
               <button
@@ -318,7 +321,7 @@ export const SegmentEffectsPanel: React.FC = () => {
                     : 'border-transparent'
                 }`}
                 style={{ backgroundColor: color }}
-                aria-label={`Color ${color}`}
+                aria-label={t('timeline.colorSwatch', { color })}
               />
             ))}
           </div>
@@ -326,9 +329,9 @@ export const SegmentEffectsPanel: React.FC = () => {
 
         {/* Gain */}
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-400">Gain</label>
+          <label className="text-xs font-medium text-gray-400">{t('timeline.gain')}</label>
           <ParamSlider
-            label="Gain"
+            label={t('timeline.gain')}
             value={seg.gain}
             min={0}
             max={4}
@@ -339,11 +342,11 @@ export const SegmentEffectsPanel: React.FC = () => {
 
         {/* Fades */}
         <div className="space-y-2">
-          <label className="text-xs font-medium text-gray-400">Fades</label>
+          <label className="text-xs font-medium text-gray-400">{t('timeline.fades')}</label>
 
           <div className="space-y-1">
             <ParamSlider
-              label="Fade In"
+              label={t('timeline.fadeIn')}
               value={seg.fadeInDuration}
               min={0}
               max={seg.duration}
@@ -363,7 +366,7 @@ export const SegmentEffectsPanel: React.FC = () => {
                       : 'border-gray-700 text-gray-500 hover:text-gray-300'
                   }`}
                 >
-                  {curve === 'linear' ? 'Lin' : curve === 'exponential' ? 'Exp' : 'S'}
+                  {curve === 'linear' ? t('timeline.curveLinear') : curve === 'exponential' ? t('timeline.curveExponential') : t('timeline.curveScurve')}
                 </button>
               ))}
             </div>
@@ -371,7 +374,7 @@ export const SegmentEffectsPanel: React.FC = () => {
 
           <div className="space-y-1">
             <ParamSlider
-              label="Fade Out"
+              label={t('timeline.fadeOut')}
               value={seg.fadeOutDuration}
               min={0}
               max={seg.duration}
@@ -391,7 +394,7 @@ export const SegmentEffectsPanel: React.FC = () => {
                       : 'border-gray-700 text-gray-500 hover:text-gray-300'
                   }`}
                 >
-                  {curve === 'linear' ? 'Lin' : curve === 'exponential' ? 'Exp' : 'S'}
+                  {curve === 'linear' ? t('timeline.curveLinear') : curve === 'exponential' ? t('timeline.curveExponential') : t('timeline.curveScurve')}
                 </button>
               ))}
             </div>
@@ -401,7 +404,7 @@ export const SegmentEffectsPanel: React.FC = () => {
         {/* Effect chain */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-medium text-gray-400">Effects</label>
+            <label className="text-xs font-medium text-gray-400">{t('timeline.effects')}</label>
             <div className="relative">
               <button
                 type="button"
@@ -409,7 +412,7 @@ export const SegmentEffectsPanel: React.FC = () => {
                 className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add
+                {t('timeline.add')}
               </button>
               {addMenuOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-600 rounded shadow-xl z-20 py-1 min-w-[140px]">
@@ -420,7 +423,7 @@ export const SegmentEffectsPanel: React.FC = () => {
                       className="w-full text-left px-3 py-1 text-xs text-gray-200 hover:bg-gray-700"
                       onClick={() => handleAddEffect(type)}
                     >
-                      {EFFECT_LABELS[type]}
+                      {t(`timeline.effectNames.${type}`, EFFECT_LABELS[type])}
                     </button>
                   ))}
                 </div>
@@ -429,7 +432,7 @@ export const SegmentEffectsPanel: React.FC = () => {
           </div>
 
           {seg.effects.length === 0 && (
-            <p className="text-xs text-gray-600 text-center py-2">No effects</p>
+            <p className="text-xs text-gray-600 text-center py-2">{t('timeline.noEffects')}</p>
           )}
 
           <div className="space-y-1.5">
@@ -448,13 +451,13 @@ export const SegmentEffectsPanel: React.FC = () => {
         {/* Segment info */}
         <div className="space-y-1 border-t border-gray-800 pt-3">
           <p className="text-xs text-gray-600">
-            Start: {seg.startTime.toFixed(3)}s
+            {t('timeline.segmentStart')}: {seg.startTime.toFixed(3)}s
           </p>
           <p className="text-xs text-gray-600">
-            Duration: {seg.duration.toFixed(3)}s
+            {t('timeline.segmentDuration')}: {seg.duration.toFixed(3)}s
           </p>
           <p className="text-xs text-gray-600">
-            Offset: {seg.sourceOffset.toFixed(3)}s
+            {t('timeline.segmentOffset')}: {seg.sourceOffset.toFixed(3)}s
           </p>
         </div>
       </div>

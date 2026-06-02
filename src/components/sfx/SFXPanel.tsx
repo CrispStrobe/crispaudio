@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Play,
   Square,
@@ -22,30 +23,30 @@ import * as sfxPresets from '../../audio/presets/sfxPresets';
 // Helpers
 // ---------------------------------------------------------------------------
 
-const PRESET_LABELS: Record<PresetName, string> = {
-  pickupCoin: 'Coin',
-  laserShoot: 'Laser',
-  explosion: 'Boom',
-  powerUp: 'Power',
-  hitHurt: 'Hit',
-  jump: 'Jump',
-  ambient: 'Ambient',
-  random: 'Random',
-  blipSelect: 'Blip',
-  zapElectric: 'Zap',
-  wooshWind: 'Woosh',
-  droneBuzz: 'Drone',
-  clickUI: 'Click',
-  glitchDigital: 'Glitch',
-  portalWarp: 'Portal',
-  warningAlarm: 'Alarm',
+const PRESET_LABEL_KEYS: Record<PresetName, string> = {
+  pickupCoin: 'sfx.preset_pickupCoin',
+  laserShoot: 'sfx.preset_laserShoot',
+  explosion: 'sfx.preset_explosion',
+  powerUp: 'sfx.preset_powerUp',
+  hitHurt: 'sfx.preset_hitHurt',
+  jump: 'sfx.preset_jump',
+  ambient: 'sfx.preset_ambient',
+  random: 'sfx.preset_random',
+  blipSelect: 'sfx.preset_blipSelect',
+  zapElectric: 'sfx.preset_zapElectric',
+  wooshWind: 'sfx.preset_wooshWind',
+  droneBuzz: 'sfx.preset_droneBuzz',
+  clickUI: 'sfx.preset_clickUI',
+  glitchDigital: 'sfx.preset_glitchDigital',
+  portalWarp: 'sfx.preset_portalWarp',
+  warningAlarm: 'sfx.preset_warningAlarm',
 };
 
 const WAVEFORM_OPTIONS = [
-  { value: 0, label: 'SQ', title: 'Square' },
-  { value: 1, label: 'SAW', title: 'Sawtooth' },
-  { value: 2, label: 'SIN', title: 'Sine' },
-  { value: 3, label: 'NOI', title: 'Noise' },
+  { value: 0, label: 'SQ', titleKey: 'sfx.waveSquare' },
+  { value: 1, label: 'SAW', titleKey: 'sfx.waveSawtooth' },
+  { value: 2, label: 'SIN', titleKey: 'sfx.waveSine' },
+  { value: 3, label: 'NOI', titleKey: 'sfx.waveNoise' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -77,6 +78,7 @@ function SliderRow({
   onToggleLock,
   formatValue,
 }: SliderRowProps) {
+  const { t } = useTranslation();
   const display = formatValue ? formatValue(value) : value.toFixed(3);
   return (
     <div className="flex items-center gap-2" style={{ height: 22 }}>
@@ -84,7 +86,7 @@ function SliderRow({
       {onToggleLock ? (
         <button
           onClick={() => onToggleLock(paramKey)}
-          title={locked ? 'Unlock parameter' : 'Lock parameter'}
+          title={locked ? t('sfx.unlockParameter') : t('sfx.lockParameter')}
           style={{
             background: 'none',
             border: 'none',
@@ -350,6 +352,7 @@ function AmplitudeMeter({ buffer }: { buffer: Float32Array | null }) {
 // ---------------------------------------------------------------------------
 
 function ABControls() {
+  const { t } = useTranslation();
   const { activeSlot, morphAmount, setActiveSlot, setMorphAmount, swapSlots, copyToOther } =
     useSynthStore();
 
@@ -374,12 +377,12 @@ function ABControls() {
             cursor: 'pointer',
           }}
         >
-          {slot}
+          {slot === 'A' ? t('common.slotA') : t('common.slotB')}
         </button>
       ))}
 
       {/* Morph slider */}
-      <span style={{ fontSize: 10, color: '#475569' }}>Morph</span>
+      <span style={{ fontSize: 10, color: '#475569' }}>{t('common.morph')}</span>
       <input
         type="range"
         min={0}
@@ -396,7 +399,7 @@ function ABControls() {
       {/* Swap / copy */}
       <button
         onClick={swapSlots}
-        title="Swap A ↔ B"
+        title={t('sfx.swapAB')}
         className="flex items-center justify-center rounded"
         style={{
           width: 28,
@@ -417,7 +420,7 @@ function ABControls() {
       </button>
       <button
         onClick={copyToOther}
-        title="Copy active to other slot"
+        title={t('common.copy')}
         className="flex items-center justify-center rounded"
         style={{
           width: 28,
@@ -445,6 +448,7 @@ function ABControls() {
 // ---------------------------------------------------------------------------
 
 function ExportBar() {
+  const { t } = useTranslation();
   const { sampleRate, bitDepth, buffer, setExportSettings } = useSynthStore();
 
   const sampleRates = [8000, 11025, 22050, 44100, 48000];
@@ -505,7 +509,7 @@ function ExportBar() {
       className="flex items-center gap-3 px-3 py-2 rounded"
       style={{ background: '#0d1929', border: '1px solid #1e2d40' }}
     >
-      <span style={{ fontSize: 10, color: '#475569' }}>SR</span>
+      <span style={{ fontSize: 10, color: '#475569' }} title={t('sfx.sampleRate')}>{t('sfx.sampleRateShort')}</span>
       <select
         value={sampleRate}
         onChange={(e) => setExportSettings(parseInt(e.target.value), bitDepth)}
@@ -526,7 +530,7 @@ function ExportBar() {
         ))}
       </select>
 
-      <span style={{ fontSize: 10, color: '#475569' }}>BD</span>
+      <span style={{ fontSize: 10, color: '#475569' }} title={t('sfx.bitDepth')}>{t('sfx.bitDepthShort')}</span>
       <select
         value={bitDepth}
         onChange={(e) => setExportSettings(sampleRate, parseInt(e.target.value))}
@@ -562,7 +566,7 @@ function ExportBar() {
         }}
       >
         <Download size={12} />
-        Export WAV
+        {t('sfx.exportWav')}
       </button>
     </div>
   );
@@ -573,6 +577,7 @@ function ExportBar() {
 // ---------------------------------------------------------------------------
 
 export function SFXPanel() {
+  const { t } = useTranslation();
   const store = useSynthStore();
   const params = selectActiveParams(store);
   const { lockedParams, toggleLock, loadPreset, generate, setParams, isPlaying, buffer } = store;
@@ -657,7 +662,7 @@ export function SFXPanel() {
             color: '#3b82f6',
           }}
         >
-          SFX Synth
+          {t('panels.sfx')}
         </span>
         <div style={{ flex: 1 }} />
         {/* Play / Stop */}
@@ -674,7 +679,7 @@ export function SFXPanel() {
           }}
         >
           {isPlaying ? <Square size={12} /> : <Play size={12} />}
-          {isPlaying ? 'Stop' : 'Play'}
+          {isPlaying ? t('sfx.stop') : t('sfx.play')}
         </button>
         {/* Regenerate */}
         <button
@@ -695,7 +700,7 @@ export function SFXPanel() {
           }
         >
           <RefreshCw size={12} />
-          Randomise
+          {t('sfx.randomise')}
         </button>
       </div>
 
@@ -730,7 +735,7 @@ export function SFXPanel() {
               (e.currentTarget as HTMLButtonElement).style.borderColor = '#334155';
             }}
           >
-            {PRESET_LABELS[name]}
+            {t(PRESET_LABEL_KEYS[name])}
           </button>
         ))}
       </div>
@@ -748,13 +753,13 @@ export function SFXPanel() {
           style={{ width: 200, borderRight: '1px solid #1e2d40', flexShrink: 0 }}
         >
           {/* Waveform selector */}
-          <Section title="Waveform">
+          <Section title={t('sfx.waveform')}>
             <div className="grid grid-cols-2 gap-1">
               {WAVEFORM_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => onChange('wave_type', opt.value)}
-                  title={opt.title}
+                  title={t(opt.titleKey)}
                   className="rounded font-mono font-bold transition-all"
                   style={{
                     height: 28,
@@ -772,9 +777,9 @@ export function SFXPanel() {
           </Section>
 
           {/* Main controls */}
-          <Section title="Main">
+          <Section title={t('sfx.main')}>
             <SliderRow
-              label="Base Freq"
+              label={t('sfx.baseFreq')}
               paramKey="p_base_freq"
               min={0.001}
               max={2}
@@ -784,7 +789,7 @@ export function SFXPanel() {
               onToggleLock={toggleLock}
             />
             <SliderRow
-              label="Volume"
+              label={t('sfx.volume')}
               paramKey="sound_vol"
               min={0}
               max={1}
@@ -794,7 +799,7 @@ export function SFXPanel() {
               onToggleLock={toggleLock}
             />
             <SliderRow
-              label="Sub Bass"
+              label={t('sfx.subBass')}
               paramKey="sub_bass"
               min={0}
               max={1}
@@ -806,9 +811,9 @@ export function SFXPanel() {
           </Section>
 
           {/* Pitch */}
-          <Section title="Pitch">
+          <Section title={t('sfx.pitch')}>
             <SliderRow
-              label="Freq Ramp"
+              label={t('sfx.freqRamp')}
               paramKey="p_freq_ramp"
               min={-1}
               max={1}
@@ -818,7 +823,7 @@ export function SFXPanel() {
               onToggleLock={toggleLock}
             />
             <SliderRow
-              label="Delta Ramp"
+              label={t('sfx.deltaRamp')}
               paramKey="p_freq_dramp"
               min={-1}
               max={1}
@@ -828,7 +833,7 @@ export function SFXPanel() {
               onToggleLock={toggleLock}
             />
             <SliderRow
-              label="Freq Limit"
+              label={t('sfx.freqLimit')}
               paramKey="p_freq_limit"
               min={0}
               max={1}
@@ -845,71 +850,71 @@ export function SFXPanel() {
           className="flex-1 min-w-0 overflow-y-auto px-3 py-3 flex flex-col gap-3"
         >
           {/* Envelope */}
-          <Section title="Envelope">
-            <SliderRow label="Attack" paramKey="p_env_attack" min={0} max={3} value={params.p_env_attack} locked={isLocked('p_env_attack')} onChange={onChange} onToggleLock={toggleLock} formatValue={(v) => `${v.toFixed(2)}s`} />
-            <SliderRow label="Sustain" paramKey="p_env_sustain" min={0} max={3} value={params.p_env_sustain} locked={isLocked('p_env_sustain')} onChange={onChange} onToggleLock={toggleLock} formatValue={(v) => `${v.toFixed(2)}s`} />
-            <SliderRow label="Punch" paramKey="p_env_punch" min={0} max={3} value={params.p_env_punch} locked={isLocked('p_env_punch')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Decay" paramKey="p_env_decay" min={0} max={3} value={params.p_env_decay} locked={isLocked('p_env_decay')} onChange={onChange} onToggleLock={toggleLock} formatValue={(v) => `${v.toFixed(2)}s`} />
+          <Section title={t('sfx.envelope')}>
+            <SliderRow label={t('sfx.attack')} paramKey="p_env_attack" min={0} max={3} value={params.p_env_attack} locked={isLocked('p_env_attack')} onChange={onChange} onToggleLock={toggleLock} formatValue={(v) => `${v.toFixed(2)}s`} />
+            <SliderRow label={t('sfx.sustain')} paramKey="p_env_sustain" min={0} max={3} value={params.p_env_sustain} locked={isLocked('p_env_sustain')} onChange={onChange} onToggleLock={toggleLock} formatValue={(v) => `${v.toFixed(2)}s`} />
+            <SliderRow label={t('sfx.punch')} paramKey="p_env_punch" min={0} max={3} value={params.p_env_punch} locked={isLocked('p_env_punch')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.decay')} paramKey="p_env_decay" min={0} max={3} value={params.p_env_decay} locked={isLocked('p_env_decay')} onChange={onChange} onToggleLock={toggleLock} formatValue={(v) => `${v.toFixed(2)}s`} />
           </Section>
 
           {/* Vibrato */}
-          <Section title="Vibrato">
-            <SliderRow label="Strength" paramKey="p_vib_strength" min={0} max={1} value={params.p_vib_strength} locked={isLocked('p_vib_strength')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Speed" paramKey="p_vib_speed" min={0} max={1} value={params.p_vib_speed} locked={isLocked('p_vib_speed')} onChange={onChange} onToggleLock={toggleLock} />
+          <Section title={t('sfx.vibrato')}>
+            <SliderRow label={t('sfx.strength')} paramKey="p_vib_strength" min={0} max={1} value={params.p_vib_strength} locked={isLocked('p_vib_strength')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.speed')} paramKey="p_vib_speed" min={0} max={1} value={params.p_vib_speed} locked={isLocked('p_vib_speed')} onChange={onChange} onToggleLock={toggleLock} />
           </Section>
 
           {/* Arpeggio */}
-          <Section title="Arpeggio">
-            <SliderRow label="Mod" paramKey="p_arp_mod" min={-1} max={1} value={params.p_arp_mod} locked={isLocked('p_arp_mod')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Speed" paramKey="p_arp_speed" min={0} max={1} value={params.p_arp_speed} locked={isLocked('p_arp_speed')} onChange={onChange} onToggleLock={toggleLock} />
+          <Section title={t('sfx.arpeggio')}>
+            <SliderRow label={t('sfx.mod')} paramKey="p_arp_mod" min={-1} max={1} value={params.p_arp_mod} locked={isLocked('p_arp_mod')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.speed')} paramKey="p_arp_speed" min={0} max={1} value={params.p_arp_speed} locked={isLocked('p_arp_speed')} onChange={onChange} onToggleLock={toggleLock} />
           </Section>
 
           {/* Pulse */}
-          <Section title="Pulse Width">
-            <SliderRow label="Duty" paramKey="p_duty" min={-1} max={1} value={params.p_duty} locked={isLocked('p_duty')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Duty Ramp" paramKey="p_duty_ramp" min={-1} max={1} value={params.p_duty_ramp} locked={isLocked('p_duty_ramp')} onChange={onChange} onToggleLock={toggleLock} />
+          <Section title={t('sfx.pulseWidth')}>
+            <SliderRow label={t('sfx.duty')} paramKey="p_duty" min={-1} max={1} value={params.p_duty} locked={isLocked('p_duty')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.dutyRamp')} paramKey="p_duty_ramp" min={-1} max={1} value={params.p_duty_ramp} locked={isLocked('p_duty_ramp')} onChange={onChange} onToggleLock={toggleLock} />
           </Section>
 
           {/* Phaser */}
-          <Section title="Phaser">
-            <SliderRow label="Offset" paramKey="p_pha_offset" min={-1} max={1} value={params.p_pha_offset} locked={isLocked('p_pha_offset')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Ramp" paramKey="p_pha_ramp" min={-1} max={1} value={params.p_pha_ramp} locked={isLocked('p_pha_ramp')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Repeat" paramKey="p_repeat_speed" min={0} max={1} value={params.p_repeat_speed} locked={isLocked('p_repeat_speed')} onChange={onChange} onToggleLock={toggleLock} />
+          <Section title={t('sfx.phaser')}>
+            <SliderRow label={t('sfx.offset')} paramKey="p_pha_offset" min={-1} max={1} value={params.p_pha_offset} locked={isLocked('p_pha_offset')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.ramp')} paramKey="p_pha_ramp" min={-1} max={1} value={params.p_pha_ramp} locked={isLocked('p_pha_ramp')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.repeat')} paramKey="p_repeat_speed" min={0} max={1} value={params.p_repeat_speed} locked={isLocked('p_repeat_speed')} onChange={onChange} onToggleLock={toggleLock} />
           </Section>
 
           {/* Filters */}
-          <Section title="Filters">
-            <SliderRow label="LPF Freq" paramKey="p_lpf_freq" min={0} max={1} value={params.p_lpf_freq} locked={isLocked('p_lpf_freq')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="LPF Ramp" paramKey="p_lpf_ramp" min={-1} max={1} value={params.p_lpf_ramp} locked={isLocked('p_lpf_ramp')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="LPF Res" paramKey="p_lpf_resonance" min={0} max={1} value={params.p_lpf_resonance} locked={isLocked('p_lpf_resonance')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="HPF Freq" paramKey="p_hpf_freq" min={0} max={1} value={params.p_hpf_freq} locked={isLocked('p_hpf_freq')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="HPF Ramp" paramKey="p_hpf_ramp" min={-1} max={1} value={params.p_hpf_ramp} locked={isLocked('p_hpf_ramp')} onChange={onChange} onToggleLock={toggleLock} />
+          <Section title={t('sfx.filters')}>
+            <SliderRow label={t('sfx.lpfFreq')} paramKey="p_lpf_freq" min={0} max={1} value={params.p_lpf_freq} locked={isLocked('p_lpf_freq')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.lpfRamp')} paramKey="p_lpf_ramp" min={-1} max={1} value={params.p_lpf_ramp} locked={isLocked('p_lpf_ramp')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.lpfRes')} paramKey="p_lpf_resonance" min={0} max={1} value={params.p_lpf_resonance} locked={isLocked('p_lpf_resonance')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.hpfFreq')} paramKey="p_hpf_freq" min={0} max={1} value={params.p_hpf_freq} locked={isLocked('p_hpf_freq')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.hpfRamp')} paramKey="p_hpf_ramp" min={-1} max={1} value={params.p_hpf_ramp} locked={isLocked('p_hpf_ramp')} onChange={onChange} onToggleLock={toggleLock} />
           </Section>
 
           {/* FM */}
-          <Section title="FM Synthesis">
-            <SliderRow label="FM Freq" paramKey="fm_freq" min={0} max={1} value={params.fm_freq} locked={isLocked('fm_freq')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="FM Depth" paramKey="fm_depth" min={0} max={1} value={params.fm_depth} locked={isLocked('fm_depth')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="LFO Rate" paramKey="lfo_rate" min={0} max={1} value={params.lfo_rate} locked={isLocked('lfo_rate')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="LFO Depth" paramKey="lfo_depth" min={0} max={1} value={params.lfo_depth} locked={isLocked('lfo_depth')} onChange={onChange} onToggleLock={toggleLock} />
+          <Section title={t('sfx.fmSynthesis')}>
+            <SliderRow label={t('sfx.fmFreq')} paramKey="fm_freq" min={0} max={1} value={params.fm_freq} locked={isLocked('fm_freq')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.fmDepth')} paramKey="fm_depth" min={0} max={1} value={params.fm_depth} locked={isLocked('fm_depth')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.lfoRate')} paramKey="lfo_rate" min={0} max={1} value={params.lfo_rate} locked={isLocked('lfo_rate')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.lfoDepth')} paramKey="lfo_depth" min={0} max={1} value={params.lfo_depth} locked={isLocked('lfo_depth')} onChange={onChange} onToggleLock={toggleLock} />
           </Section>
 
           {/* Effects */}
-          <Section title="Effects">
-            <SliderRow label="Distortion" paramKey="distortion" min={0} max={1} value={params.distortion} locked={isLocked('distortion')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Bit Crush" paramKey="bit_crush" min={0} max={1} value={params.bit_crush} locked={isLocked('bit_crush')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Smp Reduce" paramKey="sample_reduction" min={0} max={1} value={params.sample_reduction} locked={isLocked('sample_reduction')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Chorus Rate" paramKey="chorus_rate" min={0} max={1} value={params.chorus_rate} locked={isLocked('chorus_rate')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Chorus Depth" paramKey="chorus_depth" min={0} max={1} value={params.chorus_depth} locked={isLocked('chorus_depth')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Reverb Size" paramKey="reverb_size" min={0} max={1} value={params.reverb_size} locked={isLocked('reverb_size')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Reverb Decay" paramKey="reverb_decay" min={0} max={1} value={params.reverb_decay} locked={isLocked('reverb_decay')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Delay Time" paramKey="delay_time" min={0} max={1} value={params.delay_time} locked={isLocked('delay_time')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Delay FB" paramKey="delay_feedback" min={0} max={1} value={params.delay_feedback} locked={isLocked('delay_feedback')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Ring Freq" paramKey="ring_mod_freq" min={0} max={1} value={params.ring_mod_freq} locked={isLocked('ring_mod_freq')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Ring Depth" paramKey="ring_mod_depth" min={0} max={1} value={params.ring_mod_depth} locked={isLocked('ring_mod_depth')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Flanger Rate" paramKey="flanger_rate" min={0} max={1} value={params.flanger_rate} locked={isLocked('flanger_rate')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Flanger Depth" paramKey="flanger_depth" min={0} max={1} value={params.flanger_depth} locked={isLocked('flanger_depth')} onChange={onChange} onToggleLock={toggleLock} />
-            <SliderRow label="Flanger Dly" paramKey="flanger_delay" min={0.1} max={1} value={params.flanger_delay} locked={isLocked('flanger_delay')} onChange={onChange} onToggleLock={toggleLock} />
+          <Section title={t('sfx.effects')}>
+            <SliderRow label={t('sfx.distortion')} paramKey="distortion" min={0} max={1} value={params.distortion} locked={isLocked('distortion')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.bitCrush')} paramKey="bit_crush" min={0} max={1} value={params.bit_crush} locked={isLocked('bit_crush')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.smpReduce')} paramKey="sample_reduction" min={0} max={1} value={params.sample_reduction} locked={isLocked('sample_reduction')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.chorusRate')} paramKey="chorus_rate" min={0} max={1} value={params.chorus_rate} locked={isLocked('chorus_rate')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.chorusDepth')} paramKey="chorus_depth" min={0} max={1} value={params.chorus_depth} locked={isLocked('chorus_depth')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.reverbSize')} paramKey="reverb_size" min={0} max={1} value={params.reverb_size} locked={isLocked('reverb_size')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.reverbDecay')} paramKey="reverb_decay" min={0} max={1} value={params.reverb_decay} locked={isLocked('reverb_decay')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.delayTime')} paramKey="delay_time" min={0} max={1} value={params.delay_time} locked={isLocked('delay_time')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.delayFb')} paramKey="delay_feedback" min={0} max={1} value={params.delay_feedback} locked={isLocked('delay_feedback')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.ringFreq')} paramKey="ring_mod_freq" min={0} max={1} value={params.ring_mod_freq} locked={isLocked('ring_mod_freq')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.ringDepth')} paramKey="ring_mod_depth" min={0} max={1} value={params.ring_mod_depth} locked={isLocked('ring_mod_depth')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.flangerRate')} paramKey="flanger_rate" min={0} max={1} value={params.flanger_rate} locked={isLocked('flanger_rate')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.flangerDepth')} paramKey="flanger_depth" min={0} max={1} value={params.flanger_depth} locked={isLocked('flanger_depth')} onChange={onChange} onToggleLock={toggleLock} />
+            <SliderRow label={t('sfx.flangerDly')} paramKey="flanger_delay" min={0.1} max={1} value={params.flanger_delay} locked={isLocked('flanger_delay')} onChange={onChange} onToggleLock={toggleLock} />
           </Section>
         </div>
 
@@ -918,13 +923,13 @@ export function SFXPanel() {
           className="flex flex-col gap-3 px-3 py-3"
           style={{ width: 200, borderLeft: '1px solid #1e2d40', flexShrink: 0 }}
         >
-          <Section title="Waveform">
+          <Section title={t('sfx.waveform')}>
             <WaveformCanvas buffer={buffer} width={176} height={72} />
           </Section>
-          <Section title="Spectrum">
+          <Section title={t('sfx.spectrum')}>
             <SpectrumCanvas buffer={buffer} width={176} height={64} />
           </Section>
-          <Section title="Amplitude">
+          <Section title={t('sfx.amplitude')}>
             <div className="flex justify-center">
               <AmplitudeMeter buffer={buffer} />
             </div>

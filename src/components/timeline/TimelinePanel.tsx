@@ -51,6 +51,7 @@ interface TrackHeaderProps {
 }
 
 const TrackHeader: React.FC<TrackHeaderProps> = ({ trackIndex }) => {
+  const { t } = useTranslation();
   const { project, updateTrack, removeTrack } = useProjectStore();
   const track = project.tracks[trackIndex];
   if (!track) return null;
@@ -71,7 +72,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = ({ trackIndex }) => {
           type="button"
           onClick={() => removeTrack(track.id)}
           className="p-0.5 text-gray-600 hover:text-red-400 transition-colors"
-          aria-label="Remove track"
+          aria-label={t('timeline.removeTrack')}
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -87,7 +88,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = ({ trackIndex }) => {
               ? 'bg-amber-700 text-amber-200'
               : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
           }`}
-          title="Mute"
+          title={t('timeline.mute')}
           aria-pressed={track.muted}
         >
           M
@@ -102,7 +103,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = ({ trackIndex }) => {
               ? 'bg-yellow-600 text-yellow-100'
               : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
           }`}
-          title="Solo"
+          title={t('timeline.solo')}
           aria-pressed={track.solo}
         >
           S
@@ -125,7 +126,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = ({ trackIndex }) => {
               updateTrack(track.id, { volume: parseFloat(e.target.value) })
             }
             className="flex-1 h-1 appearance-none bg-gray-700 rounded [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-300 cursor-pointer"
-            aria-label="Track volume"
+            aria-label={t('timeline.trackVolume')}
           />
         </div>
       </div>
@@ -313,8 +314,8 @@ export const TimelinePanel: React.FC = () => {
           type="button"
           onClick={handleUndo}
           className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-          title="Undo (Ctrl+Z)"
-          aria-label="Undo"
+          title={t('timeline.undoTooltip')}
+          aria-label={t('timeline.undo')}
         >
           <Undo2 className="w-4 h-4" />
         </button>
@@ -322,8 +323,8 @@ export const TimelinePanel: React.FC = () => {
           type="button"
           onClick={handleRedo}
           className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-          title="Redo (Ctrl+Y)"
-          aria-label="Redo"
+          title={t('timeline.redoTooltip')}
+          aria-label={t('timeline.redo')}
         >
           <Redo2 className="w-4 h-4" />
         </button>
@@ -340,10 +341,10 @@ export const TimelinePanel: React.FC = () => {
               : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800 border border-transparent'
           }`}
           aria-pressed={store.snapEnabled}
-          title="Snap to grid"
+          title={t('timeline.snapToGrid')}
         >
           <Magnet className="w-3.5 h-3.5" />
-          Snap
+          {t('timeline.snap')}
         </button>
 
         <div className="w-px h-5 bg-gray-700 mx-1" />
@@ -353,8 +354,8 @@ export const TimelinePanel: React.FC = () => {
           type="button"
           onClick={handleZoomOut}
           className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-          title="Zoom out"
-          aria-label="Zoom out"
+          title={t('timeline.zoomOut')}
+          aria-label={t('timeline.zoomOut')}
         >
           <ZoomOut className="w-4 h-4" />
         </button>
@@ -366,14 +367,14 @@ export const TimelinePanel: React.FC = () => {
           value={store.zoomLevel}
           onChange={(e) => store.setZoomLevel(parseFloat(e.target.value))}
           className="w-24 h-1.5 appearance-none bg-gray-700 rounded [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-300 cursor-pointer"
-          aria-label="Zoom level"
+          aria-label={t('timeline.zoomLevel')}
         />
         <button
           type="button"
           onClick={handleZoomIn}
           className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-          title="Zoom in"
-          aria-label="Zoom in"
+          title={t('timeline.zoomIn')}
+          aria-label={t('timeline.zoomIn')}
         >
           <ZoomIn className="w-4 h-4" />
         </button>
@@ -446,7 +447,7 @@ export const TimelinePanel: React.FC = () => {
           className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          Add Track
+          {t('timeline.addTrack')}
         </button>
       </div>
 
@@ -463,7 +464,7 @@ export const TimelinePanel: React.FC = () => {
             style={{ height: RULER_HEIGHT }}
           >
             <span className="text-[10px] text-gray-600 uppercase tracking-wide">
-              Tracks
+              {t('timeline.tracks')}
             </span>
           </div>
 
@@ -474,13 +475,13 @@ export const TimelinePanel: React.FC = () => {
             ))}
             {store.project.tracks.length === 0 && (
               <div className="flex flex-col items-center justify-center h-24 text-xs text-gray-600 gap-2 px-3">
-                <p className="text-center">No tracks</p>
+                <p className="text-center">{t('timeline.noTracks')}</p>
                 <button
                   type="button"
                   onClick={handleAddTrack}
                   className="text-indigo-400 hover:text-indigo-300"
                 >
-                  + Add track
+                  + {t('timeline.addTrack')}
                 </button>
               </div>
             )}
