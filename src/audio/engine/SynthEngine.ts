@@ -98,7 +98,7 @@ export function validateParams(p: SynthParams): SynthParams {
   for (const key of Object.keys(out) as Array<keyof SynthParams>) {
     const v = out[key] as number;
     if (typeof v === 'number' && (!isFinite(v) || isNaN(v))) {
-      (out as Record<string, number>)[key] = 0;
+      (out as unknown as Record<string, number>)[key] = 0;
     }
   }
 
@@ -164,7 +164,7 @@ export function morphParams(a: SynthParams, b: SynthParams, amount: number): Syn
     const av = a[key];
     const bv = b[key];
     if (typeof av === 'number' && typeof bv === 'number') {
-      (result as Record<string, number>)[key] = av + (bv - av) * amount;
+      (result as unknown as Record<string, number>)[key] = av + (bv - av) * amount;
     }
   }
   return result;
@@ -480,7 +480,7 @@ export function samplesToAudioBuffer(
   samples: Float32Array,
 ): AudioBuffer {
   const buf = ctx.createBuffer(1, samples.length, ctx.sampleRate);
-  buf.copyToChannel(samples, 0);
+  buf.copyToChannel(samples as Float32Array<ArrayBuffer>, 0);
   return buf;
 }
 

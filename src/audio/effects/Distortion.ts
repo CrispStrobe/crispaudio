@@ -8,7 +8,7 @@ export function createDistortionCurve(
   algorithm: DistortionAlgorithm,
   drive: number,
   samples = 256,
-): Float32Array {
+): Float32Array<ArrayBuffer> {
   const curve = new Float32Array(samples);
   const d = Math.max(0, Math.min(1, drive));
 

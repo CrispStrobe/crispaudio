@@ -13,7 +13,7 @@ import React, {
 } from 'react';
 import type { AudioSegment, TimelineTrack, AudioSource } from '../../types/audio';
 import { useProjectStore } from '../../stores/projectStore';
-import { useTimeline, TRACK_HEIGHT, RULER_HEIGHT } from '../../hooks/useTimeline';
+import { useTimeline, TRACK_HEIGHT } from '../../hooks/useTimeline';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

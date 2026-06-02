@@ -5,7 +5,6 @@
 
 import type {
   TimelineProject,
-  TimelineTrack,
   AudioSegment,
   AudioSource,
   EffectConfig,

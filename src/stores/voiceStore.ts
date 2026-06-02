@@ -119,7 +119,7 @@ function lerpSettings(
   const result = {} as VoiceSettings;
   const keys = Object.keys(a) as Array<keyof VoiceSettings>;
   for (const key of keys) {
-    (result as Record<string, number>)[key] =
+    (result as unknown as Record<string, number>)[key] =
       (a[key] as number) + ((b[key] as number) - (a[key] as number)) * t;
   }
   return result;

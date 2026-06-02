@@ -44,7 +44,7 @@ function tryTauriDialog(
           readBinaryFile(selected).then((data: Uint8Array) => {
             const ext = selected.split('.').pop()?.toLowerCase() ?? 'wav';
             const mime = EXTENSION_MAP[ext] ?? 'audio/wav';
-            const blob = new Blob([data], { type: mime });
+            const blob = new Blob([data as unknown as BlobPart], { type: mime });
             const name = selected.split(/[\\/]/).pop() ?? 'audio';
             onFileLoad(new File([blob], name, { type: mime }));
           });

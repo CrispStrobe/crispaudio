@@ -22,7 +22,7 @@ export function samplesToAudioBuffer(
   ctx: AudioContext | OfflineAudioContext,
 ): AudioBuffer {
   const buf = ctx.createBuffer(1, samples.length, sampleRate);
-  buf.copyToChannel(samples, 0);
+  buf.copyToChannel(samples as Float32Array<ArrayBuffer>, 0);
   return buf;
 }
 

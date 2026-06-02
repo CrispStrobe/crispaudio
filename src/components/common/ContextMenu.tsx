@@ -69,7 +69,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ items, position, onClo
   );
 
   const handleKeyNav = useCallback(
-    (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    (e: React.KeyboardEvent<HTMLButtonElement>, _index: number) => {
       const buttons = menuRef.current?.querySelectorAll<HTMLButtonElement>(
         'button[role="menuitem"]:not([disabled])'
       );
