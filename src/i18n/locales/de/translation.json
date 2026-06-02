@@ -77,6 +77,8 @@
     "redo": "Wiederholen",
     "import": "Importieren",
     "export": "Mix exportieren",
+    "openProject": "Öffnen",
+    "saveProject": "Speichern",
     "fadeIn": "Einblenden",
     "fadeOut": "Ausblenden",
     "effects": "Segmenteffekte",

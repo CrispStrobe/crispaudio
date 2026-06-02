@@ -103,6 +103,10 @@ interface ProjectState {
   setZoomLevel: (level: number) => void;
   setScrollOffset: (offset: number) => void;
   setSnapEnabled: (enabled: boolean) => void;
+
+  // Persistence
+  /** Replace the entire project + sources (e.g. after loading a project file). */
+  loadProjectState: (project: TimelineProject, sources: Map<string, AudioSource>) => void;
 }
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
@@ -416,6 +420,20 @@ export const useProjectStore = create<ProjectState>()(
           const sources = new Map(state.sources);
           sources.delete(sourceId);
           return { sources };
+        });
+      },
+
+      loadProjectState: (project, sources) => {
+        set({
+          project: {
+            ...project,
+            duration: computeProjectDuration(project.tracks),
+          },
+          sources,
+          selection: null,
+          clipboard: { operation: null, segments: [], sourceIds: [] },
+          playheadPosition: 0,
+          isPlaying: false,
         });
       },
 

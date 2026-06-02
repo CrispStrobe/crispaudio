@@ -77,6 +77,8 @@
     "redo": "Redo",
     "import": "Import",
     "export": "Export Mix",
+    "openProject": "Open",
+    "saveProject": "Save",
     "fadeIn": "Fade In",
     "fadeOut": "Fade Out",
     "effects": "Segment Effects",

@@ -26,10 +26,14 @@ import {
   Redo2,
   Upload,
   Download,
+  Save,
+  FolderOpen,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { serializeProject, deserializeProject } from '../../lib/projectFile';
+import { saveProjectFile, openProjectFile } from '../../lib/projectIO';
 import { TransportControls } from './TransportControls';
 import { TimelineRuler } from './TimelineRuler';
 import { TimelineCanvas } from './TimelineCanvas';
@@ -249,6 +253,29 @@ export const TimelinePanel: React.FC = () => {
     [audioEngine, store],
   );
 
+  // Save the whole project (structure + embedded audio) to a .json file.
+  const handleSaveProject = useCallback(async () => {
+    try {
+      const json = serializeProject(store.project, store.sources);
+      await saveProjectFile(json, store.project.name || 'project');
+    } catch (err) {
+      console.error('Save project failed:', err);
+    }
+  }, [store.project, store.sources]);
+
+  // Open a project file and replace the current session with it.
+  const handleOpenProject = useCallback(async () => {
+    try {
+      const json = await openProjectFile();
+      if (!json) return;
+      const ctx = audioEngine.getContext();
+      const { project, sources } = await deserializeProject(json, ctx);
+      store.loadProjectState(project, sources);
+    } catch (err) {
+      console.error('Open project failed:', err);
+    }
+  }, [audioEngine, store]);
+
   // Offline-render the whole project and download it as a WAV.
   const handleExportMix = useCallback(async () => {
     const engine = engineRef.current;
@@ -355,6 +382,28 @@ export const TimelinePanel: React.FC = () => {
         </span>
 
         <div className="flex-1" />
+
+        {/* Open / Save project */}
+        <button
+          type="button"
+          onClick={() => void handleOpenProject()}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+          title={t('timeline.openProject')}
+        >
+          <FolderOpen className="w-3.5 h-3.5" />
+          {t('timeline.openProject')}
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleSaveProject()}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+          title={t('timeline.saveProject')}
+        >
+          <Save className="w-3.5 h-3.5" />
+          {t('timeline.saveProject')}
+        </button>
+
+        <div className="w-px h-5 bg-gray-700 mx-1" />
 
         {/* Import audio */}
         <input
