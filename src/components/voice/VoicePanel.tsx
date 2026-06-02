@@ -12,7 +12,11 @@ import {
   ArrowLeftRight,
 } from 'lucide-react';
 import { useVoiceStore } from '../../stores/voiceStore';
+import { VoiceEngine } from '../../audio/engine/VoiceEngine';
 import type { VoiceSettings, VoicePresetName } from '../../types/voicelab';
+
+// Single shared offline DSP engine for the voice processor.
+const voiceEngine = new VoiceEngine();
 
 // ---------------------------------------------------------------------------
 // Preset labels
@@ -480,16 +484,22 @@ export function VoicePanel() {
     setIsPlaying(false);
   }, []);
 
-  // Stub process — in a real build this would call VoiceEngine
-  const handleProcess = useCallback(() => {
+  // Run the source buffer through the full voice effect chain (offline render).
+  const handleProcess = useCallback(async () => {
     if (!sourceBuffer) return;
     setIsProcessing(true);
-    // Placeholder: pass-through with a short delay to simulate processing
-    setTimeout(() => {
+    try {
+      const effectiveSettings = store.getEffectiveSettings();
+      const out = await voiceEngine.processAudio(sourceBuffer, effectiveSettings);
+      setProcessedBuffer(out);
+    } catch (err) {
+      console.error('Voice processing failed:', err);
+      // Fall back to the unprocessed source so playback/export still work.
       setProcessedBuffer(sourceBuffer);
+    } finally {
       setIsProcessing(false);
-    }, 400);
-  }, [sourceBuffer, setIsProcessing, setProcessedBuffer]);
+    }
+  }, [sourceBuffer, store, setIsProcessing, setProcessedBuffer]);
 
   function downloadProcessed() {
     if (!processedBuffer) return;

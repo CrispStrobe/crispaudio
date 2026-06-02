@@ -628,6 +628,14 @@ export function SFXPanel() {
     [loadPreset, generate],
   );
 
+  // Generate an initial buffer on mount so Play / Export are usable immediately
+  // (the store starts with buffer === null and nothing else triggers generation).
+  useEffect(() => {
+    if (!buffer) generate();
+    // Run once on mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const isLocked = (k: keyof SynthParams) => lockedParams.has(k);
 
   return (

@@ -5,7 +5,13 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { enableMapSet } from 'immer';
 import { type SynthParams, type PresetName } from '../types/synth';
+
+// `lockedParams` is stored as a Set and read through the immer draft, which
+// requires immer's MapSet plugin. Enable it once at module load so the SFX
+// param actions (setParams / loadPreset) don't throw at runtime.
+enableMapSet();
 import {
   createDefaultParams,
   generateSamples,
