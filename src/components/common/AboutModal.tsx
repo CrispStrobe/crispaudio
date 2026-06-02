@@ -5,13 +5,21 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getVersion } from '@tauri-apps/api/app';
 import { ExternalLink } from 'lucide-react';
 import { Modal } from './Modal';
 import { useUIStore } from '../../stores/uiStore';
 import { openExternal } from '../../lib/openExternal';
 
 const REPO_URL = 'https://github.com/CrispStrobe/crispaudio';
+
+async function getTauriVersion(): Promise<string> {
+  try {
+    const { getVersion } = await import('@tauri-apps/api/app');
+    return await getVersion();
+  } catch {
+    return '';
+  }
+}
 const IDENTIFIER = 'com.crispstrobe.crispaudio';
 
 export function AboutModal() {
@@ -21,9 +29,7 @@ export function AboutModal() {
 
   useEffect(() => {
     if (activeModal !== 'about') return;
-    getVersion()
-      .then(setVersion)
-      .catch(() => setVersion(''));
+    getTauriVersion().then(setVersion);
   }, [activeModal]);
 
   return (

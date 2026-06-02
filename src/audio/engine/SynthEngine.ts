@@ -285,6 +285,8 @@ export function generateSamples(
   let dutyCycle = clamp(0.5 - p.p_duty * 0.5, 0.01, 0.99);
   let arpTime = 0;
   let arpValue = 1;
+  let lpfPrev = 0;
+  let hpfPrev = 0;
 
   // --- Main sample loop ---
   for (let i = 0; i < length; i++) {
@@ -399,14 +401,16 @@ export function generateSamples(
     // ---- Low-pass filter (1-pole IIR) ----
     if (p.p_lpf_freq < 1) {
       const cutoff = clamp(p.p_lpf_freq, 0, 1);
-      const prevSample = i > 0 ? data[i - 1] : 0;
-      sample = sample * cutoff + (1 - cutoff) * prevSample;
+      lpfPrev = sample * cutoff + (1 - cutoff) * lpfPrev;
+      sample = lpfPrev;
     }
 
     // ---- High-pass filter ----
     if (p.p_hpf_freq > 0) {
-      const prevSample = i > 0 ? data[i - 1] : 0;
-      sample = sample - prevSample * clamp(p.p_hpf_freq, 0, 1);
+      const hpfAlpha = clamp(p.p_hpf_freq, 0, 1);
+      const hpfOut = sample - hpfPrev;
+      hpfPrev = sample;
+      sample = hpfOut * (1 - hpfAlpha);
     }
 
     // ---- Distortion (bug-fixed) ----

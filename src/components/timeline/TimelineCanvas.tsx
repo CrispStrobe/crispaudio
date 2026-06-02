@@ -11,6 +11,7 @@ import React, {
   useState,
   useLayoutEffect,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AudioSegment, TimelineTrack, AudioSource } from '../../types/audio';
 import { useProjectStore } from '../../stores/projectStore';
 import { useTimeline, TRACK_HEIGHT } from '../../hooks/useTimeline';
@@ -63,6 +64,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
   width,
   onHeightChange,
 }) => {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -622,21 +624,21 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
                 className="w-full text-left px-3 py-1.5 hover:bg-gray-700 text-gray-200"
                 onClick={handleSplit}
               >
-                Split at cursor
+                {t('timeline.split')}
               </button>
               <button
                 type="button"
                 className="w-full text-left px-3 py-1.5 hover:bg-gray-700 text-gray-200"
                 onClick={handleCopySeg}
               >
-                Copy
+                {t('timeline.copy')}
               </button>
               <button
                 type="button"
                 className="w-full text-left px-3 py-1.5 hover:bg-gray-700 text-gray-200"
                 onClick={handleCutSeg}
               >
-                Cut
+                {t('timeline.cut')}
               </button>
               <div className="h-px bg-gray-700 my-1" />
               <button
@@ -644,7 +646,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
                 className="w-full text-left px-3 py-1.5 hover:bg-gray-700 text-red-400"
                 onClick={handleDeleteSeg}
               >
-                Delete
+                {t('timeline.delete')}
               </button>
             </>
           ) : (
@@ -653,7 +655,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
               className="w-full text-left px-3 py-1.5 hover:bg-gray-700 text-gray-200"
               onClick={handlePasteHere}
             >
-              Paste here
+              {t('timeline.paste')}
             </button>
           )}
         </div>

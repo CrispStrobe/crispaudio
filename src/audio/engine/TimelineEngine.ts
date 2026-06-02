@@ -29,7 +29,13 @@ export class TimelineEngine {
   constructor(ctx: AudioContext, masterGain?: GainNode) {
     this.ctx = ctx;
     this.sources = new Map();
-    this.masterGain = masterGain ?? ctx.destination as unknown as GainNode;
+    if (masterGain) {
+      this.masterGain = masterGain;
+    } else {
+      const fallbackGain = ctx.createGain();
+      fallbackGain.connect(ctx.destination);
+      this.masterGain = fallbackGain;
+    }
   }
 
   /** Update the source registry (call when sources are added/removed). */
