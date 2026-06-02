@@ -78,6 +78,11 @@ interface ProjectState {
   // Source management
   addSource: (source: AudioSource) => void;
   removeSource: (sourceId: string) => void;
+  /**
+   * Register an audio source and place a segment for it on the timeline in one
+   * atomic update. Creates a track if none exists / no valid target is given.
+   */
+  importAudioSource: (source: AudioSource, startTime?: number, trackId?: string) => void;
 
   // Selection
   setSelection: (selection: TimelineSelection | null) => void;
@@ -411,6 +416,67 @@ export const useProjectStore = create<ProjectState>()(
           const sources = new Map(state.sources);
           sources.delete(sourceId);
           return { sources };
+        });
+      },
+
+      importAudioSource: (source, startTime = 0, trackId) => {
+        set((state) => {
+          const sources = new Map(state.sources);
+          sources.set(source.id, source);
+
+          let tracks = state.project.tracks;
+          let targetId = trackId;
+
+          // Fall back to the first track, or create one if the project is empty.
+          if (!targetId || !tracks.some((t) => t.id === targetId)) {
+            if (tracks.length > 0) {
+              targetId = tracks[0].id;
+            } else {
+              const newTrack: TimelineTrack = {
+                id: uuid(),
+                name: 'Track 1',
+                segments: [],
+                muted: false,
+                solo: false,
+                volume: 1,
+                pan: 0,
+              };
+              tracks = [...tracks, newTrack];
+              targetId = newTrack.id;
+            }
+          }
+
+          const segment: AudioSegment = {
+            id: uuid(),
+            trackId: targetId,
+            sourceId: source.id,
+            startTime: Math.max(0, startTime),
+            duration: source.duration,
+            sourceOffset: 0,
+            fadeInDuration: 0,
+            fadeOutDuration: 0,
+            fadeInCurve: 'linear',
+            fadeOutCurve: 'linear',
+            effects: [],
+            gain: 1,
+            color: '#3b82f6',
+            name: source.name,
+          };
+
+          tracks = tracks.map((t) =>
+            t.id === targetId
+              ? { ...t, segments: [...t.segments, segment] }
+              : t,
+          );
+
+          return {
+            sources,
+            project: {
+              ...state.project,
+              tracks,
+              duration: computeProjectDuration(tracks),
+            },
+          };
         });
       },
 

@@ -120,6 +120,78 @@ export function encodeWav(
   return buffer;
 }
 
+/**
+ * Encode a (possibly multi-channel) AudioBuffer to an interleaved PCM WAV.
+ * Channels are interleaved frame-by-frame. Supports 8/16/24/32-bit depth.
+ */
+export function encodeAudioBufferToWav(
+  buffer: AudioBuffer,
+  bitDepth: BitDepth = 16,
+): ArrayBuffer {
+  const numChannels = buffer.numberOfChannels;
+  const numFrames = buffer.length;
+  const sampleRate = buffer.sampleRate;
+  const bytesPerSample = bitDepth / 8;
+  const dataLength = numFrames * numChannels * bytesPerSample;
+
+  const out = new ArrayBuffer(44 + dataLength);
+  const view = new DataView(out);
+
+  function writeStr(offset: number, str: string): void {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  }
+
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+  view.setUint16(32, numChannels * bytesPerSample, true);
+  view.setUint16(34, bitDepth, true);
+  writeStr(36, 'data');
+  view.setUint32(40, dataLength, true);
+
+  const channels: Float32Array[] = [];
+  for (let c = 0; c < numChannels; c++) channels.push(buffer.getChannelData(c));
+
+  let offset = 44;
+  for (let i = 0; i < numFrames; i++) {
+    for (let c = 0; c < numChannels; c++) {
+      const s = Math.max(-1, Math.min(1, channels[c][i]));
+      switch (bitDepth) {
+        case 8:
+          view.setUint8(offset, Math.round((s + 1) * 127.5));
+          offset += 1;
+          break;
+        case 16:
+          view.setInt16(offset, Math.round(s * 32767), true);
+          offset += 2;
+          break;
+        case 24: {
+          const v = Math.round(s * 8388607);
+          view.setUint8(offset, v & 0x0000ff);
+          view.setUint8(offset + 1, (v & 0x00ff00) >> 8);
+          view.setUint8(offset + 2, (v & 0xff0000) >> 16);
+          offset += 3;
+          break;
+        }
+        case 32:
+          view.setInt32(offset, Math.round(s * 2147483647), true);
+          offset += 4;
+          break;
+      }
+    }
+  }
+
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Normalisation
 // ---------------------------------------------------------------------------

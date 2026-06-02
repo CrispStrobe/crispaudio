@@ -24,8 +24,12 @@ import {
   Magnet,
   Undo2,
   Redo2,
+  Upload,
+  Download,
 } from 'lucide-react';
-import { useProjectStore, useTimelineHistory } from '../../stores/projectStore';
+import { useTranslation } from 'react-i18next';
+import { useProjectStore } from '../../stores/projectStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { TransportControls } from './TransportControls';
 import { TimelineRuler } from './TimelineRuler';
 import { TimelineCanvas } from './TimelineCanvas';
@@ -33,6 +37,8 @@ import { SegmentEffectsPanel } from './SegmentEffectsPanel';
 import { TRACK_HEADER_WIDTH, TRACK_HEIGHT, RULER_HEIGHT } from '../../hooks/useTimeline';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
 import { TimelineEngine } from '../../audio/engine/TimelineEngine';
+import { computeWaveformPeaks, encodeAudioBufferToWav } from '../../audio/utils/audioBufferUtils';
+import type { AudioSource } from '../../types/audio';
 
 // ── Track header ──────────────────────────────────────────────────────────────
 
@@ -202,11 +208,68 @@ export const TimelinePanel: React.FC = () => {
     return () => ro.disconnect();
   }, []);
 
+  const { t } = useTranslation();
+  const defaultBitDepth = useSettingsStore((s) => s.defaultBitDepth);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
   const handleAddTrack = useCallback(() => store.addTrack(), [store]);
   const handleZoomIn = useCallback(() => store.setZoomLevel(store.zoomLevel * 1.25), [store]);
   const handleZoomOut = useCallback(() => store.setZoomLevel(store.zoomLevel / 1.25), [store]);
-  const handleUndo = useCallback(() => useTimelineHistory().undo(), []);
-  const handleRedo = useCallback(() => useTimelineHistory().redo(), []);
+  const handleUndo = useCallback(() => useProjectStore.temporal.getState().undo(), []);
+  const handleRedo = useCallback(() => useProjectStore.temporal.getState().redo(), []);
+
+  // Decode dropped/picked audio files into sources + segments on the timeline.
+  const handleImportFiles = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      const ctx = audioEngine.getContext();
+      await audioEngine.resume();
+      for (const file of Array.from(files)) {
+        try {
+          const arrayBuf = await file.arrayBuffer();
+          const decoded = await ctx.decodeAudioData(arrayBuf);
+          const mono = decoded.getChannelData(0);
+          const bins = Math.max(1, Math.min(8000, Math.ceil(decoded.duration * 200)));
+          const source: AudioSource = {
+            id: crypto.randomUUID(),
+            name: file.name,
+            buffer: decoded,
+            peaks: computeWaveformPeaks(mono, bins),
+            duration: decoded.duration,
+            sampleRate: decoded.sampleRate,
+            channels: decoded.numberOfChannels,
+          };
+          store.importAudioSource(source, store.playheadPosition);
+        } catch (err) {
+          console.error(`Failed to import ${file.name}:`, err);
+        }
+      }
+    },
+    [audioEngine, store],
+  );
+
+  // Offline-render the whole project and download it as a WAV.
+  const handleExportMix = useCallback(async () => {
+    const engine = engineRef.current;
+    if (!engine || store.project.duration <= 0) return;
+    setIsExporting(true);
+    try {
+      const rendered = await engine.renderToBuffer(store.project);
+      const wav = encodeAudioBufferToWav(rendered, defaultBitDepth);
+      const blob = new Blob([wav], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${store.project.name || 'crispaudio_mix'}.wav`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Mix export failed:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [store.project, defaultBitDepth]);
 
   const showEffectsPanel =
     store.selection !== null && store.selection.segmentIds.length > 0;
@@ -292,6 +355,40 @@ export const TimelinePanel: React.FC = () => {
         </span>
 
         <div className="flex-1" />
+
+        {/* Import audio */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="audio/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            void handleImportFiles(e.target.files);
+            e.target.value = '';
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+          title={t('timeline.import')}
+        >
+          <Upload className="w-3.5 h-3.5" />
+          {t('timeline.import')}
+        </button>
+
+        {/* Export mix */}
+        <button
+          type="button"
+          onClick={() => void handleExportMix()}
+          disabled={isExporting || store.project.duration <= 0}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          title={t('timeline.export')}
+        >
+          <Download className="w-3.5 h-3.5" />
+          {t('timeline.export')}
+        </button>
 
         {/* Add track */}
         <button

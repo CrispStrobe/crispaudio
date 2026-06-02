@@ -6,7 +6,7 @@
 
 import { useRef, useCallback, useEffect } from 'react';
 import type { AudioSegment, TimelineTrack } from '../types/audio';
-import { useProjectStore, useTimelineHistory } from '../stores/projectStore';
+import { useProjectStore } from '../stores/projectStore';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -332,13 +332,13 @@ export function useTimeline() {
 
       if (ctrl && e.code === 'KeyZ' && !e.shiftKey) {
         e.preventDefault();
-        useTimelineHistory().undo();
+        useProjectStore.temporal.getState().undo();
         return;
       }
 
       if (ctrl && (e.code === 'KeyY' || (e.code === 'KeyZ' && e.shiftKey))) {
         e.preventDefault();
-        useTimelineHistory().redo();
+        useProjectStore.temporal.getState().redo();
         return;
       }
 

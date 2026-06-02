@@ -75,6 +75,7 @@
     "split": "Split",
     "undo": "Undo",
     "redo": "Redo",
+    "import": "Import",
     "export": "Export Mix",
     "fadeIn": "Fade In",
     "fadeOut": "Fade Out",
