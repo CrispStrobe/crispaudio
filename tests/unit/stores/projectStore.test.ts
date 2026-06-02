@@ -354,7 +354,7 @@ describe('projectStore — cut', () => {
 
 describe('projectStore — paste', () => {
   it('inserts clipboard segment(s) at the playhead position', () => {
-    const { trackId } = setupTrackWithSegment();
+    setupTrackWithSegment();
     useProjectStore.getState().copy();
     useProjectStore.getState().setPlayheadPosition(5.0);
     useProjectStore.getState().paste();

@@ -105,34 +105,32 @@ export const Modal: React.FC<ModalProps> = ({
         style={{ animation: 'modalIn 0.15s ease-out both' }}
       >
         {/* Header */}
-        {(title || true) && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-700/70 flex-shrink-0">
-            {title ? (
-              <h2
-                id="modal-title"
-                className="text-sm font-semibold text-gray-100 leading-none"
-              >
-                {title}
-              </h2>
-            ) : (
-              <div />
-            )}
-            <button
-              ref={closeBtnRef}
-              type="button"
-              onClick={onClose}
-              className="
-                -mr-1 w-6 h-6 flex items-center justify-center rounded
-                text-gray-500 hover:text-gray-200 hover:bg-gray-700
-                transition-colors
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400
-              "
-              aria-label="Close modal"
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-700/70 flex-shrink-0">
+          {title ? (
+            <h2
+              id="modal-title"
+              className="text-sm font-semibold text-gray-100 leading-none"
             >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+              {title}
+            </h2>
+          ) : (
+            <div />
+          )}
+          <button
+            ref={closeBtnRef}
+            type="button"
+            onClick={onClose}
+            className="
+              -mr-1 w-6 h-6 flex items-center justify-center rounded
+              text-gray-500 hover:text-gray-200 hover:bg-gray-700
+              transition-colors
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400
+            "
+            aria-label="Close modal"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Body */}
         <div className="overflow-y-auto flex-1 px-5 py-4">

@@ -202,7 +202,6 @@ describe('validateParams', () => {
 
   it('does not mutate the input object', () => {
     const p = createDefaultParams();
-    const originalVol = p.sound_vol;
     (p as Record<string, unknown>).sound_vol = 99;
     validateParams(p);
     // p itself was mutated before the call, but validateParams returns a copy

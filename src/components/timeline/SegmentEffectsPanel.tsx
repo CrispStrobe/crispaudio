@@ -4,7 +4,7 @@
 // and per-segment effect chain.
 // ---------------------------------------------------------------------------
 
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import {
   X,
   ChevronDown,
@@ -258,32 +258,23 @@ export const SegmentEffectsPanel: React.FC = () => {
   const handleColorChange = (color: string) =>
     store.setSegmentColor(seg.id, color);
 
-  const handleEffectUpdate = useCallback(
-    (index: number, patch: Partial<EffectConfig>) => {
-      const effects = seg.effects.map((e, i) =>
-        i === index ? { ...e, ...patch } : e,
-      );
-      store.setSegmentEffects(seg.id, effects);
-    },
-    [seg, store],
-  );
+  const handleEffectUpdate = (index: number, patch: Partial<EffectConfig>) => {
+    const effects = seg.effects.map((e, i) =>
+      i === index ? { ...e, ...patch } : e,
+    );
+    store.setSegmentEffects(seg.id, effects);
+  };
 
-  const handleEffectRemove = useCallback(
-    (index: number) => {
-      const effects = seg.effects.filter((_, i) => i !== index);
-      store.setSegmentEffects(seg.id, effects);
-    },
-    [seg, store],
-  );
+  const handleEffectRemove = (index: number) => {
+    const effects = seg.effects.filter((_, i) => i !== index);
+    store.setSegmentEffects(seg.id, effects);
+  };
 
-  const handleAddEffect = useCallback(
-    (type: EffectType) => {
-      const effects = [...seg.effects, defaultEffect(type)];
-      store.setSegmentEffects(seg.id, effects);
-      setAddMenuOpen(false);
-    },
-    [seg, store],
-  );
+  const handleAddEffect = (type: EffectType) => {
+    const effects = [...seg.effects, defaultEffect(type)];
+    store.setSegmentEffects(seg.id, effects);
+    setAddMenuOpen(false);
+  };
 
   return (
     <div className="flex flex-col h-full bg-gray-900 border-l border-gray-700 w-64 flex-shrink-0 overflow-hidden">

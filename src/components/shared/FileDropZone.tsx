@@ -24,38 +24,49 @@ function isAudioFile(file: File, acceptedTypes: string[]): boolean {
   return ext in EXTENSION_MAP && acceptedTypes.includes(EXTENSION_MAP[ext]);
 }
 
+interface TauriGlobals {
+  dialog: {
+    open: (opts: {
+      multiple: boolean;
+      filters: { name: string; extensions: string[] }[];
+    }) => Promise<string | null>;
+  };
+  fs: {
+    readBinaryFile: (path: string) => Promise<Uint8Array>;
+  };
+}
+
+function getTauriGlobals(): TauriGlobals | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return (window as unknown as { __TAURI__?: TauriGlobals }).__TAURI__;
+}
+
 function tryTauriDialog(
   acceptedTypes: string[],
   onFileLoad: (file: File) => void
 ): boolean {
-  // @ts-ignore – Tauri __TAURI__ global
-  if (typeof window !== 'undefined' && (window as any).__TAURI__) {
-    try {
-      // @ts-ignore
-      const { open } = (window as any).__TAURI__.dialog;
-      const extensions = Object.keys(EXTENSION_MAP).filter(
-        ext => acceptedTypes.includes(EXTENSION_MAP[ext])
-      );
-      open({ multiple: false, filters: [{ name: 'Audio', extensions }] }).then(
-        (selected: string | null) => {
-          if (!selected) return;
-          // @ts-ignore
-          const { readBinaryFile } = (window as any).__TAURI__.fs;
-          readBinaryFile(selected).then((data: Uint8Array) => {
-            const ext = selected.split('.').pop()?.toLowerCase() ?? 'wav';
-            const mime = EXTENSION_MAP[ext] ?? 'audio/wav';
-            const blob = new Blob([data as unknown as BlobPart], { type: mime });
-            const name = selected.split(/[\\/]/).pop() ?? 'audio';
-            onFileLoad(new File([blob], name, { type: mime }));
-          });
-        }
-      );
-      return true;
-    } catch {
-      return false;
-    }
+  const tauri = getTauriGlobals();
+  if (!tauri) return false;
+  try {
+    const extensions = Object.keys(EXTENSION_MAP).filter(
+      ext => acceptedTypes.includes(EXTENSION_MAP[ext])
+    );
+    tauri.dialog
+      .open({ multiple: false, filters: [{ name: 'Audio', extensions }] })
+      .then((selected) => {
+        if (!selected) return;
+        tauri.fs.readBinaryFile(selected).then((data) => {
+          const ext = selected.split('.').pop()?.toLowerCase() ?? 'wav';
+          const mime = EXTENSION_MAP[ext] ?? 'audio/wav';
+          const blob = new Blob([data as unknown as BlobPart], { type: mime });
+          const name = selected.split(/[\\/]/).pop() ?? 'audio';
+          onFileLoad(new File([blob], name, { type: mime }));
+        });
+      });
+    return true;
+  } catch {
+    return false;
   }
-  return false;
 }
 
 export const FileDropZone: React.FC<FileDropZoneProps> = ({

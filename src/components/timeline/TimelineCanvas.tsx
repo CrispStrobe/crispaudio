@@ -454,7 +454,6 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     store.scrollOffset,
     store.selection,
     store.playheadPosition,
-    store.sources,
     timeToPixels,
     drawSegment,
   ]);
