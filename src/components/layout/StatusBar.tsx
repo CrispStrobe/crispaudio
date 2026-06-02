@@ -3,14 +3,10 @@
 // Bottom bar: mode name | playback time | sample-rate / bit-depth
 // ---------------------------------------------------------------------------
 
+import { useTranslation } from 'react-i18next';
 import { useUIStore } from '../../stores/uiStore';
 import { useSynthStore } from '../../stores/synthStore';
-
-const PANEL_LABELS: Record<string, string> = {
-  sfx: 'SFX Synthesizer',
-  voice: 'Voice Processor',
-  timeline: 'Timeline Editor',
-};
+import { useProjectStore } from '../../stores/projectStore';
 
 /** Format seconds as mm:ss.xx */
 function formatTime(seconds: number): string {
@@ -27,11 +23,28 @@ function bufferDuration(buf: Float32Array | null, sr: number): number {
 }
 
 export function StatusBar() {
-  const { activePanel } = useUIStore();
-  const { buffer, sampleRate, bitDepth, isPlaying } = useSynthStore();
+  const { t } = useTranslation();
+  const activePanel = useUIStore((s) => s.activePanel);
 
-  const modeLabel = PANEL_LABELS[activePanel] ?? activePanel;
-  const totalDuration = bufferDuration(buffer, sampleRate);
+  const buffer = useSynthStore((s) => s.buffer);
+  const sampleRate = useSynthStore((s) => s.sampleRate);
+  const bitDepth = useSynthStore((s) => s.bitDepth);
+  const synthPlaying = useSynthStore((s) => s.isPlaying);
+
+  const playhead = useProjectStore((s) => s.playheadPosition);
+  const projectDuration = useProjectStore((s) => s.project.duration);
+  const timelinePlaying = useProjectStore((s) => s.isPlaying);
+
+  const modeLabel = t(`panels.${activePanel}`);
+
+  // The timeline has a continuously moving playhead; the SFX/Voice panels play
+  // one-shot buffers, so only their total duration is meaningful.
+  const isTimeline = activePanel === 'timeline';
+  const currentTime = isTimeline ? playhead : 0;
+  const totalDuration = isTimeline
+    ? projectDuration
+    : bufferDuration(buffer, sampleRate);
+  const isPlaying = isTimeline ? timelinePlaying : synthPlaying;
 
   return (
     <footer
@@ -61,7 +74,7 @@ export function StatusBar() {
           className="font-mono"
           style={{ color: isPlaying ? '#60a5fa' : '#475569', fontSize: 11 }}
         >
-          {formatTime(0)}
+          {formatTime(currentTime)}
         </span>
         <span style={{ color: '#1e293b' }}>/</span>
         <span className="font-mono" style={{ fontSize: 11 }}>

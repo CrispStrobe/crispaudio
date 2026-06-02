@@ -1,10 +1,4 @@
-use serde::{Deserialize, Serialize};
 use std::fs;
-
-#[derive(Serialize, Deserialize)]
-pub struct ProjectData {
-    pub json: String,
-}
 
 #[tauri::command]
 pub async fn save_project(path: String, data: String) -> Result<(), String> {
