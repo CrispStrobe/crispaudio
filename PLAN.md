@@ -10,21 +10,20 @@
 > | P1.1 Settings screen | ✅ done |
 > | P1.2 About dialog | ✅ done |
 > | P1.3 Third-party licenses list | ✅ done |
-> | P1.4 i18n init + language switch | ✅ done (init + nav/modals/status bar; full string migration pending) |
+> | P1.4 i18n init + full string migration | ✅ done (init + all 3 panels + nav/modals/status bar; EN/DE at 263-key parity, all `t()` keys verified) |
 > | P1.5 Timeline audio import | ✅ done |
 > | P1.6 Timeline export mix | ✅ done |
-> | P1.7 Tauri backend / persistence | ◐ partial — dead `ProjectData` removed (warning gone); full project save/load (needs AudioBuffer serialization) deferred |
+> | P1.7 Tauri backend / persistence | ✅ done — project save/load (audio embedded as base64 WAV) via Tauri dialog + save_project/load_project; dead `ProjectData` removed. (`export_wav` command still unused; exports use the JS WAV encoder by design.) |
 > | P2.1 SFX auto-generate on mount | ✅ done |
 > | P2.2 StatusBar clock | ✅ done (panel-aware live playhead) |
 > | P2.3 Timeline undo/redo hook misuse | ✅ done |
-> | P2.4 Fake spectrum (SpectrumCanvas) | ⏳ deferred (cosmetic) |
+> | P2.4 Fake spectrum (SpectrumCanvas) | ✅ done (real radix-2 FFT magnitude spectrum + tests) |
 > | P2.5 Dead/duplicated code | ✅ done (removed unused EffectsPanel, SpectrumAnalyzer) |
-> | P2.6 A/B copy ignores locks | ⏳ deferred (design decision) |
+> | P2.6 A/B copy ignores locks | ✅ resolved by design — "copy to other" / swap are slot-level ops that intentionally replace the whole target slot; locks only guard preset/randomise within a slot |
 > | P2.7 Build-fix commit | ✅ done |
 >
-> **Deferred (documented, not blockers):** full project persistence (P1.7),
-> real-FFT spectrum (P2.4), A/B-copy lock semantics (P2.6), and migrating the
-> remaining hardcoded English strings to `t()` (P1.4 tail).
+> **All plan items addressed.** Remaining backend command `export_wav` is left
+> as scaffolding (exports use the JS encoder); not a blocker.
 
 
 Status of the build: **compiles, lints clean, 331 unit tests pass, `tauri build` produces a
