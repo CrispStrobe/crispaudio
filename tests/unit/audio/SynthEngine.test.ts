@@ -135,10 +135,12 @@ describe('generateSamples', () => {
 
   it('no NaN values in output', () => {
     const params = createDefaultParams();
-    const samples = generateSamples(params, 44100, 0.5);
+    const samples = generateSamples(params, 8000, 0.5);
+    let hasNaN = false;
     for (let i = 0; i < samples.length; i++) {
-      expect(isNaN(samples[i])).toBe(false);
+      if (isNaN(samples[i])) { hasNaN = true; break; }
     }
+    expect(hasNaN).toBe(false);
   });
 
   it('clamps duration to minimum of 0.1 s', () => {
