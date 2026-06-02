@@ -18,6 +18,7 @@ import {
 import { useSynthStore, selectActiveParams } from '../../stores/synthStore';
 import { type SynthParams, ALL_PRESET_NAMES, type PresetName } from '../../types/synth';
 import * as sfxPresets from '../../audio/presets/sfxPresets';
+import { computeSpectrumBars } from '../../audio/utils/fft';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -248,7 +249,7 @@ function WaveformCanvas({
 }
 
 // ---------------------------------------------------------------------------
-// Spectrum visualisation (canvas — fake static bars for now)
+// Spectrum visualisation (canvas — real FFT magnitude spectrum)
 // ---------------------------------------------------------------------------
 
 function SpectrumCanvas({ buffer, width = 200, height = 64 }: WaveformCanvasProps) {
@@ -266,9 +267,9 @@ function SpectrumCanvas({ buffer, width = 200, height = 64 }: WaveformCanvasProp
 
     if (!buffer || buffer.length === 0) return;
 
-    // Simple magnitude from chunked RMS
+    // Real log-spaced FFT magnitude spectrum
     const numBars = 32;
-    const chunkSize = Math.floor(buffer.length / numBars);
+    const bars = computeSpectrumBars(buffer, numBars);
     const gradient = ctx.createLinearGradient(0, height, 0, 0);
     gradient.addColorStop(0, '#1d4ed8');
     gradient.addColorStop(0.6, '#3b82f6');
@@ -276,13 +277,7 @@ function SpectrumCanvas({ buffer, width = 200, height = 64 }: WaveformCanvasProp
 
     const barW = Math.floor(width / numBars) - 1;
     for (let i = 0; i < numBars; i++) {
-      let sum = 0;
-      for (let j = 0; j < chunkSize; j++) {
-        const s = buffer[i * chunkSize + j] ?? 0;
-        sum += s * s;
-      }
-      const rms = Math.sqrt(sum / chunkSize);
-      const barH = Math.min(height, rms * height * 4);
+      const barH = Math.min(height, bars[i] * height);
       const x = i * (barW + 1);
       ctx.fillStyle = gradient;
       ctx.fillRect(x, height - barH, barW, barH);
