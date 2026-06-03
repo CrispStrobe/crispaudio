@@ -1,6 +1,6 @@
 # CrispAudio
 
-Cross-platform audio workstation combining sound synthesis, voice effects processing, and a DaVinci-style timeline waveform editor.
+Cross-platform audio workstation combining sound synthesis, voice effects processing, and a timeline waveform editor.
 
 Built with Tauri 2.x (Rust + React + TypeScript).
 
