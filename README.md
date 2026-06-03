@@ -23,7 +23,7 @@ Built with Tauri 2.x (Rust + React + TypeScript).
 - A/B comparison with morph interpolation
 
 ### Timeline Editor
-- Canvas-based DaVinci Resolve-style waveform editor
+- Canvas-based waveform editor
 - Cut, copy, paste, split, reorder segments
 - Drag-and-drop audio files
 - Fade in/out with configurable curves (linear, exponential, s-curve)
