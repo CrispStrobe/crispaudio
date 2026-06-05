@@ -290,8 +290,10 @@
   "about": {
     "title": "Über",
     "version": "Version",
-    "description": "Plattformübergreifende Audio-Workstation mit Klangsynthese, Stimmeffekten und einem Timeline-Wellenform-Editor.",
-    "repository": "Auf GitHub ansehen"
+    "description": "Plattformübergreifende Audio-Workstation mit Klangsynthese, Stimmeffektverarbeitung und einem Timeline-Wellenform-Editor. Gebaut mit Tauri 2 + React + TypeScript + Rust.",
+    "repository": "Auf GitHub ansehen",
+    "serviceProvider": "Anbieter",
+    "contact": "Kontakt"
   },
   "licenses": {
     "title": "Drittanbieter-Lizenzen",

@@ -290,8 +290,10 @@
   "about": {
     "title": "About",
     "version": "Version",
-    "description": "Cross-platform audio workstation combining sound synthesis, voice effects, and a timeline waveform editor.",
-    "repository": "View on GitHub"
+    "description": "Cross-platform audio workstation combining sound synthesis, voice effects processing, and a timeline waveform editor. Built with Tauri 2 + React + TypeScript + Rust.",
+    "repository": "View on GitHub",
+    "serviceProvider": "Service Provider",
+    "contact": "Contact"
   },
   "licenses": {
     "title": "Third-Party Licenses",
