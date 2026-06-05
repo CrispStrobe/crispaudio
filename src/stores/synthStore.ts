@@ -1,16 +1,14 @@
 // ---------------------------------------------------------------------------
 // CrispAudio — synthStore
-// Zustand store for the SFX synthesizer.
+// Zustand store for the SFX synthesizer with undo/redo (zundo).
 // ---------------------------------------------------------------------------
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
+import { temporal } from 'zundo';
 import { enableMapSet } from 'immer';
 import { type SynthParams, type PresetName } from '../types/synth';
 
-// `lockedParams` is stored as a Set and read through the immer draft, which
-// requires immer's MapSet plugin. Enable it once at module load so the SFX
-// param actions (setParams / loadPreset) don't throw at runtime.
 enableMapSet();
 import {
   createDefaultParams,
@@ -24,83 +22,79 @@ import {
 // ---------------------------------------------------------------------------
 
 interface SynthState {
-  // --- Sound slots ---
   paramsA: SynthParams;
   paramsB: SynthParams;
-  /** Which slot is currently being edited. */
   activeSlot: 'A' | 'B';
-
-  // --- Morphing ---
-  /** 0 = fully A, 1 = fully B. */
   morphAmount: number;
-
-  // --- Per-parameter lock (prevents randomisation / preset loading from
-  //     overwriting locked params) ---
   lockedParams: Set<keyof SynthParams>;
-
-  // --- Render output ---
   buffer: Float32Array | null;
   sampleRate: number;
   bitDepth: number;
-
-  // --- Playback state (updated externally by the audio subsystem) ---
   isPlaying: boolean;
 
-  // -------------------------------------------------------------------------
-  // Actions
-  // -------------------------------------------------------------------------
-
-  /**
-   * Merge partial params into the active slot, skipping locked fields.
-   */
   setParams: (params: Partial<SynthParams>) => void;
-
-  /**
-   * Set which slot (A or B) is being actively edited.
-   */
   setActiveSlot: (slot: 'A' | 'B') => void;
-
-  /**
-   * Update the morph crossfade amount (0..1).
-   */
   setMorphAmount: (amount: number) => void;
-
-  /**
-   * Toggle the lock state of a single parameter key.
-   */
   toggleLock: (param: keyof SynthParams) => void;
-
-  /**
-   * Load a named preset into the active slot.
-   * Locked parameters are preserved.
-   */
   loadPreset: (name: PresetName) => void;
-
-  /**
-   * Swap the contents of slot A and slot B.
-   */
   swapSlots: () => void;
-
-  /**
-   * Copy the active slot's params into the other slot (preserving its locks).
-   */
   copyToOther: () => void;
-
-  /**
-   * Synthesise samples from the current active slot params (or the morphed
-   * result when morphAmount is between 0 and 1) and store them in `buffer`.
-   */
   generate: () => void;
-
-  /**
-   * Update isPlaying (called by the audio subsystem).
-   */
   setIsPlaying: (playing: boolean) => void;
-
-  /**
-   * Update export settings.
-   */
   setExportSettings: (sampleRate: number, bitDepth: number) => void;
+
+  /** Slightly randomize 2-4 params of the active slot by ±10%. */
+  mutateParams: () => void;
+
+  /** Export active slot params as a JSON string. */
+  exportParamsJSON: () => string;
+
+  /** Import params from a JSON string into the active slot. */
+  importParamsJSON: (json: string) => void;
+
+  /** Encode active slot params as base64 for URL sharing. */
+  encodeShareLink: () => string;
+}
+
+// ---------------------------------------------------------------------------
+// Mutate helper — tweak 2-4 random params by ±10%
+// ---------------------------------------------------------------------------
+
+const MUTABLE_KEYS: Array<keyof SynthParams> = [
+  'p_base_freq', 'p_freq_ramp', 'p_freq_dramp', 'p_freq_limit',
+  'p_env_attack', 'p_env_sustain', 'p_env_punch', 'p_env_decay',
+  'p_vib_strength', 'p_vib_speed', 'p_arp_mod', 'p_arp_speed',
+  'p_duty', 'p_duty_ramp', 'p_repeat_speed',
+  'p_pha_offset', 'p_pha_ramp',
+  'p_lpf_freq', 'p_lpf_ramp', 'p_lpf_resonance',
+  'p_hpf_freq', 'p_hpf_ramp',
+  'fm_freq', 'fm_depth', 'lfo_rate', 'lfo_depth',
+  'distortion', 'chorus_rate', 'chorus_depth',
+  'delay_time', 'delay_feedback',
+  'ring_mod_freq', 'ring_mod_depth',
+  'bit_crush', 'sample_reduction',
+  'flanger_rate', 'flanger_depth', 'flanger_delay',
+  'reverb_size', 'reverb_decay', 'sub_bass',
+];
+
+function mutateSynthParams(
+  params: SynthParams,
+  locked: Set<keyof SynthParams>,
+): Partial<SynthParams> {
+  const available = MUTABLE_KEYS.filter((k) => !locked.has(k));
+  if (available.length === 0) return {};
+
+  const count = 2 + Math.floor(Math.random() * 3); // 2-4 params
+  const shuffled = [...available].sort(() => Math.random() - 0.5);
+  const picked = shuffled.slice(0, Math.min(count, shuffled.length));
+
+  const result: Partial<SynthParams> = {};
+  for (const key of picked) {
+    const current = params[key] as number;
+    const delta = current * (Math.random() * 0.2 - 0.1); // ±10%
+    (result as Record<string, number>)[key] = current + delta;
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,142 +102,188 @@ interface SynthState {
 // ---------------------------------------------------------------------------
 
 export const useSynthStore = create<SynthState>()(
-  immer((set, get) => ({
-    paramsA: createDefaultParams(),
-    paramsB: createDefaultParams(),
-    activeSlot: 'A',
-    morphAmount: 0,
-    lockedParams: new Set<keyof SynthParams>(),
-    buffer: null,
-    sampleRate: 44100,
-    bitDepth: 16,
-    isPlaying: false,
+  temporal(
+    immer((set, get) => ({
+      paramsA: createDefaultParams(),
+      paramsB: createDefaultParams(),
+      activeSlot: 'A' as const,
+      morphAmount: 0,
+      lockedParams: new Set<keyof SynthParams>(),
+      buffer: null as Float32Array | null,
+      sampleRate: 44100,
+      bitDepth: 16,
+      isPlaying: false,
 
-    // -----------------------------------------------------------------------
-    setParams(partial: Partial<SynthParams>) {
-      set((state) => {
-        const target = state.activeSlot === 'A' ? state.paramsA : state.paramsB;
-        for (const key of Object.keys(partial) as Array<keyof SynthParams>) {
-          if (state.lockedParams.has(key)) continue;
-          // TypeScript: we know `partial[key]` matches `SynthParams[key]`
-          (target as Record<string, unknown>)[key] = partial[key];
-        }
-      });
-    },
+      setParams(partial: Partial<SynthParams>) {
+        set((state) => {
+          const target = state.activeSlot === 'A' ? state.paramsA : state.paramsB;
+          for (const key of Object.keys(partial) as Array<keyof SynthParams>) {
+            if (state.lockedParams.has(key)) continue;
+            (target as Record<string, unknown>)[key] = partial[key];
+          }
+        });
+      },
 
-    // -----------------------------------------------------------------------
-    setActiveSlot(slot: 'A' | 'B') {
-      set((state) => {
-        state.activeSlot = slot;
-      });
-    },
+      setActiveSlot(slot: 'A' | 'B') {
+        set((state) => { state.activeSlot = slot; });
+      },
 
-    // -----------------------------------------------------------------------
-    setMorphAmount(amount: number) {
-      set((state) => {
-        state.morphAmount = Math.max(0, Math.min(1, amount));
-      });
-    },
+      setMorphAmount(amount: number) {
+        set((state) => { state.morphAmount = Math.max(0, Math.min(1, amount)); });
+      },
 
-    // -----------------------------------------------------------------------
-    toggleLock(param: keyof SynthParams) {
-      set((state) => {
-        // immer doesn't support Set mutations directly via draft — we rebuild it
-        const next = new Set(state.lockedParams);
-        if (next.has(param)) {
-          next.delete(param);
-        } else {
-          next.add(param);
-        }
-        state.lockedParams = next;
-      });
-    },
+      toggleLock(param: keyof SynthParams) {
+        set((state) => {
+          const next = new Set(state.lockedParams);
+          if (next.has(param)) next.delete(param);
+          else next.add(param);
+          state.lockedParams = next;
+        });
+      },
 
-    // -----------------------------------------------------------------------
-    loadPreset(name: PresetName) {
-      set((state) => {
-        const fresh = loadPreset(name);
-        const target = state.activeSlot === 'A' ? state.paramsA : state.paramsB;
+      loadPreset(name: PresetName) {
+        set((state) => {
+          const fresh = loadPreset(name);
+          const target = state.activeSlot === 'A' ? state.paramsA : state.paramsB;
+          for (const key of Object.keys(fresh) as Array<keyof SynthParams>) {
+            if (state.lockedParams.has(key)) continue;
+            (target as Record<string, unknown>)[key] = fresh[key];
+          }
+        });
+      },
 
-        // Overwrite all non-locked fields
-        for (const key of Object.keys(fresh) as Array<keyof SynthParams>) {
-          if (state.lockedParams.has(key)) continue;
-          (target as Record<string, unknown>)[key] = fresh[key];
-        }
-      });
-    },
-
-    // -----------------------------------------------------------------------
-    swapSlots() {
-      set((state) => {
-        const tmp = { ...state.paramsA };
-        state.paramsA = { ...state.paramsB };
-        state.paramsB = tmp;
-      });
-    },
-
-    // -----------------------------------------------------------------------
-    copyToOther() {
-      set((state) => {
-        if (state.activeSlot === 'A') {
-          // Copy A → B (respecting B's own locks — we do a full overwrite here
-          // since "copy to other" semantics implies replacing the target)
-          state.paramsB = { ...state.paramsA };
-        } else {
+      swapSlots() {
+        set((state) => {
+          const tmp = { ...state.paramsA };
           state.paramsA = { ...state.paramsB };
+          state.paramsB = tmp;
+        });
+      },
+
+      copyToOther() {
+        set((state) => {
+          if (state.activeSlot === 'A') {
+            state.paramsB = { ...state.paramsA };
+          } else {
+            state.paramsA = { ...state.paramsB };
+          }
+        });
+      },
+
+      generate() {
+        const { paramsA, paramsB, morphAmount, sampleRate } = get();
+        const params: SynthParams =
+          morphAmount === 0
+            ? paramsA
+            : morphAmount === 1
+            ? paramsB
+            : morphParams(paramsA, paramsB, morphAmount);
+        const samples = generateSamples(params, sampleRate);
+        set((state) => { state.buffer = samples; });
+      },
+
+      setIsPlaying(playing: boolean) {
+        set((state) => { state.isPlaying = playing; });
+      },
+
+      setExportSettings(sampleRate: number, bitDepth: number) {
+        set((state) => {
+          state.sampleRate = sampleRate;
+          state.bitDepth = bitDepth;
+        });
+      },
+
+      mutateParams() {
+        set((state) => {
+          const target = state.activeSlot === 'A' ? state.paramsA : state.paramsB;
+          const mutations = mutateSynthParams(target, state.lockedParams);
+          for (const key of Object.keys(mutations) as Array<keyof SynthParams>) {
+            (target as Record<string, unknown>)[key] = mutations[key];
+          }
+        });
+      },
+
+      exportParamsJSON(): string {
+        const { paramsA, paramsB, activeSlot } = get();
+        const params = activeSlot === 'A' ? paramsA : paramsB;
+        return JSON.stringify({ slot: activeSlot, params }, null, 2);
+      },
+
+      importParamsJSON(json: string) {
+        try {
+          const data = JSON.parse(json);
+          if (data?.params && typeof data.params === 'object') {
+            set((state) => {
+              const target = state.activeSlot === 'A' ? state.paramsA : state.paramsB;
+              for (const key of Object.keys(data.params) as Array<keyof SynthParams>) {
+                if (state.lockedParams.has(key)) continue;
+                if (key in target) {
+                  (target as Record<string, unknown>)[key] = data.params[key];
+                }
+              }
+            });
+          }
+        } catch {
+          // silently ignore invalid JSON
         }
-      });
+      },
+
+      encodeShareLink(): string {
+        const { paramsA, paramsB, activeSlot } = get();
+        const params = activeSlot === 'A' ? paramsA : paramsB;
+        const encoded = btoa(JSON.stringify(params));
+        return `${window.location.origin}${window.location.pathname}?sound=${encoded}`;
+      },
+    })),
+    {
+      // Only track param-related state changes in undo history,
+      // exclude transient state (buffer, isPlaying).
+      partialize: (state) => ({
+        paramsA: state.paramsA,
+        paramsB: state.paramsB,
+        activeSlot: state.activeSlot,
+        morphAmount: state.morphAmount,
+      }),
+      limit: 50,
     },
-
-    // -----------------------------------------------------------------------
-    generate() {
-      const { paramsA, paramsB, morphAmount, sampleRate } = get();
-
-      // When morphAmount is exactly 0 or 1 we skip the interpolation step
-      const params: SynthParams =
-        morphAmount === 0
-          ? paramsA
-          : morphAmount === 1
-          ? paramsB
-          : morphParams(paramsA, paramsB, morphAmount);
-
-      const samples = generateSamples(params, sampleRate);
-
-      set((state) => {
-        state.buffer = samples;
-      });
-    },
-
-    // -----------------------------------------------------------------------
-    setIsPlaying(playing: boolean) {
-      set((state) => {
-        state.isPlaying = playing;
-      });
-    },
-
-    // -----------------------------------------------------------------------
-    setExportSettings(sampleRate: number, bitDepth: number) {
-      set((state) => {
-        state.sampleRate = sampleRate;
-        state.bitDepth = bitDepth;
-      });
-    },
-  })),
+  ),
 );
 
 // ---------------------------------------------------------------------------
 // Convenience selectors
 // ---------------------------------------------------------------------------
 
-/** Return the params for the currently active slot. */
 export function selectActiveParams(state: SynthState): SynthParams {
   return state.activeSlot === 'A' ? state.paramsA : state.paramsB;
 }
 
-/** Return the morphed params at the current morphAmount. */
 export function selectMorphedParams(state: SynthState): SynthParams {
   const { paramsA, paramsB, morphAmount } = state;
   if (morphAmount === 0) return paramsA;
   if (morphAmount === 1) return paramsB;
   return morphParams(paramsA, paramsB, morphAmount);
+}
+
+// ---------------------------------------------------------------------------
+// URL share link loader — call on app startup
+// ---------------------------------------------------------------------------
+
+export function loadFromShareLink(): boolean {
+  const url = new URL(window.location.href);
+  const encoded = url.searchParams.get('sound');
+  if (!encoded) return false;
+  try {
+    const params = JSON.parse(atob(encoded));
+    if (params && typeof params === 'object' && 'p_base_freq' in params) {
+      useSynthStore.getState().setParams(params);
+      useSynthStore.getState().generate();
+      // Clean URL
+      url.searchParams.delete('sound');
+      window.history.replaceState({}, '', url.toString());
+      return true;
+    }
+  } catch {
+    // invalid link, ignore
+  }
+  return false;
 }

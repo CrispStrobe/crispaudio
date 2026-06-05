@@ -477,6 +477,29 @@ export function VoicePanel() {
     }
   }, [sourceBuffer, store, setIsProcessing, setProcessedBuffer]);
 
+  // Auto-process on settings/preset change (throttled 300ms)
+  const processTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settingsRef = useRef(settings);
+  const presetRef = useRef(selectedPreset);
+
+  useEffect(() => {
+    // Skip the very first render and only trigger on actual changes
+    if (settingsRef.current === settings && presetRef.current === selectedPreset) return;
+    settingsRef.current = settings;
+    presetRef.current = selectedPreset;
+
+    if (!sourceBuffer) return;
+
+    if (processTimerRef.current) clearTimeout(processTimerRef.current);
+    processTimerRef.current = setTimeout(() => {
+      handleProcess();
+    }, 300);
+
+    return () => {
+      if (processTimerRef.current) clearTimeout(processTimerRef.current);
+    };
+  }, [settings, selectedPreset, sourceBuffer, handleProcess]);
+
   function downloadProcessed() {
     if (!processedBuffer) return;
     const sr = processedBuffer.sampleRate;

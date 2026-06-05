@@ -11,6 +11,7 @@ import {
   Play,
   Square,
   Download,
+  Upload,
   ArrowLeftRight,
   Copy,
   RefreshCw,
@@ -23,8 +24,12 @@ import {
   Volume2,
   Repeat,
   Shuffle,
+  Undo2,
+  Redo2,
+  Share2,
+  FileJson,
 } from 'lucide-react';
-import { useSynthStore, selectActiveParams } from '../../stores/synthStore';
+import { useSynthStore, selectActiveParams, loadFromShareLink } from '../../stores/synthStore';
 import { type SynthParams, ALL_PRESET_NAMES, type PresetName } from '../../types/synth';
 import * as sfxPresets from '../../audio/presets/sfxPresets';
 import { computeSpectrumBars } from '../../audio/utils/fft';
@@ -531,10 +536,17 @@ export function SFXPanel() {
     setActiveSlot, setMorphAmount, swapSlots, copyToOther,
     toggleLock, loadPreset: storeLoadPreset, generate, setParams,
     setIsPlaying, setExportSettings,
+    mutateParams, exportParamsJSON, importParamsJSON, encodeShareLink,
   } = store;
 
   const [activeTab, setActiveTab] = useState<ParamTab>('basic');
   const [isLooping, setIsLooping] = useState(false);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  // Undo / Redo
+  const handleUndo = useCallback(() => useSynthStore.temporal.getState().undo(), []);
+  const handleRedo = useCallback(() => useSynthStore.temporal.getState().redo(), []);
 
   // Audio playback
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -594,6 +606,41 @@ export function SFXPanel() {
     generate();
   }, [setParams, generate]);
 
+  const handleMutate = useCallback(() => {
+    mutateParams();
+    generate();
+  }, [mutateParams, generate]);
+
+  const handleShareLink = useCallback(() => {
+    const link = encodeShareLink();
+    navigator.clipboard.writeText(link).then(() => {
+      setShareMsg('Link copied!');
+      setTimeout(() => setShareMsg(null), 2000);
+    });
+  }, [encodeShareLink]);
+
+  const handleExportJSON = useCallback(() => {
+    const json = exportParamsJSON();
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `crispaudio_sfx_preset_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [exportParamsJSON]);
+
+  const handleImportJSON = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        importParamsJSON(reader.result);
+        generate();
+      }
+    };
+    reader.readAsText(file);
+  }, [importParamsJSON, generate]);
+
   const onChange = useCallback(
     (key: keyof SynthParams, value: number) => {
       setParams({ [key]: value } as Partial<SynthParams>);
@@ -610,9 +657,10 @@ export function SFXPanel() {
     [storeLoadPreset, generate],
   );
 
-  // Generate initial buffer on mount
+  // Generate initial buffer on mount + load share link if present
   useEffect(() => {
-    if (!buffer) generate();
+    const loaded = loadFromShareLink();
+    if (!loaded && !buffer) generate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -628,6 +676,15 @@ export function SFXPanel() {
     const handleKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
       const key = e.key.toLowerCase();
+
+      // Ctrl+Z / Ctrl+Shift+Z for undo/redo
+      if ((e.ctrlKey || e.metaKey) && key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) { handleRedo(); } else { handleUndo(); }
+        generate();
+        return;
+      }
+
       if (key === ' ') {
         e.preventDefault();
         if (isPlaying) handleStop();
@@ -638,6 +695,8 @@ export function SFXPanel() {
         setActiveSlot('A');
       } else if (key === 'b') {
         setActiveSlot('B');
+      } else if (key === 'm') {
+        handleMutate();
       } else if (presetKeys[key]) {
         handlePreset(presetKeys[key]);
       }
@@ -645,7 +704,7 @@ export function SFXPanel() {
 
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [isPlaying, handlePlay, handleStop, toggleLoop, setActiveSlot, handlePreset]);
+  }, [isPlaying, handlePlay, handleStop, toggleLoop, setActiveSlot, handlePreset, handleUndo, handleRedo, handleMutate, generate]);
 
   const isLocked = (k: keyof SynthParams) => lockedParams.has(k);
 
@@ -718,7 +777,7 @@ export function SFXPanel() {
           </h1>
           <p className="text-gray-400 text-base">Advanced Sound Effect Synthesizer</p>
           <p className="text-gray-500 text-xs mt-2">
-            Shortcuts: A/B (slots) · 1-8,Q,W,E,R,T,Y,U (presets) · Space (play) · L (loop)
+            Shortcuts: A/B (slots) · 1-8,Q,W,E,R,T,Y,U (presets) · Space (play) · L (loop) · M (mutate) · Ctrl+Z (undo)
           </p>
 
           {/* Master Controls */}
@@ -819,10 +878,34 @@ export function SFXPanel() {
 
             <button
               onClick={handleRandomise}
+              className="px-5 py-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+            >
+              <RefreshCw className="w-5 h-5" />
+              {t('sfx.randomise')}
+            </button>
+
+            <button
+              onClick={handleMutate}
               className="px-5 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
             >
               <Shuffle className="w-5 h-5" />
-              {t('sfx.randomise')}
+              Mutate
+            </button>
+
+            <button
+              onClick={handleUndo}
+              className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={handleRedo}
+              className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+              title="Redo (Ctrl+Shift+Z)"
+            >
+              <Redo2 className="w-5 h-5" />
             </button>
 
             <button
@@ -950,24 +1033,44 @@ export function SFXPanel() {
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Share & Presets */}
             <div>
-              <h3 className="text-base font-semibold mb-3 text-white">Actions</h3>
+              <h3 className="text-base font-semibold mb-3 text-white">Share &amp; Presets</h3>
               <div className="space-y-2">
                 <button
-                  onClick={handleRandomise}
-                  className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-sm text-white"
+                  onClick={handleShareLink}
+                  className="w-full px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-sm text-white"
                 >
-                  <Shuffle className="w-4 h-4" />
-                  Mutate
+                  <Share2 className="w-4 h-4" />
+                  {shareMsg ?? 'Share Link'}
                 </button>
                 <button
-                  onClick={() => { generate(); }}
-                  className="w-full px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-sm text-white"
+                  onClick={handleExportJSON}
+                  className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2 font-semibold text-sm text-white"
                 >
-                  <RefreshCw className="w-4 h-4" />
-                  Regenerate
+                  <FileJson className="w-4 h-4" />
+                  Export Preset
                 </button>
+                <div className="relative">
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImportJSON(file);
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    onClick={() => importInputRef.current?.click()}
+                    className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-sm text-white"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Import Preset
+                  </button>
+                </div>
               </div>
             </div>
 
