@@ -775,9 +775,9 @@ export function SFXPanel() {
       } else if (key === 'l') {
         toggleLoop();
       } else if (key === 'a') {
-        setActiveSlot('A');
+        setActiveSlot('A'); generate();
       } else if (key === 'b') {
-        setActiveSlot('B');
+        setActiveSlot('B'); generate();
       } else if (key === 'm') {
         handleMutate();
       } else if (presetKeys[key]) {
@@ -885,7 +885,7 @@ export function SFXPanel() {
             {/* A/B Slot Selector */}
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setActiveSlot('A')}
+                onClick={() => { setActiveSlot('A'); generate(); }}
                 className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
                   activeSlot === 'A' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
@@ -893,21 +893,21 @@ export function SFXPanel() {
                 Slot A
               </button>
               <button
-                onClick={copyToOther}
+                onClick={() => { copyToOther(); generate(); }}
                 className="btn-surface p-2 rounded-lg"
                 title="Copy to other slot"
               >
                 <Copy className="w-4 h-4" />
               </button>
               <button
-                onClick={swapSlots}
+                onClick={() => { swapSlots(); generate(); }}
                 className="p-2 rounded-lg transition-colors bg-purple-600 hover:bg-purple-500 text-white"
                 title="Swap slots"
               >
                 <ArrowLeftRight className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setActiveSlot('B')}
+                onClick={() => { setActiveSlot('B'); generate(); }}
                 className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
                   activeSlot === 'B' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}

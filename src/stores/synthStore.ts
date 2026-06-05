@@ -174,13 +174,20 @@ export const useSynthStore = create<SynthState>()(
       },
 
       generate() {
-        const { paramsA, paramsB, morphAmount, sampleRate } = get();
-        const params: SynthParams =
-          morphAmount === 0
-            ? paramsA
-            : morphAmount === 1
-            ? paramsB
-            : morphParams(paramsA, paramsB, morphAmount);
+        const { paramsA, paramsB, activeSlot, morphAmount, sampleRate } = get();
+        let params: SynthParams;
+        if (morphAmount === 0) {
+          // No morphing — use the active slot directly
+          params = activeSlot === 'A' ? paramsA : paramsB;
+        } else if (morphAmount === 1) {
+          // Fully morphed — use the other slot
+          params = activeSlot === 'A' ? paramsB : paramsA;
+        } else {
+          // Interpolate from active toward other
+          const src = activeSlot === 'A' ? paramsA : paramsB;
+          const dst = activeSlot === 'A' ? paramsB : paramsA;
+          params = morphParams(src, dst, morphAmount);
+        }
         const samples = generateSamples(params, sampleRate);
         set((state) => { state.buffer = samples; });
       },
@@ -261,10 +268,12 @@ export function selectActiveParams(state: SynthState): SynthParams {
 }
 
 export function selectMorphedParams(state: SynthState): SynthParams {
-  const { paramsA, paramsB, morphAmount } = state;
-  if (morphAmount === 0) return paramsA;
-  if (morphAmount === 1) return paramsB;
-  return morphParams(paramsA, paramsB, morphAmount);
+  const { paramsA, paramsB, activeSlot, morphAmount } = state;
+  if (morphAmount === 0) return activeSlot === 'A' ? paramsA : paramsB;
+  if (morphAmount === 1) return activeSlot === 'A' ? paramsB : paramsA;
+  const src = activeSlot === 'A' ? paramsA : paramsB;
+  const dst = activeSlot === 'A' ? paramsB : paramsA;
+  return morphParams(src, dst, morphAmount);
 }
 
 // ---------------------------------------------------------------------------
