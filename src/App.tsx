@@ -11,7 +11,7 @@ import { SettingsModal } from './components/common/SettingsModal';
 import { AboutModal } from './components/common/AboutModal';
 import { LicensesModal } from './components/common/LicensesModal';
 import { useUIStore } from './stores/uiStore';
-import { useSettingsStore } from './stores/settingsStore';
+import { useSettingsStore, type Theme } from './stores/settingsStore';
 import { useSynthStore, loadFromShareLink } from './stores/synthStore';
 import { useEffect, useRef } from 'react';
 
@@ -35,6 +35,18 @@ export default function App() {
       setActivePanel('sfx');
     }
   }, [setActivePanel]);
+
+  // Listen for OS theme changes when "system" theme is selected
+  const theme = useSettingsStore((s) => s.theme);
+  useEffect(() => {
+    if (theme !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      document.documentElement.classList.toggle('light', !e.matches);
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [theme]);
 
   // Global keyboard shortcuts for panel switching
   useEffect(() => {

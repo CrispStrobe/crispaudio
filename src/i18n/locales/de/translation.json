@@ -282,6 +282,7 @@
   "settings": {
     "title": "Einstellungen",
     "language": "Sprache",
+    "theme": "Farbschema",
     "exportDefaults": "Standard-Exportformat",
     "sampleRate": "Abtastrate",
     "bitDepth": "Bittiefe"

@@ -15,14 +15,14 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div
       className="flex flex-col"
-      style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#0f172a' }}
+      style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}
     >
       {/* Top row: sidebar + main */}
       <div className="flex flex-1 min-h-0">
         <Sidebar />
         <main
           className="flex-1 min-w-0 overflow-hidden"
-          style={{ background: '#0f172a' }}
+          style={{ background: 'var(--bg-primary)' }}
         >
           {children}
         </main>

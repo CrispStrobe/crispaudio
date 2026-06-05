@@ -14,6 +14,68 @@
   --border-subtle: #1e2d40;
 }
 
+/* Light theme overrides */
+html.light {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #e2e8f0;
+  --bg-tertiary: #cbd5e1;
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border: #94a3b8;
+  --border-subtle: #e2e8f0;
+}
+
+html.light body {
+  color-scheme: light;
+}
+
+html.light .card {
+  background: var(--bg-card);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+html.light input[type="range"].slider-styled {
+  background: #cbd5e1;
+}
+
+html.light .tab-btn {
+  color: #475569;
+}
+
+html.light .tab-btn:hover {
+  color: #0f172a;
+  background: rgba(203, 213, 225, 0.5);
+}
+
+html.light .tab-btn.active {
+  background: #2563eb;
+  color: white;
+}
+
+html.light .btn-ghost {
+  color: var(--text-muted);
+}
+
+html.light .btn-ghost:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+html.light .btn-surface {
+  background: var(--bg-secondary);
+  border-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+html.light .btn-surface:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
 * {
   margin: 0;
   padding: 0;

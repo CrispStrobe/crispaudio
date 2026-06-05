@@ -29,7 +29,7 @@ export function Sidebar() {
       style={{
         width: 72,
         minWidth: 72,
-        background: '#070d1b',
+        background: 'var(--bg-secondary)',
         borderRight: '1px solid var(--border-subtle)',
         height: '100%',
       }}

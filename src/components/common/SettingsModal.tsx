@@ -12,6 +12,7 @@ import {
   SAMPLE_RATES,
   BIT_DEPTHS,
   type Language,
+  type Theme,
   type SampleRate,
   type BitDepth,
 } from '../../stores/settingsStore';
@@ -19,6 +20,12 @@ import {
 const LANGUAGES: { value: Language; label: string }[] = [
   { value: 'en', label: 'English' },
   { value: 'de', label: 'Deutsch' },
+];
+
+const THEMES: { value: Theme; label: string }[] = [
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+  { value: 'system', label: 'System' },
 ];
 
 const fieldLabel = 'text-xs font-medium text-gray-400 mb-1.5 block';
@@ -31,9 +38,11 @@ export function SettingsModal() {
   const { activeModal, closeModal, openModal } = useUIStore();
   const {
     language,
+    theme,
     defaultSampleRate,
     defaultBitDepth,
     setLanguage,
+    setTheme,
     setDefaultSampleRate,
     setDefaultBitDepth,
   } = useSettingsStore();
@@ -59,6 +68,25 @@ export function SettingsModal() {
             {LANGUAGES.map((l) => (
               <option key={l.value} value={l.value}>
                 {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Theme */}
+        <div>
+          <label className={fieldLabel} htmlFor="settings-theme">
+            {t('settings.theme')}
+          </label>
+          <select
+            id="settings-theme"
+            className={selectClass}
+            value={theme}
+            onChange={(e) => setTheme(e.target.value as Theme)}
+          >
+            {THEMES.map((th) => (
+              <option key={th.value} value={th.value}>
+                {th.label}
               </option>
             ))}
           </select>

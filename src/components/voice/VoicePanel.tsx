@@ -674,7 +674,7 @@ export function VoicePanel() {
   const currentTab = TABS.find((t) => t.id === activeTab)!;
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: 'linear-gradient(to bottom right, #0f172a, #111827, #0c1929)' }}>
+    <div className="h-full overflow-y-auto" style={{ background: 'var(--bg-primary)' }}>
       <div className="max-w-7xl mx-auto p-6">
 
         {/* ── Header ──────────────────────────────────────────────── */}

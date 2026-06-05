@@ -282,6 +282,7 @@
   "settings": {
     "title": "Settings",
     "language": "Language",
+    "theme": "Theme",
     "exportDefaults": "Default Export Format",
     "sampleRate": "Sample Rate",
     "bitDepth": "Bit Depth"
