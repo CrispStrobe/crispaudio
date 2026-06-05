@@ -11,8 +11,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Build (${{ matrix.platform }})
+  # ── Desktop builds (Linux, macOS ARM, Windows) ──────────────────────────
+  desktop:
+    name: Desktop (${{ matrix.platform }})
     permissions:
       contents: write
     strategy:
@@ -80,9 +81,9 @@ jobs:
           prerelease: false
           args: ${{ matrix.tauri_args }}
 
-  # macOS Intel — optional, non-blocking (macos-13 is chronically queue-starved)
-  release-intel:
-    name: Build (macos-13, optional)
+  # ── macOS Intel — optional, non-blocking ────────────────────────────────
+  desktop-intel:
+    name: Desktop (macOS Intel, optional)
     permissions:
       contents: write
     runs-on: macos-13
@@ -121,10 +122,180 @@ jobs:
           prerelease: false
           args: --target x86_64-apple-darwin
 
+  # ── iOS (unsigned .app bundle) ──────────────────────────────────────────
+  ios:
+    name: iOS (unsigned)
+    permissions:
+      contents: write
+    runs-on: macos-15
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: aarch64-apple-ios
+
+      - run: npm ci
+
+      - name: Initialize iOS project
+        env:
+          APPLE_DEVELOPMENT_TEAM: UNSIGNED
+          TAURI_APPLE_DEVELOPMENT_TEAM: UNSIGNED
+        run: npx tauri ios init || true
+
+      - name: Fix Xcode workspace and disable signing
+        run: |
+          APPLE_DIR="src-tauri/gen/apple"
+          WS_DIR="$APPLE_DIR/crispaudio.xcodeproj/project.xcworkspace"
+          mkdir -p "$WS_DIR"
+          cat > "$WS_DIR/contents.xcworkspacedata" <<'XML'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Workspace version="1.0">
+            <FileRef location="self:"/>
+          </Workspace>
+          XML
+
+      - name: Build Rust library for iOS
+        working-directory: src-tauri
+        run: cargo build --target aarch64-apple-ios --release
+
+      - name: Build iOS (unsigned)
+        run: |
+          cd src-tauri/gen/apple
+          xcodebuild \
+            -project crispaudio.xcodeproj \
+            -scheme crispaudio_iOS \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            ARCHS=arm64 \
+            -derivedDataPath build \
+            build \
+            || echo "::warning::iOS xcodebuild failed — see logs"
+
+      - name: Package .app for sideloading
+        if: always()
+        run: |
+          APP_PATH=$(find src-tauri/gen/apple/build -name "*.app" -type d 2>/dev/null | head -1)
+          if [ -n "$APP_PATH" ]; then
+            mkdir -p artifacts
+            cd "$(dirname "$APP_PATH")"
+            tar czf "$GITHUB_WORKSPACE/artifacts/CrispAudio-ios-arm64.app.tar.gz" "$(basename "$APP_PATH")"
+            echo "Packaged: $APP_PATH"
+          else
+            echo "::warning::No .app bundle found"
+          fi
+
+      - name: Upload iOS artifact to release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [ -f artifacts/CrispAudio-ios-arm64.app.tar.gz ]; then
+            gh release upload "$TAG" artifacts/CrispAudio-ios-arm64.app.tar.gz --clobber \
+              || echo "::warning::Could not upload iOS artifact to release"
+          fi
+
+      - name: Upload iOS artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: crispaudio-ios
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ── Android (unsigned APK) ──────────────────────────────────────────────
+  android:
+    name: Android (unsigned)
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: android
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+
+      - run: npm ci
+
+      - name: Initialize Android project
+        run: npx tauri android init || true
+
+      - name: Build Android APK (unsigned)
+        run: |
+          npx tauri android build --apk \
+            || echo "::warning::Android build failed — may need additional setup"
+
+      - name: Collect APK artifacts
+        if: always()
+        run: |
+          mkdir -p artifacts
+          find src-tauri/gen/android -name "*.apk" -exec cp {} artifacts/ \; 2>/dev/null || true
+          ls -la artifacts/ 2>/dev/null || echo "No APK files found"
+
+      - name: Upload Android artifact to release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          for apk in artifacts/*.apk; do
+            [ -f "$apk" ] && gh release upload "$TAG" "$apk" --clobber \
+              || echo "::warning::Could not upload Android artifact to release"
+          done
+
+      - name: Upload Android artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: crispaudio-android
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ── Publish release (after desktop builds complete) ─────────────────────
   publish:
     name: Publish release
-    needs: [release]
-    # Does NOT need release-intel — Intel is best-effort
+    needs: [desktop]
+    # Does NOT wait for Intel/iOS/Android — those are best-effort
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -136,7 +307,7 @@ jobs:
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           echo "Publishing release for tag: $TAG"
-          # Wait a moment for all assets to settle
-          sleep 10
+          # Wait for mobile artifacts to settle
+          sleep 30
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false \
             || echo "::warning::Could not auto-publish — release may need manual publish"
