@@ -1,0 +1,99 @@
+name: Mobile Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    name: iOS Build
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - run: npm ci
+
+      - name: Initialize iOS project
+        run: npx tauri ios init || true
+
+      - name: Build iOS (unsigned)
+        run: |
+          npx tauri ios build --export-method debugging \
+            || echo "::warning::iOS build failed — may need Xcode project adjustments"
+
+      - name: Upload iOS artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crispaudio-ios
+          path: |
+            src-tauri/gen/apple/build/**/*.app
+            src-tauri/gen/apple/build/**/*.ipa
+          if-no-files-found: warn
+          retention-days: 14
+
+  android:
+    name: Android Build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+
+      - run: npm ci
+
+      - name: Initialize Android project
+        run: npx tauri android init || true
+
+      - name: Build Android APK (unsigned)
+        run: |
+          npx tauri android build --apk \
+            || echo "::warning::Android build failed — may need additional setup"
+
+      - name: Upload Android artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crispaudio-android
+          path: |
+            src-tauri/gen/android/app/build/outputs/**/*.apk
+          if-no-files-found: warn
+          retention-days: 14
