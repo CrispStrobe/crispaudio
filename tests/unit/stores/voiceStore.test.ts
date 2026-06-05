@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useVoiceStore } from '../../../src/stores/voiceStore';
 import { getPreset } from '../../../src/audio/presets/voicePresets';
-import type { VoiceSettings, VoicePresetName } from '../../../src/types/voicelab';
+import type { VoicePresetName } from '../../../src/types/voicelab';
 
 function resetStore() {
   useVoiceStore.setState({
@@ -173,7 +173,7 @@ describe('Voice settings updates', () => {
 
   it('all VoiceSettings fields are numeric', () => {
     const settings = getPreset('classicRobot');
-    for (const [key, value] of Object.entries(settings)) {
+    for (const value of Object.values(settings)) {
       expect(typeof value).toBe('number');
       expect(isFinite(value as number)).toBe(true);
     }

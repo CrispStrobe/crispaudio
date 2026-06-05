@@ -16,7 +16,7 @@ import { useSynthStore, loadFromShareLink } from './stores/synthStore';
 import { useEffect, useRef } from 'react';
 
 export default function App() {
-  const { activePanel, setActivePanel } = useUIStore();
+  const { activePanel, setActivePanel, openModal, activeModal } = useUIStore();
 
   // Apply the persisted default export format to the synth store on startup.
   const defaultSampleRate = useSettingsStore((s) => s.defaultSampleRate);
@@ -35,6 +35,24 @@ export default function App() {
       setActivePanel('sfx');
     }
   }, [setActivePanel]);
+
+  // Global keyboard shortcuts for panel switching
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (activeModal) return; // don't intercept when modal is open
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === '1') { e.preventDefault(); setActivePanel('sfx'); }
+        else if (e.key === '2') { e.preventDefault(); setActivePanel('voice'); }
+        else if (e.key === '3') { e.preventDefault(); setActivePanel('timeline'); }
+        else if (e.key === ',') { e.preventDefault(); openModal('settings'); }
+      }
+    };
+
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [setActivePanel, openModal, activeModal]);
 
   return (
     <AppShell>

@@ -17,7 +17,8 @@ async function getTauriVersion(): Promise<string> {
     const { getVersion } = await import('@tauri-apps/api/app');
     return await getVersion();
   } catch {
-    return '';
+    // Web-only mode — return package version
+    return '0.2.0';
   }
 }
 const IDENTIFIER = 'com.crispstrobe.crispaudio';
