@@ -52,14 +52,16 @@ jobs:
 
       - name: Build iOS (unsigned)
         env:
-          APPLE_DEVELOPMENT_TEAM: ""
-          TAURI_APPLE_DEVELOPMENT_TEAM: ""
+          # Tauri requires a non-empty team ID; use a placeholder for unsigned builds
+          APPLE_DEVELOPMENT_TEAM: UNSIGNED
+          TAURI_APPLE_DEVELOPMENT_TEAM: UNSIGNED
         run: |
           npx tauri ios build \
             -- \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
             || echo "::warning::iOS build failed — see logs for details"
 
       - name: Package .app for sideloading
