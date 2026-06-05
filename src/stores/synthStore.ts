@@ -91,7 +91,10 @@ function mutateSynthParams(
   const result: Partial<SynthParams> = {};
   for (const key of picked) {
     const current = params[key] as number;
-    const delta = current * (Math.random() * 0.2 - 0.1); // ±10%
+    // If current is near 0, use a small absolute offset instead of relative
+    const delta = Math.abs(current) > 0.01
+      ? current * (Math.random() * 0.2 - 0.1)  // ±10% relative
+      : (Math.random() * 0.1 - 0.05);           // ±0.05 absolute
     (result as Record<string, number>)[key] = current + delta;
   }
   return result;

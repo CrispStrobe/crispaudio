@@ -12,11 +12,11 @@ import { AboutModal } from './components/common/AboutModal';
 import { LicensesModal } from './components/common/LicensesModal';
 import { useUIStore } from './stores/uiStore';
 import { useSettingsStore } from './stores/settingsStore';
-import { useSynthStore } from './stores/synthStore';
-import { useEffect } from 'react';
+import { useSynthStore, loadFromShareLink } from './stores/synthStore';
+import { useEffect, useRef } from 'react';
 
 export default function App() {
-  const { activePanel } = useUIStore();
+  const { activePanel, setActivePanel } = useUIStore();
 
   // Apply the persisted default export format to the synth store on startup.
   const defaultSampleRate = useSettingsStore((s) => s.defaultSampleRate);
@@ -25,6 +25,16 @@ export default function App() {
   useEffect(() => {
     setExportSettings(defaultSampleRate, defaultBitDepth);
   }, [defaultSampleRate, defaultBitDepth, setExportSettings]);
+
+  // Load shared sound from URL on startup (e.g. ?sound=BASE64)
+  const shareLoadedRef = useRef(false);
+  useEffect(() => {
+    if (shareLoadedRef.current) return;
+    shareLoadedRef.current = true;
+    if (loadFromShareLink()) {
+      setActivePanel('sfx');
+    }
+  }, [setActivePanel]);
 
   return (
     <AppShell>
