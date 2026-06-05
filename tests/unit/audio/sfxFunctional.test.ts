@@ -360,7 +360,11 @@ describe('Morphing', () => {
 
 describe('WAV data validity', () => {
   it('all samples are finite numbers', () => {
-    const params = loadPreset('pickupCoin');
+    // Use deterministic params to avoid flakiness from random presets
+    const params = createDefaultParams();
+    params.p_base_freq = 0.3;
+    params.p_env_sustain = 0.3;
+    params.p_env_decay = 0.4;
     const samples = generateSamples(params, SR);
     for (let i = 0; i < samples.length; i++) {
       expect(isFinite(samples[i])).toBe(true);

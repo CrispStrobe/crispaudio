@@ -217,6 +217,7 @@ export const TimelinePanel: React.FC = () => {
   const defaultBitDepth = useSettingsStore((s) => s.defaultBitDepth);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   const handleAddTrack = useCallback(() => store.addTrack(), [store]);
   const handleZoomIn = useCallback(() => store.setZoomLevel(store.zoomLevel * 1.25), [store]);
@@ -509,8 +510,32 @@ export const TimelinePanel: React.FC = () => {
           </div>
 
           {/* Canvas (internally virtual-scrolled via store.scrollOffset) */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
+          <div
+            className={`flex-1 overflow-y-auto overflow-x-hidden relative transition-colors ${
+              isDraggingFile ? 'bg-indigo-900/20 ring-2 ring-inset ring-indigo-500/50' : ''
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'copy';
+              setIsDraggingFile(true);
+            }}
+            onDragLeave={() => setIsDraggingFile(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDraggingFile(false);
+              if (e.dataTransfer.files.length > 0) {
+                void handleImportFiles(e.dataTransfer.files);
+              }
+            }}
+          >
             <TimelineCanvas width={canvasWidth} />
+            {isDraggingFile && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                <div className="bg-gray-900/80 backdrop-blur rounded-xl px-6 py-4 border border-indigo-500/50 text-indigo-300 font-semibold">
+                  Drop audio files here
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

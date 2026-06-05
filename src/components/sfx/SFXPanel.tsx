@@ -263,13 +263,19 @@ function WaveformCanvas({
   buffer,
   isPlaying,
   title,
+  duration,
 }: {
   buffer: Float32Array | null;
   isPlaying?: boolean;
   title: string;
+  duration?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const playheadRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const startTimeRef = useRef(0);
 
+  // Draw the static waveform
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -278,14 +284,12 @@ function WaveformCanvas({
     const w = canvas.width;
     const h = canvas.height;
 
-    // Background
     const gradient = ctx.createLinearGradient(0, 0, 0, h);
     gradient.addColorStop(0, '#1f2937');
     gradient.addColorStop(1, '#111827');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
-    // Grid
     ctx.strokeStyle = '#374151';
     ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
@@ -305,7 +309,6 @@ function WaveformCanvas({
       return;
     }
 
-    // Glow when playing
     if (isPlaying) {
       ctx.shadowColor = '#10b981';
       ctx.shadowBlur = 10;
@@ -326,15 +329,52 @@ function WaveformCanvas({
     ctx.shadowBlur = 0;
   }, [buffer, isPlaying]);
 
+  // Animate playhead during playback
+  useEffect(() => {
+    const el = playheadRef.current;
+    if (!el) return;
+
+    if (isPlaying && duration && duration > 0) {
+      startTimeRef.current = performance.now();
+
+      const tick = () => {
+        const elapsed = (performance.now() - startTimeRef.current) / 1000;
+        const progress = Math.min(elapsed / duration, 1);
+        el.style.left = `${progress * 100}%`;
+        el.style.display = 'block';
+        if (progress < 1) {
+          rafRef.current = requestAnimationFrame(tick);
+        } else {
+          el.style.display = 'none';
+        }
+      };
+
+      rafRef.current = requestAnimationFrame(tick);
+    } else {
+      el.style.display = 'none';
+    }
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [isPlaying, duration]);
+
   return (
     <div>
       <h3 className="text-sm font-semibold mb-2 text-white">{title}</h3>
-      <canvas
-        ref={canvasRef}
-        width={400}
-        height={120}
-        className="w-full h-24 rounded border border-gray-700"
-      />
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          width={400}
+          height={120}
+          className="w-full h-24 rounded border border-gray-700"
+        />
+        <div
+          ref={playheadRef}
+          className="absolute top-0 bottom-0 w-px bg-red-500 pointer-events-none"
+          style={{ display: 'none', left: 0 }}
+        />
+      </div>
     </div>
   );
 }
@@ -893,7 +933,7 @@ export function SFXPanel() {
               }`}
             >
               <Repeat className="w-5 h-5" />
-              {isLooping ? 'Stop Loop' : 'Loop'}
+              {isLooping ? t('sfx.stopLoop') : t('sfx.loop')}
             </button>
 
             <button
@@ -909,7 +949,7 @@ export function SFXPanel() {
               className="px-5 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
             >
               <Shuffle className="w-5 h-5" />
-              Mutate
+              {t('sfx.mutate')}
             </button>
 
             <button
@@ -945,13 +985,13 @@ export function SFXPanel() {
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <ParamInfoButton paramKey="waveform" />
             </div>
-            <WaveformCanvas buffer={buffer} isPlaying={isPlaying && activeSlot === 'A'} title="Waveform A" />
+            <WaveformCanvas buffer={buffer} isPlaying={isPlaying && activeSlot === 'A'} title="Waveform A" duration={buffer ? buffer.length / sampleRate : 0} />
           </div>
           <div className="card relative group">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <ParamInfoButton paramKey="waveform" />
             </div>
-            <WaveformCanvas buffer={buffer} isPlaying={isPlaying && activeSlot === 'B'} title="Waveform B" />
+            <WaveformCanvas buffer={buffer} isPlaying={isPlaying && activeSlot === 'B'} title="Waveform B" duration={buffer ? buffer.length / sampleRate : 0} />
           </div>
           <div className="card relative group">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1048,7 +1088,7 @@ export function SFXPanel() {
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-400">Clipped:</span>
                   <div className={`w-3 h-3 rounded ${isClipping ? 'bg-red-500' : 'bg-gray-600'}`} />
-                  <span className="text-xs text-gray-500">{isClipping ? 'Yes' : 'No'}</span>
+                  <span className="text-xs text-gray-500">{isClipping ? t('sfx.clippedYes') : t('sfx.clippedNo')}</span>
                 </div>
               </div>
             </div>

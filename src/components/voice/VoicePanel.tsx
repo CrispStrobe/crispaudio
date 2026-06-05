@@ -408,10 +408,10 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
         {filename ? filename : t('voice.loadFile')}
       </span>
       {!filename && (
-        <span className="text-xs text-gray-500 mt-1">Drop audio file or click to upload</span>
+        <span className="text-xs text-gray-500 mt-1">{t('voice.dropAudio')}</span>
       )}
       {filename && (
-        <span className="text-xs text-green-400 mt-1">Loaded — ready to process</span>
+        <span className="text-xs text-green-400 mt-1">{t('voice.loadedReady')}</span>
       )}
     </div>
   );
@@ -559,7 +559,6 @@ export function VoicePanel() {
   }, [isPlaying, handlePlay, handleStop, handleProcess, setActiveSlot, loadPreset, processedBuffer, sourceBuffer]);
 
   const currentTab = TABS.find((t) => t.id === activeTab)!;
-  const hasAudio = !!(sourceBuffer || processedBuffer);
 
   return (
     <div className="h-full overflow-y-auto" style={{ background: 'linear-gradient(to bottom right, #0f172a, #111827, #0c1929)' }}>
@@ -656,32 +655,53 @@ export function VoicePanel() {
 
         {/* ── Action Buttons ──────────────────────────────────────── */}
         <div className="flex flex-wrap justify-center gap-3 mb-6">
+          {/* Play Source */}
           <button
-            onClick={isPlaying ? handleStop : () => handlePlay(processedBuffer ?? sourceBuffer)}
-            disabled={!hasAudio}
-            className={`px-6 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
+            onClick={isPlaying ? handleStop : () => handlePlay(sourceBuffer)}
+            disabled={!sourceBuffer}
+            className={`px-5 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
+              isPlaying
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white'
+            }`}
+          >
+            {isPlaying ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+            {isPlaying ? t('voice.stop') : t('voice.playSource')}
+          </button>
+
+          {/* Play Processed */}
+          <button
+            onClick={isPlaying ? handleStop : () => handlePlay(processedBuffer)}
+            disabled={!processedBuffer}
+            className={`px-5 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
               isPlaying
                 ? 'bg-red-600 hover:bg-red-700 text-white'
                 : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white'
             }`}
           >
             {isPlaying ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-            {isPlaying ? t('voice.stop') : t('voice.play')}
+            {isPlaying ? t('voice.stop') : t('voice.playProcessed')}
           </button>
 
+          {/* Process */}
           <button
             onClick={handleProcess}
             disabled={!sourceBuffer || isProcessing}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+            className="px-5 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
           >
-            <Shuffle className="w-5 h-5" />
+            {isProcessing ? (
+              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Shuffle className="w-5 h-5" />
+            )}
             {isProcessing ? t('voice.processing') : t('voice.process')}
           </button>
 
+          {/* Export */}
           <button
             onClick={downloadProcessed}
             disabled={!processedBuffer}
-            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+            className="px-5 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
           >
             <Download className="w-5 h-5" />
             {t('voice.export')}
