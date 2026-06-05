@@ -118,6 +118,65 @@ const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ className?: 
 ];
 
 // ---------------------------------------------------------------------------
+// Parameter info tooltips
+// ---------------------------------------------------------------------------
+
+const VOICE_PARAM_INFO: Record<string, string> = {
+  pitchShift: 'Shift pitch up or down in semitones without changing speed.',
+  formantShift: 'Shift vocal formants independently of pitch. Positive = brighter, negative = deeper.',
+  speedChange: 'Change playback speed. 1.0 = normal, 0.5 = half speed, 2.0 = double speed.',
+  vocoderFreq: 'Carrier frequency for the vocoder effect.',
+  vocoderMix: 'Blend between dry signal and vocoder output.',
+  ringModFreq: 'Carrier frequency for ring modulation. Creates metallic, robotic tones.',
+  ringModMix: 'Blend between dry signal and ring-modulated output.',
+  tremoloRate: 'Speed of volume modulation in Hz.',
+  tremoloDepth: 'Amount of volume modulation.',
+  chorusRate: 'Speed of chorus modulation.',
+  chorusDepth: 'Width of chorus pitch variation.',
+  chorusMix: 'Blend between dry and chorus output.',
+  delayTime: 'Echo delay time.',
+  delayFeedback: 'How much of the delayed signal feeds back. Higher = more repeats.',
+  delayMix: 'Blend between dry signal and delayed output.',
+  reverbSize: 'Size of the reverb space. Larger = more spacious.',
+  reverbDecay: 'How long the reverb tail lasts.',
+  reverbMix: 'Blend between dry signal and reverb output.',
+  lowpassFreq: 'Cuts frequencies above this value. Lower = darker sound.',
+  highpassFreq: 'Cuts frequencies below this value. Higher = thinner sound.',
+  compThreshold: 'Level above which compression begins. Lower = more compression.',
+  compRatio: 'Compression ratio. Higher = more aggressive limiting.',
+  distortionDrive: 'Amount of distortion/overdrive.',
+  distortionMix: 'Blend between clean and distorted signal.',
+  bitCrushBits: 'Reduce bit resolution for lo-fi effect. Lower = more crushed.',
+  bitCrushMix: 'Blend between clean and bit-crushed signal.',
+  noiseGateThreshold: 'Silence signals below this level. Removes background noise.',
+  masterGain: 'Overall output volume multiplier.',
+};
+
+function VoiceInfoButton({ paramKey }: { paramKey: string }) {
+  const [show, setShow] = useState(false);
+  const info = VOICE_PARAM_INFO[paramKey];
+  if (!info) return null;
+
+  return (
+    <div className="relative inline-block">
+      <button
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="w-4 h-4 rounded-full bg-blue-500/60 text-white text-[9px] flex items-center justify-center hover:bg-blue-400 transition-colors"
+        type="button"
+      >
+        i
+      </button>
+      {show && (
+        <div className="absolute z-50 w-56 p-2.5 bg-gray-800 border border-gray-600 rounded-lg shadow-lg bottom-6 left-0">
+          <p className="text-xs text-gray-300">{info}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Parameter slider card
 // ---------------------------------------------------------------------------
 
@@ -131,7 +190,10 @@ function ParamSlider({ def, value, onChange }: {
   return (
     <div className="bg-gray-800/50 rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-200">{t(def.labelKey)}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium text-gray-200">{t(def.labelKey)}</span>
+          <VoiceInfoButton paramKey={def.key} />
+        </div>
         <span className="font-mono text-xs text-gray-400 w-16 text-right">{display}</span>
       </div>
       <input
@@ -151,12 +213,17 @@ function ParamSlider({ def, value, onChange }: {
 // Visualizations
 // ---------------------------------------------------------------------------
 
-function WaveformCanvas({ buffer, color, title }: {
+function WaveformCanvas({ buffer, color, title, isPlaying, duration }: {
   buffer: AudioBuffer | null;
   color: string;
   title: string;
+  isPlaying?: boolean;
+  duration?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const playheadRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const startTimeRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -172,7 +239,6 @@ function WaveformCanvas({ buffer, color, title }: {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, w, h);
 
-    // Grid
     ctx.strokeStyle = '#374151';
     ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
@@ -192,6 +258,11 @@ function WaveformCanvas({ buffer, color, title }: {
       return;
     }
 
+    if (isPlaying) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+    }
+
     const data = buffer.getChannelData(0);
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
@@ -204,17 +275,53 @@ function WaveformCanvas({ buffer, color, title }: {
       else ctx.lineTo(i, y);
     }
     ctx.stroke();
-  }, [buffer, color]);
+    ctx.shadowBlur = 0;
+  }, [buffer, color, isPlaying]);
+
+  // Playhead animation
+  useEffect(() => {
+    const el = playheadRef.current;
+    if (!el) return;
+
+    if (isPlaying && duration && duration > 0) {
+      startTimeRef.current = performance.now();
+      const tick = () => {
+        const elapsed = (performance.now() - startTimeRef.current) / 1000;
+        const progress = Math.min(elapsed / duration, 1);
+        el.style.left = `${progress * 100}%`;
+        el.style.display = 'block';
+        if (progress < 1) {
+          rafRef.current = requestAnimationFrame(tick);
+        } else {
+          el.style.display = 'none';
+        }
+      };
+      rafRef.current = requestAnimationFrame(tick);
+    } else {
+      el.style.display = 'none';
+    }
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [isPlaying, duration]);
 
   return (
     <div>
       <h3 className="text-sm font-semibold mb-2 text-white">{title}</h3>
-      <canvas
-        ref={canvasRef}
-        width={400}
-        height={120}
-        className="w-full h-24 rounded border border-gray-700"
-      />
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          width={400}
+          height={120}
+          className="w-full h-24 rounded border border-gray-700"
+        />
+        <div
+          ref={playheadRef}
+          className="absolute top-0 bottom-0 w-px bg-red-500 pointer-events-none"
+          style={{ display: 'none', left: 0 }}
+        />
+      </div>
     </div>
   );
 }
@@ -434,11 +541,12 @@ export function VoicePanel() {
   const settings = activeSlot === 'A' ? settingsA : settingsB;
   const [activeTab, setActiveTab] = useState<TabId>('pitch');
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playingBuffer, setPlayingBuffer] = useState<'source' | 'processed' | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   const handlePlay = useCallback(
-    (buf: AudioBuffer | null) => {
+    (buf: AudioBuffer | null, which: 'source' | 'processed') => {
       if (!buf) return;
       if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
         audioCtxRef.current = new AudioContext({ sampleRate: buf.sampleRate });
@@ -450,9 +558,13 @@ export function VoicePanel() {
       src.buffer = buf;
       src.connect(ctx.destination);
       src.start();
-      src.onended = () => setIsPlaying(false);
+      src.onended = () => {
+        setIsPlaying(false);
+        setPlayingBuffer(null);
+      };
       sourceRef.current = src;
       setIsPlaying(true);
+      setPlayingBuffer(which);
     },
     [],
   );
@@ -460,6 +572,7 @@ export function VoicePanel() {
   const handleStop = useCallback(() => {
     sourceRef.current?.stop();
     setIsPlaying(false);
+    setPlayingBuffer(null);
   }, []);
 
   const handleProcess = useCallback(async () => {
@@ -542,7 +655,7 @@ export function VoicePanel() {
       if (key === ' ') {
         e.preventDefault();
         if (isPlaying) handleStop();
-        else handlePlay(processedBuffer ?? sourceBuffer);
+        else handlePlay(processedBuffer ?? sourceBuffer, processedBuffer ? 'processed' : 'source');
       } else if (key === 'a') {
         setActiveSlot('A');
       } else if (key === 'b') {
@@ -657,7 +770,7 @@ export function VoicePanel() {
         <div className="flex flex-wrap justify-center gap-3 mb-6">
           {/* Play Source */}
           <button
-            onClick={isPlaying ? handleStop : () => handlePlay(sourceBuffer)}
+            onClick={isPlaying ? handleStop : () => handlePlay(sourceBuffer, 'source')}
             disabled={!sourceBuffer}
             className={`px-5 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
               isPlaying
@@ -671,7 +784,7 @@ export function VoicePanel() {
 
           {/* Play Processed */}
           <button
-            onClick={isPlaying ? handleStop : () => handlePlay(processedBuffer)}
+            onClick={isPlaying ? handleStop : () => handlePlay(processedBuffer, 'processed')}
             disabled={!processedBuffer}
             className={`px-5 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
               isPlaying
@@ -711,10 +824,10 @@ export function VoicePanel() {
         {/* ── Visualizations ──────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           <div className="card">
-            <WaveformCanvas buffer={sourceBuffer} color="#3b82f6" title="Original Waveform" />
+            <WaveformCanvas buffer={sourceBuffer} color="#3b82f6" title="Original Waveform" isPlaying={isPlaying && playingBuffer === 'source'} duration={sourceBuffer?.duration} />
           </div>
           <div className="card">
-            <WaveformCanvas buffer={processedBuffer} color="#a855f7" title="Processed Waveform" />
+            <WaveformCanvas buffer={processedBuffer} color="#a855f7" title="Processed Waveform" isPlaying={isPlaying && playingBuffer === 'processed'} duration={processedBuffer?.duration} />
           </div>
           <div className="card">
             <SpectrumCanvas buffer={processedBuffer ?? sourceBuffer} />
