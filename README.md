@@ -1,5 +1,9 @@
 # CrispAudio
 
+[![CI](https://github.com/CrispStrobe/crispaudio/actions/workflows/ci.yml/badge.svg)](https://github.com/CrispStrobe/crispaudio/actions/workflows/ci.yml)
+[![Release](https://github.com/CrispStrobe/crispaudio/actions/workflows/release.yml/badge.svg)](https://github.com/CrispStrobe/crispaudio/actions/workflows/release.yml)
+[![Mobile Build](https://github.com/CrispStrobe/crispaudio/actions/workflows/mobile.yml/badge.svg)](https://github.com/CrispStrobe/crispaudio/actions/workflows/mobile.yml)
+
 Cross-platform audio workstation combining sound synthesis, voice effects processing, and a timeline waveform editor.
 
 Built with Tauri 2.x (Rust + React + TypeScript).
@@ -87,12 +91,14 @@ src-tauri/            Rust backend
 
 ## CI/CD
 
-- **CI** (`ci.yml`): Lint, typecheck, test, build check on every PR
+- **CI** (`ci.yml`): Lint, typecheck, test on every push/PR; Rust check on Linux, macOS, Windows
 - **Release** (`release.yml`): Cross-platform Tauri builds on tag push (`v*`)
   - Linux x86_64 (.deb, .AppImage)
   - macOS ARM64 (.dmg)
-  - macOS x86_64 (.dmg)
-  - Windows x86_64 (.msi, .exe)
+  - macOS x86_64 (.dmg) — optional, non-blocking
+  - Windows x86_64 (.msi)
+- **Mobile** (`mobile.yml`): iOS (.app) and Android (.apk) builds on tag push
+- Branch protection requires all CI checks to pass before merging
 
 ## License
 
