@@ -677,7 +677,7 @@ export function VoicePanel() {
 
         {/* ── Header ──────────────────────────────────────────────── */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-2 gradient-title-voice">
             {t('panels.voice')}
           </h1>
           <p className="text-gray-400 text-base">Voice Synthesis &amp; Real-time Processing</p>

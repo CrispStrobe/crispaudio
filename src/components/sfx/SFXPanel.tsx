@@ -240,7 +240,7 @@ function ParamSlider({
             <button
               onClick={() => onToggleLock(paramKey)}
               className="transition-colors"
-              style={{ color: locked ? '#f59e0b' : '#4b5563' }}
+              style={{ color: locked ? '#f59e0b' : 'var(--text-muted)' }}
               type="button"
             >
               {locked ? <Lock size={12} /> : <Unlock size={12} />}
@@ -855,7 +855,7 @@ export function SFXPanel() {
 
         {/* ── Header ──────────────────────────────────────────────── */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2 gradient-title">
             {t('panels.sfx')}
           </h1>
           <p className="text-gray-400 text-base">Advanced Sound Effect Synthesizer</p>

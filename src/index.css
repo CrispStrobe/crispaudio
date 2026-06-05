@@ -76,6 +76,20 @@ html.light .btn-surface:hover {
   color: var(--text-primary);
 }
 
+/* Light mode: darken gradient text so it pops on white bg */
+html.light .gradient-title {
+  background-image: linear-gradient(to right, #1d4ed8, #7c3aed, #db2777) !important;
+}
+
+html.light .gradient-title-voice {
+  background-image: linear-gradient(to right, #059669, #2563eb, #7c3aed) !important;
+}
+
+/* Light mode: make indigo-on-dark selections readable */
+html.light .bg-indigo-900\/40 {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -106,6 +120,19 @@ html, body, #root {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border);
+}
+
+/* ── Nav active button ───────────────────────────────────────────── */
+.btn-nav-active {
+  background: #1d4ed8;
+  color: white;
+  border: 1px solid #3b82f6;
+}
+
+html.light .btn-nav-active {
+  background: #2563eb;
+  color: white;
+  border-color: #3b82f6;
 }
 
 /* ── Card component ──────────────────────────────────────────────── */

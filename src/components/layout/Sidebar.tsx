@@ -65,14 +65,7 @@ export function Sidebar() {
               className={`flex flex-col items-center justify-center rounded-lg transition-all duration-150 ${
                 isActive ? 'btn-nav-active' : 'btn-ghost'
               }`}
-              style={{
-                width: 56,
-                height: 52,
-                gap: 3,
-                background: isActive ? '#1d4ed8' : undefined,
-                color: isActive ? '#93c5fd' : undefined,
-                border: isActive ? '1px solid #2563eb' : undefined,
-              }}
+              style={{ width: 56, height: 52, gap: 3 }}
             >
               <Icon size={18} />
               <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>

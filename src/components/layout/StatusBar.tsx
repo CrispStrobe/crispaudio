@@ -72,7 +72,7 @@ export function StatusBar() {
       <div className="flex-1 flex items-center justify-center gap-3">
         <span
           className="font-mono"
-          style={{ color: isPlaying ? '#60a5fa' : 'var(--text-muted)', fontSize: 11 }}
+          style={{ color: isPlaying ? 'var(--accent)' : 'var(--text-muted)', fontSize: 11 }}
         >
           {formatTime(currentTime)}
         </span>
