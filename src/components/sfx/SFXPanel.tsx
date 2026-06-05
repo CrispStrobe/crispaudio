@@ -173,6 +173,26 @@ function ParamInfoButton({ paramKey }: { paramKey: string }) {
 // Slider sub-component (card-style, matching CrispFXR)
 // ---------------------------------------------------------------------------
 
+// Waveform-specific parameter suggestions
+const PARAM_SUGGESTIONS: Record<number, Record<string, string>> = {
+  0: { // Square
+    p_duty: 'Try 0.1–0.9 for different timbres',
+    p_duty_ramp: 'Sweep for filter-like effects',
+  },
+  2: { // Sine
+    fm_freq: 'Add harmonics with FM',
+    p_vib_speed: 'Natural vibrato at 4–6 Hz',
+  },
+  3: { // Noise
+    p_lpf_freq: 'Essential for shaping noise',
+    p_hpf_freq: 'Remove unwanted low-end',
+  },
+};
+
+function getSuggestion(paramKey: string, waveType: number): string | null {
+  return PARAM_SUGGESTIONS[waveType]?.[paramKey] ?? null;
+}
+
 interface ParamSliderProps {
   label: string;
   paramKey: keyof SynthParams;
@@ -182,6 +202,7 @@ interface ParamSliderProps {
   value: number;
   locked?: boolean;
   numeric?: boolean;
+  suggestion?: string | null;
   onChange: (key: keyof SynthParams, value: number) => void;
   onToggleLock?: (key: keyof SynthParams) => void;
 }
@@ -195,6 +216,7 @@ function ParamSlider({
   value,
   locked = false,
   numeric = false,
+  suggestion,
   onChange,
   onToggleLock,
 }: ParamSliderProps) {
@@ -250,6 +272,9 @@ function ParamSlider({
           onChange={(e) => onChange(paramKey, parseFloat(e.target.value))}
           className={`w-full slider-styled ${locked ? 'slider-amber' : ''}`}
         />
+      )}
+      {suggestion && (
+        <div className="text-xs text-blue-400 italic mt-1">{suggestion}</div>
       )}
     </div>
   );
@@ -1221,66 +1246,66 @@ export function SFXPanel() {
                   )}
                 </div>
 
-                <ParamSlider label={t('sfx.baseFreq')} paramKey="p_base_freq" min={0.001} max={2} value={params.p_base_freq} locked={isLocked('p_base_freq')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.freqRamp')} paramKey="p_freq_ramp" min={-1} max={1} value={params.p_freq_ramp} locked={isLocked('p_freq_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.freqLimit')} paramKey="p_freq_limit" min={0} max={1} value={params.p_freq_limit} locked={isLocked('p_freq_limit')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.deltaRamp')} paramKey="p_freq_dramp" min={-1} max={1} value={params.p_freq_dramp} locked={isLocked('p_freq_dramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
+                <ParamSlider label={t('sfx.baseFreq')} paramKey="p_base_freq" min={0.001} max={2} value={params.p_base_freq} locked={isLocked('p_base_freq')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_base_freq", params.wave_type)} />
+                <ParamSlider label={t('sfx.freqRamp')} paramKey="p_freq_ramp" min={-1} max={1} value={params.p_freq_ramp} locked={isLocked('p_freq_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_freq_ramp", params.wave_type)} />
+                <ParamSlider label={t('sfx.freqLimit')} paramKey="p_freq_limit" min={0} max={1} value={params.p_freq_limit} locked={isLocked('p_freq_limit')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_freq_limit", params.wave_type)} />
+                <ParamSlider label={t('sfx.deltaRamp')} paramKey="p_freq_dramp" min={-1} max={1} value={params.p_freq_dramp} locked={isLocked('p_freq_dramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_freq_dramp", params.wave_type)} />
 
                 {/* Retrigger */}
                 <div className="bg-gray-800/50 rounded-lg p-4">
                   <h4 className="font-semibold mb-3 text-orange-300 text-sm">Retrigger</h4>
-                  <ParamSlider label={t('sfx.repeat')} paramKey="p_repeat_speed" min={0} max={1} value={params.p_repeat_speed} locked={isLocked('p_repeat_speed')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
+                  <ParamSlider label={t('sfx.repeat')} paramKey="p_repeat_speed" min={0} max={1} value={params.p_repeat_speed} locked={isLocked('p_repeat_speed')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_repeat_speed", params.wave_type)} />
                 </div>
               </>
             )}
 
             {activeTab === 'envelope' && (
               <>
-                <ParamSlider label={t('sfx.attack')} paramKey="p_env_attack" min={0} max={3} value={params.p_env_attack} locked={isLocked('p_env_attack')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.sustain')} paramKey="p_env_sustain" min={0} max={3} value={params.p_env_sustain} locked={isLocked('p_env_sustain')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.decay')} paramKey="p_env_decay" min={0} max={3} value={params.p_env_decay} locked={isLocked('p_env_decay')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.punch')} paramKey="p_env_punch" min={0} max={3} value={params.p_env_punch} locked={isLocked('p_env_punch')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.speed')} paramKey="p_vib_speed" min={0} max={1} value={params.p_vib_speed} locked={isLocked('p_vib_speed')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.strength')} paramKey="p_vib_strength" min={0} max={1} value={params.p_vib_strength} locked={isLocked('p_vib_strength')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
+                <ParamSlider label={t('sfx.attack')} paramKey="p_env_attack" min={0} max={3} value={params.p_env_attack} locked={isLocked('p_env_attack')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_env_attack", params.wave_type)} />
+                <ParamSlider label={t('sfx.sustain')} paramKey="p_env_sustain" min={0} max={3} value={params.p_env_sustain} locked={isLocked('p_env_sustain')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_env_sustain", params.wave_type)} />
+                <ParamSlider label={t('sfx.decay')} paramKey="p_env_decay" min={0} max={3} value={params.p_env_decay} locked={isLocked('p_env_decay')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_env_decay", params.wave_type)} />
+                <ParamSlider label={t('sfx.punch')} paramKey="p_env_punch" min={0} max={3} value={params.p_env_punch} locked={isLocked('p_env_punch')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_env_punch", params.wave_type)} />
+                <ParamSlider label={t('sfx.speed')} paramKey="p_vib_speed" min={0} max={1} value={params.p_vib_speed} locked={isLocked('p_vib_speed')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_vib_speed", params.wave_type)} />
+                <ParamSlider label={t('sfx.strength')} paramKey="p_vib_strength" min={0} max={1} value={params.p_vib_strength} locked={isLocked('p_vib_strength')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_vib_strength", params.wave_type)} />
               </>
             )}
 
             {activeTab === 'effects' && (
               <>
-                <ParamSlider label={t('sfx.distortion')} paramKey="distortion" min={0} max={1} value={params.distortion} locked={isLocked('distortion')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.bitCrush')} paramKey="bit_crush" min={0} max={1} value={params.bit_crush} locked={isLocked('bit_crush')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.smpReduce')} paramKey="sample_reduction" min={0} max={1} value={params.sample_reduction} locked={isLocked('sample_reduction')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.lpfFreq')} paramKey="p_lpf_freq" min={0} max={1} value={params.p_lpf_freq} locked={isLocked('p_lpf_freq')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.lpfRamp')} paramKey="p_lpf_ramp" min={-1} max={1} value={params.p_lpf_ramp} locked={isLocked('p_lpf_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.lpfRes')} paramKey="p_lpf_resonance" min={0} max={1} value={params.p_lpf_resonance} locked={isLocked('p_lpf_resonance')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.hpfFreq')} paramKey="p_hpf_freq" min={0} max={1} value={params.p_hpf_freq} locked={isLocked('p_hpf_freq')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.hpfRamp')} paramKey="p_hpf_ramp" min={-1} max={1} value={params.p_hpf_ramp} locked={isLocked('p_hpf_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.chorusRate')} paramKey="chorus_rate" min={0} max={1} value={params.chorus_rate} locked={isLocked('chorus_rate')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.chorusDepth')} paramKey="chorus_depth" min={0} max={1} value={params.chorus_depth} locked={isLocked('chorus_depth')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.delayTime')} paramKey="delay_time" min={0} max={1} value={params.delay_time} locked={isLocked('delay_time')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.delayFb')} paramKey="delay_feedback" min={0} max={1} value={params.delay_feedback} locked={isLocked('delay_feedback')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.flangerRate')} paramKey="flanger_rate" min={0} max={1} value={params.flanger_rate} locked={isLocked('flanger_rate')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.flangerDepth')} paramKey="flanger_depth" min={0} max={1} value={params.flanger_depth} locked={isLocked('flanger_depth')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.flangerDly')} paramKey="flanger_delay" min={0.1} max={1} value={params.flanger_delay} locked={isLocked('flanger_delay')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
+                <ParamSlider label={t('sfx.distortion')} paramKey="distortion" min={0} max={1} value={params.distortion} locked={isLocked('distortion')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("distortion", params.wave_type)} />
+                <ParamSlider label={t('sfx.bitCrush')} paramKey="bit_crush" min={0} max={1} value={params.bit_crush} locked={isLocked('bit_crush')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("bit_crush", params.wave_type)} />
+                <ParamSlider label={t('sfx.smpReduce')} paramKey="sample_reduction" min={0} max={1} value={params.sample_reduction} locked={isLocked('sample_reduction')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("sample_reduction", params.wave_type)} />
+                <ParamSlider label={t('sfx.lpfFreq')} paramKey="p_lpf_freq" min={0} max={1} value={params.p_lpf_freq} locked={isLocked('p_lpf_freq')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_lpf_freq", params.wave_type)} />
+                <ParamSlider label={t('sfx.lpfRamp')} paramKey="p_lpf_ramp" min={-1} max={1} value={params.p_lpf_ramp} locked={isLocked('p_lpf_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_lpf_ramp", params.wave_type)} />
+                <ParamSlider label={t('sfx.lpfRes')} paramKey="p_lpf_resonance" min={0} max={1} value={params.p_lpf_resonance} locked={isLocked('p_lpf_resonance')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_lpf_resonance", params.wave_type)} />
+                <ParamSlider label={t('sfx.hpfFreq')} paramKey="p_hpf_freq" min={0} max={1} value={params.p_hpf_freq} locked={isLocked('p_hpf_freq')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_hpf_freq", params.wave_type)} />
+                <ParamSlider label={t('sfx.hpfRamp')} paramKey="p_hpf_ramp" min={-1} max={1} value={params.p_hpf_ramp} locked={isLocked('p_hpf_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_hpf_ramp", params.wave_type)} />
+                <ParamSlider label={t('sfx.chorusRate')} paramKey="chorus_rate" min={0} max={1} value={params.chorus_rate} locked={isLocked('chorus_rate')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("chorus_rate", params.wave_type)} />
+                <ParamSlider label={t('sfx.chorusDepth')} paramKey="chorus_depth" min={0} max={1} value={params.chorus_depth} locked={isLocked('chorus_depth')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("chorus_depth", params.wave_type)} />
+                <ParamSlider label={t('sfx.delayTime')} paramKey="delay_time" min={0} max={1} value={params.delay_time} locked={isLocked('delay_time')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("delay_time", params.wave_type)} />
+                <ParamSlider label={t('sfx.delayFb')} paramKey="delay_feedback" min={0} max={1} value={params.delay_feedback} locked={isLocked('delay_feedback')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("delay_feedback", params.wave_type)} />
+                <ParamSlider label={t('sfx.flangerRate')} paramKey="flanger_rate" min={0} max={1} value={params.flanger_rate} locked={isLocked('flanger_rate')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("flanger_rate", params.wave_type)} />
+                <ParamSlider label={t('sfx.flangerDepth')} paramKey="flanger_depth" min={0} max={1} value={params.flanger_depth} locked={isLocked('flanger_depth')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("flanger_depth", params.wave_type)} />
+                <ParamSlider label={t('sfx.flangerDly')} paramKey="flanger_delay" min={0.1} max={1} value={params.flanger_delay} locked={isLocked('flanger_delay')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("flanger_delay", params.wave_type)} />
               </>
             )}
 
             {activeTab === 'advanced' && (
               <>
-                <ParamSlider label={t('sfx.fmFreq')} paramKey="fm_freq" min={0} max={1} value={params.fm_freq} locked={isLocked('fm_freq')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.fmDepth')} paramKey="fm_depth" min={0} max={1} value={params.fm_depth} locked={isLocked('fm_depth')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.lfoRate')} paramKey="lfo_rate" min={0} max={1} value={params.lfo_rate} locked={isLocked('lfo_rate')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.lfoDepth')} paramKey="lfo_depth" min={0} max={1} value={params.lfo_depth} locked={isLocked('lfo_depth')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.ringFreq')} paramKey="ring_mod_freq" min={0} max={1} value={params.ring_mod_freq} locked={isLocked('ring_mod_freq')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.ringDepth')} paramKey="ring_mod_depth" min={0} max={1} value={params.ring_mod_depth} locked={isLocked('ring_mod_depth')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.subBass')} paramKey="sub_bass" min={0} max={1} value={params.sub_bass} locked={isLocked('sub_bass')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
+                <ParamSlider label={t('sfx.fmFreq')} paramKey="fm_freq" min={0} max={1} value={params.fm_freq} locked={isLocked('fm_freq')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("fm_freq", params.wave_type)} />
+                <ParamSlider label={t('sfx.fmDepth')} paramKey="fm_depth" min={0} max={1} value={params.fm_depth} locked={isLocked('fm_depth')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("fm_depth", params.wave_type)} />
+                <ParamSlider label={t('sfx.lfoRate')} paramKey="lfo_rate" min={0} max={1} value={params.lfo_rate} locked={isLocked('lfo_rate')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("lfo_rate", params.wave_type)} />
+                <ParamSlider label={t('sfx.lfoDepth')} paramKey="lfo_depth" min={0} max={1} value={params.lfo_depth} locked={isLocked('lfo_depth')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("lfo_depth", params.wave_type)} />
+                <ParamSlider label={t('sfx.ringFreq')} paramKey="ring_mod_freq" min={0} max={1} value={params.ring_mod_freq} locked={isLocked('ring_mod_freq')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("ring_mod_freq", params.wave_type)} />
+                <ParamSlider label={t('sfx.ringDepth')} paramKey="ring_mod_depth" min={0} max={1} value={params.ring_mod_depth} locked={isLocked('ring_mod_depth')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("ring_mod_depth", params.wave_type)} />
+                <ParamSlider label={t('sfx.subBass')} paramKey="sub_bass" min={0} max={1} value={params.sub_bass} locked={isLocked('sub_bass')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("sub_bass", params.wave_type)} />
 
                 {/* Arpeggio */}
                 <div className="bg-gray-800/50 rounded-lg p-4">
                   <h4 className="font-semibold mb-3 text-blue-300 text-sm">Arpeggio</h4>
                   <div className="space-y-3">
-                    <ParamSlider label={t('sfx.mod')} paramKey="p_arp_mod" min={-1} max={1} value={params.p_arp_mod} locked={isLocked('p_arp_mod')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                    <ParamSlider label={t('sfx.speed')} paramKey="p_arp_speed" min={0} max={1} value={params.p_arp_speed} locked={isLocked('p_arp_speed')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
+                    <ParamSlider label={t('sfx.mod')} paramKey="p_arp_mod" min={-1} max={1} value={params.p_arp_mod} locked={isLocked('p_arp_mod')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_arp_mod", params.wave_type)} />
+                    <ParamSlider label={t('sfx.speed')} paramKey="p_arp_speed" min={0} max={1} value={params.p_arp_speed} locked={isLocked('p_arp_speed')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_arp_speed", params.wave_type)} />
                   </div>
                 </div>
 
@@ -1288,8 +1313,8 @@ export function SFXPanel() {
                 <div className="bg-gray-800/50 rounded-lg p-4">
                   <h4 className="font-semibold mb-3 text-blue-300 text-sm">Pulse Width</h4>
                   <div className="space-y-3">
-                    <ParamSlider label={t('sfx.duty')} paramKey="p_duty" min={-1} max={1} value={params.p_duty} locked={isLocked('p_duty')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                    <ParamSlider label={t('sfx.dutyRamp')} paramKey="p_duty_ramp" min={-1} max={1} value={params.p_duty_ramp} locked={isLocked('p_duty_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
+                    <ParamSlider label={t('sfx.duty')} paramKey="p_duty" min={-1} max={1} value={params.p_duty} locked={isLocked('p_duty')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_duty", params.wave_type)} />
+                    <ParamSlider label={t('sfx.dutyRamp')} paramKey="p_duty_ramp" min={-1} max={1} value={params.p_duty_ramp} locked={isLocked('p_duty_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_duty_ramp", params.wave_type)} />
                   </div>
                 </div>
 
@@ -1297,14 +1322,14 @@ export function SFXPanel() {
                 <div className="bg-gray-800/50 rounded-lg p-4">
                   <h4 className="font-semibold mb-3 text-blue-300 text-sm">Phaser</h4>
                   <div className="space-y-3">
-                    <ParamSlider label={t('sfx.offset')} paramKey="p_pha_offset" min={-1} max={1} value={params.p_pha_offset} locked={isLocked('p_pha_offset')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                    <ParamSlider label={t('sfx.ramp')} paramKey="p_pha_ramp" min={-1} max={1} value={params.p_pha_ramp} locked={isLocked('p_pha_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
+                    <ParamSlider label={t('sfx.offset')} paramKey="p_pha_offset" min={-1} max={1} value={params.p_pha_offset} locked={isLocked('p_pha_offset')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_pha_offset", params.wave_type)} />
+                    <ParamSlider label={t('sfx.ramp')} paramKey="p_pha_ramp" min={-1} max={1} value={params.p_pha_ramp} locked={isLocked('p_pha_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_pha_ramp", params.wave_type)} />
                   </div>
                 </div>
 
-                <ParamSlider label={t('sfx.reverbSize')} paramKey="reverb_size" min={0} max={1} value={params.reverb_size} locked={isLocked('reverb_size')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.reverbDecay')} paramKey="reverb_decay" min={0} max={1} value={params.reverb_decay} locked={isLocked('reverb_decay')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
-                <ParamSlider label={t('sfx.volume')} paramKey="sound_vol" min={0} max={1} value={params.sound_vol} locked={isLocked('sound_vol')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} />
+                <ParamSlider label={t('sfx.reverbSize')} paramKey="reverb_size" min={0} max={1} value={params.reverb_size} locked={isLocked('reverb_size')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("reverb_size", params.wave_type)} />
+                <ParamSlider label={t('sfx.reverbDecay')} paramKey="reverb_decay" min={0} max={1} value={params.reverb_decay} locked={isLocked('reverb_decay')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("reverb_decay", params.wave_type)} />
+                <ParamSlider label={t('sfx.volume')} paramKey="sound_vol" min={0} max={1} value={params.sound_vol} locked={isLocked('sound_vol')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("sound_vol", params.wave_type)} />
               </>
             )}
           </div>
