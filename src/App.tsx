@@ -11,7 +11,7 @@ import { SettingsModal } from './components/common/SettingsModal';
 import { AboutModal } from './components/common/AboutModal';
 import { LicensesModal } from './components/common/LicensesModal';
 import { useUIStore } from './stores/uiStore';
-import { useSettingsStore, type Theme } from './stores/settingsStore';
+import { useSettingsStore } from './stores/settingsStore';
 import { useSynthStore, loadFromShareLink } from './stores/synthStore';
 import { useEffect, useRef } from 'react';
 
