@@ -72,8 +72,10 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = ({
     ctx.fillStyle = '#0f1117';
     ctx.fillRect(0, 0, w, h);
 
+    const isLight = document.documentElement.classList.contains('light');
+
     // Center line
-    ctx.strokeStyle = '#374151';
+    ctx.strokeStyle = isLight ? '#94a3b8' : '#374151';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, h / 2);
@@ -81,7 +83,7 @@ export const WaveformDisplay: React.FC<WaveformDisplayProps> = ({
     ctx.stroke();
 
     // Subtle grid lines at ±50%
-    ctx.strokeStyle = '#1f2937';
+    ctx.strokeStyle = isLight ? '#cbd5e1' : '#1f2937';
     ctx.lineWidth = 1;
     [0.25, 0.75].forEach(y => {
       ctx.beginPath();

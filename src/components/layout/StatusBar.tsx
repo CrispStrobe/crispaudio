@@ -52,7 +52,7 @@ export function StatusBar() {
       style={{
         height: 28,
         background: 'var(--bg-secondary)',
-        borderTop: '1px solid #1e2d40',
+        borderTop: '1px solid var(--border-subtle)',
         fontSize: 11,
         color: '#64748b',
       }}
@@ -60,30 +60,30 @@ export function StatusBar() {
       {/* Left: mode */}
       <span
         className="font-medium tracking-wide uppercase"
-        style={{ color: '#475569', letterSpacing: '0.06em', fontSize: 10 }}
+        style={{ color: 'var(--text-muted)', letterSpacing: '0.06em', fontSize: 10 }}
       >
         {modeLabel}
       </span>
 
       {/* Divider */}
-      <div style={{ width: 1, height: 12, background: '#1e293b' }} />
+      <div style={{ width: 1, height: 12, background: 'var(--bg-tertiary)' }} />
 
       {/* Center: playback time */}
       <div className="flex-1 flex items-center justify-center gap-3">
         <span
           className="font-mono"
-          style={{ color: isPlaying ? '#60a5fa' : '#475569', fontSize: 11 }}
+          style={{ color: isPlaying ? '#60a5fa' : 'var(--text-muted)', fontSize: 11 }}
         >
           {formatTime(currentTime)}
         </span>
-        <span style={{ color: '#1e293b' }}>/</span>
+        <span style={{ color: 'var(--border-subtle)' }}>/</span>
         <span className="font-mono" style={{ fontSize: 11 }}>
           {formatTime(totalDuration)}
         </span>
       </div>
 
       {/* Divider */}
-      <div style={{ width: 1, height: 12, background: '#1e293b' }} />
+      <div style={{ width: 1, height: 12, background: 'var(--bg-tertiary)' }} />
 
       {/* Right: sample rate + bit depth */}
       <div className="flex items-center gap-3">
@@ -99,16 +99,17 @@ function StatusChip({ label, value }: { label: string; value: string }) {
     <span className="flex items-center gap-1">
       <span
         style={{
-          color: '#334155',
+          color: 'var(--text-muted)',
           fontSize: 9,
           fontWeight: 600,
           letterSpacing: '0.05em',
           textTransform: 'uppercase',
+          opacity: 0.7,
         }}
       >
         {label}
       </span>
-      <span className="font-mono" style={{ color: '#64748b', fontSize: 11 }}>
+      <span className="font-mono" style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
         {value}
       </span>
     </span>

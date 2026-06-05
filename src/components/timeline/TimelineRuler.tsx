@@ -66,12 +66,14 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cssWidth, cssHeight);
 
+    const isLight = document.documentElement.classList.contains('light');
+
     // Background
-    ctx.fillStyle = '#1e293b';
+    ctx.fillStyle = isLight ? '#e2e8f0' : '#1e293b';
     ctx.fillRect(0, 0, cssWidth, cssHeight);
 
     // Bottom border
-    ctx.strokeStyle = '#334155';
+    ctx.strokeStyle = isLight ? '#94a3b8' : '#334155';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, cssHeight - 0.5);
@@ -90,10 +92,10 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
     const firstMinor = Math.floor(timeStart / minorInterval) * minorInterval;
 
     ctx.font = '10px Inter, sans-serif';
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = isLight ? '#475569' : '#94a3b8';
 
     // Minor ticks
-    ctx.strokeStyle = '#334155';
+    ctx.strokeStyle = isLight ? '#94a3b8' : '#334155';
     ctx.lineWidth = 1;
     for (let t = firstMinor; t <= timeEnd + minorInterval; t += minorInterval) {
       const x = (t - scrollOffset) * zoomLevel;
@@ -105,7 +107,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
     }
 
     // Major ticks + labels
-    ctx.strokeStyle = '#475569';
+    ctx.strokeStyle = isLight ? '#64748b' : '#475569';
     ctx.lineWidth = 1;
     for (let t = firstMajor; t <= timeEnd + majorInterval; t += majorInterval) {
       const x = (t - scrollOffset) * zoomLevel;

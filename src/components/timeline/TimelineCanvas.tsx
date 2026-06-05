@@ -18,8 +18,13 @@ import { useTimeline, TRACK_HEIGHT } from '../../hooks/useTimeline';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const TRACK_COLORS_EVEN = '#1e293b';
-const TRACK_COLORS_ODD = '#172032';
+function getTrackColors() {
+  const isLight = document.documentElement.classList.contains('light');
+  return {
+    even: isLight ? '#e2e8f0' : '#1e293b',
+    odd: isLight ? '#dce5f0' : '#172032',
+  };
+}
 const WAVEFORM_LINE_WIDTH = 1;
 const PLAYHEAD_COLOR = '#ef4444';
 const SELECTION_COLOR = 'rgba(99, 102, 241, 0.18)';
@@ -376,11 +381,12 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
     // ── Track backgrounds ─────────────────────────────────────────────────
     for (let i = 0; i < Math.max(tracks.length, 1); i++) {
-      ctx.fillStyle = i % 2 === 0 ? TRACK_COLORS_EVEN : TRACK_COLORS_ODD;
+      const tc = getTrackColors();
+      ctx.fillStyle = i % 2 === 0 ? tc.even : tc.odd;
       ctx.fillRect(0, i * TRACK_HEIGHT, cssWidth, TRACK_HEIGHT);
 
       // Track divider
-      ctx.strokeStyle = '#0f172a';
+      ctx.strokeStyle = tc.even; // segment border matches track bg
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(0, (i + 1) * TRACK_HEIGHT - 0.5);

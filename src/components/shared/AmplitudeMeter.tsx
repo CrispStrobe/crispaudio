@@ -91,7 +91,7 @@ export const AmplitudeMeter: React.FC<AmplitudeMeterProps> = ({
       const trackY = 0;
 
       // Background track
-      ctx.fillStyle = '#1f2937';
+      ctx.fillStyle = document.documentElement.classList.contains('light') ? '#cbd5e1' : '#1f2937';
       ctx.roundRect(0, trackY, w, trackH, 2);
       ctx.fill();
 
@@ -177,7 +177,7 @@ export const AmplitudeMeter: React.FC<AmplitudeMeterProps> = ({
       const trackX = 0;
 
       // Background
-      ctx.fillStyle = '#1f2937';
+      ctx.fillStyle = document.documentElement.classList.contains('light') ? '#cbd5e1' : '#1f2937';
       ctx.roundRect(trackX, 0, trackW, h, 2);
       ctx.fill();
 
