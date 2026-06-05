@@ -35,19 +35,51 @@ jobs:
       - name: Initialize iOS project
         run: npx tauri ios init || true
 
+      - name: Disable code signing for unsigned build
+        run: |
+          PROJ="src-tauri/gen/apple/crispaudio.xcodeproj/project.pbxproj"
+          if [ -f "$PROJ" ]; then
+            sed -i '' 's/CODE_SIGN_IDENTITY = ".*"/CODE_SIGN_IDENTITY = "-"/g' "$PROJ"
+            sed -i '' 's/DEVELOPMENT_TEAM = ".*"/DEVELOPMENT_TEAM = ""/g' "$PROJ"
+            # Add CODE_SIGNING_ALLOWED = NO to build settings
+            sed -i '' 's/CODE_SIGN_IDENTITY = "-"/CODE_SIGN_IDENTITY = "-"; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO/g' "$PROJ"
+          fi
+
       - name: Build iOS (unsigned)
         run: |
-          npx tauri ios build --export-method debugging \
-            || echo "::warning::iOS build failed — may need Xcode project adjustments"
+          cd src-tauri/gen/apple
+          xcodebuild \
+            -project crispaudio.xcodeproj \
+            -scheme crispaudio_iOS \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ARCHS=arm64 \
+            -derivedDataPath build \
+            build \
+            || echo "::warning::iOS xcodebuild failed"
+
+      - name: Package .app for sideloading
+        if: always()
+        run: |
+          APP_PATH=$(find src-tauri/gen/apple/build -name "*.app" -type d 2>/dev/null | head -1)
+          if [ -n "$APP_PATH" ]; then
+            mkdir -p artifacts
+            cd "$(dirname "$APP_PATH")"
+            tar czf "$GITHUB_WORKSPACE/artifacts/CrispAudio-ios-arm64.app.tar.gz" "$(basename "$APP_PATH")"
+            echo "Packaged: $APP_PATH"
+          else
+            echo "::warning::No .app bundle found"
+          fi
 
       - name: Upload iOS artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: crispaudio-ios
-          path: |
-            src-tauri/gen/apple/build/**/*.app
-            src-tauri/gen/apple/build/**/*.ipa
+          path: artifacts/
           if-no-files-found: warn
           retention-days: 14
 
