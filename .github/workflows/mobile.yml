@@ -35,36 +35,38 @@ jobs:
       - name: Initialize iOS project
         run: npx tauri ios init || true
 
-      - name: Disable code signing for unsigned build
+      - name: Patch Xcode project for unsigned build
         run: |
+          # Write an xcconfig that disables all signing
+          cat > src-tauri/gen/apple/unsigned.xcconfig <<'XCFG'
+          CODE_SIGN_IDENTITY = -
+          CODE_SIGNING_REQUIRED = NO
+          CODE_SIGNING_ALLOWED = NO
+          DEVELOPMENT_TEAM =
+          XCFG
+          # Inject xcconfig into the generated project
           PROJ="src-tauri/gen/apple/crispaudio.xcodeproj/project.pbxproj"
           if [ -f "$PROJ" ]; then
-            sed -i '' 's/CODE_SIGN_IDENTITY = ".*"/CODE_SIGN_IDENTITY = "-"/g' "$PROJ"
-            sed -i '' 's/DEVELOPMENT_TEAM = ".*"/DEVELOPMENT_TEAM = ""/g' "$PROJ"
-            # Add CODE_SIGNING_ALLOWED = NO to build settings
-            sed -i '' 's/CODE_SIGN_IDENTITY = "-"/CODE_SIGN_IDENTITY = "-"; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO/g' "$PROJ"
+            sed -i '' 's/DEVELOPMENT_TEAM = "[^"]*"/DEVELOPMENT_TEAM = ""/g' "$PROJ"
           fi
 
       - name: Build iOS (unsigned)
+        env:
+          APPLE_DEVELOPMENT_TEAM: ""
+          TAURI_APPLE_DEVELOPMENT_TEAM: ""
         run: |
-          cd src-tauri/gen/apple
-          xcodebuild \
-            -project crispaudio.xcodeproj \
-            -scheme crispaudio_iOS \
-            -sdk iphoneos \
-            -configuration Release \
+          npx tauri ios build \
+            -- \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            ARCHS=arm64 \
-            -derivedDataPath build \
-            build \
-            || echo "::warning::iOS xcodebuild failed"
+            || echo "::warning::iOS build failed — see logs for details"
 
       - name: Package .app for sideloading
         if: always()
         run: |
-          APP_PATH=$(find src-tauri/gen/apple/build -name "*.app" -type d 2>/dev/null | head -1)
+          # Search multiple possible output locations
+          APP_PATH=$(find src-tauri/gen/apple -name "*.app" -type d 2>/dev/null | head -1)
           if [ -n "$APP_PATH" ]; then
             mkdir -p artifacts
             cd "$(dirname "$APP_PATH")"
