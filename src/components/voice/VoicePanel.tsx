@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
 // CrispAudio — VoicePanel
-// Voice processor panel: file drop → presets → A/B → tabs → visualisations.
+// Voice processor panel matching VoiceLab layout:
+// Header → File drop → Presets → A/B → Actions → Visualizations → Tabbed params
 // ---------------------------------------------------------------------------
 
 import { useCallback, useRef, useState, useEffect } from 'react';
@@ -11,39 +12,53 @@ import {
   Square,
   Download,
   ArrowLeftRight,
+  Mic,
+  Shuffle,
+  Settings,
+  Waves,
+  Zap,
+  Activity,
 } from 'lucide-react';
 import { useVoiceStore } from '../../stores/voiceStore';
 import { VoiceEngine } from '../../audio/engine/VoiceEngine';
 import type { VoiceSettings, VoicePresetName } from '../../types/voicelab';
 
-// Single shared offline DSP engine for the voice processor.
 const voiceEngine = new VoiceEngine();
 
 // ---------------------------------------------------------------------------
-// Preset labels
+// Preset config
 // ---------------------------------------------------------------------------
 
 const PRESET_NAMES: VoicePresetName[] = [
-  'original',
-  'classicRobot',
-  'deepRobot',
-  'alien',
-  'cyborg',
-  'radio',
-  'metallic',
-  'demon',
-  'chipmunk',
+  'original', 'classicRobot', 'deepRobot', 'alien', 'cyborg',
+  'radio', 'metallic', 'demon', 'chipmunk',
 ];
 
+const PRESET_COLORS: Record<VoicePresetName, string> = {
+  original: 'bg-slate-600',
+  classicRobot: 'bg-red-600',
+  deepRobot: 'bg-purple-600',
+  alien: 'bg-green-600',
+  cyborg: 'bg-blue-600',
+  radio: 'bg-yellow-600',
+  metallic: 'bg-orange-600',
+  demon: 'bg-pink-600',
+  chipmunk: 'bg-indigo-600',
+};
+
+const PRESET_SHORTCUTS: Record<VoicePresetName, string> = {
+  original: '1', classicRobot: '2', deepRobot: '3', alien: '4', cyborg: '5',
+  radio: '6', metallic: '7', demon: '8', chipmunk: '9',
+};
+
 // ---------------------------------------------------------------------------
-// Parameter tab definitions
+// Tab definitions
 // ---------------------------------------------------------------------------
 
 type TabId = 'pitch' | 'modulation' | 'effects' | 'dynamics';
 
 interface ParamDef {
   key: keyof VoiceSettings;
-  // i18n key resolved at render time (voice.* namespace).
   labelKey: string;
   min: number;
   max: number;
@@ -51,11 +66,9 @@ interface ParamDef {
   formatValue?: (v: number) => string;
 }
 
-// Each tab's `labelKey` resolves to an existing voice.* key at render time.
-const TABS: { id: TabId; labelKey: string; params: ParamDef[] }[] = [
+const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ className?: string }>; params: ParamDef[] }[] = [
   {
-    id: 'pitch',
-    labelKey: 'voice.pitch',
+    id: 'pitch', label: 'Pitch & Speed', Icon: Settings,
     params: [
       { key: 'pitchShift', labelKey: 'voice.pitchShift', min: -24, max: 24, step: 0.5, formatValue: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)} st` },
       { key: 'formantShift', labelKey: 'voice.formantShift', min: -1, max: 1, step: 0.01 },
@@ -65,8 +78,7 @@ const TABS: { id: TabId; labelKey: string; params: ParamDef[] }[] = [
     ],
   },
   {
-    id: 'modulation',
-    labelKey: 'voice.modulation',
+    id: 'modulation', label: 'Modulation', Icon: Waves,
     params: [
       { key: 'ringModFreq', labelKey: 'voice.ringModFreq', min: 1, max: 500, step: 1, formatValue: (v) => `${Math.round(v)} Hz` },
       { key: 'ringModMix', labelKey: 'voice.ringModMix', min: 0, max: 1, step: 0.01 },
@@ -78,8 +90,7 @@ const TABS: { id: TabId; labelKey: string; params: ParamDef[] }[] = [
     ],
   },
   {
-    id: 'effects',
-    labelKey: 'voice.effects',
+    id: 'effects', label: 'Effects', Icon: Zap,
     params: [
       { key: 'delayTime', labelKey: 'voice.delayTime', min: 0, max: 1, step: 0.01, formatValue: (v) => `${(v * 1000).toFixed(0)} ms` },
       { key: 'delayFeedback', labelKey: 'voice.delayFeedback', min: 0, max: 0.99, step: 0.01 },
@@ -92,8 +103,7 @@ const TABS: { id: TabId; labelKey: string; params: ParamDef[] }[] = [
     ],
   },
   {
-    id: 'dynamics',
-    labelKey: 'voice.dynamics',
+    id: 'dynamics', label: 'Dynamics', Icon: Activity,
     params: [
       { key: 'compThreshold', labelKey: 'voice.compThreshold', min: -60, max: 0, step: 0.5, formatValue: (v) => `${v.toFixed(1)} dB` },
       { key: 'compRatio', labelKey: 'voice.compRatio', min: 1, max: 20, step: 0.5, formatValue: (v) => `${v.toFixed(1)}:1` },
@@ -108,36 +118,10 @@ const TABS: { id: TabId; labelKey: string; params: ParamDef[] }[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Helpers / shared sub-components
+// Parameter slider card
 // ---------------------------------------------------------------------------
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1" style={{ marginBottom: 8 }}>
-      <div className="flex items-center gap-2" style={{ marginBottom: 4 }}>
-        <span
-          style={{
-            fontSize: 9,
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: '#22c55e',
-          }}
-        >
-          {title}
-        </span>
-        <div style={{ flex: 1, height: 1, background: '#1e2d40' }} />
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function SliderRow({
-  def,
-  value,
-  onChange,
-}: {
+function ParamSlider({ def, value, onChange }: {
   def: ParamDef;
   value: number;
   onChange: (key: keyof VoiceSettings, v: number) => void;
@@ -145,20 +129,11 @@ function SliderRow({
   const { t } = useTranslation();
   const display = def.formatValue ? def.formatValue(value) : value.toFixed(3);
   return (
-    <div className="flex items-center gap-2" style={{ height: 22 }}>
-      <span
-        style={{
-          width: 110,
-          fontSize: 10,
-          color: '#64748b',
-          flexShrink: 0,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >
-        {t(def.labelKey)}
-      </span>
+    <div className="bg-gray-800/50 rounded-lg p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium text-gray-200">{t(def.labelKey)}</span>
+        <span className="font-mono text-xs text-gray-400 w-16 text-right">{display}</span>
+      </div>
       <input
         type="range"
         min={def.min}
@@ -166,34 +141,20 @@ function SliderRow({
         step={def.step ?? 0.001}
         value={value}
         onChange={(e) => onChange(def.key, parseFloat(e.target.value))}
-        style={{ flex: 1, height: 4, accentColor: '#22c55e', cursor: 'pointer' }}
+        className="w-full slider-styled"
       />
-      <span
-        className="font-mono"
-        style={{ width: 54, fontSize: 10, color: '#475569', textAlign: 'right', flexShrink: 0 }}
-      >
-        {display}
-      </span>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Waveform canvas
+// Visualizations
 // ---------------------------------------------------------------------------
 
-function WaveformCanvas({
-  buffer,
-  width = 200,
-  height = 56,
-  color = '#22c55e',
-  label,
-}: {
+function WaveformCanvas({ buffer, color, title }: {
   buffer: AudioBuffer | null;
-  width?: number;
-  height?: number;
-  color?: string;
-  label?: string;
+  color: string;
+  title: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -202,59 +163,63 @@ function WaveformCanvas({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
 
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = '#0a1120';
-    ctx.fillRect(0, 0, width, height);
+    const gradient = ctx.createLinearGradient(0, 0, 0, h);
+    gradient.addColorStop(0, '#1f2937');
+    gradient.addColorStop(1, '#111827');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, w, h);
 
-    ctx.strokeStyle = '#1e2d40';
+    // Grid
+    ctx.strokeStyle = '#374151';
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, height / 2);
-    ctx.lineTo(width, height / 2);
-    ctx.stroke();
+    for (let i = 0; i < 5; i++) {
+      const y = (i / 4) * h;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
 
-    if (!buffer) return;
+    if (!buffer) {
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No audio', w / 2, h / 2);
+      ctx.textAlign = 'left';
+      return;
+    }
+
     const data = buffer.getChannelData(0);
-    const step = Math.max(1, Math.floor(data.length / width));
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    for (let x = 0; x < width; x++) {
-      const s = data[Math.min(x * step, data.length - 1)];
-      const y = ((1 - s) / 2) * height;
-      if (x === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+    const step = data.length / w;
+    for (let i = 0; i < w; i++) {
+      const sample = data[Math.floor(i * step)] || 0;
+      const y = (sample * h * 0.4) + (h / 2);
+      if (i === 0) ctx.moveTo(i, y);
+      else ctx.lineTo(i, y);
     }
     ctx.stroke();
-  }, [buffer, width, height, color]);
+  }, [buffer, color]);
 
   return (
     <div>
-      {label && (
-        <div style={{ fontSize: 9, color: '#334155', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          {label}
-        </div>
-      )}
+      <h3 className="text-sm font-semibold mb-2 text-white">{title}</h3>
       <canvas
         ref={canvasRef}
-        width={width}
-        height={height}
-        style={{ display: 'block', width: '100%', height, borderRadius: 4 }}
+        width={400}
+        height={120}
+        className="w-full h-24 rounded border border-gray-700"
       />
     </div>
   );
 }
 
-function SpectrumCanvas({
-  buffer,
-  width = 200,
-  height = 56,
-}: {
-  buffer: AudioBuffer | null;
-  width?: number;
-  height?: number;
-}) {
+function SpectrumCanvas({ buffer }: { buffer: AudioBuffer | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -262,109 +227,133 @@ function SpectrumCanvas({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
 
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = '#0a1120';
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(0, 0, w, h);
 
-    if (!buffer) return;
+    if (!buffer) {
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No audio', w / 2, h / 2);
+      ctx.textAlign = 'left';
+      return;
+    }
+
     const data = buffer.getChannelData(0);
     const numBars = 32;
-    const chunkSize = Math.floor(data.length / numBars);
-    const gradient = ctx.createLinearGradient(0, height, 0, 0);
-    gradient.addColorStop(0, '#166534');
-    gradient.addColorStop(0.6, '#22c55e');
-    gradient.addColorStop(1, '#86efac');
-    const barW = Math.floor(width / numBars) - 1;
+    const chunkSize = Math.max(1, Math.floor(data.length / numBars));
+    const barW = Math.floor(w / numBars) - 1;
+
+    // Compute RMS per chunk
+    const bars: number[] = [];
+    let maxRms = 0;
     for (let i = 0; i < numBars; i++) {
       let sum = 0;
       for (let j = 0; j < chunkSize; j++) {
         const s = data[i * chunkSize + j] ?? 0;
         sum += s * s;
       }
-      const rms = Math.sqrt(sum / chunkSize);
-      const barH = Math.min(height, rms * height * 4);
-      ctx.fillStyle = gradient;
-      ctx.fillRect(i * (barW + 1), height - barH, barW, barH);
+      const r = Math.sqrt(sum / chunkSize);
+      bars.push(r);
+      if (r > maxRms) maxRms = r;
     }
-  }, [buffer, width, height]);
+
+    if (maxRms === 0) return;
+
+    for (let i = 0; i < numBars; i++) {
+      const norm = bars[i] / maxRms;
+      const barH = Math.min(h, norm * h * 0.85);
+      const hue = 240 - (i / numBars) * 120;
+      const lightness = 40 + norm * 30;
+      ctx.fillStyle = `hsl(${hue}, 70%, ${lightness}%)`;
+      ctx.fillRect(i * (barW + 1), h - barH, barW, barH);
+    }
+  }, [buffer]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={width}
-      height={height}
-      style={{ display: 'block', width: '100%', height, borderRadius: 4 }}
-    />
+    <div>
+      <h3 className="text-sm font-semibold mb-2 text-white">Frequency Spectrum</h3>
+      <canvas
+        ref={canvasRef}
+        width={200}
+        height={100}
+        className="w-full h-20 rounded border border-gray-700"
+      />
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// A/B controls
-// ---------------------------------------------------------------------------
+function LevelsMeter({ buffer }: { buffer: AudioBuffer | null }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-function ABControls() {
-  const { t } = useTranslation();
-  const { activeSlot, morphAmount, setActiveSlot, setMorphAmount, swapSlots } =
-    useVoiceStore();
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(0, 0, w, h);
+
+    if (!buffer) {
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No audio', w / 2, h / 2);
+      ctx.textAlign = 'left';
+      return;
+    }
+
+    const data = buffer.getChannelData(0);
+    let peak = 0;
+    let rmsSum = 0;
+    for (let i = 0; i < data.length; i++) {
+      const s = Math.abs(data[i]);
+      if (s > peak) peak = s;
+      rmsSum += s * s;
+    }
+    const rms = Math.sqrt(rmsSum / data.length);
+
+    const dbRange = 60;
+    const peakDb = peak > 0 ? 20 * Math.log10(peak) : -100;
+    const rmsDb = rms > 0 ? 20 * Math.log10(rms) : -100;
+    const peakH = Math.max(0, (peakDb + dbRange) / dbRange) * h;
+    const rmsH = Math.max(0, (rmsDb + dbRange) / dbRange) * h;
+
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(0, h - rmsH, w * 0.4, rmsH);
+
+    ctx.fillStyle = peak > 0.95 ? '#ef4444' : '#10b981';
+    ctx.fillRect(w * 0.5, h - peakH, w * 0.4, peakH);
+
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '10px monospace';
+    ctx.fillText('RMS', 2, 12);
+    ctx.fillText('PEAK', w * 0.5 + 2, 12);
+    ctx.fillText(`${rmsDb.toFixed(1)}dB`, 2, h - 2);
+    ctx.fillText(`${peakDb.toFixed(1)}dB`, w * 0.5 + 2, h - 2);
+  }, [buffer]);
 
   return (
-    <div
-      className="flex items-center gap-3 px-3 py-2 rounded"
-      style={{ background: '#0d1929', border: '1px solid #1e2d40' }}
-    >
-      {(['A', 'B'] as const).map((slot) => (
-        <button
-          key={slot}
-          onClick={() => setActiveSlot(slot)}
-          className="font-mono font-bold rounded"
-          style={{
-            width: 28,
-            height: 24,
-            fontSize: 12,
-            background: activeSlot === slot ? '#166534' : '#1e293b',
-            color: activeSlot === slot ? '#86efac' : '#475569',
-            border: `1px solid ${activeSlot === slot ? '#22c55e' : '#334155'}`,
-            cursor: 'pointer',
-          }}
-        >
-          {slot}
-        </button>
-      ))}
-      <span style={{ fontSize: 10, color: '#475569' }}>{t('common.morph')}</span>
-      <input
-        type="range"
-        min={0}
-        max={1}
-        step={0.01}
-        value={morphAmount}
-        onChange={(e) => setMorphAmount(parseFloat(e.target.value))}
-        style={{ width: 80, height: 4, accentColor: '#8b5cf6' }}
+    <div>
+      <h3 className="text-sm font-semibold mb-2 text-white">Signal Level</h3>
+      <canvas
+        ref={canvasRef}
+        width={200}
+        height={100}
+        className="w-full h-20 rounded border border-gray-700"
       />
-      <span className="font-mono" style={{ fontSize: 10, color: '#475569', width: 30 }}>
-        {Math.round(morphAmount * 100)}%
-      </span>
-      <button
-        onClick={swapSlots}
-        title={t('voice.swapAB')}
-        className="flex items-center justify-center rounded"
-        style={{
-          width: 28,
-          height: 24,
-          background: '#1e293b',
-          border: '1px solid #334155',
-          color: '#64748b',
-          cursor: 'pointer',
-        }}
-      >
-        <ArrowLeftRight size={12} />
-      </button>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// File drop zone
+// File drop zone (larger, more inviting)
 // ---------------------------------------------------------------------------
 
 function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
@@ -382,7 +371,7 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
       setFilename(file.name);
       await ctx.close();
     } catch {
-      // silently ignore decode errors in the UI
+      // silently ignore decode errors
     }
   }
 
@@ -397,55 +386,49 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
         if (file) loadFile(file);
       }}
       onClick={() => inputRef.current?.click()}
-      className="flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all"
-      style={{
-        height: 72,
-        border: `2px dashed ${dragging ? '#22c55e' : '#1e2d40'}`,
-        background: dragging ? '#0d2318' : '#0a1120',
-        color: dragging ? '#86efac' : '#475569',
-      }}
+      className={`flex flex-col items-center justify-center rounded-2xl cursor-pointer transition-all border-2 border-dashed ${
+        dragging
+          ? 'border-blue-500 bg-blue-500/10 scale-[1.02]'
+          : 'border-gray-600/30 bg-gray-800/30 hover:border-gray-500/50'
+      }`}
+      style={{ padding: '2rem', minHeight: filename ? 80 : 120 }}
     >
       <input
         ref={inputRef}
         type="file"
-        accept="audio/*"
+        accept="audio/*,.m4a,.mp3,.wav,.aac,.flac"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) loadFile(file);
         }}
       />
-      <Upload size={20} style={{ marginBottom: 4, opacity: 0.7 }} />
-      <span style={{ fontSize: 11 }}>
-        {filename ?? t('voice.loadFile')}
+      <Upload size={28} className={`mb-2 ${dragging ? 'text-blue-400' : 'text-gray-500'}`} />
+      <span className={`text-sm ${dragging ? 'text-blue-300' : 'text-gray-400'}`}>
+        {filename ? filename : t('voice.loadFile')}
       </span>
+      {!filename && (
+        <span className="text-xs text-gray-500 mt-1">Drop audio file or click to upload</span>
+      )}
       {filename && (
-        <span style={{ fontSize: 9, color: '#22c55e', marginTop: 2 }}>{filename}</span>
+        <span className="text-xs text-green-400 mt-1">Loaded — ready to process</span>
       )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Main panel
+// Main VoicePanel
 // ---------------------------------------------------------------------------
 
 export function VoicePanel() {
   const { t } = useTranslation();
   const store = useVoiceStore();
   const {
-    settingsA,
-    settingsB,
-    activeSlot,
-    sourceBuffer,
-    processedBuffer,
-    isProcessing,
-    selectedPreset,
-    setSourceBuffer,
-    setSettings,
-    loadPreset,
-    setIsProcessing,
-    setProcessedBuffer,
+    settingsA, settingsB, activeSlot, morphAmount,
+    sourceBuffer, processedBuffer, isProcessing, selectedPreset,
+    setSourceBuffer, setSettings, loadPreset, setIsProcessing,
+    setProcessedBuffer, setActiveSlot, setMorphAmount, swapSlots,
   } = store;
 
   const settings = activeSlot === 'A' ? settingsA : settingsB;
@@ -479,7 +462,6 @@ export function VoicePanel() {
     setIsPlaying(false);
   }, []);
 
-  // Run the source buffer through the full voice effect chain (offline render).
   const handleProcess = useCallback(async () => {
     if (!sourceBuffer) return;
     setIsProcessing(true);
@@ -489,7 +471,6 @@ export function VoicePanel() {
       setProcessedBuffer(out);
     } catch (err) {
       console.error('Voice processing failed:', err);
-      // Fall back to the unprocessed source so playback/export still work.
       setProcessedBuffer(sourceBuffer);
     } finally {
       setIsProcessing(false);
@@ -525,193 +506,208 @@ export function VoicePanel() {
     a.click(); URL.revokeObjectURL(url);
   }
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const presetKeys: Record<string, VoicePresetName> = {
+      '1': 'original', '2': 'classicRobot', '3': 'deepRobot', '4': 'alien',
+      '5': 'cyborg', '6': 'radio', '7': 'metallic', '8': 'demon', '9': 'chipmunk',
+    };
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      const key = e.key.toLowerCase();
+      if (key === ' ') {
+        e.preventDefault();
+        if (isPlaying) handleStop();
+        else handlePlay(processedBuffer ?? sourceBuffer);
+      } else if (key === 'a') {
+        setActiveSlot('A');
+      } else if (key === 'b') {
+        setActiveSlot('B');
+      } else if (key === 'p') {
+        handleProcess();
+      } else if (presetKeys[key]) {
+        loadPreset(presetKeys[key]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isPlaying, handlePlay, handleStop, handleProcess, setActiveSlot, loadPreset, processedBuffer, sourceBuffer]);
+
   const currentTab = TABS.find((t) => t.id === activeTab)!;
+  const hasAudio = !!(sourceBuffer || processedBuffer);
 
   return (
-    <div className="flex flex-col h-full" style={{ background: '#0f172a', overflow: 'hidden' }}>
-      {/* ── Toolbar ───────────────────────────────────────────────── */}
-      <div
-        className="flex items-center gap-3 px-4 py-2 shrink-0"
-        style={{ borderBottom: '1px solid #1e2d40', background: '#0a1120' }}
-      >
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: '#22c55e',
-          }}
-        >
-          {t('panels.voice')}
-        </span>
-        <div style={{ flex: 1 }} />
-        <button
-          onClick={isPlaying ? handleStop : () => handlePlay(processedBuffer ?? sourceBuffer)}
-          disabled={!sourceBuffer && !processedBuffer}
-          className="flex items-center gap-1.5 px-3 py-1 rounded font-medium"
-          style={{
-            background: isPlaying ? '#7f1d1d' : (sourceBuffer || processedBuffer ? '#14532d' : '#1e293b'),
-            color: isPlaying ? '#fca5a5' : (sourceBuffer || processedBuffer ? '#86efac' : '#334155'),
-            border: `1px solid ${isPlaying ? '#dc2626' : (sourceBuffer || processedBuffer ? '#22c55e' : '#334155')}`,
-            fontSize: 11,
-            cursor: (sourceBuffer || processedBuffer) ? 'pointer' : 'not-allowed',
-          }}
-        >
-          {isPlaying ? <Square size={12} /> : <Play size={12} />}
-          {isPlaying ? t('voice.stop') : t('voice.play')}
-        </button>
-        <button
-          onClick={handleProcess}
-          disabled={!sourceBuffer || isProcessing}
-          className="flex items-center gap-1.5 px-3 py-1 rounded font-medium"
-          style={{
-            background: sourceBuffer && !isProcessing ? '#1d4ed8' : '#1e293b',
-            color: sourceBuffer && !isProcessing ? '#bfdbfe' : '#334155',
-            border: `1px solid ${sourceBuffer && !isProcessing ? '#3b82f6' : '#334155'}`,
-            fontSize: 11,
-            cursor: sourceBuffer && !isProcessing ? 'pointer' : 'not-allowed',
-          }}
-        >
-          {isProcessing ? t('voice.processing') : t('voice.process')}
-        </button>
-        <button
-          onClick={downloadProcessed}
-          disabled={!processedBuffer}
-          className="flex items-center gap-1.5 px-3 py-1 rounded font-medium"
-          style={{
-            background: processedBuffer ? '#166534' : '#1e293b',
-            color: processedBuffer ? '#86efac' : '#334155',
-            border: `1px solid ${processedBuffer ? '#22c55e' : '#334155'}`,
-            fontSize: 11,
-            cursor: processedBuffer ? 'pointer' : 'not-allowed',
-          }}
-        >
-          <Download size={12} />
-          {t('voice.export')}
-        </button>
-      </div>
+    <div className="h-full overflow-y-auto" style={{ background: 'linear-gradient(to bottom right, #0f172a, #111827, #0c1929)' }}>
+      <div className="max-w-7xl mx-auto p-6">
 
-      {/* ── Drop zone ─────────────────────────────────────────────── */}
-      <div className="px-4 py-2 shrink-0" style={{ borderBottom: '1px solid #1e2d40' }}>
-        <FileDropZone onFile={setSourceBuffer} />
-      </div>
+        {/* ── Header ──────────────────────────────────────────────── */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
+            {t('panels.voice')}
+          </h1>
+          <p className="text-gray-400 text-base">Voice Synthesis &amp; Real-time Processing</p>
+          <p className="text-gray-500 text-xs mt-2">
+            Shortcuts: Space (play) · 1-9 (presets) · A/B (slots) · P (process)
+          </p>
+        </div>
 
-      {/* ── Preset bar ────────────────────────────────────────────── */}
-      <div
-        className="flex items-center gap-1 px-4 py-2 shrink-0 flex-wrap"
-        style={{ borderBottom: '1px solid #1e2d40', background: '#0d1929' }}
-      >
-        {PRESET_NAMES.map((name) => (
-          <button
-            key={name}
-            onClick={() => loadPreset(name)}
-            className="rounded transition-all"
-            style={{
-              padding: '2px 8px',
-              fontSize: 10,
-              fontWeight: 500,
-              background: selectedPreset === name ? '#166534' : '#1e293b',
-              color: selectedPreset === name ? '#86efac' : '#64748b',
-              border: `1px solid ${selectedPreset === name ? '#22c55e' : '#334155'}`,
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              if (selectedPreset !== name) {
-                (e.currentTarget as HTMLButtonElement).style.background = '#166534';
-                (e.currentTarget as HTMLButtonElement).style.color = '#86efac';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = '#22c55e';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (selectedPreset !== name) {
-                (e.currentTarget as HTMLButtonElement).style.background = '#1e293b';
-                (e.currentTarget as HTMLButtonElement).style.color = '#64748b';
-                (e.currentTarget as HTMLButtonElement).style.borderColor = '#334155';
-              }
-            }}
-          >
-            {t(`voice.preset_${name}`)}
-          </button>
-        ))}
-      </div>
+        {/* ── File Drop Zone ──────────────────────────────────────── */}
+        <div className="card mb-6">
+          <FileDropZone onFile={setSourceBuffer} />
+        </div>
 
-      {/* ── A/B row ───────────────────────────────────────────────── */}
-      <div className="px-4 py-2 shrink-0" style={{ borderBottom: '1px solid #1e2d40' }}>
-        <ABControls />
-      </div>
-
-      {/* ── 2-column body ─────────────────────────────────────────── */}
-      <div className="flex flex-1 min-h-0">
-        {/* Left: tabbed parameter area */}
-        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          {/* Tab strip */}
-          <div
-            className="flex items-center gap-1 px-4 shrink-0"
-            style={{ background: '#0a1120', borderBottom: '1px solid #1e2d40', paddingTop: 6, paddingBottom: 0 }}
-          >
-            {TABS.map((tab) => (
+        {/* ── Voice Presets ────────────────────────────────────────── */}
+        <div className="card mb-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
+            <Mic className="w-5 h-5" />
+            Voice Presets
+          </h3>
+          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
+            {PRESET_NAMES.map((name) => (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="transition-all"
-                style={{
-                  padding: '4px 14px',
-                  fontSize: 11,
-                  fontWeight: activeTab === tab.id ? 600 : 400,
-                  background: 'transparent',
-                  color: activeTab === tab.id ? '#22c55e' : '#475569',
-                  border: 'none',
-                  borderBottom: `2px solid ${activeTab === tab.id ? '#22c55e' : 'transparent'}`,
-                  cursor: 'pointer',
-                  marginBottom: -1,
-                }}
+                key={name}
+                onClick={() => loadPreset(name)}
+                className={`p-3 rounded-lg transition-all transform hover:scale-105 text-sm font-semibold shadow-lg text-white ${
+                  selectedPreset === name
+                    ? `${PRESET_COLORS[name]} ring-2 ring-white/30`
+                    : `${PRESET_COLORS[name]} hover:opacity-80`
+                }`}
               >
-                {t(tab.labelKey)}
+                {t(`voice.preset_${name}`)}
+                <span className="block text-[10px] opacity-70 mt-0.5">({PRESET_SHORTCUTS[name]})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── A/B Controls ────────────────────────────────────────── */}
+        <div className="card mb-6">
+          <div className="flex flex-wrap justify-center items-center gap-4">
+            {/* Slots */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActiveSlot('A')}
+                className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
+                  activeSlot === 'A' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                Slot A
+              </button>
+              <button
+                onClick={swapSlots}
+                className="p-2 rounded-lg transition-colors bg-purple-600 hover:bg-purple-500 text-white"
+                title="Swap slots"
+              >
+                <ArrowLeftRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setActiveSlot('B')}
+                className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
+                  activeSlot === 'B' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                Slot B
+              </button>
+            </div>
+
+            {/* Morph */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Morph:</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={morphAmount}
+                onChange={(e) => setMorphAmount(parseFloat(e.target.value))}
+                className="w-20 slider-styled"
+              />
+              <span className="text-xs text-white bg-gray-800 px-2 py-1 rounded w-12 text-center font-mono">
+                {Math.round(morphAmount * 100)}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Action Buttons ──────────────────────────────────────── */}
+        <div className="flex flex-wrap justify-center gap-3 mb-6">
+          <button
+            onClick={isPlaying ? handleStop : () => handlePlay(processedBuffer ?? sourceBuffer)}
+            disabled={!hasAudio}
+            className={`px-6 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
+              isPlaying
+                ? 'bg-red-600 hover:bg-red-700 text-white'
+                : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white'
+            }`}
+          >
+            {isPlaying ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+            {isPlaying ? t('voice.stop') : t('voice.play')}
+          </button>
+
+          <button
+            onClick={handleProcess}
+            disabled={!sourceBuffer || isProcessing}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+          >
+            <Shuffle className="w-5 h-5" />
+            {isProcessing ? t('voice.processing') : t('voice.process')}
+          </button>
+
+          <button
+            onClick={downloadProcessed}
+            disabled={!processedBuffer}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+          >
+            <Download className="w-5 h-5" />
+            {t('voice.export')}
+          </button>
+        </div>
+
+        {/* ── Visualizations ──────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          <div className="card">
+            <WaveformCanvas buffer={sourceBuffer} color="#3b82f6" title="Original Waveform" />
+          </div>
+          <div className="card">
+            <WaveformCanvas buffer={processedBuffer} color="#a855f7" title="Processed Waveform" />
+          </div>
+          <div className="card">
+            <SpectrumCanvas buffer={processedBuffer ?? sourceBuffer} />
+          </div>
+          <div className="card">
+            <LevelsMeter buffer={processedBuffer ?? sourceBuffer} />
+          </div>
+        </div>
+
+        {/* ── Tabbed Parameters ───────────────────────────────────── */}
+        <div className="card">
+          <div className="tab-bar mb-6">
+            {TABS.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`tab-btn ${activeTab === id ? 'active' : ''}`}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
               </button>
             ))}
           </div>
 
-          {/* Parameter sliders */}
-          <div className="flex-1 overflow-y-auto px-4 py-3">
-            <Section title={t(currentTab.labelKey)}>
-              {currentTab.params.map((def) => (
-                <SliderRow
-                  key={def.key}
-                  def={def}
-                  value={settings[def.key] as number}
-                  onChange={(key, v) => setSettings({ [key]: v })}
-                />
-              ))}
-            </Section>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {currentTab.params.map((def) => (
+              <ParamSlider
+                key={def.key}
+                def={def}
+                value={settings[def.key] as number}
+                onChange={(key, v) => setSettings({ [key]: v })}
+              />
+            ))}
           </div>
         </div>
 
-        {/* Right: visualisations */}
-        <div
-          className="flex flex-col gap-3 px-3 py-3"
-          style={{ width: 220, borderLeft: '1px solid #1e2d40', flexShrink: 0 }}
-        >
-          <Section title={t('voice.source')}>
-            <WaveformCanvas
-              buffer={sourceBuffer}
-              width={196}
-              height={52}
-              color="#64748b"
-            />
-          </Section>
-          <Section title={t('voice.processed')}>
-            <WaveformCanvas
-              buffer={processedBuffer}
-              width={196}
-              height={52}
-              color="#22c55e"
-            />
-          </Section>
-          <Section title={t('voice.spectrum')}>
-            <SpectrumCanvas buffer={processedBuffer ?? sourceBuffer} width={196} height={52} />
-          </Section>
-        </div>
       </div>
     </div>
   );

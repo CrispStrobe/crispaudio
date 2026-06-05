@@ -125,7 +125,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = ({ trackIndex }) => {
             onChange={(e) =>
               updateTrack(track.id, { volume: parseFloat(e.target.value) })
             }
-            className="flex-1 h-1 appearance-none bg-gray-700 rounded [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-300 cursor-pointer"
+            className="flex-1 slider-styled"
             aria-label={t('timeline.trackVolume')}
           />
         </div>
@@ -366,7 +366,7 @@ export const TimelinePanel: React.FC = () => {
           step={5}
           value={store.zoomLevel}
           onChange={(e) => store.setZoomLevel(parseFloat(e.target.value))}
-          className="w-24 h-1.5 appearance-none bg-gray-700 rounded [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-300 cursor-pointer"
+          className="w-24 slider-styled"
           aria-label={t('timeline.zoomLevel')}
         />
         <button
@@ -474,15 +474,25 @@ export const TimelinePanel: React.FC = () => {
               <TrackHeader key={t.id} trackIndex={i} />
             ))}
             {store.project.tracks.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-24 text-xs text-gray-600 gap-2 px-3">
-                <p className="text-center">{t('timeline.noTracks')}</p>
-                <button
-                  type="button"
-                  onClick={handleAddTrack}
-                  className="text-indigo-400 hover:text-indigo-300"
-                >
-                  + {t('timeline.addTrack')}
-                </button>
+              <div className="flex flex-col items-center justify-center h-32 text-gray-500 gap-3 px-4">
+                <Upload className="w-8 h-8 text-gray-600" />
+                <p className="text-sm text-center">{t('timeline.noTracks')}</p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddTrack}
+                    className="px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors"
+                  >
+                    + {t('timeline.addTrack')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-semibold transition-colors"
+                  >
+                    Import Audio
+                  </button>
+                </div>
               </div>
             )}
           </div>
