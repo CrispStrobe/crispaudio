@@ -33,6 +33,7 @@ import { useSynthStore, selectActiveParams } from '../../stores/synthStore';
 import { type SynthParams, ALL_PRESET_NAMES, type PresetName } from '../../types/synth';
 import * as sfxPresets from '../../audio/presets/sfxPresets';
 import { computeSpectrumBars } from '../../audio/utils/fft';
+import { canvasBgGradient, canvasBgFlat, canvasGridColor, canvasTextColor, canvasEmptyColor } from '../../lib/themeColors';
 
 // ---------------------------------------------------------------------------
 // Preset visual config
@@ -309,13 +310,10 @@ function WaveformCanvas({
     const w = canvas.width;
     const h = canvas.height;
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, h);
-    gradient.addColorStop(0, '#1f2937');
-    gradient.addColorStop(1, '#111827');
-    ctx.fillStyle = gradient;
+    ctx.fillStyle = canvasBgGradient(ctx, h);
     ctx.fillRect(0, 0, w, h);
 
-    ctx.strokeStyle = '#374151';
+    ctx.strokeStyle = canvasGridColor();
     ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
       const y = (i / 4) * h;
@@ -326,7 +324,7 @@ function WaveformCanvas({
     }
 
     if (!buffer || buffer.length === 0) {
-      ctx.fillStyle = '#6b7280';
+      ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('No signal', w / 2, h / 2);
@@ -415,11 +413,11 @@ function SpectrumCanvas({ buffer }: { buffer: Float32Array | null }) {
     const w = canvas.width;
     const h = canvas.height;
 
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = canvasBgFlat();
     ctx.fillRect(0, 0, w, h);
 
     if (!buffer || buffer.length === 0) {
-      ctx.fillStyle = '#6b7280';
+      ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('No signal', w / 2, h / 2);
@@ -444,7 +442,7 @@ function SpectrumCanvas({ buffer }: { buffer: Float32Array | null }) {
     }
 
     // Freq labels
-    ctx.fillStyle = '#9ca3af';
+    ctx.fillStyle = canvasTextColor();
     ctx.font = '9px monospace';
     ctx.fillText('20Hz', 2, h - 2);
     ctx.fillText('1kHz', w * 0.4, h - 2);
@@ -475,11 +473,11 @@ function AmplitudeMeter({ buffer }: { buffer: Float32Array | null }) {
     const w = canvas.width;
     const h = canvas.height;
 
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = canvasBgFlat();
     ctx.fillRect(0, 0, w, h);
 
     if (!buffer || buffer.length === 0) {
-      ctx.fillStyle = '#6b7280';
+      ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('No signal', w / 2, h / 2);
@@ -511,7 +509,7 @@ function AmplitudeMeter({ buffer }: { buffer: Float32Array | null }) {
     ctx.fillRect(w * 0.5, h - peakH, w * 0.4, peakH);
 
     // Labels
-    ctx.fillStyle = '#9ca3af';
+    ctx.fillStyle = canvasTextColor();
     ctx.font = '10px monospace';
     ctx.fillText('RMS', 2, 12);
     ctx.fillText('PEAK', w * 0.5 + 2, 12);
@@ -543,7 +541,7 @@ function EnvelopeDisplay({ buffer, sampleRate }: { buffer: Float32Array | null; 
     const w = canvas.width;
     const h = canvas.height;
 
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = canvasBgFlat();
     ctx.fillRect(0, 0, w, h);
 
     if (!buffer || buffer.length === 0) return;
@@ -587,7 +585,7 @@ function EnvelopeDisplay({ buffer, sampleRate }: { buffer: Float32Array | null; 
     ctx.stroke();
 
     // Time labels
-    ctx.fillStyle = '#9ca3af';
+    ctx.fillStyle = canvasTextColor();
     ctx.font = '10px monospace';
     const duration = buffer.length / sampleRate;
     ctx.fillText('0s', 2, h - 2);

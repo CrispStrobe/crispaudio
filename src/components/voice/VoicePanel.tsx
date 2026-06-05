@@ -22,6 +22,7 @@ import {
 import { useVoiceStore } from '../../stores/voiceStore';
 import { VoiceEngine } from '../../audio/engine/VoiceEngine';
 import type { VoiceSettings, VoicePresetName } from '../../types/voicelab';
+import { canvasBgGradient, canvasBgFlat, canvasGridColor, canvasTextColor, canvasEmptyColor } from '../../lib/themeColors';
 
 const voiceEngine = new VoiceEngine();
 
@@ -233,13 +234,10 @@ function WaveformCanvas({ buffer, color, title, isPlaying, duration }: {
     const w = canvas.width;
     const h = canvas.height;
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, h);
-    gradient.addColorStop(0, '#1f2937');
-    gradient.addColorStop(1, '#111827');
-    ctx.fillStyle = gradient;
+    ctx.fillStyle = canvasBgGradient(ctx, h);
     ctx.fillRect(0, 0, w, h);
 
-    ctx.strokeStyle = '#374151';
+    ctx.strokeStyle = canvasGridColor();
     ctx.lineWidth = 1;
     for (let i = 0; i < 5; i++) {
       const y = (i / 4) * h;
@@ -250,7 +248,7 @@ function WaveformCanvas({ buffer, color, title, isPlaying, duration }: {
     }
 
     if (!buffer) {
-      ctx.fillStyle = '#6b7280';
+      ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('No audio', w / 2, h / 2);
@@ -337,11 +335,11 @@ function SpectrumCanvas({ buffer }: { buffer: AudioBuffer | null }) {
     const w = canvas.width;
     const h = canvas.height;
 
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = canvasBgFlat();
     ctx.fillRect(0, 0, w, h);
 
     if (!buffer) {
-      ctx.fillStyle = '#6b7280';
+      ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('No audio', w / 2, h / 2);
@@ -404,11 +402,11 @@ function LevelsMeter({ buffer }: { buffer: AudioBuffer | null }) {
     const w = canvas.width;
     const h = canvas.height;
 
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = canvasBgFlat();
     ctx.fillRect(0, 0, w, h);
 
     if (!buffer) {
-      ctx.fillStyle = '#6b7280';
+      ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('No audio', w / 2, h / 2);
@@ -438,7 +436,7 @@ function LevelsMeter({ buffer }: { buffer: AudioBuffer | null }) {
     ctx.fillStyle = peak > 0.95 ? '#ef4444' : '#10b981';
     ctx.fillRect(w * 0.5, h - peakH, w * 0.4, peakH);
 
-    ctx.fillStyle = '#9ca3af';
+    ctx.fillStyle = canvasTextColor();
     ctx.font = '10px monospace';
     ctx.fillText('RMS', 2, 12);
     ctx.fillText('PEAK', w * 0.5 + 2, 12);
