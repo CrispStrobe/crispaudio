@@ -46,20 +46,6 @@ function zeroCrossingRate(buf: Float32Array): number {
   return crossings / buf.length;
 }
 
-/** Correlation between two buffers (0 = uncorrelated, 1 = identical) */
-function correlation(a: Float32Array, b: Float32Array): number {
-  const len = Math.min(a.length, b.length);
-  if (len === 0) return 0;
-  let sumAB = 0, sumA2 = 0, sumB2 = 0;
-  for (let i = 0; i < len; i++) {
-    sumAB += a[i] * b[i];
-    sumA2 += a[i] * a[i];
-    sumB2 += b[i] * b[i];
-  }
-  const denom = Math.sqrt(sumA2 * sumB2);
-  return denom > 0 ? sumAB / denom : 0;
-}
-
 /** Check if two buffers are meaningfully different */
 function areDifferent(a: Float32Array, b: Float32Array): boolean {
   if (a.length !== b.length) return true;
@@ -447,7 +433,6 @@ describe('Store generate() integration', () => {
     store.loadPreset('pickupCoin');
     store.generate();
     const buf1 = useSynthStore.getState().buffer!;
-    const rms1 = rms(buf1);
 
     store.setParams({ p_base_freq: 1.5 });
     store.generate();
