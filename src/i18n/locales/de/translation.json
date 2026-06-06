@@ -332,7 +332,11 @@
     "open": "Öffnen",
     "settings": "Einstellungen",
     "sampleRateShort": "SR",
-    "bitDepthShort": "BT"
+    "bitDepthShort": "BT",
+    "dropAudio": "Audiodatei hierher ziehen oder klicken",
+    "releaseToLoad": "Loslassen zum Laden",
+    "clickToReplace": "Klicken zum Ersetzen",
+    "loading": "Laden…"
   },
   "nav": {
     "sfx": "SFX",

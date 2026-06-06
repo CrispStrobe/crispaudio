@@ -72,7 +72,15 @@ export default function App() {
 
   return (
     <AppShell>
-      <Suspense fallback={<div className="flex-1 flex items-center justify-center" style={{ color: 'var(--text-muted)' }}>Loading…</div>}>
+      <Suspense fallback={
+        <div className="flex-1 flex flex-col items-center justify-center gap-4" style={{ color: 'var(--text-muted)' }}>
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" className="animate-pulse">
+            <circle cx="12" cy="12" r="10" fill="#3b82f6" opacity="0.15" />
+            <path d="M7 12 Q9 8 12 12 Q15 16 17 12" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" fill="none" />
+          </svg>
+          <span className="text-sm font-medium">Loading…</span>
+        </div>
+      }>
         {activePanel === 'sfx' && <SFXPanel />}
         {activePanel === 'voice' && <VoicePanel />}
         {activePanel === 'timeline' && <TimelinePanel />}

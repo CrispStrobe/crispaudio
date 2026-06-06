@@ -114,7 +114,7 @@ npm run build        # Web-only
 
 ### Test
 ```bash
-npm run test        # run once (780+ tests)
+npm run test        # run once (860+ tests)
 npm run test:watch  # watch mode
 ```
 

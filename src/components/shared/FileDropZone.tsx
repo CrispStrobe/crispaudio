@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, FileAudio, X } from 'lucide-react';
 
 interface FileDropZoneProps {
@@ -72,10 +73,12 @@ function tryTauriDialog(
 export const FileDropZone: React.FC<FileDropZoneProps> = ({
   onFileLoad,
   acceptedTypes = DEFAULT_TYPES,
-  label = 'Drop audio file here or click to browse',
+  label,
   loadedFileName,
   className = '',
 }) => {
+  const { t } = useTranslation();
+  const displayLabel = label ?? t('common.dropAudio');
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -143,7 +146,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        aria-label={label}
+        aria-label={displayLabel}
         className={`
           relative flex flex-col items-center justify-center gap-2
           w-full min-h-[80px] p-4 rounded-lg border-2 border-dashed
@@ -159,7 +162,7 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
         {isDragging ? (
           <>
             <Upload className="w-6 h-6 text-indigo-400 animate-bounce" />
-            <span className="text-sm text-indigo-300 font-medium">Release to load</span>
+            <span className="text-sm text-indigo-300 font-medium">{t('common.releaseToLoad')}</span>
           </>
         ) : loadedFileName ? (
           <>
@@ -167,12 +170,12 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
             <span className="text-sm text-green-300 font-medium text-center break-all max-w-full px-2 leading-tight">
               {loadedFileName}
             </span>
-            <span className="text-[11px] text-gray-500">Click to replace</span>
+            <span className="text-[11px] text-gray-500">{t('common.clickToReplace')}</span>
           </>
         ) : (
           <>
             <Upload className="w-5 h-5 text-gray-500" />
-            <span className="text-sm text-gray-400 text-center leading-tight">{label}</span>
+            <span className="text-sm text-gray-400 text-center leading-tight">{displayLabel}</span>
             <span className="text-[11px] text-gray-600 uppercase tracking-wide">
               {Object.keys(EXTENSION_MAP).join(' · ')}
             </span>
