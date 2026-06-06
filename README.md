@@ -25,7 +25,8 @@ Built with Tauri 2.x (Rust + React + TypeScript). Also runs as a web app.
 - Waveform playhead animation during playback
 - 4-panel visualization: Waveform A/B, Frequency Spectrum, Signal Level (RMS + Peak dB)
 - Volume Envelope display (ADSR contour)
-- WAV export (8/16/24/32-bit, configurable sample rate)
+- WAV export via native Rust encoder (8/16/24/32-bit, configurable sample rate; JS fallback for web)
+- ADSR parametric envelope display alongside buffer-based volume envelope
 - JSON preset import/export
 - Shareable URL links (base64-encoded params)
 
@@ -53,6 +54,15 @@ Built with Tauri 2.x (Rust + React + TypeScript). Also runs as a web app.
 - Full undo/redo history
 - Project save/load (audio embedded as base64)
 - Offline rendering for WAV export
+
+### Cross-cutting
+- Lazy-loaded panels and modals (React.lazy/Suspense)
+- Vendor chunk splitting (React, i18n, state management)
+- Mobile-responsive layout with collapsible sidebar
+- Panel transition animations
+- WCAG accessibility: skip-to-content, aria labels, proper tab roles, improved contrast
+- Timeline autosave to localStorage (30s interval + on unload)
+- Content Security Policy enabled for Tauri builds
 
 ## Keyboard Shortcuts
 
@@ -104,7 +114,7 @@ npm run build        # Web-only
 
 ### Test
 ```bash
-npm run test        # run once (730+ tests)
+npm run test        # run once (780+ tests)
 npm run test:watch  # watch mode
 ```
 
@@ -126,7 +136,7 @@ src/                  React frontend (TypeScript)
   i18n/               Internationalization (EN/DE)
 
 src-tauri/            Rust backend
-  src/commands/       Tauri commands (file I/O, WAV export, project save/load)
+  src/commands/       Tauri commands (WAV export, project save/load)
 ```
 
 ## CI/CD

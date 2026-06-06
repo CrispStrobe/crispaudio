@@ -6,6 +6,7 @@
 
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { exportWav, downloadWavFile } from '../../lib/wavExport';
 import {
   Upload,
   Play,
@@ -611,33 +612,11 @@ export function VoicePanel() {
     };
   }, [settings, selectedPreset, sourceBuffer, handleProcess]);
 
-  function downloadProcessed() {
+  async function downloadProcessed() {
     if (!processedBuffer) return;
-    const sr = processedBuffer.sampleRate;
-    const numSamples = processedBuffer.length;
     const data = processedBuffer.getChannelData(0);
-    const wavBuf = new ArrayBuffer(44 + numSamples * 2);
-    const view = new DataView(wavBuf);
-    const enc = (off: number, s: string) => {
-      for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
-    };
-    enc(0, 'RIFF'); view.setUint32(4, 36 + numSamples * 2, true);
-    enc(8, 'WAVE'); enc(12, 'fmt ');
-    view.setUint32(16, 16, true); view.setUint16(20, 1, true);
-    view.setUint16(22, 1, true); view.setUint32(24, sr, true);
-    view.setUint32(28, sr * 2, true); view.setUint16(32, 2, true);
-    view.setUint16(34, 16, true); enc(36, 'data');
-    view.setUint32(40, numSamples * 2, true);
-    let off = 44;
-    for (let i = 0; i < numSamples; i++) {
-      view.setInt16(off, Math.round(Math.max(-1, Math.min(1, data[i])) * 32767), true);
-      off += 2;
-    }
-    const blob = new Blob([wavBuf], { type: 'audio/wav' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `crispaudio_voice_${Date.now()}.wav`;
-    a.click(); URL.revokeObjectURL(url);
+    const blob = await exportWav(data, processedBuffer.sampleRate, 16);
+    downloadWavFile(blob, `crispaudio_voice_${Date.now()}.wav`);
   }
 
   // Keyboard shortcuts

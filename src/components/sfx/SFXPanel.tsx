@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { exportWav, downloadWavFile } from '../../lib/wavExport';
 import { useTranslation } from 'react-i18next';
 import {
   Play,
@@ -32,8 +33,10 @@ import {
 import { useSynthStore, selectActiveParams } from '../../stores/synthStore';
 import { type SynthParams, ALL_PRESET_NAMES, type PresetName } from '../../types/synth';
 import * as sfxPresets from '../../audio/presets/sfxPresets';
-import { computeSpectrumBars } from '../../audio/utils/fft';
-import { canvasBgGradient, canvasBgFlat, canvasGridColor, canvasTextColor, canvasEmptyColor } from '../../lib/themeColors';
+import { canvasBgGradient, canvasGridColor, canvasEmptyColor } from '../../lib/themeColors';
+import { SpectrumDisplay } from '../shared/SpectrumDisplay';
+import { AmplitudeDisplay } from '../shared/AmplitudeDisplay';
+import { EnvelopeDisplay, ADSRDisplay } from '../shared/EnvelopeDisplay';
 
 // ---------------------------------------------------------------------------
 // Preset visual config
@@ -402,209 +405,6 @@ function WaveformCanvas({
   );
 }
 
-function SpectrumCanvas({ buffer }: { buffer: Float32Array | null }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const w = canvas.width;
-    const h = canvas.height;
-
-    ctx.fillStyle = canvasBgFlat();
-    ctx.fillRect(0, 0, w, h);
-
-    if (!buffer || buffer.length === 0) {
-      ctx.fillStyle = canvasEmptyColor();
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('No signal', w / 2, h / 2);
-      ctx.textAlign = 'left';
-      return;
-    }
-
-    const numBars = 32;
-    const bars = computeSpectrumBars(buffer, numBars);
-    const maxVal = Math.max(...bars);
-    if (maxVal === 0) return;
-
-    const barW = Math.floor(w / numBars) - 1;
-    for (let i = 0; i < numBars; i++) {
-      const norm = bars[i] / maxVal;
-      const barH = Math.min(h, norm * h * 0.85);
-      const x = i * (barW + 1);
-      const hue = 240 - (i / numBars) * 120;
-      const lightness = 40 + norm * 30;
-      ctx.fillStyle = `hsl(${hue}, 70%, ${lightness}%)`;
-      ctx.fillRect(x, h - barH, barW, barH);
-    }
-
-    // Freq labels
-    ctx.fillStyle = canvasTextColor();
-    ctx.font = '9px monospace';
-    ctx.fillText('20Hz', 2, h - 2);
-    ctx.fillText('1kHz', w * 0.4, h - 2);
-    ctx.fillText('20kHz', w - 32, h - 2);
-  }, [buffer]);
-
-  return (
-    <div>
-      <h3 className="text-sm font-semibold mb-2 text-white">Frequency Spectrum</h3>
-      <canvas
-        ref={canvasRef}
-        width={200}
-        height={100}
-        className="w-full h-20 rounded border border-gray-700"
-      />
-    </div>
-  );
-}
-
-function AmplitudeMeter({ buffer }: { buffer: Float32Array | null }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const w = canvas.width;
-    const h = canvas.height;
-
-    ctx.fillStyle = canvasBgFlat();
-    ctx.fillRect(0, 0, w, h);
-
-    if (!buffer || buffer.length === 0) {
-      ctx.fillStyle = canvasEmptyColor();
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('No signal', w / 2, h / 2);
-      ctx.textAlign = 'left';
-      return;
-    }
-
-    let peak = 0;
-    let rmsSum = 0;
-    for (let i = 0; i < buffer.length; i++) {
-      const s = Math.abs(buffer[i]);
-      if (s > peak) peak = s;
-      rmsSum += s * s;
-    }
-    const rms = Math.sqrt(rmsSum / buffer.length);
-
-    const dbRange = 60;
-    const peakDb = peak > 0 ? 20 * Math.log10(peak) : -100;
-    const rmsDb = rms > 0 ? 20 * Math.log10(rms) : -100;
-    const peakH = Math.max(0, (peakDb + dbRange) / dbRange) * h;
-    const rmsH = Math.max(0, (rmsDb + dbRange) / dbRange) * h;
-
-    // RMS bar
-    ctx.fillStyle = '#3b82f6';
-    ctx.fillRect(0, h - rmsH, w * 0.4, rmsH);
-
-    // Peak bar
-    ctx.fillStyle = peak > 0.95 ? '#ef4444' : '#10b981';
-    ctx.fillRect(w * 0.5, h - peakH, w * 0.4, peakH);
-
-    // Labels
-    ctx.fillStyle = canvasTextColor();
-    ctx.font = '10px monospace';
-    ctx.fillText('RMS', 2, 12);
-    ctx.fillText('PEAK', w * 0.5 + 2, 12);
-    ctx.fillText(`${rmsDb.toFixed(1)}dB`, 2, h - 2);
-    ctx.fillText(`${peakDb.toFixed(1)}dB`, w * 0.5 + 2, h - 2);
-  }, [buffer]);
-
-  return (
-    <div>
-      <h3 className="text-sm font-semibold mb-2 text-white">Signal Level</h3>
-      <canvas
-        ref={canvasRef}
-        width={200}
-        height={100}
-        className="w-full h-20 rounded border border-gray-700"
-      />
-    </div>
-  );
-}
-
-function EnvelopeDisplay({ buffer, sampleRate }: { buffer: Float32Array | null; sampleRate: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const w = canvas.width;
-    const h = canvas.height;
-
-    ctx.fillStyle = canvasBgFlat();
-    ctx.fillRect(0, 0, w, h);
-
-    if (!buffer || buffer.length === 0) return;
-
-    const windowSize = Math.max(1, Math.floor(buffer.length / w));
-    const envelope: number[] = [];
-    for (let i = 0; i < w; i++) {
-      let sum = 0;
-      const start = i * windowSize;
-      const end = Math.min(start + windowSize, buffer.length);
-      for (let j = start; j < end; j++) {
-        sum += buffer[j] * buffer[j];
-      }
-      envelope.push(Math.sqrt(sum / (end - start)));
-    }
-
-    const maxEnv = Math.max(...envelope);
-
-    // Fill area
-    ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
-    ctx.beginPath();
-    ctx.moveTo(0, h);
-    for (let i = 0; i < envelope.length; i++) {
-      const norm = maxEnv > 0 ? envelope[i] / maxEnv : 0;
-      ctx.lineTo(i, h - norm * h * 0.8);
-    }
-    ctx.lineTo(w, h);
-    ctx.closePath();
-    ctx.fill();
-
-    // Stroke
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i < envelope.length; i++) {
-      const norm = maxEnv > 0 ? envelope[i] / maxEnv : 0;
-      const y = h - norm * h * 0.8;
-      if (i === 0) ctx.moveTo(i, y);
-      else ctx.lineTo(i, y);
-    }
-    ctx.stroke();
-
-    // Time labels
-    ctx.fillStyle = canvasTextColor();
-    ctx.font = '10px monospace';
-    const duration = buffer.length / sampleRate;
-    ctx.fillText('0s', 2, h - 2);
-    ctx.fillText(`${duration.toFixed(2)}s`, w - 36, h - 2);
-  }, [buffer, sampleRate]);
-
-  return (
-    <div>
-      <h3 className="text-sm font-semibold mb-2 text-white">Volume Envelope</h3>
-      <canvas
-        ref={canvasRef}
-        width={400}
-        height={60}
-        className="w-full h-12 rounded border border-gray-700"
-      />
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Main SFXPanel
 // ---------------------------------------------------------------------------
@@ -792,53 +592,10 @@ export function SFXPanel() {
   const isLocked = (k: keyof SynthParams) => lockedParams.has(k);
 
   // WAV export
-  const downloadWav = useCallback(() => {
+  const downloadWav = useCallback(async () => {
     if (!buffer) return;
-    const numChannels = 1;
-    const bitsPerSample = bitDepth;
-    const numSamples = buffer.length;
-    const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
-    const blockAlign = (numChannels * bitsPerSample) / 8;
-    const dataSize = numSamples * blockAlign;
-    const wavBuffer = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(wavBuffer);
-    const enc = (offset: number, str: string) => {
-      for (let i = 0; i < str.length; i++)
-        view.setUint8(offset + i, str.charCodeAt(i));
-    };
-    enc(0, 'RIFF');
-    view.setUint32(4, 36 + dataSize, true);
-    enc(8, 'WAVE');
-    enc(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, numChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, byteRate, true);
-    view.setUint16(32, blockAlign, true);
-    view.setUint16(34, bitsPerSample, true);
-    enc(36, 'data');
-    view.setUint32(40, dataSize, true);
-    let offset = 44;
-    if (bitsPerSample === 8) {
-      for (let i = 0; i < numSamples; i++) {
-        view.setUint8(offset, Math.round((buffer[i] + 1) * 127.5));
-        offset += 1;
-      }
-    } else {
-      for (let i = 0; i < numSamples; i++) {
-        const s = Math.max(-1, Math.min(1, buffer[i]));
-        view.setInt16(offset, Math.round(s * 32767), true);
-        offset += 2;
-      }
-    }
-    const blob = new Blob([wavBuffer], { type: 'audio/wav' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `crispaudio_sfx_${Date.now()}.wav`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const blob = await exportWav(buffer, sampleRate, bitDepth);
+    downloadWavFile(blob, `crispaudio_sfx_${Date.now()}.wav`);
   }, [buffer, sampleRate, bitDepth]);
 
   // Clipping indicator
@@ -1024,22 +781,35 @@ export function SFXPanel() {
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <ParamInfoButton paramKey="spectrum" />
             </div>
-            <SpectrumCanvas buffer={buffer} />
+            <SpectrumDisplay buffer={buffer} />
           </div>
           <div className="card relative group">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <ParamInfoButton paramKey="amplitude" />
             </div>
-            <AmplitudeMeter buffer={buffer} />
+            <AmplitudeDisplay buffer={buffer} />
           </div>
         </div>
 
         {/* ── Envelope ────────────────────────────────────────────── */}
-        <div className="card mb-6 relative group">
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <ParamInfoButton paramKey="envelope" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <div className="card relative group">
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ParamInfoButton paramKey="envelope" />
+            </div>
+            <EnvelopeDisplay buffer={buffer} sampleRate={sampleRate} />
           </div>
-          <EnvelopeDisplay buffer={buffer} sampleRate={sampleRate} />
+          <div className="card relative group">
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ParamInfoButton paramKey="envelope" />
+            </div>
+            <ADSRDisplay
+              attack={params.p_env_attack}
+              sustain={params.p_env_sustain}
+              decay={params.p_env_decay}
+              punch={params.p_env_punch}
+            />
+          </div>
         </div>
 
         {/* ── Presets ─────────────────────────────────────────────── */}
