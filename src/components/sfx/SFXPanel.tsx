@@ -118,40 +118,15 @@ type ParamTab = 'basic' | 'envelope' | 'effects' | 'advanced';
 // Parameter Info tooltip
 // ---------------------------------------------------------------------------
 
-const PARAM_INFO: Record<string, { title: string; description: string }> = {
-  waveform: { title: 'Waveform Display', description: 'Time-domain shape of the audio signal. Y-axis is amplitude (-1 to 1), X-axis is time.' },
-  spectrum: { title: 'Frequency Spectrum', description: 'Shows which frequencies are present. Taller bars = more prominent frequency. Logarithmic scale.' },
-  amplitude: { title: 'Signal Level', description: 'RMS (average loudness) and Peak level in dB. Red peak = clipping.' },
-  envelope: { title: 'Volume Envelope', description: 'Overall volume shape from start to finish, shaped by Attack, Sustain, and Decay.' },
-  p_base_freq: { title: 'Base Frequency', description: 'Fundamental pitch. Higher = higher pitch.' },
-  p_freq_ramp: { title: 'Frequency Slide', description: 'Pitch slides up (+) or down (-) over time.' },
-  p_freq_limit: { title: 'Frequency Floor', description: 'Minimum pitch for downward slides.' },
-  p_freq_dramp: { title: 'Delta Slide', description: 'Accelerates/decelerates the pitch slide.' },
-  p_env_attack: { title: 'Attack', description: 'How quickly the sound fades in.' },
-  p_env_sustain: { title: 'Sustain', description: 'How long the sound holds at full volume.' },
-  p_env_punch: { title: 'Punch', description: 'Extra burst of volume at the start of sustain.' },
-  p_env_decay: { title: 'Decay', description: 'How quickly the sound fades out.' },
-  p_vib_strength: { title: 'Vibrato Depth', description: 'Amount of pitch wobble.' },
-  p_vib_speed: { title: 'Vibrato Speed', description: 'Rate of pitch wobble.' },
-  p_arp_mod: { title: 'Arpeggio Mod', description: 'Pitch jump amount for arpeggio effect.' },
-  p_arp_speed: { title: 'Arpeggio Speed', description: 'Rate of arpeggio pitch jumps.' },
-  distortion: { title: 'Distortion', description: 'Adds harmonic crunch and grit.' },
-  bit_crush: { title: 'Bit Crush', description: 'Reduces resolution for retro/lo-fi effect.' },
-  p_lpf_freq: { title: 'Low-pass Filter', description: 'Cuts high frequencies. Lower = darker sound.' },
-  p_hpf_freq: { title: 'High-pass Filter', description: 'Cuts low frequencies. Higher = thinner sound.' },
-  chorus_rate: { title: 'Chorus Rate', description: 'Speed of chorus modulation.' },
-  delay_time: { title: 'Delay Time', description: 'Echo delay length.' },
-  flanger_rate: { title: 'Flanger Rate', description: 'Speed of flanger sweep.' },
-  fm_freq: { title: 'FM Frequency', description: 'Modulator frequency for FM synthesis.' },
-  fm_depth: { title: 'FM Depth', description: 'Amount of frequency modulation.' },
-  ring_mod_freq: { title: 'Ring Mod Freq', description: 'Carrier frequency for ring modulation.' },
-  ring_mod_depth: { title: 'Ring Mod Depth', description: 'Amount of ring modulation.' },
-};
+// Translation keys live under sfx.paramInfo.<paramKey>.title / .description
 
 function ParamInfoButton({ paramKey }: { paramKey: string }) {
+  const { t, i18n } = useTranslation();
   const [show, setShow] = useState(false);
-  const info = PARAM_INFO[paramKey];
-  if (!info) return null;
+  const titleKey = `sfx.paramInfo.${paramKey}.title`;
+  const descKey = `sfx.paramInfo.${paramKey}.description`;
+  // If no translation exists for this paramKey, hide the button
+  if (!i18n.exists(titleKey)) return null;
 
   return (
     <div className="relative inline-block">
@@ -165,8 +140,8 @@ function ParamInfoButton({ paramKey }: { paramKey: string }) {
       </button>
       {show && (
         <div className="absolute z-50 w-64 p-3 bg-gray-800 border border-gray-600 rounded-lg shadow-lg bottom-6 left-0">
-          <h4 className="font-semibold text-white text-sm mb-1">{info.title}</h4>
-          <p className="text-xs text-gray-300">{info.description}</p>
+          <h4 className="font-semibold text-white text-sm mb-1">{t(titleKey)}</h4>
+          <p className="text-xs text-gray-300">{t(descKey)}</p>
         </div>
       )}
     </div>

@@ -664,7 +664,7 @@ dependencies = [
 
 [[package]]
 name = "crispaudio"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "hound",
  "log",
@@ -676,6 +676,7 @@ dependencies = [
  "tauri-plugin-fs",
  "tauri-plugin-log",
  "tauri-plugin-opener",
+ "tokio",
 ]
 
 [[package]]

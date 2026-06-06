@@ -150,7 +150,7 @@ describe('deserializeProject — valid input', () => {
 describe('deserializeProject — corrupt source handling', () => {
   it('skips a corrupt source without crashing', async () => {
     let callCount = 0;
-    const ctx = makeMockAudioContext((buf) => {
+    const ctx = makeMockAudioContext(() => {
       callCount++;
       if (callCount === 1) {
         throw new Error('Corrupt audio data');

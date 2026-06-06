@@ -1,5 +1,7 @@
 # CrispAudio
 
+`React` | `TypeScript` | `Tauri 2` | `Vite` | `Zustand` | `Vitest`
+
 [![CI](https://github.com/CrispStrobe/crispaudio/actions/workflows/ci.yml/badge.svg)](https://github.com/CrispStrobe/crispaudio/actions/workflows/ci.yml)
 [![Release](https://github.com/CrispStrobe/crispaudio/actions/workflows/release.yml/badge.svg)](https://github.com/CrispStrobe/crispaudio/actions/workflows/release.yml)
 
@@ -114,7 +116,7 @@ npm run build        # Web-only
 
 ### Test
 ```bash
-npm run test        # run once (860+ tests)
+npm run test        # run once (845+ tests)
 npm run test:watch  # watch mode
 ```
 
@@ -125,6 +127,38 @@ npm run typecheck
 ```
 
 ## Architecture
+
+### Data flow
+
+```
+                         +------------------+
+                         |     React UI     |
+                         |  (Components /   |
+                         |   Hooks / i18n)  |
+                         +--------+---------+
+                                  |
+                    +-------------+-------------+
+                    |                           |
+           +-------v--------+         +--------v--------+
+           |  Zustand Store  |         |   Tauri IPC     |
+           |  (zundo undo)   |         |   (invoke)      |
+           +-------+--------+         +--------+--------+
+                    |                           |
+           +-------v--------+         +--------v--------+
+           |  Audio Engine   |         |  Rust Backend   |
+           |  SynthEngine    |         |  WAV encoder    |
+           |  VoiceEngine    |         |  Project I/O    |
+           |  TimelineEngine |         |  File dialogs   |
+           +-------+--------+         +-----------------+
+                    |
+           +-------v--------+
+           |  Web Audio API  |
+           |  DSP pipeline   |
+           |  Effects chain  |
+           +----------------+
+```
+
+### Directory layout
 
 ```
 src/                  React frontend (TypeScript)
@@ -151,6 +185,27 @@ src-tauri/            Rust backend
   - Android (.apk, unsigned)
 - **Vercel**: Auto-deploys web version on push to main
 - Branch protection requires all CI checks to pass before merging
+
+## Contributing
+
+1. **Fork** the repository and clone your fork locally.
+2. **Create a branch** for your feature or fix: `git checkout -b feat/my-feature`.
+3. **Install dependencies**: `npm install`.
+4. **Make your changes** -- keep commits focused and atomic.
+5. **Run the full check suite** before pushing:
+   ```bash
+   npm run lint && npm run typecheck && npm run test
+   ```
+6. **Open a Pull Request** against `main`. CI must pass before merge.
+
+### Code style notes
+
+- TypeScript strict mode is enabled -- avoid `any` where possible.
+- React components use functional style with hooks (no class components).
+- Audio DSP code lives in `src/audio/`; keep engine classes stateless where feasible.
+- State management goes through Zustand stores in `src/stores/`.
+- Tests use Vitest and live under `tests/`. Mirror the `src/` directory structure.
+- Commit messages should be concise and describe the *why*, not just the *what*.
 
 ## License
 

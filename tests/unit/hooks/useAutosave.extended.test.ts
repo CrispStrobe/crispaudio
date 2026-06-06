@@ -2,9 +2,8 @@
 // useAutosave — extended edge-case tests
 // ---------------------------------------------------------------------------
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { restoreAutosave, clearAutosave } from '../../../src/hooks/useAutosave';
-import { useProjectStore } from '../../../src/stores/projectStore';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { restoreAutosave } from '../../../src/hooks/useAutosave';
 
 const AUTOSAVE_KEY = 'crispaudio-autosave';
 

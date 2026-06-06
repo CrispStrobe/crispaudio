@@ -140,7 +140,117 @@
     "signalLevel": "Signalpegel",
     "volumeEnvelope": "Lautstärkehüllkurve",
     "adsrShape": "ADSR-Form",
-    "noEnvelope": "Keine Hüllkurve"
+    "noEnvelope": "Keine Hüllkurve",
+    "paramInfo": {
+      "waveform": {
+        "title": "Wellenform-Anzeige",
+        "description": "Zeitbereich-Darstellung des Audiosignals. Y-Achse ist die Amplitude (-1 bis 1), X-Achse ist die Zeit."
+      },
+      "spectrum": {
+        "title": "Frequenzspektrum",
+        "description": "Zeigt vorhandene Frequenzen. Höhere Balken = stärkere Frequenz. Logarithmische Skala."
+      },
+      "amplitude": {
+        "title": "Signalpegel",
+        "description": "RMS (Durchschnittslautstärke) und Spitzenpegel in dB. Roter Spitzenwert = Übersteuerung."
+      },
+      "envelope": {
+        "title": "Lautstärkehüllkurve",
+        "description": "Gesamter Lautstärkeverlauf von Anfang bis Ende, geformt durch Attack, Sustain und Decay."
+      },
+      "p_base_freq": {
+        "title": "Grundfrequenz",
+        "description": "Grundtonhöhe. Höher = höherer Ton."
+      },
+      "p_freq_ramp": {
+        "title": "Frequenzgleiten",
+        "description": "Tonhöhe gleitet nach oben (+) oder unten (-) über die Zeit."
+      },
+      "p_freq_limit": {
+        "title": "Frequenzuntergrenze",
+        "description": "Minimale Tonhöhe bei abwärts gerichteten Gleitvorgängen."
+      },
+      "p_freq_dramp": {
+        "title": "Delta-Gleiten",
+        "description": "Beschleunigt/verlangsamt das Frequenzgleiten."
+      },
+      "p_env_attack": {
+        "title": "Einschwingen",
+        "description": "Wie schnell der Klang einfadet."
+      },
+      "p_env_sustain": {
+        "title": "Halten",
+        "description": "Wie lange der Klang auf voller Lautstärke gehalten wird."
+      },
+      "p_env_punch": {
+        "title": "Punch",
+        "description": "Zusätzlicher Lautstärkestoß zu Beginn der Haltephase."
+      },
+      "p_env_decay": {
+        "title": "Abklingen",
+        "description": "Wie schnell der Klang ausfadet."
+      },
+      "p_vib_strength": {
+        "title": "Vibrato-Tiefe",
+        "description": "Stärke der Tonhöhenschwankung."
+      },
+      "p_vib_speed": {
+        "title": "Vibrato-Geschwindigkeit",
+        "description": "Rate der Tonhöhenschwankung."
+      },
+      "p_arp_mod": {
+        "title": "Arpeggio-Mod",
+        "description": "Tonhöhensprung-Betrag für den Arpeggio-Effekt."
+      },
+      "p_arp_speed": {
+        "title": "Arpeggio-Geschwindigkeit",
+        "description": "Rate der Arpeggio-Tonhöhensprünge."
+      },
+      "distortion": {
+        "title": "Verzerrung",
+        "description": "Fügt harmonische Verzerrung und Rauheit hinzu."
+      },
+      "bit_crush": {
+        "title": "Bit Crush",
+        "description": "Reduziert die Auflösung für Retro-/Lo-Fi-Effekte."
+      },
+      "p_lpf_freq": {
+        "title": "Tiefpassfilter",
+        "description": "Kappt hohe Frequenzen. Niedriger = dunklerer Klang."
+      },
+      "p_hpf_freq": {
+        "title": "Hochpassfilter",
+        "description": "Kappt tiefe Frequenzen. Höher = dünnerer Klang."
+      },
+      "chorus_rate": {
+        "title": "Chorus-Rate",
+        "description": "Geschwindigkeit der Chorus-Modulation."
+      },
+      "delay_time": {
+        "title": "Delay-Zeit",
+        "description": "Länge der Echo-Verzögerung."
+      },
+      "flanger_rate": {
+        "title": "Flanger-Rate",
+        "description": "Geschwindigkeit des Flanger-Durchlaufs."
+      },
+      "fm_freq": {
+        "title": "FM-Frequenz",
+        "description": "Modulatorfrequenz für die FM-Synthese."
+      },
+      "fm_depth": {
+        "title": "FM-Tiefe",
+        "description": "Stärke der Frequenzmodulation."
+      },
+      "ring_mod_freq": {
+        "title": "Ringmod.-Frequenz",
+        "description": "Trägerfrequenz für die Ringmodulation."
+      },
+      "ring_mod_depth": {
+        "title": "Ringmod.-Tiefe",
+        "description": "Stärke der Ringmodulation."
+      }
+    }
   },
   "voice": {
     "loadFile": "Audiodatei hierher ziehen oder klicken",
@@ -213,7 +323,10 @@
     "processedWaveform": "Verarbeitete Wellenform",
     "frequencySpectrum": "Frequenzspektrum",
     "signalLevel": "Signalpegel",
-    "noAudio": "Kein Audio"
+    "noAudio": "Kein Audio",
+    "record": "Aufnehmen",
+    "stopRecording": "Aufnahme stoppen",
+    "recordProcessing": "Verarbeitung..."
   },
   "timeline": {
     "addTrack": "Spur hinzufügen",

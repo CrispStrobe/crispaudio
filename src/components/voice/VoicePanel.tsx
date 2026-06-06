@@ -21,6 +21,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { useVoiceStore } from '../../stores/voiceStore';
+import { useMediaRecorder } from '../../hooks/useMediaRecorder';
 import { VoiceEngine } from '../../audio/engine/VoiceEngine';
 import type { VoiceSettings, VoicePresetName } from '../../types/voicelab';
 import { canvasBgGradient, canvasBgFlat, canvasGridColor, canvasTextColor, canvasEmptyColor } from '../../lib/themeColors';
@@ -547,6 +548,23 @@ export function VoicePanel() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
+  // Microphone recording
+  const { isRecording, error: recordError, startRecording, stopRecording } = useMediaRecorder();
+  const [isRecordProcessing, setIsRecordProcessing] = useState(false);
+
+  const handleRecordToggle = useCallback(async () => {
+    if (isRecording) {
+      setIsRecordProcessing(true);
+      const buf = await stopRecording();
+      if (buf) {
+        setSourceBuffer(buf);
+      }
+      setIsRecordProcessing(false);
+    } else {
+      await startRecording();
+    }
+  }, [isRecording, startRecording, stopRecording, setSourceBuffer]);
+
   const handlePlay = useCallback(
     (buf: AudioBuffer | null, which: 'source' | 'processed') => {
       if (!buf) return;
@@ -668,9 +686,33 @@ export function VoicePanel() {
           </p>
         </div>
 
-        {/* ── File Drop Zone ──────────────────────────────────────── */}
+        {/* ── File Drop Zone + Record ─────────────────────────────── */}
         <div className="card mb-6">
           <FileDropZone onFile={setSourceBuffer} />
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <button
+              onClick={handleRecordToggle}
+              disabled={isRecordProcessing}
+              className={`px-5 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white ${
+                isRecording
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500'
+              }`}
+            >
+              {isRecording && (
+                <span className="w-3 h-3 rounded-full bg-red-400 animate-pulse" />
+              )}
+              <Mic className="w-5 h-5" />
+              {isRecordProcessing
+                ? t('voice.recordProcessing')
+                : isRecording
+                  ? t('voice.stopRecording')
+                  : t('voice.record')}
+            </button>
+            {recordError && (
+              <span className="text-sm text-red-400">{recordError}</span>
+            )}
+          </div>
         </div>
 
         {/* ── Voice Presets ────────────────────────────────────────── */}
