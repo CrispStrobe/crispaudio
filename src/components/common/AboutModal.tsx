@@ -65,7 +65,7 @@ export function AboutModal() {
         <section className="p-4 rounded-lg" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)' }}>
           <div className="flex items-center gap-4 mb-3">
             <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: 'rgba(59, 130, 246, 0.15)' }}>
-              <svg viewBox="0 0 24 24" width="32" height="32" fill="none">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" role="img" aria-label="CrispAudio logo">
                 <circle cx="12" cy="12" r="10" fill="#3b82f6" opacity="0.15" />
                 <path d="M7 12 Q9 8 12 12 Q15 16 17 12" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" fill="none" />
               </svg>

@@ -179,3 +179,53 @@ describe('Voice settings updates', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Effective settings slot routing
+// ---------------------------------------------------------------------------
+
+describe('Voice effective settings slot routing', () => {
+  it('getEffectiveSettings returns slot B settings when B is active', () => {
+    const store = useVoiceStore.getState();
+    store.setActiveSlot('A');
+    store.setSettings({ pitchShift: 3 });
+
+    store.setActiveSlot('B');
+    store.setSettings({ pitchShift: -7 });
+
+    // morphAmount=0, active=B → should return B's settings
+    store.setMorphAmount(0);
+    const eff = store.getEffectiveSettings();
+    expect(eff.pitchShift).toBe(-7);
+  });
+
+  it('getEffectiveSettings morphs from B toward A when B is active', () => {
+    const store = useVoiceStore.getState();
+    store.setActiveSlot('A');
+    store.setSettings({ pitchShift: 10 });
+
+    store.setActiveSlot('B');
+    store.setSettings({ pitchShift: 0 });
+
+    store.setMorphAmount(0.5);
+    const eff = store.getEffectiveSettings();
+    // B=0, A=10, morph 0.5 from B toward A → should be ~5
+    expect(eff.pitchShift).toBeCloseTo(5, 1);
+  });
+
+  it('switching slot changes which settings are returned', () => {
+    const store = useVoiceStore.getState();
+    store.setActiveSlot('A');
+    store.setSettings({ pitchShift: 12 });
+    store.setActiveSlot('B');
+    store.setSettings({ pitchShift: -12 });
+
+    store.setMorphAmount(0);
+
+    store.setActiveSlot('A');
+    expect(store.getEffectiveSettings().pitchShift).toBe(12);
+
+    store.setActiveSlot('B');
+    expect(store.getEffectiveSettings().pitchShift).toBe(-12);
+  });
+});

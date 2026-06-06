@@ -896,6 +896,7 @@ export function SFXPanel() {
                 onClick={() => { copyToOther(); generate(); }}
                 className="btn-surface p-2 rounded-lg"
                 title="Copy to other slot"
+              aria-label="Copy to other slot"
               >
                 <Copy className="w-4 h-4" />
               </button>
@@ -903,6 +904,7 @@ export function SFXPanel() {
                 onClick={() => { swapSlots(); generate(); }}
                 className="p-2 rounded-lg transition-colors bg-purple-600 hover:bg-purple-500 text-white"
                 title="Swap slots"
+              aria-label="Swap slots"
               >
                 <ArrowLeftRight className="w-4 h-4" />
               </button>
@@ -979,6 +981,7 @@ export function SFXPanel() {
               onClick={handleUndo}
               className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
               title="Undo (Ctrl+Z)"
+              aria-label="Undo"
             >
               <Undo2 className="w-5 h-5" />
             </button>
@@ -987,6 +990,7 @@ export function SFXPanel() {
               onClick={handleRedo}
               className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
               title="Redo (Ctrl+Shift+Z)"
+              aria-label="Redo"
             >
               <Redo2 className="w-5 h-5" />
             </button>

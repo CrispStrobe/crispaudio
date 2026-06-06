@@ -40,7 +40,7 @@ export function Sidebar() {
         style={{ width: 36, height: 36 }}
         title="CrispAudio"
       >
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" role="img" aria-label="CrispAudio">
           <circle cx="12" cy="12" r="10" fill="#3b82f6" opacity="0.15" />
           <path
             d="M7 12 Q9 8 12 12 Q15 16 17 12"

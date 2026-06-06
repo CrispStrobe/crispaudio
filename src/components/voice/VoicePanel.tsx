@@ -732,6 +732,7 @@ export function VoicePanel() {
                 onClick={swapSlots}
                 className="p-2 rounded-lg transition-colors bg-purple-600 hover:bg-purple-500 text-white"
                 title="Swap slots"
+                aria-label="Swap slots"
               >
                 <ArrowLeftRight className="w-4 h-4" />
               </button>

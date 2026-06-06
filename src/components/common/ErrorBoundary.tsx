@@ -45,7 +45,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             textAlign: 'center',
           }}
         >
-          <svg viewBox="0 0 32 32" width="48" height="48" fill="none" style={{ marginBottom: 16 }}>
+          <svg viewBox="0 0 32 32" width="48" height="48" fill="none" role="img" aria-label="CrispAudio" style={{ marginBottom: 16 }}>
             <circle cx="16" cy="16" r="12" fill="#3b82f6" opacity="0.15" />
             <path d="M8 16 Q11 10 16 16 Q21 22 24 16" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" fill="none" />
           </svg>
