@@ -136,6 +136,9 @@
     "noisePink": "Pink",
     "noiseBrown": "Brown",
     "retrigger": "Retrigger",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Reset zoom",
     "frequencySpectrum": "Frequency Spectrum",
     "signalLevel": "Signal Level",
     "volumeEnvelope": "Volume Envelope",
@@ -310,7 +313,7 @@
     "noiseGate": "Noise Gate",
     "masterGain": "Master Gain",
     "subtitle": "Voice Synthesis & Real-time Processing",
-    "shortcuts": "Shortcuts: Space (play) · 1-9 (presets) · A/B (slots) · P (process)",
+    "shortcuts": "Shortcuts: Space (play) · 1-9 (presets) · A/B (slots) · P (process) · Ctrl+Z (undo)",
     "slotA": "Slot A",
     "slotB": "Slot B",
     "swapSlots": "Swap slots",
@@ -399,6 +402,7 @@
     "segmentCount_one": "{{count}} segment",
     "segmentCount_other": "{{count}} segments",
     "selectedCount": "{{count}} selected",
+    "reorderTrack": "Reorder track",
     "exporting": "Exporting…",
     "effectNames": {
       "reverb": "Reverb",
@@ -449,7 +453,9 @@
     "dropAudio": "Drop audio file here or click to browse",
     "releaseToLoad": "Release to load",
     "clickToReplace": "Click to replace",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "undo": "Undo",
+    "redo": "Redo"
   },
   "nav": {
     "sfx": "SFX",
@@ -472,6 +478,9 @@
     "repository": "View on GitHub",
     "serviceProvider": "Service Provider",
     "contact": "Contact"
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts"
   },
   "licenses": {
     "title": "Third-Party Licenses",

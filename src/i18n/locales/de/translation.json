@@ -136,6 +136,9 @@
     "noisePink": "Rosa",
     "noiseBrown": "Braun",
     "retrigger": "Retrigger",
+    "zoomIn": "Vergrößern",
+    "zoomOut": "Verkleinern",
+    "zoomReset": "Zoom zurücksetzen",
     "frequencySpectrum": "Frequenzspektrum",
     "signalLevel": "Signalpegel",
     "volumeEnvelope": "Lautstärkehüllkurve",
@@ -310,7 +313,7 @@
     "noiseGate": "Rauschsperre",
     "masterGain": "Gesamtpegel",
     "subtitle": "Stimmsynthese & Echtzeitverarbeitung",
-    "shortcuts": "Tasten: Leertaste (Abspielen) · 1-9 (Presets) · A/B (Slots) · P (Verarbeiten)",
+    "shortcuts": "Tasten: Leertaste (Abspielen) · 1-9 (Presets) · A/B (Slots) · P (Verarbeiten) · Strg+Z (Rückgängig)",
     "slotA": "Slot A",
     "slotB": "Slot B",
     "swapSlots": "Slots tauschen",
@@ -399,6 +402,7 @@
     "segmentCount_one": "{{count}} Segment",
     "segmentCount_other": "{{count}} Segmente",
     "selectedCount": "{{count}} ausgewählt",
+    "reorderTrack": "Spur neu anordnen",
     "exporting": "Exportiere…",
     "effectNames": {
       "reverb": "Hall",
@@ -449,7 +453,9 @@
     "dropAudio": "Audiodatei hierher ziehen oder klicken",
     "releaseToLoad": "Loslassen zum Laden",
     "clickToReplace": "Klicken zum Ersetzen",
-    "loading": "Laden…"
+    "loading": "Laden…",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen"
   },
   "nav": {
     "sfx": "SFX",
@@ -472,6 +478,9 @@
     "repository": "Auf GitHub ansehen",
     "serviceProvider": "Anbieter",
     "contact": "Kontakt"
+  },
+  "shortcuts": {
+    "title": "Tastenkürzel"
   },
   "licenses": {
     "title": "Drittanbieter-Lizenzen",

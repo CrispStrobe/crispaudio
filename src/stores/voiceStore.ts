@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { temporal } from 'zundo';
 import type { VoiceSettings, VoicePresetName } from '../types/voicelab';
 import { getPreset } from '../audio/presets/voicePresets';
 
@@ -50,7 +51,9 @@ interface VoiceState {
 
 // ── Store ────────────────────────────────────────────────────────────────────
 
-export const useVoiceStore = create<VoiceState>()((set, get) => ({
+export const useVoiceStore = create<VoiceState>()(
+  temporal(
+    (set, get) => ({
   settingsA: getPreset('original'),
   settingsB: getPreset('original'),
   activeSlot: 'A',
@@ -107,7 +110,24 @@ export const useVoiceStore = create<VoiceState>()((set, get) => ({
     const dst = activeSlot === 'A' ? settingsB : settingsA;
     return lerpSettings(src, dst, morphAmount);
   },
-}));
+    }),
+    {
+      // Only track settings-related state in undo history,
+      // exclude transient state (sourceBuffer, processedBuffer, isProcessing).
+      partialize: (state) => ({
+        settingsA: state.settingsA,
+        settingsB: state.settingsB,
+        activeSlot: state.activeSlot,
+        selectedPreset: state.selectedPreset,
+      }),
+      limit: 50,
+    },
+  ),
+);
+
+// ── History convenience export ──────────────────────────────────────────────
+
+export const useVoiceHistory = () => useVoiceStore.temporal.getState();
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

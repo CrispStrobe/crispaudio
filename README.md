@@ -26,9 +26,9 @@ Built with Tauri 2.x (Rust + React + TypeScript). Also runs as a web app.
 - Context-aware parameter suggestions based on waveform type
 - Waveform playhead animation during playback
 - 4-panel visualization: Waveform A/B, Frequency Spectrum, Signal Level (RMS + Peak dB)
-- Volume Envelope display (ADSR contour)
+- Volume Envelope display (ADSR contour) + parametric ADSR shape visualization
+- Waveform zoom/scroll with minimap (Ctrl+wheel, drag pan, up to 16x)
 - WAV export via native Rust encoder (8/16/24/32-bit, configurable sample rate; JS fallback for web)
-- ADSR parametric envelope display alongside buffer-based volume envelope
 - JSON preset import/export
 - Shareable URL links (base64-encoded params)
 
@@ -42,6 +42,8 @@ Built with Tauri 2.x (Rust + React + TypeScript). Also runs as a web app.
 - Separate Play Source / Play Processed for A/B comparison
 - Throttled auto-processing on parameter changes (300ms)
 - Waveform playhead animation during playback
+- Undo/redo (Ctrl+Z / Ctrl+Shift+Z, 50-step history)
+- Microphone recording (MediaRecorder capture)
 - Parameter info tooltips on every slider
 - Drag-and-drop audio file loading
 
@@ -53,6 +55,7 @@ Built with Tauri 2.x (Rust + React + TypeScript). Also runs as a web app.
 - Automatic crossfade on segment overlap
 - Per-segment effects chains
 - Zoom, scroll, snap-to-grid
+- Track reordering via drag handles
 - Full undo/redo history
 - Project save/load (audio embedded as base64)
 - Offline rendering for WAV export

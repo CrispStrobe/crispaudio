@@ -19,6 +19,8 @@ import {
   Waves,
   Zap,
   Activity,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import { useVoiceStore } from '../../stores/voiceStore';
 import { useMediaRecorder } from '../../hooks/useMediaRecorder';
@@ -565,6 +567,9 @@ export function VoicePanel() {
     }
   }, [isRecording, startRecording, stopRecording, setSourceBuffer]);
 
+  const handleUndo = useCallback(() => useVoiceStore.temporal.getState().undo(), []);
+  const handleRedo = useCallback(() => useVoiceStore.temporal.getState().redo(), []);
+
   const handlePlay = useCallback(
     (buf: AudioBuffer | null, which: 'source' | 'processed') => {
       if (!buf) return;
@@ -650,6 +655,14 @@ export function VoicePanel() {
     const handleKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
       const key = e.key.toLowerCase();
+
+      // Ctrl+Z / Ctrl+Shift+Z for undo/redo
+      if ((e.ctrlKey || e.metaKey) && key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) { handleRedo(); } else { handleUndo(); }
+        return;
+      }
+
       if (key === ' ') {
         e.preventDefault();
         if (isPlaying) handleStop();
@@ -667,7 +680,7 @@ export function VoicePanel() {
 
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [isPlaying, handlePlay, handleStop, handleProcess, setActiveSlot, loadPreset, processedBuffer, sourceBuffer]);
+  }, [isPlaying, handlePlay, handleStop, handleProcess, setActiveSlot, loadPreset, processedBuffer, sourceBuffer, handleUndo, handleRedo]);
 
   const currentTab = TABS.find((t) => t.id === activeTab)!;
 
@@ -847,6 +860,25 @@ export function VoicePanel() {
           >
             <Download className="w-5 h-5" />
             {t('voice.export')}
+          </button>
+
+          {/* Undo / Redo */}
+          <button
+            onClick={handleUndo}
+            className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+            title={t('common.undo') + ' (Ctrl+Z)'}
+            aria-label={t('common.undo')}
+          >
+            <Undo2 className="w-5 h-5" />
+          </button>
+
+          <button
+            onClick={handleRedo}
+            className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+            title={t('common.redo') + ' (Ctrl+Shift+Z)'}
+            aria-label={t('common.redo')}
+          >
+            <Redo2 className="w-5 h-5" />
           </button>
         </div>
 

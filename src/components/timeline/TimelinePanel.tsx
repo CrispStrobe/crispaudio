@@ -28,6 +28,7 @@ import {
   Download,
   Save,
   FolderOpen,
+  GripVertical,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
@@ -49,9 +50,21 @@ import type { AudioSource } from '../../types/audio';
 
 interface TrackHeaderProps {
   trackIndex: number;
+  onDragStart: (e: React.DragEvent, trackId: string) => void;
+  onDragOver: (e: React.DragEvent, trackIndex: number) => void;
+  onDrop: (e: React.DragEvent, trackIndex: number) => void;
+  onDragEnd: () => void;
+  isDragOver: boolean;
 }
 
-const TrackHeader: React.FC<TrackHeaderProps> = ({ trackIndex }) => {
+const TrackHeader: React.FC<TrackHeaderProps> = ({
+  trackIndex,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  isDragOver,
+}) => {
   const { t } = useTranslation();
   const { project, updateTrack, removeTrack } = useProjectStore();
   const track = project.tracks[trackIndex];
@@ -59,10 +72,24 @@ const TrackHeader: React.FC<TrackHeaderProps> = ({ trackIndex }) => {
 
   return (
     <div
-      className="flex flex-col justify-center px-2 border-b border-gray-900 bg-gray-850 select-none"
+      className={`flex flex-col justify-center px-2 border-b border-gray-900 bg-gray-850 select-none transition-colors ${
+        isDragOver ? 'bg-indigo-900/30 border-t-2 border-t-indigo-400' : ''
+      }`}
       style={{ width: TRACK_HEADER_WIDTH, height: TRACK_HEIGHT }}
+      onDragOver={(e) => onDragOver(e, trackIndex)}
+      onDrop={(e) => onDrop(e, trackIndex)}
     >
       <div className="flex items-center gap-1.5 mb-1">
+        <div
+          draggable
+          onDragStart={(e) => onDragStart(e, track.id)}
+          onDragEnd={onDragEnd}
+          className="flex-shrink-0 cursor-grab active:cursor-grabbing p-0.5 text-gray-600 hover:text-gray-400 transition-colors"
+          aria-label={t('timeline.reorderTrack')}
+          title={t('timeline.reorderTrack')}
+        >
+          <GripVertical className="w-3 h-3" />
+        </div>
         <input
           type="text"
           value={track.name}
@@ -219,6 +246,46 @@ export const TimelinePanel: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+
+  // Track reorder drag state
+  const [draggedTrackId, setDraggedTrackId] = useState<string | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+
+  const handleTrackDragStart = useCallback(
+    (e: React.DragEvent, trackId: string) => {
+      setDraggedTrackId(trackId);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', trackId);
+    },
+    [],
+  );
+
+  const handleTrackDragOver = useCallback(
+    (e: React.DragEvent, index: number) => {
+      if (draggedTrackId === null) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setDropTargetIndex(index);
+    },
+    [draggedTrackId],
+  );
+
+  const handleTrackDrop = useCallback(
+    (e: React.DragEvent, newIndex: number) => {
+      e.preventDefault();
+      if (draggedTrackId !== null) {
+        store.reorderTrack(draggedTrackId, newIndex);
+      }
+      setDraggedTrackId(null);
+      setDropTargetIndex(null);
+    },
+    [draggedTrackId, store],
+  );
+
+  const handleTrackDragEnd = useCallback(() => {
+    setDraggedTrackId(null);
+    setDropTargetIndex(null);
+  }, []);
 
   const handleAddTrack = useCallback(() => store.addTrack(), [store]);
   const handleZoomIn = useCallback(() => store.setZoomLevel(store.zoomLevel * 1.25), [store]);
@@ -473,7 +540,15 @@ export const TimelinePanel: React.FC = () => {
           {/* Per-track headers — scroll locked to canvas */}
           <div className="flex-1 overflow-y-hidden">
             {store.project.tracks.map((t, i) => (
-              <TrackHeader key={t.id} trackIndex={i} />
+              <TrackHeader
+                key={t.id}
+                trackIndex={i}
+                onDragStart={handleTrackDragStart}
+                onDragOver={handleTrackDragOver}
+                onDrop={handleTrackDrop}
+                onDragEnd={handleTrackDragEnd}
+                isDragOver={dropTargetIndex === i && draggedTrackId !== t.id}
+              />
             ))}
             {store.project.tracks.length === 0 && (
               <div className="flex flex-col items-center justify-center h-32 text-gray-500 gap-3 px-4">

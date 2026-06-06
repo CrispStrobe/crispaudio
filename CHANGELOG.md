@@ -11,22 +11,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Vendor chunk splitting (React, i18n, state management) for better caching
 - Mobile-responsive layout with collapsible sidebar and hamburger menu
 - Panel transition animations (fade-in + slide)
-- WCAG accessibility: skip-to-content link, aria labels, tablist roles, color contrast fixes
+- WCAG accessibility: skip-to-content, aria labels, tablist roles, keyboard nav, color contrast
 - Timeline autosave to localStorage (30s + on beforeunload)
 - Reusable SpectrumDisplay, AmplitudeDisplay, EnvelopeDisplay shared components
 - ADSR parametric envelope visualization (synth param driven)
 - Shared WAV export utility with Rust backend integration and JS fallback
-- settingsStore, component smoke, and autosave unit tests (781+ total)
+- Microphone recording for Voice panel (MediaRecorder + AudioContext)
+- Voice panel undo/redo via zundo (50-step history)
+- Keyboard shortcuts help overlay (press ? to view)
+- SFX waveform zoom/scroll with minimap (Ctrl+wheel zoom, drag pan, up to 16x)
+- Timeline track reordering via drag handles
+- "Check for Updates" in About dialog (GitHub releases API)
+- PWA service worker for offline support (vite-plugin-pwa)
+- Open Graph and Twitter meta tags for web SEO
+- Full PARAM_INFO tooltip translations (28 entries, EN + DE)
+- Complete i18n migration: all panels, shared components, FileDropZone (EN + DE)
+- 845 JS tests + 11 Rust unit tests across 26 files
 - Coverage threshold (50% lines) enforced in vitest config
-- CHANGELOG.md, LICENSE, PWA raster icons (192x192, 512x512)
-- cargo test step in CI workflow
+- CHANGELOG.md, LICENSE, PWA raster icons, CLAUDE.md
+- cargo test in CI, VoiceEngine/TimelineEngine structural tests
+- Architecture diagram and Contributing section in README
 
 ### Changed
 - SFX/Voice WAV export now uses Rust encoder (supports 8/16/24/32-bit natively)
-- Color contrast improved: --text-muted upgraded to slate-400 (dark) / slate-600 (light)
+- Color contrast improved: --text-secondary and --text-muted differentiated
+- Error handling hardened: projectFile/projectIO try/catch on all async paths
+- Branded loading spinner replaces plain text Suspense fallback
 
 ### Removed
 - Dead Tauri file_io commands (open_audio_file, save_audio_file)
+- Dead clipboard.ts and audioAnalysis.ts utilities
+- Dead ContextMenu.tsx component
 - Disabled CSP replaced with proper Content-Security-Policy
 
 ## [0.2.1] - 2025

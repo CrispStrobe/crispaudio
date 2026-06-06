@@ -61,6 +61,7 @@ interface ProjectState {
   // Track actions
   addTrack: (name?: string) => void;
   removeTrack: (trackId: string) => void;
+  reorderTrack: (trackId: string, newIndex: number) => void;
   updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'name' | 'muted' | 'solo' | 'volume' | 'pan'>>) => void;
 
   // Segment actions
@@ -182,6 +183,21 @@ export const useProjectStore = create<ProjectState>()(
               tracks,
               duration: computeProjectDuration(tracks),
             },
+          };
+        });
+      },
+
+      reorderTrack: (trackId, newIndex) => {
+        set((state) => {
+          const tracks = [...state.project.tracks];
+          const oldIndex = tracks.findIndex((t) => t.id === trackId);
+          if (oldIndex === -1) return state;
+          const clampedIndex = Math.max(0, Math.min(tracks.length - 1, newIndex));
+          if (oldIndex === clampedIndex) return state;
+          const [moved] = tracks.splice(oldIndex, 1);
+          tracks.splice(clampedIndex, 0, moved);
+          return {
+            project: { ...state.project, tracks },
           };
         });
       },

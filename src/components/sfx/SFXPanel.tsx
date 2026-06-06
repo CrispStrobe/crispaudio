@@ -29,6 +29,8 @@ import {
   Redo2,
   Share2,
   FileJson,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import { useSynthStore, selectActiveParams } from '../../stores/synthStore';
 import { type SynthParams, ALL_PRESET_NAMES, type PresetName } from '../../types/synth';
@@ -276,12 +278,69 @@ function WaveformCanvas({
   duration?: number;
   noSignalText?: string;
 }) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const minimapRef = useRef<HTMLCanvasElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const startTimeRef = useRef(0);
 
-  // Draw the static waveform
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [scrollOffset, setScrollOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, offset: 0 });
+
+  const MAX_ZOOM = 16;
+
+  // Clamp scroll offset within valid range for a given zoom
+  const clampOffset = useCallback((offset: number, zoom: number) => {
+    const viewSize = 1 / zoom;
+    return Math.max(0, Math.min(offset, 1 - viewSize));
+  }, []);
+
+  // Handle zoom change (shared by wheel and buttons)
+  const applyZoom = useCallback((newZoom: number, pivotNorm?: number) => {
+    const clamped = Math.max(1, Math.min(MAX_ZOOM, newZoom));
+    setZoomLevel((prevZoom) => {
+      const pivot = pivotNorm ?? (scrollOffset + (1 / prevZoom) / 2);
+      const newViewSize = 1 / clamped;
+      const newOffset = clampOffset(pivot - newViewSize / 2, clamped);
+      setScrollOffset(newOffset);
+      return clamped;
+    });
+  }, [scrollOffset, clampOffset]);
+
+  // Mouse wheel zoom (Ctrl or Shift held)
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => {
+    if (!e.ctrlKey && !e.shiftKey) return;
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pivotX = (e.clientX - rect.left) / rect.width;
+    const pivotNorm = scrollOffset + pivotX / zoomLevel;
+    const factor = e.deltaY < 0 ? 1.25 : 0.8;
+    applyZoom(zoomLevel * factor, pivotNorm);
+  }, [zoomLevel, scrollOffset, applyZoom]);
+
+  // Drag to pan
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (zoomLevel <= 1) return;
+    setIsDragging(true);
+    dragStartRef.current = { x: e.clientX, offset: scrollOffset };
+  }, [zoomLevel, scrollOffset]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dx = (e.clientX - dragStartRef.current.x) / rect.width;
+    const newOffset = clampOffset(dragStartRef.current.offset - dx / zoomLevel, zoomLevel);
+    setScrollOffset(newOffset);
+  }, [isDragging, zoomLevel, clampOffset]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Draw the static waveform (zoomed view)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -312,6 +371,12 @@ function WaveformCanvas({
       return;
     }
 
+    // Calculate visible sample range
+    const viewSize = 1 / zoomLevel;
+    const startSample = Math.floor(scrollOffset * buffer.length);
+    const endSample = Math.min(buffer.length, Math.ceil((scrollOffset + viewSize) * buffer.length));
+    const visibleLength = endSample - startSample;
+
     if (isPlaying) {
       ctx.shadowColor = '#10b981';
       ctx.shadowBlur = 10;
@@ -321,16 +386,55 @@ function WaveformCanvas({
     ctx.lineWidth = 2;
     ctx.beginPath();
 
-    const step = buffer.length / w;
+    const step = visibleLength / w;
     for (let i = 0; i < w; i++) {
-      const sample = buffer[Math.floor(i * step)] || 0;
+      const idx = startSample + Math.floor(i * step);
+      const sample = buffer[Math.min(idx, buffer.length - 1)] || 0;
       const y = (sample * h * 0.4) + (h / 2);
       if (i === 0) ctx.moveTo(i, y);
       else ctx.lineTo(i, y);
     }
     ctx.stroke();
     ctx.shadowBlur = 0;
-  }, [buffer, isPlaying, noSignalText]);
+  }, [buffer, isPlaying, noSignalText, zoomLevel, scrollOffset]);
+
+  // Draw minimap
+  useEffect(() => {
+    const canvas = minimapRef.current;
+    if (!canvas || zoomLevel <= 1) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, w, h);
+
+    if (buffer && buffer.length > 0) {
+      // Draw full waveform in minimap
+      ctx.strokeStyle = '#4b5563';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const step = buffer.length / w;
+      for (let i = 0; i < w; i++) {
+        const sample = buffer[Math.floor(i * step)] || 0;
+        const y = (sample * h * 0.4) + (h / 2);
+        if (i === 0) ctx.moveTo(i, y);
+        else ctx.lineTo(i, y);
+      }
+      ctx.stroke();
+
+      // Draw visible region highlight
+      const viewSize = 1 / zoomLevel;
+      const rx = scrollOffset * w;
+      const rw = viewSize * w;
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
+      ctx.fillRect(rx, 0, rw, h);
+      ctx.strokeStyle = 'rgba(59, 130, 246, 0.7)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(rx, 0, rw, h);
+    }
+  }, [buffer, zoomLevel, scrollOffset]);
 
   // Animate playhead during playback
   useEffect(() => {
@@ -343,8 +447,15 @@ function WaveformCanvas({
       const tick = () => {
         const elapsed = (performance.now() - startTimeRef.current) / 1000;
         const progress = Math.min(elapsed / duration, 1);
-        el.style.left = `${progress * 100}%`;
-        el.style.display = 'block';
+        // Convert global progress to zoomed view position
+        const viewSize = 1 / zoomLevel;
+        const viewProgress = (progress - scrollOffset) / viewSize;
+        if (viewProgress >= 0 && viewProgress <= 1) {
+          el.style.left = `${viewProgress * 100}%`;
+          el.style.display = 'block';
+        } else {
+          el.style.display = 'none';
+        }
         if (progress < 1) {
           rafRef.current = requestAnimationFrame(tick);
         } else {
@@ -360,17 +471,66 @@ function WaveformCanvas({
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [isPlaying, duration]);
+  }, [isPlaying, duration, zoomLevel, scrollOffset]);
+
+  const handleZoomIn = useCallback(() => {
+    applyZoom(zoomLevel * 1.5);
+  }, [zoomLevel, applyZoom]);
+
+  const handleZoomOut = useCallback(() => {
+    applyZoom(zoomLevel / 1.5);
+  }, [zoomLevel, applyZoom]);
+
+  const handleZoomReset = useCallback(() => {
+    setZoomLevel(1);
+    setScrollOffset(0);
+  }, []);
 
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-2 text-white">{title}</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-semibold text-white">{title}</h3>
+        <div className="flex items-center gap-1">
+          {zoomLevel > 1 && (
+            <button
+              onClick={handleZoomReset}
+              className="px-1.5 py-0.5 text-[10px] font-mono text-blue-300 bg-blue-900/40 rounded hover:bg-blue-800/60 transition-colors"
+              title={t('sfx.zoomReset')}
+            >
+              {zoomLevel.toFixed(1)}x
+            </button>
+          )}
+          <button
+            onClick={handleZoomOut}
+            disabled={zoomLevel <= 1}
+            className="p-0.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-default transition-colors"
+            title={t('sfx.zoomOut')}
+            aria-label={t('sfx.zoomOut')}
+          >
+            <ZoomOut size={14} />
+          </button>
+          <button
+            onClick={handleZoomIn}
+            disabled={zoomLevel >= MAX_ZOOM}
+            className="p-0.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-default transition-colors"
+            title={t('sfx.zoomIn')}
+            aria-label={t('sfx.zoomIn')}
+          >
+            <ZoomIn size={14} />
+          </button>
+        </div>
+      </div>
       <div className="relative">
         <canvas
           ref={canvasRef}
           width={400}
           height={120}
-          className="w-full h-24 rounded border border-gray-700"
+          className={`w-full h-24 rounded border border-gray-700 ${zoomLevel > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
         />
         <div
           ref={playheadRef}
@@ -378,6 +538,15 @@ function WaveformCanvas({
           style={{ display: 'none', left: 0 }}
         />
       </div>
+      {zoomLevel > 1 && (
+        <canvas
+          ref={minimapRef}
+          width={400}
+          height={16}
+          className="w-full mt-1 rounded border border-gray-700/50"
+          style={{ height: '16px' }}
+        />
+      )}
     </div>
   );
 }

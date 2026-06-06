@@ -15,6 +15,7 @@ const VoicePanel = lazy(() => import('./components/voice/VoicePanel').then(m => 
 const TimelinePanel = lazy(() => import('./components/timeline/TimelinePanel').then(m => ({ default: m.TimelinePanel })));
 const SettingsModal = lazy(() => import('./components/common/SettingsModal').then(m => ({ default: m.SettingsModal })));
 const AboutModal = lazy(() => import('./components/common/AboutModal').then(m => ({ default: m.AboutModal })));
+const ShortcutsModal = lazy(() => import('./components/common/ShortcutsModal').then(m => ({ default: m.ShortcutsModal })));
 
 export default function App() {
   const { activePanel, setActivePanel, openModal, activeModal } = useUIStore();
@@ -63,6 +64,9 @@ export default function App() {
         else if (e.key === '2') { e.preventDefault(); setActivePanel('voice'); }
         else if (e.key === '3') { e.preventDefault(); setActivePanel('timeline'); }
         else if (e.key === ',') { e.preventDefault(); openModal('settings'); }
+      } else if (e.key === '?' || (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey)) {
+        e.preventDefault();
+        openModal('shortcuts');
       }
     };
 
@@ -87,6 +91,7 @@ export default function App() {
 
         {activeModal === 'settings' && <SettingsModal />}
         {activeModal === 'about' && <AboutModal />}
+        {activeModal === 'shortcuts' && <ShortcutsModal />}
       </Suspense>
     </AppShell>
   );

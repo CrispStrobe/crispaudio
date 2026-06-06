@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 
 export type ActivePanel = 'sfx' | 'voice' | 'timeline';
-export type ActiveModal = 'settings' | 'about' | null;
+export type ActiveModal = 'settings' | 'about' | 'shortcuts' | null;
 
 interface UIState {
   activePanel: ActivePanel;
