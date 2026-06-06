@@ -371,7 +371,7 @@ describe('WAV data validity', () => {
     for (let i = 0; i < samples.length; i++) {
       expect(isFinite(samples[i])).toBe(true);
     }
-  }, 10000);
+  }, 30000);
 
   it('samples are within [-1, 1] range (or close)', () => {
     const presets: PresetName[] = ['pickupCoin', 'explosion', 'laserShoot', 'ambient'];

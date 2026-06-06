@@ -9,7 +9,7 @@
   --accent-hover: #2563eb;
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-muted: #94a3b8;
   --border: #475569;
   --border-subtle: #1e2d40;
 }
@@ -24,7 +24,7 @@ html.light {
   --accent-hover: #1d4ed8;
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --text-muted: #64748b;
+  --text-muted: #475569;
   --border: #94a3b8;
   --border-subtle: #e2e8f0;
 }
@@ -284,4 +284,29 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
   background: #1d4ed8;
   color: white;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Panel enter animation ─────────────────────────────────────── */
+@keyframes panel-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.panel-enter {
+  animation: panel-enter 200ms ease-out;
+}
+
+/* ── Sidebar mobile overlay ────────────────────────────────────── */
+@keyframes sidebar-slide-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes backdrop-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.sidebar-slide-in {
+  animation: sidebar-slide-in 200ms ease-out;
+}
+.sidebar-backdrop {
+  animation: backdrop-fade-in 200ms ease-out;
 }

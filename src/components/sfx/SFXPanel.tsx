@@ -850,7 +850,7 @@ export function SFXPanel() {
   })() : false;
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: 'var(--bg-primary)' }}>
+    <div className="h-full overflow-y-auto panel-enter" style={{ background: 'var(--bg-primary)' }}>
       <div className="max-w-7xl mx-auto p-6">
 
         {/* ── Header ──────────────────────────────────────────────── */}

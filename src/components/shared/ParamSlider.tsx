@@ -64,6 +64,7 @@ export const ParamSlider: React.FC<ParamSliderProps> = ({
   const smoothValue = useSmoothParam(value);
   const [showTooltip, setShowTooltip] = useState(false);
   const isDisabled = disabled || locked;
+  const inputId = `param-${label.replace(/\s+/g, '-').toLowerCase()}`;
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,6 +85,7 @@ export const ParamSlider: React.FC<ParamSliderProps> = ({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <label
+            htmlFor={inputId}
             className="text-xs font-medium text-gray-300 truncate select-none leading-none"
             title={tooltip ?? label}
           >
@@ -153,6 +155,7 @@ export const ParamSlider: React.FC<ParamSliderProps> = ({
         </div>
 
         <input
+          id={inputId}
           type="range"
           min={min}
           max={max}
@@ -160,6 +163,7 @@ export const ParamSlider: React.FC<ParamSliderProps> = ({
           value={value}
           onChange={handleChange}
           disabled={isDisabled}
+          aria-label={label}
           className={`
             relative w-full h-1.5 appearance-none bg-transparent rounded-full
             focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-1 focus-visible:ring-offset-gray-900

@@ -304,7 +304,7 @@ export const TimelinePanel: React.FC = () => {
     store.selection !== null && store.selection.segmentIds.length > 0;
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 overflow-hidden">
+    <div className="flex flex-col h-full bg-gray-950 overflow-hidden panel-enter">
       {/* Transport bar */}
       <TransportControls />
 
@@ -391,6 +391,7 @@ export const TimelinePanel: React.FC = () => {
           onClick={() => void handleOpenProject()}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
           title={t('timeline.openProject')}
+          aria-label={t('timeline.openProject')}
         >
           <FolderOpen className="w-3.5 h-3.5" />
           {t('timeline.openProject')}
@@ -400,6 +401,7 @@ export const TimelinePanel: React.FC = () => {
           onClick={() => void handleSaveProject()}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
           title={t('timeline.saveProject')}
+          aria-label={t('timeline.saveProject')}
         >
           <Save className="w-3.5 h-3.5" />
           {t('timeline.saveProject')}
@@ -424,6 +426,7 @@ export const TimelinePanel: React.FC = () => {
           onClick={() => fileInputRef.current?.click()}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
           title={t('timeline.import')}
+          aria-label={t('timeline.import')}
         >
           <Upload className="w-3.5 h-3.5" />
           {t('timeline.import')}
@@ -436,6 +439,7 @@ export const TimelinePanel: React.FC = () => {
           disabled={isExporting || store.project.duration <= 0}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           title={t('timeline.export')}
+          aria-label={t('timeline.export')}
         >
           <Download className="w-3.5 h-3.5" />
           {t('timeline.export')}
@@ -446,6 +450,7 @@ export const TimelinePanel: React.FC = () => {
           type="button"
           onClick={handleAddTrack}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+          aria-label={t('timeline.addTrack')}
         >
           <Plus className="w-3.5 h-3.5" />
           {t('timeline.addTrack')}

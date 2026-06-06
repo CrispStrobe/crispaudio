@@ -11,6 +11,9 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/audio/**', 'src/stores/**', 'src/lib/**'],
+      thresholds: {
+        lines: 50,
+      },
     },
   },
 });

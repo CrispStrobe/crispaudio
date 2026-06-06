@@ -3,19 +3,24 @@
 // Root component. Renders AppShell and switches panels based on uiStore.
 // ---------------------------------------------------------------------------
 
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { AppShell } from './components/layout/AppShell';
-import { SFXPanel } from './components/sfx/SFXPanel';
-import { VoicePanel } from './components/voice/VoicePanel';
-import { TimelinePanel } from './components/timeline/TimelinePanel';
-import { SettingsModal } from './components/common/SettingsModal';
-import { AboutModal } from './components/common/AboutModal';
 import { useUIStore } from './stores/uiStore';
 import { useSettingsStore } from './stores/settingsStore';
 import { useSynthStore, loadFromShareLink } from './stores/synthStore';
-import { useEffect, useRef } from 'react';
+import { useAutosave } from './hooks/useAutosave';
+
+const SFXPanel = lazy(() => import('./components/sfx/SFXPanel').then(m => ({ default: m.SFXPanel })));
+const VoicePanel = lazy(() => import('./components/voice/VoicePanel').then(m => ({ default: m.VoicePanel })));
+const TimelinePanel = lazy(() => import('./components/timeline/TimelinePanel').then(m => ({ default: m.TimelinePanel })));
+const SettingsModal = lazy(() => import('./components/common/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const AboutModal = lazy(() => import('./components/common/AboutModal').then(m => ({ default: m.AboutModal })));
 
 export default function App() {
   const { activePanel, setActivePanel, openModal, activeModal } = useUIStore();
+
+  // Autosave timeline project structure periodically + on unload
+  useAutosave();
 
   // Apply the persisted default export format to the synth store on startup.
   const defaultSampleRate = useSettingsStore((s) => s.defaultSampleRate);
@@ -67,12 +72,14 @@ export default function App() {
 
   return (
     <AppShell>
-      {activePanel === 'sfx' && <SFXPanel />}
-      {activePanel === 'voice' && <VoicePanel />}
-      {activePanel === 'timeline' && <TimelinePanel />}
+      <Suspense fallback={<div className="flex-1 flex items-center justify-center" style={{ color: 'var(--text-muted)' }}>Loading…</div>}>
+        {activePanel === 'sfx' && <SFXPanel />}
+        {activePanel === 'voice' && <VoicePanel />}
+        {activePanel === 'timeline' && <TimelinePanel />}
 
-      <SettingsModal />
-      <AboutModal />
+        {activeModal === 'settings' && <SettingsModal />}
+        {activeModal === 'about' && <AboutModal />}
+      </Suspense>
     </AppShell>
   );
 }

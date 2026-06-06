@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{file_io, audio_export, project};
+use commands::{audio_export, project};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -19,8 +19,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            file_io::open_audio_file,
-            file_io::save_audio_file,
             audio_export::export_wav,
             project::save_project,
             project::load_project,

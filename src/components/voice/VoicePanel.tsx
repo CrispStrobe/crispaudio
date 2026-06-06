@@ -672,7 +672,7 @@ export function VoicePanel() {
   const currentTab = TABS.find((t) => t.id === activeTab)!;
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: 'var(--bg-primary)' }}>
+    <div className="h-full overflow-y-auto panel-enter" style={{ background: 'var(--bg-primary)' }}>
       <div className="max-w-7xl mx-auto p-6">
 
         {/* ── Header ──────────────────────────────────────────────── */}
@@ -722,6 +722,8 @@ export function VoicePanel() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveSlot('A')}
+                aria-label="Slot A"
+                aria-pressed={activeSlot === 'A'}
                 className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
                   activeSlot === 'A' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
@@ -738,6 +740,8 @@ export function VoicePanel() {
               </button>
               <button
                 onClick={() => setActiveSlot('B')}
+                aria-label="Slot B"
+                aria-pressed={activeSlot === 'B'}
                 className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
                   activeSlot === 'B' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
@@ -771,6 +775,7 @@ export function VoicePanel() {
           <button
             onClick={isPlaying ? handleStop : () => handlePlay(sourceBuffer, 'source')}
             disabled={!sourceBuffer}
+            aria-label={isPlaying ? 'Stop source playback' : 'Play source audio'}
             className={`px-5 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
               isPlaying
                 ? 'bg-red-600 hover:bg-red-700 text-white'
@@ -785,6 +790,7 @@ export function VoicePanel() {
           <button
             onClick={isPlaying ? handleStop : () => handlePlay(processedBuffer, 'processed')}
             disabled={!processedBuffer}
+            aria-label={isPlaying ? 'Stop processed playback' : 'Play processed audio'}
             className={`px-5 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
               isPlaying
                 ? 'bg-red-600 hover:bg-red-700 text-white'
@@ -838,11 +844,13 @@ export function VoicePanel() {
 
         {/* ── Tabbed Parameters ───────────────────────────────────── */}
         <div className="card">
-          <div className="tab-bar mb-6">
+          <div className="tab-bar mb-6" role="tablist">
             {TABS.map(({ id, label, Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
+                role="tab"
+                aria-selected={activeTab === id}
                 className={`tab-btn ${activeTab === id ? 'active' : ''}`}
               >
                 <Icon className="w-4 h-4" />
@@ -851,7 +859,7 @@ export function VoicePanel() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div role="tabpanel" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {currentTab.params.map((def) => (
               <ParamSlider
                 key={def.key}

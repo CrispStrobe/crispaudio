@@ -25,7 +25,7 @@ export function getCanvasTheme(): CanvasTheme {
     bgPrimary: cssVar('--bg-primary') || (isLight ? '#f8fafc' : '#0f172a'),
     bgSecondary: cssVar('--bg-secondary') || (isLight ? '#e2e8f0' : '#1e293b'),
     bgTertiary: cssVar('--bg-tertiary') || (isLight ? '#cbd5e1' : '#334155'),
-    textMuted: cssVar('--text-muted') || (isLight ? '#64748b' : '#64748b'),
+    textMuted: cssVar('--text-muted') || (isLight ? '#475569' : '#94a3b8'),
     border: cssVar('--border') || (isLight ? '#94a3b8' : '#475569'),
     borderSubtle: cssVar('--border-subtle') || (isLight ? '#e2e8f0' : '#1e2d40'),
     isLight,
