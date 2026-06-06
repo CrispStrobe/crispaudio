@@ -198,7 +198,22 @@
     "bitCrushBits": "Bit-Crush-Bits",
     "bitCrushMix": "Bit-Crush-Anteil",
     "noiseGate": "Rauschsperre",
-    "masterGain": "Gesamtpegel"
+    "masterGain": "Gesamtpegel",
+    "subtitle": "Stimmsynthese & Echtzeitverarbeitung",
+    "shortcuts": "Tasten: Leertaste (Abspielen) · 1-9 (Presets) · A/B (Slots) · P (Verarbeiten)",
+    "slotA": "Slot A",
+    "slotB": "Slot B",
+    "swapSlots": "Slots tauschen",
+    "morph": "Überblenden:",
+    "tabPitch": "Tonhöhe & Tempo",
+    "tabModulation": "Modulation",
+    "tabEffects": "Effekte",
+    "tabDynamics": "Dynamik",
+    "originalWaveform": "Original-Wellenform",
+    "processedWaveform": "Verarbeitete Wellenform",
+    "frequencySpectrum": "Frequenzspektrum",
+    "signalLevel": "Signalpegel",
+    "noAudio": "Kein Audio"
   },
   "timeline": {
     "addTrack": "Spur hinzufügen",
@@ -264,6 +279,14 @@
     "segmentStart": "Start",
     "segmentDuration": "Dauer",
     "segmentOffset": "Versatz",
+    "importAudio": "Audio importieren",
+    "dropFilesHere": "Audiodateien hier ablegen",
+    "trackCount_one": "{{count}} Spur",
+    "trackCount_other": "{{count}} Spuren",
+    "segmentCount_one": "{{count}} Segment",
+    "segmentCount_other": "{{count}} Segmente",
+    "selectedCount": "{{count}} ausgewählt",
+    "exporting": "Exportiere…",
     "effectNames": {
       "reverb": "Hall",
       "delay": "Verzögerung",
@@ -307,7 +330,9 @@
     "cancel": "Abbrechen",
     "save": "Speichern",
     "open": "Öffnen",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "sampleRateShort": "SR",
+    "bitDepthShort": "BT"
   },
   "nav": {
     "sfx": "SFX",

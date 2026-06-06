@@ -73,6 +73,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const ctxMenuRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     visible: false,
     x: 0,
@@ -602,6 +603,75 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     return () => window.removeEventListener('mousedown', dismiss);
   }, [contextMenu.visible, closeMenu]);
 
+  // Focus first menu item when context menu opens
+  useEffect(() => {
+    if (!contextMenu.visible) return;
+    // Use rAF so the DOM has rendered the menu items
+    requestAnimationFrame(() => {
+      const firstItem = ctxMenuRef.current?.querySelector<HTMLButtonElement>(
+        'button[role="menuitem"]',
+      );
+      firstItem?.focus();
+    });
+  }, [contextMenu.visible]);
+
+  // Keyboard navigation for the context menu
+  const handleMenuKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const menu = ctxMenuRef.current;
+      if (!menu) return;
+
+      const items = Array.from(
+        menu.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]'),
+      );
+      if (items.length === 0) return;
+
+      const active = document.activeElement as HTMLButtonElement;
+      const currentIndex = items.indexOf(active);
+
+      switch (e.key) {
+        case 'ArrowDown': {
+          e.preventDefault();
+          const next = (currentIndex + 1) % items.length;
+          items[next]?.focus();
+          break;
+        }
+        case 'ArrowUp': {
+          e.preventDefault();
+          const prev = (currentIndex - 1 + items.length) % items.length;
+          items[prev]?.focus();
+          break;
+        }
+        case 'Home': {
+          e.preventDefault();
+          items[0]?.focus();
+          break;
+        }
+        case 'End': {
+          e.preventDefault();
+          items[items.length - 1]?.focus();
+          break;
+        }
+        case 'Escape': {
+          e.preventDefault();
+          closeMenu();
+          break;
+        }
+        case 'Enter':
+        case ' ': {
+          e.preventDefault();
+          if (currentIndex >= 0) {
+            items[currentIndex]?.click();
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    },
+    [closeMenu],
+  );
+
   return (
     <div ref={containerRef} className="relative" style={{ height: totalHeight }}>
       <canvas
@@ -619,37 +689,49 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       {/* Context menu */}
       {contextMenu.visible && (
         <div
+          ref={ctxMenuRef}
           data-timeline-menu
+          role="menu"
+          aria-label="Context menu"
           className="fixed z-50 bg-gray-800 border border-gray-600 rounded shadow-xl py-1 min-w-[160px] text-sm"
           style={{ left: contextMenu.x, top: contextMenu.y }}
+          onKeyDown={handleMenuKeyDown}
         >
           {contextMenu.segmentId ? (
             <>
               <button
                 type="button"
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 text-gray-200"
+                role="menuitem"
+                tabIndex={-1}
+                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
                 onClick={handleSplit}
               >
                 {t('timeline.split')}
               </button>
               <button
                 type="button"
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 text-gray-200"
+                role="menuitem"
+                tabIndex={-1}
+                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
                 onClick={handleCopySeg}
               >
                 {t('timeline.copy')}
               </button>
               <button
                 type="button"
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 text-gray-200"
+                role="menuitem"
+                tabIndex={-1}
+                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
                 onClick={handleCutSeg}
               >
                 {t('timeline.cut')}
               </button>
-              <div className="h-px bg-gray-700 my-1" />
+              <div className="h-px bg-gray-700 my-1" role="separator" />
               <button
                 type="button"
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 text-red-400"
+                role="menuitem"
+                tabIndex={-1}
+                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-red-400"
                 onClick={handleDeleteSeg}
               >
                 {t('timeline.delete')}
@@ -658,7 +740,9 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
           ) : (
             <button
               type="button"
-              className="w-full text-left px-3 py-1.5 hover:bg-gray-700 text-gray-200"
+              role="menuitem"
+              tabIndex={-1}
+              className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
               onClick={handlePasteHere}
             >
               {t('timeline.paste')}

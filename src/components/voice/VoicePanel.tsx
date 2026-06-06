@@ -68,9 +68,9 @@ interface ParamDef {
   formatValue?: (v: number) => string;
 }
 
-const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ className?: string }>; params: ParamDef[] }[] = [
+const TABS: { id: TabId; labelKey: string; Icon: React.ComponentType<{ className?: string }>; params: ParamDef[] }[] = [
   {
-    id: 'pitch', label: 'Pitch & Speed', Icon: Settings,
+    id: 'pitch', labelKey: 'voice.tabPitch', Icon: Settings,
     params: [
       { key: 'pitchShift', labelKey: 'voice.pitchShift', min: -24, max: 24, step: 0.5, formatValue: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)} st` },
       { key: 'formantShift', labelKey: 'voice.formantShift', min: -1, max: 1, step: 0.01 },
@@ -80,7 +80,7 @@ const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ className?: 
     ],
   },
   {
-    id: 'modulation', label: 'Modulation', Icon: Waves,
+    id: 'modulation', labelKey: 'voice.tabModulation', Icon: Waves,
     params: [
       { key: 'ringModFreq', labelKey: 'voice.ringModFreq', min: 1, max: 500, step: 1, formatValue: (v) => `${Math.round(v)} Hz` },
       { key: 'ringModMix', labelKey: 'voice.ringModMix', min: 0, max: 1, step: 0.01 },
@@ -92,7 +92,7 @@ const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ className?: 
     ],
   },
   {
-    id: 'effects', label: 'Effects', Icon: Zap,
+    id: 'effects', labelKey: 'voice.tabEffects', Icon: Zap,
     params: [
       { key: 'delayTime', labelKey: 'voice.delayTime', min: 0, max: 1, step: 0.01, formatValue: (v) => `${(v * 1000).toFixed(0)} ms` },
       { key: 'delayFeedback', labelKey: 'voice.delayFeedback', min: 0, max: 0.99, step: 0.01 },
@@ -105,7 +105,7 @@ const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ className?: 
     ],
   },
   {
-    id: 'dynamics', label: 'Dynamics', Icon: Activity,
+    id: 'dynamics', labelKey: 'voice.tabDynamics', Icon: Activity,
     params: [
       { key: 'compThreshold', labelKey: 'voice.compThreshold', min: -60, max: 0, step: 0.5, formatValue: (v) => `${v.toFixed(1)} dB` },
       { key: 'compRatio', labelKey: 'voice.compRatio', min: 1, max: 20, step: 0.5, formatValue: (v) => `${v.toFixed(1)}:1` },
@@ -222,6 +222,7 @@ function WaveformCanvas({ buffer, color, title, isPlaying, duration }: {
   isPlaying?: boolean;
   duration?: number;
 }) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -252,7 +253,7 @@ function WaveformCanvas({ buffer, color, title, isPlaying, duration }: {
       ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('No audio', w / 2, h / 2);
+      ctx.fillText(t('voice.noAudio'), w / 2, h / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -275,7 +276,7 @@ function WaveformCanvas({ buffer, color, title, isPlaying, duration }: {
     }
     ctx.stroke();
     ctx.shadowBlur = 0;
-  }, [buffer, color, isPlaying]);
+  }, [buffer, color, isPlaying, t]);
 
   // Playhead animation
   useEffect(() => {
@@ -326,6 +327,7 @@ function WaveformCanvas({ buffer, color, title, isPlaying, duration }: {
 }
 
 function SpectrumCanvas({ buffer }: { buffer: AudioBuffer | null }) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -343,7 +345,7 @@ function SpectrumCanvas({ buffer }: { buffer: AudioBuffer | null }) {
       ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('No audio', w / 2, h / 2);
+      ctx.fillText(t('voice.noAudio'), w / 2, h / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -377,11 +379,11 @@ function SpectrumCanvas({ buffer }: { buffer: AudioBuffer | null }) {
       ctx.fillStyle = `hsl(${hue}, 70%, ${lightness}%)`;
       ctx.fillRect(i * (barW + 1), h - barH, barW, barH);
     }
-  }, [buffer]);
+  }, [buffer, t]);
 
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-2 text-white">Frequency Spectrum</h3>
+      <h3 className="text-sm font-semibold mb-2 text-white">{t('voice.frequencySpectrum')}</h3>
       <canvas
         ref={canvasRef}
         width={200}
@@ -393,6 +395,7 @@ function SpectrumCanvas({ buffer }: { buffer: AudioBuffer | null }) {
 }
 
 function LevelsMeter({ buffer }: { buffer: AudioBuffer | null }) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -410,7 +413,7 @@ function LevelsMeter({ buffer }: { buffer: AudioBuffer | null }) {
       ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('No audio', w / 2, h / 2);
+      ctx.fillText(t('voice.noAudio'), w / 2, h / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -443,11 +446,11 @@ function LevelsMeter({ buffer }: { buffer: AudioBuffer | null }) {
     ctx.fillText('PEAK', w * 0.5 + 2, 12);
     ctx.fillText(`${rmsDb.toFixed(1)}dB`, 2, h - 2);
     ctx.fillText(`${peakDb.toFixed(1)}dB`, w * 0.5 + 2, h - 2);
-  }, [buffer]);
+  }, [buffer, t]);
 
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-2 text-white">Signal Level</h3>
+      <h3 className="text-sm font-semibold mb-2 text-white">{t('voice.signalLevel')}</h3>
       <canvas
         ref={canvasRef}
         width={200}
@@ -659,9 +662,9 @@ export function VoicePanel() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-2 gradient-title-voice">
             {t('panels.voice')}
           </h1>
-          <p className="text-gray-400 text-base">Voice Synthesis &amp; Real-time Processing</p>
+          <p className="text-gray-400 text-base">{t('voice.subtitle')}</p>
           <p className="text-gray-500 text-xs mt-2">
-            Shortcuts: Space (play) · 1-9 (presets) · A/B (slots) · P (process)
+            {t('voice.shortcuts')}
           </p>
         </div>
 
@@ -674,7 +677,7 @@ export function VoicePanel() {
         <div className="card mb-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
             <Mic className="w-5 h-5" />
-            Voice Presets
+            {t('voice.presets')}
           </h3>
           <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
             {PRESET_NAMES.map((name) => (
@@ -701,37 +704,37 @@ export function VoicePanel() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveSlot('A')}
-                aria-label="Slot A"
+                aria-label={t('voice.slotA')}
                 aria-pressed={activeSlot === 'A'}
                 className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
                   activeSlot === 'A' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
-                Slot A
+                {t('voice.slotA')}
               </button>
               <button
                 onClick={swapSlots}
                 className="p-2 rounded-lg transition-colors bg-purple-600 hover:bg-purple-500 text-white"
-                title="Swap slots"
-                aria-label="Swap slots"
+                title={t('voice.swapSlots')}
+                aria-label={t('voice.swapSlots')}
               >
                 <ArrowLeftRight className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setActiveSlot('B')}
-                aria-label="Slot B"
+                aria-label={t('voice.slotB')}
                 aria-pressed={activeSlot === 'B'}
                 className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
                   activeSlot === 'B' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
-                Slot B
+                {t('voice.slotB')}
               </button>
             </div>
 
             {/* Morph */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Morph:</span>
+              <span className="text-xs text-gray-500">{t('voice.morph')}</span>
               <input
                 type="range"
                 min={0}
@@ -808,10 +811,10 @@ export function VoicePanel() {
         {/* ── Visualizations ──────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           <div className="card">
-            <WaveformCanvas buffer={sourceBuffer} color="#3b82f6" title="Original Waveform" isPlaying={isPlaying && playingBuffer === 'source'} duration={sourceBuffer?.duration} />
+            <WaveformCanvas buffer={sourceBuffer} color="#3b82f6" title={t('voice.originalWaveform')} isPlaying={isPlaying && playingBuffer === 'source'} duration={sourceBuffer?.duration} />
           </div>
           <div className="card">
-            <WaveformCanvas buffer={processedBuffer} color="#a855f7" title="Processed Waveform" isPlaying={isPlaying && playingBuffer === 'processed'} duration={processedBuffer?.duration} />
+            <WaveformCanvas buffer={processedBuffer} color="#a855f7" title={t('voice.processedWaveform')} isPlaying={isPlaying && playingBuffer === 'processed'} duration={processedBuffer?.duration} />
           </div>
           <div className="card">
             <SpectrumCanvas buffer={processedBuffer ?? sourceBuffer} />
@@ -824,7 +827,7 @@ export function VoicePanel() {
         {/* ── Tabbed Parameters ───────────────────────────────────── */}
         <div className="card">
           <div className="tab-bar mb-6" role="tablist">
-            {TABS.map(({ id, label, Icon }) => (
+            {TABS.map(({ id, labelKey, Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
@@ -833,7 +836,7 @@ export function VoicePanel() {
                 className={`tab-btn ${activeTab === id ? 'active' : ''}`}
               >
                 <Icon className="w-4 h-4" />
-                {label}
+                {t(labelKey)}
               </button>
             ))}
           </div>

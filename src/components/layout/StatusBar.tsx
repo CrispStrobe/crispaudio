@@ -87,8 +87,8 @@ export function StatusBar() {
 
       {/* Right: sample rate + bit depth */}
       <div className="flex items-center gap-3">
-        <StatusChip label="SR" value={`${(sampleRate / 1000).toFixed(1)} kHz`} />
-        <StatusChip label="BD" value={`${bitDepth}-bit`} />
+        <StatusChip label={t('common.sampleRateShort')} value={`${(sampleRate / 1000).toFixed(1)} kHz`} />
+        <StatusChip label={t('common.bitDepthShort')} value={`${bitDepth}-bit`} />
       </div>
     </footer>
   );

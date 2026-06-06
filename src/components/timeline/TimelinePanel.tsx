@@ -492,7 +492,7 @@ export const TimelinePanel: React.FC = () => {
                     onClick={() => fileInputRef.current?.click()}
                     className="px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-semibold transition-colors"
                   >
-                    Import Audio
+                    {t('timeline.importAudio')}
                   </button>
                 </div>
               </div>
@@ -533,7 +533,7 @@ export const TimelinePanel: React.FC = () => {
             {isDraggingFile && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                 <div className="bg-gray-900/80 backdrop-blur rounded-xl px-6 py-4 border border-indigo-500/50 text-indigo-300 font-semibold">
-                  Drop audio files here
+                  {t('timeline.dropFilesHere')}
                 </div>
               </div>
             )}
@@ -547,15 +547,14 @@ export const TimelinePanel: React.FC = () => {
       {/* Status bar */}
       <div className="flex items-center gap-4 px-4 py-1 bg-gray-900 border-t border-gray-800 text-xs text-gray-500 flex-shrink-0 select-none">
         <span>
-          {store.project.tracks.length} track
-          {store.project.tracks.length !== 1 ? 's' : ''}
+          {t('timeline.trackCount', { count: store.project.tracks.length })}
         </span>
         <span>
-          {store.project.tracks.reduce((n, t) => n + t.segments.length, 0)} segments
+          {t('timeline.segmentCount', { count: store.project.tracks.reduce((n, tr) => n + tr.segments.length, 0) })}
         </span>
         {store.selection && (
           <span className="text-indigo-400">
-            {store.selection.segmentIds.length} selected
+            {t('timeline.selectedCount', { count: store.selection.segmentIds.length })}
           </span>
         )}
         <span className="ml-auto">{store.project.name}</span>

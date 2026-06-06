@@ -198,7 +198,22 @@
     "bitCrushBits": "Bit Crush Bits",
     "bitCrushMix": "Bit Crush Mix",
     "noiseGate": "Noise Gate",
-    "masterGain": "Master Gain"
+    "masterGain": "Master Gain",
+    "subtitle": "Voice Synthesis & Real-time Processing",
+    "shortcuts": "Shortcuts: Space (play) · 1-9 (presets) · A/B (slots) · P (process)",
+    "slotA": "Slot A",
+    "slotB": "Slot B",
+    "swapSlots": "Swap slots",
+    "morph": "Morph:",
+    "tabPitch": "Pitch & Speed",
+    "tabModulation": "Modulation",
+    "tabEffects": "Effects",
+    "tabDynamics": "Dynamics",
+    "originalWaveform": "Original Waveform",
+    "processedWaveform": "Processed Waveform",
+    "frequencySpectrum": "Frequency Spectrum",
+    "signalLevel": "Signal Level",
+    "noAudio": "No audio"
   },
   "timeline": {
     "addTrack": "Add Track",
@@ -264,6 +279,14 @@
     "segmentStart": "Start",
     "segmentDuration": "Duration",
     "segmentOffset": "Offset",
+    "importAudio": "Import Audio",
+    "dropFilesHere": "Drop audio files here",
+    "trackCount_one": "{{count}} track",
+    "trackCount_other": "{{count}} tracks",
+    "segmentCount_one": "{{count}} segment",
+    "segmentCount_other": "{{count}} segments",
+    "selectedCount": "{{count}} selected",
+    "exporting": "Exporting…",
     "effectNames": {
       "reverb": "Reverb",
       "delay": "Delay",
@@ -307,7 +330,9 @@
     "cancel": "Cancel",
     "save": "Save",
     "open": "Open",
-    "settings": "Settings"
+    "settings": "Settings",
+    "sampleRateShort": "SR",
+    "bitDepthShort": "BD"
   },
   "nav": {
     "sfx": "SFX",
