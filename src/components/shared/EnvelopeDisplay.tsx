@@ -5,6 +5,7 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { canvasBgFlat, canvasTextColor } from '../../lib/themeColors';
 
 // ---------------------------------------------------------------------------
@@ -20,8 +21,10 @@ export interface EnvelopeDisplayProps {
 export function EnvelopeDisplay({
   buffer,
   sampleRate,
-  title = 'Volume Envelope',
+  title,
 }: EnvelopeDisplayProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t('sfx.volumeEnvelope');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -85,7 +88,7 @@ export function EnvelopeDisplay({
 
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-2 text-white">{title}</h3>
+      <h3 className="text-sm font-semibold mb-2 text-white">{resolvedTitle}</h3>
       <canvas
         ref={canvasRef}
         width={400}
@@ -113,8 +116,11 @@ export function ADSRDisplay({
   sustain,
   decay,
   punch,
-  title = 'ADSR Shape',
+  title,
 }: ADSRDisplayProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t('sfx.adsrShape');
+  const resolvedNoEnvelope = t('sfx.noEnvelope');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -138,7 +144,7 @@ export function ADSRDisplay({
       ctx.fillStyle = canvasTextColor();
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('No envelope', w / 2, h / 2);
+      ctx.fillText(resolvedNoEnvelope, w / 2, h / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -152,7 +158,6 @@ export function ADSRDisplay({
     const dEnd = pad + drawW; // always reaches right edge
 
     // Peak amplitude (1.0 baseline, punch adds extra)
-    const peakY = pad;
     const sustainLevel = 1.0;
     const punchLevel = sustainLevel + Math.min(punch, 2) * 0.3; // punch adds up to 60% extra
     const baseY = pad + drawH; // bottom
@@ -238,11 +243,11 @@ export function ADSRDisplay({
     ctx.lineTo(pad + drawW, ampToY(sustainLevel));
     ctx.stroke();
     ctx.setLineDash([]);
-  }, [attack, sustain, decay, punch]);
+  }, [attack, sustain, decay, punch, resolvedNoEnvelope]);
 
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-2 text-white">{title}</h3>
+      <h3 className="text-sm font-semibold mb-2 text-white">{resolvedTitle}</h3>
       <canvas
         ref={canvasRef}
         width={400}

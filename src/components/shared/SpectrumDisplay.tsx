@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { computeSpectrumBars } from '../../audio/utils/fft';
 import { canvasBgFlat, canvasTextColor, canvasEmptyColor } from '../../lib/themeColors';
 
@@ -11,13 +12,18 @@ export interface SpectrumDisplayProps {
   buffer: Float32Array | null;
   numBars?: number;
   title?: string;
+  noSignalText?: string;
 }
 
 export function SpectrumDisplay({
   buffer,
   numBars = 32,
-  title = 'Frequency Spectrum',
+  title,
+  noSignalText,
 }: SpectrumDisplayProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t('sfx.frequencySpectrum');
+  const resolvedNoSignal = noSignalText ?? t('sfx.noSignal');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -35,7 +41,7 @@ export function SpectrumDisplay({
       ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('No signal', w / 2, h / 2);
+      ctx.fillText(resolvedNoSignal, w / 2, h / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -61,11 +67,11 @@ export function SpectrumDisplay({
     ctx.fillText('20Hz', 2, h - 2);
     ctx.fillText('1kHz', w * 0.4, h - 2);
     ctx.fillText('20kHz', w - 32, h - 2);
-  }, [buffer, numBars]);
+  }, [buffer, numBars, resolvedNoSignal]);
 
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-2 text-white">{title}</h3>
+      <h3 className="text-sm font-semibold mb-2 text-white">{resolvedTitle}</h3>
       <canvas
         ref={canvasRef}
         width={200}

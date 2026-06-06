@@ -100,16 +100,16 @@ const PRESET_LABEL_KEYS: Record<PresetName, string> = {
 };
 
 const WAVEFORM_OPTIONS = [
-  { value: 0, label: 'Square', titleKey: 'sfx.waveSquare' },
-  { value: 1, label: 'Sawtooth', titleKey: 'sfx.waveSawtooth' },
-  { value: 2, label: 'Sine', titleKey: 'sfx.waveSine' },
-  { value: 3, label: 'Noise', titleKey: 'sfx.waveNoise' },
+  { value: 0, labelKey: 'sfx.waveSquare' },
+  { value: 1, labelKey: 'sfx.waveSawtooth' },
+  { value: 2, labelKey: 'sfx.waveSine' },
+  { value: 3, labelKey: 'sfx.waveNoise' },
 ];
 
 const NOISE_OPTIONS = [
-  { value: 0, label: 'White' },
-  { value: 1, label: 'Pink' },
-  { value: 2, label: 'Brown' },
+  { value: 0, labelKey: 'sfx.noiseWhite' },
+  { value: 1, labelKey: 'sfx.noisePink' },
+  { value: 2, labelKey: 'sfx.noiseBrown' },
 ];
 
 type ParamTab = 'basic' | 'envelope' | 'effects' | 'advanced';
@@ -293,11 +293,13 @@ function WaveformCanvas({
   isPlaying,
   title,
   duration,
+  noSignalText = 'No signal',
 }: {
   buffer: Float32Array | null;
   isPlaying?: boolean;
   title: string;
   duration?: number;
+  noSignalText?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
@@ -330,7 +332,7 @@ function WaveformCanvas({
       ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('No signal', w / 2, h / 2);
+      ctx.fillText(noSignalText, w / 2, h / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -353,7 +355,7 @@ function WaveformCanvas({
     }
     ctx.stroke();
     ctx.shadowBlur = 0;
-  }, [buffer, isPlaying]);
+  }, [buffer, isPlaying, noSignalText]);
 
   // Animate playhead during playback
   useEffect(() => {
@@ -498,10 +500,10 @@ export function SFXPanel() {
   const handleShareLink = useCallback(() => {
     const link = encodeShareLink();
     navigator.clipboard.writeText(link).then(() => {
-      setShareMsg('Link copied!');
+      setShareMsg(t('sfx.linkCopied'));
       setTimeout(() => setShareMsg(null), 2000);
     });
-  }, [encodeShareLink]);
+  }, [encodeShareLink, t]);
 
   const handleExportJSON = useCallback(() => {
     const json = exportParamsJSON();
@@ -615,9 +617,9 @@ export function SFXPanel() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2 gradient-title">
             {t('panels.sfx')}
           </h1>
-          <p className="text-gray-400 text-base">Advanced Sound Effect Synthesizer</p>
+          <p className="text-gray-400 text-base">{t('sfx.subtitle')}</p>
           <p className="text-gray-500 text-xs mt-2">
-            Shortcuts: A/B (slots) · 1-8,Q,W,E,R,T,Y,U (presets) · Space (play) · L (loop) · M (mutate) · Ctrl+Z (undo)
+            {t('sfx.shortcuts')}
           </p>
 
           {/* Master Controls */}
@@ -647,21 +649,21 @@ export function SFXPanel() {
                   activeSlot === 'A' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
-                Slot A
+                {t('sfx.slotA')}
               </button>
               <button
                 onClick={() => { copyToOther(); generate(); }}
                 className="btn-surface p-2 rounded-lg"
-                title="Copy to other slot"
-              aria-label="Copy to other slot"
+                title={t('sfx.copyToOther')}
+              aria-label={t('sfx.copyToOther')}
               >
                 <Copy className="w-4 h-4" />
               </button>
               <button
                 onClick={() => { swapSlots(); generate(); }}
                 className="p-2 rounded-lg transition-colors bg-purple-600 hover:bg-purple-500 text-white"
-                title="Swap slots"
-              aria-label="Swap slots"
+                title={t('sfx.swapSlots')}
+              aria-label={t('sfx.swapSlots')}
               >
                 <ArrowLeftRight className="w-4 h-4" />
               </button>
@@ -671,13 +673,13 @@ export function SFXPanel() {
                   activeSlot === 'B' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
-                Slot B
+                {t('sfx.slotB')}
               </button>
             </div>
 
             {/* Morph */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Morph:</span>
+              <span className="text-xs text-gray-500">{t('sfx.morph')}</span>
               <input
                 type="range"
                 min={0}
@@ -758,7 +760,7 @@ export function SFXPanel() {
               className="px-5 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
             >
               <Download className="w-5 h-5" />
-              Export {activeSlot}
+              {t('sfx.exportSlot', { slot: activeSlot })}
             </button>
           </div>
         </div>
@@ -769,25 +771,25 @@ export function SFXPanel() {
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <ParamInfoButton paramKey="waveform" />
             </div>
-            <WaveformCanvas buffer={buffer} isPlaying={isPlaying && activeSlot === 'A'} title="Waveform A" duration={buffer ? buffer.length / sampleRate : 0} />
+            <WaveformCanvas buffer={buffer} isPlaying={isPlaying && activeSlot === 'A'} title={t('sfx.waveformA')} duration={buffer ? buffer.length / sampleRate : 0} noSignalText={t('sfx.noSignal')} />
           </div>
           <div className="card relative group">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <ParamInfoButton paramKey="waveform" />
             </div>
-            <WaveformCanvas buffer={buffer} isPlaying={isPlaying && activeSlot === 'B'} title="Waveform B" duration={buffer ? buffer.length / sampleRate : 0} />
+            <WaveformCanvas buffer={buffer} isPlaying={isPlaying && activeSlot === 'B'} title={t('sfx.waveformB')} duration={buffer ? buffer.length / sampleRate : 0} noSignalText={t('sfx.noSignal')} />
           </div>
           <div className="card relative group">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <ParamInfoButton paramKey="spectrum" />
             </div>
-            <SpectrumDisplay buffer={buffer} />
+            <SpectrumDisplay buffer={buffer} title={t('sfx.frequencySpectrum')} />
           </div>
           <div className="card relative group">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <ParamInfoButton paramKey="amplitude" />
             </div>
-            <AmplitudeDisplay buffer={buffer} />
+            <AmplitudeDisplay buffer={buffer} title={t('sfx.signalLevel')} />
           </div>
         </div>
 
@@ -797,7 +799,7 @@ export function SFXPanel() {
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <ParamInfoButton paramKey="envelope" />
             </div>
-            <EnvelopeDisplay buffer={buffer} sampleRate={sampleRate} />
+            <EnvelopeDisplay buffer={buffer} sampleRate={sampleRate} title={t('sfx.volumeEnvelope')} />
           </div>
           <div className="card relative group">
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -808,6 +810,7 @@ export function SFXPanel() {
               sustain={params.p_env_sustain}
               decay={params.p_env_decay}
               punch={params.p_env_punch}
+              title={t('sfx.adsrShape')}
             />
           </div>
         </div>
@@ -816,7 +819,7 @@ export function SFXPanel() {
         <div className="card mb-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
             <Zap className="w-5 h-5" />
-            Sound Presets
+            {t('sfx.soundPresets')}
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
             {ALL_PRESET_NAMES.map((name) => (
@@ -839,10 +842,10 @@ export function SFXPanel() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Sample Rate & Bit Depth */}
             <div>
-              <h3 className="text-base font-semibold mb-3 text-white">Audio Quality</h3>
+              <h3 className="text-base font-semibold mb-3 text-white">{t('sfx.audioQuality')}</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-400 mb-2 block">Sample Rate</label>
+                  <label className="text-xs font-medium text-gray-400 mb-2 block">{t('sfx.sampleRate')}</label>
                   <div className="grid grid-cols-4 gap-2">
                     {[44100, 22050, 11025, 8000].map((rate) => (
                       <button
@@ -864,7 +867,7 @@ export function SFXPanel() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-400 mb-2 block">Bit Depth</label>
+                  <label className="text-xs font-medium text-gray-400 mb-2 block">{t('sfx.bitDepth')}</label>
                   <div className="grid grid-cols-4 gap-2">
                     {[32, 24, 16, 8].map((bits) => (
                       <button
@@ -883,7 +886,7 @@ export function SFXPanel() {
                 </div>
                 {/* Clipping */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">Clipped:</span>
+                  <span className="text-xs text-gray-400">{t('sfx.clipped')}</span>
                   <div className={`w-3 h-3 rounded ${isClipping ? 'bg-red-500' : 'bg-gray-600'}`} />
                   <span className="text-xs text-gray-500">{isClipping ? t('sfx.clippedYes') : t('sfx.clippedNo')}</span>
                 </div>
@@ -892,21 +895,21 @@ export function SFXPanel() {
 
             {/* Share & Presets */}
             <div>
-              <h3 className="text-base font-semibold mb-3 text-white">Share &amp; Presets</h3>
+              <h3 className="text-base font-semibold mb-3 text-white">{t('sfx.shareAndPresets')}</h3>
               <div className="space-y-2">
                 <button
                   onClick={handleShareLink}
                   className="w-full px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-sm text-white"
                 >
                   <Share2 className="w-4 h-4" />
-                  {shareMsg ?? 'Share Link'}
+                  {shareMsg ?? t('sfx.shareLink')}
                 </button>
                 <button
                   onClick={handleExportJSON}
                   className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2 font-semibold text-sm text-white"
                 >
                   <FileJson className="w-4 h-4" />
-                  Export Preset
+                  {t('sfx.exportPreset')}
                 </button>
                 <div className="relative">
                   <input
@@ -925,7 +928,7 @@ export function SFXPanel() {
                     className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-sm text-white"
                   >
                     <Upload className="w-4 h-4" />
-                    Import Preset
+                    {t('sfx.importPreset')}
                   </button>
                 </div>
               </div>
@@ -933,7 +936,7 @@ export function SFXPanel() {
 
             {/* Export */}
             <div>
-              <h3 className="text-base font-semibold mb-3 text-white">Export</h3>
+              <h3 className="text-base font-semibold mb-3 text-white">{t('sfx.export')}</h3>
               <div className="space-y-2">
                 <button
                   onClick={downloadWav}
@@ -941,7 +944,7 @@ export function SFXPanel() {
                   className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-sm text-white"
                 >
                   <Download className="w-4 h-4" />
-                  Download WAV
+                  {t('sfx.downloadWav')}
                 </button>
               </div>
             </div>
@@ -953,18 +956,18 @@ export function SFXPanel() {
           <div className="flex justify-between items-start mb-6 flex-wrap gap-3">
             <div className="tab-bar">
               {([
-                { id: 'basic' as const, label: 'Basic', Icon: Settings },
-                { id: 'envelope' as const, label: 'Envelope', Icon: Activity },
-                { id: 'effects' as const, label: 'Effects', Icon: Zap },
-                { id: 'advanced' as const, label: 'Advanced', Icon: Volume2 },
-              ]).map(({ id, label, Icon }) => (
+                { id: 'basic' as const, labelKey: 'sfx.tabBasic', Icon: Settings },
+                { id: 'envelope' as const, labelKey: 'sfx.tabEnvelope', Icon: Activity },
+                { id: 'effects' as const, labelKey: 'sfx.tabEffects', Icon: Zap },
+                { id: 'advanced' as const, labelKey: 'sfx.tabAdvanced', Icon: Volume2 },
+              ]).map(({ id, labelKey, Icon }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
                   className={`tab-btn ${activeTab === id ? 'active' : ''}`}
                 >
                   <Icon className="w-4 h-4" />
-                  {label}
+                  {t(labelKey)}
                 </button>
               ))}
             </div>
@@ -975,7 +978,7 @@ export function SFXPanel() {
                 showNumeric ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >
-              {showNumeric ? 'Sliders' : 'Numeric'}
+              {showNumeric ? t('sfx.sliders') : t('sfx.numeric')}
             </button>
           </div>
 
@@ -984,7 +987,7 @@ export function SFXPanel() {
               <>
                 {/* Waveform type */}
                 <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h4 className="font-semibold mb-3 text-blue-300 text-sm">Waveform Type</h4>
+                  <h4 className="font-semibold mb-3 text-blue-300 text-sm">{t('sfx.waveformType')}</h4>
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {WAVEFORM_OPTIONS.map((opt) => (
                       <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
@@ -994,13 +997,13 @@ export function SFXPanel() {
                           onChange={() => onChange('wave_type', opt.value)}
                           className="text-blue-600"
                         />
-                        <span className="text-sm text-white">{opt.label}</span>
+                        <span className="text-sm text-white">{t(opt.labelKey)}</span>
                       </label>
                     ))}
                   </div>
                   {params.wave_type === 3 && (
                     <>
-                      <h4 className="font-semibold mb-2 text-purple-400 text-xs">Noise Type</h4>
+                      <h4 className="font-semibold mb-2 text-purple-400 text-xs">{t('sfx.noiseType')}</h4>
                       <div className="grid grid-cols-3 gap-1">
                         {NOISE_OPTIONS.map((opt) => (
                           <label key={opt.value} className="flex items-center gap-1 cursor-pointer text-xs">
@@ -1010,7 +1013,7 @@ export function SFXPanel() {
                               onChange={() => onChange('noise_type', opt.value)}
                               className="text-purple-600"
                             />
-                            <span className="text-white">{opt.label}</span>
+                            <span className="text-white">{t(opt.labelKey)}</span>
                           </label>
                         ))}
                       </div>
@@ -1025,7 +1028,7 @@ export function SFXPanel() {
 
                 {/* Retrigger */}
                 <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h4 className="font-semibold mb-3 text-orange-300 text-sm">Retrigger</h4>
+                  <h4 className="font-semibold mb-3 text-orange-300 text-sm">{t('sfx.retrigger')}</h4>
                   <ParamSlider label={t('sfx.repeat')} paramKey="p_repeat_speed" min={0} max={1} value={params.p_repeat_speed} locked={isLocked('p_repeat_speed')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_repeat_speed", params.wave_type)} />
                 </div>
               </>
@@ -1074,7 +1077,7 @@ export function SFXPanel() {
 
                 {/* Arpeggio */}
                 <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h4 className="font-semibold mb-3 text-blue-300 text-sm">Arpeggio</h4>
+                  <h4 className="font-semibold mb-3 text-blue-300 text-sm">{t('sfx.arpeggio')}</h4>
                   <div className="space-y-3">
                     <ParamSlider label={t('sfx.mod')} paramKey="p_arp_mod" min={-1} max={1} value={params.p_arp_mod} locked={isLocked('p_arp_mod')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_arp_mod", params.wave_type)} />
                     <ParamSlider label={t('sfx.speed')} paramKey="p_arp_speed" min={0} max={1} value={params.p_arp_speed} locked={isLocked('p_arp_speed')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_arp_speed", params.wave_type)} />
@@ -1083,7 +1086,7 @@ export function SFXPanel() {
 
                 {/* Pulse Width */}
                 <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h4 className="font-semibold mb-3 text-blue-300 text-sm">Pulse Width</h4>
+                  <h4 className="font-semibold mb-3 text-blue-300 text-sm">{t('sfx.pulseWidth')}</h4>
                   <div className="space-y-3">
                     <ParamSlider label={t('sfx.duty')} paramKey="p_duty" min={-1} max={1} value={params.p_duty} locked={isLocked('p_duty')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_duty", params.wave_type)} />
                     <ParamSlider label={t('sfx.dutyRamp')} paramKey="p_duty_ramp" min={-1} max={1} value={params.p_duty_ramp} locked={isLocked('p_duty_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_duty_ramp", params.wave_type)} />
@@ -1092,7 +1095,7 @@ export function SFXPanel() {
 
                 {/* Phaser */}
                 <div className="bg-gray-800/50 rounded-lg p-4">
-                  <h4 className="font-semibold mb-3 text-blue-300 text-sm">Phaser</h4>
+                  <h4 className="font-semibold mb-3 text-blue-300 text-sm">{t('sfx.phaser')}</h4>
                   <div className="space-y-3">
                     <ParamSlider label={t('sfx.offset')} paramKey="p_pha_offset" min={-1} max={1} value={params.p_pha_offset} locked={isLocked('p_pha_offset')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_pha_offset", params.wave_type)} />
                     <ParamSlider label={t('sfx.ramp')} paramKey="p_pha_ramp" min={-1} max={1} value={params.p_pha_ramp} locked={isLocked('p_pha_ramp')} onChange={onChange} onToggleLock={toggleLock} numeric={showNumeric} suggestion={getSuggestion("p_pha_ramp", params.wave_type)} />

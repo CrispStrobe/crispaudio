@@ -42,6 +42,7 @@ import { TRACK_HEADER_WIDTH, TRACK_HEIGHT, RULER_HEIGHT } from '../../hooks/useT
 import { useAudioEngine } from '../../hooks/useAudioEngine';
 import { TimelineEngine } from '../../audio/engine/TimelineEngine';
 import { computeWaveformPeaks, encodeAudioBufferToWav } from '../../audio/utils/audioBufferUtils';
+import { downloadWavFile } from '../../lib/wavExport';
 import type { AudioSource } from '../../types/audio';
 
 // ── Track header ──────────────────────────────────────────────────────────────
@@ -287,12 +288,7 @@ export const TimelinePanel: React.FC = () => {
       const rendered = await engine.renderToBuffer(store.project);
       const wav = encodeAudioBufferToWav(rendered, defaultBitDepth);
       const blob = new Blob([wav], { type: 'audio/wav' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${store.project.name || 'crispaudio_mix'}.wav`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadWavFile(blob, `${store.project.name || 'crispaudio_mix'}.wav`);
     } catch (err) {
       console.error('Mix export failed:', err);
     } finally {

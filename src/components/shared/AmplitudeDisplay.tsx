@@ -5,17 +5,23 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { canvasBgFlat, canvasTextColor, canvasEmptyColor } from '../../lib/themeColors';
 
 export interface AmplitudeDisplayProps {
   buffer: Float32Array | null;
   title?: string;
+  noSignalText?: string;
 }
 
 export function AmplitudeDisplay({
   buffer,
-  title = 'Signal Level',
+  title,
+  noSignalText,
 }: AmplitudeDisplayProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t('sfx.signalLevel');
+  const resolvedNoSignal = noSignalText ?? t('sfx.noSignal');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -33,7 +39,7 @@ export function AmplitudeDisplay({
       ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('No signal', w / 2, h / 2);
+      ctx.fillText(resolvedNoSignal, w / 2, h / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -68,11 +74,11 @@ export function AmplitudeDisplay({
     ctx.fillText('PEAK', w * 0.5 + 2, 12);
     ctx.fillText(`${rmsDb.toFixed(1)}dB`, 2, h - 2);
     ctx.fillText(`${peakDb.toFixed(1)}dB`, w * 0.5 + 2, h - 2);
-  }, [buffer]);
+  }, [buffer, resolvedNoSignal]);
 
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-2 text-white">{title}</h3>
+      <h3 className="text-sm font-semibold mb-2 text-white">{resolvedTitle}</h3>
       <canvas
         ref={canvasRef}
         width={200}
