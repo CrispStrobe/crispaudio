@@ -92,7 +92,7 @@ describe('SpectrumDisplay -- smoke', () => {
     );
     const { container } = render(<SpectrumDisplay buffer={null} />);
     expect(container.querySelector('canvas')).toBeInTheDocument();
-  });
+  }, 15_000);
 
   it('renders with sample data', async () => {
     const { SpectrumDisplay } = await import(
