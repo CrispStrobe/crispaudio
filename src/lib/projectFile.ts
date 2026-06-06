@@ -86,18 +86,23 @@ export async function deserializeProject(
 
   const sources = new Map<string, AudioSource>();
   for (const s of doc.sources) {
-    const buffer = await ctx.decodeAudioData(base64ToArrayBuffer(s.wav));
-    const mono = buffer.getChannelData(0);
-    const bins = Math.max(1, Math.min(8000, Math.ceil(buffer.duration * 200)));
-    sources.set(s.id, {
-      id: s.id,
-      name: s.name,
-      buffer,
-      peaks: computeWaveformPeaks(mono, bins),
-      duration: buffer.duration,
-      sampleRate: buffer.sampleRate,
-      channels: buffer.numberOfChannels,
-    });
+    try {
+      const buffer = await ctx.decodeAudioData(base64ToArrayBuffer(s.wav));
+      const mono = buffer.getChannelData(0);
+      const bins = Math.max(1, Math.min(8000, Math.ceil(buffer.duration * 200)));
+      sources.set(s.id, {
+        id: s.id,
+        name: s.name,
+        buffer,
+        peaks: computeWaveformPeaks(mono, bins),
+        duration: buffer.duration,
+        sampleRate: buffer.sampleRate,
+        channels: buffer.numberOfChannels,
+      });
+    } catch (err) {
+      console.error(`Failed to decode audio source "${s.name}":`, err);
+      // Skip corrupt sources instead of crashing the entire project load
+    }
   }
 
   return { project: doc.project, sources };

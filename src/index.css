@@ -8,7 +8,7 @@
   --accent: #3b82f6;
   --accent-hover: #2563eb;
   --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
+  --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --border: #475569;
   --border-subtle: #1e2d40;
@@ -23,7 +23,7 @@ html.light {
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --text-primary: #0f172a;
-  --text-secondary: #475569;
+  --text-secondary: #334155;
   --text-muted: #475569;
   --border: #94a3b8;
   --border-subtle: #e2e8f0;

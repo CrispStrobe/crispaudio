@@ -19,13 +19,18 @@ export async function saveProjectFile(
   defaultName: string,
 ): Promise<boolean> {
   if (isTauri()) {
-    const path = await save({
-      defaultPath: `${defaultName}.crispaudio.json`,
-      filters: FILTERS,
-    });
-    if (!path) return false;
-    await invoke('save_project', { path, data: json });
-    return true;
+    try {
+      const path = await save({
+        defaultPath: `${defaultName}.crispaudio.json`,
+        filters: FILTERS,
+      });
+      if (!path) return false;
+      await invoke('save_project', { path, data: json });
+      return true;
+    } catch (err) {
+      console.error('Failed to save project:', err);
+      return false;
+    }
   }
 
   // Browser fallback: trigger a download.
@@ -42,9 +47,14 @@ export async function saveProjectFile(
 /** Prompt for a project file and return its contents (null if cancelled). */
 export async function openProjectFile(): Promise<string | null> {
   if (isTauri()) {
-    const selected = await open({ multiple: false, filters: FILTERS });
-    if (!selected || typeof selected !== 'string') return null;
-    return invoke<string>('load_project', { path: selected });
+    try {
+      const selected = await open({ multiple: false, filters: FILTERS });
+      if (!selected || typeof selected !== 'string') return null;
+      return invoke<string>('load_project', { path: selected });
+    } catch (err) {
+      console.error('Failed to open project:', err);
+      return null;
+    }
   }
 
   // Browser fallback: hidden file input.
