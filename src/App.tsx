@@ -9,7 +9,6 @@ import { VoicePanel } from './components/voice/VoicePanel';
 import { TimelinePanel } from './components/timeline/TimelinePanel';
 import { SettingsModal } from './components/common/SettingsModal';
 import { AboutModal } from './components/common/AboutModal';
-import { LicensesModal } from './components/common/LicensesModal';
 import { useUIStore } from './stores/uiStore';
 import { useSettingsStore } from './stores/settingsStore';
 import { useSynthStore, loadFromShareLink } from './stores/synthStore';
@@ -74,7 +73,6 @@ export default function App() {
 
       <SettingsModal />
       <AboutModal />
-      <LicensesModal />
     </AppShell>
   );
 }

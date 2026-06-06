@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { useTranslation } from 'react-i18next';
-import { Info, FileText } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { Modal } from './Modal';
 import { useUIStore } from '../../stores/uiStore';
 import {
@@ -139,7 +139,7 @@ export function SettingsModal() {
           </div>
         </div>
 
-        {/* About / Licenses links */}
+        {/* About link */}
         <div className="flex gap-2 pt-2 border-t border-gray-700/70">
           <button
             type="button"
@@ -148,14 +148,6 @@ export function SettingsModal() {
           >
             <Info className="w-3.5 h-3.5" />
             {t('about.title')}
-          </button>
-          <button
-            type="button"
-            onClick={() => openModal('licenses')}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-100 transition-colors"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            {t('licenses.title')}
           </button>
         </div>
       </div>

@@ -214,3 +214,61 @@ describe('Undo/Redo', () => {
     expect(useSynthStore.getState().paramsA.p_base_freq).toBe(origFreq);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Slot B generate
+// ---------------------------------------------------------------------------
+
+describe('Slot B generate', () => {
+  it('generate() uses slot B params when activeSlot is B', () => {
+    const store = useSynthStore.getState();
+
+    // Load different presets into A and B
+    store.setActiveSlot('A');
+    store.loadPreset('pickupCoin');
+    store.generate();
+    const bufA = useSynthStore.getState().buffer;
+
+    store.setActiveSlot('B');
+    store.loadPreset('explosion');
+    store.generate();
+    const bufB = useSynthStore.getState().buffer;
+
+    // Buffers should differ — slot B uses explosion, not pickupCoin
+    expect(bufA).not.toBeNull();
+    expect(bufB).not.toBeNull();
+    expect(bufA!.length !== bufB!.length || (() => {
+      let diff = 0;
+      const len = Math.min(bufA!.length, bufB!.length);
+      for (let i = 0; i < len; i++) diff += Math.abs(bufA![i] - bufB![i]);
+      return diff / len > 0.001;
+    })()).toBe(true);
+  });
+
+  it('switching back to A regenerates from A params', () => {
+    const store = useSynthStore.getState();
+
+    // Use deterministic params (no random presets)
+    store.setActiveSlot('A');
+    store.setParams({ p_base_freq: 0.3, p_env_sustain: 0.2, p_env_decay: 0.2, wave_type: 2 });
+    store.generate();
+    const bufA1 = useSynthStore.getState().buffer!.slice();
+
+    store.setActiveSlot('B');
+    store.setParams({ p_base_freq: 0.8, p_env_sustain: 0.5, p_env_decay: 0.3, wave_type: 0 });
+    store.generate();
+
+    // Switch back to A and regenerate
+    store.setActiveSlot('A');
+    store.generate();
+    const bufA2 = useSynthStore.getState().buffer!;
+
+    // Should match original A buffer exactly (deterministic params)
+    expect(bufA2.length).toBe(bufA1.length);
+    let maxDiff = 0;
+    for (let i = 0; i < bufA1.length; i++) {
+      maxDiff = Math.max(maxDiff, Math.abs(bufA1[i] - bufA2[i]));
+    }
+    expect(maxDiff).toBe(0);
+  });
+});
