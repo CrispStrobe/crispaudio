@@ -37,11 +37,14 @@ tests/unit/         Unit tests (stores/, audio/, components/, hooks/, lib/)
 ## Conventions
 
 - Panels are lazy-loaded via React.lazy in App.tsx
-- Visualization components (WaveformDisplay, SpectrumDisplay, etc.) are in shared/
+- Visualization components (WaveformDisplay, SpectrumDisplay, etc.) are in shared/ with ResizeObserver for HiDPI
 - Audio processing runs in the browser (Web Audio API) — Tauri is used for file I/O and WAV encoding
+- Panels must clean up AudioContext and stop playback on unmount
 - CSS uses Tailwind utilities + CSS custom properties for theming (--bg-primary, --text-muted, etc.)
 - All interactive elements need aria-labels (WCAG compliance)
+- Use React.memo on frequently re-rendered leaf components (e.g. ParamSlider)
 - Version is synced across: package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml, AboutModal CURRENT_VERSION
+- PWA: service worker auto-updates via vite-plugin-pwa (web only, disabled for Tauri)
 
 ## CI
 

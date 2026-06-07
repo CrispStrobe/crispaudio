@@ -73,6 +73,9 @@ Built with Tauri 2.x (Rust + React + TypeScript). Also runs as a web app.
 - "Check for Updates" via GitHub releases API
 - Full i18n: EN + DE with 100% string coverage (including parameter tooltips)
 - Branded loading screen with CrispAudio logo
+- HiDPI-sharp canvas rendering via ResizeObserver + DPR scaling
+- Audio cleanup on panel switch (prevents orphaned playback)
+- Error feedback for failed file imports and JSON parsing
 
 ## Keyboard Shortcuts
 

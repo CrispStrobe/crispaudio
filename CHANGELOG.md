@@ -31,12 +31,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - CHANGELOG.md, LICENSE, PWA raster icons, CLAUDE.md
 - cargo test in CI, VoiceEngine/TimelineEngine structural tests
 - Architecture diagram and Contributing section in README
+- robots.txt and sitemap.xml for web SEO
+- User-visible error feedback for file decode and JSON import failures
 
 ### Changed
 - SFX/Voice WAV export now uses Rust encoder (supports 8/16/24/32-bit natively)
 - Color contrast improved: --text-secondary and --text-muted differentiated
 - Error handling hardened: projectFile/projectIO try/catch on all async paths
 - Branded loading spinner replaces plain text Suspense fallback
+- Audio playback stops cleanly on panel unmount (prevents orphaned AudioContext)
+- Voice processAudio guarded against race conditions (staleness counter)
+- ParamSlider wrapped in React.memo for render optimization
+- Canvas visualizations use ResizeObserver + DPR scaling for sharp HiDPI rendering
 
 ### Removed
 - Dead Tauri file_io commands (open_audio_file, save_audio_file)
