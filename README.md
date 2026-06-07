@@ -65,11 +65,23 @@ Built with Tauri 2.x (Rust + React + TypeScript). Also runs as a web app.
 - Vendor chunk splitting (React, i18n, state management)
 - Mobile-responsive layout with collapsible sidebar
 - Panel transition animations
-- WCAG accessibility: skip-to-content, aria labels, proper tab roles, improved contrast
+- WCAG accessibility: skip-to-content, aria labels, tab roles, keyboard nav, color contrast
 - Timeline autosave to localStorage (30s interval + on unload)
 - Content Security Policy enabled for Tauri builds
+- PWA offline support via service worker
+- Keyboard shortcuts help overlay (press `?`)
+- "Check for Updates" via GitHub releases API
+- Full i18n: EN + DE with 100% string coverage (including parameter tooltips)
+- Branded loading screen with CrispAudio logo
 
 ## Keyboard Shortcuts
+
+### Global
+| Key | Action |
+|-----|--------|
+| `Ctrl+1` / `2` / `3` | Switch to SFX / Voice / Timeline |
+| `Ctrl+,` | Open Settings |
+| `?` | Show shortcuts help |
 
 ### SFX Panel
 | Key | Action |
@@ -79,8 +91,8 @@ Built with Tauri 2.x (Rust + React + TypeScript). Also runs as a web app.
 | `L` | Toggle loop |
 | `M` | Mutate (subtle variation) |
 | `A` / `B` | Switch slot |
-| `Ctrl+Z` | Undo |
-| `Ctrl+Shift+Z` | Redo |
+| `Ctrl+Wheel` | Zoom waveform |
+| `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / Redo |
 
 ### Voice Panel
 | Key | Action |
@@ -89,6 +101,7 @@ Built with Tauri 2.x (Rust + React + TypeScript). Also runs as a web app.
 | `Space` | Play / Stop |
 | `P` | Process |
 | `A` / `B` | Switch slot |
+| `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / Redo |
 
 ## Development
 
