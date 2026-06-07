@@ -41,10 +41,16 @@ export function SettingsModal() {
     theme,
     defaultSampleRate,
     defaultBitDepth,
+    ttsServerUrl,
+    ttsDefaultVoice,
+    ttsDefaultBackend,
     setLanguage,
     setTheme,
     setDefaultSampleRate,
     setDefaultBitDepth,
+    setTTSServerUrl,
+    setTTSDefaultVoice,
+    setTTSDefaultBackend,
   } = useSettingsStore();
 
   return (
@@ -135,6 +141,56 @@ export function SettingsModal() {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+        </div>
+
+        {/* TTS configuration */}
+        <div>
+          <h3 className="text-xs font-semibold text-gray-300 mb-2 uppercase tracking-wide">
+            {t('settings.tts')}
+          </h3>
+          <div className="flex flex-col gap-3">
+            <div>
+              <label className={fieldLabel} htmlFor="settings-tts-url">
+                {t('settings.ttsServerUrl')}
+              </label>
+              <input
+                id="settings-tts-url"
+                type="text"
+                className={selectClass}
+                value={ttsServerUrl}
+                onChange={(e) => setTTSServerUrl(e.target.value)}
+                placeholder="http://localhost:8766"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={fieldLabel} htmlFor="settings-tts-voice">
+                  {t('settings.ttsDefaultVoice')}
+                </label>
+                <input
+                  id="settings-tts-voice"
+                  type="text"
+                  className={selectClass}
+                  value={ttsDefaultVoice}
+                  onChange={(e) => setTTSDefaultVoice(e.target.value)}
+                  placeholder={t('settings.ttsVoicePlaceholder')}
+                />
+              </div>
+              <div>
+                <label className={fieldLabel} htmlFor="settings-tts-backend">
+                  {t('settings.ttsDefaultBackend')}
+                </label>
+                <input
+                  id="settings-tts-backend"
+                  type="text"
+                  className={selectClass}
+                  value={ttsDefaultBackend}
+                  onChange={(e) => setTTSDefaultBackend(e.target.value)}
+                  placeholder="kokoro"
+                />
+              </div>
             </div>
           </div>
         </div>

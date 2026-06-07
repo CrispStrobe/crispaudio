@@ -22,11 +22,17 @@ interface SettingsState {
   theme: Theme;
   defaultSampleRate: SampleRate;
   defaultBitDepth: BitDepth;
+  ttsServerUrl: string;
+  ttsDefaultVoice: string;
+  ttsDefaultBackend: string;
 
   setLanguage: (lang: Language) => void;
   setTheme: (theme: Theme) => void;
   setDefaultSampleRate: (rate: SampleRate) => void;
   setDefaultBitDepth: (depth: BitDepth) => void;
+  setTTSServerUrl: (url: string) => void;
+  setTTSDefaultVoice: (voice: string) => void;
+  setTTSDefaultBackend: (backend: string) => void;
 }
 
 /** Apply theme class to the document root element. */
@@ -47,6 +53,9 @@ export const useSettingsStore = create<SettingsState>()(
       theme: 'dark' as Theme,
       defaultSampleRate: 44100,
       defaultBitDepth: 16,
+      ttsServerUrl: 'http://localhost:8766',
+      ttsDefaultVoice: '',
+      ttsDefaultBackend: 'kokoro',
 
       setLanguage: (language) => {
         i18n.changeLanguage(language);
@@ -58,6 +67,9 @@ export const useSettingsStore = create<SettingsState>()(
       },
       setDefaultSampleRate: (defaultSampleRate) => set({ defaultSampleRate }),
       setDefaultBitDepth: (defaultBitDepth) => set({ defaultBitDepth }),
+      setTTSServerUrl: (ttsServerUrl) => set({ ttsServerUrl }),
+      setTTSDefaultVoice: (ttsDefaultVoice) => set({ ttsDefaultVoice }),
+      setTTSDefaultBackend: (ttsDefaultBackend) => set({ ttsDefaultBackend }),
     }),
     {
       name: 'crispaudio-settings',

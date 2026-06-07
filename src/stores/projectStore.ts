@@ -85,6 +85,9 @@ interface ProjectState {
    */
   importAudioSource: (source: AudioSource, startTime?: number, trackId?: string) => void;
 
+  /** Replace a segment's audio source with a new one (non-destructive). */
+  replaceSegmentSource: (segmentId: string, newSource: AudioSource) => void;
+
   // Selection
   setSelection: (selection: TimelineSelection | null) => void;
   selectSegment: (segmentId: string, addToSelection?: boolean) => void;
@@ -502,6 +505,31 @@ export const useProjectStore = create<ProjectState>()(
               ? { ...t, segments: [...t.segments, segment] }
               : t,
           );
+
+          return {
+            sources,
+            project: {
+              ...state.project,
+              tracks,
+              duration: computeProjectDuration(tracks),
+            },
+          };
+        });
+      },
+
+      replaceSegmentSource: (segmentId, newSource) => {
+        set((state) => {
+          const sources = new Map(state.sources);
+          sources.set(newSource.id, newSource);
+
+          const tracks = state.project.tracks.map((track) => ({
+            ...track,
+            segments: track.segments.map((seg) =>
+              seg.id === segmentId
+                ? { ...seg, sourceId: newSource.id, duration: newSource.duration, sourceOffset: 0 }
+                : seg,
+            ),
+          }));
 
           return {
             sources,

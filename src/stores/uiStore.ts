@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 
 export type ActivePanel = 'sfx' | 'voice' | 'timeline';
-export type ActiveModal = 'settings' | 'about' | 'shortcuts' | null;
+export type ActiveModal = 'settings' | 'about' | 'shortcuts' | 'voiceEffects' | 'tts' | null;
 
 interface UIState {
   activePanel: ActivePanel;
@@ -15,10 +15,12 @@ interface UIState {
   zoomLevel: number;
   snapEnabled: boolean;
   snapInterval: number;
+  voiceEffectsTargetSegmentId: string | null;
 
   setActivePanel: (panel: ActivePanel) => void;
   openModal: (modal: Exclude<ActiveModal, null>) => void;
   closeModal: () => void;
+  openVoiceEffects: (segmentId: string) => void;
   toggleSidebar: () => void;
   setZoomLevel: (level: number) => void;
   setSnapEnabled: (enabled: boolean) => void;
@@ -32,10 +34,12 @@ export const useUIStore = create<UIState>()((set) => ({
   zoomLevel: 1,
   snapEnabled: true,
   snapInterval: 16,
+  voiceEffectsTargetSegmentId: null,
 
   setActivePanel: (panel) => set({ activePanel: panel }),
   openModal: (modal) => set({ activeModal: modal }),
-  closeModal: () => set({ activeModal: null }),
+  closeModal: () => set({ activeModal: null, voiceEffectsTargetSegmentId: null }),
+  openVoiceEffects: (segmentId) => set({ activeModal: 'voiceEffects', voiceEffectsTargetSegmentId: segmentId }),
   toggleSidebar: () =>
     set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setZoomLevel: (level) =>

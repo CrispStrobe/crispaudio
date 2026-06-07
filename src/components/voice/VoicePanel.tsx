@@ -21,8 +21,12 @@ import {
   Activity,
   Undo2,
   Redo2,
+  SendHorizontal,
 } from 'lucide-react';
 import { useVoiceStore } from '../../stores/voiceStore';
+import { useProjectStore } from '../../stores/projectStore';
+import { useUIStore } from '../../stores/uiStore';
+import { computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
 import { useMediaRecorder } from '../../hooks/useMediaRecorder';
 import { VoiceEngine } from '../../audio/engine/VoiceEngine';
 import type { VoiceSettings, VoicePresetName } from '../../types/voicelab';
@@ -675,6 +679,22 @@ export function VoicePanel() {
     downloadWavFile(blob, `crispaudio_voice_${Date.now()}.wav`);
   }
 
+  const sendToTimeline = useCallback(() => {
+    if (!processedBuffer) return;
+    const data = processedBuffer.getChannelData(0);
+    const peaks = computeWaveformPeaks(data, 256);
+    useProjectStore.getState().importAudioSource({
+      id: crypto.randomUUID(),
+      name: `Voice - ${new Date().toLocaleTimeString()}`,
+      buffer: processedBuffer,
+      peaks,
+      duration: processedBuffer.duration,
+      sampleRate: processedBuffer.sampleRate,
+      channels: processedBuffer.numberOfChannels,
+    });
+    useUIStore.getState().setActivePanel('timeline');
+  }, [processedBuffer]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const presetKeys: Record<string, VoicePresetName> = {
@@ -890,6 +910,17 @@ export function VoicePanel() {
           >
             <Download className="w-5 h-5" />
             {t('voice.export')}
+          </button>
+
+          {/* Send to Timeline */}
+          <button
+            onClick={sendToTimeline}
+            disabled={!processedBuffer}
+            className="px-5 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+            aria-label={t('voice.sendToTimeline')}
+          >
+            <SendHorizontal className="w-5 h-5" />
+            {t('voice.sendToTimeline')}
           </button>
 
           {/* Undo / Redo */}

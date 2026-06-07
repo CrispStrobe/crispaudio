@@ -14,6 +14,7 @@ import React, {
 import { useTranslation } from 'react-i18next';
 import type { AudioSegment, TimelineTrack, AudioSource } from '../../types/audio';
 import { useProjectStore } from '../../stores/projectStore';
+import { useUIStore } from '../../stores/uiStore';
 import { useTimeline, TRACK_HEIGHT } from '../../hooks/useTimeline';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -584,6 +585,13 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     closeMenu();
   }, [contextMenu, store, closeMenu]);
 
+  const handleApplyVoiceEffects = useCallback(() => {
+    if (contextMenu.segmentId) {
+      useUIStore.getState().openVoiceEffects(contextMenu.segmentId);
+    }
+    closeMenu();
+  }, [contextMenu.segmentId, closeMenu]);
+
   const handlePasteHere = useCallback(() => {
     store.paste(snapTime(contextMenu.time));
     closeMenu();
@@ -725,6 +733,16 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
                 onClick={handleCutSeg}
               >
                 {t('timeline.cut')}
+              </button>
+              <div className="h-px bg-gray-700 my-1" role="separator" />
+              <button
+                type="button"
+                role="menuitem"
+                tabIndex={-1}
+                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-violet-400"
+                onClick={handleApplyVoiceEffects}
+              >
+                {t('timeline.applyVoiceEffects')}
               </button>
               <div className="h-px bg-gray-700 my-1" role="separator" />
               <button

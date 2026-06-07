@@ -113,6 +113,7 @@
     "swapSlots": "Slots tauschen",
     "morph": "Überblenden:",
     "exportSlot": "Exportieren {{slot}}",
+    "sendToTimeline": "An Timeline senden",
     "waveformA": "Wellenform A",
     "waveformB": "Wellenform B",
     "soundPresets": "Sound-Voreinstellungen",
@@ -278,6 +279,7 @@
     "stop": "Stopp",
     "processing": "Verarbeitung…",
     "export": "Exportieren",
+    "sendToTimeline": "An Timeline senden",
     "dropAudio": "Audiodatei hierher ziehen oder klicken",
     "loadedReady": "Geladen — bereit zur Verarbeitung",
     "swapAB": "A ↔ B tauschen",
@@ -404,6 +406,10 @@
     "selectedCount": "{{count}} ausgewählt",
     "reorderTrack": "Spur neu anordnen",
     "exporting": "Exportiere…",
+    "applyVoiceEffects": "Stimmeffekte anwenden",
+    "voiceEffectsTitle": "Stimmeffekte",
+    "preview": "Vorschau",
+    "apply": "Anwenden",
     "effectNames": {
       "reverb": "Hall",
       "delay": "Verzögerung",
@@ -465,13 +471,31 @@
     "timeline": "Timeline",
     "settings": "Einstellungen"
   },
+  "tts": {
+    "title": "Text-zu-Sprache",
+    "text": "Text",
+    "textPlaceholder": "Text zum Synthetisieren eingeben…",
+    "voice": "Stimme",
+    "voicePlaceholder": "Standardstimme",
+    "backend": "Engine",
+    "generate": "Generieren",
+    "generating": "Generiere…",
+    "addToTimeline": "Zur Timeline hinzufügen",
+    "serverInfo": "Server: {{url}}",
+    "generated": "{{duration}}s Audio bei {{sampleRate}} Hz generiert"
+  },
   "settings": {
     "title": "Einstellungen",
     "language": "Sprache",
     "theme": "Farbschema",
     "exportDefaults": "Standard-Exportformat",
     "sampleRate": "Abtastrate",
-    "bitDepth": "Bittiefe"
+    "bitDepth": "Bittiefe",
+    "tts": "Text-zu-Sprache (TTS)",
+    "ttsServerUrl": "Server-URL",
+    "ttsDefaultVoice": "Standardstimme",
+    "ttsDefaultBackend": "Standard-Engine",
+    "ttsVoicePlaceholder": "Leer lassen für Standard"
   },
   "about": {
     "title": "Über",

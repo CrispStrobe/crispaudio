@@ -29,9 +29,11 @@ import {
   Save,
   FolderOpen,
   GripVertical,
+  MessageSquare,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
+import { useUIStore } from '../../stores/uiStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { serializeProject, deserializeProject } from '../../lib/projectFile';
 import { saveProjectFile, openProjectFile } from '../../lib/projectIO';
@@ -493,6 +495,18 @@ export const TimelinePanel: React.FC = () => {
         >
           <Upload className="w-3.5 h-3.5" />
           {t('timeline.import')}
+        </button>
+
+        {/* TTS */}
+        <button
+          type="button"
+          onClick={() => useUIStore.getState().openModal('tts')}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-teal-800 border border-teal-700 text-xs text-teal-200 hover:text-white hover:bg-teal-700 transition-colors"
+          title={t('tts.title')}
+          aria-label={t('tts.title')}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          {t('tts.title')}
         </button>
 
         {/* Export mix */}

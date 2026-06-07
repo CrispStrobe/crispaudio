@@ -113,6 +113,7 @@
     "swapSlots": "Swap slots",
     "morph": "Morph:",
     "exportSlot": "Export {{slot}}",
+    "sendToTimeline": "Send to Timeline",
     "waveformA": "Waveform A",
     "waveformB": "Waveform B",
     "soundPresets": "Sound Presets",
@@ -278,6 +279,7 @@
     "stop": "Stop",
     "processing": "Processing…",
     "export": "Export",
+    "sendToTimeline": "Send to Timeline",
     "dropAudio": "Drop audio file or click to upload",
     "loadedReady": "Loaded — ready to process",
     "swapAB": "Swap A ↔ B",
@@ -404,6 +406,10 @@
     "selectedCount": "{{count}} selected",
     "reorderTrack": "Reorder track",
     "exporting": "Exporting…",
+    "applyVoiceEffects": "Apply Voice Effects",
+    "voiceEffectsTitle": "Voice Effects",
+    "preview": "Preview",
+    "apply": "Apply",
     "effectNames": {
       "reverb": "Reverb",
       "delay": "Delay",
@@ -465,13 +471,31 @@
     "timeline": "Timeline",
     "settings": "Settings"
   },
+  "tts": {
+    "title": "Text to Speech",
+    "text": "Text",
+    "textPlaceholder": "Enter text to synthesize…",
+    "voice": "Voice",
+    "voicePlaceholder": "Default voice",
+    "backend": "Engine",
+    "generate": "Generate",
+    "generating": "Generating…",
+    "addToTimeline": "Add to Timeline",
+    "serverInfo": "Server: {{url}}",
+    "generated": "Generated {{duration}}s audio at {{sampleRate}} Hz"
+  },
   "settings": {
     "title": "Settings",
     "language": "Language",
     "theme": "Theme",
     "exportDefaults": "Default Export Format",
     "sampleRate": "Sample Rate",
-    "bitDepth": "Bit Depth"
+    "bitDepth": "Bit Depth",
+    "tts": "Text to Speech (TTS)",
+    "ttsServerUrl": "Server URL",
+    "ttsDefaultVoice": "Default Voice",
+    "ttsDefaultBackend": "Default Engine",
+    "ttsVoicePlaceholder": "Leave empty for default"
   },
   "about": {
     "title": "About",

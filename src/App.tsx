@@ -16,6 +16,8 @@ const TimelinePanel = lazy(() => import('./components/timeline/TimelinePanel').t
 const SettingsModal = lazy(() => import('./components/common/SettingsModal').then(m => ({ default: m.SettingsModal })));
 const AboutModal = lazy(() => import('./components/common/AboutModal').then(m => ({ default: m.AboutModal })));
 const ShortcutsModal = lazy(() => import('./components/common/ShortcutsModal').then(m => ({ default: m.ShortcutsModal })));
+const VoiceEffectsModal = lazy(() => import('./components/timeline/VoiceEffectsModal').then(m => ({ default: m.VoiceEffectsModal })));
+const TTSModal = lazy(() => import('./components/timeline/TTSModal').then(m => ({ default: m.TTSModal })));
 
 export default function App() {
   const { activePanel, setActivePanel, openModal, activeModal } = useUIStore();
@@ -92,6 +94,8 @@ export default function App() {
         {activeModal === 'settings' && <SettingsModal />}
         {activeModal === 'about' && <AboutModal />}
         {activeModal === 'shortcuts' && <ShortcutsModal />}
+        {activeModal === 'voiceEffects' && <VoiceEffectsModal />}
+        {activeModal === 'tts' && <TTSModal />}
       </Suspense>
     </AppShell>
   );

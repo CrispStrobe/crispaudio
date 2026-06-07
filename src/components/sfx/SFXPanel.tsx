@@ -27,12 +27,16 @@ import {
   Shuffle,
   Undo2,
   Redo2,
+  SendHorizontal,
   Share2,
   FileJson,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
 import { useSynthStore, selectActiveParams } from '../../stores/synthStore';
+import { useProjectStore } from '../../stores/projectStore';
+import { useUIStore } from '../../stores/uiStore';
+import { samplesToAudioBuffer, computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
 import { type SynthParams, ALL_PRESET_NAMES, type PresetName } from '../../types/synth';
 import * as sfxPresets from '../../audio/presets/sfxPresets';
 import { canvasBgGradient, canvasGridColor, canvasEmptyColor } from '../../lib/themeColors';
@@ -772,6 +776,25 @@ export function SFXPanel() {
     downloadWavFile(blob, `crispaudio_sfx_${Date.now()}.wav`);
   }, [buffer, sampleRate, bitDepth]);
 
+  // Send to Timeline
+  const sendToTimeline = useCallback(() => {
+    if (!buffer) return;
+    const ctx = audioCtxRef.current ?? new AudioContext({ sampleRate });
+    if (!audioCtxRef.current) audioCtxRef.current = ctx;
+    const audioBuffer = samplesToAudioBuffer(buffer, sampleRate, ctx);
+    const peaks = computeWaveformPeaks(buffer, 256);
+    useProjectStore.getState().importAudioSource({
+      id: crypto.randomUUID(),
+      name: `SFX - ${new Date().toLocaleTimeString()}`,
+      buffer: audioBuffer,
+      peaks,
+      duration: buffer.length / sampleRate,
+      sampleRate,
+      channels: 1,
+    });
+    useUIStore.getState().setActivePanel('timeline');
+  }, [buffer, sampleRate]);
+
   // Clipping indicator
   const isClipping = buffer ? (() => {
     for (let i = 0; i < buffer.length; i++) {
@@ -933,6 +956,16 @@ export function SFXPanel() {
             >
               <Download className="w-5 h-5" />
               {t('sfx.exportSlot', { slot: activeSlot })}
+            </button>
+
+            <button
+              onClick={sendToTimeline}
+              disabled={!buffer}
+              className="px-5 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
+              aria-label={t('sfx.sendToTimeline')}
+            >
+              <SendHorizontal className="w-5 h-5" />
+              {t('sfx.sendToTimeline')}
             </button>
           </div>
         </div>
