@@ -4,31 +4,11 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useProjectStore } from '../../../src/stores/projectStore';
-import type { AudioSegment, AudioSource } from '../../../src/types/audio';
+import type { AudioSource } from '../../../src/types/audio';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function makeSegment(overrides: Partial<AudioSegment> = {}): AudioSegment {
-  return {
-    id: crypto.randomUUID(),
-    trackId: '',
-    sourceId: 'src-1',
-    startTime: 0,
-    duration: 2,
-    sourceOffset: 0,
-    fadeInDuration: 0,
-    fadeOutDuration: 0,
-    fadeInCurve: 'linear',
-    fadeOutCurve: 'linear',
-    effects: [],
-    gain: 1,
-    color: '#ffffff',
-    name: 'test segment',
-    ...overrides,
-  };
-}
 
 function makeSource(overrides: Partial<AudioSource> = {}): AudioSource {
   const buf = {
