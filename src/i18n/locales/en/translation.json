@@ -455,7 +455,9 @@
     "clickToReplace": "Click to replace",
     "loading": "Loading…",
     "undo": "Undo",
-    "redo": "Redo"
+    "redo": "Redo",
+    "importError": "Failed to import file",
+    "decodeError": "Could not decode audio file"
   },
   "nav": {
     "sfx": "SFX",

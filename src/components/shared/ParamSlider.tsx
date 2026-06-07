@@ -48,7 +48,7 @@ function formatValue(value: number, step: number, unit?: string): string {
   return unit ? `${formatted}${unit}` : formatted;
 }
 
-export const ParamSlider: React.FC<ParamSliderProps> = ({
+export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
   label,
   value,
   min = 0,
@@ -191,6 +191,8 @@ export const ParamSlider: React.FC<ParamSliderProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ParamSlider.displayName = 'ParamSlider';
 
 export default ParamSlider;

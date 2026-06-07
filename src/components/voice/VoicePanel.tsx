@@ -472,9 +472,11 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
   const { t } = useTranslation();
   const [dragging, setDragging] = useState(false);
   const [filename, setFilename] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function loadFile(file: File) {
+    setError(null);
     try {
       const arrayBuf = await file.arrayBuffer();
       const ctx = new AudioContext();
@@ -483,47 +485,54 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
       setFilename(file.name);
       await ctx.close();
     } catch {
-      // silently ignore decode errors
+      setError(t('common.decodeError'));
     }
   }
 
   return (
-    <div
-      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-        const file = e.dataTransfer.files[0];
-        if (file) loadFile(file);
-      }}
-      onClick={() => inputRef.current?.click()}
-      className={`flex flex-col items-center justify-center rounded-2xl cursor-pointer transition-all border-2 border-dashed ${
-        dragging
-          ? 'border-blue-500 bg-blue-500/10 scale-[1.02]'
-          : 'border-gray-600/30 bg-gray-800/30 hover:border-gray-500/50'
-      }`}
-      style={{ padding: '2rem', minHeight: filename ? 80 : 120 }}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept="audio/*,.m4a,.mp3,.wav,.aac,.flac"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
+    <div className="flex flex-col gap-1.5">
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          const file = e.dataTransfer.files[0];
           if (file) loadFile(file);
         }}
-      />
-      <Upload size={28} className={`mb-2 ${dragging ? 'text-blue-400' : 'text-gray-500'}`} />
-      <span className={`text-sm ${dragging ? 'text-blue-300' : 'text-gray-400'}`}>
-        {filename ? filename : t('voice.loadFile')}
-      </span>
-      {!filename && (
-        <span className="text-xs text-gray-500 mt-1">{t('voice.dropAudio')}</span>
-      )}
-      {filename && (
-        <span className="text-xs text-green-400 mt-1">{t('voice.loadedReady')}</span>
+        onClick={() => inputRef.current?.click()}
+        className={`flex flex-col items-center justify-center rounded-2xl cursor-pointer transition-all border-2 border-dashed ${
+          dragging
+            ? 'border-blue-500 bg-blue-500/10 scale-[1.02]'
+            : 'border-gray-600/30 bg-gray-800/30 hover:border-gray-500/50'
+        }`}
+        style={{ padding: '2rem', minHeight: filename ? 80 : 120 }}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="audio/*,.m4a,.mp3,.wav,.aac,.flac"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) loadFile(file);
+          }}
+        />
+        <Upload size={28} className={`mb-2 ${dragging ? 'text-blue-400' : 'text-gray-500'}`} />
+        <span className={`text-sm ${dragging ? 'text-blue-300' : 'text-gray-400'}`}>
+          {filename ? filename : t('voice.loadFile')}
+        </span>
+        {!filename && (
+          <span className="text-xs text-gray-500 mt-1">{t('voice.dropAudio')}</span>
+        )}
+        {filename && (
+          <span className="text-xs text-green-400 mt-1">{t('voice.loadedReady')}</span>
+        )}
+      </div>
+      {error && (
+        <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-950/50 border border-red-800">
+          <span className="text-sm text-red-400">{error}</span>
+        </div>
       )}
     </div>
   );
@@ -594,24 +603,45 @@ export function VoicePanel() {
     [],
   );
 
+  // Cleanup audio on unmount — stop playback, close context
+  useEffect(() => {
+    return () => {
+      try { sourceRef.current?.stop(); } catch { /* already stopped */ }
+      audioCtxRef.current?.close();
+      audioCtxRef.current = null;
+      sourceRef.current = null;
+      setIsPlaying(false);
+      setPlayingBuffer(null);
+    };
+  }, []);
+
   const handleStop = useCallback(() => {
     sourceRef.current?.stop();
     setIsPlaying(false);
     setPlayingBuffer(null);
   }, []);
 
+  // Staleness counter to discard results from outdated processAudio calls
+  const processGenRef = useRef(0);
+
   const handleProcess = useCallback(async () => {
     if (!sourceBuffer) return;
+    const gen = ++processGenRef.current;
     setIsProcessing(true);
     try {
       const effectiveSettings = store.getEffectiveSettings();
       const out = await voiceEngine.processAudio(sourceBuffer, effectiveSettings);
+      // Discard result if a newer process call was started
+      if (gen !== processGenRef.current) return;
       setProcessedBuffer(out);
     } catch (err) {
+      if (gen !== processGenRef.current) return;
       console.error('Voice processing failed:', err);
       setProcessedBuffer(sourceBuffer);
     } finally {
-      setIsProcessing(false);
+      if (gen === processGenRef.current) {
+        setIsProcessing(false);
+      }
     }
   }, [sourceBuffer, store, setIsProcessing, setProcessedBuffer]);
 

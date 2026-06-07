@@ -4,7 +4,7 @@
 // Extracted from SFXPanel for shared use.
 // ---------------------------------------------------------------------------
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { canvasBgFlat, canvasTextColor } from '../../lib/themeColors';
 
@@ -26,23 +26,53 @@ export function EnvelopeDisplay({
   const { t } = useTranslation();
   const resolvedTitle = title ?? t('sfx.volumeEnvelope');
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canvasWidth, setCanvasWidth] = useState(400);
+
+  // ResizeObserver to match canvas pixel width to container
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const newW = Math.floor(entry.contentRect.width * dpr);
+        if (newW > 0) setCanvasWidth(newW);
+      }
+    });
+
+    ro.observe(container);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const initW = Math.floor((container.clientWidth || 400) * dpr);
+    if (initW > 0) setCanvasWidth(initW);
+
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = canvas.width;
     const h = canvas.height;
 
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    const lw = w / dpr;
+    const lh = h / dpr;
+
     ctx.fillStyle = canvasBgFlat();
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(0, 0, lw, lh);
 
     if (!buffer || buffer.length === 0) return;
 
-    const windowSize = Math.max(1, Math.floor(buffer.length / w));
+    const windowSize = Math.max(1, Math.floor(buffer.length / lw));
     const envelope: number[] = [];
-    for (let i = 0; i < w; i++) {
+    for (let i = 0; i < lw; i++) {
       let sum = 0;
       const start = i * windowSize;
       const end = Math.min(start + windowSize, buffer.length);
@@ -57,12 +87,12 @@ export function EnvelopeDisplay({
     // Fill area
     ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
     ctx.beginPath();
-    ctx.moveTo(0, h);
+    ctx.moveTo(0, lh);
     for (let i = 0; i < envelope.length; i++) {
       const norm = maxEnv > 0 ? envelope[i] / maxEnv : 0;
-      ctx.lineTo(i, h - norm * h * 0.8);
+      ctx.lineTo(i, lh - norm * lh * 0.8);
     }
-    ctx.lineTo(w, h);
+    ctx.lineTo(lw, lh);
     ctx.closePath();
     ctx.fill();
 
@@ -72,7 +102,7 @@ export function EnvelopeDisplay({
     ctx.beginPath();
     for (let i = 0; i < envelope.length; i++) {
       const norm = maxEnv > 0 ? envelope[i] / maxEnv : 0;
-      const y = h - norm * h * 0.8;
+      const y = lh - norm * lh * 0.8;
       if (i === 0) ctx.moveTo(i, y);
       else ctx.lineTo(i, y);
     }
@@ -82,18 +112,22 @@ export function EnvelopeDisplay({
     ctx.fillStyle = canvasTextColor();
     ctx.font = '10px monospace';
     const duration = buffer.length / sampleRate;
-    ctx.fillText('0s', 2, h - 2);
-    ctx.fillText(`${duration.toFixed(2)}s`, w - 36, h - 2);
-  }, [buffer, sampleRate]);
+    ctx.fillText('0s', 2, lh - 2);
+    ctx.fillText(`${duration.toFixed(2)}s`, lw - 36, lh - 2);
+  }, [buffer, sampleRate, canvasWidth]);
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const canvasHeight = Math.floor(48 * dpr); // h-12 = 3rem = 48px
 
   return (
-    <div>
+    <div ref={containerRef}>
       <h3 className="text-sm font-semibold mb-2 text-white">{resolvedTitle}</h3>
       <canvas
         ref={canvasRef}
-        width={400}
-        height={60}
+        width={canvasWidth}
+        height={canvasHeight}
         className="w-full h-12 rounded border border-gray-700"
+        style={{ display: 'block' }}
       />
     </div>
   );
@@ -122,20 +156,51 @@ export function ADSRDisplay({
   const resolvedTitle = title ?? t('sfx.adsrShape');
   const resolvedNoEnvelope = t('sfx.noEnvelope');
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canvasWidth, setCanvasWidth] = useState(300);
+
+  // ResizeObserver to match canvas pixel width to container
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const newW = Math.floor(entry.contentRect.width * dpr);
+        if (newW > 0) setCanvasWidth(newW);
+      }
+    });
+
+    ro.observe(container);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const initW = Math.floor((container.clientWidth || 300) * dpr);
+    if (initW > 0) setCanvasWidth(initW);
+
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = canvas.width;
     const h = canvas.height;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    const lw = w / dpr;
+    const lh = h / dpr;
+
     const pad = 8;
-    const drawW = w - pad * 2;
-    const drawH = h - pad * 2;
+    const drawW = lw - pad * 2;
+    const drawH = lh - pad * 2;
 
     ctx.fillStyle = canvasBgFlat();
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(0, 0, lw, lh);
 
     // Normalize durations so they fill the canvas proportionally.
     // attack, sustain, decay are in the 0-3 range from synth params.
@@ -144,7 +209,7 @@ export function ADSRDisplay({
       ctx.fillStyle = canvasTextColor();
       ctx.font = '10px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(resolvedNoEnvelope, w / 2, h / 2);
+      ctx.fillText(resolvedNoEnvelope, lw / 2, lh / 2);
       ctx.textAlign = 'left';
       return;
     }
@@ -243,16 +308,20 @@ export function ADSRDisplay({
     ctx.lineTo(pad + drawW, ampToY(sustainLevel));
     ctx.stroke();
     ctx.setLineDash([]);
-  }, [attack, sustain, decay, punch, resolvedNoEnvelope]);
+  }, [attack, sustain, decay, punch, resolvedNoEnvelope, canvasWidth]);
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const canvasHeight = Math.floor(48 * dpr);
 
   return (
-    <div>
+    <div ref={containerRef}>
       <h3 className="text-sm font-semibold mb-2 text-white">{resolvedTitle}</h3>
       <canvas
         ref={canvasRef}
-        width={400}
-        height={60}
+        width={canvasWidth}
+        height={canvasHeight}
         className="w-full h-12 rounded border border-gray-700"
+        style={{ display: 'block' }}
       />
     </div>
   );

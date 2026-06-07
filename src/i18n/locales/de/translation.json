@@ -455,7 +455,9 @@
     "clickToReplace": "Klicken zum Ersetzen",
     "loading": "Laden…",
     "undo": "Rückgängig",
-    "redo": "Wiederholen"
+    "redo": "Wiederholen",
+    "importError": "Datei konnte nicht importiert werden",
+    "decodeError": "Audiodatei konnte nicht dekodiert werden"
   },
   "nav": {
     "sfx": "SFX",

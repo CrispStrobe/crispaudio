@@ -571,6 +571,7 @@ export function SFXPanel() {
   const [activeTab, setActiveTab] = useState<ParamTab>('basic');
   const [isLooping, setIsLooping] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
   const [showNumeric, setShowNumeric] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -610,6 +611,18 @@ export function SFXPanel() {
   }, [buffer, sampleRate, setIsPlaying]);
 
   useEffect(() => { handlePlayRef.current = handlePlay; }, [handlePlay]);
+
+  // Cleanup audio on unmount — stop playback, close context
+  useEffect(() => {
+    return () => {
+      loopRef.current = false;
+      try { sourceRef.current?.stop(); } catch { /* already stopped */ }
+      audioCtxRef.current?.close();
+      audioCtxRef.current = null;
+      sourceRef.current = null;
+      setIsPlaying(false);
+    };
+  }, [setIsPlaying]);
 
   const handleStop = useCallback(() => {
     loopRef.current = false;
@@ -661,15 +674,30 @@ export function SFXPanel() {
   }, [exportParamsJSON]);
 
   const handleImportJSON = useCallback((file: File) => {
+    setImportError(null);
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
+      try {
+        if (typeof reader.result !== 'string') {
+          throw new Error('empty');
+        }
+        const data = JSON.parse(reader.result);
+        if (!data?.params || typeof data.params !== 'object') {
+          throw new Error('schema');
+        }
         importParamsJSON(reader.result);
         generate();
+      } catch {
+        setImportError(t('common.importError'));
+        setTimeout(() => setImportError(null), 3000);
       }
     };
+    reader.onerror = () => {
+      setImportError(t('common.importError'));
+      setTimeout(() => setImportError(null), 3000);
+    };
     reader.readAsText(file);
-  }, [importParamsJSON, generate]);
+  }, [importParamsJSON, generate, t]);
 
   const onChange = useCallback(
     (key: keyof SynthParams, value: number) => {
@@ -1075,6 +1103,11 @@ export function SFXPanel() {
                     {t('sfx.importPreset')}
                   </button>
                 </div>
+                {importError && (
+                  <div className="px-3 py-2 rounded-lg bg-red-950/50 border border-red-800 text-sm text-red-400">
+                    {importError}
+                  </div>
+                )}
               </div>
             </div>
 

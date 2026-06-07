@@ -21,6 +21,13 @@ beforeAll(() => {
   globalThis.requestAnimationFrame = (() => ++rafId) as unknown as typeof requestAnimationFrame;
   globalThis.cancelAnimationFrame = (() => {}) as unknown as typeof cancelAnimationFrame;
 
+  // Mock ResizeObserver (used by canvas components for sharp HiDPI rendering)
+  vi.stubGlobal('ResizeObserver', class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  });
+
   // Mock canvas getContext
   HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
     clearRect: vi.fn(),
@@ -33,11 +40,15 @@ beforeAll(() => {
     fill: vi.fn(),
     stroke: vi.fn(),
     setLineDash: vi.fn(),
+    setTransform: vi.fn(),
+    scale: vi.fn(),
     fillStyle: '',
     strokeStyle: '',
     lineWidth: 1,
     font: '',
     textAlign: 'left',
+    shadowColor: '',
+    shadowBlur: 0,
   }) as unknown as typeof HTMLCanvasElement.prototype.getContext;
 
   // Mock matchMedia
