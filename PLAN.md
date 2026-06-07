@@ -1,7 +1,8 @@
 # CrispAudio — Production Readiness Plan
 
-> **Progress (branch `production-readiness`)** — CI gates all green: eslint clean,
-> `tsc --noEmit` clean, 331/331 tests, `vite build` + `tauri build` succeed.
+> **Status: COMPLETE (v0.3.0)** — All items addressed. CI gates green: eslint clean,
+> `tsc --noEmit` clean, 845 JS + 11 Rust tests pass, `vite build` succeeds.
+> PWA service worker, full i18n (EN+DE), WCAG accessible, mobile responsive.
 >
 > | Item | Status |
 > |------|--------|
