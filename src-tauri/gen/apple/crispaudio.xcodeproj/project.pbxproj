@@ -18,7 +18,6 @@
 		96CF882499476FD41BD4D739 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F764B11D3F94A6090D877666 /* QuartzCore.framework */; };
 		97FD4D320A5A088B759750D5 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 152E4545D4FE3B694480D60F /* CoreGraphics.framework */; };
 		A792E88F46A898D201755900 /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 05F708BA326CB10AB33F0C6B /* libapp.a */; };
-		C315246172C5B65C3737F363 /* libapp.a in Resources */ = {isa = PBXBuildFile; fileRef = 9D9217E0259A51EB14277C7C /* libapp.a */; };
 		CCB486ECD966A54284983A49 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 27C4ADBFFDB33FD035AFCA33 /* LaunchScreen.storyboard */; };
 		F8BC20858ECF2182ACDF7E6B /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 4E416CA3090F42E017F30A9E /* assets */; };
 /* End PBXBuildFile section */
@@ -36,7 +35,6 @@
 		582D77A672203EFE65DBF017 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		71E1AED0F61A3D3B86D25A66 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		824B20389205C510EA7AFF0B /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
-		9D9217E0259A51EB14277C7C /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
 		9E3571A13DA5AD7B53B2BB44 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
 		A60D6A15AEF2B98965D36E20 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
 		ACCE9D224459B2B40919DABC /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
@@ -82,7 +80,6 @@
 		115415026A5E3C1301E1E2DF /* Externals */ = {
 			isa = PBXGroup;
 			children = (
-				CA3E8A8CA01A16353D98D2C2 /* arm64 */,
 			);
 			path = Externals;
 			sourceTree = "<group>";
@@ -108,14 +105,6 @@
 				E1427395FA9668A480BA7383 /* crispaudio_iOS.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		4140964629B9D78C6E2FC174 /* debug */ = {
-			isa = PBXGroup;
-			children = (
-				9D9217E0259A51EB14277C7C /* libapp.a */,
-			);
-			path = debug;
 			sourceTree = "<group>";
 		};
 		8507AAEE42CAABCDF9E8CADA /* commands */ = {
@@ -151,14 +140,6 @@
 			path = Sources;
 			sourceTree = "<group>";
 		};
-		CA3E8A8CA01A16353D98D2C2 /* arm64 */ = {
-			isa = PBXGroup;
-			children = (
-				4140964629B9D78C6E2FC174 /* debug */,
-			);
-			path = arm64;
-			sourceTree = "<group>";
-		};
 		CC920ED842E75864022E7C2A /* crispaudio */ = {
 			isa = PBXGroup;
 			children = (
@@ -184,13 +165,6 @@
 				71E1AED0F61A3D3B86D25A66 /* PrivacyInfo.xcprivacy */,
 			);
 			path = crispaudio_iOS;
-			sourceTree = "<group>";
-		};
-		"TEMP_39EDC737-779F-49A5-BFBE-4AAAF7D1C95C" /* x86_64 */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = x86_64;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -255,7 +229,6 @@
 				CCB486ECD966A54284983A49 /* LaunchScreen.storyboard in Resources */,
 				2EDD74D322B0F1A96A84F8A7 /* PrivacyInfo.xcprivacy in Resources */,
 				F8BC20858ECF2182ACDF7E6B /* assets in Resources */,
-				C315246172C5B65C3737F363 /* libapp.a in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -440,7 +413,7 @@
 				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.crispstrobe.crispaudio;
-				PRODUCT_NAME = CrispAudio;
+				PRODUCT_NAME = "CrispAudio";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
@@ -471,7 +444,7 @@
 				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.crispstrobe.crispaudio;
-				PRODUCT_NAME = CrispAudio;
+				PRODUCT_NAME = "CrispAudio";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
