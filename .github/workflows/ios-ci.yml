@@ -44,7 +44,12 @@ jobs:
       # Uses the committed src-tauri/gen/apple project (project.yml carries our
       # NSMicrophoneUsageDescription / privacy customizations). We deliberately
       # do NOT run `tauri ios init` here, which would regenerate and wipe them.
+      # VITE_FS_SELFTEST makes the app run a plugin-fs read/write round-trip on
+      # launch and show a FS PASS/FAIL badge — verifies the sandbox-safe file
+      # I/O actually works on iOS (captured in the launch screenshot below).
       - name: Build iOS app (simulator, unsigned)
+        env:
+          VITE_FS_SELFTEST: "1"
         run: PATH="/usr/bin:$PATH" npx tauri ios build --debug --target aarch64-sim --no-sign
 
       - name: Locate built .app
