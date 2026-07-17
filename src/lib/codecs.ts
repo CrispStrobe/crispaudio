@@ -110,3 +110,58 @@ export async function encodeMono(
 ): Promise<Blob> {
   return encodeCompressed(data, 1, sampleRate, format, bitrateKbps);
 }
+
+/**
+ * Decode a whole encoded stream (MP3 / AAC-LC / Ogg-Opus, auto-detected from
+ * the header) to de-interleaved per-channel Float32 PCM (±1.0). Throws on
+ * unrecognized/unsupported input. Used as a fallback for formats a platform
+ * can't decode natively — notably Ogg-Opus in iOS WKWebView.
+ */
+export async function decodeCompressed(bytes: Uint8Array): Promise<{
+  channelData: Float32Array[];
+  sampleRate: number;
+}> {
+  const m = await loadGlint();
+  const inPtr = m._malloc(bytes.length);
+  m.HEAPU8.set(bytes, inPtr);
+  const srPtr = m._malloc(4);
+  const chPtr = m._malloc(4);
+  const frPtr = m._malloc(4);
+  const ptr = m._glint_decode_audio(inPtr, bytes.length, srPtr, chPtr, frPtr);
+  m._free(inPtr);
+  if (!ptr) {
+    m._free(srPtr);
+    m._free(chPtr);
+    m._free(frPtr);
+    throw new Error('glint decode failed (unrecognized or unsupported audio)');
+  }
+  const sampleRate = m.getValue(srPtr, 'i32');
+  const channels = m.getValue(chPtr, 'i32');
+  const frames = m.getValue(frPtr, 'i32');
+  m._free(srPtr);
+  m._free(chPtr);
+  m._free(frPtr);
+  // glint returns interleaved float PCM of length frames*channels. De-interleave
+  // into per-channel arrays before freeing the wasm buffer. No allocations occur
+  // between the view and the copy, so the heap can't grow and detach it.
+  const interleaved = new Float32Array(m.HEAPF32.buffer, ptr, frames * channels);
+  const channelData: Float32Array[] = [];
+  for (let c = 0; c < channels; c++) {
+    const ch = new Float32Array(frames);
+    for (let i = 0; i < frames; i++) ch[i] = interleaved[i * channels + c];
+    channelData.push(ch);
+  }
+  m._glint_free(ptr);
+  return { channelData, sampleRate };
+}
+
+/** Decode compressed bytes and build an AudioBuffer on the given context. */
+export async function decodeCompressedToBuffer(
+  ctx: BaseAudioContext,
+  bytes: Uint8Array,
+): Promise<AudioBuffer> {
+  const { channelData, sampleRate } = await decodeCompressed(bytes);
+  const buffer = ctx.createBuffer(channelData.length, channelData[0].length, sampleRate);
+  channelData.forEach((ch, c) => buffer.copyToChannel(ch, c));
+  return buffer;
+}

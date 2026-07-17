@@ -485,7 +485,17 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
     try {
       const arrayBuf = await file.arrayBuffer();
       const ctx = new AudioContext();
-      const decoded = await ctx.decodeAudioData(arrayBuf);
+      let decoded: AudioBuffer;
+      try {
+        // decodeAudioData detaches its input, so hand it a copy and keep the
+        // original bytes for the glint fallback below.
+        decoded = await ctx.decodeAudioData(arrayBuf.slice(0));
+      } catch {
+        // Formats the platform can't decode natively (e.g. Ogg-Opus in iOS
+        // WKWebView) — fall back to glint's decoder.
+        const { decodeCompressedToBuffer } = await import('../../lib/codecs');
+        decoded = await decodeCompressedToBuffer(ctx, new Uint8Array(arrayBuf));
+      }
       onFile(decoded);
       setFilename(file.name);
       await ctx.close();
@@ -516,7 +526,7 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
         <input
           ref={inputRef}
           type="file"
-          accept="audio/*,.m4a,.mp3,.wav,.aac,.flac"
+          accept="audio/*,.m4a,.mp3,.wav,.aac,.flac,.opus,.ogg"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];

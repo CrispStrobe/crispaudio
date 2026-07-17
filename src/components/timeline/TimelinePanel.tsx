@@ -333,7 +333,16 @@ export const TimelinePanel: React.FC = () => {
       for (const file of Array.from(files)) {
         try {
           const arrayBuf = await file.arrayBuffer();
-          const decoded = await ctx.decodeAudioData(arrayBuf);
+          let decoded: AudioBuffer;
+          try {
+            // decodeAudioData detaches its input; pass a copy so the original
+            // bytes remain available for the glint fallback.
+            decoded = await ctx.decodeAudioData(arrayBuf.slice(0));
+          } catch {
+            // Ogg-Opus and other formats the platform can't decode natively.
+            const { decodeCompressedToBuffer } = await import('../../lib/codecs');
+            decoded = await decodeCompressedToBuffer(ctx, new Uint8Array(arrayBuf));
+          }
           const mono = decoded.getChannelData(0);
           const bins = Math.max(1, Math.min(8000, Math.ceil(decoded.duration * 200)));
           const source: AudioSource = {
