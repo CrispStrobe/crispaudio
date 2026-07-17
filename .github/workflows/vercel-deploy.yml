@@ -1,0 +1,54 @@
+# Deploy the web app to Vercel production on push to main — a reliable,
+# CI-controlled alternative to Vercel's GitHub-App auto-deploy (which was
+# firing unreliably). Requires ONE repo secret: VERCEL_TOKEN
+# (Vercel dashboard → Account Settings → Tokens → create). The org/project
+# IDs below are not secret (they live in .vercel/project.json).
+#
+# NOTE: if Vercel's GitHub-App integration is still connected, you may get
+# double deploys — disconnect it in the Vercel project's Git settings to let
+# this workflow be the single source of deploys.
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "src-tauri/**"
+      - "docs/**"
+      - "**/*.md"
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-prod
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: team_uvAE8yHK3Zi7pXobhJmwckcQ
+      VERCEL_PROJECT_ID: prj_yuwGcrdF3dKM77Th8zifAzBF2bTH
+      # Job-level env because `if: ${{ secrets.X }}` is rejected by Actions.
+      HAS_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
+    steps:
+      - name: Require VERCEL_TOKEN
+        if: env.HAS_TOKEN != 'true'
+        run: echo "::warning::VERCEL_TOKEN secret not set — add it to enable CI deploys. Skipping."
+      - uses: actions/checkout@v4
+        if: env.HAS_TOKEN == 'true'
+      - uses: actions/setup-node@v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          node-version: 20
+      - name: Install Vercel CLI
+        if: env.HAS_TOKEN == 'true'
+        run: npm i -g vercel@latest
+      - name: Pull Vercel project settings
+        if: env.HAS_TOKEN == 'true'
+        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Build
+        if: env.HAS_TOKEN == 'true'
+        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+      - name: Deploy (prebuilt) to production
+        if: env.HAS_TOKEN == 'true'
+        run: vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"
