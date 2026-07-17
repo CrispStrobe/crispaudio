@@ -676,7 +676,7 @@ export function VoicePanel() {
     if (!processedBuffer) return;
     const data = processedBuffer.getChannelData(0);
     const blob = await exportWav(data, processedBuffer.sampleRate, 16);
-    downloadWavFile(blob, `crispaudio_voice_${Date.now()}.wav`);
+    await downloadWavFile(blob, `crispaudio_voice_${Date.now()}.wav`);
   }
 
   const sendToTimeline = useCallback(() => {

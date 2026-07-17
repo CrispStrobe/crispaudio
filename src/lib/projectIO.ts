@@ -1,11 +1,13 @@
 // ---------------------------------------------------------------------------
 // projectIO — save/open a project JSON via native Tauri dialogs (with browser
-// fallbacks for dev/preview). The actual file read/write goes through the Rust
-// save_project / load_project commands.
+// fallbacks for dev/preview). File read/write goes through the cross-platform
+// @tauri-apps/plugin-fs API, which handles the iOS/Android sandbox (via the
+// document picker's security-scoped paths) — unlike a raw std::fs write to an
+// arbitrary path, which fails on mobile.
 // ---------------------------------------------------------------------------
 
 import { save, open } from '@tauri-apps/plugin-dialog';
-import { invoke } from '@tauri-apps/api/core';
+import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 
 const FILTERS = [{ name: 'CrispAudio Project', extensions: ['json'] }];
 
@@ -25,7 +27,7 @@ export async function saveProjectFile(
         filters: FILTERS,
       });
       if (!path) return false;
-      await invoke('save_project', { path, data: json });
+      await writeTextFile(path, json);
       return true;
     } catch (err) {
       console.error('Failed to save project:', err);
@@ -50,7 +52,7 @@ export async function openProjectFile(): Promise<string | null> {
     try {
       const selected = await open({ multiple: false, filters: FILTERS });
       if (!selected || typeof selected !== 'string') return null;
-      return invoke<string>('load_project', { path: selected });
+      return await readTextFile(selected);
     } catch (err) {
       console.error('Failed to open project:', err);
       return null;

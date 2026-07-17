@@ -795,7 +795,7 @@ export function SFXPanel() {
   const downloadWav = useCallback(async () => {
     if (!buffer) return;
     const blob = await exportWav(buffer, sampleRate, bitDepth);
-    downloadWavFile(blob, `crispaudio_sfx_${Date.now()}.wav`);
+    await downloadWavFile(blob, `crispaudio_sfx_${Date.now()}.wav`);
   }, [buffer, sampleRate, bitDepth]);
 
   // Send to Timeline
