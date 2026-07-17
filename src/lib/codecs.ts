@@ -162,6 +162,8 @@ export async function decodeCompressedToBuffer(
 ): Promise<AudioBuffer> {
   const { channelData, sampleRate } = await decodeCompressed(bytes);
   const buffer = ctx.createBuffer(channelData.length, channelData[0].length, sampleRate);
-  channelData.forEach((ch, c) => buffer.copyToChannel(ch, c));
+  // Use .set() rather than copyToChannel: it accepts ArrayLike<number> and so
+  // doesn't trip the strict Float32Array<ArrayBuffer> generic in newer TS libs.
+  channelData.forEach((ch, c) => buffer.getChannelData(c).set(ch));
   return buffer;
 }
