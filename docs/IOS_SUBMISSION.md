@@ -32,32 +32,34 @@ steps that only a human (browser/Apple account) can do.
   `https://crispaudio-psi.vercel.app/privacy.html`.
 - License is **MIT** — no App Store ToS conflict (unlike AGPL).
 
-## Human-only steps (cannot be automated)
+## Status (2026-07-17) — done via API vs. remaining
 
-1. **Register the bundle id** (API-doable, see playbook Step 2), or via the
-   Developer portal. Identifier `com.crispstrobe.crispaudio`, platform IOS.
-2. **Create the app record** — App Store Connect → Apps → New App (playbook
-   Step 3; `POST /v1/apps` is 403 for all API keys). Pick the bundle id above.
-   Note the numeric app id it returns.
-3. **Create the provisioning profile** `CrispAudio AppStore CI` for the bundle
-   id, bound to the account's Distribution cert(s) (bind to BOTH `L9PHHNLY9Y`
-   and `X48Y45DL9F` — see playbook; which one a `.p12` holds is ambiguous).
-4. **App Privacy nutrition label** — App Store Connect → App Privacy → "Data
-   Not Collected" (playbook Step 10; not API-doable).
-5. **Set the repo secrets** (see below).
-6. **Hit Submit** — the final review submission is a deliberate human decision.
+Done by agent (ASC API + brickwright keychain):
+- ✅ Bundle id `com.crispstrobe.crispaudio` registered (platform IOS, resource `J5LRU3J9QG`).
+- ✅ Profile `CrispAudio AppStore CI` created (uuid `c0fdb465-c860-4c8d-b812-24164e757e80`), bound to BOTH dist certs `L9PHHNLY9Y` + `X48Y45DL9F`.
+- ✅ 6 of 7 repo secrets set (all except `ASC_APP_ID`).
 
-## Repo secrets to set (canonical manual-signing set)
+Remaining — genuinely human (Apple hard-blocks these via API):
+1. **Create the app record** — App Store Connect → Apps → + → New App; iOS, name
+   CrispAudio, pick `com.crispstrobe.crispaudio` from the dropdown, any SKU.
+   Then the agent fetches the numeric app id via API and sets `ASC_APP_ID`.
+2. **App Privacy nutrition label** — "Data Not Collected" (one browser click).
+3. **Hit Submit** — deliberate human decision.
 
-| Secret | Value |
-|--------|-------|
-| `ASC_API_KEY_P8_BASE64` | base64 of `AuthKey_9RMU3C7422.p8` |
-| `ASC_KEY_ID` | `9RMU3C7422` |
-| `ASC_ISSUER_ID` | `5f618ba3-98ef-42ad-835c-fbbef6c76cf5` |
-| `ASC_APP_ID` | numeric app id from step 2 |
-| `DIST_CERT_P12_BASE64` | the account's Distribution `.p12` |
-| `DIST_CERT_PASSWORD` | its password |
-| `ASC_PROFILE_BASE64` | base64 of `CrispAudio AppStore CI.mobileprovision` |
+Everything else (fetch app id, set `ASC_APP_ID`, all listing metadata via API,
+trigger the signed build, verify via `GET /v1/builds`) the agent does.
+
+## Repo secrets (status)
+
+| Secret | Value | Set? |
+|--------|-------|------|
+| `ASC_API_KEY_P8_BASE64` | base64 of `AuthKey_9RMU3C7422.p8` | ✅ |
+| `ASC_KEY_ID` | `9RMU3C7422` | ✅ |
+| `ASC_ISSUER_ID` | `5f618ba3-98ef-42ad-835c-fbbef6c76cf5` | ✅ |
+| `ASC_APP_ID` | numeric app id (after app record) | ⬜ |
+| `DIST_CERT_P12_BASE64` | Distribution `.p12` (exported from `brickwright-build.keychain-db`) | ✅ |
+| `DIST_CERT_PASSWORD` | `crispaudio-dist` (throwaway) | ✅ |
+| `ASC_PROFILE_BASE64` | base64 of `CrispAudio AppStore CI.mobileprovision` | ✅ |
 
 ## App Store metadata (draft — ready to paste / API-set)
 
