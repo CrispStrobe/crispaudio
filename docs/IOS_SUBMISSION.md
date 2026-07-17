@@ -97,8 +97,26 @@ steps that only a human (browser/Apple account) can do.
 
 - **NEVER** `-allowProvisioningUpdates` in CI — it can revoke the account's
   shared Distribution cert and break every other app. Manual signing only.
-- Verify success via the ASC API (`GET /v1/builds`), **not** a green CI run.
-- Every embedded app-extension (none here currently) would need its own
-  profile + a resolving `CFBundleVersion`.
-- Set the build's `usesNonExemptEncryption=false` via API after upload if
-  TestFlight blocks on export compliance.
+- **`tauri ios build --export-method` produces a DEVELOPMENT-signed IPA** (Tauri
+  doesn't forward the API-key auth flags to its internal export). `ios-release.yml`
+  therefore builds the `.xcarchive` only, then does a separate
+  `xcodebuild -exportArchive` with `ExportOptions-appstore.plist`. Don't "simplify"
+  it back.
+- **Bind the profile to BOTH Distribution certs** (`L9PHHNLY9Y` and `X48Y45DL9F`)
+  — which one this repo's `DIST_CERT_P12_BASE64` holds is ambiguous; a mismatch
+  fails export with `profile doesn't include signing certificate`.
+- **Install the profile in BOTH** `~/Library/MobileDevice/Provisioning Profiles/`
+  and `~/Library/Developer/Xcode/UserData/Provisioning Profiles/` (Xcode 16+/26).
+  Already done in the workflow.
+- **base64 every secret** (`.p8`, `.p12`, profile) — raw multi-line PEM in a
+  GitHub secret loses newlines and silently corrupts the key.
+- **`altool` "accepted, no errors" ≠ a VALID build.** Watch ASC
+  `processingState` until VALID — SDK-pulled purpose strings (e.g. a missing
+  `NSPhotoLibraryUsageDescription`, ITMS-90683) surface only at processing. Add
+  the string and bump the build number if that happens.
+- **Verify success via the ASC API** (`GET /v1/builds?filter[app]=<id>`), **not**
+  a green CI run — a dry run reports success while uploading nothing.
+- Every embedded app-extension (none here) would need its own profile + a
+  resolving `CFBundleVersion`.
+- `usesNonExemptEncryption=false` is already in Info.plist; the API PATCH will
+  409 (that's the desired state, no action needed).
