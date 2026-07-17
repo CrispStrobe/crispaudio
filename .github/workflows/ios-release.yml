@@ -48,6 +48,16 @@ jobs:
         with:
           node-version: 20
 
+      # App Store now requires the iOS 26 SDK (Xcode 26). The runner may default
+      # to an older Xcode, so select the newest available.
+      - name: Select newest Xcode
+        run: |
+          echo "Available Xcodes:"; ls -d /Applications/Xcode*.app
+          XC="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          [ -n "$XC" ] || XC="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
+
       - name: Add Rust iOS device target
         run: rustup target add aarch64-apple-ios
 
@@ -145,6 +155,12 @@ jobs:
           ARCHIVE="$(find src-tauri/gen/apple/build -name '*.xcarchive' | head -1)"
           if [ -z "$ARCHIVE" ]; then echo "No .xcarchive produced" >&2; exit 1; fi
           echo "Archive: $ARCHIVE"
+          # Tauri stamps CFBundleVersion from tauri.conf.json (0.3.0); overwrite
+          # it with a unique build number in the (unsigned) archive before we
+          # re-sign at export, so it matches altool --bundle-version below.
+          APP_PLIST="$(find "$ARCHIVE/Products/Applications" -maxdepth 2 -name Info.plist | head -1)"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NO" "$APP_PLIST"
+          echo "Patched CFBundleVersion -> $BUILD_NO in $APP_PLIST"
           PATH="/usr/bin:$PATH" xcodebuild -exportArchive \
             -archivePath "$ARCHIVE" \
             -exportPath "$RUNNER_TEMP/export" \
