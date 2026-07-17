@@ -254,7 +254,8 @@
         "title": "Ring Mod Depth",
         "description": "Amount of ring modulation."
       }
-    }
+    },
+    "masterVolume": "Master Volume"
   },
   "voice": {
     "loadFile": "Drop audio file here or click to browse",
@@ -331,7 +332,8 @@
     "noAudio": "No audio",
     "record": "Record",
     "stopRecording": "Stop Recording",
-    "recordProcessing": "Processing..."
+    "recordProcessing": "Processing...",
+    "loadAudioFile": "Load audio file"
   },
   "timeline": {
     "addTrack": "Add Track",
@@ -441,7 +443,8 @@
       "attack": "Attack",
       "release": "Release",
       "knee": "Knee"
-    }
+    },
+    "trackName": "Track name"
   },
   "common": {
     "slotA": "A",

@@ -254,7 +254,8 @@
         "title": "Ringmod.-Tiefe",
         "description": "Stärke der Ringmodulation."
       }
-    }
+    },
+    "masterVolume": "Gesamtlautstärke"
   },
   "voice": {
     "loadFile": "Audiodatei hierher ziehen oder klicken",
@@ -331,7 +332,8 @@
     "noAudio": "Kein Audio",
     "record": "Aufnehmen",
     "stopRecording": "Aufnahme stoppen",
-    "recordProcessing": "Verarbeitung..."
+    "recordProcessing": "Verarbeitung...",
+    "loadAudioFile": "Audiodatei laden"
   },
   "timeline": {
     "addTrack": "Spur hinzufügen",
@@ -441,7 +443,8 @@
       "attack": "Attack",
       "release": "Release",
       "knee": "Knee"
-    }
+    },
+    "trackName": "Spurname"
   },
   "common": {
     "slotA": "A",

@@ -221,6 +221,7 @@ export function VoiceEffectsModal() {
               </label>
               <input
                 type="range"
+                aria-label={label}
                 min={min}
                 max={max}
                 step={step}

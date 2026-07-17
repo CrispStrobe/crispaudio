@@ -208,6 +208,7 @@ function ParamSlider({ def, value, onChange }: {
       </div>
       <input
         type="range"
+        aria-label={t(def.labelKey)}
         min={def.min}
         max={def.max}
         step={def.step ?? 0.001}
@@ -507,6 +508,9 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={t('voice.loadAudioFile')}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => {
@@ -516,6 +520,12 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
           if (file) loadFile(file);
         }}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
         className={`flex flex-col items-center justify-center rounded-2xl cursor-pointer transition-all border-2 border-dashed ${
           dragging
             ? 'border-blue-500 bg-blue-500/10 scale-[1.02]'
@@ -862,6 +872,7 @@ export function VoicePanel() {
               <span className="text-xs text-gray-500">{t('voice.morph')}</span>
               <input
                 type="range"
+                aria-label={t('voice.morph')}
                 min={0}
                 max={1}
                 step={0.01}

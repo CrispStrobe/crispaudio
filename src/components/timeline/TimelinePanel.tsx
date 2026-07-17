@@ -123,6 +123,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = ({
         </div>
         <input
           type="text"
+          aria-label={t('timeline.trackName')}
           value={track.name}
           onChange={(e) => updateTrack(track.id, { name: e.target.value })}
           className="flex-1 min-w-0 bg-transparent text-xs font-medium text-gray-200 focus:outline-none focus:bg-gray-700 rounded px-1 py-0.5"

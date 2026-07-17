@@ -212,6 +212,7 @@ export function AboutModal() {
               <Search size={12} style={{ color: 'var(--text-muted)' }} />
               <input
                 type="text"
+                aria-label="Search licenses"
                 value={licenseSearch}
                 onChange={(e) => setLicenseSearch(e.target.value)}
                 placeholder="Search..."

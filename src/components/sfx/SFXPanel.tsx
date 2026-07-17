@@ -227,6 +227,8 @@ function ParamSlider({
               className="transition-colors"
               style={{ color: locked ? '#f59e0b' : 'var(--text-muted)' }}
               type="button"
+              aria-label={locked ? `Unlock ${label}` : `Lock ${label}`}
+              title={locked ? 'Unlock parameter' : 'Lock parameter'}
             >
               {locked ? <Lock size={12} /> : <Unlock size={12} />}
             </button>
@@ -236,6 +238,7 @@ function ParamSlider({
       {numeric ? (
         <input
           type="number"
+          aria-label={label}
           min={min}
           max={max}
           step={step}
@@ -250,6 +253,7 @@ function ParamSlider({
       ) : (
         <input
           type="range"
+          aria-label={label}
           min={min}
           max={max}
           step={step}
@@ -856,6 +860,7 @@ export function SFXPanel() {
               <Headphones className="w-4 h-4 text-gray-400" />
               <input
                 type="range"
+                aria-label={t('sfx.masterVolume')}
                 min={0}
                 max={1}
                 step={0.01}
@@ -909,6 +914,7 @@ export function SFXPanel() {
               <span className="text-xs text-gray-500">{t('sfx.morph')}</span>
               <input
                 type="range"
+                aria-label={t('sfx.morph')}
                 min={0}
                 max={1}
                 step={0.01}

@@ -300,6 +300,7 @@ export const SegmentEffectsPanel: React.FC = () => {
           <label className="text-xs font-medium text-gray-400">{t('timeline.name')}</label>
           <input
             type="text"
+            aria-label={t('timeline.name')}
             value={seg.name}
             onChange={handleNameChange}
             className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-indigo-500"
