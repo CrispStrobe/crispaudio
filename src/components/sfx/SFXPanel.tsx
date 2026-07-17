@@ -36,6 +36,7 @@ import {
 import { useSynthStore, selectActiveParams } from '../../stores/synthStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { samplesToAudioBuffer, computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
 import { type SynthParams, ALL_PRESET_NAMES, type PresetName } from '../../types/synth';
 import * as sfxPresets from '../../audio/presets/sfxPresets';
@@ -794,8 +795,16 @@ export function SFXPanel() {
   // WAV export
   const downloadWav = useCallback(async () => {
     if (!buffer) return;
-    const blob = await exportWav(buffer, sampleRate, bitDepth);
-    await downloadWavFile(blob, `crispaudio_sfx_${Date.now()}.wav`);
+    const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } =
+      useSettingsStore.getState();
+    let blob: Blob;
+    if (fmt === 'wav') {
+      blob = await exportWav(buffer, sampleRate, bitDepth);
+    } else {
+      const { encodeMono } = await import('../../lib/codecs');
+      blob = await encodeMono(buffer, sampleRate, fmt, kbps);
+    }
+    await downloadWavFile(blob, `crispaudio_sfx_${Date.now()}.${fmt}`);
   }, [buffer, sampleRate, bitDepth]);
 
   // Send to Timeline

@@ -13,15 +13,19 @@ export type Theme = 'dark' | 'light' | 'system';
 
 export const SAMPLE_RATES = [22050, 44100, 48000] as const;
 export const BIT_DEPTHS = [8, 16, 24, 32] as const;
+export const EXPORT_FORMATS = ['wav', 'mp3', 'aac', 'opus'] as const;
 
 export type SampleRate = (typeof SAMPLE_RATES)[number];
 export type BitDepth = (typeof BIT_DEPTHS)[number];
+export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 interface SettingsState {
   language: Language;
   theme: Theme;
   defaultSampleRate: SampleRate;
   defaultBitDepth: BitDepth;
+  defaultExportFormat: ExportFormat;
+  defaultBitrateKbps: number;
   ttsServerUrl: string;
   ttsDefaultVoice: string;
   ttsDefaultBackend: string;
@@ -30,6 +34,8 @@ interface SettingsState {
   setTheme: (theme: Theme) => void;
   setDefaultSampleRate: (rate: SampleRate) => void;
   setDefaultBitDepth: (depth: BitDepth) => void;
+  setDefaultExportFormat: (format: ExportFormat) => void;
+  setDefaultBitrateKbps: (kbps: number) => void;
   setTTSServerUrl: (url: string) => void;
   setTTSDefaultVoice: (voice: string) => void;
   setTTSDefaultBackend: (backend: string) => void;
@@ -53,6 +59,8 @@ export const useSettingsStore = create<SettingsState>()(
       theme: 'dark' as Theme,
       defaultSampleRate: 44100,
       defaultBitDepth: 16,
+      defaultExportFormat: 'wav' as ExportFormat,
+      defaultBitrateKbps: 192,
       ttsServerUrl: 'http://localhost:8766',
       ttsDefaultVoice: '',
       ttsDefaultBackend: 'kokoro',
@@ -67,6 +75,8 @@ export const useSettingsStore = create<SettingsState>()(
       },
       setDefaultSampleRate: (defaultSampleRate) => set({ defaultSampleRate }),
       setDefaultBitDepth: (defaultBitDepth) => set({ defaultBitDepth }),
+      setDefaultExportFormat: (defaultExportFormat) => set({ defaultExportFormat }),
+      setDefaultBitrateKbps: (defaultBitrateKbps) => set({ defaultBitrateKbps }),
       setTTSServerUrl: (ttsServerUrl) => set({ ttsServerUrl }),
       setTTSDefaultVoice: (ttsDefaultVoice) => set({ ttsDefaultVoice }),
       setTTSDefaultBackend: (ttsDefaultBackend) => set({ ttsDefaultBackend }),

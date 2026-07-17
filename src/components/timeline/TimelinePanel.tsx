@@ -384,9 +384,17 @@ export const TimelinePanel: React.FC = () => {
     setIsExporting(true);
     try {
       const rendered = await engine.renderToBuffer(store.project);
-      const wav = encodeAudioBufferToWav(rendered, defaultBitDepth);
-      const blob = new Blob([wav], { type: 'audio/wav' });
-      await downloadWavFile(blob, `${store.project.name || 'crispaudio_mix'}.wav`);
+      const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } =
+        useSettingsStore.getState();
+      const name = store.project.name || 'crispaudio_mix';
+      let blob: Blob;
+      if (fmt === 'wav') {
+        blob = new Blob([encodeAudioBufferToWav(rendered, defaultBitDepth)], { type: 'audio/wav' });
+      } else {
+        const { encodeAudioBuffer } = await import('../../lib/codecs');
+        blob = await encodeAudioBuffer(rendered, fmt, kbps);
+      }
+      await downloadWavFile(blob, `${name}.${fmt}`);
     } catch (err) {
       console.error('Mix export failed:', err);
     } finally {

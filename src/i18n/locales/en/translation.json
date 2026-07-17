@@ -493,6 +493,8 @@
     "exportDefaults": "Default Export Format",
     "sampleRate": "Sample Rate",
     "bitDepth": "Bit Depth",
+    "format": "Format",
+    "bitrate": "Bitrate",
     "tts": "Text to Speech (TTS)",
     "ttsServerUrl": "Server URL",
     "ttsDefaultVoice": "Default Voice",

@@ -11,11 +11,15 @@ import {
   useSettingsStore,
   SAMPLE_RATES,
   BIT_DEPTHS,
+  EXPORT_FORMATS,
   type Language,
   type Theme,
   type SampleRate,
   type BitDepth,
+  type ExportFormat,
 } from '../../stores/settingsStore';
+
+const BITRATES = [96, 128, 192, 256, 320] as const;
 
 const LANGUAGES: { value: Language; label: string }[] = [
   { value: 'en', label: 'English' },
@@ -41,6 +45,8 @@ export function SettingsModal() {
     theme,
     defaultSampleRate,
     defaultBitDepth,
+    defaultExportFormat,
+    defaultBitrateKbps,
     ttsServerUrl,
     ttsDefaultVoice,
     ttsDefaultBackend,
@@ -48,6 +54,8 @@ export function SettingsModal() {
     setTheme,
     setDefaultSampleRate,
     setDefaultBitDepth,
+    setDefaultExportFormat,
+    setDefaultBitrateKbps,
     setTTSServerUrl,
     setTTSDefaultVoice,
     setTTSDefaultBackend,
@@ -138,6 +146,43 @@ export function SettingsModal() {
                 {BIT_DEPTHS.map((d) => (
                   <option key={d} value={d}>
                     {d}-bit
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            <div>
+              <label className={fieldLabel} htmlFor="settings-format">
+                {t('settings.format')}
+              </label>
+              <select
+                id="settings-format"
+                className={selectClass}
+                value={defaultExportFormat}
+                onChange={(e) => setDefaultExportFormat(e.target.value as ExportFormat)}
+              >
+                {EXPORT_FORMATS.map((f) => (
+                  <option key={f} value={f}>
+                    {f.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={fieldLabel} htmlFor="settings-bitrate">
+                {t('settings.bitrate')}
+              </label>
+              <select
+                id="settings-bitrate"
+                className={selectClass}
+                value={defaultBitrateKbps}
+                disabled={defaultExportFormat === 'wav'}
+                onChange={(e) => setDefaultBitrateKbps(Number(e.target.value))}
+              >
+                {BITRATES.map((b) => (
+                  <option key={b} value={b}>
+                    {b} kbps
                   </option>
                 ))}
               </select>

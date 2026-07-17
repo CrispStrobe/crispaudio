@@ -41,7 +41,8 @@ function isTauri(): boolean {
 }
 
 /**
- * Save a WAV Blob to disk. In a Tauri context (desktop and mobile) this opens a
+ * Save an audio Blob to disk (WAV or a compressed format — the extension is
+ * taken from `filename`). In a Tauri context (desktop and mobile) this opens a
  * native save dialog and writes via @tauri-apps/plugin-fs, which works inside
  * the iOS/Android sandbox. On the web it falls back to an `<a download>` — note
  * that iOS Safari/WKWebView ignores the download attribute, which is exactly why
@@ -50,13 +51,14 @@ function isTauri(): boolean {
  * Returns false if the user cancels the dialog.
  */
 export async function downloadWavFile(blob: Blob, filename: string): Promise<boolean> {
+  const ext = filename.split('.').pop()?.toLowerCase() || 'wav';
   if (isTauri()) {
     try {
       const { save } = await import('@tauri-apps/plugin-dialog');
       const { writeFile } = await import('@tauri-apps/plugin-fs');
       const path = await save({
         defaultPath: filename,
-        filters: [{ name: 'WAV Audio', extensions: ['wav'] }],
+        filters: [{ name: `${ext.toUpperCase()} Audio`, extensions: [ext] }],
       });
       if (!path) return false;
       await writeFile(path, new Uint8Array(await blob.arrayBuffer()));
