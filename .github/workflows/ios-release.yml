@@ -108,27 +108,10 @@ jobs:
           mkdir -p "$HOME/.appstoreconnect/private_keys"
           echo "$P8_BASE64" | base64 --decode > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
 
-      # Force MANUAL signing with our explicit profile in the (committed) Xcode
-      # project, so neither xcodebuild nor tauri reaches for automatic signing.
-      - name: Patch project for manual signing
-        run: |
-          set -euo pipefail
-          python3 - "$PROFILE_NAME" "$TEAM_ID" "$BUNDLE_ID" <<'PY'
-          import re, sys, glob
-          profile, team, bundle = sys.argv[1], sys.argv[2], sys.argv[3]
-          pbx = glob.glob("src-tauri/gen/apple/*.xcodeproj/project.pbxproj")[0]
-          s = open(pbx).read()
-          # Inject signing settings into every buildSettings block.
-          inject = (
-              f'\n\t\t\t\tCODE_SIGN_STYLE = Manual;'
-              f'\n\t\t\t\tDEVELOPMENT_TEAM = {team};'
-              f'\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";'
-              f'\n\t\t\t\t"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "{profile}";'
-          )
-          s = s.replace("buildSettings = {", "buildSettings = {" + inject)
-          open(pbx, "w").write(s)
-          print("Patched", pbx)
-          PY
+      # NOTE: no pbxproj signing patch — `tauri ios build` re-runs xcodegen and
+      # regenerates the project, wiping any pbxproj edit. We archive UNSIGNED
+      # (next step) and apply Distribution signing at -exportArchive instead
+      # (playbook canonical flow: archive unsigned, sign at export).
 
       # Stamp a unique build number so each upload is accepted (App Store
       # rejects a duplicate CFBundleVersion). Kept in project.yml so xcodegen
@@ -141,14 +124,16 @@ jobs:
           echo "BUILD_NO=$BUILD_NO" >> "$GITHUB_ENV"
           echo "SHORT_VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
 
-      # Produce the .xcarchive only. Do NOT pass --export-method: Tauri's own
-      # export doesn't forward the auth flags, so it falls back to a
-      # DEVELOPMENT-signed IPA that App Store upload rejects (playbook gotcha,
-      # 2026-07-12). We export ourselves in the next step with manual signing.
-      - name: Build iOS archive
+      # Archive UNSIGNED (--no-sign → CODE_SIGNING_ALLOWED=NO), so the archive
+      # doesn't demand an "iOS Development" cert the CI runner doesn't have.
+      # Distribution signing is applied at -exportArchive below. Tauri's own
+      # export may fail on an unsigned build — that's expected and harmless; the
+      # .xcarchive it produced is what we export. (Also: never --export-method —
+      # Tauri's export drops the auth flags and yields a Development-signed IPA.)
+      - name: Build iOS archive (unsigned)
         run: |
-          set -euo pipefail
-          PATH="/usr/bin:$PATH" npx tauri ios build
+          PATH="/usr/bin:$PATH" npx tauri ios build --no-sign || \
+            echo "::warning::tauri build/export returned non-zero (expected on --no-sign); checking for the archive next"
 
       - name: Export signed IPA (manual signing)
         id: ipa
