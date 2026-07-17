@@ -26,6 +26,7 @@ import {
 import { useVoiceStore } from '../../stores/voiceStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
 import { useMediaRecorder } from '../../hooks/useMediaRecorder';
 import { VoiceEngine } from '../../audio/engine/VoiceEngine';
@@ -675,8 +676,16 @@ export function VoicePanel() {
   async function downloadProcessed() {
     if (!processedBuffer) return;
     const data = processedBuffer.getChannelData(0);
-    const blob = await exportWav(data, processedBuffer.sampleRate, 16);
-    await downloadWavFile(blob, `crispaudio_voice_${Date.now()}.wav`);
+    const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } =
+      useSettingsStore.getState();
+    let blob: Blob;
+    if (fmt === 'wav') {
+      blob = await exportWav(data, processedBuffer.sampleRate, 16);
+    } else {
+      const { encodeMono } = await import('../../lib/codecs');
+      blob = await encodeMono(data, processedBuffer.sampleRate, fmt, kbps);
+    }
+    await downloadWavFile(blob, `crispaudio_voice_${Date.now()}.${fmt}`);
   }
 
   const sendToTimeline = useCallback(() => {
