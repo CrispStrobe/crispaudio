@@ -155,6 +155,15 @@ jobs:
           mkdir -p "$RUNNER_TEMP/ipa_check" && (cd "$RUNNER_TEMP/ipa_check" && unzip -oq "$IPA")
           codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/ipa_check/Payload/"*.app
 
+      - name: Diagnose altool auth
+        run: |
+          echo "keyid_len=${#ASC_KEY_ID} issuer_len=${#ASC_ISSUER_ID} appid_len=${#ASC_APP_ID}"
+          echo "issuer first char: [$(printf %.1s "$ASC_ISSUER_ID")]"
+          ls -la "$HOME/.appstoreconnect/private_keys/" || true
+          echo "p8 header: [$(head -c 27 "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8" 2>/dev/null)]"
+          xcrun altool --version 2>&1 | head -1 || true
+          xcrun altool --help 2>&1 | grep -iE "api-key|apiKey|api-issuer|apiIssuer|apple-id" | head -8 || true
+
       # Advisory only — --validate-app can flag non-fatal issues; never let it
       # block the upload (playbook: make validate advisory).
       - name: Validate with App Store Connect (advisory)
