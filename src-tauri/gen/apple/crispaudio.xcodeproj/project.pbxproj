@@ -1,0 +1,478 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0081A7EF56CAE7603842A91F /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A6799CAD19387C8900F7E1F /* Metal.framework */; };
+		18A65EFB51B2A73916961228 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E2891E82C163005FF1A73635 /* MetalKit.framework */; };
+		205D757322A7E1AF72AE5CC2 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 824B20389205C510EA7AFF0B /* WebKit.framework */; };
+		2D4FF8485AABDEF90E6EA6DB /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 582D77A672203EFE65DBF017 /* Security.framework */; };
+		2EDD74D322B0F1A96A84F8A7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 71E1AED0F61A3D3B86D25A66 /* PrivacyInfo.xcprivacy */; };
+		312E0647CCD7B121858B11DD /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = F2073E79F3471F4FA438877B /* main.mm */; };
+		642188BC8882E761C663C778 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 212F9A634B80FA73894CA0C0 /* UIKit.framework */; };
+		8CE89D381EC10C7EC2201E4F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F905B9821EF6972C6A62F0C6 /* Assets.xcassets */; };
+		96CF882499476FD41BD4D739 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F764B11D3F94A6090D877666 /* QuartzCore.framework */; };
+		97FD4D320A5A088B759750D5 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 152E4545D4FE3B694480D60F /* CoreGraphics.framework */; };
+		A792E88F46A898D201755900 /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 05F708BA326CB10AB33F0C6B /* libapp.a */; };
+		CCB486ECD966A54284983A49 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 27C4ADBFFDB33FD035AFCA33 /* LaunchScreen.storyboard */; };
+		F8BC20858ECF2182ACDF7E6B /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 4E416CA3090F42E017F30A9E /* assets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		05F708BA326CB10AB33F0C6B /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		0B7D5394E9E51959C73F8ED9 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		152E4545D4FE3B694480D60F /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		212F9A634B80FA73894CA0C0 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		27C4ADBFFDB33FD035AFCA33 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		286C296C68A9D0F9BA57530E /* project.rs */ = {isa = PBXFileReference; path = project.rs; sourceTree = "<group>"; };
+		3A6799CAD19387C8900F7E1F /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		4E416CA3090F42E017F30A9E /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
+		574092D947DEADACA2776B29 /* audio_export.rs */ = {isa = PBXFileReference; path = audio_export.rs; sourceTree = "<group>"; };
+		582D77A672203EFE65DBF017 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		71E1AED0F61A3D3B86D25A66 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		824B20389205C510EA7AFF0B /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		9E3571A13DA5AD7B53B2BB44 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		A60D6A15AEF2B98965D36E20 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
+		ACCE9D224459B2B40919DABC /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
+		B46F20BA87624D4C3597512F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E1427395FA9668A480BA7383 /* crispaudio_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = crispaudio_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2891E82C163005FF1A73635 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		EA6587E1F28CDE2E868ABC81 /* crispaudio_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = crispaudio_iOS.entitlements; sourceTree = "<group>"; };
+		F2073E79F3471F4FA438877B /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		F764B11D3F94A6090D877666 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		F905B9821EF6972C6A62F0C6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3BDB6F532D3DE741D5F045A2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A792E88F46A898D201755900 /* libapp.a in Frameworks */,
+				97FD4D320A5A088B759750D5 /* CoreGraphics.framework in Frameworks */,
+				0081A7EF56CAE7603842A91F /* Metal.framework in Frameworks */,
+				18A65EFB51B2A73916961228 /* MetalKit.framework in Frameworks */,
+				96CF882499476FD41BD4D739 /* QuartzCore.framework in Frameworks */,
+				2D4FF8485AABDEF90E6EA6DB /* Security.framework in Frameworks */,
+				642188BC8882E761C663C778 /* UIKit.framework in Frameworks */,
+				205D757322A7E1AF72AE5CC2 /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0D3CCCA4415A866D0775204C /* src */ = {
+			isa = PBXGroup;
+			children = (
+				ACCE9D224459B2B40919DABC /* lib.rs */,
+				A60D6A15AEF2B98965D36E20 /* main.rs */,
+				8507AAEE42CAABCDF9E8CADA /* commands */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		115415026A5E3C1301E1E2DF /* Externals */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Externals;
+			sourceTree = "<group>";
+		};
+		1CD90E919F1EA9A95E3457AF = {
+			isa = PBXGroup;
+			children = (
+				4E416CA3090F42E017F30A9E /* assets */,
+				F905B9821EF6972C6A62F0C6 /* Assets.xcassets */,
+				27C4ADBFFDB33FD035AFCA33 /* LaunchScreen.storyboard */,
+				DDE48EF48DA671719B2F0F8A /* crispaudio_iOS */,
+				115415026A5E3C1301E1E2DF /* Externals */,
+				AD43F38AB0C70F6B88B68705 /* Sources */,
+				0D3CCCA4415A866D0775204C /* src */,
+				9B37473593C5F7B3B3D17566 /* Frameworks */,
+				392933ECD0E99C25794AB254 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		392933ECD0E99C25794AB254 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E1427395FA9668A480BA7383 /* crispaudio_iOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8507AAEE42CAABCDF9E8CADA /* commands */ = {
+			isa = PBXGroup;
+			children = (
+				574092D947DEADACA2776B29 /* audio_export.rs */,
+				0B7D5394E9E51959C73F8ED9 /* mod.rs */,
+				286C296C68A9D0F9BA57530E /* project.rs */,
+			);
+			path = commands;
+			sourceTree = "<group>";
+		};
+		9B37473593C5F7B3B3D17566 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				152E4545D4FE3B694480D60F /* CoreGraphics.framework */,
+				05F708BA326CB10AB33F0C6B /* libapp.a */,
+				3A6799CAD19387C8900F7E1F /* Metal.framework */,
+				E2891E82C163005FF1A73635 /* MetalKit.framework */,
+				F764B11D3F94A6090D877666 /* QuartzCore.framework */,
+				582D77A672203EFE65DBF017 /* Security.framework */,
+				212F9A634B80FA73894CA0C0 /* UIKit.framework */,
+				824B20389205C510EA7AFF0B /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		AD43F38AB0C70F6B88B68705 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				CC920ED842E75864022E7C2A /* crispaudio */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		CC920ED842E75864022E7C2A /* crispaudio */ = {
+			isa = PBXGroup;
+			children = (
+				F2073E79F3471F4FA438877B /* main.mm */,
+				D972E8164424239DEA4BD817 /* bindings */,
+			);
+			path = crispaudio;
+			sourceTree = "<group>";
+		};
+		D972E8164424239DEA4BD817 /* bindings */ = {
+			isa = PBXGroup;
+			children = (
+				9E3571A13DA5AD7B53B2BB44 /* bindings.h */,
+			);
+			path = bindings;
+			sourceTree = "<group>";
+		};
+		DDE48EF48DA671719B2F0F8A /* crispaudio_iOS */ = {
+			isa = PBXGroup;
+			children = (
+				EA6587E1F28CDE2E868ABC81 /* crispaudio_iOS.entitlements */,
+				B46F20BA87624D4C3597512F /* Info.plist */,
+				71E1AED0F61A3D3B86D25A66 /* PrivacyInfo.xcprivacy */,
+			);
+			path = crispaudio_iOS;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5B52321E40BD69BEB1A6ADA0 /* crispaudio_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BF4532E32885B901EB94DC64 /* Build configuration list for PBXNativeTarget "crispaudio_iOS" */;
+			buildPhases = (
+				A289214CE1E326424025772B /* Build Rust Code */,
+				94D895E1102B5312969F92A8 /* Sources */,
+				1C5B2BFFCBF4612EB27C26CD /* Resources */,
+				3BDB6F532D3DE741D5F045A2 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = crispaudio_iOS;
+			packageProductDependencies = (
+			);
+			productName = crispaudio_iOS;
+			productReference = E1427395FA9668A480BA7383 /* crispaudio_iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5F724E37740CF97F34EA5CE7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 952A17A0221183D992801A88 /* Build configuration list for PBXProject "crispaudio" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 1CD90E919F1EA9A95E3457AF;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 392933ECD0E99C25794AB254 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5B52321E40BD69BEB1A6ADA0 /* crispaudio_iOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1C5B2BFFCBF4612EB27C26CD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8CE89D381EC10C7EC2201E4F /* Assets.xcassets in Resources */,
+				CCB486ECD966A54284983A49 /* LaunchScreen.storyboard in Resources */,
+				2EDD74D322B0F1A96A84F8A7 /* PrivacyInfo.xcprivacy in Resources */,
+				F8BC20858ECF2182ACDF7E6B /* assets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A289214CE1E326424025772B /* Build Rust Code */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Code";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a",
+				"$(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "npm run -- tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?}";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		94D895E1102B5312969F92A8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				312E0647CCD7B121858B11DD /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2371C03B5001F55510E6596D /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = debug;
+		};
+		2A7A21CC6671EB12A107C53D /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = release;
+		};
+		AEAE3ADCC5BE5201AA3B7941 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = crispaudio_iOS/crispaudio_iOS.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = crispaudio_iOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.crispstrobe.crispaudio;
+				PRODUCT_NAME = "CrispAudio";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = debug;
+		};
+		B37DE4DCAC0CFBCBDA13E6A3 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = crispaudio_iOS/crispaudio_iOS.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = crispaudio_iOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.crispstrobe.crispaudio;
+				PRODUCT_NAME = "CrispAudio";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		952A17A0221183D992801A88 /* Build configuration list for PBXProject "crispaudio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2371C03B5001F55510E6596D /* debug */,
+				2A7A21CC6671EB12A107C53D /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		BF4532E32885B901EB94DC64 /* Build configuration list for PBXNativeTarget "crispaudio_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AEAE3ADCC5BE5201AA3B7941 /* debug */,
+				B37DE4DCAC0CFBCBDA13E6A3 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5F724E37740CF97F34EA5CE7 /* Project object */;
+}

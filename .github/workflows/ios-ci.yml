@@ -1,0 +1,88 @@
+# iOS CI — compile the app for the simulator (unsigned, no Apple secrets) and
+# smoke-test that it launches. This verifies the Tauri iOS scaffold + config +
+# frontend on GitHub's macOS runners instead of a local machine. It does NOT
+# sign or upload anything — that's the separate release/signing workflow.
+name: iOS CI
+
+on:
+  push:
+    branches: [touch-responsive-ux]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-simulator:
+    name: iOS simulator build + smoke test
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Add Rust iOS simulator target
+        run: rustup target add aarch64-apple-ios-sim
+
+      - name: Cache cargo + rust build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ios-sim-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: ios-sim-cargo-
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # Uses the committed src-tauri/gen/apple project (project.yml carries our
+      # NSMicrophoneUsageDescription / privacy customizations). We deliberately
+      # do NOT run `tauri ios init` here, which would regenerate and wipe them.
+      - name: Build iOS app (simulator, unsigned)
+        run: PATH="/usr/bin:$PATH" npx tauri ios build --debug --target aarch64-sim --no-sign
+
+      - name: Locate built .app
+        id: app
+        run: |
+          APP=$(find src-tauri/gen/apple/build -name "*.app" | head -1)
+          if [ -z "$APP" ]; then echo "No .app produced" >&2; exit 1; fi
+          echo "path=$APP" >> "$GITHUB_OUTPUT"
+          echo "Built: $APP"
+
+      - name: Boot simulator, install, launch, screenshot
+        continue-on-error: true
+        run: |
+          set -x
+          RUNTIME=$(xcrun simctl list runtimes available | grep -oE 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]+' | tail -1)
+          DEVTYPE=$(xcrun simctl list devicetypes | grep -oE 'com\.apple\.CoreSimulator\.SimDeviceType\.iPhone-1[5-9]([-A-Za-z]*)?' | tail -1)
+          echo "Using device=$DEVTYPE runtime=$RUNTIME"
+          DEV=$(xcrun simctl create "CI-iPhone" "$DEVTYPE" "$RUNTIME")
+          xcrun simctl boot "$DEV"
+          xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "${{ steps.app.outputs.path }}"
+          xcrun simctl launch "$DEV" com.crispstrobe.crispaudio
+          sleep 10
+          xcrun simctl io "$DEV" screenshot ios-launch.png
+          ls -la ios-launch.png
+
+      - name: Upload launch screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-launch-screenshot
+          path: ios-launch.png
+          if-no-files-found: warn
+
+      - name: Upload unsigned .app (for local Simulator use)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CrispAudio-ios-sim-app
+          path: ${{ steps.app.outputs.path }}
+          if-no-files-found: warn
