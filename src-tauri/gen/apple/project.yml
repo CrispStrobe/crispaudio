@@ -57,6 +57,10 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         # Required because CFBundleDocumentTypes declares the .crispaudio type.
         LSSupportsOpeningDocumentsInPlace: false
+        # Without this, App Store Connect doesn't recognise the asset-catalog
+        # AppIcon and extracts a 167px device icon instead of the 1024 marketing
+        # icon, leaving the store tile blank.
+        CFBundleIconName: AppIcon
     entitlements:
       path: crispaudio_iOS/crispaudio_iOS.entitlements
     scheme:
