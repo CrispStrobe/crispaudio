@@ -55,6 +55,8 @@ targets:
         CFBundleVersion: "0.3.0"
         NSMicrophoneUsageDescription: "CrispAudio uses the microphone so you can record audio to process with voice effects. Recording only happens when you tap Record."
         ITSAppUsesNonExemptEncryption: false
+        # Required because CFBundleDocumentTypes declares the .crispaudio type.
+        LSSupportsOpeningDocumentsInPlace: false
     entitlements:
       path: crispaudio_iOS/crispaudio_iOS.entitlements
     scheme:
