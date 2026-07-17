@@ -1,0 +1,68 @@
+# Generate App Store screenshots on the iOS Simulator (no device, no signing).
+# One clean build per panel (VITE_INITIAL_PANEL), captured at the two required
+# App Store sizes: iPhone 6.9" (1320x2868, bucket APP_IPHONE_67) and iPad 13"
+# (2064x2752, bucket APP_IPAD_PRO_3GEN_129). Artifacts are then uploaded to
+# App Store Connect via the API.
+name: iOS Screenshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: macos-15
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        panel: [sfx, voice, timeline]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: rustup target add aarch64-apple-ios-sim
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ios-sim-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: ios-sim-cargo-
+      - run: npm ci
+
+      - name: Build simulator app (panel=${{ matrix.panel }})
+        env:
+          VITE_INITIAL_PANEL: ${{ matrix.panel }}
+        run: PATH="/usr/bin:$PATH" npx tauri ios build --debug --target aarch64-sim --no-sign
+
+      - name: Capture on iPhone 6.9" + iPad 13"
+        run: |
+          set -euxo pipefail
+          APP="$(find src-tauri/gen/apple/build -name '*.app' | head -1)"
+          RUNTIME="$(xcrun simctl list runtimes available | grep -oE 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]+' | tail -1)"
+          mkdir -p shots
+          capture() {
+            name="$1"; devtype="$2"
+            dev="$(xcrun simctl create "ss-$name" "$devtype" "$RUNTIME")"
+            xcrun simctl boot "$dev"
+            xcrun simctl bootstatus "$dev" -b
+            xcrun simctl install "$dev" "$APP"
+            xcrun simctl launch "$dev" com.crispstrobe.crispaudio
+            sleep 12
+            xcrun simctl io "$dev" screenshot "shots/${{ matrix.panel }}-$name.png"
+            xcrun simctl shutdown "$dev" || true
+          }
+          IPHONE="$(xcrun simctl list devicetypes | grep -oE 'com\.apple\.CoreSimulator\.SimDeviceType\.iPhone-1[5-9]-Pro-Max' | tail -1)"
+          IPAD="$(xcrun simctl list devicetypes | grep -oE 'com\.apple\.CoreSimulator\.SimDeviceType\.iPad-Pro-13[A-Za-z0-9-]*' | tail -1)"
+          echo "iPhone=$IPHONE iPad=$IPAD"
+          capture iphone69 "$IPHONE"
+          capture ipad13 "$IPAD"
+          for f in shots/*.png; do echo "$f -> $(sips -g pixelWidth -g pixelHeight "$f" | grep pixel | tr '\n' ' ')"; done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ matrix.panel }}
+          path: shots/*.png
+          if-no-files-found: warn

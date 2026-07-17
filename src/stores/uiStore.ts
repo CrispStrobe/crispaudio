@@ -27,8 +27,17 @@ interface UIState {
   setSnapInterval: (interval: number) => void;
 }
 
+// Optional build-time override of the starting panel — used only by the
+// screenshot CI job (VITE_INITIAL_PANEL) so it can capture each panel.
+const INITIAL_PANEL: ActivePanel =
+  (['sfx', 'voice', 'timeline'] as const).includes(
+    import.meta.env.VITE_INITIAL_PANEL as ActivePanel,
+  )
+    ? (import.meta.env.VITE_INITIAL_PANEL as ActivePanel)
+    : 'sfx';
+
 export const useUIStore = create<UIState>()((set) => ({
-  activePanel: 'sfx',
+  activePanel: INITIAL_PANEL,
   activeModal: null,
   sidebarCollapsed: false,
   zoomLevel: 1,
