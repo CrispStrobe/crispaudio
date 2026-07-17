@@ -736,15 +736,16 @@ export function VoicePanel() {
 
   return (
     <div className="h-full overflow-y-auto panel-enter" style={{ background: 'var(--bg-primary)' }}>
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-3 sm:p-6">
 
         {/* ── Header ──────────────────────────────────────────────── */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-2 gradient-title-voice">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-2 gradient-title-voice">
             {t('panels.voice')}
           </h1>
-          <p className="text-gray-400 text-base">{t('voice.subtitle')}</p>
-          <p className="text-gray-500 text-xs mt-2">
+          <p className="text-gray-400 text-sm sm:text-base">{t('voice.subtitle')}</p>
+          {/* Keyboard shortcuts hint is irrelevant on touch/small screens */}
+          <p className="hidden sm:block text-gray-500 text-xs mt-2">
             {t('voice.shortcuts')}
           </p>
         </div>
@@ -804,7 +805,7 @@ export function VoicePanel() {
 
         {/* ── A/B Controls ────────────────────────────────────────── */}
         <div className="card mb-6">
-          <div className="flex flex-wrap justify-center items-center gap-4">
+          <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 sm:gap-4">
             {/* Slots */}
             <div className="flex items-center gap-2">
               <button

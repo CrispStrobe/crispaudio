@@ -51,6 +51,8 @@ export function StatusBar() {
       className="flex items-center px-4 gap-4 select-none shrink-0"
       style={{
         height: 28,
+        boxSizing: 'content-box',
+        paddingBottom: 'env(safe-area-inset-bottom)',
         background: 'var(--bg-secondary)',
         borderTop: '1px solid var(--border-subtle)',
         fontSize: 11,

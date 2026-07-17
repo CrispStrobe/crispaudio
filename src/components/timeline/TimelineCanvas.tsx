@@ -31,6 +31,10 @@ const PLAYHEAD_COLOR = '#ef4444';
 const SELECTION_COLOR = 'rgba(99, 102, 241, 0.18)';
 const SNAP_GRID_COLOR = 'rgba(99, 102, 241, 0.08)';
 
+// Touch long-press → context menu (fingers have no right-click).
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_MOVE_TOL = 10; // px of movement that reclassifies it as a drag
+
 // Segment swatch fallback colors (cycled by track index)
 const SEGMENT_PALETTE = [
   '#3b82f6', // blue
@@ -513,26 +517,25 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
   const [cursor, setCursor] = useState('default');
 
-  const handleMouseMoveWithCursor = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      onMouseMove(e);
+  // Pending touch long-press (timer + the down position it must stay near).
+  const longPressRef = useRef<{ timer: number; x: number; y: number } | null>(null);
+  const clearLongPress = useCallback(() => {
+    if (longPressRef.current) {
+      clearTimeout(longPressRef.current.timer);
+      longPressRef.current = null;
+    }
+  }, []);
 
-      const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
-      setCursor(getCursor(cx, cy));
-    },
-    [onMouseMove, getCursor],
-  );
-
-  // ── Context menu ──────────────────────────────────────────────────────────
-
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      e.preventDefault();
-      const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
-      const cx = e.clientX - rect.left;
-      const cy = e.clientY - rect.top;
+  // Open the segment context menu at a screen position. Shared by right-click
+  // (mouse) and long-press (touch). Declared before the pointer handlers so
+  // they can reference it.
+  const openContextMenuAt = useCallback(
+    (clientX: number, clientY: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const cx = clientX - rect.left;
+      const cy = clientY - rect.top;
       const time = canvasXToTime(cx);
       const trackIndex = canvasYToTrackIndex(cy);
       const track = tracks[trackIndex];
@@ -547,9 +550,80 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         }
       }
 
-      setContextMenu({ visible: true, x: e.clientX, y: e.clientY, segmentId, time });
+      setContextMenu({ visible: true, x: clientX, y: clientY, segmentId, time });
     },
     [canvasXToTime, canvasYToTrackIndex, tracks],
+  );
+
+  const handleMouseMoveWithCursor = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      // A press that travels is a drag/scroll, not a long-press.
+      if (longPressRef.current) {
+        const dx = Math.abs(e.clientX - longPressRef.current.x);
+        const dy = Math.abs(e.clientY - longPressRef.current.y);
+        if (dx > LONG_PRESS_MOVE_TOL || dy > LONG_PRESS_MOVE_TOL) clearLongPress();
+      }
+
+      onMouseMove(e);
+
+      const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      setCursor(getCursor(cx, cy));
+    },
+    [onMouseMove, getCursor, clearLongPress],
+  );
+
+  // ── Pointer handlers (unify mouse / touch / pen) ─────────────────────────
+  // A PointerEvent carries the same clientX/clientY/shiftKey the drag logic
+  // reads, so the existing handlers work unchanged. We capture the pointer so
+  // a drag keeps tracking even if the finger/cursor leaves the canvas, and the
+  // canvas sets touch-action: none so touch-drags don't scroll the page.
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* setPointerCapture can throw if the pointer is already gone */
+      }
+      onMouseDown(e);
+
+      // Touch has no right-click: press-and-hold (without moving) opens the
+      // context menu and cancels the tentative drag started above.
+      if (e.pointerType === 'touch') {
+        const { clientX, clientY } = e;
+        const timer = window.setTimeout(() => {
+          onMouseUp();
+          openContextMenuAt(clientX, clientY);
+          longPressRef.current = null;
+        }, LONG_PRESS_MS);
+        longPressRef.current = { timer, x: clientX, y: clientY };
+      }
+    },
+    [onMouseDown, onMouseUp, openContextMenuAt],
+  );
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      clearLongPress();
+      onMouseUp();
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        /* release can throw if capture was never established */
+      }
+    },
+    [onMouseUp, clearLongPress],
+  );
+
+  // ── Context menu ──────────────────────────────────────────────────────────
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
+      openContextMenuAt(e.clientX, e.clientY);
+    },
+    [openContextMenuAt],
   );
 
   const closeMenu = useCallback(() =>
@@ -601,14 +675,14 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
   useEffect(() => {
     if (!contextMenu.visible) return;
-    const dismiss = (e: MouseEvent) => {
+    const dismiss = (e: Event) => {
       const target = e.target as HTMLElement;
       if (!target.closest('[data-timeline-menu]')) {
         closeMenu();
       }
     };
-    window.addEventListener('mousedown', dismiss);
-    return () => window.removeEventListener('mousedown', dismiss);
+    window.addEventListener('pointerdown', dismiss);
+    return () => window.removeEventListener('pointerdown', dismiss);
   }, [contextMenu.visible, closeMenu]);
 
   // Focus first menu item when context menu opens
@@ -685,11 +759,11 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       <canvas
         ref={canvasRef}
         className="block"
-        style={{ cursor, width, height: totalHeight }}
-        onMouseDown={onMouseDown}
-        onMouseMove={handleMouseMoveWithCursor}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
+        style={{ cursor, width, height: totalHeight, touchAction: 'none' }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handleMouseMoveWithCursor}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         onWheel={onWheel}
         onContextMenu={handleContextMenu}
       />

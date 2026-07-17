@@ -405,6 +405,8 @@
     "segmentCount_other": "{{count}} Segmente",
     "selectedCount": "{{count}} ausgewählt",
     "reorderTrack": "Spur neu anordnen",
+    "moveTrackUp": "Spur nach oben",
+    "moveTrackDown": "Spur nach unten",
     "exporting": "Exportiere…",
     "applyVoiceEffects": "Stimmeffekte anwenden",
     "voiceEffectsTitle": "Stimmeffekte",

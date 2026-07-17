@@ -29,6 +29,8 @@ import {
   Save,
   FolderOpen,
   GripVertical,
+  ChevronUp,
+  ChevronDown,
   MessageSquare,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -68,9 +70,12 @@ const TrackHeader: React.FC<TrackHeaderProps> = ({
   isDragOver,
 }) => {
   const { t } = useTranslation();
-  const { project, updateTrack, removeTrack } = useProjectStore();
+  const { project, updateTrack, removeTrack, reorderTrack } = useProjectStore();
   const track = project.tracks[trackIndex];
   if (!track) return null;
+
+  const isFirst = trackIndex === 0;
+  const isLast = trackIndex === project.tracks.length - 1;
 
   return (
     <div
@@ -82,15 +87,39 @@ const TrackHeader: React.FC<TrackHeaderProps> = ({
       onDrop={(e) => onDrop(e, trackIndex)}
     >
       <div className="flex items-center gap-1.5 mb-1">
+        {/* Drag handle (desktop pointer) — HTML5 DnD doesn't fire on touch */}
         <div
           draggable
           onDragStart={(e) => onDragStart(e, track.id)}
           onDragEnd={onDragEnd}
-          className="flex-shrink-0 cursor-grab active:cursor-grabbing p-0.5 text-gray-600 hover:text-gray-400 transition-colors"
+          className="hidden md:block flex-shrink-0 cursor-grab active:cursor-grabbing p-0.5 text-gray-600 hover:text-gray-400 transition-colors"
           aria-label={t('timeline.reorderTrack')}
           title={t('timeline.reorderTrack')}
         >
           <GripVertical className="w-3 h-3" />
+        </div>
+        {/* Up/down reorder — works with touch and keyboard everywhere */}
+        <div className="flex-shrink-0 flex flex-col -my-0.5">
+          <button
+            type="button"
+            onClick={() => reorderTrack(track.id, trackIndex - 1)}
+            disabled={isFirst}
+            className="p-0.5 text-gray-600 hover:text-gray-300 disabled:opacity-30 disabled:hover:text-gray-600 transition-colors leading-none"
+            aria-label={t('timeline.moveTrackUp')}
+            title={t('timeline.moveTrackUp')}
+          >
+            <ChevronUp className="w-3 h-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => reorderTrack(track.id, trackIndex + 1)}
+            disabled={isLast}
+            className="p-0.5 text-gray-600 hover:text-gray-300 disabled:opacity-30 disabled:hover:text-gray-600 transition-colors leading-none"
+            aria-label={t('timeline.moveTrackDown')}
+            title={t('timeline.moveTrackDown')}
+          >
+            <ChevronDown className="w-3 h-3" />
+          </button>
         </div>
         <input
           type="text"
@@ -373,8 +402,8 @@ export const TimelinePanel: React.FC = () => {
       {/* Transport bar */}
       <TransportControls />
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800 bg-gray-900 flex-shrink-0">
+      {/* Toolbar — scrolls horizontally on narrow screens so nothing clips */}
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800 bg-gray-900 flex-shrink-0 overflow-x-auto [&>*]:shrink-0">
         {/* Undo / Redo */}
         <button
           type="button"

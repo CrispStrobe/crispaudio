@@ -19,16 +19,18 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div
-      className="flex flex-col"
-      style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}
+      className="flex flex-col h-viewport"
+      style={{ width: '100vw', overflow: 'hidden', background: 'var(--bg-primary)' }}
     >
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-indigo-600 focus:text-white focus:rounded">Skip to content</a>
 
       {/* Mobile hamburger button */}
       <button
         onClick={toggleSidebar}
-        className="md:hidden fixed top-3 left-3 z-40 btn-ghost flex items-center justify-center rounded-lg"
+        className="md:hidden fixed z-40 btn-ghost flex items-center justify-center rounded-lg"
         style={{
+          top: 'calc(0.75rem + env(safe-area-inset-top))',
+          left: 'calc(0.75rem + env(safe-area-inset-left))',
           width: 40,
           height: 40,
           background: 'var(--bg-secondary)',
@@ -44,7 +46,7 @@ export function AppShell({ children }: AppShellProps) {
         <Sidebar mobileOpen={sidebarCollapsed} onClose={toggleSidebar} />
         <main
           id="main-content"
-          className="flex-1 min-w-0 overflow-hidden md:overflow-hidden overflow-y-auto"
+          className="flex-1 min-w-0 overflow-hidden md:overflow-hidden overflow-y-auto pt-mobile-header"
           style={{ background: 'var(--bg-primary)' }}
         >
           {children}
