@@ -80,13 +80,13 @@ export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
   const fillPercent = ((smoothValue - min) / (max - min)) * 100;
 
   return (
-    <div className="group flex flex-col gap-1.5 w-full">
+    <div className="group flex flex-col gap-1.5 w-full param-slider">
       {/* Header row */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <label
             htmlFor={inputId}
-            className="text-xs font-medium text-gray-300 truncate select-none leading-none"
+            className="param-slider__label text-xs font-medium text-gray-300 truncate select-none leading-none"
             title={tooltip ?? label}
           >
             {label}
@@ -98,9 +98,10 @@ export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
                 type="button"
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
-                className="w-3.5 h-3.5 rounded-full bg-gray-700 text-gray-400 hover:text-gray-200 hover:bg-gray-600 flex items-center justify-center text-[9px] font-bold leading-none transition-colors"
-                tabIndex={-1}
+                onClick={() => setShowTooltip((v) => !v)}
+                className="param-slider__info w-3.5 h-3.5 rounded-full bg-gray-700 text-gray-400 hover:text-gray-200 hover:bg-gray-600 flex items-center justify-center text-[9px] font-bold leading-none transition-colors"
                 aria-label={`Info: ${label}`}
+                aria-expanded={showTooltip}
               >
                 ?
               </button>
@@ -115,7 +116,7 @@ export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="font-mono text-[11px] text-gray-200 bg-gray-800 border border-gray-700 px-1.5 py-0.5 rounded leading-none min-w-[3.5rem] text-right tabular-nums">
+          <span className="param-slider__value font-mono text-[11px] text-gray-200 bg-gray-800 border border-gray-700 px-1.5 py-0.5 rounded leading-none min-w-[3.5rem] text-right tabular-nums">
             {formatValue(smoothValue, step, unit)}
           </span>
 
@@ -125,7 +126,7 @@ export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
               onClick={onLockToggle}
               disabled={disabled}
               className={`
-                p-0.5 rounded transition-colors
+                param-slider__lock p-0.5 rounded transition-colors flex items-center justify-center
                 ${locked
                   ? 'text-amber-400 hover:text-amber-300'
                   : 'text-gray-500 hover:text-gray-300'}
@@ -143,7 +144,7 @@ export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
       </div>
 
       {/* Track + thumb */}
-      <div className="relative h-4 flex items-center">
+      <div className="param-slider__track relative h-4 flex items-center">
         {/* Background track */}
         <div className="absolute inset-x-0 h-1.5 rounded-full bg-gray-700 overflow-hidden">
           <div
@@ -165,7 +166,9 @@ export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
           disabled={isDisabled}
           aria-label={label}
           className={`
+            param-slider__input
             relative w-full h-1.5 appearance-none bg-transparent rounded-full
+            touch-none
             focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-1 focus-visible:ring-offset-gray-900
             [&::-webkit-slider-thumb]:appearance-none
             [&::-webkit-slider-thumb]:w-3.5

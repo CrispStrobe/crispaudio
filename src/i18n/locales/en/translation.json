@@ -405,6 +405,8 @@
     "segmentCount_other": "{{count}} segments",
     "selectedCount": "{{count}} selected",
     "reorderTrack": "Reorder track",
+    "moveTrackUp": "Move track up",
+    "moveTrackDown": "Move track down",
     "exporting": "Exporting…",
     "applyVoiceEffects": "Apply Voice Effects",
     "voiceEffectsTitle": "Voice Effects",

@@ -344,6 +344,27 @@ function WaveformCanvas({
     setIsDragging(false);
   }, []);
 
+  // Pointer wrappers so panning works with touch/pen as well as mouse.
+  // Capture the pointer so a pan keeps tracking off-canvas.
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (zoomLevel <= 1) return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    handleMouseDown(e);
+  }, [zoomLevel, handleMouseDown]);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    handleMouseUp();
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  }, [handleMouseUp]);
+
   // Draw the static waveform (zoomed view)
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -530,11 +551,12 @@ function WaveformCanvas({
           width={400}
           height={120}
           className={`w-full h-24 rounded border border-gray-700 ${zoomLevel > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
+          style={{ touchAction: zoomLevel > 1 ? 'none' : 'auto' }}
           onWheel={handleWheel}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handleMouseMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         />
         <div
           ref={playheadRef}
@@ -773,7 +795,7 @@ export function SFXPanel() {
   const downloadWav = useCallback(async () => {
     if (!buffer) return;
     const blob = await exportWav(buffer, sampleRate, bitDepth);
-    downloadWavFile(blob, `crispaudio_sfx_${Date.now()}.wav`);
+    await downloadWavFile(blob, `crispaudio_sfx_${Date.now()}.wav`);
   }, [buffer, sampleRate, bitDepth]);
 
   // Send to Timeline
@@ -805,20 +827,21 @@ export function SFXPanel() {
 
   return (
     <div className="h-full overflow-y-auto panel-enter" style={{ background: 'var(--bg-primary)' }}>
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-3 sm:p-6">
 
         {/* ── Header ──────────────────────────────────────────────── */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2 gradient-title">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2 gradient-title">
             {t('panels.sfx')}
           </h1>
-          <p className="text-gray-400 text-base">{t('sfx.subtitle')}</p>
-          <p className="text-gray-500 text-xs mt-2">
+          <p className="text-gray-400 text-sm sm:text-base">{t('sfx.subtitle')}</p>
+          {/* Keyboard shortcuts hint is irrelevant on touch/small screens */}
+          <p className="hidden sm:block text-gray-500 text-xs mt-2">
             {t('sfx.shortcuts')}
           </p>
 
-          {/* Master Controls */}
-          <div className="flex flex-wrap justify-center items-center gap-6 mt-6 mb-4">
+          {/* Master Controls — stack vertically on phones, row on larger */}
+          <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 sm:gap-6 mt-4 sm:mt-6 mb-4">
             {/* Master Volume */}
             <div className="flex items-center gap-2">
               <Headphones className="w-4 h-4 text-gray-400" />

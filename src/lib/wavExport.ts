@@ -36,16 +36,45 @@ export async function exportWav(
   return encodeWavJS(buffer, sampleRate, bitDepth);
 }
 
+function isTauri(): boolean {
+  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+}
+
 /**
- * Trigger a browser download for a Blob.
+ * Save a WAV Blob to disk. In a Tauri context (desktop and mobile) this opens a
+ * native save dialog and writes via @tauri-apps/plugin-fs, which works inside
+ * the iOS/Android sandbox. On the web it falls back to an `<a download>` — note
+ * that iOS Safari/WKWebView ignores the download attribute, which is exactly why
+ * the Tauri build must not use this fallback.
+ *
+ * Returns false if the user cancels the dialog.
  */
-export function downloadWavFile(blob: Blob, filename: string): void {
+export async function downloadWavFile(blob: Blob, filename: string): Promise<boolean> {
+  if (isTauri()) {
+    try {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const { writeFile } = await import('@tauri-apps/plugin-fs');
+      const path = await save({
+        defaultPath: filename,
+        filters: [{ name: 'WAV Audio', extensions: ['wav'] }],
+      });
+      if (!path) return false;
+      await writeFile(path, new Uint8Array(await blob.arrayBuffer()));
+      return true;
+    } catch (err) {
+      console.error('Failed to save WAV:', err);
+      return false;
+    }
+  }
+
+  // Browser fallback.
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+  return true;
 }
 
 // ---------------------------------------------------------------------------

@@ -95,7 +95,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
               style={{ width: 56, height: 52, gap: 3 }}
             >
               <Icon size={18} />
-              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              <span className="nav-label">
                 {label}
               </span>
             </button>
@@ -115,7 +115,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         style={{ width: 56, height: 52, gap: 3 }}
       >
         <Settings size={18} />
-        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+        <span className="nav-label">
           {t('nav.settings')}
         </span>
       </button>

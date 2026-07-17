@@ -3,7 +3,7 @@
 // Root component. Renders AppShell and switches panels based on uiStore.
 // ---------------------------------------------------------------------------
 
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import { useUIStore } from './stores/uiStore';
 import { useSettingsStore } from './stores/settingsStore';
@@ -24,6 +24,14 @@ export default function App() {
 
   // Autosave timeline project structure periodically + on unload
   useAutosave();
+
+  // CI-only plugin-fs self-test (VITE_FS_SELFTEST build flag). Confirms the
+  // sandbox-safe file I/O actually reads/writes on the target platform.
+  const [fsSelfTest, setFsSelfTest] = useState<{ ok: boolean; detail: string } | null>(null);
+  useEffect(() => {
+    if (!import.meta.env.VITE_FS_SELFTEST) return;
+    import('./lib/fsSelfTest').then((m) => m.runFsSelfTest()).then(setFsSelfTest);
+  }, []);
 
   // Apply the persisted default export format to the synth store on startup.
   const defaultSampleRate = useSettingsStore((s) => s.defaultSampleRate);
@@ -78,6 +86,24 @@ export default function App() {
 
   return (
     <AppShell>
+      {fsSelfTest && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            zIndex: 99999,
+            padding: '3px 8px',
+            fontSize: 11,
+            fontWeight: 700,
+            fontFamily: 'monospace',
+            color: '#fff',
+            background: fsSelfTest.ok ? '#16a34a' : '#dc2626',
+          }}
+        >
+          FS {fsSelfTest.ok ? 'PASS' : 'FAIL'}: {fsSelfTest.detail}
+        </div>
+      )}
       <Suspense fallback={
         <div className="flex-1 flex flex-col items-center justify-center gap-4" style={{ color: 'var(--text-muted)' }}>
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" className="animate-pulse">

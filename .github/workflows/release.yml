@@ -149,11 +149,10 @@ jobs:
 
       - run: npm ci
 
-      - name: Initialize iOS project
-        env:
-          APPLE_DEVELOPMENT_TEAM: UNSIGNED
-          TAURI_APPLE_DEVELOPMENT_TEAM: UNSIGNED
-        run: npx tauri ios init || true
+      # NOTE: do NOT run `tauri ios init` here — the iOS project is committed
+      # under src-tauri/gen/apple with customizations (mic usage string,
+      # PrivacyInfo) that init would overwrite. Simulator-build verification
+      # lives in ios-ci.yml; signed App Store builds in ios-release.yml.
 
       - name: Fix Xcode workspace and disable signing
         run: |

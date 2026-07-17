@@ -61,7 +61,7 @@ export const TransportControls: React.FC = () => {
   }, [loopEnabled, setLoopEnabled]);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-700 select-none">
+    <div className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-700 select-none overflow-x-auto [&>*]:shrink-0">
       {/* Skip to start */}
       <button
         type="button"

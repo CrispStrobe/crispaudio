@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- App Store export options for CrispAudio (manual signing).
+     Used by the signed release workflow's `xcodebuild -exportArchive`.
+     Manual signing with an explicit, pre-created Distribution profile —
+     NEVER -allowProvisioningUpdates (that mints a cert and can revoke the
+     account's shared Distribution cert, breaking every other app).
+     The provisioning profile "CrispAudio AppStore CI" must be created for
+     bundle id com.crispstrobe.crispaudio and bound to the account's
+     Distribution cert(s); its base64 goes in the ASC_PROFILE_BASE64 secret. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store-connect</string>
+    <key>teamID</key>
+    <string>N9XSJ4M3GT</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>signingCertificate</key>
+    <string>Apple Distribution</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.crispstrobe.crispaudio</key>
+        <string>CrispAudio AppStore CI</string>
+    </dict>
+    <key>destination</key>
+    <string>export</string>
+    <key>uploadSymbols</key>
+    <true/>
+</dict>
+</plist>

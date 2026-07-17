@@ -48,6 +48,16 @@ jobs:
         with:
           node-version: 20
 
+      # App Store now requires the iOS 26 SDK (Xcode 26). The runner may default
+      # to an older Xcode, so select the newest available.
+      - name: Select newest Xcode
+        run: |
+          echo "Available Xcodes:"; ls -d /Applications/Xcode*.app
+          XC="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          [ -n "$XC" ] || XC="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
+
       - name: Add Rust iOS device target
         run: rustup target add aarch64-apple-ios
 
@@ -105,30 +115,16 @@ jobs:
           P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
         run: |
           set -euo pipefail
-          mkdir -p "$HOME/.appstoreconnect/private_keys"
-          echo "$P8_BASE64" | base64 --decode > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          # altool searches ./private_keys, ~/private_keys, ~/.private_keys and
+          # ~/.appstoreconnect/private_keys — write to the guaranteed one.
+          mkdir -p "$HOME/.private_keys" "$HOME/.appstoreconnect/private_keys"
+          echo "$P8_BASE64" | base64 --decode > "$HOME/.private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          cp "$HOME/.private_keys/AuthKey_${ASC_KEY_ID}.p8" "$HOME/.appstoreconnect/private_keys/"
 
-      # Force MANUAL signing with our explicit profile in the (committed) Xcode
-      # project, so neither xcodebuild nor tauri reaches for automatic signing.
-      - name: Patch project for manual signing
-        run: |
-          set -euo pipefail
-          python3 - "$PROFILE_NAME" "$TEAM_ID" "$BUNDLE_ID" <<'PY'
-          import re, sys, glob
-          profile, team, bundle = sys.argv[1], sys.argv[2], sys.argv[3]
-          pbx = glob.glob("src-tauri/gen/apple/*.xcodeproj/project.pbxproj")[0]
-          s = open(pbx).read()
-          # Inject signing settings into every buildSettings block.
-          inject = (
-              f'\n\t\t\t\tCODE_SIGN_STYLE = Manual;'
-              f'\n\t\t\t\tDEVELOPMENT_TEAM = {team};'
-              f'\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";'
-              f'\n\t\t\t\t"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "{profile}";'
-          )
-          s = s.replace("buildSettings = {", "buildSettings = {" + inject)
-          open(pbx, "w").write(s)
-          print("Patched", pbx)
-          PY
+      # NOTE: no pbxproj signing patch — `tauri ios build` re-runs xcodegen and
+      # regenerates the project, wiping any pbxproj edit. We archive UNSIGNED
+      # (next step) and apply Distribution signing at -exportArchive instead
+      # (playbook canonical flow: archive unsigned, sign at export).
 
       # Stamp a unique build number so each upload is accepted (App Store
       # rejects a duplicate CFBundleVersion). Kept in project.yml so xcodegen
@@ -141,14 +137,16 @@ jobs:
           echo "BUILD_NO=$BUILD_NO" >> "$GITHUB_ENV"
           echo "SHORT_VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
 
-      # Produce the .xcarchive only. Do NOT pass --export-method: Tauri's own
-      # export doesn't forward the auth flags, so it falls back to a
-      # DEVELOPMENT-signed IPA that App Store upload rejects (playbook gotcha,
-      # 2026-07-12). We export ourselves in the next step with manual signing.
-      - name: Build iOS archive
+      # Archive UNSIGNED (--no-sign → CODE_SIGNING_ALLOWED=NO), so the archive
+      # doesn't demand an "iOS Development" cert the CI runner doesn't have.
+      # Distribution signing is applied at -exportArchive below. Tauri's own
+      # export may fail on an unsigned build — that's expected and harmless; the
+      # .xcarchive it produced is what we export. (Also: never --export-method —
+      # Tauri's export drops the auth flags and yields a Development-signed IPA.)
+      - name: Build iOS archive (unsigned)
         run: |
-          set -euo pipefail
-          PATH="/usr/bin:$PATH" npx tauri ios build
+          PATH="/usr/bin:$PATH" npx tauri ios build --no-sign || \
+            echo "::warning::tauri build/export returned non-zero (expected on --no-sign); checking for the archive next"
 
       - name: Export signed IPA (manual signing)
         id: ipa
@@ -157,6 +155,15 @@ jobs:
           ARCHIVE="$(find src-tauri/gen/apple/build -name '*.xcarchive' | head -1)"
           if [ -z "$ARCHIVE" ]; then echo "No .xcarchive produced" >&2; exit 1; fi
           echo "Archive: $ARCHIVE"
+          # Tauri stamps CFBundleVersion from tauri.conf.json (0.3.0); overwrite
+          # it with a unique build number BEFORE export. Both the app's own
+          # Info.plist AND the archive's ApplicationProperties must be patched —
+          # -exportArchive reads the version from the latter.
+          APP="$(ls -d "$ARCHIVE/Products/Applications/"*.app | head -1)"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NO" "$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :ApplicationProperties:CFBundleVersion $BUILD_NO" "$ARCHIVE/Info.plist" || true
+          echo "Patched CFBundleVersion -> $BUILD_NO"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$APP/Info.plist"
           PATH="/usr/bin:$PATH" xcodebuild -exportArchive \
             -archivePath "$ARCHIVE" \
             -exportPath "$RUNNER_TEMP/export" \
@@ -171,25 +178,32 @@ jobs:
           codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/ipa_check/Payload/"*.app
 
       # Advisory only — --validate-app can flag non-fatal issues; never let it
-      # block the upload (playbook: make validate advisory).
+      # block the upload (playbook: make validate advisory). NOTE: the runner's
+      # altool uses --apiKey/--apiIssuer (camelCase), not the kebab-case forms.
       - name: Validate with App Store Connect (advisory)
         continue-on-error: true
         run: |
           xcrun altool --validate-app -f "${{ steps.ipa.outputs.path }}" --type ios \
             --apple-id "$ASC_APP_ID" \
-            --api-key "$ASC_KEY_ID" --api-issuer "$ASC_ISSUER_ID"
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
 
       - name: Upload to App Store Connect
         if: ${{ github.event_name == 'push' || github.event.inputs.dry_run == 'false' }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          OUT="$RUNNER_TEMP/altool_upload.log"
+          # altool exits 0 even when the upload fails validation — fail loud by
+          # inspecting its output for the success/failure markers.
           xcrun altool --upload-package "${{ steps.ipa.outputs.path }}" --type ios \
             --apple-id "$ASC_APP_ID" \
             --bundle-id "$BUNDLE_ID" \
             --bundle-version "$BUILD_NO" \
             --bundle-short-version-string "$SHORT_VERSION" \
-            --api-key "$ASC_KEY_ID" --api-issuer "$ASC_ISSUER_ID"
-          echo "Uploaded. Now VERIFY via the ASC API: GET /v1/builds?filter[app]=$ASC_APP_ID"
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$OUT"
+          if grep -qiE "UPLOAD FAILED|Validation failed" "$OUT"; then
+            echo "::error::altool reported errors — nothing was uploaded"; exit 1
+          fi
+          echo "Uploaded. Verify via the ASC API: GET /v1/builds?filter[app]=$ASC_APP_ID"
 
       - name: Upload IPA artifact
         if: always()

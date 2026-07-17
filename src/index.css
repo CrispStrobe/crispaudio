@@ -144,6 +144,11 @@ html.light .btn-nav-active {
   padding: 1.5rem;
 }
 
+/* Tighter card padding on phones to reclaim horizontal space */
+@media (max-width: 767px) {
+  .card { padding: 1rem; }
+}
+
 /* ── Styled range inputs ─────────────────────────────────────────── */
 input[type="range"].slider-styled {
   -webkit-appearance: none;
@@ -309,4 +314,133 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
 }
 .sidebar-backdrop {
   animation: backdrop-fade-in 200ms ease-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Viewport + safe-area helpers (mobile / notch / home-indicator)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Full viewport height that accounts for iOS Safari's dynamic toolbar.
+   `100vh` overshoots on mobile Safari (content hides behind the toolbar);
+   `100dvh` tracks the actual visible height. The 100vh line is a fallback
+   for the rare engine without dvh support. */
+.h-viewport {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Padding utilities that respect the device safe areas (requires
+   `viewport-fit=cover` on the viewport meta, already set in index.html).
+   Insets are 0 on devices without notches/home indicators, so these are
+   inert on desktop and older phones. */
+.safe-pt { padding-top: env(safe-area-inset-top); }
+.safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+.safe-pl { padding-left: env(safe-area-inset-left); }
+.safe-pr { padding-right: env(safe-area-inset-right); }
+
+/* Below the md breakpoint the sidebar collapses to a fixed hamburger overlay
+   (top-left). Clear the top of the main content so panel headers don't render
+   underneath it; also honour the safe-area inset. Inert at md and up. */
+@media (max-width: 767px) {
+  /* Clears the 44px hamburger sitting at 0.75rem from the top, plus a gap. */
+  .pt-mobile-header { padding-top: calc(env(safe-area-inset-top) + 3.75rem); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Touch / coarse-pointer adaptation
+   Grows interactive targets toward Apple's 44pt minimum and lifts the
+   tiniest fonts — ONLY where the primary pointer is coarse (phones,
+   tablets, touch laptops in tablet mode). None of these rules apply
+   under a fine pointer, so the desktop mouse experience is unchanged.
+
+   `min-height`/`min-width` are used deliberately: they expand elements
+   whose width/height are pinned by inline styles (e.g. the sidebar
+   hamburger's 40px box) without those components needing to know about
+   touch, because a min-* constraint always overrides a smaller used size.
+   ═══════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+  /* Shared button classes → ≥44×44 hit area */
+  .btn-ghost,
+  .btn-surface,
+  .btn-primary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Tab bar buttons: taller, slightly larger label */
+  .tab-btn {
+    min-height: 44px;
+    padding: 0.625rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  /* Timeline long-press context-menu items → comfortable tap height */
+  [data-timeline-menu] [role="menuitem"] {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Standalone styled range inputs (morph/mix sliders): grabbier thumb
+     and a taller touch strip. ParamSlider has its own coarse-pointer
+     treatment (its markup allows a full 44px target over a thin track). */
+  input[type="range"].slider-styled {
+    height: 12px;
+  }
+  input[type="range"].slider-styled::-webkit-slider-thumb {
+    height: 26px;
+    width: 26px;
+  }
+  input[type="range"].slider-styled::-moz-range-thumb {
+    height: 26px;
+    width: 26px;
+  }
+
+  /* Prevent iOS from auto-zooming when focusing a small text input:
+     any font-size below 16px triggers the zoom. */
+  input[type="text"],
+  input[type="number"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Sidebar nav labels: nudge up from the desktop 9px for legibility. */
+  .nav-label {
+    font-size: 11px;
+  }
+}
+
+/* ── Sidebar nav label (extracted from inline style so it can adapt
+   under a coarse pointer, see the touch block above) ─────────────── */
+.nav-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── ParamSlider touch adaptation ─────────────────────────────────
+   The universal parameter control. Its markup layers a full-width
+   <input type=range> over a thin visual track, so under a coarse
+   pointer we can expand the input into a 44px touch strip and grow
+   the thumb without thickening the visible track. Desktop (fine
+   pointer) keeps the compact 16px row untouched. */
+@media (pointer: coarse) {
+  .param-slider__track { height: 44px; }
+  .param-slider__input { height: 44px; }
+  .param-slider__input::-webkit-slider-thumb { width: 26px; height: 26px; }
+  .param-slider__input::-moz-range-thumb { width: 26px; height: 26px; }
+  .param-slider__label { font-size: 13px; }
+  .param-slider__value { font-size: 13px; }
+  .param-slider__info {
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+  }
+  .param-slider__lock {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
