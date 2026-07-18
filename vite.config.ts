@@ -5,8 +5,13 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 const host = process.env.TAURI_DEV_HOST;
 const isTauri = !!host || !!process.env.TAURI_ENV_PLATFORM;
+// GitHub Pages serves under a repo subpath (/crispaudio/); set PAGES_BASE for
+// that build so assets, the service worker, and the manifest all resolve under
+// it. Vercel (root domain) uses the default '/'.
+const base = process.env.PAGES_BASE || '/';
 
 export default defineConfig({
+  base,
   plugins: [
     react(),
     tailwindcss(),
@@ -22,7 +27,22 @@ export default defineConfig({
           },
         ],
       },
-      manifest: false, // use existing public/manifest.json
+      // Generated so start_url/scope/icons follow `base` — works on both the
+      // root (Vercel) and the /crispaudio/ subpath (GitHub Pages). Icon paths
+      // are relative so they resolve against the manifest's own URL.
+      manifest: {
+        name: 'CrispAudio',
+        short_name: 'CrispAudio',
+        description: 'Cross-platform audio workstation: SFX synthesis, voice effects, timeline editor',
+        display: 'standalone',
+        background_color: '#0f172a',
+        theme_color: '#0f172a',
+        icons: [
+          { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: 'icon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+        ],
+      },
     })] : []),
   ],
   clearScreen: false,

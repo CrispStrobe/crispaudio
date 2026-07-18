@@ -1,0 +1,46 @@
+# Deploy the web app (PWA) to GitHub Pages — served under /crispaudio/.
+# Token-free (uses the built-in GITHUB_TOKEN). Runs only on version tags
+# (v*) or manual dispatch — NOT on every push. Vercel handles the root domain;
+# this is the reliable, no-external-token mirror.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+# Allow the deploy-pages action to publish and mint the OIDC token it needs.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One in-flight Pages deploy at a time; let a newer one supersede.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build (subpath base, PWA on)
+        run: PAGES_BASE=/crispaudio/ npm run build
+      - name: SPA fallback + disable Jekyll
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deploy
+        uses: actions/deploy-pages@v4

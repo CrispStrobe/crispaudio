@@ -1,6 +1,7 @@
-# Deploy the web app to Vercel production on push to main — a reliable,
-# CI-controlled alternative to Vercel's GitHub-App auto-deploy (which was
-# firing unreliably). Requires ONE repo secret: VERCEL_TOKEN
+# Deploy the web app to Vercel production on version tags (v*) or manual
+# dispatch — NOT every push. A reliable, CI-controlled alternative to Vercel's
+# GitHub-App auto-deploy (which fired unreliably / hit deploy limits).
+# Requires ONE repo secret: VERCEL_TOKEN
 # (Vercel dashboard → Account Settings → Tokens → create). The org/project
 # IDs below are not secret (they live in .vercel/project.json).
 #
@@ -11,11 +12,7 @@ name: Deploy to Vercel
 
 on:
   push:
-    branches: [main]
-    paths-ignore:
-      - "src-tauri/**"
-      - "docs/**"
-      - "**/*.md"
+    tags: ["v*"]
   workflow_dispatch:
 
 concurrency:
