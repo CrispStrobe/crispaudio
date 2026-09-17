@@ -9,14 +9,16 @@ import React, {
   useEffect,
   useCallback,
   useState,
-  useLayoutEffect,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AudioSegment, TimelineTrack, AudioSource } from '../../types/audio';
 import { useProjectStore } from '../../stores/projectStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../stores/uiStore';
 import { useTimeline, TRACK_HEIGHT } from '../../hooks/useTimeline';
 import { haptic } from '../../lib/native';
+import { useTimelineCanvasInvalidation } from './useTimelineCanvasInvalidation';
+import { useTimelineCanvasPlayhead } from './useTimelineCanvasPlayhead';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -28,7 +30,6 @@ function getTrackColors() {
   };
 }
 const WAVEFORM_LINE_WIDTH = 1;
-const PLAYHEAD_COLOR = '#ef4444';
 const SELECTION_COLOR = 'rgba(99, 102, 241, 0.18)';
 const SNAP_GRID_COLOR = 'rgba(99, 102, 241, 0.08)';
 
@@ -77,7 +78,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 }) => {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number | null>(null);
+  const playheadRef = useTimelineCanvasPlayhead(width);
   const containerRef = useRef<HTMLDivElement>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -88,7 +89,14 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     time: 0,
   });
 
-  const store = useProjectStore();
+  const tracks = useProjectStore((s) => s.project.tracks);
+  const store = useProjectStore(useShallow((s) => ({
+    sources: s.sources, selection: s.selection, zoomLevel: s.zoomLevel,
+    scrollOffset: s.scrollOffset, snapEnabled: s.snapEnabled,
+    setZoomLevel: s.setZoomLevel, setScrollOffset: s.setScrollOffset,
+    splitSegment: s.splitSegment, removeSegment: s.removeSegment,
+    selectSegment: s.selectSegment, copy: s.copy, cut: s.cut, paste: s.paste,
+  })));
   const {
     onMouseDown,
     onMouseMove,
@@ -100,7 +108,6 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     snapTime,
   } = useTimeline();
 
-  const { tracks } = store.project;
   const totalHeight = Math.max(3, tracks.length) * TRACK_HEIGHT;
 
   useEffect(() => {
@@ -443,23 +450,6 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       }
     }
 
-    // ── Playhead ──────────────────────────────────────────────────────────
-    const phX = timeToPixels(store.playheadPosition);
-    if (phX >= 0 && phX <= cssWidth) {
-      ctx.strokeStyle = PLAYHEAD_COLOR;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(phX + 0.5, 0);
-      ctx.lineTo(phX + 0.5, cssHeight);
-      ctx.stroke();
-
-      // Small circle at top
-      ctx.fillStyle = PLAYHEAD_COLOR;
-      ctx.beginPath();
-      ctx.arc(phX, 4, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
   }, [
     width,
     totalHeight,
@@ -468,23 +458,11 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     store.zoomLevel,
     store.scrollOffset,
     store.selection,
-    store.playheadPosition,
     timeToPixels,
     drawSegment,
   ]);
 
-  // ── RAF loop ──────────────────────────────────────────────────────────────
-
-  useLayoutEffect(() => {
-    const loop = () => {
-      draw();
-      rafRef.current = requestAnimationFrame(loop);
-    };
-    rafRef.current = requestAnimationFrame(loop);
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [draw]);
+  useTimelineCanvasInvalidation(draw);
 
   // ── Mouse wheel zoom ──────────────────────────────────────────────────────
 
@@ -770,6 +748,12 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         onWheel={onWheel}
         onContextMenu={handleContextMenu}
       />
+
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div ref={playheadRef} data-timeline-playhead className="absolute top-0 bottom-0 w-[1.5px] bg-red-500">
+          <div className="absolute top-0 -left-1 w-2 h-2 rounded-full bg-red-500" />
+        </div>
+      </div>
 
       {/* Context menu */}
       {contextMenu.visible && (

@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../stores/uiStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { serializeProject, deserializeProject } from '../../lib/projectFile';
@@ -61,21 +62,24 @@ interface TrackHeaderProps {
   isDragOver: boolean;
 }
 
-const TrackHeader: React.FC<TrackHeaderProps> = ({
+const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader({
   trackIndex,
   onDragStart,
   onDragOver,
   onDrop,
   onDragEnd,
   isDragOver,
-}) => {
+}) {
   const { t } = useTranslation();
-  const { project, updateTrack, removeTrack, reorderTrack } = useProjectStore();
-  const track = project.tracks[trackIndex];
+  const track = useProjectStore((s) => s.project.tracks[trackIndex]);
+  const trackCount = useProjectStore((s) => s.project.tracks.length);
+  const updateTrack = useProjectStore((s) => s.updateTrack);
+  const removeTrack = useProjectStore((s) => s.removeTrack);
+  const reorderTrack = useProjectStore((s) => s.reorderTrack);
   if (!track) return null;
 
   const isFirst = trackIndex === 0;
-  const isLast = trackIndex === project.tracks.length - 1;
+  const isLast = trackIndex === trackCount - 1;
 
   return (
     <div
@@ -192,12 +196,18 @@ const TrackHeader: React.FC<TrackHeaderProps> = ({
       </div>
     </div>
   );
-};
+});
 
 // ── TimelinePanel ─────────────────────────────────────────────────────────────
 
 export const TimelinePanel: React.FC = () => {
-  const store = useProjectStore();
+  const store = useProjectStore(useShallow((s) => ({
+    project: s.project, sources: s.sources, selection: s.selection,
+    isPlaying: s.isPlaying, zoomLevel: s.zoomLevel, snapEnabled: s.snapEnabled,
+    reorderTrack: s.reorderTrack, addTrack: s.addTrack,
+    setZoomLevel: s.setZoomLevel, setSnapEnabled: s.setSnapEnabled,
+    importAudioSource: s.importAudioSource, loadProjectState: s.loadProjectState,
+  })));
   const audioEngine = useAudioEngine();
   const engineRef = useRef<TimelineEngine | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -207,7 +217,14 @@ export const TimelinePanel: React.FC = () => {
   // Keep engine in sync with sources
   useEffect(() => {
     const ctx = audioEngine.getContext();
-    engineRef.current = new TimelineEngine(ctx, audioEngine.masterGain);
+    const engine = new TimelineEngine(ctx, audioEngine.masterGain);
+    engineRef.current = engine;
+    return () => {
+      engine.stop();
+      engineRef.current = null;
+      wasPlayingRef.current = false;
+      useProjectStore.getState().setIsPlaying(false);
+    };
   }, [audioEngine]);
 
   useEffect(() => {
@@ -221,23 +238,26 @@ export const TimelinePanel: React.FC = () => {
 
     if (store.isPlaying && !wasPlayingRef.current) {
       void audioEngine.resume();
-      engine.play(store.project, store.playheadPosition);
+      engine.play(store.project, useProjectStore.getState().playheadPosition);
       wasPlayingRef.current = true;
     } else if (!store.isPlaying && wasPlayingRef.current) {
       engine.stop();
       wasPlayingRef.current = false;
     }
-  }, [store.isPlaying, store.playheadPosition, store.project, audioEngine]);
+  }, [store.isPlaying, store.project, audioEngine]);
 
   // Advance playhead while playing
   useEffect(() => {
     if (!store.isPlaying) return;
     let lastTime = performance.now();
-    let raf: number;
+    let raf: number | null = null;
 
     const tick = (now: number) => {
+      raf = null;
+      if (document.visibilityState === 'hidden' || !useProjectStore.getState().isPlaying) return;
       const dt = (now - lastTime) / 1000;
       lastTime = now;
+      const store = useProjectStore.getState();
       const newPos = store.playheadPosition + dt;
 
       if (newPos >= store.project.duration && store.project.duration > 0) {
@@ -252,12 +272,24 @@ export const TimelinePanel: React.FC = () => {
         store.setPlayheadPosition(newPos);
       }
 
-      raf = requestAnimationFrame(tick);
+      if (useProjectStore.getState().isPlaying) raf = requestAnimationFrame(tick);
     };
 
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        if (raf !== null) cancelAnimationFrame(raf);
+        raf = null;
+      } else if (raf === null && useProjectStore.getState().isPlaying) {
+        // Audio keeps playing while hidden; retain lastTime to catch up.
+        raf = requestAnimationFrame(tick);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    onVisibilityChange();
+    return () => {
+      if (raf !== null) cancelAnimationFrame(raf);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [store.isPlaying]);
 
   // Track canvas width from container resize
@@ -302,16 +334,17 @@ export const TimelinePanel: React.FC = () => {
     [draggedTrackId],
   );
 
+  const reorderTrack = store.reorderTrack;
   const handleTrackDrop = useCallback(
     (e: React.DragEvent, newIndex: number) => {
       e.preventDefault();
       if (draggedTrackId !== null) {
-        store.reorderTrack(draggedTrackId, newIndex);
+        reorderTrack(draggedTrackId, newIndex);
       }
       setDraggedTrackId(null);
       setDropTargetIndex(null);
     },
-    [draggedTrackId, store],
+    [draggedTrackId, reorderTrack],
   );
 
   const handleTrackDragEnd = useCallback(() => {
@@ -355,7 +388,7 @@ export const TimelinePanel: React.FC = () => {
             sampleRate: decoded.sampleRate,
             channels: decoded.numberOfChannels,
           };
-          store.importAudioSource(source, store.playheadPosition);
+          store.importAudioSource(source, useProjectStore.getState().playheadPosition);
         } catch (err) {
           console.error(`Failed to import ${file.name}:`, err);
         }

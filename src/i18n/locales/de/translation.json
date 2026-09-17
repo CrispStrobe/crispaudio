@@ -336,6 +336,7 @@
     "loadAudioFile": "Audiodatei laden"
   },
   "timeline": {
+    "ruler": "Zeitleiste",
     "addTrack": "Spur hinzufügen",
     "play": "Abspielen",
     "pause": "Pause",

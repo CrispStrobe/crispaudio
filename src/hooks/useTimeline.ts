@@ -6,7 +6,7 @@
 
 import { useRef, useCallback, useEffect } from 'react';
 import type { AudioSegment, TimelineTrack } from '../types/audio';
-import { useProjectStore } from '../stores/projectStore';
+import { projectHistoryGesture, useProjectStore } from '../stores/projectStore';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -69,23 +69,25 @@ export type DragState =
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useTimeline() {
-  const store = useProjectStore();
+  const zoomLevel = useProjectStore((state) => state.zoomLevel);
+  const scrollOffset = useProjectStore((state) => state.scrollOffset);
+  const snapEnabled = useProjectStore((state) => state.snapEnabled);
   const dragState = useRef<DragState>({ kind: 'none' });
 
   // ── Coordinate conversion ─────────────────────────────────────────────────
 
   const pixelsToTime = useCallback(
     (px: number): number => {
-      return store.scrollOffset + px / store.zoomLevel;
+      return scrollOffset + px / zoomLevel;
     },
-    [store.scrollOffset, store.zoomLevel],
+    [scrollOffset, zoomLevel],
   );
 
   const timeToPixels = useCallback(
     (time: number): number => {
-      return (time - store.scrollOffset) * store.zoomLevel;
+      return (time - scrollOffset) * zoomLevel;
     },
-    [store.scrollOffset, store.zoomLevel],
+    [scrollOffset, zoomLevel],
   );
 
   const canvasXToTime = useCallback(
@@ -107,12 +109,12 @@ export function useTimeline() {
 
   const snapTime = useCallback(
     (time: number): number => {
-      if (!store.snapEnabled) return time;
+      if (!snapEnabled) return time;
       // Snap to 0.1s grid (adjustable later)
       const grid = 0.1;
       return Math.round(time / grid) * grid;
     },
-    [store.snapEnabled],
+    [snapEnabled],
   );
 
   // ── Hit testing ───────────────────────────────────────────────────────────
@@ -121,7 +123,7 @@ export function useTimeline() {
     (canvasX: number, canvasY: number): HitZone => {
       const time = canvasXToTime(canvasX);
       const trackIndex = canvasYToTrackIndex(canvasY);
-      const { tracks } = store.project;
+      const { tracks } = useProjectStore.getState().project;
 
       if (trackIndex < 0 || trackIndex >= tracks.length) {
         return { type: 'empty', trackIndex, time };
@@ -167,7 +169,7 @@ export function useTimeline() {
 
       return { type: 'empty', trackIndex, time };
     },
-    [canvasXToTime, canvasYToTrackIndex, timeToPixels, store.project],
+    [canvasXToTime, canvasYToTrackIndex, timeToPixels],
   );
 
   // ── Mouse event handlers (to attach to the canvas) ────────────────────────
@@ -179,8 +181,10 @@ export function useTimeline() {
       const canvasY = e.clientY - rect.top;
 
       const hit = hitTest(canvasX, canvasY);
+      const store = useProjectStore.getState();
 
       if (hit.type === 'empty') {
+        if (dragState.current.kind !== 'none') projectHistoryGesture.end();
         // Click on empty space → move playhead (no drag)
         store.setPlayheadPosition(snapTime(canvasXToTime(canvasX)));
         store.setSelection(null);
@@ -188,6 +192,7 @@ export function useTimeline() {
         return;
       }
 
+      projectHistoryGesture.begin();
       const { segment, trackIndex } = hit as { segment: AudioSegment; trackIndex: number };
 
       if (hit.type === 'segment') {
@@ -236,11 +241,12 @@ export function useTimeline() {
         };
       }
     },
-    [hitTest, store, snapTime, canvasXToTime],
+    [hitTest, snapTime, canvasXToTime],
   );
 
   const onMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const store = useProjectStore.getState();
       const ds = dragState.current;
       if (ds.kind === 'none') return;
 
@@ -250,7 +256,7 @@ export function useTimeline() {
       const dx = canvasX - ds.startX;
 
       if (ds.kind === 'move') {
-        const dtTime = dx / store.zoomLevel;
+        const dtTime = dx / zoomLevel;
         const newStart = snapTime(ds.originalStartTime + dtTime);
         const newTrackIndex = Math.max(
           0,
@@ -262,30 +268,41 @@ export function useTimeline() {
         const newTrackId = store.project.tracks[newTrackIndex]?.id;
         store.moveSegment(ds.segmentId, newStart, newTrackId);
       } else if (ds.kind === 'trim-left') {
-        const dtTime = dx / store.zoomLevel;
+        const dtTime = dx / zoomLevel;
         const newDuration = Math.max(0.01, ds.originalDuration - dtTime);
         const newOffset = Math.max(0, ds.originalOffset + dtTime);
         store.trimSegment(ds.segmentId, 'left', newDuration, newOffset);
       } else if (ds.kind === 'trim-right') {
-        const dtTime = dx / store.zoomLevel;
+        const dtTime = dx / zoomLevel;
         const newDuration = Math.max(0.01, ds.originalDuration + dtTime);
         store.trimSegment(ds.segmentId, 'right', newDuration);
       } else if (ds.kind === 'fade-in') {
-        const dtTime = dx / store.zoomLevel;
+        const dtTime = dx / zoomLevel;
         const newFade = Math.max(0, ds.originalFadeDuration + dtTime);
         store.setSegmentFade(ds.segmentId, 'in', newFade);
       } else if (ds.kind === 'fade-out') {
-        const dtTime = -dx / store.zoomLevel;
+        const dtTime = -dx / zoomLevel;
         const newFade = Math.max(0, ds.originalFadeDuration + dtTime);
         store.setSegmentFade(ds.segmentId, 'out', newFade);
       }
     },
-    [store, snapTime],
+    [zoomLevel, snapTime],
   );
 
   const onMouseUp = useCallback(() => {
+    if (dragState.current.kind === 'none') return;
     dragState.current = { kind: 'none' };
+    projectHistoryGesture.end();
   }, []);
+
+  useEffect(() => {
+    const endings = ['mouseup', 'pointerup', 'pointercancel', 'blur'] as const;
+    for (const event of endings) window.addEventListener(event, onMouseUp);
+    return () => {
+      for (const event of endings) window.removeEventListener(event, onMouseUp);
+      onMouseUp();
+    };
+  }, [onMouseUp]);
 
   // ── Cursor style based on hover zone ─────────────────────────────────────
 
@@ -316,6 +333,7 @@ export function useTimeline() {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 
+      const store = useProjectStore.getState();
       const ctrl = e.ctrlKey || e.metaKey;
 
       if (e.code === 'Space') {
@@ -385,7 +403,7 @@ export function useTimeline() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [store]);
+  }, []);
 
   return {
     pixelsToTime,

@@ -27,17 +27,19 @@ function formatTime(seconds: number): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export const TransportControls: React.FC = () => {
+const PositionDisplay = React.memo(function PositionDisplay() {
+  const position = useProjectStore((s) => s.playheadPosition);
+  return <span className="font-mono text-sm text-white bg-gray-800 border border-gray-700 px-2 py-0.5 rounded min-w-[6rem] text-center tabular-nums">{formatTime(position)}</span>;
+});
+
+export const TransportControls: React.FC = React.memo(function TransportControls() {
   const { t } = useTranslation();
-  const {
-    isPlaying,
-    loopEnabled,
-    playheadPosition,
-    project,
-    setIsPlaying,
-    setLoopEnabled,
-    setPlayheadPosition,
-  } = useProjectStore();
+  const isPlaying = useProjectStore((s) => s.isPlaying);
+  const loopEnabled = useProjectStore((s) => s.loopEnabled);
+  const duration = useProjectStore((s) => s.project.duration);
+  const setIsPlaying = useProjectStore((s) => s.setIsPlaying);
+  const setLoopEnabled = useProjectStore((s) => s.setLoopEnabled);
+  const setPlayheadPosition = useProjectStore((s) => s.setPlayheadPosition);
 
   const handlePlayPause = useCallback(() => {
     setIsPlaying(!isPlaying);
@@ -53,8 +55,8 @@ export const TransportControls: React.FC = () => {
   }, [setPlayheadPosition]);
 
   const handleSkipEnd = useCallback(() => {
-    setPlayheadPosition(project.duration);
-  }, [setPlayheadPosition, project.duration]);
+    setPlayheadPosition(duration);
+  }, [setPlayheadPosition, duration]);
 
   const handleLoopToggle = useCallback(() => {
     setLoopEnabled(!loopEnabled);
@@ -134,9 +136,7 @@ export const TransportControls: React.FC = () => {
         <span className="text-xs text-gray-500 uppercase tracking-wide">
           {t('timeline.positionShort')}
         </span>
-        <span className="font-mono text-sm text-white bg-gray-800 border border-gray-700 px-2 py-0.5 rounded min-w-[6rem] text-center tabular-nums">
-          {formatTime(playheadPosition)}
-        </span>
+        <PositionDisplay />
       </div>
 
       {/* Duration */}
@@ -145,11 +145,11 @@ export const TransportControls: React.FC = () => {
           {t('timeline.durationShort')}
         </span>
         <span className="font-mono text-sm text-gray-400 bg-gray-800/50 border border-gray-700/50 px-2 py-0.5 rounded min-w-[6rem] text-center tabular-nums">
-          {formatTime(project.duration)}
+          {formatTime(duration)}
         </span>
       </div>
     </div>
   );
-};
+});
 
 export default TransportControls;

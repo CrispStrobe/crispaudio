@@ -336,6 +336,7 @@
     "loadAudioFile": "Load audio file"
   },
   "timeline": {
+    "ruler": "Timeline ruler",
     "addTrack": "Add Track",
     "play": "Play",
     "pause": "Pause",

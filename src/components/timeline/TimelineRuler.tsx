@@ -3,7 +3,10 @@
 // Time ruler drawn on a canvas. Scrolls in sync with TimelineCanvas.
 // ---------------------------------------------------------------------------
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useTimelineCanvasInvalidation } from './useTimelineCanvasInvalidation';
+import { useTimelineCanvasPlayhead } from './useTimelineCanvasPlayhead';
 import { useProjectStore } from '../../stores/projectStore';
 import { RULER_HEIGHT } from '../../hooks/useTimeline';
 
@@ -42,8 +45,11 @@ function formatRulerTime(seconds: number, interval: number): string {
 
 export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { zoomLevel, scrollOffset, playheadPosition, setPlayheadPosition } =
-    useProjectStore();
+  const { t } = useTranslation();
+  const zoomLevel = useProjectStore((s) => s.zoomLevel);
+  const scrollOffset = useProjectStore((s) => s.scrollOffset);
+  const setPlayheadPosition = useProjectStore((s) => s.setPlayheadPosition);
+  const playheadRef = useTimelineCanvasPlayhead(width);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -127,30 +133,9 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
       }
     }
 
-    // Playhead indicator (triangle)
-    const phX = (playheadPosition - scrollOffset) * zoomLevel;
-    if (phX >= 0 && phX <= cssWidth) {
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.moveTo(phX, 0);
-      ctx.lineTo(phX - 5, 10);
-      ctx.lineTo(phX + 5, 10);
-      ctx.closePath();
-      ctx.fill();
+  }, [zoomLevel, scrollOffset, width]);
 
-      // Thin line down
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(phX + 0.5, 10);
-      ctx.lineTo(phX + 0.5, cssHeight);
-      ctx.stroke();
-    }
-  }, [zoomLevel, scrollOffset, playheadPosition, width]);
-
-  useEffect(() => {
-    draw();
-  }, [draw]);
+  useTimelineCanvasInvalidation(draw);
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -163,13 +148,18 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
   );
 
   return (
+    <div className="relative overflow-hidden" style={{ width, height: RULER_HEIGHT }}>
     <canvas
       ref={canvasRef}
       className="block cursor-pointer"
       style={{ width, height: RULER_HEIGHT }}
       onClick={handleClick}
-      aria-label="Timeline ruler"
+      aria-label={t('timeline.ruler')}
     />
+    <div ref={playheadRef} data-timeline-playhead aria-hidden="true" className="absolute top-0 bottom-0 w-px bg-red-500 pointer-events-none">
+      <div className="absolute top-0 -left-[5px] border-x-[5px] border-x-transparent border-t-[10px] border-t-red-500" />
+    </div>
+    </div>
   );
 };
 
