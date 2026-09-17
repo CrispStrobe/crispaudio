@@ -8,6 +8,13 @@
     "voice": "Voice Processor",
     "timeline": "Timeline Editor"
   },
+  "audioExport": {
+    "rendering": "Rendering mix…",
+    "encoding": "Encoding audio…",
+    "cancel": "Cancel export",
+    "failed": "Export failed. Please try again.",
+    "renderCancelNote": "Cancel prevents saving. Audio rendering already in progress may continue using CPU until it finishes."
+  },
   "sfx": {
     "presets": "Presets",
     "waveform": "Waveform",

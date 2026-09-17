@@ -47,8 +47,9 @@ import { SegmentEffectsPanel } from './SegmentEffectsPanel';
 import { TRACK_HEADER_WIDTH, TRACK_HEIGHT, RULER_HEIGHT } from '../../hooks/useTimeline';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
 import { TimelineEngine } from '../../audio/engine/TimelineEngine';
-import { computeWaveformPeaks, encodeAudioBufferToWav } from '../../audio/utils/audioBufferUtils';
-import { downloadWavFile } from '../../lib/wavExport';
+import { computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
+import { downloadWavFile, encodeAudioBufferWav } from '../../lib/wavExport';
+import { useAudioExport } from '../../hooks/useAudioExport';
 import type { AudioSource } from '../../types/audio';
 
 // ── Track header ──────────────────────────────────────────────────────────────
@@ -308,7 +309,7 @@ export const TimelinePanel: React.FC = () => {
   const { t } = useTranslation();
   const defaultBitDepth = useSettingsStore((s) => s.defaultBitDepth);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const { stage: exportStage, error: exportError, start: startExport, cancel: cancelExport } = useAudioExport();
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   // Track reorder drag state
@@ -448,26 +449,23 @@ export const TimelinePanel: React.FC = () => {
   const handleExportMix = useCallback(async () => {
     const engine = engineRef.current;
     if (!engine || store.project.duration <= 0) return;
-    setIsExporting(true);
-    try {
-      const rendered = await engine.renderToBuffer(store.project);
-      const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } =
-        useSettingsStore.getState();
-      const name = store.project.name || 'crispaudio_mix';
-      let blob: Blob;
-      if (fmt === 'wav') {
-        blob = new Blob([encodeAudioBufferToWav(rendered, defaultBitDepth)], { type: 'audio/wav' });
-      } else {
+    const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } = useSettingsStore.getState();
+    const name = store.project.name || 'crispaudio_mix';
+    await startExport({
+      key: [store.project, store.sources, defaultBitDepth, fmt, kbps],
+      stage: 'rendering',
+      produce: async (signal, setStage) => {
+        const rendered = await engine.renderToBuffer(store.project, 0, undefined, signal);
+        signal.throwIfAborted();
+        setStage('encoding');
+        if (fmt === 'wav') return encodeAudioBufferWav(rendered, defaultBitDepth, signal);
         const { encodeAudioBuffer } = await import('../../lib/codecs');
-        blob = await encodeAudioBuffer(rendered, fmt, kbps);
-      }
-      await downloadWavFile(blob, `${name}.${fmt}`);
-    } catch (err) {
-      console.error('Mix export failed:', err);
-    } finally {
-      setIsExporting(false);
-    }
-  }, [store.project, defaultBitDepth]);
+        signal.throwIfAborted();
+        return encodeAudioBuffer(rendered, fmt, kbps, signal);
+      },
+      save: blob => downloadWavFile(blob, `${name}.${fmt}`),
+    });
+  }, [store.project, store.sources, defaultBitDepth, startExport]);
 
   const showEffectsPanel =
     store.selection !== null && store.selection.segmentIds.length > 0;
@@ -617,7 +615,7 @@ export const TimelinePanel: React.FC = () => {
         <button
           type="button"
           onClick={() => void handleExportMix()}
-          disabled={isExporting || store.project.duration <= 0}
+          disabled={exportStage !== null || store.project.duration <= 0}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           title={t('timeline.export')}
           aria-label={t('timeline.export')}
@@ -625,6 +623,17 @@ export const TimelinePanel: React.FC = () => {
           <Download className="w-3.5 h-3.5" />
           {t('timeline.export')}
         </button>
+
+          {exportStage && (
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <span role="status" aria-live="polite">{t(`audioExport.${exportStage}`)}</span>
+              {exportStage === 'rendering' && <span className="text-xs text-gray-400">{t('audioExport.renderCancelNote')}</span>}
+              <button type="button" onClick={cancelExport} aria-label={t('audioExport.cancel')} className="px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">
+                {t('audioExport.cancel')}
+              </button>
+            </div>
+          )}
+          {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
 
         {/* Add track */}
         <button

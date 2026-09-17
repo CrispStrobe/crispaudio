@@ -138,7 +138,9 @@ export class TimelineEngine {
     project: TimelineProject,
     startTime = 0,
     endTime?: number,
+    signal?: AbortSignal,
   ): Promise<AudioBuffer> {
+    signal?.throwIfAborted();
     // Keep the source registry stable while graph construction yields to the UI.
     const sources = new Map(this.sources);
     let sliceStarted = performance.now();
@@ -185,6 +187,7 @@ export class TimelineEngine {
       }
 
       for (const segment of track.segments) {
+        signal?.throwIfAborted();
         const segEnd = segment.startTime + segment.duration;
         if (segEnd <= startTime || segment.startTime >= renderEnd) continue;
 
@@ -224,13 +227,38 @@ export class TimelineEngine {
         // Offline rendering has not started: wall-clock yields cannot shift audio.
         // Bound multi-segment setup tasks without delaying inexpensive graphs.
         if (performance.now() - sliceStarted >= 8) {
+          signal?.throwIfAborted();
           await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          signal?.throwIfAborted();
           sliceStarted = performance.now();
         }
       }
     }
 
-    return offCtx.startRendering();
+    signal?.throwIfAborted();
+    // OfflineAudioContext cannot reliably stop native DSP once started. Abort
+    // releases the caller promptly and discards the result, not the CPU work.
+    if (!signal) return offCtx.startRendering();
+    return new Promise<AudioBuffer>((resolve, reject) => {
+      const onAbort = () => {
+        signal.removeEventListener('abort', onAbort);
+        reject(signal.reason);
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+      try {
+        offCtx.startRendering().then(buffer => {
+          signal.removeEventListener('abort', onAbort);
+          if (signal.aborted) reject(signal.reason);
+          else resolve(buffer);
+        }, error => {
+          signal.removeEventListener('abort', onAbort);
+          reject(error);
+        });
+      } catch (error) {
+        signal.removeEventListener('abort', onAbort);
+        reject(error);
+      }
+    });
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────

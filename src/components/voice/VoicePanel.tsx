@@ -10,6 +10,7 @@ import { useVoicePlayback } from '../../hooks/useVoicePlayback';
 import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
 import { exportWav, downloadWavFile } from '../../lib/wavExport';
+import { useAudioExport } from '../../hooks/useAudioExport';
 import {
   Upload,
   Play,
@@ -159,6 +160,7 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
 // ---------------------------------------------------------------------------
 
 export function VoicePanel() {
+  const { stage: exportStage, error: exportError, start: startExport, cancel: cancelExport } = useAudioExport();
   const { t } = useTranslation();
   const settings = useVoiceStore((s) => s.activeSlot === 'A' ? s.settingsA : s.settingsB);
   const { activeSlot, morphAmount, sourceBuffer, processedBuffer, isProcessing, selectedPreset, setSourceBuffer, loadPreset, setIsProcessing, setProcessedBuffer, setActiveSlot, setMorphAmount, swapSlots, getEffectiveSettings } = useVoiceStore(useShallow((s) => ({
@@ -251,14 +253,17 @@ export function VoicePanel() {
     const data = processedBuffer.getChannelData(0);
     const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } =
       useSettingsStore.getState();
-    let blob: Blob;
-    if (fmt === 'wav') {
-      blob = await exportWav(data, processedBuffer.sampleRate, 16);
-    } else {
-      const { encodeMono } = await import('../../lib/codecs');
-      blob = await encodeMono(data, processedBuffer.sampleRate, fmt, kbps);
-    }
-    await downloadWavFile(blob, `crispaudio_voice_${Date.now()}.${fmt}`);
+    await startExport({
+      key: [processedBuffer, processedBuffer.sampleRate, 16, fmt, kbps],
+      stage: 'encoding',
+      produce: async signal => {
+        if (fmt === 'wav') return exportWav(data, processedBuffer.sampleRate, 16, signal);
+        const { encodeMono } = await import('../../lib/codecs');
+        signal.throwIfAborted();
+        return encodeMono(data, processedBuffer.sampleRate, fmt, kbps, signal);
+      },
+      save: blob => downloadWavFile(blob, `crispaudio_voice_${Date.now()}.${fmt}`),
+    });
   }
 
   const sendToTimeline = useCallback(() => {
@@ -491,7 +496,8 @@ export function VoicePanel() {
           {/* Export */}
           <button
             onClick={downloadProcessed}
-            disabled={!processedBuffer}
+            aria-label={t('voice.export')}
+            disabled={!processedBuffer || exportStage !== null}
             className="px-5 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
           >
             <Download className="w-5 h-5" />
@@ -499,6 +505,16 @@ export function VoicePanel() {
           </button>
 
           {/* Send to Timeline */}
+          {exportStage && (
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <span role="status" aria-live="polite">{t(`audioExport.${exportStage}`)}</span>
+              <button type="button" onClick={cancelExport} aria-label={t('audioExport.cancel')} className="px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">
+                {t('audioExport.cancel')}
+              </button>
+            </div>
+          )}
+          {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
+
           <button
             onClick={sendToTimeline}
             disabled={!processedBuffer}

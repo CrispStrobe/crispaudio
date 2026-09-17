@@ -8,6 +8,13 @@
     "voice": "Stimmprozessor",
     "timeline": "Timeline-Editor"
   },
+  "audioExport": {
+    "rendering": "Mix wird gerendert…",
+    "encoding": "Audio wird kodiert…",
+    "cancel": "Export abbrechen",
+    "failed": "Export fehlgeschlagen. Bitte erneut versuchen.",
+    "renderCancelNote": "Abbrechen verhindert das Speichern. Bereits laufendes Audio-Rendering kann bis zum Abschluss weiterhin die CPU beanspruchen."
+  },
   "sfx": {
     "presets": "Voreinstellungen",
     "waveform": "Wellenform",

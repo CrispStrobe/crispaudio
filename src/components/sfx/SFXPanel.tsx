@@ -10,6 +10,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { SfxParameters, ParamInfoButton } from './SfxParameters';
 import { useSfxPlayback } from '../../hooks/useSfxPlayback';
 import { exportWav, downloadWavFile } from '../../lib/wavExport';
+import { useAudioExport } from '../../hooks/useAudioExport';
 import { useTranslation } from 'react-i18next';
 import {
   Play,
@@ -108,6 +109,7 @@ const PRESET_LABEL_KEYS: Record<PresetName, string> = {
 // ---------------------------------------------------------------------------
 
 export function SFXPanel() {
+  const { stage: exportStage, error: exportError, start: startExport, cancel: cancelExport } = useAudioExport();
   const { t } = useTranslation();
   const params = useSynthStore(useShallow((s) => {
     const p = selectActiveParams(s);
@@ -271,15 +273,18 @@ export function SFXPanel() {
     if (!buffer) return;
     const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } =
       useSettingsStore.getState();
-    let blob: Blob;
-    if (fmt === 'wav') {
-      blob = await exportWav(buffer, sampleRate, bitDepth);
-    } else {
-      const { encodeMono } = await import('../../lib/codecs');
-      blob = await encodeMono(buffer, sampleRate, fmt, kbps);
-    }
-    await downloadWavFile(blob, `crispaudio_sfx_${Date.now()}.${fmt}`);
-  }, [buffer, sampleRate, bitDepth]);
+    await startExport({
+      key: [buffer, sampleRate, bitDepth, fmt, kbps],
+      stage: 'encoding',
+      produce: async signal => {
+        if (fmt === 'wav') return exportWav(buffer, sampleRate, bitDepth, signal);
+        const { encodeMono } = await import('../../lib/codecs');
+        signal.throwIfAborted();
+        return encodeMono(buffer, sampleRate, fmt, kbps, signal);
+      },
+      save: blob => downloadWavFile(blob, `crispaudio_sfx_${Date.now()}.${fmt}`),
+    });
+  }, [buffer, sampleRate, bitDepth, startExport]);
 
   // Send to Timeline
   const sendToTimeline = useCallback(() => {
@@ -459,12 +464,23 @@ export function SFXPanel() {
 
             <button
               onClick={downloadWav}
-              disabled={!buffer}
+              aria-label={t('sfx.exportSlot', { slot: activeSlot })}
+              disabled={!buffer || exportStage !== null}
               className="px-5 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
             >
               <Download className="w-5 h-5" />
               {t('sfx.exportSlot', { slot: activeSlot })}
             </button>
+
+          {exportStage && (
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <span role="status" aria-live="polite">{t(`audioExport.${exportStage}`)}</span>
+              <button type="button" onClick={cancelExport} aria-label={t('audioExport.cancel')} className="px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">
+                {t('audioExport.cancel')}
+              </button>
+            </div>
+          )}
+          {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
 
             <button
               onClick={sendToTimeline}
@@ -658,7 +674,8 @@ export function SFXPanel() {
               <div className="space-y-2">
                 <button
                   onClick={downloadWav}
-                  disabled={!buffer}
+                  aria-label={t('sfx.downloadWav')}
+                  disabled={!buffer || exportStage !== null}
                   className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-sm text-white"
                 >
                   <Download className="w-4 h-4" />
