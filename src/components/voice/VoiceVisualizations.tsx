@@ -73,6 +73,8 @@ export const VoiceWaveform = memo(function VoiceWaveform({ buffer, color, title,
     if (isPlaying && duration && duration > 0) {
       startTimeRef.current = performance.now();
       const tick = () => {
+        rafRef.current = null;
+        if (document.visibilityState === 'hidden') return;
         const elapsed = (performance.now() - startTimeRef.current) / 1000;
         const progress = Math.min(elapsed / duration, 1);
         el.style.left = `${progress * 100}%`;
@@ -83,14 +85,25 @@ export const VoiceWaveform = memo(function VoiceWaveform({ buffer, color, title,
           el.style.display = 'none';
         }
       };
-      rafRef.current = requestAnimationFrame(tick);
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') {
+          if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        } else if (rafRef.current === null) {
+          // Audio continues while hidden; catch up without resetting the clock.
+          tick();
+        }
+      };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+      onVisibilityChange();
+      return () => {
+        if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+      };
     } else {
       el.style.display = 'none';
     }
-
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
   }, [isPlaying, duration]);
 
   return (

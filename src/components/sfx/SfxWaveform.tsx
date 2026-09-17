@@ -195,15 +195,22 @@ export const SfxWaveform = memo(function SfxWaveform({
     }
   }, [buffer, zoomLevel, scrollOffset]);
 
+  // View changes must not restart the elapsed playback clock.
+  useEffect(() => {
+    if (isPlaying && duration && duration > 0) {
+      startTimeRef.current = performance.now();
+    }
+  }, [isPlaying, duration]);
+
   // Animate playhead during playback
   useEffect(() => {
     const el = playheadRef.current;
     if (!el) return;
 
     if (isPlaying && duration && duration > 0) {
-      startTimeRef.current = performance.now();
-
       const tick = () => {
+        rafRef.current = null;
+        if (document.visibilityState === 'hidden') return;
         const elapsed = (performance.now() - startTimeRef.current) / 1000;
         const progress = Math.min(elapsed / duration, 1);
         // Convert global progress to zoomed view position
@@ -222,14 +229,25 @@ export const SfxWaveform = memo(function SfxWaveform({
         }
       };
 
-      rafRef.current = requestAnimationFrame(tick);
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') {
+          if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        } else if (rafRef.current === null) {
+          // Audio continues while hidden; catch up without resetting the clock.
+          tick();
+        }
+      };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+      onVisibilityChange();
+      return () => {
+        if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+      };
     } else {
       el.style.display = 'none';
     }
-
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
   }, [isPlaying, duration, zoomLevel, scrollOffset]);
 
   const handleZoomIn = useCallback(() => {
