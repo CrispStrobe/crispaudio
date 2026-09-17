@@ -1,7 +1,6 @@
 // ---------------------------------------------------------------------------
 // AmplitudeDisplay -- reusable RMS/Peak dB meter from audio buffer
 // Extracted from SFXPanel for shared use.
-// (Distinct from AmplitudeMeter.tsx which takes pre-computed rms/peak props.)
 // ---------------------------------------------------------------------------
 
 import { useEffect, useMemo, useRef, useState } from 'react';
