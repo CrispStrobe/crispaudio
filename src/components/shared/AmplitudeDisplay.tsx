@@ -4,7 +4,7 @@
 // (Distinct from AmplitudeMeter.tsx which takes pre-computed rms/peak props.)
 // ---------------------------------------------------------------------------
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { canvasBgFlat, canvasTextColor, canvasEmptyColor } from '../../lib/themeColors';
 
@@ -25,6 +25,18 @@ export function AmplitudeDisplay({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(200);
+  // Samples are replaced on generation; layout/label changes reuse the analysis.
+  const levels = useMemo(() => {
+    if (!buffer || buffer.length === 0) return null;
+    let peak = 0;
+    let rmsSum = 0;
+    for (let i = 0; i < buffer.length; i++) {
+      const sample = Math.abs(buffer[i]);
+      peak = Math.max(peak, sample);
+      rmsSum += sample * sample;
+    }
+    return { peak, rms: Math.sqrt(rmsSum / buffer.length) };
+  }, [buffer]);
 
   // ResizeObserver to match canvas pixel width to container
   useEffect(() => {
@@ -65,7 +77,7 @@ export function AmplitudeDisplay({
     ctx.fillStyle = canvasBgFlat();
     ctx.fillRect(0, 0, lw, lh);
 
-    if (!buffer || buffer.length === 0) {
+    if (!levels) {
       ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
@@ -74,14 +86,7 @@ export function AmplitudeDisplay({
       return;
     }
 
-    let peak = 0;
-    let rmsSum = 0;
-    for (let i = 0; i < buffer.length; i++) {
-      const s = Math.abs(buffer[i]);
-      if (s > peak) peak = s;
-      rmsSum += s * s;
-    }
-    const rms = Math.sqrt(rmsSum / buffer.length);
+    const { peak, rms } = levels;
 
     const dbRange = 60;
     const peakDb = peak > 0 ? 20 * Math.log10(peak) : -100;
@@ -104,7 +109,7 @@ export function AmplitudeDisplay({
     ctx.fillText('PEAK', lw * 0.5 + 2, 12);
     ctx.fillText(`${rmsDb.toFixed(1)}dB`, 2, lh - 2);
     ctx.fillText(`${peakDb.toFixed(1)}dB`, lw * 0.5 + 2, lh - 2);
-  }, [buffer, resolvedNoSignal, canvasWidth]);
+  }, [levels, resolvedNoSignal, canvasWidth]);
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const canvasHeight = Math.floor(80 * dpr);
