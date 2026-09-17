@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { temporal } from 'zundo';
+import { createHistoryGesture } from './historyGesture';
 import type {
   TimelineProject,
   TimelineTrack,
@@ -141,6 +142,8 @@ function patchSegment(
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
+export const projectHistoryGesture = createHistoryGesture();
+
 export const useProjectStore = create<ProjectState>()(
   temporal(
     (set, get) => ({
@@ -206,14 +209,20 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       updateTrack: (trackId, patch) => {
-        set((state) => ({
-          project: {
-            ...state.project,
-            tracks: state.project.tracks.map((t) =>
-              t.id === trackId ? { ...t, ...patch } : t,
-            ),
-          },
-        }));
+        set((state) => {
+          const track = state.project.tracks.find((t) => t.id === trackId);
+          if (!track || (Object.keys(patch) as Array<keyof typeof patch>).every(
+            (key) => Object.is(track[key], patch[key]),
+          )) return state;
+          return {
+            project: {
+              ...state.project,
+              tracks: state.project.tracks.map((t) =>
+                t.id === trackId ? { ...t, ...patch } : t,
+              ),
+            },
+          };
+        });
       },
 
       // ── Segments ─────────────────────────────────────────────────────────────
@@ -258,6 +267,7 @@ export const useProjectStore = create<ProjectState>()(
 
           const targetTrackId = newTrackId ?? found.track.id;
           const clampedStart = Math.max(0, newStartTime);
+          if (targetTrackId === found.track.id && clampedStart === found.segment.startTime) return state;
 
           let tracks = state.project.tracks.map((track) => ({
             ...track,
@@ -310,6 +320,9 @@ export const useProjectStore = create<ProjectState>()(
             };
           }
 
+          if ((Object.keys(patch) as Array<keyof AudioSegment>).every(
+            (key) => Object.is(segment[key], patch[key]),
+          )) return state;
           const tracks = patchSegment(state.project.tracks, segmentId, patch);
           return {
             project: {
@@ -378,12 +391,18 @@ export const useProjectStore = create<ProjectState>()(
                 fadeOutDuration: Math.max(0, duration),
                 ...(curve ? { fadeOutCurve: curve } : {}),
               };
-        set((state) => ({
-          project: {
-            ...state.project,
-            tracks: patchSegment(state.project.tracks, segmentId, patch),
-          },
-        }));
+        set((state) => {
+          const found = findSegmentById(state.project.tracks, segmentId);
+          if (!found || (Object.keys(patch) as Array<keyof AudioSegment>).every(
+            (key) => Object.is(found.segment[key], patch[key]),
+          )) return state;
+          return {
+            project: {
+              ...state.project,
+              tracks: patchSegment(state.project.tracks, segmentId, patch),
+            },
+          };
+        });
       },
 
       setSegmentEffects: (segmentId, effects) => {
@@ -754,6 +773,8 @@ export const useProjectStore = create<ProjectState>()(
       partialize: (state) => ({
         project: state.project,
       }),
+      equality: (past, current) => past.project === current.project,
+      handleSet: projectHistoryGesture.handleSet,
       limit: 100,
     },
   ),

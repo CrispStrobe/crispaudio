@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { temporal } from 'zundo';
 import { enableMapSet } from 'immer';
+import { createHistoryGesture } from './historyGesture';
 import { type SynthParams, type PresetName } from '../types/synth';
 
 enableMapSet();
@@ -103,6 +104,8 @@ function mutateSynthParams(
 // ---------------------------------------------------------------------------
 // Store implementation
 // ---------------------------------------------------------------------------
+
+export const synthHistoryGesture = createHistoryGesture();
 
 export const useSynthStore = create<SynthState>()(
   temporal(
@@ -254,6 +257,12 @@ export const useSynthStore = create<SynthState>()(
         activeSlot: state.activeSlot,
         morphAmount: state.morphAmount,
       }),
+      equality: (past, current) =>
+        past.paramsA === current.paramsA &&
+        past.paramsB === current.paramsB &&
+        past.activeSlot === current.activeSlot &&
+        past.morphAmount === current.morphAmount,
+      handleSet: synthHistoryGesture.handleSet,
       limit: 50,
     },
   ),

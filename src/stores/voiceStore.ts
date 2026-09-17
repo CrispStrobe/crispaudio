@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { temporal } from 'zundo';
+import { createHistoryGesture } from './historyGesture';
 import type { VoiceSettings, VoicePresetName } from '../types/voicelab';
 import { getPreset } from '../audio/presets/voicePresets';
 
@@ -51,6 +52,8 @@ interface VoiceState {
 
 // ── Store ────────────────────────────────────────────────────────────────────
 
+export const voiceHistoryGesture = createHistoryGesture();
+
 export const useVoiceStore = create<VoiceState>()(
   temporal(
     (set, get) => ({
@@ -65,6 +68,10 @@ export const useVoiceStore = create<VoiceState>()(
 
   setSettings: (partial) => {
     set((state) => {
+      const current = state.activeSlot === 'A' ? state.settingsA : state.settingsB;
+      if ((Object.keys(partial) as Array<keyof VoiceSettings>).every(
+        (key) => Object.is(current[key], partial[key]),
+      )) return state;
       if (state.activeSlot === 'A') {
         return { settingsA: { ...state.settingsA, ...partial } };
       }
@@ -118,8 +125,16 @@ export const useVoiceStore = create<VoiceState>()(
         settingsA: state.settingsA,
         settingsB: state.settingsB,
         activeSlot: state.activeSlot,
+        morphAmount: state.morphAmount,
         selectedPreset: state.selectedPreset,
       }),
+      equality: (past, current) =>
+        past.settingsA === current.settingsA &&
+        past.settingsB === current.settingsB &&
+        past.activeSlot === current.activeSlot &&
+        past.morphAmount === current.morphAmount &&
+        past.selectedPreset === current.selectedPreset,
+      handleSet: voiceHistoryGesture.handleSet,
       limit: 50,
     },
   ),
