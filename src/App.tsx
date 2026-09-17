@@ -7,7 +7,10 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import { useUIStore } from './stores/uiStore';
 import { useSettingsStore } from './stores/settingsStore';
-import { useSynthStore, loadFromShareLink } from './stores/synthStore';
+import { useSynthStore, loadFromShareLink, synthHistoryGesture } from './stores/synthStore';
+import { voiceHistoryGesture } from './stores/voiceStore';
+import { projectHistoryGesture } from './stores/projectStore';
+import { HistoryGestureBoundary } from './components/shared/HistoryGestureBoundary';
 import { useAutosave } from './hooks/useAutosave';
 import { setAudioSessionType, subscribeOpenedFiles } from './lib/native';
 
@@ -132,9 +135,15 @@ export default function App() {
           <span className="text-sm font-medium">Loading…</span>
         </div>
       }>
-        {activePanel === 'sfx' && <SFXPanel />}
-        {activePanel === 'voice' && <VoicePanel />}
-        {activePanel === 'timeline' && <TimelinePanel />}
+        {activePanel === 'sfx' && (
+          <HistoryGestureBoundary gesture={synthHistoryGesture}><SFXPanel /></HistoryGestureBoundary>
+        )}
+        {activePanel === 'voice' && (
+          <HistoryGestureBoundary gesture={voiceHistoryGesture}><VoicePanel /></HistoryGestureBoundary>
+        )}
+        {activePanel === 'timeline' && (
+          <HistoryGestureBoundary gesture={projectHistoryGesture}><TimelinePanel /></HistoryGestureBoundary>
+        )}
 
         {activeModal === 'settings' && <SettingsModal />}
         {activeModal === 'about' && <AboutModal />}

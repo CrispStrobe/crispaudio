@@ -18,26 +18,40 @@ interface ParamSliderProps {
 function useSmoothParam(targetValue: number, speed = 0.12): number {
   const [current, setCurrent] = useState(targetValue);
   const rafRef = useRef<number | null>(null);
-  const targetRef = useRef(targetValue);
-
-  useEffect(() => {
-    targetRef.current = targetValue;
-  }, [targetValue]);
+  const currentRef = useRef(targetValue);
 
   useEffect(() => {
     const tick = () => {
-      setCurrent(prev => {
-        const diff = targetRef.current - prev;
-        if (Math.abs(diff) < 0.0005) return targetRef.current;
-        return prev + diff * speed;
-      });
-      rafRef.current = requestAnimationFrame(tick);
+      rafRef.current = null;
+      const diff = targetValue - currentRef.current;
+      currentRef.current = Math.abs(diff) < 0.0005
+        ? targetValue
+        : currentRef.current + diff * speed;
+      setCurrent(currentRef.current);
+      if (currentRef.current !== targetValue) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
     };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
+    const stop = () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     };
-  }, [speed]);
+    const onVisibilityChange = () => {
+      stop();
+      if (!document.hidden) {
+        currentRef.current = targetValue;
+        setCurrent(targetValue);
+      }
+    };
+    if (!document.hidden && currentRef.current !== targetValue) {
+      rafRef.current = requestAnimationFrame(tick);
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [targetValue, speed]);
 
   return current;
 }
