@@ -1,0 +1,82 @@
+{
+  "bench": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "visibility": "visible",
+    "results": [
+      {
+        "run": 0,
+        "format": "mp3",
+        "seconds": 60,
+        "sampleRate": 48000,
+        "channels": 2,
+        "elapsedMs": 3382,
+        "maxHeartbeatGapMs": 26,
+        "longTasks": 0,
+        "blockedOver50ms": 0,
+        "maxTaskMs": 0,
+        "blobSize": 1440576,
+        "inputBytesAfter": 23040000,
+        "sha256": "870009ca6cab912094a637d21cda6d95619ea25789a42db241f88c9c8e1b24e4"
+      },
+      {
+        "run": 1,
+        "format": "mp3",
+        "seconds": 60,
+        "sampleRate": 48000,
+        "channels": 2,
+        "elapsedMs": 2639,
+        "maxHeartbeatGapMs": 17,
+        "longTasks": 0,
+        "blockedOver50ms": 0,
+        "maxTaskMs": 0,
+        "blobSize": 1440576,
+        "inputBytesAfter": 23040000,
+        "sha256": "870009ca6cab912094a637d21cda6d95619ea25789a42db241f88c9c8e1b24e4"
+      },
+      {
+        "run": 2,
+        "format": "mp3",
+        "seconds": 60,
+        "sampleRate": 48000,
+        "channels": 2,
+        "elapsedMs": 2754,
+        "maxHeartbeatGapMs": 17,
+        "longTasks": 0,
+        "blockedOver50ms": 0,
+        "maxTaskMs": 0,
+        "blobSize": 1440576,
+        "inputBytesAfter": 23040000,
+        "sha256": "870009ca6cab912094a637d21cda6d95619ea25789a42db241f88c9c8e1b24e4"
+      }
+    ]
+  },
+  "formats": [
+    {
+      "format": "mp3",
+      "bytes": 48960,
+      "rate": 48000,
+      "channels": 1,
+      "frames": 97920,
+      "finite": true,
+      "inputBytes": 384000
+    },
+    {
+      "format": "aac",
+      "bytes": 45834,
+      "rate": 48000,
+      "channels": 1,
+      "frames": 98304,
+      "finite": true,
+      "inputBytes": 384000
+    },
+    {
+      "format": "opus",
+      "bytes": 50996,
+      "rate": 48000,
+      "channels": 1,
+      "frames": 95880,
+      "finite": true,
+      "inputBytes": 384000
+    }
+  ]
+}

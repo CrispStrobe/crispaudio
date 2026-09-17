@@ -1,0 +1,9 @@
+{
+  "controlled": true,
+  "bytes": 1440576,
+  "sha256": "870009ca6cab912094a637d21cda6d95619ea25789a42db241f88c9c8e1b24e4",
+  "decodedChannels": 2,
+  "decodedRate": 48000,
+  "decodedDuration": 60.024,
+  "inputFrames": 2880000
+}

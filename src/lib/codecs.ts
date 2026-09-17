@@ -5,13 +5,11 @@
 // use so it never bloats the initial bundle. WAV export stays in wavExport.ts.
 // ---------------------------------------------------------------------------
 
-import createGlint from './glint/glint.mjs';
-import glintWasmUrl from './glint/glint.wasm?url';
+import { runCodec } from './codecClient';
 
 export type CompressedFormat = 'mp3' | 'aac' | 'opus';
 export type AudioFormat = 'wav' | CompressedFormat;
 
-const GLINT_FORMAT: Record<CompressedFormat, number> = { mp3: 0, aac: 1, opus: 2 };
 const MIME: Record<CompressedFormat, string> = {
   mp3: 'audio/mpeg',
   aac: 'audio/aac',
@@ -29,17 +27,6 @@ export const FORMAT_LABEL: Record<AudioFormat, string> = {
   aac: 'AAC',
   opus: 'Opus',
 };
-
-type GlintModule = Awaited<ReturnType<typeof createGlint>>;
-let modPromise: Promise<GlintModule> | null = null;
-function loadGlint(): Promise<GlintModule> {
-  if (!modPromise) {
-    modPromise = createGlint({
-      locateFile: (p: string) => (p.endsWith('.wasm') ? glintWasmUrl : p),
-    });
-  }
-  return modPromise;
-}
 
 /** Interleave per-channel Float32 buffers into a single interleaved buffer. */
 export function interleave(channelData: Float32Array[]): {
@@ -67,25 +54,11 @@ export async function encodeCompressed(
   format: CompressedFormat,
   bitrateKbps = 192,
 ): Promise<Blob> {
-  const m = await loadGlint();
-  const frames = Math.floor(pcm.length / channels);
-  const pcmPtr = m._malloc(pcm.length * 4);
-  m.HEAPF32.set(pcm, pcmPtr >> 2);
-  const outSizePtr = m._malloc(4);
-  const ptr = m._glint_encode_audio(
-    pcmPtr, frames, channels, sampleRate, GLINT_FORMAT[format],
-    bitrateKbps, -1, 1, outSizePtr,
-  );
-  m._free(pcmPtr);
-  if (!ptr) {
-    m._free(outSizePtr);
-    throw new Error(`glint ${format} encode failed`);
-  }
-  const size = m.getValue(outSizePtr, 'i32');
-  m._free(outSizePtr);
-  const bytes = new Uint8Array(m.HEAPU8.buffer, ptr, size).slice();
-  m._glint_free(ptr);
-  return new Blob([bytes], { type: MIME[format] });
+  // Transfer an owned copy, never detach a caller's playback buffer or subview.
+  const copy = new Float32Array(pcm).buffer;
+  const result = await runCodec({ type: 'encode', pcm: copy, channels, sampleRate, format, bitrateKbps }, [copy]);
+  if (result.type !== 'encoded') throw new Error('Unexpected codec encode response');
+  return new Blob([result.bytes], { type: MIME[format] });
 }
 
 /** Convenience: encode a Web Audio AudioBuffer to a compressed Blob. */
@@ -121,38 +94,10 @@ export async function decodeCompressed(bytes: Uint8Array): Promise<{
   channelData: Float32Array[];
   sampleRate: number;
 }> {
-  const m = await loadGlint();
-  const inPtr = m._malloc(bytes.length);
-  m.HEAPU8.set(bytes, inPtr);
-  const srPtr = m._malloc(4);
-  const chPtr = m._malloc(4);
-  const frPtr = m._malloc(4);
-  const ptr = m._glint_decode_audio(inPtr, bytes.length, srPtr, chPtr, frPtr);
-  m._free(inPtr);
-  if (!ptr) {
-    m._free(srPtr);
-    m._free(chPtr);
-    m._free(frPtr);
-    throw new Error('glint decode failed (unrecognized or unsupported audio)');
-  }
-  const sampleRate = m.getValue(srPtr, 'i32');
-  const channels = m.getValue(chPtr, 'i32');
-  const frames = m.getValue(frPtr, 'i32');
-  m._free(srPtr);
-  m._free(chPtr);
-  m._free(frPtr);
-  // glint returns interleaved float PCM of length frames*channels. De-interleave
-  // into per-channel arrays before freeing the wasm buffer. No allocations occur
-  // between the view and the copy, so the heap can't grow and detach it.
-  const interleaved = new Float32Array(m.HEAPF32.buffer, ptr, frames * channels);
-  const channelData: Float32Array[] = [];
-  for (let c = 0; c < channels; c++) {
-    const ch = new Float32Array(frames);
-    for (let i = 0; i < frames; i++) ch[i] = interleaved[i * channels + c];
-    channelData.push(ch);
-  }
-  m._glint_free(ptr);
-  return { channelData, sampleRate };
+  const copy = new Uint8Array(bytes).buffer;
+  const result = await runCodec({ type: 'decode', bytes: copy }, [copy]);
+  if (result.type !== 'decoded') throw new Error('Unexpected codec decode response');
+  return { channelData: result.channelData.map(data => new Float32Array(data)), sampleRate: result.sampleRate };
 }
 
 /** Decode compressed bytes and build an AudioBuffer on the given context. */
