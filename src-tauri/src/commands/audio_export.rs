@@ -12,6 +12,10 @@ pub struct WavExportParams {
 
 #[tauri::command]
 pub async fn export_wav(params: WavExportParams) -> Result<Vec<u8>, String> {
+    encode_wav(params)
+}
+
+fn encode_wav(params: WavExportParams) -> Result<Vec<u8>, String> {
     let spec = WavSpec {
         channels: params.channels,
         sample_rate: params.sample_rate,
@@ -52,9 +56,65 @@ pub async fn export_wav(params: WavExportParams) -> Result<Vec<u8>, String> {
     Ok(buffer.into_inner())
 }
 
+// Binary wire format: sample_rate:u32, bit_depth:u16, channels:u16, then
+// interleaved f32 samples, all little-endian. Return raw WAV bytes, not JSON.
+#[tauri::command]
+pub async fn export_wav_binary(request: tauri::ipc::Request<'_>) -> Result<tauri::ipc::Response, String> {
+    let body = match request.body() {
+        tauri::ipc::InvokeBody::Raw(bytes) => bytes.clone(),
+        _ => return Err("Expected binary WAV payload".into()),
+    };
+    tauri::async_runtime::spawn_blocking(move || encode_binary(&body))
+        .await.map_err(|e| e.to_string())?
+        .map(tauri::ipc::Response::new)
+}
+
+fn encode_binary(body: &[u8]) -> Result<Vec<u8>, String> {
+    if body.len() < 8 { return Err("Truncated WAV header".into()); }
+    let sample_rate = u32::from_le_bytes(body[0..4].try_into().unwrap());
+    let bit_depth = u16::from_le_bytes(body[4..6].try_into().unwrap());
+    let channels = u16::from_le_bytes(body[6..8].try_into().unwrap());
+    if sample_rate == 0 || channels == 0 || ![8, 16, 24, 32].contains(&bit_depth) {
+        return Err("Invalid WAV format".into());
+    }
+    if (body.len() - 8) % (4 * channels as usize) != 0 {
+        return Err("Incomplete WAV sample frame".into());
+    }
+    let samples = body[8..].chunks_exact(4)
+        .map(|bytes| f32::from_le_bytes(bytes.try_into().unwrap())).collect();
+    encode_wav(WavExportParams { samples, sample_rate, bit_depth, channels })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn binary_payload_preserves_native_encoding() {
+        for depth in [8_u16, 16, 24, 32] {
+            let samples = vec![0.0_f32, 0.5, -0.5, 1.0];
+            let mut body = Vec::new();
+            body.extend_from_slice(&48000_u32.to_le_bytes());
+            body.extend_from_slice(&depth.to_le_bytes());
+            body.extend_from_slice(&2_u16.to_le_bytes());
+            for sample in &samples { body.extend_from_slice(&sample.to_le_bytes()); }
+            assert_eq!(encode_binary(&body).unwrap(), export(samples, 48000, depth, 2).unwrap());
+        }
+    }
+
+    #[test]
+    fn binary_payload_rejects_malformed_headers_and_frames() {
+        assert!(encode_binary(&[]).is_err());
+        let mut body = vec![0; 8];
+        assert!(encode_binary(&body).is_err());
+        body[0..4].copy_from_slice(&48000_u32.to_le_bytes());
+        body[4..6].copy_from_slice(&16_u16.to_le_bytes());
+        body[6..8].copy_from_slice(&2_u16.to_le_bytes());
+        body.push(0);
+        assert!(encode_binary(&body).is_err());
+        body.extend_from_slice(&[0, 0, 0]);
+        assert!(encode_binary(&body).is_err());
+    }
 
     /// Helper: run export_wav synchronously in tests.
     fn export(samples: Vec<f32>, sample_rate: u32, bit_depth: u16, channels: u16) -> Result<Vec<u8>, String> {

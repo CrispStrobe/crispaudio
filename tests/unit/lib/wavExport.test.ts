@@ -5,8 +5,15 @@
 // the test environment) and verifies WAV header structure for all bit depths.
 // ---------------------------------------------------------------------------
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { exportWav } from '../../../src/lib/wavExport';
+// Exercise real WAV encoding in jsdom; worker transport is covered separately.
+vi.mock('../../../src/lib/codecClient', () => ({
+  runCodec: async (job: { channelData: ArrayBuffer[]; sampleRate: number; bitDepth: number }) => {
+    const { encodeWavJS } = await import('../../../src/lib/wavRuntime');
+    return { type: 'encoded', bytes: await encodeWavJS(new Float32Array(job.channelData[0]), job.sampleRate, job.bitDepth).arrayBuffer() };
+  },
+}));
 
 // ---------------------------------------------------------------------------
 // Helpers

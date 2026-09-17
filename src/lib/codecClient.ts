@@ -36,7 +36,44 @@ function getWorker(): Worker {
   return instance;
 }
 
-export function runCodec(job: CodecJob, transfer: Transferable[]): Promise<CodecResult> {
+// Cancellable jobs use an exclusive worker: terminating synchronous WASM must
+// never abort an unrelated decode/export. Retain at most one idle instance.
+let idleCancellableWorker: Worker | null = null;
+function runCancellable(job: CodecJob, transfer: Transferable[], signal: AbortSignal): Promise<CodecResult> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) { reject(new DOMException('Export cancelled', 'AbortError')); return; }
+    const instance = idleCancellableWorker ?? new Worker(new URL('./codec.worker.ts', import.meta.url), { type: 'module' });
+    idleCancellableWorker = null;
+    const id = nextId++;
+    let settled = false;
+    const finish = (error?: Error, result?: CodecResult, reusable = false) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', abort);
+      instance.onmessage = null;
+      instance.onerror = null;
+      instance.onmessageerror = null;
+      if (reusable && !idleCancellableWorker) idleCancellableWorker = instance;
+      else instance.terminate();
+      if (error) reject(error);
+      else resolve(result!);
+    };
+    const abort = () => finish(new DOMException('Export cancelled', 'AbortError'));
+    signal.addEventListener('abort', abort, { once: true });
+    instance.onerror = event => { event.preventDefault(); finish(new Error(event.message || 'Codec worker failed')); };
+    instance.onmessageerror = () => finish(new Error('Codec worker response could not be read'));
+    instance.onmessage = ({ data }: MessageEvent<CodecResponse>) => {
+      if (data.id !== id) return;
+      if (data.type === 'error') finish(new Error(data.message), undefined, true);
+      else finish(undefined, data, true);
+    };
+    try { instance.postMessage({ ...job, id } satisfies CodecRequest, transfer); }
+    catch (error) { finish(error instanceof Error ? error : new Error(String(error))); }
+  });
+}
+
+export function runCodec(job: CodecJob, transfer: Transferable[], signal?: AbortSignal): Promise<CodecResult> {
+  if (signal) return runCancellable(job, transfer, signal);
   return new Promise((resolve, reject) => {
     const instance = getWorker();
     const id = nextId++;

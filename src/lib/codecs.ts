@@ -53,10 +53,12 @@ export async function encodeCompressed(
   sampleRate: number,
   format: CompressedFormat,
   bitrateKbps = 192,
+  signal?: AbortSignal,
 ): Promise<Blob> {
+  signal?.throwIfAborted();
   // Transfer an owned copy, never detach a caller's playback buffer or subview.
   const copy = new Float32Array(pcm).buffer;
-  const result = await runCodec({ type: 'encode', pcm: copy, channels, sampleRate, format, bitrateKbps }, [copy]);
+  const result = await runCodec({ type: 'encode', pcm: copy, channels, sampleRate, format, bitrateKbps }, [copy], signal);
   if (result.type !== 'encoded') throw new Error('Unexpected codec encode response');
   return new Blob([result.bytes], { type: MIME[format] });
 }
@@ -66,12 +68,14 @@ export async function encodeAudioBuffer(
   buffer: AudioBuffer,
   format: CompressedFormat,
   bitrateKbps = 192,
+  signal?: AbortSignal,
 ): Promise<Blob> {
+  signal?.throwIfAborted();
   const channelData = Array.from({ length: buffer.numberOfChannels }, (_, c) =>
     buffer.getChannelData(c),
   );
   const { pcm, channels } = interleave(channelData);
-  return encodeCompressed(pcm, channels, buffer.sampleRate, format, bitrateKbps);
+  return encodeCompressed(pcm, channels, buffer.sampleRate, format, bitrateKbps, signal);
 }
 
 /** Convenience: encode a mono Float32Array to a compressed Blob. */
@@ -80,8 +84,10 @@ export async function encodeMono(
   sampleRate: number,
   format: CompressedFormat,
   bitrateKbps = 192,
+  signal?: AbortSignal,
 ): Promise<Blob> {
-  return encodeCompressed(data, 1, sampleRate, format, bitrateKbps);
+  signal?.throwIfAborted();
+  return encodeCompressed(data, 1, sampleRate, format, bitrateKbps, signal);
 }
 
 /**

@@ -24,6 +24,46 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
+it('routes mono WAV encoding through the worker with an owned copy', async () => {
+  const { exportWav } = await import('../../../src/lib/wavExport');
+  const samples = new Float32Array([99, 0.25, -0.5, 88]);
+  const result = exportWav(samples.subarray(1, 3), 48000, 32);
+  expect(ControlledWorker.instances).toHaveLength(1);
+  const worker = ControlledWorker.instances[0];
+  const request = worker.requests[0];
+  expect(request).toMatchObject({ type: 'wav', sampleRate: 48000, bitDepth: 32, mode: 'mono-float' });
+  expect(new Float32Array((request.channelData as ArrayBuffer[])[0])).toEqual(new Float32Array([0.25, -0.5]));
+  expect(samples.byteLength).toBe(16);
+  worker.reply({ id: request.id, type: 'encoded', bytes: new ArrayBuffer(44) });
+  expect((await result).type).toBe('audio/wav');
+});
+
+it('aborts a cancellable encode without disrupting unrelated jobs', async () => {
+  const { encodeMono } = await import('../../../src/lib/codecs');
+  const controller = new AbortController();
+  const input = new Float32Array([0.5]);
+  const cancelled = encodeMono(input, 48000, 'mp3', 192, controller.signal);
+  const rejection = expect(cancelled).rejects.toMatchObject({ name: 'AbortError' });
+  const activeWorker = ControlledWorker.instances[0];
+  const unrelated = encodeMono(input, 48000, 'mp3');
+  controller.abort();
+  await rejection;
+  expect(activeWorker.terminate).toHaveBeenCalledTimes(1);
+  expect(input.byteLength).toBe(4);
+  const otherWorker = ControlledWorker.instances[1];
+  otherWorker.reply({ id: otherWorker.requests[0].id, type: 'encoded', bytes: new ArrayBuffer(0) });
+  await expect(unrelated).resolves.toBeInstanceOf(Blob);
+});
+
+it('does not start or copy a pre-aborted encode', async () => {
+  const { encodeMono } = await import('../../../src/lib/codecs');
+  const controller = new AbortController();
+  controller.abort();
+  await expect(encodeMono(new Float32Array([0]), 48000, 'mp3', 192, controller.signal))
+    .rejects.toMatchObject({ name: 'AbortError' });
+  expect(ControlledWorker.instances).toHaveLength(0);
+});
+
 it('reuses one worker and correlates concurrent decode/encode replies', async () => {
   const { encodeMono, decodeCompressed } = await import('../../../src/lib/codecs');
   const encoded = encodeMono(new Float32Array([0]), 48000, 'opus');

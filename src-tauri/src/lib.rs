@@ -24,6 +24,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             audio_export::export_wav,
+            audio_export::export_wav_binary,
             project::save_project,
             project::load_project,
             native_files::take_opened_files,

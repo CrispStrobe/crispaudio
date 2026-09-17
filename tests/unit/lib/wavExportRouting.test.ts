@@ -1,5 +1,12 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { exportWav } from '../../../src/lib/wavExport';
+// Exercise real WAV encoding in jsdom; worker transport is covered separately.
+vi.mock('../../../src/lib/codecClient', () => ({
+  runCodec: async (job: { channelData: ArrayBuffer[]; sampleRate: number; bitDepth: number }) => {
+    const { encodeWavJS } = await import('../../../src/lib/wavRuntime');
+    return { type: 'encoded', bytes: await encodeWavJS(new Float32Array(job.channelData[0]), job.sampleRate, job.bitDepth).arrayBuffer() };
+  },
+}));
 
 const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock('@tauri-apps/api/core', () => ({ invoke }));
@@ -26,14 +33,21 @@ it('encodes web exports without copying samples into a native payload', async ()
   expect(view.getInt16(48, true)).toBe(-16383);
 });
 
-it('still delegates native exports with the existing payload', async () => {
+it('sends a binary header and only the selected float32 view to native export', async () => {
   (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
   const bytes = [82, 73, 70, 70];
-  invoke.mockResolvedValue(bytes);
-  const blob = await exportWav(new Float32Array([0, 0.5]), 48000, 24);
-  expect(invoke).toHaveBeenCalledExactlyOnceWith('export_wav', {
-    params: { samples: [0, 0.5], sample_rate: 48000, bit_depth: 24, channels: 1 },
-  });
+  invoke.mockResolvedValue(new Uint8Array(bytes).buffer);
+  const source = new Float32Array([99, 0, 0.5, 88]);
+  const blob = await exportWav(source.subarray(1, 3), 48000, 24);
+  expect(invoke).toHaveBeenCalledExactlyOnceWith('export_wav_binary', expect.any(ArrayBuffer));
+  const body = new DataView(invoke.mock.calls[0][1]);
+  expect(body.byteLength).toBe(16);
+  expect(body.getUint32(0, true)).toBe(48000);
+  expect(body.getUint16(4, true)).toBe(24);
+  expect(body.getUint16(6, true)).toBe(1);
+  expect(body.getFloat32(8, true)).toBe(0);
+  expect(body.getFloat32(12, true)).toBe(0.5);
+  expect(source.byteLength).toBe(16);
   expect(Array.from(new Uint8Array(await blob.arrayBuffer()))).toEqual(bytes);
   expect(blob.type).toBe('audio/wav');
 });
