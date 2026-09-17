@@ -1,0 +1,14 @@
+[package]
+name = "tauri-plugin-crispaudio-native"
+version = "0.1.0"
+edition = "2021"
+description = "CrispAudio's native iOS integrations: on-device speech synthesis, share sheet, haptics."
+license = "MIT"
+# tauri-plugin's build script requires `links` and it must equal the package name.
+links = "tauri-plugin-crispaudio-native"
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }

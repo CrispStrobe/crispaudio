@@ -32,6 +32,7 @@ import { useMediaRecorder } from '../../hooks/useMediaRecorder';
 import { VoiceEngine } from '../../audio/engine/VoiceEngine';
 import type { VoiceSettings, VoicePresetName } from '../../types/voicelab';
 import { canvasBgGradient, canvasBgFlat, canvasGridColor, canvasTextColor, canvasEmptyColor } from '../../lib/themeColors';
+import { haptic } from '../../lib/native';
 
 const voiceEngine = new VoiceEngine();
 
@@ -818,7 +819,10 @@ export function VoicePanel() {
             {PRESET_NAMES.map((name) => (
               <button
                 key={name}
-                onClick={() => loadPreset(name)}
+                onClick={() => {
+                  loadPreset(name);
+                  haptic('selection');
+                }}
                 className={`p-3 rounded-lg transition-all transform hover:scale-105 text-sm font-semibold shadow-lg text-white ${
                   selectedPreset === name
                     ? `${PRESET_COLORS[name]} ring-2 ring-white/30`

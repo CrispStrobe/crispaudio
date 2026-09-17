@@ -44,6 +44,7 @@ import { canvasBgGradient, canvasGridColor, canvasEmptyColor } from '../../lib/t
 import { SpectrumDisplay } from '../shared/SpectrumDisplay';
 import { AmplitudeDisplay } from '../shared/AmplitudeDisplay';
 import { EnvelopeDisplay, ADSRDisplay } from '../shared/EnvelopeDisplay';
+import { haptic } from '../../lib/native';
 
 // ---------------------------------------------------------------------------
 // Preset visual config
@@ -678,11 +679,13 @@ export function SFXPanel() {
     const fn = sfxPresets['random' as keyof typeof sfxPresets] as (() => SynthParams) | undefined;
     if (fn) setParams(fn());
     generate();
+    haptic('medium');
   }, [setParams, generate]);
 
   const handleMutate = useCallback(() => {
     mutateParams();
     generate();
+    haptic('light');
   }, [mutateParams, generate]);
 
   const handleShareLink = useCallback(() => {
@@ -696,12 +699,9 @@ export function SFXPanel() {
   const handleExportJSON = useCallback(() => {
     const json = exportParamsJSON();
     const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `crispaudio_sfx_preset_${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Not an <a download>: iOS ignores it. This goes through the native save
+    // dialog / share sheet like the audio exports.
+    downloadWavFile(blob, `crispaudio_sfx_preset_${Date.now()}.json`);
   }, [exportParamsJSON]);
 
   const handleImportJSON = useCallback((file: File) => {
@@ -742,6 +742,7 @@ export function SFXPanel() {
     (name: PresetName) => {
       storeLoadPreset(name);
       generate();
+      haptic('selection');
     },
     [storeLoadPreset, generate],
   );

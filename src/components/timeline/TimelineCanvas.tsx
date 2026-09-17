@@ -16,6 +16,7 @@ import type { AudioSegment, TimelineTrack, AudioSource } from '../../types/audio
 import { useProjectStore } from '../../stores/projectStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useTimeline, TRACK_HEIGHT } from '../../hooks/useTimeline';
+import { haptic } from '../../lib/native';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -594,6 +595,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         const { clientX, clientY } = e;
         const timer = window.setTimeout(() => {
           onMouseUp();
+          haptic('medium');
           openContextMenuAt(clientX, clientY);
           longPressRef.current = null;
         }, LONG_PRESS_MS);
@@ -632,6 +634,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
   const handleSplit = useCallback(() => {
     if (contextMenu.segmentId) {
       store.splitSegment(contextMenu.segmentId, contextMenu.time);
+      haptic('light');
     }
     closeMenu();
   }, [contextMenu, store, closeMenu]);

@@ -25,6 +25,7 @@ tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-opener = "2"
 hound = "3.5"
+tauri-plugin-crispaudio-native = { path = "plugins/crispaudio-native" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt"] }

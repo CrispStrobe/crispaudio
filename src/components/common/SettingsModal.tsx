@@ -6,6 +6,7 @@
 import { useTranslation } from 'react-i18next';
 import { Info } from 'lucide-react';
 import { Modal } from './Modal';
+import { isIOSApp } from '../../lib/native';
 import { useUIStore } from '../../stores/uiStore';
 import {
   useSettingsStore,
@@ -190,7 +191,8 @@ export function SettingsModal() {
           </div>
         </div>
 
-        {/* TTS configuration */}
+        {/* TTS server configuration — iOS uses the on-device system voices */}
+        {!isIOSApp() && (
         <div>
           <h3 className="text-xs font-semibold text-gray-300 mb-2 uppercase tracking-wide">
             {t('settings.tts')}
@@ -239,6 +241,7 @@ export function SettingsModal() {
             </div>
           </div>
         </div>
+        )}
 
         {/* About link */}
         <div className="flex gap-2 pt-2 border-t border-gray-700/70">

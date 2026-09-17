@@ -4,6 +4,8 @@
 // pure-JS encoder that supports 8 / 16 / 24 / 32-bit PCM.
 // ---------------------------------------------------------------------------
 
+import { isIOSApp, isTauri, shareFile } from './native';
+
 /**
  * Encode a mono Float32Array as a WAV blob.
  *
@@ -36,9 +38,6 @@ export async function exportWav(
   return encodeWavJS(buffer, sampleRate, bitDepth);
 }
 
-function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
-}
 
 /**
  * Save an audio Blob to disk (WAV or a compressed format — the extension is
@@ -48,17 +47,27 @@ function isTauri(): boolean {
  * that iOS Safari/WKWebView ignores the download attribute, which is exactly why
  * the Tauri build must not use this fallback.
  *
+ * On iOS the share sheet replaces the save dialog: it offers Save to Files
+ * alongside AirDrop, Messages and every other app that accepts audio.
+ *
  * Returns false if the user cancels the dialog.
  */
 export async function downloadWavFile(blob: Blob, filename: string): Promise<boolean> {
   const ext = filename.split('.').pop()?.toLowerCase() || 'wav';
+  if (isIOSApp()) {
+    try {
+      return await shareFile(blob, filename);
+    } catch (err) {
+      console.error('Share sheet failed, falling back to save dialog:', err);
+    }
+  }
   if (isTauri()) {
     try {
       const { save } = await import('@tauri-apps/plugin-dialog');
       const { writeFile } = await import('@tauri-apps/plugin-fs');
       const path = await save({
         defaultPath: filename,
-        filters: [{ name: `${ext.toUpperCase()} Audio`, extensions: [ext] }],
+        filters: [{ name: ext === 'json' ? 'JSON' : `${ext.toUpperCase()} Audio`, extensions: [ext] }],
       });
       if (!path) return false;
       await writeFile(path, new Uint8Array(await blob.arrayBuffer()));

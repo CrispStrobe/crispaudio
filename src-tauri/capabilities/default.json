@@ -26,6 +26,7 @@
       "allow": [{ "path": "**" }]
     },
     "core:event:default",
-    "opener:default"
+    "opener:default",
+    "crispaudio-native:default"
   ]
 }

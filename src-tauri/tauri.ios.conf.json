@@ -1,0 +1,17 @@
+{
+  "bundle": {
+    "fileAssociations": [
+      {
+        "ext": ["crispaudio"],
+        "mimeType": "application/x-crispaudio"
+      },
+      {
+        "name": "Audio",
+        "ext": ["wav", "mp3", "m4a", "aac", "aif", "aiff", "caf", "flac", "ogg", "opus"],
+        "contentTypes": ["public.audio"],
+        "role": "Viewer",
+        "rank": "Alternate"
+      }
+    ]
+  }
+}

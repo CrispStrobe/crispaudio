@@ -9,6 +9,7 @@ import { useUIStore } from './stores/uiStore';
 import { useSettingsStore } from './stores/settingsStore';
 import { useSynthStore, loadFromShareLink } from './stores/synthStore';
 import { useAutosave } from './hooks/useAutosave';
+import { setAudioSessionType, subscribeOpenedFiles } from './lib/native';
 
 const SFXPanel = lazy(() => import('./components/sfx/SFXPanel').then(m => ({ default: m.SFXPanel })));
 const VoicePanel = lazy(() => import('./components/voice/VoicePanel').then(m => ({ default: m.VoicePanel })));
@@ -24,6 +25,24 @@ export default function App() {
 
   // Autosave timeline project structure periodically + on unload
   useAutosave();
+
+  // iOS: behave like a media app (not muted by the silent switch), and accept
+  // audio or projects opened from other apps — the timeline imports them.
+  useEffect(() => {
+    setAudioSessionType('playback');
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+    subscribeOpenedFiles((files) => useUIStore.getState().queueOpenedFiles(files))
+      .then((fn) => {
+        if (cancelled) fn();
+        else unsubscribe = fn;
+      })
+      .catch((err) => console.error('Opened-files listener failed:', err));
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, []);
 
   // CI-only plugin-fs self-test (VITE_FS_SELFTEST build flag). Confirms the
   // sandbox-safe file I/O actually reads/writes on the target platform.

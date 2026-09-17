@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { haptic, setAudioSessionType } from '../lib/native';
 
 export interface UseMediaRecorderReturn {
   isRecording: boolean;
@@ -32,6 +33,8 @@ export function useMediaRecorder(): UseMediaRecorderReturn {
     chunksRef.current = [];
 
     try {
+      // A "playback" session can't capture; switch before asking for the mic.
+      setAudioSessionType('play-and-record');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
@@ -47,6 +50,7 @@ export function useMediaRecorder(): UseMediaRecorderReturn {
       recorder.onstop = async () => {
         // Stop all tracks so the browser mic indicator turns off
         stream.getTracks().forEach((t) => t.stop());
+        setAudioSessionType('playback');
 
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
         chunksRef.current = [];
@@ -65,7 +69,9 @@ export function useMediaRecorder(): UseMediaRecorderReturn {
 
       recorder.start();
       setIsRecording(true);
+      haptic('medium');
     } catch (err) {
+      setAudioSessionType('playback');
       const msg = err instanceof DOMException && err.name === 'NotAllowedError'
         ? 'Microphone permission denied'
         : 'Could not access microphone';
@@ -83,6 +89,7 @@ export function useMediaRecorder(): UseMediaRecorderReturn {
       resolveStopRef.current = resolve;
       recorder.stop();
       setIsRecording(false);
+      haptic('light');
     });
   }, []);
 

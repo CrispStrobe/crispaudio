@@ -487,7 +487,15 @@
     "generating": "Generating…",
     "addToTimeline": "Add to Timeline",
     "serverInfo": "Server: {{url}}",
-    "generated": "Generated {{duration}}s audio at {{sampleRate}} Hz"
+    "generated": "Generated {{duration}}s audio at {{sampleRate}} Hz",
+    "rate": "Speed",
+    "pitch": "Pitch",
+    "effectVoice": "effect",
+    "systemVoiceHint": "Rendered on this device with the system voices; nothing is uploaded. Download higher-quality voices in Settings › Accessibility › Spoken Content › Voices.",
+    "quality": {
+      "enhanced": "Enhanced",
+      "premium": "Premium"
+    }
   },
   "settings": {
     "title": "Settings",

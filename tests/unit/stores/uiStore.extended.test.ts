@@ -94,3 +94,17 @@ describe('uiStore — voiceEffects via openModal', () => {
     expect(useUIStore.getState().voiceEffectsTargetSegmentId).toBeNull();
   });
 });
+
+describe('uiStore — files opened from other apps', () => {
+  it('queues files, switches to the timeline, and hands them out once', () => {
+    useUIStore.setState({ activePanel: 'sfx', pendingOpenedFiles: [] });
+    const file = { name: 'loop.wav', bytes: new ArrayBuffer(4) };
+
+    useUIStore.getState().queueOpenedFiles([file]);
+    expect(useUIStore.getState().activePanel).toBe('timeline');
+    expect(useUIStore.getState().pendingOpenedFiles).toHaveLength(1);
+
+    expect(useUIStore.getState().takeOpenedFiles()).toEqual([file]);
+    expect(useUIStore.getState().takeOpenedFiles()).toEqual([]);
+  });
+});

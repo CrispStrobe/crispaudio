@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
 // CrispAudio — TTSModal
-// Text-to-speech dialog: enter text, pick voice/backend, generate audio,
-// preview, and send to the timeline.
+// Text-to-speech dialog: enter text, pick a voice, generate audio, preview,
+// and send to the timeline. On iOS it renders with the on-device system
+// voices; elsewhere it talks to a CrispASR TTS server.
 // ---------------------------------------------------------------------------
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -13,9 +14,20 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { synthesizeSpeech, fetchVoices, type TTSVoice } from '../../services/ttsService';
 import { computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
+import {
+  groupVoicesByLanguage,
+  haptic,
+  isIOSApp,
+  listSystemVoices,
+  pickDefaultSystemVoice,
+  synthesizeWithSystemVoice,
+  type SystemVoice,
+} from '../../lib/native';
+import { ParamSlider } from '../shared/ParamSlider';
 
 export function TTSModal() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const useSystemVoices = isIOSApp();
   const closeModal = useUIStore((s) => s.closeModal);
   const {
     ttsServerUrl,
@@ -31,14 +43,27 @@ export function TTSModal() {
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedBuffer, setGeneratedBuffer] = useState<AudioBuffer | null>(null);
+  const [systemVoices, setSystemVoices] = useState<SystemVoice[]>([]);
+  const [systemVoiceId, setSystemVoiceId] = useState('');
+  const [rate, setRate] = useState(1);
+  const [pitch, setPitch] = useState(1);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
 
   // Fetch available voices on mount
   useEffect(() => {
-    fetchVoices(ttsServerUrl).then(setVoices);
-  }, [ttsServerUrl]);
+    if (useSystemVoices) {
+      listSystemVoices()
+        .then((list) => {
+          setSystemVoices(list);
+          setSystemVoiceId((current) => current || pickDefaultSystemVoice(list, i18n.language)?.id || '');
+        })
+        .catch((err) => setError(err instanceof Error ? err.message : String(err)));
+    } else {
+      fetchVoices(ttsServerUrl).then(setVoices);
+    }
+  }, [useSystemVoices, ttsServerUrl, i18n.language]);
 
   const getOrCreateCtx = useCallback(() => {
     if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
@@ -61,22 +86,29 @@ export function TTSModal() {
     stopPreview();
 
     try {
-      const wavBytes = await synthesizeSpeech(
-        ttsServerUrl,
-        text.trim(),
-        voice || undefined,
-        backend || undefined,
-      );
+      const wavBytes = useSystemVoices
+        ? await synthesizeWithSystemVoice(text.trim(), {
+            voiceId: systemVoiceId || undefined,
+            rate,
+            pitch,
+          })
+        : await synthesizeSpeech(
+            ttsServerUrl,
+            text.trim(),
+            voice || undefined,
+            backend || undefined,
+          );
 
       const ctx = getOrCreateCtx();
       const audioBuffer = await ctx.decodeAudioData(wavBytes);
       setGeneratedBuffer(audioBuffer);
+      haptic('success');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsGenerating(false);
     }
-  }, [text, voice, backend, ttsServerUrl, stopPreview, getOrCreateCtx]);
+  }, [text, voice, backend, ttsServerUrl, stopPreview, getOrCreateCtx, useSystemVoices, systemVoiceId, rate, pitch]);
 
   const handlePreview = useCallback(async () => {
     if (isPreviewing) { stopPreview(); return; }
@@ -138,48 +170,83 @@ export function TTSModal() {
           />
         </div>
 
-        {/* Voice & Backend selectors */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1" htmlFor="tts-voice">
-              {t('tts.voice')}
-            </label>
-            <input
-              id="tts-voice"
-              type="text"
-              list="tts-voice-list"
-              value={voice}
-              onChange={(e) => setVoice(e.target.value)}
-              placeholder={t('tts.voicePlaceholder')}
-              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-            {voices.length > 0 && (
-              <datalist id="tts-voice-list">
-                {voices.map((v) => (
-                  <option key={v.id} value={v.id}>{v.name}</option>
+        {useSystemVoices ? (
+          <>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1" htmlFor="tts-system-voice">
+                {t('tts.voice')}
+              </label>
+              <select
+                id="tts-system-voice"
+                value={systemVoiceId}
+                onChange={(e) => setSystemVoiceId(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                {groupVoicesByLanguage(systemVoices).map(([lang, list]) => (
+                  <optgroup key={lang} label={lang}>
+                    {list.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}
+                        {v.quality !== 'default' ? ` · ${t(`tts.quality.${v.quality}`)}` : ''}
+                        {v.novelty ? ` · ${t('tts.effectVoice')}` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
-              </datalist>
-            )}
+              </select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <ParamSlider label={t('tts.rate')} value={rate} min={0.5} max={2} step={0.05} unit="×" onChange={setRate} />
+              <ParamSlider label={t('tts.pitch')} value={pitch} min={0.5} max={2} step={0.05} unit="×" onChange={setPitch} />
+            </div>
+            <p className="text-xs text-gray-500">{t('tts.systemVoiceHint')}</p>
+          </>
+        ) : (
+          <>
+          {/* Voice & Backend selectors */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1" htmlFor="tts-voice">
+                {t('tts.voice')}
+              </label>
+              <input
+                id="tts-voice"
+                type="text"
+                list="tts-voice-list"
+                value={voice}
+                onChange={(e) => setVoice(e.target.value)}
+                placeholder={t('tts.voicePlaceholder')}
+                className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+              {voices.length > 0 && (
+                <datalist id="tts-voice-list">
+                  {voices.map((v) => (
+                    <option key={v.id} value={v.id}>{v.name}</option>
+                  ))}
+                </datalist>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1" htmlFor="tts-backend">
+                {t('tts.backend')}
+              </label>
+              <input
+                id="tts-backend"
+                type="text"
+                value={backend}
+                onChange={(e) => setBackend(e.target.value)}
+                placeholder="kokoro"
+                className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1" htmlFor="tts-backend">
-              {t('tts.backend')}
-            </label>
-            <input
-              id="tts-backend"
-              type="text"
-              value={backend}
-              onChange={(e) => setBackend(e.target.value)}
-              placeholder="kokoro"
-              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            />
-          </div>
-        </div>
 
-        {/* Server URL info */}
-        <p className="text-xs text-gray-500">
-          {t('tts.serverInfo', { url: ttsServerUrl })}
-        </p>
+          {/* Server URL info */}
+          <p className="text-xs text-gray-500">
+            {t('tts.serverInfo', { url: ttsServerUrl })}
+          </p>
+          </>
+        )}
 
         {/* Error */}
         {error && (

@@ -487,7 +487,15 @@
     "generating": "Generiere…",
     "addToTimeline": "Zur Timeline hinzufügen",
     "serverInfo": "Server: {{url}}",
-    "generated": "{{duration}}s Audio bei {{sampleRate}} Hz generiert"
+    "generated": "{{duration}}s Audio bei {{sampleRate}} Hz generiert",
+    "rate": "Tempo",
+    "pitch": "Tonhöhe",
+    "effectVoice": "Effekt",
+    "systemVoiceHint": "Wird mit den Systemstimmen auf diesem Gerät erzeugt; nichts wird hochgeladen. Hochwertigere Stimmen lassen sich unter Einstellungen › Bedienungshilfen › Gesprochene Inhalte › Stimmen laden.",
+    "quality": {
+      "enhanced": "Erweitert",
+      "premium": "Premium"
+    }
   },
   "settings": {
     "title": "Einstellungen",

@@ -327,7 +327,7 @@ export const TimelinePanel: React.FC = () => {
 
   // Decode dropped/picked audio files into sources + segments on the timeline.
   const handleImportFiles = useCallback(
-    async (files: FileList | null) => {
+    async (files: FileList | File[] | null) => {
       if (!files || files.length === 0) return;
       const ctx = audioEngine.getContext();
       await audioEngine.resume();
@@ -363,6 +363,30 @@ export const TimelinePanel: React.FC = () => {
     },
     [audioEngine, store],
   );
+
+  // Files opened from other apps ("Open in CrispAudio", Files, AirDrop):
+  // projects replace the session, audio lands at the playhead.
+  const pendingOpenedCount = useUIStore((s) => s.pendingOpenedFiles.length);
+  useEffect(() => {
+    if (pendingOpenedCount === 0) return;
+    const opened = useUIStore.getState().takeOpenedFiles();
+    const isProject = (name: string) => /\.(crispaudio|json)$/i.test(name);
+    (async () => {
+      for (const file of opened.filter((f) => isProject(f.name))) {
+        try {
+          const json = new TextDecoder().decode(file.bytes);
+          const { project, sources } = await deserializeProject(json, audioEngine.getContext());
+          store.loadProjectState(project, sources);
+        } catch (err) {
+          console.error(`Failed to open project ${file.name}:`, err);
+        }
+      }
+      const audio = opened.filter((f) => !isProject(f.name));
+      if (audio.length > 0) {
+        await handleImportFiles(audio.map((f) => new File([f.bytes], f.name)));
+      }
+    })();
+  }, [pendingOpenedCount, audioEngine, store, handleImportFiles]);
 
   // Save the whole project (structure + embedded audio) to a .json file.
   const handleSaveProject = useCallback(async () => {
