@@ -18,6 +18,9 @@ export async function exportWav(
   sampleRate: number,
   bitDepth: number,
 ): Promise<Blob> {
+  // Avoid loading the native bridge and copying samples on the web.
+  if (!isTauri()) return encodeWavJS(buffer, sampleRate, bitDepth);
+
   // --- Tauri path -----------------------------------------------------------
   try {
     const { invoke } = await import('@tauri-apps/api/core');
