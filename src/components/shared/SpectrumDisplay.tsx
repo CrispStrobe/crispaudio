@@ -3,7 +3,7 @@
 // Extracted from SFXPanel for shared use.
 // ---------------------------------------------------------------------------
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { computeSpectrumBars } from '../../audio/utils/fft';
 import { canvasBgFlat, canvasTextColor, canvasEmptyColor } from '../../lib/themeColors';
@@ -27,6 +27,12 @@ export function SpectrumDisplay({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(200);
+  // FFT analysis depends on samples and resolution, not canvas layout or labels.
+  const spectrum = useMemo(() => {
+    if (!buffer || buffer.length === 0) return null;
+    const bars = computeSpectrumBars(buffer, numBars);
+    return { bars, maxVal: Math.max(...bars) };
+  }, [buffer, numBars]);
 
   // ResizeObserver to match canvas pixel width to container
   useEffect(() => {
@@ -68,7 +74,7 @@ export function SpectrumDisplay({
     ctx.fillStyle = canvasBgFlat();
     ctx.fillRect(0, 0, lw, lh);
 
-    if (!buffer || buffer.length === 0) {
+    if (!spectrum) {
       ctx.fillStyle = canvasEmptyColor();
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
@@ -77,8 +83,7 @@ export function SpectrumDisplay({
       return;
     }
 
-    const bars = computeSpectrumBars(buffer, numBars);
-    const maxVal = Math.max(...bars);
+    const { bars, maxVal } = spectrum;
     if (maxVal === 0) return;
 
     const barW = Math.floor(lw / numBars) - 1;
@@ -98,7 +103,7 @@ export function SpectrumDisplay({
     ctx.fillText('20Hz', 2, lh - 2);
     ctx.fillText('1kHz', lw * 0.4, lh - 2);
     ctx.fillText('20kHz', lw - 32, lh - 2);
-  }, [buffer, numBars, resolvedNoSignal, canvasWidth]);
+  }, [spectrum, numBars, resolvedNoSignal, canvasWidth]);
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const canvasHeight = Math.floor(80 * dpr); // h-20 = 5rem = 80px
