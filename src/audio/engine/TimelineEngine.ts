@@ -139,6 +139,9 @@ export class TimelineEngine {
     startTime = 0,
     endTime?: number,
   ): Promise<AudioBuffer> {
+    // Keep the source registry stable while graph construction yields to the UI.
+    const sources = new Map(this.sources);
+    let sliceStarted = performance.now();
     const renderEnd = endTime ?? project.duration;
     const renderDuration = Math.max(0.01, renderEnd - startTime);
     const sampleRate = project.sampleRate;
@@ -185,7 +188,7 @@ export class TimelineEngine {
         const segEnd = segment.startTime + segment.duration;
         if (segEnd <= startTime || segment.startTime >= renderEnd) continue;
 
-        const source = this.sources.get(segment.sourceId);
+        const source = sources.get(segment.sourceId);
         if (!source) continue;
 
         const segPlayStart = Math.max(0, startTime - segment.startTime);
@@ -217,6 +220,13 @@ export class TimelineEngine {
         fadeGain.connect(trackGain);
 
         bufSrc.start(scheduleAt, bufferOffset, playDuration);
+
+        // Offline rendering has not started: wall-clock yields cannot shift audio.
+        // Bound multi-segment setup tasks without delaying inexpensive graphs.
+        if (performance.now() - sliceStarted >= 8) {
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          sliceStarted = performance.now();
+        }
       }
     }
 
