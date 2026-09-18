@@ -9,6 +9,8 @@ import { useProjectStore } from '../stores/projectStore';
 
 const AUTOSAVE_KEY = 'crispaudio-autosave';
 const AUTOSAVE_INTERVAL_MS = 30_000; // 30 seconds
+// Clearing the shared slot invalidates successful saves in mounted hooks.
+let clearGeneration = 0;
 
 interface AutosaveData {
   savedAt: string;
@@ -19,8 +21,13 @@ export function useAutosave() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    // Project edits replace this immutable object; transport/view edits do not.
+    // Keep success tracking local so remounts always attempt their first save.
+    let lastSavedProject: AutosaveData['project'] | undefined;
+    let lastSavedGeneration = clearGeneration;
     const save = () => {
       const { project } = useProjectStore.getState();
+      if (project === lastSavedProject && lastSavedGeneration === clearGeneration) return;
       // Only save if there are tracks with segments (non-empty project)
       const hasContent = project.tracks.some((t) => t.segments.length > 0);
       if (!hasContent) return;
@@ -31,6 +38,8 @@ export function useAutosave() {
       };
       try {
         localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
+        lastSavedProject = project;
+        lastSavedGeneration = clearGeneration;
       } catch {
         // localStorage full or unavailable — silently ignore
       }
@@ -77,4 +86,5 @@ export function restoreAutosave(): boolean {
 /** Clear the autosave slot. */
 export function clearAutosave(): void {
   localStorage.removeItem(AUTOSAVE_KEY);
+  clearGeneration += 1;
 }

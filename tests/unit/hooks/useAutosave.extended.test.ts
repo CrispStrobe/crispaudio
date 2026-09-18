@@ -2,8 +2,181 @@
 // useAutosave — extended edge-case tests
 // ---------------------------------------------------------------------------
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { restoreAutosave } from '../../../src/hooks/useAutosave';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { useAutosave, restoreAutosave, clearAutosave } from '../../../src/hooks/useAutosave';
+import { useProjectStore } from '../../../src/stores/projectStore';
+
+function loadContent() {
+  useProjectStore.setState(useProjectStore.getInitialState());
+  const store = useProjectStore.getState();
+  store.addTrack('Track');
+  const trackId = useProjectStore.getState().project.tracks[0].id;
+  store.addSegment(trackId, {
+    id: 'segment', trackId, sourceId: 'source', startTime: 0, duration: 1,
+    sourceOffset: 0, fadeInDuration: 0, fadeOutDuration: 0,
+    fadeInCurve: 'linear', fadeOutCurve: 'linear', effects: [], gain: 1,
+    color: '#000', name: 'Segment',
+  });
+}
+
+function tick() {
+  act(() => vi.advanceTimersByTime(30_000));
+}
+
+// Exercise the real hook and store: unchanged ticks must avoid serialization too.
+describe('useAutosave scheduling', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    loadContent();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+    useProjectStore.setState(useProjectStore.getInitialState());
+  });
+
+  it('skips serialization and writes for unchanged ticks and unloads', () => {
+    renderHook(() => useAutosave());
+    const stringify = vi.spyOn(JSON, 'stringify');
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    tick();
+    expect(setItem).toHaveBeenCalledTimes(1);
+    expect(stringify).toHaveBeenCalledTimes(1);
+    const saved = localStorage.getItem(AUTOSAVE_KEY);
+
+    tick();
+    act(() => window.dispatchEvent(new Event('beforeunload')));
+
+    expect(stringify).toHaveBeenCalledTimes(1);
+    expect(setItem).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem(AUTOSAVE_KEY)).toBe(saved);
+  });
+
+  it('ignores transport and view updates but saves immutable project edits', () => {
+    renderHook(() => useAutosave());
+    tick();
+    const project = useProjectStore.getState().project;
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    act(() => {
+      useProjectStore.getState().setPlayheadPosition(5);
+      useProjectStore.getState().setZoomLevel(200);
+    });
+    expect(useProjectStore.getState().project).toBe(project);
+    tick();
+    expect(setItem).not.toHaveBeenCalled();
+
+    act(() => useProjectStore.getState().setSegmentGain('segment', 0.5));
+    expect(useProjectStore.getState().project).not.toBe(project);
+    expect(useProjectStore.getState().project.id).toBe(project.id);
+    act(() => window.dispatchEvent(new Event('beforeunload')));
+    tick();
+    expect(setItem).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(localStorage.getItem(AUTOSAVE_KEY)!).project.tracks[0].segments[0].gain).toBe(0.5);
+
+    // Undo can revisit a previously saved identity: only the latest save counts.
+    act(() => useProjectStore.temporal.getState().undo());
+    expect(useProjectStore.getState().project).toBe(project);
+    tick();
+    expect(setItem).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(localStorage.getItem(AUTOSAVE_KEY)!).project).toEqual(project);
+  });
+
+  it('retries failed writes for an unchanged project until one succeeds', () => {
+    renderHook(() => useAutosave());
+    tick();
+    act(() => useProjectStore.getState().setSegmentGain('segment', 0.5));
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
+      throw new DOMException('Storage full', 'QuotaExceededError');
+    });
+    const stringify = vi.spyOn(JSON, 'stringify');
+
+    expect(tick).not.toThrow();
+    expect(JSON.parse(localStorage.getItem(AUTOSAVE_KEY)!).project.tracks[0].segments[0].gain).toBe(1);
+    act(() => window.dispatchEvent(new Event('beforeunload')));
+    tick();
+
+    expect(setItem).toHaveBeenCalledTimes(2);
+    expect(stringify).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(localStorage.getItem(AUTOSAVE_KEY)!).project.tracks[0].segments[0].gain).toBe(0.5);
+  });
+
+  it('retries failed serialization instead of marking the project saved', () => {
+    renderHook(() => useAutosave());
+    const stringify = vi.spyOn(JSON, 'stringify').mockImplementationOnce(() => {
+      throw new Error('Serialization failed');
+    });
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    expect(tick).not.toThrow();
+    expect(setItem).not.toHaveBeenCalled();
+    tick();
+    tick();
+    expect(stringify).toHaveBeenCalledTimes(2);
+    expect(setItem).toHaveBeenCalledTimes(1);
+  });
+
+  it('attempts the first save on remount even when project identity is unchanged', () => {
+    const hook = renderHook(() => useAutosave());
+    tick();
+    hook.unmount();
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    renderHook(() => useAutosave());
+    tick();
+    tick();
+    expect(setItem).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the previous autosave while the current project is empty', () => {
+    renderHook(() => useAutosave());
+    tick();
+    const saved = localStorage.getItem(AUTOSAVE_KEY);
+    act(() => useProjectStore.getState().removeSegment('segment'));
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    tick();
+    expect(setItem).not.toHaveBeenCalled();
+    expect(localStorage.getItem(AUTOSAVE_KEY)).toBe(saved);
+  });
+
+  it('saves a restored project without audio sources on the next tick', () => {
+    renderHook(() => useAutosave());
+    tick();
+    const project = useProjectStore.getState().project;
+    act(() => useProjectStore.getState().setSegmentGain('segment', 0.5));
+    act(() => expect(restoreAutosave()).toBe(true));
+    expect(useProjectStore.getState().project).toEqual(project);
+    expect(useProjectStore.getState().sources.size).toBe(0);
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    tick();
+    tick();
+    expect(setItem).toHaveBeenCalledTimes(1);
+  });
+
+  it('removes interval and unload saves on unmount', () => {
+    const hook = renderHook(() => useAutosave());
+    hook.unmount();
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    tick();
+    act(() => window.dispatchEvent(new Event('beforeunload')));
+    expect(setItem).not.toHaveBeenCalled();
+  });
+
+  it('saves unchanged content again after clearing the autosave slot', () => {
+    renderHook(() => useAutosave());
+    tick();
+    const project = useProjectStore.getState().project;
+    clearAutosave();
+    expect(localStorage.getItem(AUTOSAVE_KEY)).toBeNull();
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+
+    tick();
+    tick();
+
+    expect(setItem).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(localStorage.getItem(AUTOSAVE_KEY)!).project).toEqual(project);
+  });
+});
 
 const AUTOSAVE_KEY = 'crispaudio-autosave';
 
