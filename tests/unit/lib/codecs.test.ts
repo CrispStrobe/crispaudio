@@ -24,6 +24,31 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
+it('transfers its owned stereo interleave without allocating another PCM copy', async () => {
+  const { encodeAudioBuffer } = await import('../../../src/lib/codecs');
+  const left = new Float32Array([0.25, 0.5]);
+  const right = new Float32Array([-0.25, -0.5]);
+  const NativeFloat32Array = Float32Array;
+  const allocations: Float32Array[] = [];
+  vi.stubGlobal('Float32Array', new Proxy(NativeFloat32Array, {
+    construct(target, args) {
+      const array = Reflect.construct(target, args) as Float32Array;
+      allocations.push(array);
+      return array;
+    },
+  }));
+  const promise = encodeAudioBuffer({ numberOfChannels: 2, sampleRate: 48000,
+    getChannelData: (c: number) => [left, right][c] } as AudioBuffer, 'mp3');
+  const worker = ControlledWorker.instances[0];
+  worker.reply({ id: worker.requests[0].id, type: 'encoded', bytes: new ArrayBuffer(0) });
+  await promise;
+  expect(allocations).toHaveLength(1);
+  expect(allocations[0].byteLength).toBe(0);
+  expect(new NativeFloat32Array(worker.requests[0].pcm as ArrayBuffer)).toEqual(new NativeFloat32Array([0.25, -0.25, 0.5, -0.5]));
+  expect(left.byteLength).toBe(8);
+  expect(right.byteLength).toBe(8);
+});
+
 it('routes mono WAV encoding through the worker with an owned copy', async () => {
   const { exportWav } = await import('../../../src/lib/wavExport');
   const samples = new Float32Array([99, 0.25, -0.5, 88]);

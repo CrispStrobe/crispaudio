@@ -58,7 +58,19 @@ export async function encodeCompressed(
   signal?.throwIfAborted();
   // Transfer an owned copy, never detach a caller's playback buffer or subview.
   const copy = new Float32Array(pcm).buffer;
-  const result = await runCodec({ type: 'encode', pcm: copy, channels, sampleRate, format, bitrateKbps }, [copy], signal);
+  return encodeOwned(copy, channels, sampleRate, format, bitrateKbps, signal);
+}
+
+/** Internal ownership boundary: the supplied buffer is detached on dispatch. */
+async function encodeOwned(
+  pcm: ArrayBuffer,
+  channels: number,
+  sampleRate: number,
+  format: CompressedFormat,
+  bitrateKbps: number,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const result = await runCodec({ type: 'encode', pcm, channels, sampleRate, format, bitrateKbps }, [pcm], signal);
   if (result.type !== 'encoded') throw new Error('Unexpected codec encode response');
   return new Blob([result.bytes], { type: MIME[format] });
 }
@@ -75,7 +87,9 @@ export async function encodeAudioBuffer(
     buffer.getChannelData(c),
   );
   const { pcm, channels } = interleave(channelData);
-  return encodeCompressed(pcm, channels, buffer.sampleRate, format, bitrateKbps, signal);
+  // Mono interleave aliases caller data; multichannel interleave is newly owned.
+  if (channels === 1) return encodeCompressed(pcm, channels, buffer.sampleRate, format, bitrateKbps, signal);
+  return encodeOwned(pcm.buffer as ArrayBuffer, channels, buffer.sampleRate, format, bitrateKbps, signal);
 }
 
 /** Convenience: encode a mono Float32Array to a compressed Blob. */
