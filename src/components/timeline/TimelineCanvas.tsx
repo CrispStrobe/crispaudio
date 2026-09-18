@@ -152,6 +152,14 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
       const pixelsPerPeakSample = segWidth / peakRange;
 
+      // Keep the original segment-local sampling grids, but visit only the
+      // viewport plus one neighboring point per edge for stroke/fill continuity.
+      // The reverse fill grid is anchored at segRight, which can be fractional.
+      const firstPixel = Math.max(0, Math.ceil(-segLeft) - 1);
+      const lastPixel = Math.min(Math.floor(segWidth), Math.floor(width - segLeft) + 1);
+      const firstReversePixel = Math.max(0, Math.ceil(segRight - width) - 1);
+      const lastReversePixel = Math.min(Math.floor(segWidth), Math.floor(segRight) + 1);
+
       // Draw waveform using min/max peaks
       ctx.save();
       ctx.beginPath();
@@ -165,12 +173,12 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
       // Draw upper envelope (max)
       ctx.moveTo(segLeft, midY);
-      for (let px = 0; px <= segWidth; px++) {
+      for (let px = firstPixel; px <= lastPixel; px++) {
         const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
         const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
         const maxVal = peakMax[clampedIdx];
         const y = midY - maxVal * halfHeight;
-        if (px === 0) {
+        if (px === firstPixel) {
           ctx.moveTo(segLeft + px, y);
         } else {
           ctx.lineTo(segLeft + px, y);
@@ -178,7 +186,8 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       }
 
       // Draw lower envelope (min) in reverse
-      for (let px = segWidth; px >= 0; px--) {
+      for (let i = firstReversePixel; i <= lastReversePixel; i++) {
+        const px = segWidth - i;
         const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
         const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
         const minVal = peakMin[clampedIdx];
@@ -193,12 +202,12 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       ctx.strokeStyle = hexToRgba(baseColor, 0.85);
       ctx.lineWidth = WAVEFORM_LINE_WIDTH;
       ctx.beginPath();
-      for (let px = 0; px <= segWidth; px++) {
+      for (let px = firstPixel; px <= lastPixel; px++) {
         const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
         const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
         const maxVal = peakMax[clampedIdx];
         const y = midY - maxVal * halfHeight;
-        if (px === 0) {
+        if (px === firstPixel) {
           ctx.moveTo(segLeft + px, y);
         } else {
           ctx.lineTo(segLeft + px, y);
@@ -208,12 +217,12 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
       // Min line
       ctx.beginPath();
-      for (let px = 0; px <= segWidth; px++) {
+      for (let px = firstPixel; px <= lastPixel; px++) {
         const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
         const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
         const minVal = peakMin[clampedIdx];
         const y = midY - minVal * halfHeight;
-        if (px === 0) {
+        if (px === firstPixel) {
           ctx.moveTo(segLeft + px, y);
         } else {
           ctx.lineTo(segLeft + px, y);
@@ -225,7 +234,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       void samplesPerPeak; // suppress unused warning
       void pixelsPerPeakSample;
     },
-    [],
+    [width],
   );
 
   const drawFadeOverlay = useCallback(
