@@ -6,8 +6,11 @@
 - Cancellable codec jobs own exclusive workers. Aborting terminates that worker without stopping unrelated jobs. At most one idle cancellable worker is retained for reuse, in addition to the existing shared worker.
 - Mono and multichannel JS WAV encoding run in the worker. Caller channel data is copied before transfer. Existing mono float32 versus multichannel PCM32 behavior is preserved rather than silently changing WAV formats.
 - Native mono WAV export uses `export_wav_binary`: an 8-byte little-endian header (sample rate u32, bit depth u16, channels u16), followed by interleaved float32 samples. Rust returns a raw byte response and encodes on a blocking task. The old JSON command remains available for compatibility.
-- Each mounted panel retains one successful encoded blob, keyed by immutable source identity and encoding settings. Timeline includes project and source-map identity. Aborted or failed encodes cannot populate the cache or initiate saving.
+- Each mounted panel retains one successful encoded blob, keyed by immutable source identity and encoding settings. Timeline includes project and source-map identity. Aborted or failed encodes cannot populate the cache or initiate saving. Key objects (project, source map, AudioBuffer) are held **weakly** so the cache cannot pin an obsolete graph, and a result above 16 MiB evicts instead of occupying the slot.
 - Reverb impulses use seeded stereo diffusion and a private LRU cache bounded by eight entries and 16 MiB of retained sample data. Keys include sample rate, sample-rounded duration, and clamped decay. Oversized impulses are not retained. The public impulse generator returns fresh buffers.
+- `encodeAudioBuffer` transfers its newly built interleave to the worker instead of letting `encodeCompressed` copy it again; mono still copies because its interleave aliases caller channel data.
+- Timeline waveform drawing visits only the visible pixel range plus one edge point per side, keeping the segment-local fractional grid so anchors and extrema do not shift.
+- Autosave skips serialization and the localStorage write when the project object is unchanged since the last successful save; failed writes stay retryable and clearing the slot invalidates tracking.
 
 ## Behavior and limitations
 
@@ -19,7 +22,7 @@ The generated service-worker registration already waits for `window.load`; it wa
 
 ## Verification
 
-- Full frontend suite: 1,109 tests across 56 files passed with `NODE_ENV=test npm test -- --maxWorkers=1 --testTimeout=20000`.
+- Full frontend suite: 1,130 tests across 57 files passed with `NODE_ENV=test npm test -- --maxWorkers=1 --testTimeout=20000`.
 - The preceding two-worker run hit five 5-second timeouts, including three existing playback tests; there were no assertion mismatches in that run. Project timeout defaults were not modified.
 - ESLint, TypeScript checking, production Vite/PWA build, and `git diff --check` passed.
 - `cargo test --locked --manifest-path src-tauri/Cargo.toml`: 16 tests passed using isolated CARGO_HOME/RUSTUP_HOME. Binary payload tests compare against the previous native encoder at 8/16/24/32 bits and reject malformed payloads.
@@ -27,3 +30,5 @@ The generated service-worker registration already waits for `window.load`; it wa
 - Production artifact inspection confirms worker JS, Glint WASM, and both locale chunks remain precached. This inspection is not a new offline browser test.
 
 Native Tauri IPC has not been verified end-to-end in a running app. No iPhone was available through devicectl; only a paired iPad was listed. No new iPhone timings, throughput gain, or perceptual equivalence is claimed.
+
+Open items are tracked in [open-work.md](./open-work.md).
