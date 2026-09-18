@@ -8,12 +8,35 @@ interface ExportRequest {
   save: (blob: Blob) => Promise<unknown>;
 }
 
+type CacheKeyPart = { weak: WeakRef<object> } | { value: unknown };
+
+/** One retained result only; larger results save without being retained. */
+const MAX_CACHE_BYTES = 16 * 1024 * 1024;
+
+// Never pin a project, source map, AudioBuffer, or callback through the key.
+function retainKey(key: readonly unknown[]): CacheKeyPart[] {
+  return key.map(value =>
+    (typeof value === 'object' && value !== null) || typeof value === 'function'
+      ? { weak: new WeakRef(value) }
+      : { value });
+}
+
+function matchesKey(cached: readonly CacheKeyPart[], key: readonly unknown[]): boolean {
+  return cached.length === key.length && cached.every((part, index) => {
+    if ('weak' in part) {
+      const value = part.weak.deref();
+      return value !== undefined && Object.is(value, key[index]);
+    }
+    return Object.is(part.value, key[index]);
+  });
+}
+
 /** Owns an export job; only its current, non-aborted result may open a save UI. */
 export function useAudioExport() {
   const [stage, setStage] = useState<AudioExportStage | null>(null);
   const [error, setError] = useState<unknown>(null);
   const active = useRef<AbortController | null>(null);
-  const cache = useRef<{ key: readonly unknown[]; blob: Blob } | null>(null);
+  const cache = useRef<{ key: readonly CacheKeyPart[]; blob: Blob } | null>(null);
   useEffect(() => () => {
     active.current?.abort();
     active.current = null;
@@ -33,10 +56,12 @@ export function useAudioExport() {
     setStage(request.stage);
     try {
       const cached = cache.current;
-      const hit = cached && cached.key.length === request.key.length && cached.key.every((value, index) => Object.is(value, request.key[index]));
+      const hit = cached && matchesKey(cached.key, request.key);
       const blob = hit ? cached.blob : await request.produce(controller.signal, next => { if (current()) setStage(next); });
       if (!current()) return false;
-      cache.current = { key: [...request.key], blob };
+      // A retained result must not pin more than the cache budget. An oversized
+      // success still saves, but evicts rather than occupying the single slot.
+      cache.current = blob.size > MAX_CACHE_BYTES ? null : { key: retainKey(request.key), blob };
       // Encoding has finished. A native save/share dialog owns cancellation
       // from this point; do not claim it is still rendering or encoding.
       setStage(null);

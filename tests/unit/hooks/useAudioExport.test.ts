@@ -8,7 +8,52 @@ function deferred<T>() {
   const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
   return { promise, resolve, reject };
 }
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+
+it('uses weak object-key retention and treats a collected key as a miss', async () => {
+  const { result } = renderHook(() => useAudioExport());
+  const source = new Float32Array([1]);
+  const project = { sources: new Map([['source', source]]) };
+  const produce = vi.fn(async () => new Blob(['encoded']));
+  const request = { key: [project, project.sources, source], stage: 'encoding' as const, produce, save: async () => {} };
+  await act(async () => { await result.current.start(request); });
+  const deref = vi.spyOn(WeakRef.prototype, 'deref');
+  await act(async () => { await result.current.start(request); });
+  expect(produce).toHaveBeenCalledTimes(1);
+  expect(deref.mock.results.map(call => call.value)).toEqual(request.key);
+  // Simulate collection, without relying on GC timing or finalizers.
+  deref.mockReturnValue(undefined);
+  await act(async () => { await result.current.start(request); });
+  expect(produce).toHaveBeenCalledTimes(2);
+});
+
+it('retains at most 16 MiB and saves oversized results without caching them', async () => {
+  const { result } = renderHook(() => useAudioExport());
+  const limit = 16 * 1024 * 1024;
+  // Report boundary sizes without allocating tens of megabytes in a unit test.
+  const boundary = new Blob(['boundary']);
+  const oversized = new Blob(['oversized']);
+  vi.spyOn(boundary, 'size', 'get').mockReturnValue(limit);
+  vi.spyOn(oversized, 'size', 'get').mockReturnValue(limit + 1);
+  const produce = vi.fn().mockResolvedValue(boundary);
+  const save = vi.fn(async () => {});
+  const run = async (key: string) => {
+    await act(async () => { expect(await result.current.start({ key: [key], stage: 'encoding', produce, save })).toBe(true); });
+  };
+  await run('small');
+  await run('small');
+  expect(produce).toHaveBeenCalledTimes(1);
+  produce.mockResolvedValue(oversized);
+  await run('large');
+  await run('large');
+  expect(produce).toHaveBeenCalledTimes(3);
+  expect(save).toHaveBeenLastCalledWith(oversized);
+  // The oversized success also evicts the previous result: there is no fallback entry.
+  produce.mockResolvedValue(boundary);
+  await run('small');
+  expect(produce).toHaveBeenCalledTimes(4);
+  expect(save).toHaveBeenCalledTimes(5);
+});
 
 it('ends rendering/encoding progress before opening the existing save UI', async () => {
   const { result } = renderHook(() => useAudioExport());
