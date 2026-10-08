@@ -189,3 +189,13 @@ picture. Output files must be new. CLI accepts silent source videos; the guided
 GUI media import still requires camera audio. Video import/export requires desktop
 FFmpeg/FFprobe; iOS/browser retain the audio editor. See INTERVIEW_WALKTHROUGH.md
 for the Canon/H6 example.
+
+
+The top file/media toolbar stays on one row; scroll it horizontally when space
+is limited. Its ellipsis opens additional media actions above the editor panels.
+The waveform icon toggles normalized display (highlighted) versus relative level;
+this only changes drawing, never gain or export audio. Hover for its label, or
+hold the icon on touch without activating it. The navigation help icon explains
+horizontal scrolling and zoom gestures. The project overview has its own hover
+help instead of a permanent text heading. Interface labels do not select during
+clicks or drags; editable fields and diagnostic text remain selectable.

@@ -35,8 +35,8 @@ describe('video viewer lifecycle',()=>{
   });
   it('expands visibly and restores native fullscreen on Escape',async()=>{
     let host:HTMLElement;await act(async()=>{host=render(<div style={{transform:'translateX(0)'}}><VideoViewer/></div>).container;});
-    await act(async()=>{fireEvent.click(screen.getByText('video.fullscreen'));});
-    const overlay=screen.getByText('editor.closeViewer').closest('.fixed');
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'video.fullscreen',exact:true}));});
+    const overlay=screen.getByRole('button',{name:'editor.closeViewer',exact:true}).closest('.fixed');
     expect(overlay?.parentElement).toBe(document.body);
     expect(host!.contains(overlay)).toBe(false);
     expect(native.setFullscreen).toHaveBeenCalledWith(true);
@@ -68,10 +68,10 @@ describe('video viewer lifecycle',()=>{
   it('steps within the extended canvas while fullscreen stays open in a black tail',async()=>{
     useProjectStore.setState(state=>({project:{...state.project,minimumDuration:15,duration:15},playheadPosition:12}));
     await act(async()=>{render(<VideoViewer/>);});
-    await act(async()=>{fireEvent.click(screen.getByText('video.fullscreen'));});
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'video.fullscreen',exact:true}));});
     fireEvent.click(screen.getByRole('button',{name:'video.stepForward'}));
     expect(useProjectStore.getState().playheadPosition).toBeCloseTo(12.04);
-    expect(screen.getByText('editor.closeViewer').closest('.fixed')).toBeTruthy();
+    expect(screen.getByRole('button',{name:'editor.closeViewer',exact:true}).closest('.fixed')).toBeTruthy();
   });
   it('exits a browser fullscreen request which completes after the viewer was closed',async()=>{
     await act(async()=>{render(<VideoViewer/>);});
@@ -90,7 +90,7 @@ describe('video viewer lifecycle',()=>{
   it('shows fullscreen failure inside the expanded viewer',async()=>{
     native.setFullscreen.mockRejectedValueOnce(new Error('Unavailable'));
     await act(async()=>{render(<VideoViewer/>);});
-    await act(async()=>{fireEvent.click(screen.getByText('video.fullscreen'));});
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'video.fullscreen',exact:true}));});
     expect(screen.getByText('usability.fullscreenFallback').closest('.fixed')).toBeTruthy();
   });
 

@@ -18,9 +18,11 @@ export function OverflowMenu({ label, children }: { label: string; children: Rea
     if (!button || !menu) return;
     const place = () => {
       const anchor = button.getBoundingClientRect();
-      const width = Math.min(256, window.innerWidth - 16);
+      const contentLeft=document.getElementById('main-content')?.getBoundingClientRect().left??0;
+      const inset=window.innerWidth-contentLeft>=280?Math.max(8,contentLeft+8):8;
+      const width = Math.min(256, window.innerWidth - inset - 8);
       menu.style.width = `${width}px`;
-      menu.style.left = `${Math.max(8, Math.min(anchor.left, window.innerWidth - width - 8))}px`;
+      menu.style.left = `${Math.max(inset, Math.min(anchor.left, window.innerWidth - width - 8))}px`;
       menu.style.maxHeight = `${Math.max(44, window.innerHeight - 16)}px`;
       const height = menu.getBoundingClientRect().height;
       menu.style.top = `${Math.max(8, Math.min(anchor.bottom + 8, window.innerHeight - height - 8))}px`;
@@ -51,7 +53,7 @@ export function OverflowMenu({ label, children }: { label: string; children: Rea
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setOpen(true); }
       }}><Ellipsis size={18} aria-hidden="true" /></button>
     {open && createPortal(<div ref={panel} id={id} role="menu" tabIndex={-1} aria-label={label}
-      className="fixed z-[60] select-none p-2 rounded-xl border border-gray-700 bg-gray-900 shadow-xl space-y-2 overflow-y-auto"
+      className="toolbar-overflow-menu fixed z-[1000] select-none p-2 rounded-xl border border-gray-700 bg-gray-900 shadow-xl space-y-2 overflow-y-auto"
       onClick={event => { if ((event.target as HTMLElement).closest('[role="menuitem"]:not(:disabled)')) close(true); }}
       onKeyDown={event => {
         if (event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); close(true); }

@@ -264,3 +264,23 @@ TypeScript/Vite and the macOS bundle build passed. The combined ad-hoc-signed
 The current autosave and WebKit recovery store were preserved under the private
 validation folder's `ux/native-autosave-before-065.json` and
 `ux/recovery-before-065/WebKit`. No Apple upload or release tag is included.
+
+## Local 0.6.6 toolbar follow-up
+
+Video/sync actions and More share the top scrolling toolbar. Explicit square
+icon targets center SVGs in transport and toolbar controls. The More menu portals
+above app panels at z-index 1000 and stays within the main content area when space
+permits. Touch tooltip portals escape toolbar clipping. The waveform display
+switch and navigation gesture hint use icons with hover/hold help; project
+navigation has no permanent overview heading. Explicit WebKit selection rules
+prevent accidental label selection while retaining editable/diagnostic text.
+
+Chrome and WebKit browser checks at 1440×960, 1024×768 and 390×844 verify icon
+centering, a single file/media toolbar row, menu hit testing and viewport bounds,
+unselectable navigation and no page overflow. Physical iOS is not covered.
+
+All 79 frontend suites / 1,247 tests, lint, TypeScript/Vite and macOS bundle build
+passed. The ad-hoc-signed 0.6.6 local app is installed and running. Current autosave
+and full WebKit recovery were backed up as `ux/native-autosave-before-066.json`
+and `ux/recovery-before-066/WebKit` in the private validation folder. No Apple
+submission or release tag is included; native/media code is unchanged.

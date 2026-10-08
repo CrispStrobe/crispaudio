@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.5]
+## [Unreleased — local version 0.6.6]
+
+- Center toolbar and transport SVGs in explicit square targets on WebKit.
+- Keep video actions and More in the top scrolling toolbar; position More above
+  app panels and within the content area. Touch tooltips escape scrolling panels.
+- Replace long waveform-display and navigation hints with icon hover help.
+- Prevent accidental selection of interface labels on macOS/iOS WebKit while
+  keeping input and diagnostic text selectable. Project overview uses hover help.
+
+## [Local version 0.6.5]
 
 - Change the style of existing linked picture overlaps without moving audio.
   Existing overlap lengths survive style changes; unlink before changing length.

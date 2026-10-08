@@ -111,12 +111,13 @@ is future work.
    `MVI_8251.crispaudio`. Keep `aligned-final/` and the original video in place:
    this project links those files rather than embedding them.
 2. Tap/click **Fit all / reset view** to see the whole interview. Play, pause, and use the
-   position slider to seek. Open **View & tools** for zoom, snapping, undo/redo, and adding tracks.
+   position slider to seek. Use the timeline toolbar for zoom and snapping; the top
+   bar has undo/redo and Add track. Scroll these bars sideways on smaller screens.
    Zoom in for editing individual question boundaries. The video filmstrip stays
    on the same ruler as all audio tracks; click it to seek. Waveforms are visually
-   normalized by default without changing the mix. In **View & tools**, switch
-   waveform display if you need to see mix gain.
-   Open **View & tools → Check alignment**, choose Camera and Tr1 (then LR), and inspect matching
+   normalized by default without changing the mix. Toggle the waveform icon beside
+   Check alignment to show relative levels; hover or hold it for help.
+   Open **Check alignment** in the timeline toolbar, choose Camera and Tr1 (then LR), and inspect matching
    speech starts at Beginning/Middle/End. Try a 0.2–0.5 s window. This overlay
    does not change offsets; re-analyze/re-import if a correction is needed.
 3. Compare Tr1, LR, and Camera using **S** on their track headers. Solo temporarily

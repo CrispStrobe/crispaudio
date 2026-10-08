@@ -130,7 +130,7 @@ export function MediaTools({ engine, panelTarget }: Props) {
   });
 
   const button = 'min-h-11 px-4 py-2 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-40';
-  const controls = (<div className="flex flex-wrap items-center gap-2">
+  const controls = (<div className="timeline-media-actions">
         <ToolButton icon={Film} label={t('interview.sync')} className="!bg-indigo-600 !border-indigo-500" disabled={!!busy || playing} onClick={() => setSetup(true)}/>
         {video && <ToolButton icon={Clapperboard} disabled={!!busy || playing || !videoTimelineDuration(video)} onClick={exportVideo} label={t((video.inPoint ?? 0)>0 || (video.outPoint ?? videoTimelineDuration(video))<videoTimelineDuration(video)?'video.exportSection':'interview.exportVideo')}/>}
         <OverflowMenu label={t('interview.more')}>

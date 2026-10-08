@@ -21,7 +21,7 @@ afterEach(cleanup);
 describe('interview touch workflow', () => {
   it('splits both microphones at the same boundary and undoes as one edit', () => {
     render(<TimelineActions touchArrange={false} onTouchArrange={() => {}} />);
-    fireEvent.click(screen.getByText('timeline.splitAll'));
+    fireEvent.click(screen.getByRole('button',{name:'timeline.splitAll',exact:true}));
     for (const track of useProjectStore.getState().project.tracks) {
       expect(track.segments.map((clip) => [clip.startTime, clip.duration, clip.sourceOffset])).toEqual([[0, 4, 2], [4, 6, 6]]);
     }
@@ -30,7 +30,7 @@ describe('interview touch workflow', () => {
   });
   it('switches microphone audibly by clearing previous solos and mutes', () => {
     render(<TimelineActions touchArrange={false} onTouchArrange={() => {}} />);
-    fireEvent.click(screen.getByText('timeline.mixer'));
+    fireEvent.click(screen.getByRole('button',{name:'timeline.mixer',exact:true}));
     const room = screen.getByDisplayValue('Room').closest('section')!;
     fireEvent.click(within(room).getByText('timeline.listenOnly'));
     expect(useProjectStore.getState().project.tracks.map((track) => [track.muted, track.solo])).toEqual([[true, false], [false, false]]);
@@ -44,7 +44,7 @@ describe('interview touch workflow', () => {
   it('does not require precision clip selection to toggle touch arrangement', () => {
     const onTouchArrange = vi.fn();
     render(<TimelineActions touchArrange={false} onTouchArrange={onTouchArrange} />);
-    fireEvent.click(screen.getByText('timeline.touchArrangeOff'));
+    fireEvent.click(screen.getByRole('button',{name:'timeline.touchArrangeOff',exact:true}));
     expect(onTouchArrange).toHaveBeenCalledOnce();
     expect(screen.getByRole('button',{name:'timeline.splitAtPlayhead'})).toBeDisabled();
   });

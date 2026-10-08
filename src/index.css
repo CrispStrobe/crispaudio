@@ -516,10 +516,9 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
 .timeline-command-strip .timeline-tool, .timeline-command-strip button { white-space:nowrap; }
 .timeline-command-strip > .timeline-clip-actions { display:flex; }
 
-.icon-tool { position:relative; width:44px; min-width:44px; padding:0!important; justify-content:center; overflow:visible; }
-.tool-label { display:none; position:fixed; z-index:100; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border-subtle); border-radius:6px; padding:6px 10px; font-size:12px; max-width:220px; white-space:normal; transform:translateY(38px); box-shadow:0 3px 12px #0008; pointer-events:none; }
-.icon-tool:focus-visible .tool-label,.tool-label-touch {display:block;}
-@media (hover:hover) { .icon-tool:hover .tool-label {display:block;} }
+.icon-tool { position:relative; display:inline-grid; place-items:center; flex:0 0 44px; width:44px; height:44px; min-width:44px; padding:0!important; gap:0; overflow:visible; }
+.icon-tool > svg { display:block; margin:0; grid-area:1 / 1; flex-shrink:0; }
+.tool-label { display:block; position:fixed; z-index:1001; background:var(--bg-secondary); color:var(--text-primary); border:1px solid var(--border-subtle); border-radius:6px; padding:6px 10px; font-size:12px; max-width:220px; white-space:normal; box-shadow:0 3px 12px #0008; pointer-events:none; -webkit-user-select:none; user-select:none; }
 .timeline-main-tools > .icon-tool > svg {display:block;}
 @media (max-width:767px) { .timeline-clip-actions .clip-split-selected {display:flex;} }
 @media (max-width:767px) {
@@ -563,3 +562,15 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* Explicit WebKit rules: controls never select labels, icons stay centered
+   even while their background is highlighted or their hit target expands. */
+.app-shell { -webkit-user-select:none; user-select:none; }
+.app-shell button, .app-shell nav, .app-shell label, .app-shell .nav-label {
+  -webkit-user-select:none; user-select:none;
+}
+.timeline-transport > button { display:inline-grid; place-items:center; width:44px; height:44px; padding:0; gap:0; }
+.timeline-transport > button > svg { display:block; margin:0; grid-area:1 / 1; }
+.timeline-main-tools { display:flex; flex-wrap:nowrap; }
+.timeline-media-actions { display:contents; }
+.toolbar-overflow-menu { position:fixed; z-index:1000; -webkit-user-select:none; user-select:none; }

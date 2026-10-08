@@ -3,7 +3,7 @@ import { TimelineHelp } from './TimelineHelp';
 import { TimelineWorkspace, type WorkspaceTab } from './TimelineWorkspace';
 import { Library } from 'lucide-react';
 import { ToolButton } from '../common/ToolButton';
-import { FilePlus2, Scan, CircleHelp, AlignHorizontalJustifyCenter } from 'lucide-react';
+import { FilePlus2, Scan, CircleHelp, AlignHorizontalJustifyCenter, AudioLines } from 'lucide-react';
 import { timelineDuration } from '../../lib/timelineView';
 import { TimelineNavigation } from './TimelineNavigation';
 import { TrackFiles } from './TrackFiles';
@@ -560,9 +560,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={ZoomIn} label={t('timeline.zoomIn')} onClick={handleZoomIn}/>
         <ToolButton icon={Magnet} label={t('timeline.snap')} aria-pressed={store.snapEnabled} onClick={()=>store.setSnapEnabled(!store.snapEnabled)}/>
         <ToolButton icon={AlignHorizontalJustifyCenter} label={t('alignment.title')} disabled={store.project.tracks.length<2} onClick={()=>{useProjectStore.getState().setIsPlaying(false);setAlignmentOpen(true);}}/>
-        <select aria-label={t('alignment.display')} title={t(waveformMode === 'normalized' ? 'alignment.normalizedHelp' : 'alignment.levelHelp')} className="bg-gray-800 rounded min-h-11 px-2 text-xs text-gray-200" value={waveformMode} onChange={e=>setWaveformMode(e.target.value as 'normalized'|'level')}>
-          <option value="normalized">{t('alignment.normalized')}</option><option value="level">{t('alignment.level')}</option>
-        </select>
+        <ToolButton icon={AudioLines} label={t(waveformMode === 'normalized' ? 'alignment.normalizedHelp' : 'alignment.levelHelp')} aria-pressed={waveformMode === 'normalized'} onClick={()=>setWaveformMode(mode=>mode==='normalized'?'level':'normalized')}/>
         <label className="text-xs text-gray-400 flex items-center gap-2">{t('editor.trackHeight')}
           <input aria-label={t('editor.trackHeight')} className="slider-styled w-24" type="range" min={24} max={640} value={store.trackHeight} onChange={e => store.setTrackHeight(+e.target.value)} />
         </label>

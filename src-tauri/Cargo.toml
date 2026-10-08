@@ -1,6 +1,6 @@
 [package]
 name = "crispaudio"
-version = "0.6.5"
+version = "0.6.6"
 description = "CrispAudio - Integrated Audio Workstation"
 authors = ["CrispStrobe"]
 license = "MIT"
