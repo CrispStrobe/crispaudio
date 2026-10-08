@@ -1,3 +1,17 @@
+# Media workspace progress — local 0.6.0
+
+Implemented multiple picture sources on one composition lane; linked AV editing;
+frame trim/slip/ripple, configurable grid and markers; saved sync and optional audio
+drift correction; reviewed mic switching, shared automation, noise reduction and
+loudness measurement; transcript exchange/editing; optional resizable workspace;
+proxies, cancellation, recovery and media relocation. CLI recipes and linked-source
+rendering share the internal desktop media crate. See docs/MEDIA_WORKSPACE.md.
+
+Remaining architecture work: fully paged GUI audio (CLI already streams files),
+stacked multicam/linked clip rate changes, native mobile video composition and
+physical-device tests. These are not claimed by 0.6.0. Browser/touch checks do not
+prove iOS native behavior. Keep advanced transition preview limitations visible.
+
 ## Precision and picture editing (2026-10-08, local 0.5.0)
 
 Implemented fitted video overview, draggable playhead, magnetic edges, exact/ms/sample

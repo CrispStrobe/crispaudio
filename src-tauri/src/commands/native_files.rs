@@ -162,7 +162,10 @@ mod tests {
     #[test]
     fn pending_paths_drain_once() {
         let state = OpenedFiles::default();
-        state.record(&[PathBuf::from("/tmp/a.wav"), PathBuf::from("/tmp/b.crispaudio")]);
+        state.record(&[
+            PathBuf::from("/tmp/a.wav"),
+            PathBuf::from("/tmp/b.crispaudio"),
+        ]);
 
         assert_eq!(state.take_pending().len(), 2);
         assert!(state.take_pending().is_empty());

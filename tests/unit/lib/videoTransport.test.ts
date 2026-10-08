@@ -1,0 +1,12 @@
+import {beforeEach,afterEach,describe,it,expect,vi} from 'vitest';
+import {syncVideoElement,waitForPreviewFrame} from '../../../src/lib/videoTransport';
+beforeEach(()=>{vi.spyOn(HTMLMediaElement.prototype,'pause').mockImplementation(()=>{});vi.spyOn(HTMLMediaElement.prototype,'play').mockResolvedValue();});
+afterEach(()=>{document.body.innerHTML='';vi.restoreAllMocks();vi.useRealTimers();});
+function video(){const element=document.createElement('video');Object.defineProperty(element,'readyState',{value:2,configurable:true});return element;}
+describe('preview decoder scheduling',()=>{
+ it('does not replace a pending seek on successive transport ticks',()=>{const element=video();let seeking=false,position=0,count=0;Object.defineProperty(element,'seeking',{get:()=>seeking});Object.defineProperty(element,'currentTime',{get:()=>position,set:value=>{position=value;seeking=true;count++;}});syncVideoElement(element,1,true,()=>{});for(let i=0;i<100;i++)syncVideoElement(element,1+i/25,true,()=>{});expect(count).toBe(1);expect(position).toBe(1);});
+ it('seeks accurately while paused and does not start playback during the seek',()=>{const element=video();let seeking=false;Object.defineProperty(element,'seeking',{get:()=>seeking});Object.defineProperty(element,'currentTime',{get:()=>0,set:()=>{seeking=true;}});syncVideoElement(element,.025,false,()=>{});expect(seeking).toBe(true);expect(element.play).not.toHaveBeenCalled();});
+ it('does not stop audio-only playback',async()=>{await expect(waitForPreviewFrame(new AbortController().signal)).resolves.toBeUndefined();});
+ it('waits for a visible decoded first frame',async()=>{vi.useFakeTimers();const element=video();element.dataset.timelinePreview='';Object.defineProperty(element,'readyState',{value:1,configurable:true});document.body.append(element);let done=false;const pending=waitForPreviewFrame(new AbortController().signal).then(()=>{done=true;});await vi.advanceTimersByTimeAsync(120);expect(done).toBe(false);Object.defineProperty(element,'readyState',{value:2});await vi.advanceTimersByTimeAsync(41);await pending;expect(done).toBe(true);});
+ it('cancels a first-frame wait',async()=>{vi.useFakeTimers();const loading=document.createElement('div');loading.dataset.previewLoading='true';document.body.append(loading);const abort=new AbortController(),pending=waitForPreviewFrame(abort.signal);const rejected=expect(pending).rejects.toThrow();abort.abort();await vi.advanceTimersByTimeAsync(41);await rejected;});
+});

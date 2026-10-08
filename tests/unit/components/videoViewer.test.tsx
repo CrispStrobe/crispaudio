@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearPreviewCache } from '../../../src/lib/previewCache';
 import { VideoViewer } from '../../../src/components/timeline/VideoViewer';
 import { useProjectStore } from '../../../src/stores/projectStore';
 const native=vi.hoisted(()=>({invoke:vi.fn(),setFullscreen:vi.fn().mockResolvedValue(undefined)}));
@@ -8,6 +9,7 @@ vi.mock('@tauri-apps/api/window',()=>({getCurrentWindow:()=>({isFullscreen:async
 vi.mock('react-i18next',()=>({useTranslation:()=>({t:(key:string)=>key})}));
 vi.mock('../../../src/components/timeline/VideoControls',()=>({VideoControls:()=>null}));
 beforeEach(()=>{
+  clearPreviewCache();
   native.invoke.mockReset().mockResolvedValue('/camera.mp4');native.setFullscreen.mockClear();
   vi.spyOn(HTMLMediaElement.prototype,'pause').mockImplementation(()=>{});
   Object.assign(window,{__TAURI_INTERNALS__:{}});

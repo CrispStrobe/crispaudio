@@ -1,9 +1,10 @@
+import { moveClips, trimClips, linkedIds, splitClips, removeClips } from '../lib/projectEdits';
 // ---------------------------------------------------------------------------
 // CrispAudio — projectStore
 // Zustand store with temporal (undo/redo) middleware for timeline state.
 // ---------------------------------------------------------------------------
 
-import { videoTimelineDuration } from '../lib/videoEditing';
+import { videoTimelineDuration, videoClips } from '../lib/videoEditing';
 import { create } from 'zustand';
 import { temporal } from 'zundo';
 import { createHistoryGesture } from './historyGesture';
@@ -65,7 +66,7 @@ interface ProjectState {
   addTrack: (name?: string) => void;
   removeTrack: (trackId: string) => void;
   reorderTrack: (trackId: string, newIndex: number) => void;
-  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve'>>) => void;
+  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'effects'>>) => void;
 
   // Segment actions
   addSegment: (trackId: string, segment: AudioSegment) => void;
@@ -270,6 +271,14 @@ export const useProjectStore = create<ProjectState>()(
           const found = findSegmentById(state.project.tracks, segmentId);
           if (!found) return state;
 
+          if (found.segment.linkGroup) {
+            const project=moveClips(state.project,[segmentId],Math.max(0,newStartTime)-found.segment.startTime);
+            if(newTrackId && newTrackId!==found.track.id){
+              const moved=project.tracks.flatMap(t=>t.segments).find(c=>c.id===segmentId)!;
+              project.tracks=project.tracks.map(t=>({...t,segments:t.segments.filter(c=>c.id!==segmentId).concat(t.id===newTrackId?[{...moved,trackId:newTrackId}]:[])}));
+            }
+            return {project};
+          }
           const targetTrackId = newTrackId ?? found.track.id;
           const clampedStart = Math.max(0, newStartTime);
           if (targetTrackId === found.track.id && clampedStart === found.segment.startTime) return state;
@@ -306,6 +315,7 @@ export const useProjectStore = create<ProjectState>()(
           const found = findSegmentById(state.project.tracks, segmentId);
           if (!found) return state;
 
+          if(found.segment.linkGroup)return {project:trimClips(state.project,[segmentId],side,side==='left'?found.segment.duration-newDuration:newDuration-found.segment.duration,state.sources)};
           const { segment } = found;
           let patch: Partial<AudioSegment>;
 
@@ -344,6 +354,7 @@ export const useProjectStore = create<ProjectState>()(
           const found = findSegmentById(state.project.tracks, segmentId);
           if (!found) return state;
 
+          if(found.segment.linkGroup)return {project:splitClips(state.project,[segmentId],splitTime)};
           const { track, segment } = found;
           const localSplit = splitTime - segment.startTime;
           if (localSplit <= 0 || localSplit >= segment.duration) return state;
@@ -609,7 +620,7 @@ export const useProjectStore = create<ProjectState>()(
             selection: {
               startTime: segment.startTime,
               endTime: segment.startTime + segment.duration,
-              segmentIds: [segmentId],
+              segmentIds: linkedIds(state.project,[segmentId]),
             },
           };
         });
@@ -624,7 +635,7 @@ export const useProjectStore = create<ProjectState>()(
         const segments: AudioSegment[] = [];
         const sourceIds = new Set<string>();
 
-        for (const id of selection.segmentIds) {
+        for (const id of linkedIds(project,selection.segmentIds)) {
           const found = findSegmentById(project.tracks, id);
           if (found) {
             segments.push(found.segment);
@@ -632,25 +643,17 @@ export const useProjectStore = create<ProjectState>()(
           }
         }
 
+        const expanded=linkedIds(project,selection.segmentIds);
         set((state) => {
-          const tracks = state.project.tracks.map((track) => ({
-            ...track,
-            segments: track.segments.filter(
-              (s) => !selection.segmentIds.includes(s.id),
-            ),
-          }));
           return {
             clipboard: {
               operation: 'cut',
+              videos:videoClips(project.video).filter(c=>expanded.includes(c.id)),
               segments,
               sourceIds: Array.from(sourceIds),
             },
             selection: null,
-            project: {
-              ...state.project,
-              tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
-            },
+            project: removeClips(state.project,expanded),
           };
         });
       },
@@ -662,7 +665,7 @@ export const useProjectStore = create<ProjectState>()(
         const segments: AudioSegment[] = [];
         const sourceIds = new Set<string>();
 
-        for (const id of selection.segmentIds) {
+        for (const id of linkedIds(project,selection.segmentIds)) {
           const found = findSegmentById(project.tracks, id);
           if (found) {
             segments.push(found.segment);
@@ -673,6 +676,7 @@ export const useProjectStore = create<ProjectState>()(
         set({
           clipboard: {
             operation: 'copy',
+            videos:videoClips(project.video).filter(c=>linkedIds(project,selection.segmentIds).includes(c.id)),
             segments,
             sourceIds: Array.from(sourceIds),
           },
@@ -681,19 +685,24 @@ export const useProjectStore = create<ProjectState>()(
 
       paste: (atTime) => {
         const { clipboard, playheadPosition } = get();
-        if (!clipboard.segments.length) return;
+        if (!clipboard.segments.length&&!clipboard.videos?.length) return;
 
         const pasteTime = atTime ?? playheadPosition;
-        const minStart = Math.min(...clipboard.segments.map((s) => s.startTime));
+        const minStart = Math.min(...[...clipboard.segments,...(clipboard.videos??[])].map((s) => s.startTime));
         const offset = pasteTime - minStart;
 
         set((state) => {
+          const groups=new Map<string,string>();
+          const groupFor=(group?:string)=>{if(!group)return undefined;if(!groups.has(group))groups.set(group,uuid());return groups.get(group);};
+          const videos=(clipboard.videos??[]).map(clip=>({...clip,id:uuid(),linkGroup:groupFor(clip.linkGroup),startTime:Math.max(0,clip.startTime+offset)}));
+          const video=state.project.video&&videos.length?{...state.project.video,clips:[...videoClips(state.project.video),...videos],inPoint:undefined,outPoint:undefined}:state.project.video;
           // Group pasted segments by their original trackId; place on same track
           const newSegmentsByTrack = new Map<string, AudioSegment[]>();
           for (const seg of clipboard.segments) {
             const newSeg: AudioSegment = {
               ...seg,
               id: uuid(),
+              linkGroup:groupFor(seg.linkGroup),
               startTime: Math.max(0, seg.startTime + offset),
             };
             const list = newSegmentsByTrack.get(seg.trackId) ?? [];
@@ -711,7 +720,8 @@ export const useProjectStore = create<ProjectState>()(
           const newIds = Array.from(newSegmentsByTrack.values())
             .flat()
             .map((s) => s.id);
-          const pastedSegments = Array.from(newSegmentsByTrack.values()).flat();
+          newIds.push(...videos.map(c=>c.id));
+          const pastedSegments = [...Array.from(newSegmentsByTrack.values()).flat(),...videos];
           const minT = Math.min(...pastedSegments.map((s) => s.startTime));
           const maxT = Math.max(
             ...pastedSegments.map((s) => s.startTime + s.duration),
@@ -720,8 +730,8 @@ export const useProjectStore = create<ProjectState>()(
           return {
             project: {
               ...state.project,
-              tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
+              tracks,video,
+              duration: Math.max(videoTimelineDuration(video), computeProjectDuration(tracks)),
             },
             selection: {
               startTime: minT,
@@ -733,25 +743,8 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       deleteSelected: () => {
-        const { selection } = get();
-        if (!selection || selection.segmentIds.length === 0) return;
-
-        set((state) => {
-          const tracks = state.project.tracks.map((track) => ({
-            ...track,
-            segments: track.segments.filter(
-              (s) => !selection.segmentIds.includes(s.id),
-            ),
-          }));
-          return {
-            project: {
-              ...state.project,
-              tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
-            },
-            selection: null,
-          };
-        });
+        const state=get();if(!state.selection?.segmentIds.length)return;
+        set({project:removeClips(state.project,state.selection.segmentIds),selection:null});
       },
 
       // ── Transport ─────────────────────────────────────────────────────────────

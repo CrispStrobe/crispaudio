@@ -1,16 +1,17 @@
+import { splitClips, projectClips } from '../../lib/projectEdits';
 import { ToolButton } from '../common/ToolButton';
 import { Hand, SlidersHorizontal, Scissors, Layers, Settings2, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { VideoClipSettings } from './VideoClipSettings';
 import { videoClips } from '../../lib/videoEditing';
-import { splitSelectedVideo, deleteSelection, nudgeSelection } from '../../lib/timelineEditing';
+import { deleteSelection, nudgeSelection } from '../../lib/timelineEditing';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { projectHistoryGesture, useProjectStore } from '../../stores/projectStore';
+import { useProjectStore } from '../../stores/projectStore';
 import { Modal } from '../common/Modal';
 import { SegmentEffectsPanel } from './SegmentEffectsPanel';
 
 /** Actions are visible and keyboard/touch accessible; no right-click required. */
-export function TimelineActions({ touchArrange, onTouchArrange }: { touchArrange: boolean; onTouchArrange: () => void }) {
+export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: { touchArrange: boolean; onTouchArrange: () => void; onInspector?:()=>void }) {
   const { t } = useTranslation();
   const [mixer, setMixer] = useState(false);
   const [inspector, setInspector] = useState(false);
@@ -30,15 +31,12 @@ export function TimelineActions({ touchArrange, onTouchArrange }: { touchArrange
       <ToolButton icon={Hand} label={t(touchArrange?'timeline.touchArrangeOn':'timeline.touchArrangeOff')} className="touch-arrange-toggle" aria-pressed={touchArrange} onClick={onTouchArrange}/>
       <ToolButton icon={SlidersHorizontal} label={t('timeline.mixer')} disabled={!tracks.length} onClick={()=>setMixer(true)}/>
       <ToolButton icon={Scissors} label={t('timeline.splitAtPlayhead')} className="clip-split-selected" disabled={!splittable.length} onClick={()=>{
-        const state=useProjectStore.getState();projectHistoryGesture.begin();
-        try {selected.forEach(clip=>state.splitSegment(clip.id,position));splitSelectedVideo(position);} finally {projectHistoryGesture.end();}
-        state.setSelection(null);
+        const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,selection?.segmentIds??[],position),selection:null});
       }}/>
       <ToolButton icon={Layers} label={t('timeline.splitAll')} onClick={()=>{
-        const state=useProjectStore.getState();projectHistoryGesture.begin();
-        try {tracks.forEach(track=>track.segments.forEach(clip=>state.splitSegment(clip.id,position)));splitSelectedVideo(position,true);}finally{projectHistoryGesture.end();}state.setSelection(null);
+        const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,projectClips(state.project).map(c=>c.id),position),selection:null});
       }}/>
-      <ToolButton icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>setInspector(true)}/>
+      <ToolButton icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>onInspector?onInspector():setInspector(true)}/>
       <ToolButton icon={Trash2} label={t('timeline.delete')} disabled={!allSelected.length} onClick={deleteSelection}/>
       <span className="text-xs text-gray-400 hidden lg:block">{t('editing.nudge')}</span>
       <ToolButton icon={ArrowLeft} label={t('editing.nudgeLeft')} onClick={()=>nudgeSelection(-nudge)}/>

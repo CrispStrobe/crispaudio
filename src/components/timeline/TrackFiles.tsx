@@ -19,7 +19,9 @@ export function TrackFiles({ context, onError }: { context: () => BaseAudioConte
       const incoming = await deserializeProject(json, context());
       const remap = new Map([...incoming.sources.keys()].map(id => [id, crypto.randomUUID()]));
       const sources = new Map([...incoming.sources].map(([id, source]) => [remap.get(id)!, {...source, id:remap.get(id)!}]));
-      const tracks = incoming.project.tracks.map(track => { const id=crypto.randomUUID(); return {...track,id,segments:track.segments.map(clip => ({...clip,id:crypto.randomUUID(),trackId:id,sourceId:remap.get(clip.sourceId) ?? (()=>{throw new Error('Missing audio in saved track');})()}))}; });
+      const groups=new Map<string,string>();
+      const remapGroup=(group?:string)=>{if(!group)return undefined;if(!groups.has(group))groups.set(group,crypto.randomUUID());return groups.get(group);};
+      const tracks = incoming.project.tracks.map(track => { const id=crypto.randomUUID(); return {...track,id,segments:track.segments.map(clip => ({...clip,id:crypto.randomUUID(),linkGroup:remapGroup(clip.linkGroup),trackId:id,sourceId:remap.get(clip.sourceId) ?? (()=>{throw new Error('Missing audio in saved track');})()}))}; });
       useProjectStore.setState(state => { const project={...state.project,tracks:[...state.project.tracks,...tracks]}; return {project:{...project,duration:timelineDuration(project)},sources:new Map([...state.sources,...sources]),isPlaying:false,selection:null}; });
     } catch (err) {onError(String(err));} finally {setBusy(false);}
   };

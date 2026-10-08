@@ -16,7 +16,7 @@ describe('linked interview projects', () => {
       peaks: { min: new Float32Array(), max: new Float32Array() },
       filePath: '/interview/aligned.wav', provenance: { path: '/original.wav', offset: 12.5, rate: 0.99999 } };
     const saved = JSON.parse(serializeProject(project, new Map([[source.id, source]]), 'linked'));
-    expect(saved.version).toBe(2);
+    expect(saved.version).toBe(3);
     expect(saved.sources[0]).toEqual({ id: 'source', name: 'Room', sampleRate: 48000,
       channels: 2, duration: 10, path: '/interview/aligned.wav', provenance: source.provenance });
     expect(saved.project.bitDepth).toBe(24);

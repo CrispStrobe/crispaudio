@@ -27,7 +27,12 @@ export async function saveProjectFile(
         filters: FILTERS,
       });
       if (!path) return false;
-      await writeTextFile(path, json);
+      let contents=json;
+      const sources=(JSON.parse(json) as {sources?:{path?:string}[]}).sources;
+      if(sources?.some(source=>source.path&&/[/\\](?:Caches|\.cache|cache|AppData)[/\\]/.test(source.path))){
+        const {invoke}=await import('@tauri-apps/api/core');contents=await invoke<string>('persist_cached_media',{json,projectPath:path});
+      }
+      await writeTextFile(path, contents);
       return true;
     } catch (err) {
       throw new Error(`Cannot save project: ${String(err)}`, { cause: err });

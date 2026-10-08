@@ -1,3 +1,5 @@
+import { TimelineWorkspace, type WorkspaceTab } from './TimelineWorkspace';
+import { Library } from 'lucide-react';
 import { ToolButton } from '../common/ToolButton';
 import { FilePlus2, Scan, Wrench } from 'lucide-react';
 import { timelineDuration } from '../../lib/timelineView';
@@ -213,6 +215,7 @@ export const TimelinePanel: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const tracksAreaRef = useRef<HTMLDivElement>(null);
   const touchPan = useRef<{x: number; y: number; scroll: number} | null>(null);
+  const [workspace,setWorkspace]=useState<WorkspaceTab|null>(null);
   const [resetOpen, setResetOpen] = useState(false);
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [projectError, setProjectError] = useState('');
@@ -238,6 +241,7 @@ export const TimelinePanel: React.FC = () => {
 
   useTimelineTransport(engineRef, audioEngine);
 
+  useEffect(()=>{const failed=(e:Event)=>setProjectError((e as CustomEvent<string>).detail);window.addEventListener('crispaudio-recovery-error',failed);window.addEventListener('crispaudio-edit-error',failed);return()=>{window.removeEventListener('crispaudio-recovery-error',failed);window.removeEventListener('crispaudio-edit-error',failed);};},[]);
   // Track canvas width from container resize
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -368,7 +372,7 @@ export const TimelinePanel: React.FC = () => {
         try {
           const json = new TextDecoder().decode(file.bytes);
           const { project, sources } = await deserializeProject(json, audioEngine.getContext());
-          store.loadProjectState(project, sources);
+          store.loadProjectState(project, new Map([...useProjectStore.getState().sources,...sources]));
         } catch (err) {
           console.error(`Failed to open project ${file.name}:`, err);
           setProjectError(`${file.name}: ${String(err)}`);
@@ -439,13 +443,15 @@ export const TimelinePanel: React.FC = () => {
       const json = await openProjectFile();
       if (!json) return;
       const ctx = audioEngine.getContext();
-      const { project, sources } = await deserializeProject(json, ctx);
-      store.loadProjectState(project, sources);
+      const { project, sources } = await deserializeProject(json, ctx,async path=>{
+        const {open}=await import('@tauri-apps/plugin-dialog');const replacement=await open({title:`${t('workspace.relink')}: ${path}`,multiple:false});return typeof replacement==='string'?replacement:null;
+      });
+      store.loadProjectState(project, new Map([...useProjectStore.getState().sources,...sources]));
     } catch (err) {
       console.error('Open project failed:', err);
       setProjectError(String(err));
     }
-  }, [audioEngine, store]);
+  }, [audioEngine, store, t]);
 
   // Offline-render the whole project and download it as a WAV.
   const handleExportMix = useCallback(async () => {
@@ -485,6 +491,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Download} label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} />
         <AutoSyncTracks onError={setProjectError} />
+        <ToolButton icon={Library} label={t('workspace.title')} aria-pressed={workspace!==null} onClick={()=>setWorkspace(old=>old?null:'media')}/>
         <ToolButton icon={Wrench} label={t('timeline.viewTools')} onClick={() => setToolsOpen(true)}/>
         <Modal isOpen={toolsOpen} onClose={() => setToolsOpen(false)} title={t('timeline.viewTools')}>
           <div className="space-y-3">
@@ -539,10 +546,11 @@ export const TimelinePanel: React.FC = () => {
           <input aria-label={t('editor.trackHeight')} className="slider-styled w-24" type="range" min={64} max={240} value={store.trackHeight} onChange={e => store.setTrackHeight(+e.target.value)} />
         </label>
       </div>
-      <TimelineActions touchArrange={touchArrange} onTouchArrange={() => setTouchArrange((old) => !old)} />
+      <TimelineActions onInspector={()=>setWorkspace('edit')} touchArrange={touchArrange} onTouchArrange={() => setTouchArrange((old) => !old)} />
       </div>
 
       {/* Main area: headers + canvas */}
+      <div className="timeline-workarea flex flex-1 min-h-0 relative">
       <div ref={tracksAreaRef} className="timeline-tracks-area relative flex flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
         onTouchStart={e => { const p = e.touches[0]; if (!touchArrange && p && !(e.target as HTMLElement).closest('[data-video-overview], [data-timeline-playhead]')) touchPan.current = {x:p.clientX,y:p.clientY,scroll:useProjectStore.getState().scrollOffset}; }}
         onTouchEnd={() => {touchPan.current=null;}}
@@ -655,6 +663,8 @@ export const TimelinePanel: React.FC = () => {
 
       </div>
 
+      {workspace&&<TimelineWorkspace tab={workspace} onTab={setWorkspace} onClose={()=>setWorkspace(null)}/>}
+      </div>
       <TimelineNavigation width={canvasWidth} />
       {/* Status bar */}
       <div className="flex items-center gap-4 px-4 py-1 bg-gray-900 border-t border-gray-800 text-xs text-gray-500 flex-shrink-0 select-none">

@@ -7,7 +7,7 @@ import React, { useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTimelineCanvasInvalidation } from './useTimelineCanvasInvalidation';
 import { PlayheadHandle } from './PlayheadHandle';
-import { useProjectStore } from '../../stores/projectStore';
+import { projectHistoryGesture, useProjectStore } from '../../stores/projectStore';
 import { RULER_HEIGHT } from '../../hooks/useTimeline';
 
 interface TimelineRulerProps {
@@ -46,6 +46,7 @@ function formatRulerTime(seconds: number, interval: number): string {
 export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { t } = useTranslation();
+  const markers=useProjectStore(s=>s.project.markers);
   const zoomLevel = useProjectStore((s) => s.zoomLevel);
   const scrollOffset = useProjectStore((s) => s.scrollOffset);
   const setPlayheadPosition = useProjectStore((s) => s.setPlayheadPosition);
@@ -155,6 +156,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
       onClick={handleClick}
       aria-label={t('timeline.ruler')}
     />
+    {markers?.map(marker=><button key={marker.id} title={marker.name} aria-label={marker.name} className="absolute top-0 w-6 h-5 text-amber-300 bg-amber-950/70 rounded touch-none" style={{left:(marker.time-scrollOffset)*zoomLevel-12}} onClick={()=>setPlayheadPosition(marker.time)} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);projectHistoryGesture.begin();}} onPointerMove={e=>{if(!e.currentTarget.hasPointerCapture(e.pointerId))return;const rect=e.currentTarget.parentElement!.getBoundingClientRect();const time=Math.max(0,scrollOffset+(e.clientX-rect.left)/zoomLevel);const state=useProjectStore.getState();useProjectStore.setState({project:{...state.project,markers:state.project.markers?.map(m=>m.id===marker.id?{...m,time}:m)}});}} onPointerUp={e=>{e.currentTarget.releasePointerCapture(e.pointerId);projectHistoryGesture.end();}} onPointerCancel={()=>projectHistoryGesture.end()}>◆</button>)}
     <PlayheadHandle width={width}/>
     </div>
   );

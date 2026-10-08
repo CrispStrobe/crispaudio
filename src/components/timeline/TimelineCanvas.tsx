@@ -1,3 +1,4 @@
+import { gainAt } from '../../lib/mixAutomation';
 // ---------------------------------------------------------------------------
 // CrispAudio — TimelineCanvas
 // Canvas-based waveform renderer and interaction handler.
@@ -443,6 +444,13 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       const track = tracks[ti];
       for (const seg of track.segments) {
         drawSegment(ctx, seg, track, ti, selectedIds.has(seg.id));
+      }
+      if(track.automation?.length){
+        const end=store.scrollOffset+cssWidth/store.zoomLevel;
+        const points=[{time:store.scrollOffset,value:gainAt(track.automation,store.scrollOffset)},...track.automation.filter(p=>p.time>store.scrollOffset&&p.time<end),{time:end,value:gainAt(track.automation,end)}];
+        ctx.save();ctx.strokeStyle='#facc15';ctx.fillStyle='#facc15';ctx.lineWidth=2;ctx.beginPath();
+        points.forEach((point,i)=>{const x=(point.time-store.scrollOffset)*store.zoomLevel,y=(ti+1)*trackHeight-8-Math.min(2,point.value)/2*(trackHeight-24);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.stroke();
+        for(const point of points.slice(1,-1)){const x=(point.time-store.scrollOffset)*store.zoomLevel,y=(ti+1)*trackHeight-8-Math.min(2,point.value)/2*(trackHeight-24);ctx.beginPath();ctx.arc(x,y,3,0,2*Math.PI);ctx.fill();}ctx.restore();
       }
     }
 

@@ -4,6 +4,7 @@
 // for the timeline canvas.
 // ---------------------------------------------------------------------------
 
+import { projectClips } from '../lib/projectEdits';
 import { snapClipStart } from '../lib/timelineSnap';
 import { deleteSelection, nudgeSelection } from '../lib/timelineEditing';
 import { useRef, useCallback, useEffect } from 'react';
@@ -114,7 +115,8 @@ export function useTimeline() {
     (time: number): number => {
       if (!snapEnabled) return time;
       // Snap to 0.1s grid (adjustable later)
-      const grid = 0.1;
+      const grid = useProjectStore.getState().project.snapGrid??0.1;
+      if(!grid)return time;
       return Math.round(time / grid) * grid;
     },
     [snapEnabled],
@@ -261,7 +263,7 @@ export function useTimeline() {
       if (ds.kind === 'move') {
         const dtTime = dx / zoomLevel;
         const clip = store.project.tracks.flatMap(track => track.segments).find(clip => clip.id === ds.segmentId);
-        const edges = [0, store.playheadPosition, ...store.project.tracks.flatMap(track => track.segments.filter(clip => clip.id !== ds.segmentId).flatMap(clip => [clip.startTime, clip.startTime + clip.duration]))];
+        const edges = [0, store.playheadPosition, ...(store.project.markers??[]).map(m=>m.time), ...store.project.tracks.flatMap(track => track.segments.filter(clip => clip.id !== ds.segmentId).flatMap(clip => [clip.startTime, clip.startTime + clip.duration]))];
         const newStart = snapClipStart(ds.originalStartTime + dtTime, clip?.duration ?? 0, edges, zoomLevel, store.snapEnabled && !e.altKey);
         const newTrackIndex = Math.max(
           0,
@@ -271,16 +273,16 @@ export function useTimeline() {
           ),
         );
         const newTrackId = store.project.tracks[newTrackIndex]?.id;
-        store.moveSegment(ds.segmentId, newStart, newTrackId);
+        try{store.moveSegment(ds.segmentId, newStart, newTrackId);}catch{/* Retain the last valid linked placement. */}
       } else if (ds.kind === 'trim-left') {
         const dtTime = dx / zoomLevel;
         const newDuration = Math.max(0.01, ds.originalDuration - dtTime);
         const newOffset = Math.max(0, ds.originalOffset + dtTime);
-        store.trimSegment(ds.segmentId, 'left', newDuration, newOffset);
+        try{store.trimSegment(ds.segmentId, 'left', newDuration, newOffset);}catch{/* Retain valid linked trim. */}
       } else if (ds.kind === 'trim-right') {
         const dtTime = dx / zoomLevel;
         const newDuration = Math.max(0.01, ds.originalDuration + dtTime);
-        store.trimSegment(ds.segmentId, 'right', newDuration);
+        try{store.trimSegment(ds.segmentId, 'right', newDuration);}catch{/* Retain valid linked trim. */}
       } else if (ds.kind === 'fade-in') {
         const dtTime = dx / zoomLevel;
         const newFade = Math.max(0, ds.originalFadeDuration + dtTime);
@@ -392,15 +394,8 @@ export function useTimeline() {
       if (ctrl && e.code === 'KeyA') {
         e.preventDefault();
         // Select all segments
-        const allIds: string[] = [];
-        let minStart = Infinity, maxEnd = -Infinity;
-        for (const track of store.project.tracks) {
-          for (const seg of track.segments) {
-            allIds.push(seg.id);
-            minStart = Math.min(minStart, seg.startTime);
-            maxEnd = Math.max(maxEnd, seg.startTime + seg.duration);
-          }
-        }
+        const clips=projectClips(store.project),allIds=clips.map(c=>c.id);
+        const minStart=Math.min(...clips.map(c=>c.startTime)),maxEnd=Math.max(...clips.map(c=>c.startTime+c.duration));
         if (allIds.length > 0) {
           store.setSelection({
             startTime: minStart,

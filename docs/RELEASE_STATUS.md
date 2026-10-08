@@ -122,3 +122,21 @@ audio. Sync now rejects templates with a distant correlation peak within 2% of
 the winner, excluding a 100 ms neighbourhood of one peak. Repeating tones and
 identical broadband material require review on every platform. Unique noisy
 signals, inverted quiet signals and measured clock drift remain covered.
+
+## Local 0.6.0 workspace update
+
+See MEDIA_WORKSPACE.md. New desktop work is not an Apple upload or TestFlight
+release. New project format is v3; v1/v2 inputs remain supported. Native FFmpeg
+operations are desktop-only; no iOS video engine or physical-device validation is
+claimed. GUI multi-hour audio remains bounded by decoded-buffer memory.
+
+Verified locally on 2026-10-08: 1,200 frontend tests, 13 media tests and 18
+native tests pass; ESLint, TypeScript/Vite and the macOS app build pass. Real
+FFmpeg integration covers mixed source dimensions/rates, 40 cuts without
+accumulated frame drift, linked CLI edits, rendered automation, project MP4,
+loudness and overwrite protection. Browser integration covers two cameras with
+linked audio, split/unlink, markers, ripple, transcript import/search/seek,
+rendered automation and five desktop/phone viewport sizes. Canon first-frame
+capture was checked in WebKit and Chrome; the thumbnail strip additionally uses
+a native decoded first tile to avoid WKWebView's black initial canvas. The local
+0.6.0 bundle was installed and launched with the preceding arrangement backed up.

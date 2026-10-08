@@ -25,6 +25,7 @@ jobs:
       - run: cargo build --release --manifest-path media/Cargo.toml
       - run: python3 scripts/test-media-cli.py media/target/release/crispaudio
       - run: python3 scripts/test-video-edit.py media/target/release/crispaudio
+      - run: python3 scripts/test-workspace.py media/target/release/crispaudio
   frontend:
     name: Frontend lint & test
     runs-on: ubuntu-latest
@@ -38,7 +39,7 @@ jobs:
 
       - run: npm ci
       - run: npm run lint
-      - run: npm run typecheck
+      - run: npx tsc -b --pretty false
       - run: npm test
       - run: npx vite build
 

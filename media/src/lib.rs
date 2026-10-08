@@ -1,4 +1,6 @@
 //! Internal CrispAudio desktop media operations. No GUI or ASR dependency.
+pub mod jobs;
+pub mod project_edit;
 pub mod video_edit;
 use rustfft::{num_complex::Complex, FftPlanner};
 use serde::{Deserialize, Serialize};
@@ -89,10 +91,7 @@ fn tool(name: &str) -> PathBuf {
 }
 
 fn run(name: &str, args: &[String]) -> Result<Vec<u8>> {
-    let out = Command::new(tool(name))
-        .args(args)
-        .output()
-        .map_err(|e| format!("Cannot run {name}: {e}. Install FFmpeg and FFprobe."))?;
+    let out = run_command(Command::new(tool(name)).args(args))?;
     if !out.status.success() {
         return Err(format!(
             "{name} failed: {}",
@@ -894,4 +893,207 @@ mod tests {
         assert!(measure_samples(&transient, 10).suggested_gain_db < 0.0);
         assert_eq!(measure_samples(&[0.0; 100], 10).suggested_gain_db, 0.0);
     }
+}
+
+/// Reusable desktop preparation. Cache ownership and filenames belong to the caller.
+pub fn prepare_asset(path: &str, output: &str, proxy: bool) -> Result<()> {
+    if Path::new(output).exists() {
+        return Err("Output already exists".into());
+    }
+    if proxy {
+        run("ffmpeg", &strings(&["-v","error","-nostdin","-n","-threads","1","-i",path,"-an","-vf","scale=640:360:force_original_aspect_ratio=decrease,pad=640:360:(ow-iw)/2:(oh-ih)/2","-c:v","libx264","-preset","ultrafast","-crf","26","-threads","2","-movflags","+faststart",output]))?;
+    } else {
+        run(
+            "ffmpeg",
+            &strings(&[
+                "-v",
+                "error",
+                "-nostdin",
+                "-n",
+                "-threads",
+                "1",
+                "-i",
+                path,
+                "-vn",
+                "-ac",
+                "2",
+                "-ar",
+                "48000",
+                "-c:a",
+                "pcm_s16le",
+                output,
+            ]),
+        )?;
+    }
+    Ok(())
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Loudness {
+    pub integrated_lufs: f64,
+    pub true_peak_db: f64,
+    pub gain_db: f64,
+}
+/// Measurement only: does not rewrite or normalize the original recording.
+pub fn loudness(path: &str) -> Result<Loudness> {
+    let output = run_command(Command::new(tool("ffmpeg")).args([
+        "-hide_banner",
+        "-nostdin",
+        "-threads",
+        "1",
+        "-i",
+        path,
+        "-vn",
+        "-af",
+        "loudnorm=I=-16:TP=-1:LRA=11:print_format=json",
+        "-f",
+        "null",
+        "-",
+    ]))?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).into_owned());
+    }
+    let text = String::from_utf8_lossy(&output.stderr);
+    let start = text.rfind('{').ok_or("Missing loudness measurement")?;
+    let doc: serde_json::Value = serde_json::from_str(
+        &text[start..=text.rfind('}').ok_or("Incomplete loudness measurement")?],
+    )
+    .map_err(|e| e.to_string())?;
+    let read = |key: &str| -> Result<f64> {
+        let value = doc[key]
+            .as_str()
+            .ok_or("Missing loudness field")?
+            .parse::<f64>()
+            .map_err(|e| e.to_string())?;
+        if value.is_finite() {
+            Ok(value)
+        } else {
+            Err("Cannot normalize silence".into())
+        }
+    };
+    let integrated_lufs = read("input_i")?;
+    let true_peak_db = read("input_tp")?;
+    Ok(Loudness {
+        integrated_lufs,
+        true_peak_db,
+        gain_db: (-16.0 - integrated_lufs)
+            .min(-1.0 - true_peak_db)
+            .clamp(-60.0, 20.0),
+    })
+}
+
+fn run_command(command: &mut Command) -> Result<std::process::Output> {
+    use std::{io::Read, process::Stdio, time::Duration};
+    if jobs::cancelled() {
+        return Err("Operation cancelled".into());
+    }
+    let mut child = command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Cannot start media tool: {e}. Install FFmpeg and FFprobe."))?;
+    let mut stdout = child.stdout.take().unwrap();
+    let mut stderr = child.stderr.take().unwrap();
+    let out = std::thread::spawn(move || {
+        let mut bytes = Vec::new();
+        stdout.read_to_end(&mut bytes).map(|_| bytes)
+    });
+    let err = std::thread::spawn(move || {
+        let mut bytes = Vec::new();
+        stderr.read_to_end(&mut bytes).map(|_| bytes)
+    });
+    let status = loop {
+        if jobs::cancelled() {
+            let _ = child.kill();
+            break child.wait().map_err(|e| e.to_string())?;
+        }
+        if let Some(status) = child.try_wait().map_err(|e| e.to_string())? {
+            break status;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    };
+    let stdout = out
+        .join()
+        .map_err(|_| "Media stdout reader failed")?
+        .map_err(|e| e.to_string())?;
+    let stderr = err
+        .join()
+        .map_err(|_| "Media stderr reader failed")?
+        .map_err(|e| e.to_string())?;
+    if jobs::cancelled() {
+        return Err("Operation cancelled".into());
+    }
+    Ok(std::process::Output {
+        status,
+        stdout,
+        stderr,
+    })
+}
+
+pub fn clean_audio(path: &str, output: &str, noise_floor: f64) -> Result<()> {
+    if !noise_floor.is_finite() || !(-80.0..=-20.0).contains(&noise_floor) {
+        return Err("Noise floor must be between -80 and -20 dB".into());
+    }
+    if Path::new(output).exists() {
+        return Err("Output already exists".into());
+    }
+    let filter = format!("highpass=f=70,afftdn=nr=10:nf={noise_floor}:tn=1");
+    run(
+        "ffmpeg",
+        &strings(&[
+            "-v",
+            "error",
+            "-nostdin",
+            "-n",
+            "-threads",
+            "1",
+            "-i",
+            path,
+            "-vn",
+            "-af",
+            &filter,
+            "-ar",
+            "48000",
+            "-c:a",
+            "pcm_s24le",
+            output,
+        ]),
+    )?;
+    Ok(())
+}
+
+/// A first tile independent of WKWebView's first canvas-frame readiness.
+pub fn first_thumbnail(path: &str, output: &str) -> Result<()> {
+    if Path::new(output).exists() {
+        return Err("Output already exists".into());
+    }
+    let duration = probe(path)?.duration;
+    let at = 0.12f64.min(duration / 2.0).to_string();
+    run(
+        "ffmpeg",
+        &strings(&[
+            "-v",
+            "error",
+            "-nostdin",
+            "-n",
+            "-threads",
+            "1",
+            "-ss",
+            &at,
+            "-i",
+            path,
+            "-frames:v",
+            "1",
+            "-vf",
+            "scale=160:90:force_original_aspect_ratio=decrease,pad=160:90:(ow-iw)/2:(oh-ih)/2",
+            "-q:v",
+            "4",
+            "-threads",
+            "1",
+            "-update",
+            "1",
+            output,
+        ]),
+    )?;
+    Ok(())
 }

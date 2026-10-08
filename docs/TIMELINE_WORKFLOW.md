@@ -1,3 +1,7 @@
+> Local 0.6.0 adds [Media workspace](MEDIA_WORKSPACE.md): multiple picture sources,
+> linked AV edits, ripple/slip/markers, mic automation, transcript exchange and recovery.
+> The single-source limitations in the historical 0.5.0 walkthrough below are superseded.
+
 # Timeline workflow — local 0.5.0
 
 The Timeline is a general audio editor with optional video. A specific interview

@@ -13,6 +13,33 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Conservative rumble and FFT noise reduction, preserving the original recording.
+    CleanAudio {
+        #[arg(long)]
+        input: String,
+        #[arg(long)]
+        output: String,
+        #[arg(long, default_value_t = -45.0, allow_hyphen_values = true)]
+        noise_floor: f64,
+    },
+    /// Apply a JSON recipe to a .crispaudio project; never changes source media.
+    EditProject {
+        #[arg(long)]
+        input: String,
+        #[arg(long)]
+        recipe: String,
+        #[arg(long)]
+        output: String,
+    },
+    /// Render linked project audio to WAV (unsupported effects fail explicitly).
+    RenderProject {
+        #[arg(long)]
+        input: String,
+        #[arg(long)]
+        output: String,
+        #[arg(long)]
+        video: bool,
+    },
     /// Export a picture edit JSON {path, clips}; mix uses the edited timeline clock.
     EditVideo {
         #[arg(long)]
@@ -30,6 +57,17 @@ enum Commands {
     },
     /// Inspect duration, channels, sample rate and video presence (JSON).
     Probe { input: String },
+    /// Measure EBU R128 loudness and gain toward -16 LUFS, limited to -1 dBTP.
+    Loudness { input: String },
+    /// Prepare a lightweight silent video proxy or extracted 48 kHz stereo WAV.
+    Prepare {
+        #[arg(long)]
+        input: String,
+        #[arg(long)]
+        output: String,
+        #[arg(long)]
+        proxy: bool,
+    },
     /// Measure sample peak, RMS, activity proxy and a conservative gain suggestion (JSON).
     Levels { input: String },
     /// Find external recordings on the camera clock; writes a reviewable JSON session.
@@ -73,6 +111,40 @@ enum Commands {
 
 fn execute(cli: Cli) -> media::Result<()> {
     match cli.command {
+        Commands::CleanAudio {
+            input,
+            output,
+            noise_floor,
+        } => media::clean_audio(&input, &output, noise_floor)?,
+        Commands::EditProject {
+            input,
+            recipe,
+            output,
+        } => {
+            let load = |path: &str| -> media::Result<serde_json::Value> {
+                serde_json::from_slice(&std::fs::read(path).map_err(|e| e.to_string())?)
+                    .map_err(|e| e.to_string())
+            };
+            let edited = media::project_edit::apply(&load(&input)?, &load(&recipe)?)?;
+            use std::io::Write;
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(output)
+                .map_err(|e| e.to_string())?;
+            file.write_all(serde_json::to_string_pretty(&edited).unwrap().as_bytes())
+                .map_err(|e| e.to_string())?;
+        }
+        Commands::RenderProject {
+            input,
+            output,
+            video,
+        } => {
+            let doc: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(input).map_err(|e| e.to_string())?)
+                    .map_err(|e| e.to_string())?;
+            media::project_edit::render_project(&doc, &output, video)?;
+        }
         Commands::EditVideo {
             edit,
             output,
@@ -99,6 +171,18 @@ fn execute(cli: Cli) -> media::Result<()> {
             )?;
             println!("{}", serde_json::json!({"output":output}));
         }
+        Commands::Prepare {
+            input,
+            output,
+            proxy,
+        } => {
+            media::prepare_asset(&input, &output, proxy)?;
+            println!("{}", serde_json::json!({"output":output}));
+        }
+        Commands::Loudness { input } => println!(
+            "{}",
+            serde_json::to_string_pretty(&media::loudness(&input)?).unwrap()
+        ),
         Commands::Probe { input } => println!(
             "{}",
             serde_json::to_string_pretty(&media::probe(&input)?).unwrap()

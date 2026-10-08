@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{audio_export, native_files, project, media};
+use commands::{audio_export, media, native_files, project};
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 use tauri::Manager;
 
@@ -26,11 +26,16 @@ pub fn run() {
             audio_export::export_wav,
             audio_export::export_wav_binary,
             project::save_project,
+            project::persist_cached_media,
             project::load_project,
             native_files::take_opened_files,
             native_files::read_opened_file,
             native_files::stage_share_file,
             media::desktop_media_available,
+            media::probe_media,
+            media::cancel_media_job,
+            media::measure_loudness,
+            media::prepare_media_asset,
             media::analyze_media,
             media::align_media,
             media::export_media,

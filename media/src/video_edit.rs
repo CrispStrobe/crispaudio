@@ -1,4 +1,4 @@
-//! Non-destructive single-source picture edits, shared by CLI and desktop.
+//! Non-destructive multi-source picture edits, shared by CLI and desktop.
 use crate::{probe, run, strings, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -7,6 +7,8 @@ use std::path::Path;
 #[serde(rename_all = "camelCase")]
 pub struct VideoClip {
     pub id: String,
+    #[serde(default)]
+    pub source_id: Option<String>,
     pub start_time: f64,
     pub source_offset: f64,
     pub duration: f64,
@@ -19,8 +21,18 @@ pub struct VideoClip {
     pub transition_duration: f64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct VideoSource {
+    pub id: String,
+    pub path: String,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct VideoEdit {
     pub path: String,
+    #[serde(default)]
+    pub sources: Vec<VideoSource>,
+    #[serde(default)]
+    pub frame_rate: Option<f64>,
     pub clips: Vec<VideoClip>,
 }
 const TRANSITIONS: &[&str] = &[
@@ -63,7 +75,10 @@ pub fn validate(edit: &VideoEdit, source_duration: f64) -> Result<Vec<VideoClip>
             || c.start_time < 0.0
             || c.source_offset < 0.0
             || c.duration < 1.0 / 120.0
-            || c.source_offset + c.duration > source_duration + 1e-6
+            || (c.source_id.is_none() && c.source_offset + c.duration > source_duration + 1e-6)
+            || c.source_id
+                .as_ref()
+                .is_some_and(|id| !edit.sources.iter().any(|s| &s.id == id))
             || c.fade_in < 0.0
             || c.fade_out < 0.0
             || c.fade_in + c.fade_out > c.duration
@@ -107,7 +122,28 @@ pub fn export_edit(
     if !info.has_video {
         return Err("Source has no video".into());
     }
-    let clips = validate(edit, info.duration)?;
+    let mut clips = validate(edit, info.duration)?;
+    let mut durations = std::collections::HashMap::new();
+    for source in &edit.sources {
+        if durations.contains_key(&source.id) {
+            return Err("Duplicate video source ID".into());
+        }
+        let source_info = probe(&source.path)?;
+        if !source_info.has_video {
+            return Err("Source has no video".into());
+        }
+        durations.insert(source.id.clone(), source_info.duration);
+    }
+    for clip in &clips {
+        let duration = clip
+            .source_id
+            .as_ref()
+            .map(|id| durations[id])
+            .unwrap_or(info.duration);
+        if clip.source_offset + clip.duration > duration + 1e-6 {
+            return Err("Clip exceeds its video source".into());
+        }
+    }
     let total = clips.last().unwrap().start_time + clips.last().unwrap().duration;
     if !start.is_finite() || !end.is_finite() || start < 0.0 || end <= start || end > total + 1e-6 {
         return Err("Invalid edited video range".into());
@@ -145,12 +181,40 @@ pub fn export_edit(
         .split('/')
         .filter_map(|v| v.parse::<f64>().ok())
         .collect();
-    let fps =
+    let mut fps =
         if ratio.len() == 2 && ratio[1] > 0.0 && (1.0..=240.0).contains(&(ratio[0] / ratio[1])) {
             format!("{}/{}", ratio[0], ratio[1])
         } else {
             "30/1".into()
         };
+    if let Some(rate) = edit.frame_rate {
+        if !rate.is_finite() || !(1.0..=240.0).contains(&rate) {
+            return Err("Invalid output frame rate".into());
+        }
+        fps = rate.to_string();
+    }
+    let numeric_fps = if let Some((a, b)) = fps.split_once('/') {
+        a.parse::<f64>().unwrap() / b.parse::<f64>().unwrap()
+    } else {
+        fps.parse::<f64>().unwrap()
+    };
+    let quantize = |time: f64| (time * numeric_fps).round() / numeric_fps;
+    // Quantize absolute boundaries, not each clip length, so repeated cuts do not drift.
+    for clip in &mut clips {
+        let stop = quantize(clip.start_time + clip.duration);
+        clip.start_time = quantize(clip.start_time);
+        clip.duration = stop - clip.start_time;
+        clip.transition_duration = quantize(clip.transition_duration);
+        if clip.duration < 0.5 / numeric_fps {
+            return Err("Video clip shorter than one output frame".into());
+        }
+    }
+    for i in 1..clips.len() {
+        let overlap = clips[i - 1].start_time + clips[i - 1].duration - clips[i].start_time;
+        if overlap > 1e-6 {
+            clips[i].transition_duration = overlap;
+        }
+    }
     let rotation = stream["side_data_list"]
         .as_array()
         .and_then(|list| list.iter().find_map(|item| item["rotation"].as_f64()))
@@ -198,10 +262,14 @@ pub fn export_edit(
             "-t",
             &c.duration.to_string(),
             "-i",
-            &edit.path,
+            &c.source_id
+                .as_ref()
+                .and_then(|id| edit.sources.iter().find(|s| &s.id == id))
+                .map(|s| s.path.as_str())
+                .unwrap_or(&edit.path),
         ]));
         let label = format!("p{input}");
-        let mut filters=format!("[{input}:v]fps={fps},scale=trunc(iw/2)*2:trunc(ih/2)*2,setsar=1,settb=AVTB,setpts=PTS-STARTPTS,format=yuv420p");
+        let mut filters=format!("[{input}:v]fps={fps},scale={}:{}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad={}:{}:(ow-iw)/2:(oh-ih)/2,setsar=1,settb=AVTB,setpts=PTS-STARTPTS,format=yuv420p",width/2*2,height/2*2,width/2*2,height/2*2);
         if c.fade_in > 0.0 {
             filters += &format!(",fade=t=in:st=0:d={}", c.fade_in);
         }
@@ -365,6 +433,7 @@ mod tests {
     fn clip(start: f64, duration: f64) -> VideoClip {
         VideoClip {
             id: "c".into(),
+            source_id: None,
             start_time: start,
             source_offset: 0.0,
             duration,
@@ -378,6 +447,8 @@ mod tests {
     fn ambiguous_overlap_and_invalid_fades_are_rejected() {
         let mut edit = VideoEdit {
             path: "unused".into(),
+            sources: vec![],
+            frame_rate: None,
             clips: vec![clip(0.0, 3.0), clip(2.0, 3.0)],
         };
         assert!(validate(&edit, 10.0).is_err());

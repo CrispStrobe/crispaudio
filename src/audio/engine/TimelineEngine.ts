@@ -1,3 +1,4 @@
+import { scheduleGain } from '../../lib/mixAutomation';
 import { scheduleEnvelope } from '../../lib/audioEnvelope';
 import { audibleTracks } from '../../lib/timelineView';
 // ---------------------------------------------------------------------------
@@ -63,7 +64,8 @@ export class TimelineEngine {
       const trackEnd=Math.max(0,...track.segments.map(clip=>clip.startTime+clip.duration));
       const trackFade=this.ctx.createGain();
       scheduleEnvelope(trackFade.gain,now+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
-      trackFade.connect(trackGain);
+      const automated=this.ctx.createGain();scheduleGain(automated.gain,track.automation,now,startTime);
+      trackFade.connect(automated);this.applyEffects(this.ctx,automated,track.effects??[]).connect(trackGain);
       trackGain.gain.value = track.volume;
 
       // Pan
@@ -179,7 +181,8 @@ export class TimelineEngine {
       const trackEnd=Math.max(0,...track.segments.map(clip=>clip.startTime+clip.duration));
       const trackFade=offCtx.createGain();
       scheduleEnvelope(trackFade.gain,Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
-      trackFade.connect(trackGain);
+      const automated=offCtx.createGain();scheduleGain(automated.gain,track.automation,0,startTime);
+      trackFade.connect(automated);this.applyEffects(offCtx,automated,track.effects??[]).connect(trackGain);
       trackGain.gain.value = track.volume;
 
       if (track.pan !== 0) {

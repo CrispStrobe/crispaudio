@@ -1,3 +1,4 @@
+import { cacheRecovery, loadRecovery } from '../lib/recovery';
 // ---------------------------------------------------------------------------
 // useAutosave — periodically saves timeline project structure to localStorage.
 // Audio buffers are NOT saved (too large); only track/segment layout is stored
@@ -27,18 +28,19 @@ export function useAutosave() {
     // Keep success tracking local so remounts always attempt their first save.
     let lastSavedProject: AutosaveData['project'] | undefined;
     let lastSavedGeneration = clearGeneration;
+    let caching=false;
     const save = () => {
       const { project } = useProjectStore.getState();
       if (project === lastSavedProject && lastSavedGeneration === clearGeneration) return;
       // Only save if there are tracks with segments (non-empty project)
-      const hasContent = project.tracks.some((t) => t.segments.length > 0);
+      const hasContent = project.tracks.some((t) => t.segments.length > 0)||!!project.video;
       if (!hasContent) return;
 
       const data: AutosaveData = {
         savedAt: new Date().toISOString(),
         project,
       };
-      if (project.video && '__TAURI_INTERNALS__' in window) {
+      if ('__TAURI_INTERNALS__' in window) {
         const used = new Set(project.tracks.flatMap((track) => track.segments.map((segment) => segment.sourceId)));
         const sources = new Map([...useProjectStore.getState().sources].filter(([id]) => used.has(id)));
         if (sources.size === used.size && [...sources.values()].every((source) => source.filePath)) {
@@ -47,6 +49,7 @@ export function useAutosave() {
       }
       try {
         localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
+        if(typeof indexedDB!=='undefined'&&!caching){caching=true;void cacheRecovery(project,useProjectStore.getState().sources).catch(error=>window.dispatchEvent(new CustomEvent('crispaudio-recovery-error',{detail:String(error)}))).finally(()=>{caching=false;});}
         lastSavedProject = project;
         lastSavedGeneration = clearGeneration;
       } catch {
@@ -100,13 +103,12 @@ export function clearAutosave(): void {
 
 /** Interview autosaves contain linked media references, never PCM in localStorage. */
 export function hasRecoverableAutosave(): boolean {
-  try { return !!JSON.parse(localStorage.getItem(AUTOSAVE_KEY) || '{}').linked; }
+  try { return !!JSON.parse(localStorage.getItem(AUTOSAVE_KEY) || '{}').linked||localStorage.getItem('crispaudio-recovery-ready')==='1'; }
   catch { return false; }
 }
 
 export async function restoreAutosaveAudio(ctx: BaseAudioContext): Promise<void> {
   const data: AutosaveData = JSON.parse(localStorage.getItem(AUTOSAVE_KEY) || '{}');
-  if (!data.linked) throw new Error('This autosave has no linked media');
-  const restored = await deserializeProject(data.linked, ctx);
-  useProjectStore.getState().loadProjectState(restored.project, restored.sources);
+  const restored = data.linked?await deserializeProject(data.linked, ctx):await loadRecovery(ctx);
+  useProjectStore.getState().loadProjectState(restored.project, new Map([...useProjectStore.getState().sources,...restored.sources]));
 }

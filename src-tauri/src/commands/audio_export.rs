@@ -1,4 +1,4 @@
-use hound::{WavSpec, WavWriter, SampleFormat};
+use hound::{SampleFormat, WavSpec, WavWriter};
 use serde::Deserialize;
 use std::io::Cursor;
 
@@ -52,25 +52,32 @@ fn encode_wav(params: WavExportParams) -> Result<Vec<u8>, String> {
         }
     }
 
-    writer.finalize().map_err(|e| format!("Failed to finalize WAV: {}", e))?;
+    writer
+        .finalize()
+        .map_err(|e| format!("Failed to finalize WAV: {}", e))?;
     Ok(buffer.into_inner())
 }
 
 // Binary wire format: sample_rate:u32, bit_depth:u16, channels:u16, then
 // interleaved f32 samples, all little-endian. Return raw WAV bytes, not JSON.
 #[tauri::command]
-pub async fn export_wav_binary(request: tauri::ipc::Request<'_>) -> Result<tauri::ipc::Response, String> {
+pub async fn export_wav_binary(
+    request: tauri::ipc::Request<'_>,
+) -> Result<tauri::ipc::Response, String> {
     let body = match request.body() {
         tauri::ipc::InvokeBody::Raw(bytes) => bytes.clone(),
         _ => return Err("Expected binary WAV payload".into()),
     };
     tauri::async_runtime::spawn_blocking(move || encode_binary(&body))
-        .await.map_err(|e| e.to_string())?
+        .await
+        .map_err(|e| e.to_string())?
         .map(tauri::ipc::Response::new)
 }
 
 fn encode_binary(body: &[u8]) -> Result<Vec<u8>, String> {
-    if body.len() < 8 { return Err("Truncated WAV header".into()); }
+    if body.len() < 8 {
+        return Err("Truncated WAV header".into());
+    }
     let sample_rate = u32::from_le_bytes(body[0..4].try_into().unwrap());
     let bit_depth = u16::from_le_bytes(body[4..6].try_into().unwrap());
     let channels = u16::from_le_bytes(body[6..8].try_into().unwrap());
@@ -80,9 +87,16 @@ fn encode_binary(body: &[u8]) -> Result<Vec<u8>, String> {
     if (body.len() - 8) % (4 * channels as usize) != 0 {
         return Err("Incomplete WAV sample frame".into());
     }
-    let samples = body[8..].chunks_exact(4)
-        .map(|bytes| f32::from_le_bytes(bytes.try_into().unwrap())).collect();
-    encode_wav(WavExportParams { samples, sample_rate, bit_depth, channels })
+    let samples = body[8..]
+        .chunks_exact(4)
+        .map(|bytes| f32::from_le_bytes(bytes.try_into().unwrap()))
+        .collect();
+    encode_wav(WavExportParams {
+        samples,
+        sample_rate,
+        bit_depth,
+        channels,
+    })
 }
 
 #[cfg(test)]
@@ -97,8 +111,13 @@ mod tests {
             body.extend_from_slice(&48000_u32.to_le_bytes());
             body.extend_from_slice(&depth.to_le_bytes());
             body.extend_from_slice(&2_u16.to_le_bytes());
-            for sample in &samples { body.extend_from_slice(&sample.to_le_bytes()); }
-            assert_eq!(encode_binary(&body).unwrap(), export(samples, 48000, depth, 2).unwrap());
+            for sample in &samples {
+                body.extend_from_slice(&sample.to_le_bytes());
+            }
+            assert_eq!(
+                encode_binary(&body).unwrap(),
+                export(samples, 48000, depth, 2).unwrap()
+            );
         }
     }
 
@@ -117,10 +136,22 @@ mod tests {
     }
 
     /// Helper: run export_wav synchronously in tests.
-    fn export(samples: Vec<f32>, sample_rate: u32, bit_depth: u16, channels: u16) -> Result<Vec<u8>, String> {
-        let params = WavExportParams { samples, sample_rate, bit_depth, channels };
+    fn export(
+        samples: Vec<f32>,
+        sample_rate: u32,
+        bit_depth: u16,
+        channels: u16,
+    ) -> Result<Vec<u8>, String> {
+        let params = WavExportParams {
+            samples,
+            sample_rate,
+            bit_depth,
+            channels,
+        };
         // export_wav is async but does no real async work, so block on it.
-        tokio::runtime::Runtime::new().unwrap().block_on(export_wav(params))
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(export_wav(params))
     }
 
     fn read_u16_le(buf: &[u8], offset: usize) -> u16 {
@@ -128,7 +159,12 @@ mod tests {
     }
 
     fn read_u32_le(buf: &[u8], offset: usize) -> u32 {
-        u32::from_le_bytes([buf[offset], buf[offset + 1], buf[offset + 2], buf[offset + 3]])
+        u32::from_le_bytes([
+            buf[offset],
+            buf[offset + 1],
+            buf[offset + 2],
+            buf[offset + 3],
+        ])
     }
 
     /// Find the byte offset of a sub-chunk id (e.g. b"data") in a WAV buffer.
@@ -143,7 +179,9 @@ mod tests {
             let chunk_size = read_u32_le(buf, pos + 4) as usize;
             pos += 8 + chunk_size;
             // WAV chunks are word-aligned
-            if pos % 2 != 0 { pos += 1; }
+            if pos % 2 != 0 {
+                pos += 1;
+            }
         }
         None
     }
@@ -281,6 +319,9 @@ mod tests {
     #[test]
     fn test_unsupported_bit_depth_returns_error() {
         let result = export(vec![0.0], 44100, 12, 1);
-        assert!(result.is_err(), "expected error for unsupported bit depth 12");
+        assert!(
+            result.is_err(),
+            "expected error for unsupported bit depth 12"
+        );
     }
 }

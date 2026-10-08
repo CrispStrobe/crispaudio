@@ -4,7 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.5.0]
+## [Unreleased — local version 0.6.0]
+
+- Media bin, multiple video source files, linked audio/picture groups, copy/paste,
+  frame trims, slip, ripple intervals, named draggable markers and frame rate/grid.
+- Optional resizable inspector and touch overlay; timed transcript import/search,
+  cue selection, corrected SRT export and passage removal across all tracks.
+- Reviewed microphone section suggestions, visible shared gain automation,
+  speech processing, conservative noise reduction and EBU R128 level matching.
+- Saved sync decisions and optional audio drift correction; linked references
+  remain guarded and picture drift requires unlinking first.
+- Lightweight proxies, cancellable desktop exports, IndexedDB audio recovery,
+  missing-file relocation and durable saved assets for cache-derived audio.
+- CLI project recipes and linked-project WAV/MP4 rendering with explicit DSP
+  limitations; multi-source picture export quantizes absolute frame boundaries.
+- Fix misleading first black thumbnail on the Canon interview (one tile covered
+  31.7 s); wait for a displayable frame, and avoid retargeting pending video seeks.
+- Project format v3 reads v1/v2 and protects new metadata from older editors.
+
+See [Media workspace](docs/MEDIA_WORKSPACE.md) for workflows and platform limits.
+
+## [Local version 0.5.0]
 
 - Draggable red playhead; audio zoom leaves a fitted picture overview with an audio-window indicator.
 - Magnetic clip-edge snapping, exact positions, sample/ms keyboard and touch nudges.

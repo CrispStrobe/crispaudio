@@ -537,3 +537,8 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
   .video-viewer-tools {display:flex;align-items:center;gap:8px;}
   .video-viewer-tools > .mb-2 {margin-bottom:0;}
 }
+
+@media(max-width: 767px) {
+  .timeline-workspace {position:absolute;right:0;top:0;bottom:0;z-index:25;width:min(100%,360px)!important;box-shadow:-12px 0 30px #0009;}
+  .workspace-resizer {display:none;}
+}

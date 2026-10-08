@@ -10,7 +10,13 @@ export interface TimelineProject {
   tracks: TimelineTrack[];
   masterEffects: EffectConfig[];
   duration: number; // computed from segments
+  markers?: TimelineMarker[];
+  transcript?: TranscriptCue[];
+  syncHistory?: SyncDecision[];
+  frameRate?: number;
+  snapGrid?: number; // seconds, 0 disables the time grid
   video?: {
+    sources?: VideoSource[];
     clips?: VideoClip[];
     path: string;
     duration: number;
@@ -28,6 +34,8 @@ export interface TimelineTrack {
   solo: boolean;
   volume: number;
   pan: number;
+  automation?: GainPoint[]; // absolute timeline seconds
+  effects?: EffectConfig[];
   fadeInDuration?: number;
   fadeOutDuration?: number;
   fadeInCurve?: FadeCurve;
@@ -35,6 +43,7 @@ export interface TimelineTrack {
 }
 
 export interface AudioSegment {
+  linkGroup?: string;
   id: string;
   trackId: string;
   sourceId: string; // reference to AudioSource
@@ -91,10 +100,13 @@ export interface TimelineSelection {
 export interface ClipboardState {
   operation: 'cut' | 'copy' | null;
   segments: AudioSegment[];
+  videos?: VideoClip[];
   sourceIds: string[];
 }
 
 export interface VideoClip {
+  sourceId?: string;
+  linkGroup?: string;
   id: string;
   startTime: number;
   duration: number;
@@ -104,3 +116,9 @@ export interface VideoClip {
   transition: import('../lib/videoEditing').VideoTransition;
   transitionDuration: number;
 }
+
+export interface VideoSource { id: string; path: string; name: string; duration: number; frameRate?: number }
+export interface TimelineMarker { id: string; time: number; name: string }
+export interface TranscriptCue { id: string; start: number; end: number; text: string }
+export interface GainPoint { time: number; value: number }
+export interface SyncDecision { at: string; reference: string; tracks: { id: string; alignment: import('../lib/media').Alignment }[] }

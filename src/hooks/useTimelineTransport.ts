@@ -1,3 +1,4 @@
+import { waitForPreviewFrame } from '../lib/videoTransport';
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
 import type { TimelineEngine } from '../audio/engine/TimelineEngine';
@@ -14,6 +15,7 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
     const engine = engineRef.current;
     if (!engine || !playing) return;
     let cancelled = false;
+    const previewAbort=new AbortController();
     let ready = false;
     let internalPosition = false;
     let frame = 0;
@@ -57,17 +59,17 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
       if (document.visibilityState !== 'hidden' && ready) frame = requestAnimationFrame(tick);
     };
     document.addEventListener('visibilitychange', onVisibility);
-    void Promise.resolve(audio.resume()).then(() => {
+    void Promise.resolve(audio.resume()).then(()=>waitForPreviewFrame(previewAbort.signal)).then(() => {
       if (cancelled) return;
       reschedule(useProjectStore.getState().playheadPosition);
       ready = true;
       if (document.visibilityState !== 'hidden') frame = requestAnimationFrame(tick);
     }).catch((error) => {
       console.error('Timeline playback failed:', error);
-      if (!cancelled) useProjectStore.getState().setIsPlaying(false);
+      if (!cancelled){useProjectStore.getState().setIsPlaying(false);window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:String(error)}));}
     });
     return () => {
-      cancelled = true;
+      cancelled = true;previewAbort.abort();
       cancelAnimationFrame(frame);
       unsubscribe();
       document.removeEventListener('visibilitychange', onVisibility);

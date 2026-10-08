@@ -1,5 +1,6 @@
 use crispaudio_media::{self as media, Session};
 use tauri::Manager;
+use tauri_plugin_fs::FsExt;
 
 #[tauri::command]
 pub fn desktop_media_available() -> bool {
@@ -33,14 +34,17 @@ pub async fn export_media(
     mix: Option<String>,
     start: Option<f64>,
     end: Option<f64>,
+    job_id: Option<String>,
 ) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
-        if start.is_some() || end.is_some() {
-            let range = start.unwrap_or(0.0)..end.unwrap_or(session.video.duration);
-            media::export_segment(&session, &output, mix.as_deref(), range, false, false, true)
-        } else {
-            media::export(&session, &output, mix.as_deref(), false, false)
-        }
+        media::jobs::run(job_id, || {
+            if start.is_some() || end.is_some() {
+                let range = start.unwrap_or(0.0)..end.unwrap_or(session.video.duration);
+                media::export_segment(&session, &output, mix.as_deref(), range, false, false, true)
+            } else {
+                media::export(&session, &output, mix.as_deref(), false, false)
+            }
+        })
     })
     .await
     .map_err(|e| e.to_string())?
@@ -109,6 +113,125 @@ mod sync_tests {
 }
 
 #[tauri::command]
-pub async fn export_video_edit(edit: media::video_edit::VideoEdit, output:String, mix:Option<String>, start:f64, end:f64) -> Result<(),String> {
-    tauri::async_runtime::spawn_blocking(move || media::video_edit::export_edit(&edit,&output,mix.as_deref(),start,end,true)).await.map_err(|e|e.to_string())?
+pub async fn export_video_edit(
+    edit: media::video_edit::VideoEdit,
+    output: String,
+    mix: Option<String>,
+    start: f64,
+    end: f64,
+    job_id: Option<String>,
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        media::jobs::run(job_id, || {
+            media::video_edit::export_edit(&edit, &output, mix.as_deref(), start, end, true)
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn probe_media(path: String) -> Result<media::MediaInfo, String> {
+    tauri::async_runtime::spawn_blocking(move || media::probe(&path))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn prepare_media_asset(
+    app: tauri::AppHandle,
+    path: String,
+    proxy: bool,
+    denoise: Option<bool>,
+    thumbnail: Option<bool>,
+    job_id: Option<String>,
+) -> Result<String, String> {
+    let cache = app
+        .path()
+        .app_cache_dir()
+        .map_err(|e| e.to_string())?
+        .join("media");
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        media::jobs::run(job_id, || {
+            use std::hash::{Hash, Hasher};
+            let path = std::fs::canonicalize(path).map_err(|e| e.to_string())?;
+            let metadata = std::fs::metadata(&path).map_err(|e| e.to_string())?;
+            let mut hash = std::collections::hash_map::DefaultHasher::new();
+            path.hash(&mut hash);
+            metadata.len().hash(&mut hash);
+            metadata.modified().ok().hash(&mut hash);
+            proxy.hash(&mut hash);
+            denoise.unwrap_or(false).hash(&mut hash);
+            thumbnail.unwrap_or(false).hash(&mut hash);
+            std::fs::create_dir_all(&cache).map_err(|e| e.to_string())?;
+            let destination = cache.join(format!(
+                "{:x}.{}",
+                hash.finish(),
+                if thumbnail.unwrap_or(false) {
+                    "jpg"
+                } else if proxy {
+                    "mp4"
+                } else {
+                    "wav"
+                }
+            ));
+            if !destination.exists() {
+                let stamp = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_err(|e| e.to_string())?
+                    .as_nanos();
+                let stage = cache.join(format!(
+                    "{:x}-{}-{stamp}.{}",
+                    hash.finish(),
+                    std::process::id(),
+                    if thumbnail.unwrap_or(false) {
+                        "jpg"
+                    } else if proxy {
+                        "mp4"
+                    } else {
+                        "wav"
+                    }
+                ));
+                let result = if thumbnail.unwrap_or(false) {
+                    media::first_thumbnail(&path.to_string_lossy(), &stage.to_string_lossy())
+                } else if denoise.unwrap_or(false) {
+                    media::clean_audio(&path.to_string_lossy(), &stage.to_string_lossy(), -45.0)
+                } else {
+                    media::prepare_asset(&path.to_string_lossy(), &stage.to_string_lossy(), proxy)
+                }
+                .and_then(|_| std::fs::rename(&stage, &destination).map_err(|e| e.to_string()));
+                if result.is_err() {
+                    let _ = std::fs::remove_file(stage);
+                }
+                result?;
+            }
+            Ok::<_, String>(destination.to_string_lossy().into_owned())
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    app.asset_protocol_scope()
+        .allow_file(&result)
+        .map_err(|e| e.to_string())?;
+    app.fs_scope()
+        .allow_file(&result)
+        .map_err(|e| e.to_string())?;
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn measure_loudness(
+    path: String,
+    job_id: Option<String>,
+) -> Result<media::Loudness, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        media::jobs::run(job_id, || media::loudness(&path))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub fn cancel_media_job(job_id: String) -> bool {
+    media::jobs::cancel(&job_id)
 }

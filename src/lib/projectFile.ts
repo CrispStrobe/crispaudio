@@ -10,7 +10,7 @@ import {
 } from '../audio/utils/audioBufferUtils';
 
 const FORMAT = 'crispaudio-project';
-const VERSION = 2;
+const VERSION = 3;
 
 interface SerializedSource {
   id: string;
@@ -83,15 +83,28 @@ export function serializeProject(
 export async function deserializeProject(
   json: string,
   ctx: BaseAudioContext,
+  locateMissing?: (path:string)=>Promise<string|null>,
 ): Promise<{ project: TimelineProject; sources: Map<string, AudioSource> }> {
   const doc = JSON.parse(json) as Partial<SerializedProject>;
   if (doc.format !== FORMAT || !doc.project || !Array.isArray(doc.sources)) {
     throw new Error('Not a valid CrispAudio project file');
   }
-  if (doc.version !== 1 && doc.version !== VERSION) {
+  if (doc.version !== 1 && doc.version !== 2 && doc.version !== VERSION) {
     throw new Error('Unsupported CrispAudio project version');
   }
 
+  const replacements=new Map<string,string>();
+  if(locateMissing && doc.project.video && '__TAURI_INTERNALS__' in window){
+    const {invoke}=await import('@tauri-apps/api/core');
+    for(const source of [{path:doc.project.video.path},...(doc.project.video.sources??[])]){
+      try{await invoke('prepare_video_preview',{path:source.path});}catch{
+        const replacement=await locateMissing(source.path);if(!replacement)throw new Error(`Missing video: ${source.path}`);
+        await invoke('prepare_video_preview',{path:replacement});replacements.set(source.path,replacement);source.path=replacement;
+      }
+    }
+    const original=doc.project.video.path;doc.project.video.path=replacements.get(original)??original;
+    doc.project.video.session={...doc.project.video.session,video:{...doc.project.video.session.video,path:doc.project.video.path}};
+  }
   const sources = new Map<string, AudioSource>();
   for (const s of doc.sources) {
     try {
@@ -99,7 +112,12 @@ export async function deserializeProject(
       if (s.path) {
         if (!('__TAURI_INTERNALS__' in window)) throw new Error('Linked projects require the desktop app');
         const { readFile } = await import('@tauri-apps/plugin-fs');
-        const file = await readFile(s.path);
+        s.path=replacements.get(s.path)??s.path;
+        let file:Uint8Array;
+        try{file=await readFile(replacements.get(s.path)??s.path);}catch(error){
+          if(!locateMissing)throw error;const replacement=await locateMissing(s.path);if(!replacement)throw error;
+          file=await readFile(replacement);replacements.set(s.path,replacement);s.path=replacement;
+        }
         bytes = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer;
       } else if (s.wav) {
         bytes = base64ToArrayBuffer(s.wav);

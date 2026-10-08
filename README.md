@@ -241,3 +241,12 @@ src-tauri/            Rust backend
 ## License
 
 MIT
+
+## Media workspace (local 0.6.0)
+
+Multiple camera files and linked audio/picture clips, frame trims/slip/ripple,
+markers, reviewed microphone switching, gain automation, transcript editing,
+lightweight proxies and recovery are described in [Media workspace](docs/MEDIA_WORKSPACE.md).
+The desktop CLI also edits project recipes and renders linked arrangements.
+Video remains desktop-only; GUI audio is decoded in memory. See the workflow for
+limits and supported CLI processing.

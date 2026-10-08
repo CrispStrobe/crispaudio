@@ -34,6 +34,9 @@ export function MediaTools({ engine }: Props) {
   const video = useProjectStore((s) => s.project.video);
   const playing = useProjectStore((s) => s.isPlaying);
   const actionRef = useRef(false);
+  const exportAbort=useRef<AbortController|null>(null);
+  const exportJob=useRef<string|null>(null);
+  useEffect(()=>()=>{exportAbort.current?.abort();if(exportJob.current)void invoke('cancel_media_job',{jobId:exportJob.current});},[]);
 
   useEffect(() => {
     if (!('__TAURI_INTERNALS__' in window)) return;
@@ -46,7 +49,7 @@ export function MediaTools({ engine }: Props) {
     useProjectStore.getState().setIsPlaying(false);
     setError(''); setNotice(''); setBusy(stage);
     try { await task(); } catch (err) { setError(String(err)); }
-    finally { actionRef.current = false; setBusy(''); }
+    finally { actionRef.current = false;exportJob.current=null;exportAbort.current=null;setBusy(''); }
   }
 
   const chooseVideo = () => perform(t('interview.loading'), async () => {
@@ -107,17 +110,21 @@ export function MediaTools({ engine }: Props) {
     if (!output) return;
     const start = state.project.video.inPoint ?? 0;
     const end = state.project.video.outPoint ?? videoTimelineDuration(state.project.video);
-    if(state.project.video.clips){const error=validateVideoClips(videoClips(state.project.video),state.project.video.duration);if(error)throw new Error(error);}
-    const rendered = await engine.current.renderToBuffer(state.project, start, end);
-    const wav = await encodeAudioBufferWav(rendered, 24);
+    if(state.project.video.clips){const error=validateVideoClips(videoClips(state.project.video),state.project.video.duration,state.project.video.sources);if(error)throw new Error(error);}
+    const controller=new AbortController();exportAbort.current=controller;
+    const jobId=crypto.randomUUID();exportJob.current=jobId;
+    const rendered = await engine.current.renderToBuffer(state.project, start, end,controller.signal);
+    const wav = await encodeAudioBufferWav(rendered, 24,controller.signal);
+    controller.signal.throwIfAborted();
     const mix = await invoke<string>('stage_share_file', new Uint8Array(await wav.arrayBuffer()), {
       headers: { 'x-file-name': `video-mix-${crypto.randomUUID()}.wav` },
     });
     try {
-      if(state.project.video.clips) await invoke('export_video_edit', {edit:{path:state.project.video.path,clips:state.project.video.clips},output,mix,start,end});
-      else await invoke('export_media', { session: state.project.video.session, output, mix, start, end });
+      controller.signal.throwIfAborted();
+      if(state.project.video.clips) await invoke('export_video_edit', {edit:{path:state.project.video.path,sources:state.project.video.sources,frameRate:state.project.frameRate,clips:state.project.video.clips},output,mix,start,end,jobId});
+      else await invoke('export_media', { session: state.project.video.session, output, mix, start, end,jobId });
       setNotice(t('interview.exported', { path: output }));
-    } finally { await remove(mix).catch(() => {}); }
+    } finally { exportJob.current=null;exportAbort.current=null;await remove(mix).catch(() => {}); }
   });
 
   const button = 'min-h-11 px-4 py-2 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-40';
@@ -140,7 +147,7 @@ export function MediaTools({ engine }: Props) {
   return <>
     <section className="shrink-0 border-b border-gray-800 bg-gray-900/70 px-3 py-1" aria-label={t('interview.title')}>
       {!video && controls}
-      {busy && <p role="status" className="text-sm text-indigo-300 mt-2">{busy}</p>}
+      {busy && <p role="status" className="text-sm text-indigo-300 mt-2">{busy}{busy===t('interview.exporting')&&<button className="timeline-tool" onClick={()=>{exportAbort.current?.abort();if(exportJob.current)void invoke('cancel_media_job',{jobId:exportJob.current});}}>{t('common.cancel')}</button>}</p>}
       {error && <p role="alert" className="text-sm text-red-300 break-words mt-2">{error}</p>}
       {notice && <p role="status" className="text-sm text-green-300 break-words mt-2">{notice}</p>}
       {video && <VideoViewer>{controls}</VideoViewer>}

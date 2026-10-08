@@ -102,3 +102,24 @@ implicitly. Advanced preview is approximate and labelled; page peel is a 2D fold
 Audio track/segment envelopes share audioEnvelope.ts, including mid-fade resume.
 ToolButton labels hover/focus/long press; do not activate after a touch long press.
 Voice editing target survives closing Settings and resets on unrelated audio loads.
+
+## Media workspace 0.6.0
+
+Read docs/MEDIA_WORKSPACE.md. Picture sources are separate from clips; legacy
+undefined clips still derive the original whole source. clipSource resolves
+per-clip paths. projectEdits centralizes linked groups, independent split halves,
+trim/slip/ripple and duration. Never move just sound when its picture is linked.
+One picture composition lane is supported; arbitrary overlapping camera angles
+still require explicit cuts/transitions. Audio drift correction requires unlinked
+picture. Automation is scheduled by the same gain function for live/offline audio.
+
+WebKit first-thumbnail capture must seek into a displayable first frame while its
+thumbnail tile stays anchored at zero. Never retarget pending seeks on every
+transport tick. Frame boundaries in FFmpeg are quantized absolutely, not by
+summing rounded lengths. Keep decoder/encoder threads bounded.
+
+Project format v3 reads v1/v2. Derived media in OS cache is copied to a sibling
+.media folder on save. Cache recovery audio in IndexedDB, not localStorage PCM;
+retain the last successful snapshot after errors. CLI project rendering rejects
+unsupported effects/pan explicitly. Native desktop job cancellation kills its
+FFmpeg child and removes owned staging output. GUI audio is not disk-paged yet.
