@@ -119,7 +119,7 @@ ruler retains the zoomed scale. **Fit all** restores the whole audio arrangement
 
 - Move clips near another start/end to snap within eight screen pixels. Audio
   considers clip edges across lanes; picture considers picture edges. Alt-drag
-  bypasses snapping. Toggle the magnet in View & tools to disable snapping.
+  bypasses snapping. Toggle the magnet in the timeline tools to disable snapping.
 - Arrow left/right moves selected clips by 1 ms; Shift changes this to 100 ms;
   Alt changes it to one project audio sample. With no selection, arrows seek.
   Inputs, selectors and dialogs retain their own keys. The focused red handle
@@ -133,9 +133,14 @@ ruler retains the zoomed scale. **Fit all** restores the whole audio arrangement
   envelopes multiply; both realtime playback and export use them. Resuming inside
   a fade preserves its instantaneous gain.
 - Picture **Clip settings** has fade-in/out to black and an incoming transition
-  with duration. Choosing an incoming transition overlaps the preceding clip,
-  moving this clip earlier. This shortens picture length; audio is unchanged.
-  Adjust the sound if appropriate. Overlaps must equal the transition duration,
+  with duration. Changing the style of an existing overlap preserves its timing,
+  including linked audio. Unlink before changing overlap length, camera source,
+  or removing a linked overlap with Cut. Creating an overlap or changing its
+  length moves an unlinked picture clip; audio stays in place. Adjust the sound
+  if appropriate. Enter commits numeric edits; Escape cancels. Focusing and
+  leaving a field preserves exact timing. Values outside source or linked-audio
+  bounds are rejected rather than silently clamped.
+  Overlaps must equal the transition duration,
   remain shorter than both clips and never involve three clips. Invalid overlaps
   block export rather than silently changing timing.
 - Available transitions: cross dissolve, dip to black/white, wipes and pushes in

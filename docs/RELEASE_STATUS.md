@@ -241,3 +241,26 @@ complete WebKit recovery were preserved under the private validation folder's
 `ux/native-autosave-before-064.json` and `ux/recovery-before-064/WebKit`. The test
 preview server was stopped. Native/media implementation is unchanged; no Apple
 upload or release tag was requested.
+
+## Local 0.6.5 inspector follow-up
+
+Existing picture overlaps can change transition style while retaining their exact
+interval and linked audio. Changing overlap length or removing a linked overlap
+requires unlinking. Typed picture edits commit on Enter and cancel on Escape;
+source-bound violations reject the whole edit, including linked sound. Merely
+focusing a numeric field does not round timing or create undo history. Inspector
+edits preserve linked selection IDs and update their time bounds. Toolbar layout
+and overflow-menu fixes from the parallel layout update are included.
+
+Verified: 79 frontend suites / 1,247 tests, lint, and desktop/phone-sized browser
+checks for linked style changes, bounds rejection, Escape, picture-only fades,
+linked move/Undo, unlinked overlap duration and responsive inspector layout.
+Browser media uses short real media fixtures with mocked native file commands;
+these checks do not establish physical iOS behavior. Both desktop and iOS CI for
+0.6.4 passed. Native/media implementation is unchanged.
+
+TypeScript/Vite and the macOS bundle build passed. The combined ad-hoc-signed
+0.6.5 app is installed and launched at `~/Applications/CrispAudio-local.app`.
+The current autosave and WebKit recovery store were preserved under the private
+validation folder's `ux/native-autosave-before-065.json` and
+`ux/recovery-before-065/WebKit`. No Apple upload or release tag is included.

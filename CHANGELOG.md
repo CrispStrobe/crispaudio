@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.4]
+## [Unreleased — local version 0.6.5]
+
+- Change the style of existing linked picture overlaps without moving audio.
+  Existing overlap lengths survive style changes; unlink before changing length.
+- Numeric picture fields commit on Enter and cancel on Escape. Merely focusing
+  a field preserves exact timing; out-of-bounds edits are rejected visibly.
+- Keep linked audio/video selection and its bounds after inspector edits.
+- Compact toolbar layout and keep overflow menus visible above scroll panels.
+
+## [Local version 0.6.4]
 
 - Expanded viewer traps focus, isolates editing shortcuts, steps frames with
   Left/Right and toggles playback with Space; closing restores the expand button.

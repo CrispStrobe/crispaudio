@@ -1,4 +1,4 @@
-import type { TimelineProject, AudioSegment, VideoClip } from '../types/audio';
+import type { TimelineProject, AudioSegment, VideoClip, TimelineSelection } from '../types/audio';
 import { videoClips, clipSource, validateVideoClips, frameTime } from './videoEditing';
 import { timelineDuration } from './timelineView';
 
@@ -7,6 +7,10 @@ export const projectClips = (p: TimelineProject): Clip[] => [...p.tracks.flatMap
 export function linkedIds(p: TimelineProject, ids: string[]): string[] {
   const all=projectClips(p), groups=new Set(all.filter(c=>ids.includes(c.id)&&c.linkGroup).map(c=>c.linkGroup));
   return all.filter(c=>ids.includes(c.id)||(c.linkGroup&&groups.has(c.linkGroup))).map(c=>c.id);
+}
+export function projectSelection(project:TimelineProject,ids:string[]):TimelineSelection|null {
+  const selectedIds=new Set(linkedIds(project,ids)),selected=projectClips(project).filter(clip=>selectedIds.has(clip.id));
+  return selected.length?{startTime:Math.min(...selected.map(clip=>clip.startTime)),endTime:Math.max(...selected.map(clip=>clip.startTime+clip.duration)),segmentIds:selected.map(clip=>clip.id)}:null;
 }
 function finish(p: TimelineProject): TimelineProject { return {...p,duration:timelineDuration(p)}; }
 export function mapClips(p: TimelineProject, fn:(clip:Clip)=>Clip, blendVideo=false): TimelineProject {

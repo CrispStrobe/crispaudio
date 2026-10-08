@@ -1,4 +1,4 @@
-import { linkedIds, moveClips } from './projectEdits';
+import { linkedIds, moveClips, projectSelection } from './projectEdits';
 import { useProjectStore } from '../stores/projectStore';
 import { timelineDuration } from './timelineView';
 import { videoClips } from './videoEditing';
@@ -7,8 +7,7 @@ export function updateVideoClips(clips: VideoClip[]) {
   useProjectStore.setState(state => {
     if (!state.project.video) return state;
     const project={...state.project, video:{...state.project.video,clips,inPoint:undefined,outPoint:undefined}};
-    const selected=clips.filter(clip=>state.selection?.segmentIds.includes(clip.id));
-    return {project:{...project,duration:timelineDuration(project)},...(selected.length?{selection:{startTime:Math.min(...selected.map(clip=>clip.startTime)),endTime:Math.max(...selected.map(clip=>clip.startTime+clip.duration)),segmentIds:selected.map(clip=>clip.id)}}:{})};
+    return {project:{...project,duration:timelineDuration(project)},...(state.selection?{selection:projectSelection(project,state.selection.segmentIds)}:{})};
   });
 }
 export function splitSelectedVideo(position: number, all = false) {
