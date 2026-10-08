@@ -56,3 +56,25 @@ splits, seeking, inspector dialogs, touch selection vs. deliberate arrangement,
 and undo. The guided desktop setup used mocked native IPC with real excerpt WAV
 decoding/video preview; this is not a native dialog/IPC end-to-end test.
 No native screenshot capture was repeated after the WindowServer crash.
+
+## Local visual timeline build 0.4.0
+
+Installed and launched `~/Applications/CrispAudio-local.app` with the prepared
+MVI_8251 project. Both bundle version fields now read 0.4.0. No Apple upload or
+release tag was triggered.
+
+Added a larger/fullscreen viewer, approximate 33 ms seeking, shared-clock video
+filmstrip, normalized waveforms and a two-mic alignment inspection overlay.
+One source video is locked to its original clock; a persisted, undoable in/out
+range exports a single section. Multiple video clips/multicam remain future work.
+Desktop FFmpeg is still required; these video features are not available on iOS.
+
+Validation: 1,154 frontend tests, lint/build, 16 native Rust tests and six media
+Rust tests pass. Generated-media integration checks cover accurate section first
+picture, duration and both audio alternatives, plus invalid ranges/short mixes.
+The GUI trimmed-mix backend path has a regression test preventing a second seek.
+Full-length compressed video/camera audio hashes still match. Browser checks
+cover five touch/desktop viewports; the desktop IPC mock exercised real video
+thumbnail generation, alignment comparison and range entry at MacBook size.
+This does not establish native WebKit thumbnail or iOS device behavior. Local
+native build/signature and process launch were verified without OS screen capture.

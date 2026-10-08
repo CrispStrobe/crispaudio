@@ -63,3 +63,15 @@ outside git. Microphone comparison controls alter the export mix; state this
 explicitly. Touch defaults to selection/vertical scroll, with an explicit
 Move & trim mode. Keep clip actions visible and use dialogs for mixer/inspector
 so phones retain waveform space. Browser viewport tests are not iOS validation.
+
+## Visual interview timeline (local 0.4.0)
+
+`waveformView.ts` aggregates pixel intervals and uses decoded first-channel
+samples at deep zoom. Display normalization never modifies audio gains.
+`AlignmentView` compares normalized pre-effect envelopes on the source clock.
+`VideoLane` shares zoom/scroll/playhead; one locked source video, no montage.
+Video in/out points persist in `TimelineProject.video` with undo; they only select
+an export interval. `export_segment` encodes accurate sections; full length keeps
+stream copy. CLI mixes are full-clock files, GUI mixes are already range-trimmed;
+keep that distinction or section audio will seek twice. No Apple release tag was
+created for these local features. See docs/INTERVIEW_EDITING.md and RELEASE_STATUS.md.

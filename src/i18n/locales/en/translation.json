@@ -591,5 +591,41 @@
     "analyze": "3. Analyze synchronization",
     "mobileTitle": "Working with interview recordings?",
     "mobileHelp": "Automatic video sync and MP4 export currently require the desktop app with FFmpeg. On iPhone/iPad, import aligned WAVs from Files, edit their audio on the timeline, and export the mix. Desktop linked projects contain Mac file paths and cannot be transferred directly."
+  },
+  "alignment": {
+    "title": "Check alignment",
+    "help": "Overlay two microphones on the same time scale. Look for matching speech starts and transients; check several positions for drift.",
+    "reference": "Reference",
+    "compare": "Compare",
+    "atPlayhead": "At playhead",
+    "start": "Beginning",
+    "middle": "Middle",
+    "end": "End",
+    "window": "Window",
+    "center": "Position (s)",
+    "chart": "Normalized audio envelopes on a shared timeline",
+    "note": "Each envelope is normalized within this window, before gain, fades and effects. Different microphones can have different shapes; this view alone does not prove synchronization. No offsets are changed.",
+    "normalized": "Normalize waveform display",
+    "level": "Show waveform at mix gain",
+    "display": "Waveforms"
+  },
+  "video": {
+    "track": "Video",
+    "locked": "Source clock · locked",
+    "seek": "Seek video on the shared timeline",
+    "noThumbnails": "Thumbnails unavailable",
+    "fullscreen": "Fullscreen video",
+    "stepBack": "Step back approximately 33 milliseconds",
+    "stepForward": "Step forward approximately 33 milliseconds",
+    "range": "Export range",
+    "in": "In (s)",
+    "out": "Out (s)",
+    "setIn": "Set in at playhead",
+    "setOut": "Set out at playhead",
+    "jumpIn": "Go to in",
+    "reset": "Full recording",
+    "rangeHelp": "The range trims picture and mixed audio together at export. Full length keeps the original picture; a section re-encodes video for an accurate cut. Audio clips keep their original positions.",
+    "exportSection": "Export video section",
+    "invalidRange": "Enter a valid range: 0 ≤ in < out ≤ recording duration."
   }
 }

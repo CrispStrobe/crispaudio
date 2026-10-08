@@ -51,8 +51,8 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        CFBundleShortVersionString: 0.3.0
-        CFBundleVersion: "0.3.0"
+        CFBundleShortVersionString: 0.4.0
+        CFBundleVersion: "0.4.0"
         NSMicrophoneUsageDescription: "CrispAudio uses the microphone so you can record audio to process with voice effects. Recording only happens when you tap Record."
         ITSAppUsesNonExemptEncryption: false
         # Required because CFBundleDocumentTypes declares the .crispaudio type.

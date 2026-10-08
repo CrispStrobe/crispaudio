@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { readFile, remove } from '@tauri-apps/plugin-fs';
+import { VideoControls } from './VideoControls';
 import { Modal } from '../common/Modal';
 import { useProjectStore } from '../../stores/projectStore';
 import { canAlign, projectFromSession } from '../../lib/media';
@@ -11,9 +12,9 @@ import type { TimelineEngine } from '../../audio/engine/TimelineEngine';
 import { encodeAudioBufferWav } from '../../lib/wavExport';
 import { hasRecoverableAutosave, restoreAutosaveAudio } from '../../hooks/useAutosave';
 
-interface Props { engine: React.RefObject<TimelineEngine | null> }
+interface Props { engine: React.RefObject<TimelineEngine | null>; onCheckAlignment?: () => void }
 
-export function InterviewTools({ engine }: Props) {
+export function InterviewTools({ engine, onCheckAlignment }: Props) {
   const { t } = useTranslation();
   const [available, setAvailable] = useState(false);
   const [show, setShow] = useState(false);
@@ -39,15 +40,16 @@ export function InterviewTools({ engine }: Props) {
     invoke<boolean>('desktop_media_available').then(setAvailable).catch(() => {});
   }, []);
 
+  const videoPath = video?.path;
   useEffect(() => {
     let active = true;
-    if (video && available) {
-      invoke<string>('prepare_video_preview', { path: video.path }).then((path) => {
+    if (videoPath && available) {
+      invoke<string>('prepare_video_preview', { path: videoPath }).then((path) => {
         if (active) setPreviewUrl(convertFileSrc(path));
       }).catch((err) => { if (active) setError(String(err)); });
     }
     return () => { active = false; };
-  }, [video, available]);
+  }, [videoPath, available]);
 
   // Use the same timeline position for video and audio; never use camera audio
   // alongside the selected timeline microphone. Avoid seeking on every frame.
@@ -131,13 +133,15 @@ export function InterviewTools({ engine }: Props) {
     if (!state.project.video || !engine.current) return;
     const output = await save({ defaultPath: `${state.project.name}.edited.mp4`, filters: [{ name: 'MP4', extensions: ['mp4'] }] });
     if (!output) return;
-    const rendered = await engine.current.renderToBuffer(state.project, 0, state.project.video.duration);
+    const start = state.project.video.inPoint ?? 0;
+    const end = state.project.video.outPoint ?? state.project.video.duration;
+    const rendered = await engine.current.renderToBuffer(state.project, start, end);
     const wav = await encodeAudioBufferWav(rendered, 24);
     const mix = await invoke<string>('stage_share_file', new Uint8Array(await wav.arrayBuffer()), {
       headers: { 'x-file-name': `video-mix-${crypto.randomUUID()}.wav` },
     });
     try {
-      await invoke('export_media', { session: state.project.video.session, output, mix });
+      await invoke('export_media', { session: state.project.video.session, output, mix, start, end });
       setNotice(t('interview.exported', { path: output }));
     } finally { await remove(mix).catch(() => {}); }
   });
@@ -155,7 +159,7 @@ export function InterviewTools({ engine }: Props) {
           <p className="text-xs text-gray-400 mt-1">{video ? t('interview.editHelp') : t('interview.steps')}</p>
         </div>
         <button className={`${button} !bg-indigo-600 !border-indigo-500`} disabled={!!busy || playing} onClick={() => setSetup(true)}>{t('interview.sync')}</button>
-        {video && <button className={button} disabled={!!busy || playing} onClick={exportVideo}>{t('interview.exportVideo')}</button>}
+        {video && <button className={button} disabled={!!busy || playing} onClick={exportVideo}>{t((video.inPoint ?? 0) > 0 || (video.outPoint ?? video.duration) < video.duration ? 'video.exportSection' : 'interview.exportVideo')}</button>}
         <details className="relative">
           <summary className={`${button} cursor-pointer flex items-center`}>{t('interview.more')}</summary>
           <div className="absolute right-0 top-full mt-2 z-20 p-2 rounded-xl border border-gray-700 bg-gray-900 shadow-xl w-64 space-y-2">
@@ -169,7 +173,7 @@ export function InterviewTools({ engine }: Props) {
       {notice && <p role="status" className="text-sm text-green-300 break-words mt-2">{notice}</p>}
       {video && <div className="mt-3 flex flex-wrap gap-3 items-start">
         {showPreview && previewUrl && <video key={previewUrl} ref={videoRef} src={previewUrl} muted playsInline preload="metadata"
-          aria-label={t('interview.preview')} className="bg-black rounded-xl w-64 max-w-full max-h-36 object-contain"
+          aria-label={t('interview.preview')} className="bg-black rounded-xl w-full sm:w-[420px] xl:w-[520px] max-w-full max-h-[28dvh] object-contain"
           onLoadedMetadata={() => { if (videoRef.current) videoRef.current.currentTime = useProjectStore.getState().playheadPosition; }}
           onError={() => setError(t('interview.previewFailed'))} />}
         <div className="flex-1 min-w-40">
@@ -180,6 +184,15 @@ export function InterviewTools({ engine }: Props) {
               const state = useProjectStore.getState();
               tracks.forEach((other) => state.updateTrack(other.id, { muted: other.id !== track.id, solo: false }));
             }}>{track.name}</button>)}</div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <button className={button} disabled={tracks.length < 2} onClick={onCheckAlignment}>{t('alignment.title')}</button>
+            {[-1, 1].map((direction) => <button key={direction} className={button} aria-label={t(direction < 0 ? 'video.stepBack' : 'video.stepForward')} onClick={() => {
+              const state = useProjectStore.getState(); state.setIsPlaying(false);
+              state.setPlayheadPosition(Math.max(0, Math.min(video.duration, state.playheadPosition + direction / 30)));
+            }}>{direction < 0 ? '−' : '+'} 33 ms</button>)}
+            {showPreview && <button className={button} onClick={() => { void videoRef.current?.requestFullscreen().catch((err) => setError(String(err))); }}>{t('video.fullscreen')}</button>}
+          </div>
+          <VideoControls />
           <button className="min-h-11 text-xs text-gray-400 underline" onClick={() => setShowPreview((old) => !old)}>{t(showPreview ? 'interview.hidePreview' : 'interview.showPreview')}</button>
         </div>
       </div>}

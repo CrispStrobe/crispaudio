@@ -95,7 +95,8 @@ at beginning/middle/end. That does not independently verify visual lip sync.
    ```
 
    The mix must start at camera time zero and cover the complete camera clip.
-   Do not remove pauses/ripple-edit it: the CLI does not cut or retime the picture.
+   Do not ripple-edit the mix independently of the picture. For a single section,
+   add `--start 30.2 --end 55.6`; the CLI cuts both using source-clock seconds.
    The CLI does not yet expose a per-section microphone edit list.
 
 Repeat analysis/alignment for `MVI_8250.MP4` and `MVI_8249.MP4` separately, using
@@ -111,7 +112,13 @@ is future work.
    this project links those files rather than embedding them.
 2. Tap/click **Fit project** to see the whole interview. Play, pause, and use the
    position slider to seek. Open **View & tools** for zoom, snapping, undo/redo, and adding tracks.
-   Zoom in for editing individual question boundaries.
+   Zoom in for editing individual question boundaries. The video filmstrip stays
+   on the same ruler as all audio tracks; click it to seek. Waveforms are visually
+   normalized by default without changing the mix. In **View & tools**, switch
+   waveform display if you need to see mix gain.
+   Open **Check alignment**, choose Camera and Tr1 (then LR), and inspect matching
+   speech starts at Beginning/Middle/End. Try a 0.2–0.5 s window. This overlay
+   does not change offsets; re-analyze/re-import if a correction is needed.
 3. Compare Tr1, LR, and Camera with the microphone buttons below the video.
    These are **global mix changes**, not temporary headphone monitoring. A button
    selects one track and clears other solo states; it changes the eventual export.
@@ -136,13 +143,20 @@ is future work.
    microphone comparison button is used again, restore the intended track
    mute/solo states before export.
 7. **Save project** to a new project file. Keep its linked media folder.
-8. **Export edited video** writes an MP4 with the active timeline mix, original
-   picture, and original camera audio as an alternative. Choose a new filename.
+8. Optionally open **Export range** below the microphone controls. Set the start
+   and end at the playhead or enter seconds. Green IN/OUT markers and dark areas
+   in the video lane show the selected section. **Full recording** resets it.
+   The timeline/audio clips stay on the original clock.
+   **Export edited video** writes an MP4 with the active timeline mix, original
+   picture, and original camera audio as an alternative. **Export video section**
+   instead cuts picture and mix together, encoding picture for accurate boundaries.
+   Choose a new filename. Use fullscreen video to inspect lips, and ±33 ms for
+   approximate fine seeking; hide preview to gain vertical waveform space.
    **Export** in the general timeline toolbar exports audio only, according to
    the format in Settings (select WAV/24-bit for the CLI `--mix` workflow).
 
 Undo/redo is available under **View & tools** (and via keyboard shortcuts). Deleting or trimming an audio clip does not delete the
-source WAV or original video. Picture cuts, ripple editing of picture, and
+source WAV or original video. Multiple picture clips, ripple editing of picture, and
 multi-camera assembly are not implemented.
 
 ## GUI on macOS: start from the originals

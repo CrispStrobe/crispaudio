@@ -35,7 +35,7 @@ enum Commands {
         #[arg(long)]
         allow_uncertain: bool,
     },
-    /// Export aligned tracks (or an edited mix) onto the original picture, without video encoding.
+    /// Export audio onto the picture. Full-length exports copy video; sections encode exact cuts.
     Export {
         #[arg(long)]
         session: String,
@@ -47,6 +47,12 @@ enum Commands {
         allow_uncertain: bool,
         #[arg(long)]
         match_levels: bool,
+        /// Section start on the original video clock (seconds).
+        #[arg(long)]
+        start: Option<f64>,
+        /// Section end on the original video clock (seconds).
+        #[arg(long)]
+        end: Option<f64>,
     },
 }
 
@@ -87,14 +93,29 @@ fn execute(cli: Cli) -> media::Result<()> {
             mix,
             allow_uncertain,
             match_levels,
+            start,
+            end,
         } => {
-            media::export(
-                &media::read_session(&session)?,
-                &output,
-                mix.as_deref(),
-                allow_uncertain,
-                match_levels,
-            )?;
+            let session = media::read_session(&session)?;
+            if start.is_some() || end.is_some() {
+                media::export_segment(
+                    &session,
+                    &output,
+                    mix.as_deref(),
+                    start.unwrap_or(0.0)..end.unwrap_or(session.video.duration),
+                    allow_uncertain,
+                    match_levels,
+                    false,
+                )?;
+            } else {
+                media::export(
+                    &session,
+                    &output,
+                    mix.as_deref(),
+                    allow_uncertain,
+                    match_levels,
+                )?;
+            }
             println!("{}", serde_json::json!({ "output": output }));
         }
     }

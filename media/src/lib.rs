@@ -548,11 +548,84 @@ pub fn export(
     allow_uncertain: bool,
     match_levels: bool,
 ) -> Result<()> {
+    export_impl(
+        session,
+        output,
+        mix,
+        allow_uncertain,
+        match_levels,
+        None,
+        false,
+    )
+}
+
+/// Exact section export: encode the selected picture and camera audio so the
+/// start need not fall on a keyframe. GUI mixes may already begin at range.start.
+pub fn export_segment(
+    session: &Session,
+    output: &str,
+    mix: Option<&str>,
+    range: std::ops::Range<f64>,
+    allow_uncertain: bool,
+    match_levels: bool,
+    mix_is_trimmed: bool,
+) -> Result<()> {
+    if !range.start.is_finite()
+        || !range.end.is_finite()
+        || range.start < 0.0
+        || range.end <= range.start
+        || range.end > session.video.duration + 1e-6
+    {
+        return Err("Invalid video in/out range".into());
+    }
+    let range = if range.start == 0.0 && (range.end - session.video.duration).abs() < 1e-6 {
+        None
+    } else {
+        Some(range)
+    };
+    export_impl(
+        session,
+        output,
+        mix,
+        allow_uncertain,
+        match_levels,
+        range,
+        mix_is_trimmed,
+    )
+}
+
+fn export_impl(
+    session: &Session,
+    output: &str,
+    mix: Option<&str>,
+    allow_uncertain: bool,
+    match_levels: bool,
+    range: Option<std::ops::Range<f64>>,
+    mix_is_trimmed: bool,
+) -> Result<()> {
     validate(session, allow_uncertain)?;
     if Path::new(output).exists() {
         return Err("Output already exists; choose a new filename".into());
     }
-    let mut args = strings(&["-v", "error", "-nostdin", "-n", "-i", &session.video.path]);
+    let start = range.as_ref().map_or(0.0, |r| r.start);
+    let duration = range
+        .as_ref()
+        .map_or(session.video.duration, |r| r.end - r.start);
+    if let Some(path) = mix {
+        let required = if mix_is_trimmed {
+            duration
+        } else {
+            start + duration
+        };
+        if probe(path)?.duration + 0.01 < required {
+            return Err("Edited mix does not cover the selected video range".into());
+        }
+    }
+    let mut args = strings(&["-v", "error", "-nostdin", "-n"]);
+    if range.is_some() {
+        args.extend(strings(&["-ss", &start.to_string()]));
+    }
+    args.extend(strings(&["-i", &session.video.path]));
     let paths: Vec<&str> = if let Some(mix) = mix {
         vec![mix]
     } else {
@@ -563,15 +636,23 @@ pub fn export(
             .collect::<std::result::Result<_, _>>()?
     };
     for path in &paths {
+        if range.is_some() && !(mix.is_some() && mix_is_trimmed) {
+            args.extend(strings(&["-ss", &start.to_string()]));
+        }
         args.extend(strings(&["-i", path]));
     }
     args.extend(strings(&["-map", "0:v:0"]));
     for i in 0..paths.len() {
         args.extend(strings(&["-map", &format!("{}:a:0", i + 1)]));
     }
-    args.extend(strings(&[
-        "-map", "0:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-    ]));
+    args.extend(strings(&["-map", "0:a:0", "-c:a", "aac", "-b:a", "192k"]));
+    if range.is_some() {
+        args.extend(strings(&[
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
+        ]));
+    } else {
+        args.extend(strings(&["-c:v", "copy"]));
+    }
     for i in 0..paths.len() {
         if mix.is_none() && match_levels {
             let levels = session.tracks[i]
@@ -599,13 +680,13 @@ pub fn export(
     }
     args.extend(strings(&[
         &format!("-c:a:{}", paths.len()),
-        "copy",
+        if range.is_some() { "aac" } else { "copy" },
         &format!("-metadata:s:a:{}", paths.len()),
         "title=Original camera audio",
         &format!("-disposition:a:{}", paths.len()),
         "0",
         "-t",
-        &session.video.duration.to_string(),
+        &duration.to_string(),
         "-movflags",
         "+faststart",
         output,
@@ -640,6 +721,102 @@ mod tests {
                 (state as f64 / u32::MAX as f64 * 2.0 - 1.0) as f32
             })
             .collect()
+    }
+    #[test]
+    fn gui_section_does_not_seek_its_already_trimmed_mix_twice() {
+        let root = std::env::temp_dir().join(format!(
+            "crispaudio-range-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&root).unwrap();
+        let video = root.join("video.mp4").to_string_lossy().into_owned();
+        let mix = root.join("mix.wav").to_string_lossy().into_owned();
+        let output = root.join("section.mp4").to_string_lossy().into_owned();
+        run(
+            "ffmpeg",
+            &strings(&[
+                "-v",
+                "error",
+                "-nostdin",
+                "-n",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=s=160x90:r=25:d=4",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=200:sample_rate=48000:duration=4",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "ultrafast",
+                "-c:a",
+                "aac",
+                &video,
+            ]),
+        )
+        .unwrap();
+        run(
+            "ffmpeg",
+            &strings(&[
+                "-v",
+                "error",
+                "-nostdin",
+                "-n",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=777:sample_rate=48000:duration=2",
+                &mix,
+            ]),
+        )
+        .unwrap();
+        let session = Session {
+            format: "crispaudio-sync".into(),
+            version: 1,
+            video: probe(&video).unwrap(),
+            tracks: vec![Track {
+                source: probe(&mix).unwrap(),
+                aligned_path: Some(mix.clone()),
+                levels: None,
+                rendered_rate: None,
+                alignment: Alignment {
+                    offset: 0.0,
+                    rate: 1.0,
+                    confidence: 1.0,
+                    residual_ms: 0.0,
+                    reliable: true,
+                    manual: false,
+                    anchors: vec![],
+                },
+            }],
+            camera_path: None,
+            camera_levels: None,
+        };
+        export_segment(&session, &output, Some(&mix), 1.0..3.0, false, false, true).unwrap();
+        let samples = run(
+            "ffmpeg",
+            &strings(&[
+                "-v", "error", "-i", &output, "-map", "0:a:0", "-ac", "1", "-ar", "48000", "-f",
+                "f32le", "pipe:1",
+            ]),
+        )
+        .unwrap();
+        assert!(
+            samples.len() / 4 >= 95000,
+            "Trimmed mix was sought again and lost audio"
+        );
+        let wrong = root.join("wrong.mp4").to_string_lossy().into_owned();
+        assert!(
+            export_segment(&session, &wrong, Some(&mix), 1.0..3.0, false, false, false).is_err(),
+            "CLI full-clock mix must cover the selected end"
+        );
+        fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn detects_offset_and_inverted_quiet_audio() {

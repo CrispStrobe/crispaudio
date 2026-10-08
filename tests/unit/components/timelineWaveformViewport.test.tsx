@@ -86,12 +86,14 @@ function reference(source: AudioSource, segment: AudioSegment, width: number) {
   const right = (segment.startTime + segment.duration - scrollOffset) * zoomLevel;
   const size = right - left;
   const count = source.peaks.max.length;
-  const start = segment.sourceOffset / source.duration * count;
-  const range = Math.min(count, (segment.sourceOffset + segment.duration) / source.duration * count) - start;
-  const point = (px: number, peaks: Float32Array): Point => [
-    left + px,
-    43 - peaks[Math.min(count - 1, Math.max(0, Math.floor(start + px / size * range)))] * 27,
-  ];
+  // Each display pixel covers an interval: keep all extrema in that interval.
+  const point = (px: number, peaks: Float32Array): Point => {
+    const from = Math.max(0, Math.floor((segment.sourceOffset + px / size * segment.duration) / source.duration * count));
+    const to = Math.min(count, Math.ceil((segment.sourceOffset + (px + 1) / size * segment.duration) / source.duration * count));
+    const values = Array.from(peaks.slice(from, Math.max(from + 1, to)));
+    const value = peaks === source.peaks.max ? Math.max(0, ...values) : Math.min(0, ...values);
+    return [left + px, 43 - value * 27];
+  };
   const upper: Point[] = [];
   const lower: Point[] = [];
   const reverse: Point[] = [];

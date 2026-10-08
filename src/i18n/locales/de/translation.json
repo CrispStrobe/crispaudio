@@ -591,5 +591,41 @@
     "analyze": "3. Synchronisation analysieren",
     "mobileTitle": "Interviewaufnahmen bearbeiten?",
     "mobileHelp": "Automatischer Videoabgleich und MP4-Export benötigen derzeit die Desktop-App mit FFmpeg. Auf iPhone/iPad die ausgerichteten WAVs aus Dateien importieren, in der Timeline bearbeiten und den Audiomix exportieren. Verknüpfte Desktop-Projekte enthalten Mac-Dateipfade und lassen sich nicht direkt übertragen."
+  },
+  "alignment": {
+    "title": "Ausrichtung prüfen",
+    "help": "Zwei Mikrofone auf derselben Zeitskala überlagern. Sprachbeginn und markante Spitzen vergleichen; mehrere Stellen auf Drift prüfen.",
+    "reference": "Referenz",
+    "compare": "Vergleich",
+    "atPlayhead": "Am Abspielkopf",
+    "start": "Anfang",
+    "middle": "Mitte",
+    "end": "Ende",
+    "window": "Zeitfenster",
+    "center": "Position (s)",
+    "chart": "Normalisierte Audiohüllkurven auf gemeinsamer Zeitleiste",
+    "note": "Jede Hüllkurve ist im Zeitfenster normalisiert, vor Pegel, Blenden und Effekten. Verschiedene Mikrofone können unterschiedliche Formen haben; die Ansicht allein beweist keine Synchronität. Versätze bleiben unverändert.",
+    "normalized": "Wellenformen optisch normalisieren",
+    "level": "Wellenformen mit Mischpegel anzeigen",
+    "display": "Wellenformen"
+  },
+  "video": {
+    "track": "Video",
+    "locked": "Quellzeit · gesperrt",
+    "seek": "Video auf gemeinsamer Zeitleiste positionieren",
+    "noThumbnails": "Vorschaubilder nicht verfügbar",
+    "fullscreen": "Video im Vollbild",
+    "stepBack": "Etwa 33 Millisekunden zurück",
+    "stepForward": "Etwa 33 Millisekunden vor",
+    "range": "Exportbereich",
+    "in": "Anfang (s)",
+    "out": "Ende (s)",
+    "setIn": "Anfang am Abspielkopf",
+    "setOut": "Ende am Abspielkopf",
+    "jumpIn": "Zum Anfang",
+    "reset": "Ganze Aufnahme",
+    "rangeHelp": "Beim Export werden Bild und Audiomischung gemeinsam gekürzt. Die ganze Aufnahme behält das Originalbild; ein Ausschnitt wird für einen genauen Schnitt neu kodiert. Audioclips behalten ihre Positionen.",
+    "exportSection": "Videoausschnitt exportieren",
+    "invalidRange": "Gültigen Bereich eingeben: 0 ≤ Anfang < Ende ≤ Aufnahmedauer."
   }
 }

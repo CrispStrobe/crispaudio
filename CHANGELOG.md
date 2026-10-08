@@ -4,9 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [Unreleased — local version 0.4.0]
 
 ### Added
+- Shared video filmstrip lane, larger/fullscreen viewer, approximate 33 ms seeking,
+  and a persisted in/out export range with accurate picture/audio section cuts.
+- Alignment inspection overlay with selectable microphones, 100 ms–10 s windows,
+  and beginning/middle/end checks on the original project clock.
+- Visual waveform normalization (no audio changes), complete peak aggregation,
+  and decoded sample drawing at high zoom.
 - Desktop interview synchronization and drift correction, standalone media CLI,
   linked projects, video preview, and edited-audio MP4 export.
 - Guided file selection/review, microphone comparison, full track mixer, timeline

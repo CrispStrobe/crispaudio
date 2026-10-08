@@ -2,6 +2,8 @@
 
 Desktop interview synchronization, external microphone alignment, video preview
 and edited-audio video export are available in the Timeline and standalone CLI.
+Local version 0.4.0 adds a shared video filmstrip, alignment comparison, clearer
+quiet waveforms, a larger viewer, and in/out section exports.
 See [Interview editing and CLI](docs/INTERVIEW_EDITING.md) for setup, the
 [Canon/H6 walkthrough](docs/INTERVIEW_WALKTHROUGH.md) for concrete steps, and
 [iOS/macOS release status](docs/RELEASE_STATUS.md) for platform limits. The audio

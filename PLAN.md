@@ -15,10 +15,20 @@
   five media DSP tests; generated-media CLI integration tests; browser GUI flow
   calling the real CLI; full Canon/H6 export with unchanged picture/camera hashes
   and residual alignment <= 1.75 ms across beginning/middle/end checks.
-- Picture cuts/multicam, speaker-to-mic automation, and transcript navigation are
+- Multiple picture clips/ripple editing/multicam, speaker-to-mic automation, and transcript navigation are
   follow-up work, documented in `docs/INTERVIEW_EDITING.md`.
 - No separate cross-application engine. FFmpeg/FFprobe are desktop prerequisites;
   web/mobile keep the existing audio editor.
+
+## Visual timeline and video workflow (2026-10-08, local 0.4.0)
+
+- Implemented source-normalized waveforms, transient-preserving aggregation and
+  deep-zoom samples, plus a normalized two-mic alignment overlay.
+- Added the shared-clock filmstrip lane, larger/fullscreen video viewer and
+  approximate time stepping. Single locked video; no arbitrary montage yet.
+- Persisted in/out range; GUI and CLI export accurate encoded sections while
+  preserving stream-copy behavior for the full recording.
+- Local version bumped to 0.4.0; this does not itself submit an Apple release.
 
 ## Touch workflow and release readiness (2026-10-08)
 

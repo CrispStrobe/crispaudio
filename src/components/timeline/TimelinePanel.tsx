@@ -42,6 +42,8 @@ import { TransportControls } from './TransportControls';
 import { TimelineRuler } from './TimelineRuler';
 import { TimelineCanvas } from './TimelineCanvas';
 import { isIOSApp } from '../../lib/native';
+import { AlignmentView } from './AlignmentView';
+import { VideoLane, VIDEO_LANE_HEIGHT } from './VideoLane';
 import { Modal } from '../common/Modal';
 import { TimelineActions } from './TimelineActions';
 import { TRACK_HEADER_WIDTH, TRACK_HEIGHT, RULER_HEIGHT } from '../../hooks/useTimeline';
@@ -203,6 +205,8 @@ export const TimelinePanel: React.FC = () => {
   const [projectError, setProjectError] = useState('');
   const [touchArrange, setTouchArrange] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [alignmentOpen, setAlignmentOpen] = useState(false);
+  const [waveformMode, setWaveformMode] = useState<'normalized' | 'level'>('normalized');
 
   // Keep engine in sync with sources
   useEffect(() => {
@@ -420,7 +424,7 @@ export const TimelinePanel: React.FC = () => {
     <div className="timeline-editor flex flex-col h-full bg-gray-950 overflow-hidden panel-enter">
       {/* Transport bar */}
       <TransportControls />
-      <InterviewTools engine={engineRef} />
+      <InterviewTools engine={engineRef} onCheckAlignment={() => { useProjectStore.getState().setIsPlaying(false); setAlignmentOpen(true); }} />
       {projectError && <p role="alert" className="text-xs text-red-300 px-3 py-2">{projectError}</p>}
 
       <div className="timeline-main-tools flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900 shrink-0">
@@ -444,6 +448,14 @@ export const TimelinePanel: React.FC = () => {
               <input type="range" min={0.1} max={2000} step={0.1} value={store.zoomLevel} onChange={(e) => store.setZoomLevel(+e.target.value)} className="w-28 slider-styled" aria-label={t('timeline.zoomLevel')} />
               <button className="timeline-tool" aria-label={t('timeline.zoomIn')} onClick={handleZoomIn}><ZoomIn size={16} /></button>
             </div>
+            <div className="flex flex-wrap gap-2">
+              <button className="timeline-tool" disabled={store.project.tracks.length < 2} onClick={() => { useProjectStore.getState().setIsPlaying(false); setToolsOpen(false); setAlignmentOpen(true); }}>{t('alignment.title')}</button>
+              <label className="text-xs text-gray-400 flex items-center gap-2">{t('alignment.display')}
+                <select className="min-h-11 bg-gray-800 text-gray-100 rounded px-2" value={waveformMode} onChange={(e) => setWaveformMode(e.target.value as 'normalized' | 'level')}>
+                  <option value="normalized">{t('alignment.normalized')}</option><option value="level">{t('alignment.level')}</option>
+                </select>
+              </label>
+            </div>
             <button className="timeline-tool" aria-label={t('timeline.addTrack')} onClick={handleAddTrack}><Plus size={16} />{t('timeline.addTrack')}</button>
             <button className="timeline-tool" onClick={() => useUIStore.getState().openModal('tts')}><MessageSquare size={16} />{t('tts.title')}</button>
           </div>
@@ -456,6 +468,7 @@ export const TimelinePanel: React.FC = () => {
         {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
       </div>
 
+      {alignmentOpen && <AlignmentView close={() => setAlignmentOpen(false)} />}
       <TimelineActions touchArrange={touchArrange} onTouchArrange={() => setTouchArrange((old) => !old)} />
 
       {/* Main area: headers + canvas */}
@@ -481,6 +494,10 @@ export const TimelinePanel: React.FC = () => {
             </span>
           </div>
 
+          {store.project.video && <div className="shrink-0 px-3 flex flex-col justify-center gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: VIDEO_LANE_HEIGHT }}>
+            <span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
+            <span className="text-xs text-gray-400">{t('video.locked')}</span>
+          </div>}
           {/* Per-track headers — scroll locked to canvas */}
           <div className="flex-1">
             {store.project.tracks.map((t, i) => (
@@ -529,6 +546,8 @@ export const TimelinePanel: React.FC = () => {
             <TimelineRuler width={canvasWidth} />
           </div>
 
+          {store.project.video && <VideoLane width={canvasWidth} />}
+
           {/* Canvas (internally virtual-scrolled via store.scrollOffset) */}
           <div
             className={`flex-1 relative transition-colors ${
@@ -548,7 +567,7 @@ export const TimelinePanel: React.FC = () => {
               }
             }}
           >
-            <TimelineCanvas width={canvasWidth} touchArrange={touchArrange} />
+            <TimelineCanvas width={canvasWidth} touchArrange={touchArrange} waveformMode={waveformMode} />
             {isDraggingFile && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                 <div className="bg-gray-900/80 backdrop-blur rounded-xl px-6 py-4 border border-indigo-500/50 text-indigo-300 font-semibold">

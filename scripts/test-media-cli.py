@@ -49,7 +49,7 @@ with tempfile.TemporaryDirectory(prefix="CrispAudio media test ") as temporary:
             sample = rng.randint(-8000, 8000)
             wav.writeframesraw(struct.pack("<hh", sample, sample // 3))
     video = root / "camera.mp4"
-    ffmpeg("-f", "lavfi", "-i", "color=c=black:s=160x90:r=25:d=8", "-ss", "2.25", "-i", source,
+    ffmpeg("-f", "lavfi", "-i", "testsrc2=s=160x90:r=25:d=8", "-ss", "2.25", "-i", source,
            "-t", "8", "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac", video)
     analysis = root / "analysis.json"
     session = json.loads(cli("analyze", "--video", video, "--audio", source, "--output", analysis))
@@ -71,6 +71,34 @@ with tempfile.TemporaryDirectory(prefix="CrispAudio media test ") as temporary:
     assert stream_hash(video, "0:a:0") == stream_hash(exported, "0:a:1"), "Camera audio changed"
     cli("export", "--session", output_dir / "session.json", "--output", exported, succeeds=False)
     cli("align", "--session", analysis, "--output-dir", output_dir, succeeds=False)
+
+    # A non-keyframe section must start at the selected picture/audio position.
+    section = root / "section.mp4"
+    cli("export", "--session", output_dir / "session.json", "--output", section, "--start", "1.2", "--end", "3.6")
+    assert abs(json.loads(cli("probe", section))["duration"] - 2.4) < .05
+    def frame_at(path, time):
+        return ffmpeg("-ss", str(time), "-i", path, "-frames:v", "1", "-pix_fmt", "rgb24", "-f", "rawvideo", "pipe:1")
+    original_frame, section_frame = frame_at(video, 1.2), frame_at(section, 0)
+    assert len(original_frame) == len(section_frame)
+    assert sum(abs(a-b) for a,b in zip(original_frame, section_frame)) / len(original_frame) < 5, "Section starts on the wrong picture"
+    streams = json.loads(command("ffprobe", "-v", "error", "-show_streams", "-of", "json", section))["streams"]
+    assert len([s for s in streams if s["codec_type"] == "audio"]) == 2
+    # Decode each alternative and compare with the expected source-clock slice.
+    def audio_samples(path, stream=0):
+        return array.array("f", ffmpeg("-i", path, "-map", f"0:a:{stream}", "-ac", "1", "-ar", "8000", "-f", "f32le", "pipe:1"))
+    def correlation(a, b):
+        return sum(x*y for x,y in zip(a,b)) / (sum(x*x for x in a) * sum(y*y for y in b)) ** .5
+    for reference, stream in [(track, 0), (video, 1)]:
+        actual = audio_samples(section, stream)[2000:8000]
+        expected = audio_samples(reference)[9600+2000:9600+8000]
+        assert correlation(actual, expected) > .85, "Section audio is shifted from the picture"
+    short_mix = root / "short.wav"
+    ffmpeg("-i", track, "-t", "1", short_mix)
+    cli("export", "--session", output_dir / "session.json", "--output", root / "short.mp4", "--mix", short_mix, "--start", "1.2", "--end", "3.6", succeeds=False)
+    assert not (root / "short.mp4").exists()
+    for start, end in [(4, 3), (0, 99)]:
+        cli("export", "--session", output_dir / "session.json", "--output", root / "bad.mp4", "--start", str(start), "--end", str(end), succeeds=False)
+    assert not (root / "bad.mp4").exists()
 
     # Camera starts before the external recorder: the aligned recording must
     # contain silence until its actual start, not move the whole interview.
@@ -96,4 +124,4 @@ with tempfile.TemporaryDirectory(prefix="CrispAudio media test ") as temporary:
     uncertain_file.write_text(json.dumps(uncertain))
     cli("align", "--session", uncertain_file, "--output-dir", root / "must-not-exist", succeeds=False)
     assert not (root / "must-not-exist").exists()
-    print("PASS: offsets in both directions, 48 kHz/24-bit stereo, level measurement, review/overwrite guards, unchanged video and camera audio")
+    print("PASS: offsets in both directions, 48 kHz/24-bit stereo, level measurement, review/overwrite guards, unchanged full-length video/camera audio, accurate section picture and duration, range guards")

@@ -84,7 +84,8 @@ each source's original number of channels retained.
    aligned folder and original video; moving them requires restoring their paths.
 6. **Export edited video** renders the active timeline mix to the original video's
    duration, then copies the original picture and retains camera audio as an
-   alternative track. It does not cut or retime the picture.
+   alternative track. Full length copies the picture; **Export range** selects
+   a single section and encodes an accurate picture/audio cut.
 
 Project version 2 can also embed 32-bit PCM WAV for portable audio projects;
 version 1 projects still load. Linked projects avoid repeated PCM/base64 copies
@@ -143,6 +144,47 @@ It checks offsets in both directions, late-recorder silence, channels, sample
 rate/precision, level measurement, confidence and overwrite guards, and compressed
 stream hashes for both picture and retained camera audio.
 
-Next work: picture cuts/multicam, transcript navigation, microphone changes by
+Next work: multiple picture clips/ripple cuts/multicam, transcript navigation, microphone changes by
 speaker with reviewed crossfades, long-file streaming, cancellable native jobs,
 and packaging/discovery of FFmpeg on fresh installations.
+
+## Visual alignment and video sections (local 0.4.0)
+
+The video lane shares the audio ruler, horizontal scroll, zoom, and playhead.
+Eight overview thumbnails show picture context; they are not frame-accurate
+edit handles. Click the lane to seek. The viewer offers fullscreen and ±33 ms
+steps (approximate time steps, not frame-rate detection). Hide the viewer when
+more vertical audio space is needed.
+
+Waveforms default to display normalization per source; this does not change
+mix gain, measured recording quality, or export audio. **View & tools** can
+switch to mix-gain display. Deep zoom uses decoded channel-one samples; wider
+views aggregate all covered cached peaks so narrow transients stay visible.
+
+**Check alignment** overlays two pre-effect, window-normalized audio envelopes.
+Choose Camera as reference and compare Tr1/LR near speech starts at beginning,
+middle, and end; use a 100–500 ms window for close inspection. Different mic
+positions and room reverberation change envelope shape. Also listen and check
+lips in the video. This is an inspection tool, not proof of sync or an automatic
+offset correction. Actual offset corrections remain in the sync session review,
+followed by a fresh aligned import.
+
+**Export range** sets in/out on the original video clock, with buttons at the
+playhead or numeric seconds. Undo restores a range change. It does not move or
+trim the stored audio clips. Export section renders that interval of the current
+mix and encodes H.264/AAC for an accurate cut, retaining section camera audio as
+an alternative. Full-length export still copies compressed picture and camera
+audio. This is one locked source video and one export interval, not a multicam
+or arbitrary multi-clip montage editor. Camera + external audio setup is still
+required; silent video and standalone video import are not supported yet.
+
+CLI equivalent (seconds on the original camera clock):
+
+```sh
+crispaudio export --session aligned/session.json \
+  --start 30.2 --end 55.6 --output interview-section.mp4
+```
+
+With CLI `--mix`, supply the full source-clock mix, starting at camera time zero,
+covering at least the selected end. The CLI seeks it with the picture. The GUI
+renders an already trimmed temporary mix and uses the backend's trimmed-mix path.

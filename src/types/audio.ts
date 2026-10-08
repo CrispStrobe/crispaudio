@@ -13,6 +13,8 @@ export interface TimelineProject {
   video?: {
     path: string;
     duration: number;
+    inPoint?: number;
+    outPoint?: number;
     session: import('../lib/media').SyncSession;
   };
 }

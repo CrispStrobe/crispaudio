@@ -31,9 +31,16 @@ pub async fn export_media(
     session: Session,
     output: String,
     mix: Option<String>,
+    start: Option<f64>,
+    end: Option<f64>,
 ) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
-        media::export(&session, &output, mix.as_deref(), false, false)
+        if start.is_some() || end.is_some() {
+            let range = start.unwrap_or(0.0)..end.unwrap_or(session.video.duration);
+            media::export_segment(&session, &output, mix.as_deref(), range, false, false, true)
+        } else {
+            media::export(&session, &output, mix.as_deref(), false, false)
+        }
     })
     .await
     .map_err(|e| e.to_string())?

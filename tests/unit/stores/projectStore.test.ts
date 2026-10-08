@@ -441,3 +441,22 @@ describe('projectStore — deleteSelected', () => {
     expect(useProjectStore.getState().project.tracks[0].segments).toHaveLength(1);
   });
 });
+
+describe('video export range', () => {
+  it('preserves the source clock and clips, supports undo, and rejects invalid ranges', () => {
+    const state = useProjectStore.getState();
+    const video = { path: '/camera.mp4', duration: 10, session: {} } as NonNullable<typeof state.project.video>;
+    useProjectStore.setState({ project: { ...state.project, duration: 10, video } });
+    useProjectStore.temporal.getState().clear();
+    const original = useProjectStore.getState().project;
+    useProjectStore.getState().setVideoRange(2, 6);
+    const changed = useProjectStore.getState().project;
+    expect(changed.video).toMatchObject({ duration: 10, inPoint: 2, outPoint: 6 });
+    expect(changed.tracks).toBe(original.tracks);
+    expect(changed.duration).toBe(10);
+    for (const [start, end] of [[-1, 5], [5, 5], [2, 11], [NaN, 5], [0, Infinity]]) useProjectStore.getState().setVideoRange(start, end);
+    expect(useProjectStore.getState().project).toBe(changed);
+    useProjectStore.temporal.getState().undo();
+    expect(useProjectStore.getState().project).toBe(original);
+  });
+});

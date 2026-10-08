@@ -105,6 +105,7 @@ interface ProjectState {
   setLoopEnabled: (enabled: boolean) => void;
 
   // View
+  setVideoRange: (start: number, end: number) => void;
   setZoomLevel: (level: number) => void;
   setScrollOffset: (offset: number) => void;
   setSnapEnabled: (enabled: boolean) => void;
@@ -759,6 +760,12 @@ export const useProjectStore = create<ProjectState>()(
       setLoopEnabled: (enabled) => set({ loopEnabled: enabled }),
 
       // ── View ──────────────────────────────────────────────────────────────────
+
+      setVideoRange: (start, end) => set((state) => {
+        const video = state.project.video;
+        if (!video || !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > video.duration || end <= start) return state;
+        return { project: { ...state.project, video: { ...video, inPoint: start, outPoint: end } } };
+      }),
 
       setZoomLevel: (level) =>
         set({ zoomLevel: Math.max(0.1, Math.min(2000, level)) }),

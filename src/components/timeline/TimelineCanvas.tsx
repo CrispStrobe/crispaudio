@@ -16,6 +16,7 @@ import { useProjectStore } from '../../stores/projectStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../stores/uiStore';
 import { useTimeline, TRACK_HEIGHT } from '../../hooks/useTimeline';
+import { sourceDisplayGain, waveformBounds } from '../../lib/waveformView';
 import { haptic } from '../../lib/native';
 import { useTimelineCanvasInvalidation } from './useTimelineCanvasInvalidation';
 import { useTimelineCanvasPlayhead } from './useTimelineCanvasPlayhead';
@@ -69,6 +70,7 @@ interface TimelineCanvasProps {
   /** Total width of the canvas area in CSS px (excluding track header). */
   width: number;
   touchArrange?: boolean;
+  waveformMode?: 'normalized' | 'level';
   /** Called when the canvas height changes (for parent layout). */
   onHeightChange?: (height: number) => void;
 }
@@ -77,6 +79,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
   width,
   onHeightChange,
   touchArrange = false,
+  waveformMode = 'level',
 }) => {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -132,7 +135,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       displayGain: number,
     ) => {
       const { peaks } = source;
-      const { min: peakMin, max: peakMax } = peaks;
+      const { max: peakMax } = peaks;
       const peakCount = peakMax.length;
 
       const segWidth = segRight - segLeft;
@@ -142,19 +145,9 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
       if (segWidth < 2 || peakCount === 0) return;
 
-      // How many peak samples map to 1 canvas pixel?
-      // sourceOffset + duration determine which part of the peaks array to show
-      const sourceTotal = source.duration;
-      const samplesPerPeak = sourceTotal / peakCount;
-
-      const visibleStart = seg.sourceOffset; // seconds into source
-      const visibleEnd = seg.sourceOffset + seg.duration;
-
-      const peakStart = (visibleStart / sourceTotal) * peakCount;
-      const peakEnd = Math.min(peakCount, (visibleEnd / sourceTotal) * peakCount);
-      const peakRange = peakEnd - peakStart;
-
-      const pixelsPerPeakSample = segWidth / peakRange;
+      const bounds = (px: number) => waveformBounds(source,
+        seg.sourceOffset + px / segWidth * seg.duration,
+        seg.sourceOffset + (px + 1) / segWidth * seg.duration);
 
       // Keep the original segment-local sampling grids, but visit only the
       // viewport plus one neighboring point per edge for stroke/fill continuity.
@@ -178,9 +171,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       // Draw upper envelope (max)
       ctx.moveTo(segLeft, midY);
       for (let px = firstPixel; px <= lastPixel; px++) {
-        const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
-        const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
-        const maxVal = Math.max(-1, Math.min(1, peakMax[clampedIdx] * displayGain));
+        const maxVal = Math.max(-1, Math.min(1, bounds(px)[1] * displayGain));
         const y = midY - maxVal * halfHeight;
         if (px === firstPixel) {
           ctx.moveTo(segLeft + px, y);
@@ -192,9 +183,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       // Draw lower envelope (min) in reverse
       for (let i = firstReversePixel; i <= lastReversePixel; i++) {
         const px = segWidth - i;
-        const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
-        const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
-        const minVal = Math.max(-1, Math.min(1, peakMin[clampedIdx] * displayGain));
+        const minVal = Math.max(-1, Math.min(1, bounds(px)[0] * displayGain));
         const y = midY - minVal * halfHeight; // min is negative
         ctx.lineTo(segLeft + px, y);
       }
@@ -207,9 +196,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       ctx.lineWidth = WAVEFORM_LINE_WIDTH;
       ctx.beginPath();
       for (let px = firstPixel; px <= lastPixel; px++) {
-        const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
-        const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
-        const maxVal = Math.max(-1, Math.min(1, peakMax[clampedIdx] * displayGain));
+        const maxVal = Math.max(-1, Math.min(1, bounds(px)[1] * displayGain));
         const y = midY - maxVal * halfHeight;
         if (px === firstPixel) {
           ctx.moveTo(segLeft + px, y);
@@ -222,9 +209,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       // Min line
       ctx.beginPath();
       for (let px = firstPixel; px <= lastPixel; px++) {
-        const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
-        const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
-        const minVal = Math.max(-1, Math.min(1, peakMin[clampedIdx] * displayGain));
+        const minVal = Math.max(-1, Math.min(1, bounds(px)[0] * displayGain));
         const y = midY - minVal * halfHeight;
         if (px === firstPixel) {
           ctx.moveTo(segLeft + px, y);
@@ -235,8 +220,6 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       ctx.stroke();
 
       ctx.restore();
-      void samplesPerPeak; // suppress unused warning
-      void pixelsPerPeakSample;
     },
     [width],
   );
@@ -347,7 +330,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       // Waveform
       const source = store.sources.get(seg.sourceId);
       if (source && segRight - segLeft > 4) {
-        drawWaveform(ctx, source, seg, segLeft, segRight, segTop + 6, segBottom, baseColor, track.volume * seg.gain);
+        drawWaveform(ctx, source, seg, segLeft, segRight, segTop + 6, segBottom, baseColor, waveformMode === 'normalized' ? sourceDisplayGain(source) : track.volume * seg.gain);
       }
 
       // Fade overlays
@@ -379,7 +362,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
       void track;
     },
-    [timeToPixels, store.sources, drawWaveform, drawFadeOverlay],
+    [timeToPixels, store.sources, drawWaveform, drawFadeOverlay, waveformMode],
   );
 
   const draw = useCallback(() => {
