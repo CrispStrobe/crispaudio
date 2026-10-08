@@ -8,3 +8,9 @@ it('commits colon-formatted input with Enter and cancels with Escape',()=>{
  commit.mockClear();act(()=>field.focus());fireEvent.change(field,{target:{value:'25'}});fireEvent.keyDown(field,{key:'Escape'});expect(commit).not.toHaveBeenCalled();expect(field).toHaveValue('00:02.000');
 });
 it('marks malformed input and preserves the timeline',()=>{const commit=vi.fn();render(<TimeField label="DUR" value={10} onCommit={commit}/>);const field=screen.getByLabelText('DUR');act(()=>field.focus());fireEvent.change(field,{target:{value:'1:99'}});act(()=>field.blur());expect(commit).not.toHaveBeenCalled();expect(field).toHaveAttribute('aria-invalid','true');});
+
+it('preserves full precision when merely focused for contextual help',()=>{
+ const commit=vi.fn();render(<TimeField label="POS" value={2.123456} onCommit={commit}/>);
+ const field=screen.getByLabelText('POS');act(()=>field.focus());act(()=>field.blur());
+ expect(commit).not.toHaveBeenCalled();expect(field).toHaveValue('00:02.123');
+});

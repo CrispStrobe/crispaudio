@@ -81,7 +81,7 @@ export const TransportControls = React.memo(function TransportControls({viewport
       {/* Skip to start */}
       <button
         type="button"
-        onClick={handleSkipStart}
+        data-help="play" onClick={handleSkipStart}
         className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
         title={t('timeline.skipToStart')}
         aria-label={t('timeline.skipToStart')}
@@ -92,7 +92,7 @@ export const TransportControls = React.memo(function TransportControls({viewport
       {/* Play / Pause */}
       <button
         type="button"
-        onClick={handlePlayPause}
+        data-help="play" onClick={handlePlayPause}
         className="flex items-center justify-center w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow"
         title={isPlaying ? t('timeline.pauseTooltip') : t('timeline.playTooltip')}
         aria-label={isPlaying ? t('timeline.pause') : t('timeline.play')}
@@ -107,7 +107,7 @@ export const TransportControls = React.memo(function TransportControls({viewport
       {/* Stop */}
       <button
         type="button"
-        onClick={handleStop}
+        data-help="play" onClick={handleStop}
         className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
         title={t('timeline.stop')}
         aria-label={t('timeline.stop')}
@@ -118,7 +118,7 @@ export const TransportControls = React.memo(function TransportControls({viewport
       {/* Skip to end */}
       <button
         type="button"
-        onClick={handleSkipEnd}
+        data-help="play" onClick={handleSkipEnd}
         className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
         title={t('timeline.skipToEnd')}
         aria-label={t('timeline.skipToEnd')}
@@ -129,7 +129,7 @@ export const TransportControls = React.memo(function TransportControls({viewport
       {/* Loop */}
       <button
         type="button"
-        onClick={handleLoopToggle}
+        data-help="loop" onClick={handleLoopToggle}
         className={`p-1.5 rounded transition-colors ${
           loopEnabled
             ? 'text-indigo-400 bg-indigo-900/40 hover:bg-indigo-900/60'

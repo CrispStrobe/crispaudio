@@ -574,3 +574,13 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
 .timeline-main-tools { display:flex; flex-wrap:nowrap; }
 .timeline-media-actions { display:contents; }
 .toolbar-overflow-menu { position:fixed; z-index:1000; -webkit-user-select:none; user-select:none; }
+
+/* Contextual help is anchored to the inspected control, never a modal manual. */
+[data-timeline-help="true"] [data-help] { outline:1px dashed #818cf8; outline-offset:2px; cursor:help; }
+[data-timeline-help="true"] [data-help-target="true"] { outline:2px solid #a5b4fc; outline-offset:3px; }
+.timeline-help-card, .timeline-help-status { position:fixed; z-index:1100; background:#1e293b; color:#e2e8f0; border:1px solid #818cf8; border-radius:10px; box-shadow:0 5px 24px #0009; font-size:13px; }
+.timeline-help-card { padding:12px; pointer-events:none; max-height:calc(100dvh - 24px); overflow-y:auto; }
+.timeline-help-card p { margin-top:6px; line-height:1.5; }
+.timeline-help-status { bottom:30px; right:12px; max-width:calc(100vw - 24px); padding:6px 8px 6px 12px; display:flex; align-items:center; gap:8px; }
+.timeline-help-status button { width:44px; height:44px; flex-shrink:0; display:grid; place-items:center; border-radius:6px; }
+.timeline-help-status button:hover { background:#334155; }

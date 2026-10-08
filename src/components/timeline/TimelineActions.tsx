@@ -28,23 +28,23 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
   const button = 'min-h-11 px-3 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-40';
   return <>
     <div className="timeline-clip-actions flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 shrink-0" aria-label={t('timeline.clipActions')}>
-      <ToolButton icon={Hand} label={t(touchArrange?'timeline.touchArrangeOn':'timeline.touchArrangeOff')} className="touch-arrange-toggle" aria-pressed={touchArrange} onClick={onTouchArrange}/>
-      <ToolButton icon={SlidersHorizontal} label={t('timeline.mixer')} disabled={!tracks.length} onClick={()=>setMixer(true)}/>
-      <ToolButton icon={Scissors} label={t('timeline.splitAtPlayhead')} className="clip-split-selected" disabled={!splittable.length} onClick={()=>{
+      <ToolButton data-help="move" icon={Hand} label={t(touchArrange?'timeline.touchArrangeOn':'timeline.touchArrangeOff')} className="touch-arrange-toggle" aria-pressed={touchArrange} onClick={onTouchArrange}/>
+      <ToolButton data-help="mixer" icon={SlidersHorizontal} label={t('timeline.mixer')} disabled={!tracks.length} onClick={()=>setMixer(true)}/>
+      <ToolButton data-help="split" icon={Scissors} label={t('timeline.splitAtPlayhead')} className="clip-split-selected" disabled={!splittable.length} onClick={()=>{
         const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,selection?.segmentIds??[],position),selection:null});
       }}/>
-      <ToolButton icon={Layers} label={t('timeline.splitAll')} onClick={()=>{
+      <ToolButton data-help="split" icon={Layers} label={t('timeline.splitAll')} onClick={()=>{
         const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,projectClips(state.project).map(c=>c.id),position),selection:null});
       }}/>
-      <ToolButton icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>onInspector?onInspector():setInspector(true)}/>
-      <ToolButton icon={Blend} label={t('usability.blendAudio')} disabled={selected.length<2} onClick={()=>{try{const state=useProjectStore.getState();useProjectStore.setState({project:blendAudioOverlaps(state.project,selection?.segmentIds??[])});}catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:String(error)}));}}}/>
-      <ToolButton icon={Trash2} label={t('timeline.delete')} disabled={!allSelected.length} onClick={deleteSelection}/>
+      <ToolButton data-help="inspector" icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>onInspector?onInspector():setInspector(true)}/>
+      <ToolButton data-help="overlap" icon={Blend} label={t('usability.blendAudio')} disabled={selected.length<2} onClick={()=>{try{const state=useProjectStore.getState();useProjectStore.setState({project:blendAudioOverlaps(state.project,selection?.segmentIds??[])});}catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:String(error)}));}}}/>
+      <ToolButton data-help="remove" icon={Trash2} label={t('timeline.delete')} disabled={!allSelected.length} onClick={deleteSelection}/>
       <span className="text-xs text-gray-400 hidden lg:block">{t('editing.nudge')}</span>
-      <ToolButton icon={ArrowLeft} label={t('editing.nudgeLeft')} onClick={()=>nudgeSelection(-nudge)}/>
-      <select className="bg-gray-800 rounded min-h-11 px-1 text-xs text-gray-200 w-20" value={nudge} aria-label={t('editing.nudgeStep')} onChange={e=>setNudge(Number(e.target.value))}>
+      <ToolButton data-help="nudge" icon={ArrowLeft} label={t('editing.nudgeLeft')} onClick={()=>nudgeSelection(-nudge)}/>
+      <select data-help="nudge" className="bg-gray-800 rounded min-h-11 px-1 text-xs text-gray-200 w-20" value={nudge} aria-label={t('editing.nudgeStep')} onChange={e=>setNudge(Number(e.target.value))}>
         <option value={1/useProjectStore.getState().project.sampleRate}>{t('editing.sample')}</option><option value={.001}>1 ms</option><option value={.01}>10 ms</option><option value={1/30}>33 ms</option><option value={.1}>100 ms</option>
       </select>
-      <ToolButton icon={ArrowRight} label={t('editing.nudgeRight')} onClick={()=>nudgeSelection(nudge)}/>
+      <ToolButton data-help="nudge" icon={ArrowRight} label={t('editing.nudgeRight')} onClick={()=>nudgeSelection(nudge)}/>
     </div>
     <Modal isOpen={inspector && allSelected.length > 0} onClose={() => setInspector(false)} title={t('timeline.clipSettings')}>
       {selectedVideo.length ? <VideoClipSettings id={selectedVideo[0].id}/> : <SegmentEffectsPanel onClose={() => setInspector(false)} />}

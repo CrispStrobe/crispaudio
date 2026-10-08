@@ -109,7 +109,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
       data-touch-compact={trackHeight<96}
     >
       <div className="track-heading flex items-center gap-1.5 mb-1">
-        <button type="button" data-track-reorder
+        <button type="button" data-track-reorder data-help="reorder"
           onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);onDragStart(e,track.id);}}
           onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))onDragOver(e,trackIndex);}}
           onPointerUp={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId)){onDrop(e,trackIndex);e.currentTarget.releasePointerCapture(e.pointerId);}}}
@@ -156,7 +156,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
           type="button"
           onClick={() => removeTrack(track.id)}
           className="track-remove p-0.5 text-gray-600 hover:text-red-400 transition-colors"
-          aria-label={t('timeline.removeTrack')}
+          data-help="remove" aria-label={t('timeline.removeTrack')}
           title={t('timeline.removeTrack')}
         >
           <Trash2 className="w-3 h-3" />
@@ -174,7 +174,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
               : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
           }`}
           title={t(track.solo && track.muted ? 'editor.muteOverridden' : 'timeline.mute')}
-          aria-label={`${t('timeline.mute')} ${track.name}`}
+          data-help="mute" aria-label={`${t('timeline.mute')} ${track.name}`}
           aria-pressed={track.muted}
         >
           M
@@ -190,7 +190,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
               : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
           }`}
           title={t('timeline.solo')}
-          aria-label={`${t('timeline.solo')} ${track.name}`}
+          data-help="solo" aria-label={`${t('timeline.solo')} ${track.name}`}
           aria-pressed={track.solo}
         >
           S
@@ -504,10 +504,10 @@ export const TimelinePanel: React.FC = () => {
       <div className="timeline-main-tools flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900 shrink-0">
         <input ref={fileInputRef} type="file" accept="audio/*" multiple className="hidden"
           onChange={(e) => { void handleImportFiles(fileInputs(Array.from(e.target.files??[]))); e.target.value = ''; }} />
-        <ToolButton icon={FilePlus2} label={t('editor.newProject')} onClick={() => setResetOpen(true)}/>
-        <ToolButton icon={FolderOpen} label={t('timeline.openProject')} onClick={() => void handleOpenProject()}/>
-        <ToolButton icon={Save} label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}/>
-        <ToolButton icon={Upload} label={t('timeline.import')} onClick={() => askImport()}/>
+        <ToolButton data-help="files" icon={FilePlus2} label={t('editor.newProject')} onClick={() => setResetOpen(true)}/>
+        <ToolButton data-help="files" icon={FolderOpen} label={t('timeline.openProject')} onClick={() => void handleOpenProject()}/>
+        <ToolButton data-help="files" icon={Save} label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}/>
+        <ToolButton data-help="import" icon={Upload} label={t('timeline.import')} onClick={() => askImport()}/>
         <ToolButton icon={Download} label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} />
         <AutoSyncTracks onError={setProjectError} />
@@ -517,7 +517,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Plus} label={t('timeline.addTrack')} onClick={handleAddTrack}/>
         <ToolButton icon={MessageSquare} label={t('tts.title')} onClick={()=>useUIStore.getState().openModal('tts')}/>
         <MediaTools engine={engineRef} panelTarget={mediaPanel} />
-        <ToolButton icon={CircleHelp} label={t('usability.help')} onClick={()=>setHelpOpen(true)}/>
+        <ToolButton data-help-toggle icon={CircleHelp} label={t('usability.help')} aria-pressed={helpOpen} onClick={()=>setHelpOpen(value=>!value)}/>
         {exportStage && <div className="flex flex-wrap gap-2 items-center">
           <span role="status" className="text-sm text-gray-300">{t(`audioExport.${exportStage}`)}</span>
           {exportStage === 'rendering' && <span className="text-xs text-gray-400">{t('audioExport.renderCancelNote')}</span>}
@@ -526,7 +526,7 @@ export const TimelinePanel: React.FC = () => {
         {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
       </div>
 
-      <TimelineHelp open={helpOpen} onClose={()=>setHelpOpen(false)}/>
+      {helpOpen&&<TimelineHelp open onClose={()=>setHelpOpen(false)}/>}
       <Modal isOpen={importOpen} onClose={()=>setImportOpen(false)} title={t('timeline.importAudio')}>
         <p className="text-sm text-gray-300 mb-3">{t('usability.importDestinationHelp')}</p>
         <label className="text-sm text-gray-300">{t('usability.destination')}
@@ -555,14 +555,14 @@ export const TimelinePanel: React.FC = () => {
       <TransportControls viewportWidth={canvasWidth} />
       <div className="timeline-command-strip flex shrink-0 overflow-x-auto">
       <div className="timeline-view-tools flex flex-wrap items-center gap-2 px-3 py-1 border-b border-gray-800 shrink-0">
-        <ToolButton icon={Scan} label={t('timeline.fit')} disabled={!timelineDuration(store.project)} onClick={fitAll}/>
-        <ToolButton icon={ZoomOut} label={t('timeline.zoomOut')} onClick={handleZoomOut}/>
-        <ToolButton icon={ZoomIn} label={t('timeline.zoomIn')} onClick={handleZoomIn}/>
-        <ToolButton icon={Magnet} label={t('timeline.snap')} aria-pressed={store.snapEnabled} onClick={()=>store.setSnapEnabled(!store.snapEnabled)}/>
+        <ToolButton data-help="navigation" icon={Scan} label={t('timeline.fit')} disabled={!timelineDuration(store.project)} onClick={fitAll}/>
+        <ToolButton data-help="navigation" icon={ZoomOut} label={t('timeline.zoomOut')} onClick={handleZoomOut}/>
+        <ToolButton data-help="navigation" icon={ZoomIn} label={t('timeline.zoomIn')} onClick={handleZoomIn}/>
+        <ToolButton data-help="snap" icon={Magnet} label={t('timeline.snap')} aria-pressed={store.snapEnabled} onClick={()=>store.setSnapEnabled(!store.snapEnabled)}/>
         <ToolButton icon={AlignHorizontalJustifyCenter} label={t('alignment.title')} disabled={store.project.tracks.length<2} onClick={()=>{useProjectStore.getState().setIsPlaying(false);setAlignmentOpen(true);}}/>
-        <ToolButton icon={AudioLines} label={t(waveformMode === 'normalized' ? 'alignment.normalizedHelp' : 'alignment.levelHelp')} aria-pressed={waveformMode === 'normalized'} onClick={()=>setWaveformMode(mode=>mode==='normalized'?'level':'normalized')}/>
+        <ToolButton data-help="waveform" icon={AudioLines} label={t(waveformMode === 'normalized' ? 'alignment.normalizedHelp' : 'alignment.levelHelp')} aria-pressed={waveformMode === 'normalized'} onClick={()=>setWaveformMode(mode=>mode==='normalized'?'level':'normalized')}/>
         <label className="text-xs text-gray-400 flex items-center gap-2">{t('editor.trackHeight')}
-          <input aria-label={t('editor.trackHeight')} className="slider-styled w-24" type="range" min={24} max={640} value={store.trackHeight} onChange={e => store.setTrackHeight(+e.target.value)} />
+          <input data-help="height" aria-label={t('editor.trackHeight')} className="slider-styled w-24" type="range" min={24} max={640} value={store.trackHeight} onChange={e => store.setTrackHeight(+e.target.value)} />
         </label>
       </div>
       <TimelineActions onInspector={()=>setWorkspace('edit')} touchArrange={touchArrange} onTouchArrange={() => setTouchArrange((old) => !old)} />
@@ -597,7 +597,7 @@ export const TimelinePanel: React.FC = () => {
 
           {store.project.video && <div data-track-header data-compact={store.trackHeight<56} data-touch-compact={store.trackHeight<96} className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
             <div className="track-heading flex items-center justify-between gap-2"><span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
-              <button type="button" className="p-1 text-gray-400 hover:text-red-400" aria-label={t('usability.removeVideo')} title={t('usability.removeVideo')} onClick={()=>{
+              <button type="button" className="p-1 text-gray-400 hover:text-red-400" data-help="remove" aria-label={t('usability.removeVideo')} title={t('usability.removeVideo')} onClick={()=>{
                 const state=useProjectStore.getState();const groups=new Set(state.project.video?.clips?.map(clip=>clip.linkGroup).filter(Boolean));
                 const project={...state.project,video:undefined,tracks:state.project.tracks.map(track=>({...track,segments:track.segments.map(clip=>clip.linkGroup&&groups.has(clip.linkGroup)?{...clip,linkGroup:undefined}:clip)}))};
                 useProjectStore.setState({project:{...project,duration:timelineDuration(project)},selection:null,isPlaying:false});

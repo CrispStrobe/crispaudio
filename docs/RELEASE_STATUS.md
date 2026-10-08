@@ -284,3 +284,24 @@ passed. The ad-hoc-signed 0.6.6 local app is installed and running. Current auto
 and full WebKit recovery were backed up as `ux/native-autosave-before-066.json`
 and `ux/recovery-before-066/WebKit` in the private validation folder. No Apple
 submission or release tag is included; native/media code is unchanged.
+
+## Local 0.6.7 contextual help
+
+The top question mark toggles an inspection mode instead of opening a manual.
+Highlighted controls show one explanation beside the hovered, focused or tapped
+control, including disabled actions. Help taps and editing keys cannot modify
+the arrangement. Escape, the help toggle or the status close button exits help.
+English/German topics cover move/trim, snapping, clip edits, track ordering,
+transport, mixer, time fields, imports and navigation. Focusing and leaving a
+POS/DUR field also preserves its exact unrounded value without a commit.
+
+Verified: full frontend run passed 80 suites / 1,250 tests; the final time-field
+precision regression and contextual-help suite then passed all six focused tests.
+Lint passed. Chrome and WebKit integration at desktop, tablet and phone sizes
+verified anchored explanations, viewport bounds, hover, tap without activation,
+keyboard focus, Escape and restored editing. Physical iOS remains untested.
+
+TypeScript/Vite and the macOS app bundle build passed. The ad-hoc-signed local
+0.6.7 app is installed and launched. Autosave and full WebKit recovery were backed
+up under the private validation folder's `ux/native-autosave-before-067.json`
+and `ux/recovery-before-067/WebKit`. No release tag or Apple upload is included.

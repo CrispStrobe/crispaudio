@@ -13,7 +13,7 @@ export function TimelineNavigation({ width }: { width: number }) {
   const max = Math.max(0, duration - width / zoom);
   useEffect(() => { if (ref.current) ref.current.scrollLeft = Math.min(scroll, max) * zoom; }, [scroll, max, zoom]);
   const move = (value: number) => useProjectStore.getState().setScrollOffset(Math.max(0, Math.min(max, value)));
-  return <div className="timeline-navigation shrink-0 border-t border-gray-700 px-3 bg-gray-900">
+  return <div data-help="navigation" className="timeline-navigation shrink-0 border-t border-gray-700 px-3 bg-gray-900">
     <div className="flex items-center gap-2 text-xs text-gray-400">
       <button className="min-h-9 px-2" aria-label={t('editor.panLeft')} disabled={scroll <= 0} onClick={() => move(scroll - width / zoom * .8)}>◀</button>
       <ProjectOverview viewportWidth={width}/>

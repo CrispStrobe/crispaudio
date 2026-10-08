@@ -199,3 +199,10 @@ hold the icon on touch without activating it. The navigation help icon explains
 horizontal scrolling and zoom gestures. The project overview has its own hover
 help instead of a permanent text heading. Interface labels do not select during
 clicks or drags; editable fields and diagnostic text remain selectable.
+
+
+Use the top **?** to enter contextual help mode. Highlighted controls show their
+explanation beside the element when hovered, focused with Tab, or tapped. Tapping
+in help mode explains instead of editing. This works for disabled controls too.
+Only one explanation is shown at a time; there is no manual dialog. Press Escape,
+use **?** again or the help status close button to resume editing.

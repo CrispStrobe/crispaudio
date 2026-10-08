@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.6]
+## [Unreleased — local version 0.6.7]
+
+- Replace the help manual dialog with contextual help mode: highlight controls
+  and show one explanation beside the hovered, focused or tapped element.
+- Help gestures cannot activate editing actions. Escape, the help toggle or its
+  close button returns to editing. Disabled controls can also be explained.
+- Add English/German explanations for transport, snapping, waveform display,
+  clip editing, linked selections, mixer and track controls.
+
+## [Local version 0.6.6]
 
 - Center toolbar and transport SVGs in explicit square targets on WebKit.
 - Keep video actions and More in the top scrolling toolbar; position More above
