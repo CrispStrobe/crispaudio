@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom';
+import { OverflowMenu } from '../common/OverflowMenu';
 import { ToolButton } from '../common/ToolButton';
 import { Film, Clapperboard } from 'lucide-react';
 import { videoClips, videoTimelineDuration, validateVideoClips } from '../../lib/videoEditing';
@@ -16,9 +18,9 @@ import type { TimelineEngine } from '../../audio/engine/TimelineEngine';
 import { encodeAudioBufferWav } from '../../lib/wavExport';
 import { hasRecoverableAutosave, restoreAutosaveAudio } from '../../hooks/useAutosave';
 
-interface Props { engine: React.RefObject<TimelineEngine | null> }
+interface Props { engine: React.RefObject<TimelineEngine | null>; panelTarget: HTMLElement | null }
 
-export function MediaTools({ engine }: Props) {
+export function MediaTools({ engine, panelTarget }: Props) {
   const { t } = useTranslation();
   const [available, setAvailable] = useState(false);
   const [show, setShow] = useState(false);
@@ -131,27 +133,24 @@ export function MediaTools({ engine }: Props) {
   const controls = (<div className="flex flex-wrap items-center gap-2">
         <ToolButton icon={Film} label={t('interview.sync')} className="!bg-indigo-600 !border-indigo-500" disabled={!!busy || playing} onClick={() => setSetup(true)}/>
         {video && <ToolButton icon={Clapperboard} disabled={!!busy || playing || !videoTimelineDuration(video)} onClick={exportVideo} label={t((video.inPoint ?? 0)>0 || (video.outPoint ?? videoTimelineDuration(video))<videoTimelineDuration(video)?'video.exportSection':'interview.exportVideo')}/>}
-        <details className="relative">
-          <summary className={`${button} cursor-pointer flex items-center`}>{t('interview.more')}</summary>
-          <div className="absolute right-0 top-full mt-2 z-20 p-2 rounded-xl border border-gray-700 bg-gray-900 shadow-xl w-64 space-y-2">
-            <button className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={loadSession}>{t('interview.openSession')}</button>
-            {video && <button className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={()=>{
+        <OverflowMenu label={t('interview.more')}>
+            <button role="menuitem" className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={loadSession}>{t('interview.openSession')}</button>
+            {video && <button role="menuitem" className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={()=>{
               const state=useProjectStore.getState(), project={...state.project,video:undefined};
               useProjectStore.setState({project:{...project,duration:timelineDuration(project)},isPlaying:false});
             }}>{t('editor.detachVideo')}</button>}
-            {recoverable && <button className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={recover}>{t('interview.recover')}</button>}
-          </div>
-        </details>
+            {recoverable && <button role="menuitem" className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={recover}>{t('interview.recover')}</button>}
+        </OverflowMenu>
       </div>);
   if (!available) return null;
   return <>
-    <section className="shrink-0 border-b border-gray-800 bg-gray-900/70 px-3 py-1" aria-label={t('interview.title')}>
-      {!video && controls}
+    {controls}
+    {panelTarget && (video || busy || error || notice) && createPortal(<section className="relative z-30 shrink-0 border-b border-gray-800 bg-gray-900/70 px-3 py-1" aria-label={t('interview.title')}>
       {busy && <p role="status" className="text-sm text-indigo-300 mt-2">{busy}{busy===t('interview.exporting')&&<button className="timeline-tool" onClick={()=>{exportAbort.current?.abort();if(exportJob.current)void invoke('cancel_media_job',{jobId:exportJob.current});}}>{t('common.cancel')}</button>}</p>}
       {error && <p role="alert" className="text-sm text-red-300 break-words mt-2">{error}</p>}
       {notice && <p role="status" className="text-sm text-green-300 break-words mt-2">{notice}</p>}
-      {video && <VideoViewer>{controls}</VideoViewer>}
-    </section>
+      {video && <VideoViewer/>}
+    </section>, panelTarget)}
     <Modal isOpen={setup} onClose={() => { if (!busy) setSetup(false); }} title={t('interview.sync')} widthClass="max-w-2xl">
       <ol className="space-y-5 text-sm text-gray-300">
         <li><h3 className="font-semibold mb-2">{t('interview.pickVideo')}</h3>

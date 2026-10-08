@@ -26,9 +26,8 @@ export function ProjectOverview({ viewportWidth }: { viewportWidth: number }) {
   const move = (time: number) => useProjectStore.getState().setScrollOffset(Math.max(0, Math.min(duration - visible, time)));
   const rows = [videoClips(project.video).map(clip => ({ ...clip, color: '#8b5cf6' })), ...project.tracks.map(track => track.segments)].filter(row => row.length);
   return <div className="flex flex-1 min-w-0 items-center gap-3" data-project-overview>
-    <span className="hidden md:block text-xs text-gray-400 shrink-0">{t('editing.projectOverview')}</span>
     <div ref={ref} className="relative h-9 min-w-0 flex-1 rounded bg-gray-950 overflow-hidden border border-gray-700" style={{ touchAction: 'none' }}
-      role="slider" tabIndex={0} aria-label={t('editing.visibleTimelineRange')} aria-valuemin={0} aria-valuemax={Math.max(0,duration-visible)} aria-valuenow={scroll} title={t('editing.overviewHelp')}
+      role="slider" tabIndex={0} aria-label={t('editing.visibleTimelineRange')} aria-valuemin={0} aria-valuemax={Math.max(0,duration-visible)} aria-valuenow={scroll} title={`${t('editing.projectOverview')} · ${t('editing.overviewHelp')}`}
       onKeyDown={e => { if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault();move(scroll+(e.key==='ArrowLeft'?-1:1)*visible*(e.shiftKey?1:.1)); } else if(e.key==='Home'||e.key==='End'){ e.preventDefault();move(e.key==='Home'?0:duration); } }}
       onPointerDown={e => {
         if(!duration||!width)return;

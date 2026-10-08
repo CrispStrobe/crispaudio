@@ -220,6 +220,7 @@ export const TimelinePanel: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const tracksAreaRef = useRef<HTMLDivElement>(null);
   const touchPan = useRef<{x: number; y: number; scroll: number} | null>(null);
+  const [mediaPanel, setMediaPanel] = useState<HTMLDivElement | null>(null);
   const [workspace,setWorkspace]=useState<WorkspaceTab|null>(null);
   const [resetOpen, setResetOpen] = useState(false);
   const [canvasWidth, setCanvasWidth] = useState(800);
@@ -515,6 +516,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Redo2} label={t('timeline.redo')} onClick={handleRedo}/>
         <ToolButton icon={Plus} label={t('timeline.addTrack')} onClick={handleAddTrack}/>
         <ToolButton icon={MessageSquare} label={t('tts.title')} onClick={()=>useUIStore.getState().openModal('tts')}/>
+        <MediaTools engine={engineRef} panelTarget={mediaPanel} />
         <ToolButton icon={CircleHelp} label={t('usability.help')} onClick={()=>setHelpOpen(true)}/>
         {exportStage && <div className="flex flex-wrap gap-2 items-center">
           <span role="status" className="text-sm text-gray-300">{t(`audioExport.${exportStage}`)}</span>
@@ -549,7 +551,7 @@ export const TimelinePanel: React.FC = () => {
           state.setScrollOffset(0); state.setZoomLevel(100); state.setTrackHeight(80); setResetOpen(false);
         }}>{t('editor.clearArrangement')}</button>
       </Modal>
-      <MediaTools engine={engineRef} />
+      <div ref={setMediaPanel} />
       <TransportControls viewportWidth={canvasWidth} />
       <div className="timeline-command-strip flex shrink-0 overflow-x-auto">
       <div className="timeline-view-tools flex flex-wrap items-center gap-2 px-3 py-1 border-b border-gray-800 shrink-0">
@@ -558,7 +560,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={ZoomIn} label={t('timeline.zoomIn')} onClick={handleZoomIn}/>
         <ToolButton icon={Magnet} label={t('timeline.snap')} aria-pressed={store.snapEnabled} onClick={()=>store.setSnapEnabled(!store.snapEnabled)}/>
         <ToolButton icon={AlignHorizontalJustifyCenter} label={t('alignment.title')} disabled={store.project.tracks.length<2} onClick={()=>{useProjectStore.getState().setIsPlaying(false);setAlignmentOpen(true);}}/>
-        <select aria-label={t('alignment.display')} className="bg-gray-800 rounded min-h-11 px-2 text-xs text-gray-200" value={waveformMode} onChange={e=>setWaveformMode(e.target.value as 'normalized'|'level')}>
+        <select aria-label={t('alignment.display')} title={t(waveformMode === 'normalized' ? 'alignment.normalizedHelp' : 'alignment.levelHelp')} className="bg-gray-800 rounded min-h-11 px-2 text-xs text-gray-200" value={waveformMode} onChange={e=>setWaveformMode(e.target.value as 'normalized'|'level')}>
           <option value="normalized">{t('alignment.normalized')}</option><option value="level">{t('alignment.level')}</option>
         </select>
         <label className="text-xs text-gray-400 flex items-center gap-2">{t('editor.trackHeight')}

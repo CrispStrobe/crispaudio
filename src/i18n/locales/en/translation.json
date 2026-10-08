@@ -605,8 +605,10 @@
     "center": "Position (s)",
     "chart": "Normalized audio envelopes on a shared timeline",
     "note": "Each envelope is normalized within this window, before gain, fades and effects. Different microphones can have different shapes; this view alone does not prove synchronization. No offsets are changed.",
-    "normalized": "Normalize waveform display",
-    "level": "Show waveform at mix gain",
+    "normalized": "Normalized",
+    "normalizedHelp": "Normalize waveform display",
+    "level": "Mix level",
+    "levelHelp": "Show waveform at mix gain",
     "display": "Waveforms"
   },
   "video": {
@@ -633,6 +635,7 @@
     "panLeft": "Scroll earlier",
     "panRight": "Scroll later",
     "browse": "Browse timeline",
+    "panShort": "Scroll · Zoom",
     "panHelp": "Trackpad sideways · Shift+wheel · Ctrl/Cmd+wheel to zoom",
     "scroll": "Horizontal timeline scrollbar",
     "newProject": "New project",

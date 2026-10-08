@@ -605,8 +605,10 @@
     "center": "Position (s)",
     "chart": "Normalisierte Audiohüllkurven auf gemeinsamer Zeitleiste",
     "note": "Jede Hüllkurve ist im Zeitfenster normalisiert, vor Pegel, Blenden und Effekten. Verschiedene Mikrofone können unterschiedliche Formen haben; die Ansicht allein beweist keine Synchronität. Versätze bleiben unverändert.",
-    "normalized": "Wellenformen optisch normalisieren",
-    "level": "Wellenformen mit Mischpegel anzeigen",
+    "normalized": "Normalisiert",
+    "normalizedHelp": "Wellenformen optisch normalisieren",
+    "level": "Mischpegel",
+    "levelHelp": "Wellenformen mit Mischpegel anzeigen",
     "display": "Wellenformen"
   },
   "video": {
@@ -633,6 +635,7 @@
     "panLeft": "Nach links scrollen",
     "panRight": "Nach rechts scrollen",
     "browse": "Zeitleiste verschieben",
+    "panShort": "Scrollen · Zoom",
     "panHelp": "Trackpad seitlich · Umschalt+Mausrad · Strg/Cmd+Mausrad zum Zoomen",
     "scroll": "Horizontale Zeitleisten-Bildlaufleiste",
     "newProject": "Neues Projekt",

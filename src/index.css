@@ -452,7 +452,7 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
   outline-offset: 2px;
 }
 .timeline-editor button[aria-pressed="true"] { border-color: #a5b4fc; color: #c7d2fe; background-color: #312e81; }
-.timeline-transport > button { min-height: 44px; min-width: 44px; }
+.timeline-transport > button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; min-height: 44px; min-width: 44px; }
 .touch-arrange-toggle { display: none; }
 @media (pointer: coarse), (max-width: 767px) {
   .touch-arrange-toggle { display: inline-flex; align-items: center; }
@@ -554,4 +554,12 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
   .timeline-editor [data-track-header][data-touch-compact="true"] .track-mixer,
   .timeline-editor [data-track-header][data-touch-compact="true"] .track-subtitle { display:none; }
   .timeline-editor [data-track-header][data-touch-compact="true"] .track-compact-status { display:block; }
+}
+
+/* Interface labels do not select during clicks/drags; editable and diagnostic text still does. */
+.app-shell input:not([type="range"]):not([type="checkbox"]),
+.app-shell textarea, .app-shell [contenteditable="true"],
+.app-shell [role="alert"], .app-shell pre, .app-shell code {
+  -webkit-user-select: text;
+  user-select: text;
 }

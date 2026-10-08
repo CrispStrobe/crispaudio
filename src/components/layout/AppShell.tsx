@@ -19,7 +19,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div
-      className="flex flex-col h-viewport"
+      className="app-shell flex flex-col h-viewport select-none"
       style={{ width: '100vw', overflow: 'hidden', background: 'var(--bg-primary)' }}
     >
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-indigo-600 focus:text-white focus:rounded">Skip to content</a>
