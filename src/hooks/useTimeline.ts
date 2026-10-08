@@ -4,6 +4,7 @@
 // for the timeline canvas.
 // ---------------------------------------------------------------------------
 
+import { isNativeMac } from '../lib/nativeMenuPlatform';
 import { projectClips } from '../lib/projectEdits';
 import { snapClipStart } from '../lib/timelineSnap';
 import { deleteSelection, nudgeSelection } from '../lib/timelineEditing';
@@ -340,6 +341,8 @@ export function useTimeline() {
       const target = e.target as HTMLElement;
       if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable=true], [role=dialog]')) return;
 
+      // Native menu accelerators own these commands on macOS: never apply twice.
+      if(isNativeMac()&&((e.metaKey&&['KeyZ','KeyC','KeyX','KeyV','KeyA'].includes(e.code))||e.code==='Backspace'))return;
       const store = useProjectStore.getState();
       const ctrl = e.ctrlKey || e.metaKey;
 

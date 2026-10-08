@@ -1,3 +1,6 @@
+import { registerTimelineMenu } from '../../lib/nativeMenu';
+import { deleteSelection } from '../../lib/timelineEditing';
+import { projectClips, projectSelection, splitClips } from '../../lib/projectEdits';
 import { prepareAudioImport, type AudioImportInput, type ImportPhase } from '../../lib/audioImport';
 import { TimelineHelp } from './TimelineHelp';
 import { TimelineWorkspace, type WorkspaceTab } from './TimelineWorkspace';
@@ -494,6 +497,41 @@ export const TimelinePanel: React.FC = () => {
       save: blob => downloadWavFile(blob, `${name}.${fmt}`),
     });
   }, [store.project, store.sources, defaultBitDepth, startExport]);
+
+
+  useEffect(()=>registerTimelineMenu(async action=>{
+    const state=useProjectStore.getState();
+    switch(action){
+      case 'new':setResetOpen(true);break;
+      case 'open':await handleOpenProject();break;
+      case 'save':await handleSaveProject();break;
+      case 'import':askImport();break;
+      case 'export':await handleExportMix();break;
+      case 'undo':handleUndo();break;
+      case 'redo':handleRedo();break;
+      case 'cut':state.cut();break;
+      case 'copy':state.copy();break;
+      case 'paste':state.paste();break;
+      case 'delete':deleteSelection();break;
+      case 'select-all':state.setSelection(projectSelection(state.project,projectClips(state.project).map(clip=>clip.id)));break;
+      case 'deselect':state.setSelection(null);break;
+      case 'split':useProjectStore.setState({project:splitClips(state.project,state.selection?.segmentIds??[],state.playheadPosition),selection:null,isPlaying:false});break;
+      case 'add-track':state.addTrack();break;
+      case 'zoom-in':state.setZoomLevel(state.zoomLevel*1.25);break;
+      case 'zoom-out':state.setZoomLevel(state.zoomLevel/1.25);break;
+      case 'fit':fitAll();break;
+      case 'height-up':state.setTrackHeight(Math.min(640,state.trackHeight*1.25));break;
+      case 'height-down':state.setTrackHeight(Math.max(24,state.trackHeight/1.25));break;
+      case 'workspace':setWorkspace(old=>old?null:'media');break;
+      case 'snap':state.setSnapEnabled(!state.snapEnabled);break;
+      case 'play':state.setIsPlaying(!state.isPlaying);break;
+      case 'stop':state.setIsPlaying(false);state.setPlayheadPosition(0);break;
+      case 'start':state.setPlayheadPosition(0);break;
+      case 'end':state.setPlayheadPosition(timelineDuration(state.project));break;
+      case 'loop':state.setLoopEnabled(!state.loopEnabled);break;
+      case 'help':setHelpOpen(true);break;
+    }
+  }));
 
 
   return (

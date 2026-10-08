@@ -584,3 +584,15 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
 .timeline-help-status { bottom:30px; right:12px; max-width:calc(100vw - 24px); padding:6px 8px 6px 12px; display:flex; align-items:center; gap:8px; }
 .timeline-help-status button { width:44px; height:44px; flex-shrink:0; display:grid; place-items:center; border-radius:6px; }
 .timeline-help-status button:hover { background:#334155; }
+
+/* SFX presets: icons and wrapped names rather than solid colour buttons. */
+.sfx-editor .card { padding:16px; }
+.sfx-preset-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr)); gap:8px; }
+.sfx-preset { position:relative; min-width:0; min-height:78px; padding:12px 10px 12px 12px; display:flex; align-items:center; gap:10px; text-align:left; border:1px solid var(--border); border-radius:10px; background:var(--bg-secondary); color:var(--text-primary); font-size:13px; line-height:1.35; }
+.sfx-preset > svg { flex-shrink:0; color:#a5b4fc; }
+.sfx-preset > span { min-width:0; overflow-wrap:anywhere; hyphens:auto; }
+.sfx-preset kbd { position:absolute; right:7px; top:6px; color:var(--text-muted); font-size:10px; }
+.sfx-preset:hover,.sfx-preset:focus-visible { border-color:#a5b4fc; background:var(--bg-tertiary); outline:2px solid #818cf8; outline-offset:1px; }
+.sfx-actions [aria-pressed="true"] { background:#312e81; border-color:#a5b4fc; color:#c7d2fe; }
+.sfx-editor .sfx-header button { flex-shrink:0; }
+@media (max-width:480px) { .sfx-preset-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .sfx-preset { padding-left:9px; gap:7px; font-size:12px; } }

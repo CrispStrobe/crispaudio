@@ -305,3 +305,32 @@ TypeScript/Vite and the macOS app bundle build passed. The ad-hoc-signed local
 0.6.7 app is installed and launched. Autosave and full WebKit recovery were backed
 up under the private validation folder's `ux/native-autosave-before-067.json`
 and `ux/recovery-before-067/WebKit`. No release tag or Apple upload is included.
+
+## Local 0.6.8 native menus and SFX view
+
+macOS now installs File, Edit, View, Playback, Window and Help menus. Custom
+commands route to existing frontend actions; lazy timeline activation retains a
+pending file/view command. AppKit responder actions handle focused text editing;
+clip commands use the project clipboard. Undo/Redo selects the active panel's
+history. Enabled states follow selection, clipboard, history, modal/help state
+and asynchronous commands. Native accelerators own their shortcuts to avoid
+applying the same command twice. Menu labels follow English/German UI language.
+
+SFX presets use sound-type icons and wrapping labels on neutral cards. Playback
+and export commands use compact icon controls. A single active-output waveform
+replaces two misleading copies of the same buffer; duration, peak and RMS report
+that actual output. Secondary analysis and quality/preset-file panels collapse.
+See `docs/SFX_WORKFLOW.md` for the workflow and possible later visualizations.
+
+Verified: 81 frontend suites / 1,257 tests, lint, TypeScript/Vite, Rust check and
+18 native library tests. Routing regressions cover lazy activation, text editing,
+modal/help guards, asynchronous duplicate protection and active SFX history.
+Chrome/WebKit checks at desktop, tablet and phone sizes verify all 16 preset icons,
+German label bounds, active-slot waveform labeling, menu dispatch from SFX into
+Timeline, zoom/height and Undo/Redo. These browser checks omit native OS menu
+clicks; physical macOS responder behavior and physical iOS remain outside them.
+
+The macOS app bundle build passed. The ad-hoc-signed 0.6.8 local app is installed
+and launched. Current autosave and WebKit recovery were backed up under the
+private validation folder's `ux/native-autosave-before-068.json` and
+`ux/recovery-before-068/WebKit`. No Apple upload or release tag is included.

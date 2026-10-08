@@ -1,4 +1,5 @@
 mod commands;
+mod native_menu;
 
 use commands::{audio_export, media, native_files, project};
 #[cfg(any(target_os = "macos", target_os = "ios"))]
@@ -6,7 +7,7 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
@@ -20,9 +21,20 @@ pub fn run() {
                         .build(),
                 )?;
             }
+            #[cfg(target_os = "macos")]
+            native_menu::install(app.handle(), &native_menu::MenuContext::default())?;
             Ok(())
-        })
+        });
+    #[cfg(desktop)]
+    let builder = builder.on_menu_event(|app, event| {
+        use tauri::Emitter;
+        if let Some(action) = event.id().as_ref().strip_prefix("ca-") {
+            let _ = app.emit("crispaudio-menu", action);
+        }
+    });
+    let app = builder
         .invoke_handler(tauri::generate_handler![
+            native_menu::configure_native_menu,
             audio_export::export_wav,
             audio_export::export_wav_binary,
             project::save_project,

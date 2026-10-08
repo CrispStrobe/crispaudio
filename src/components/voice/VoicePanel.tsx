@@ -1,3 +1,4 @@
+import { isNativeMac } from '../../lib/nativeMenuPlatform';
 // ---------------------------------------------------------------------------
 // CrispAudio — VoicePanel
 // Voice processor panel matching VoiceLab layout:
@@ -299,6 +300,7 @@ export function VoicePanel() {
 
     const handleKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if(isNativeMac()&&e.metaKey&&e.key.toLowerCase()==='z')return;
       const key = e.key.toLowerCase();
 
       // Ctrl+Z / Ctrl+Shift+Z for undo/redo
@@ -308,6 +310,7 @@ export function VoicePanel() {
         return;
       }
 
+      if(e.ctrlKey||e.metaKey||e.altKey)return;
       if (key === ' ') {
         e.preventDefault();
         if (isPlaying) handleStop();

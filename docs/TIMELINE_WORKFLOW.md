@@ -206,3 +206,20 @@ explanation beside the element when hovered, focused with Tab, or tapped. Tappin
 in help mode explains instead of editing. This works for disabled controls too.
 Only one explanation is shown at a time; there is no manual dialog. Press Escape,
 use **?** again or the help status close button to resume editing.
+
+
+On macOS the menu bar provides **File** (New/Open/Save Project, Import Audio,
+Export Audio Mix), **Edit** (Undo/Redo, Cut/Copy/Paste at playhead, Delete,
+Select/Deselect All, Split, Add Track), **View** (zoom, fit, track height,
+snapping, workspace and panels), **Playback**, **Window** and **Help**. File and
+view commands switch to the timeline when needed. File Export Audio Mix always
+exports the timeline mix; SFX/Voice keep their own export controls.
+
+Use Cmd+N/O/S/I for project/file actions, Cmd+Shift+E for mix export, Cmd+=/− for
+zoom and Cmd+0 to fit. Cmd+Z / Shift+Cmd+Z uses the active panel’s history.
+Cmd+X/C/V edits selected timeline clips, including linked picture/sound; while a
+text field is focused, macOS handles text editing instead. Cmd+A selects clips;
+Shift+Cmd+A clears selection. Backspace deletes selected clips. Cmd+B splits at
+the playhead; Shift+Cmd+N adds an audio track. Cmd+1/2/3 opens SFX/Voice/Timeline,
+matching existing panel shortcuts. Editing menus disable unavailable actions;
+modal dialogs and help mode protect the underlying arrangement.

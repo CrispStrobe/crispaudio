@@ -4,7 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.7]
+## [Unreleased — local version 0.6.8]
+
+- Add macOS File, Edit, View, Playback, Window and Help menus with standard
+  shortcuts, enabled states and English/German labels. Project commands can open
+  the timeline from another view. Text fields retain native AppKit editing.
+- Route timeline clip editing through the existing clipboard/history, and
+  Undo/Redo through the active panel’s history. Prevent duplicate shortcut actions.
+- Compact SFX playback/export tools into icon controls. Presets use sound-type
+  icons, neutral cards and wrapping localized names instead of colored blocks.
+- Show one accurately labeled output waveform instead of two copies of the
+  current buffer. Add duration/peak/RMS feedback; collapse detailed analysis and
+  secondary quality/preset-file controls.
+
+## [Local version 0.6.7]
 
 - Replace the help manual dialog with contextual help mode: highlight controls
   and show one explanation beside the hovered, focused or tapped element.

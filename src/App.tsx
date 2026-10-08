@@ -11,6 +11,8 @@ import { useSynthStore, loadFromShareLink, synthHistoryGesture } from './stores/
 import { voiceHistoryGesture } from './stores/voiceStore';
 import { projectHistoryGesture } from './stores/projectStore';
 import { HistoryGestureBoundary } from './components/shared/HistoryGestureBoundary';
+import { isNativeMac } from './lib/nativeMenuPlatform';
+import { useNativeMenu } from './hooks/useNativeMenu';
 import { useAutosave } from './hooks/useAutosave';
 import { setAudioSessionType, subscribeOpenedFiles } from './lib/native';
 
@@ -28,6 +30,7 @@ export default function App() {
 
   // Autosave timeline project structure periodically + on unload
   useAutosave();
+  useNativeMenu();
 
   // iOS: behave like a media app (not muted by the silent switch), and accept
   // audio or projects opened from other apps — the timeline imports them.
@@ -89,8 +92,9 @@ export default function App() {
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (activeModal) return; // don't intercept when modal is open
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if (e.target instanceof HTMLElement && e.target.closest('input,textarea,select,[contenteditable="true"],[role="dialog"]')) return;
 
+      if(isNativeMac()&&e.metaKey&&['1','2','3',','].includes(e.key))return;
       if (e.ctrlKey || e.metaKey) {
         if (e.key === '1') { e.preventDefault(); setActivePanel('sfx'); }
         else if (e.key === '2') { e.preventDefault(); setActivePanel('voice'); }

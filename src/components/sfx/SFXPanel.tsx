@@ -1,3 +1,6 @@
+import { ToolButton } from '../common/ToolButton';
+import { Coins, Crosshair, Flame, TrendingUp, HeartCrack, ArrowUp, Wind, MousePointer2, Waves, Radio, MousePointerClick, ScanLine, Orbit, TriangleAlert } from 'lucide-react';
+import { isNativeMac } from '../../lib/nativeMenuPlatform';
 // ---------------------------------------------------------------------------
 // CrispAudio — SFXPanel
 // SFX synthesizer panel matching CrispFXR-web layout:
@@ -5,9 +8,9 @@
 // Presets → Audio Quality → Tabbed Parameters
 // ---------------------------------------------------------------------------
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { SfxParameters, ParamInfoButton } from './SfxParameters';
+import { SfxParameters } from './SfxParameters';
 import { useSfxPlayback } from '../../hooks/useSfxPlayback';
 import { exportWav, downloadWavFile } from '../../lib/wavExport';
 import { useAudioExport } from '../../hooks/useAudioExport';
@@ -47,24 +50,12 @@ import { haptic } from '../../lib/native';
 // Preset visual config
 // ---------------------------------------------------------------------------
 
-const PRESET_COLORS: Record<PresetName, string> = {
-  pickupCoin: 'bg-yellow-500',
-  laserShoot: 'bg-red-500',
-  explosion: 'bg-orange-500',
-  powerUp: 'bg-green-500',
-  hitHurt: 'bg-purple-500',
-  jump: 'bg-blue-500',
-  ambient: 'bg-teal-500',
-  random: 'bg-gray-500',
-  blipSelect: 'bg-cyan-400',
-  zapElectric: 'bg-lime-400',
-  wooshWind: 'bg-indigo-500',
-  droneBuzz: 'bg-pink-500',
-  clickUI: 'bg-amber-500',
-  glitchDigital: 'bg-fuchsia-500',
-  portalWarp: 'bg-emerald-500',
-  warningAlarm: 'bg-red-700',
-};
+const PRESET_ICONS = {
+  pickupCoin:Coins,laserShoot:Crosshair,explosion:Flame,powerUp:TrendingUp,
+  hitHurt:HeartCrack,jump:ArrowUp,ambient:Wind,random:Shuffle,blipSelect:MousePointer2,
+  zapElectric:Zap,wooshWind:Waves,droneBuzz:Radio,clickUI:MousePointerClick,
+  glitchDigital:ScanLine,portalWarp:Orbit,warningAlarm:TriangleAlert,
+} satisfies Record<PresetName,typeof Zap>;
 
 const PRESET_SHORTCUTS: Partial<Record<PresetName, string>> = {
   pickupCoin: '1',
@@ -236,6 +227,7 @@ export function SFXPanel() {
 
     const handleKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if(isNativeMac()&&e.metaKey&&e.key.toLowerCase()==='z')return;
       const key = e.key.toLowerCase();
 
       // Ctrl+Z / Ctrl+Shift+Z for undo/redo
@@ -246,6 +238,7 @@ export function SFXPanel() {
         return;
       }
 
+      if(e.ctrlKey||e.metaKey||e.altKey)return;
       if (key === ' ') {
         e.preventDefault();
         if (isPlaying) handleStop();
@@ -305,31 +298,25 @@ export function SFXPanel() {
     useUIStore.getState().setActivePanel('timeline');
   }, [buffer, sampleRate, audioCtxRef]);
 
-  // Clipping indicator
-  const isClipping = buffer ? (() => {
-    for (let i = 0; i < buffer.length; i++) {
-      if (Math.abs(buffer[i]) > 0.95) return true;
-    }
-    return false;
-  })() : false;
+  const outputStats=useMemo(()=>{
+    if(!buffer?.length)return {peak:0,rms:0,duration:0};
+    let peak=0,sum=0;for(const sample of buffer){peak=Math.max(peak,Math.abs(sample));sum+=sample*sample;}
+    return {peak,rms:Math.sqrt(sum/buffer.length),duration:buffer.length/sampleRate};
+  },[buffer,sampleRate]);
+  const isClipping=outputStats.peak>.95;
 
   return (
-    <div className="h-full overflow-y-auto panel-enter" style={{ background: 'var(--bg-primary)' }}>
+    <div className="sfx-editor h-full overflow-y-auto panel-enter" style={{ background: 'var(--bg-primary)' }}>
       <div className="max-w-7xl mx-auto p-3 sm:p-6">
 
         {/* ── Header ──────────────────────────────────────────────── */}
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-2 gradient-title">
+        <div className="sfx-header mb-4">
+          <h1 className="text-xl font-semibold text-gray-100 mb-1">
             {t('panels.sfx')}
           </h1>
-          <p className="text-gray-400 text-sm sm:text-base">{t('sfx.subtitle')}</p>
-          {/* Keyboard shortcuts hint is irrelevant on touch/small screens */}
-          <p className="hidden sm:block text-gray-500 text-xs mt-2">
-            {t('sfx.shortcuts')}
-          </p>
-
+          <p className="text-gray-400 text-sm">{t('sfx.subtitle')}</p>
           {/* Master Controls — stack vertically on phones, row on larger */}
-          <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 sm:gap-6 mt-4 sm:mt-6 mb-4">
+          <div className="sfx-master flex flex-wrap items-center gap-3 mt-3 mb-3">
             {/* Master Volume */}
             <div className="flex items-center gap-2">
               <Headphones className="w-4 h-4 text-gray-400" />
@@ -351,7 +338,7 @@ export function SFXPanel() {
             {/* A/B Slot Selector */}
             <div className="flex items-center gap-2">
               <button
-                onClick={() => { setActiveSlot('A'); generate(); }}
+                aria-pressed={activeSlot==='A'} onClick={() => { setActiveSlot('A'); generate(); }}
                 className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
                   activeSlot === 'A' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
@@ -375,7 +362,7 @@ export function SFXPanel() {
                 <ArrowLeftRight className="w-4 h-4" />
               </button>
               <button
-                onClick={() => { setActiveSlot('B'); generate(); }}
+                aria-pressed={activeSlot==='B'} onClick={() => { setActiveSlot('B'); generate(); }}
                 className={`px-4 py-2 rounded-lg transition-colors font-semibold text-sm ${
                   activeSlot === 'B' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
@@ -403,171 +390,58 @@ export function SFXPanel() {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap justify-center gap-3 mt-4">
-            <button
-              onClick={isPlaying ? handleStop : handlePlay}
-              disabled={!buffer}
-              className={`px-6 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
-                isPlaying
-                  ? 'bg-red-600 hover:bg-red-700 text-white'
-                  : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white'
-              }`}
-            >
-              {isPlaying ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-              {isPlaying ? t('sfx.stop') : `${t('sfx.play')} ${activeSlot}`}
-            </button>
-
-            <button
-              onClick={toggleLoop}
-              className={`px-5 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
-                isLooping ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-600 hover:bg-gray-500 text-white'
-              }`}
-            >
-              <Repeat className="w-5 h-5" />
-              {isLooping ? t('sfx.stopLoop') : t('sfx.loop')}
-            </button>
-
-            <button
-              onClick={handleRandomise}
-              className="px-5 py-3 bg-gray-600 hover:bg-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-            >
-              <RefreshCw className="w-5 h-5" />
-              {t('sfx.randomise')}
-            </button>
-
-            <button
-              onClick={handleMutate}
-              className="px-5 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-            >
-              <Shuffle className="w-5 h-5" />
-              {t('sfx.mutate')}
-            </button>
-
-            <button
-              onClick={handleUndo}
-              className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-              title="Undo (Ctrl+Z)"
-              aria-label="Undo"
-            >
-              <Undo2 className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={handleRedo}
-              className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-              title="Redo (Ctrl+Shift+Z)"
-              aria-label="Redo"
-            >
-              <Redo2 className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={downloadWav}
-              aria-label={t('sfx.exportSlot', { slot: activeSlot })}
-              disabled={!buffer || exportStage !== null}
-              className="px-5 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-            >
-              <Download className="w-5 h-5" />
-              {t('sfx.exportSlot', { slot: activeSlot })}
-            </button>
-
-          {exportStage && (
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <span role="status" aria-live="polite">{t(`audioExport.${exportStage}`)}</span>
-              <button type="button" onClick={cancelExport} aria-label={t('audioExport.cancel')} className="px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">
-                {t('audioExport.cancel')}
-              </button>
-            </div>
-          )}
-          {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
-
-            <button
-              onClick={sendToTimeline}
-              disabled={!buffer}
-              className="px-5 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-              aria-label={t('sfx.sendToTimeline')}
-            >
-              <SendHorizontal className="w-5 h-5" />
-              {t('sfx.sendToTimeline')}
-            </button>
+          <div className="sfx-actions flex flex-wrap items-center gap-2">
+            <ToolButton icon={isPlaying?Square:Play} label={isPlaying?t('sfx.stop'):`${t('sfx.play')} ${activeSlot}`} disabled={!buffer} onClick={isPlaying?handleStop:handlePlay} className="!bg-indigo-600 !border-indigo-500 !text-white"/>
+            <ToolButton icon={Repeat} label={t(isLooping?'sfx.stopLoop':'sfx.loop')} aria-pressed={isLooping} onClick={toggleLoop}/>
+            <ToolButton icon={RefreshCw} label={t('sfx.randomise')} onClick={handleRandomise}/>
+            <ToolButton icon={Shuffle} label={t('sfx.mutate')} onClick={handleMutate}/>
+            <ToolButton icon={Undo2} label={t('timeline.undo')} onClick={handleUndo}/>
+            <ToolButton icon={Redo2} label={t('timeline.redo')} onClick={handleRedo}/>
+            <span className="w-px h-6 bg-gray-700 mx-1"/>
+            <ToolButton icon={Download} label={t('sfx.exportSlot',{slot:activeSlot})} onClick={downloadWav} disabled={!buffer||exportStage!==null}/>
+            <ToolButton icon={SendHorizontal} label={t('sfx.sendToTimeline')} onClick={sendToTimeline} disabled={!buffer}/>
+            {exportStage&&<><span role="status" className="text-sm text-gray-300">{t(`audioExport.${exportStage}`)}</span><button className="timeline-tool" onClick={cancelExport}>{t('audioExport.cancel')}</button></>}
+            {exportError!=null&&<span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
           </div>
         </div>
 
-        {/* ── Visualizations ──────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-          <div className="card relative group">
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ParamInfoButton paramKey="waveform" />
-            </div>
-            <SfxWaveform buffer={buffer} isPlaying={isPlaying && activeSlot === 'A'} title={t('sfx.waveformA')} duration={buffer ? buffer.length / sampleRate : 0} noSignalText={t('sfx.noSignal')} />
+        <section className="sfx-presets mb-4" aria-label={t('sfx.soundPresets')}>
+          <h2 className="text-sm font-semibold text-gray-300 mb-2">{t('sfx.soundPresets')}</h2>
+          <div className="sfx-preset-grid">
+            {ALL_PRESET_NAMES.map(name=>{
+              const Icon=PRESET_ICONS[name];
+              return <button key={name} type="button" onClick={()=>handlePreset(name)} className="sfx-preset" title={t(PRESET_LABEL_KEYS[name])}>
+                <Icon size={22} aria-hidden="true"/>
+                <span>{t(PRESET_LABEL_KEYS[name])}</span>
+                {PRESET_SHORTCUTS[name]&&<kbd aria-hidden="true">{PRESET_SHORTCUTS[name]}</kbd>}
+              </button>;
+            })}
           </div>
-          <div className="card relative group">
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ParamInfoButton paramKey="waveform" />
-            </div>
-            <SfxWaveform buffer={buffer} isPlaying={isPlaying && activeSlot === 'B'} title={t('sfx.waveformB')} duration={buffer ? buffer.length / sampleRate : 0} noSignalText={t('sfx.noSignal')} />
-          </div>
-          <div className="card relative group">
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ParamInfoButton paramKey="spectrum" />
-            </div>
-            <SpectrumDisplay buffer={buffer} title={t('sfx.frequencySpectrum')} />
-          </div>
-          <div className="card relative group">
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ParamInfoButton paramKey="amplitude" />
-            </div>
-            <AmplitudeDisplay buffer={buffer} title={t('sfx.signalLevel')} />
-          </div>
-        </div>
+        </section>
 
-        {/* ── Envelope ────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-          <div className="card relative group">
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ParamInfoButton paramKey="envelope" />
-            </div>
-            <EnvelopeDisplay buffer={buffer} sampleRate={sampleRate} title={t('sfx.volumeEnvelope')} />
-          </div>
-          <div className="card relative group">
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ParamInfoButton paramKey="envelope" />
-            </div>
-            <ADSRDisplay
-              attack={params.p_env_attack}
-              sustain={params.p_env_sustain}
-              decay={params.p_env_decay}
-              punch={params.p_env_punch}
-              title={t('sfx.adsrShape')}
-            />
-          </div>
+        <div className="sfx-output grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
+          <section className="card lg:col-span-2">
+            <SfxWaveform buffer={buffer} isPlaying={isPlaying} title={morphAmount>0?t('sfx.mixedWaveform'):t(activeSlot==='A'?'sfx.waveformA':'sfx.waveformB')} duration={outputStats.duration} noSignalText={t('sfx.noSignal')}/>
+            <dl className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-400 mt-3 tabular-nums">
+              <div><dt className="inline">{t('sfx.outputDuration')} </dt><dd className="inline text-gray-200">{outputStats.duration.toFixed(2)} s</dd></div>
+              <div><dt className="inline">{t('sfx.outputPeak')} </dt><dd className={`inline ${isClipping?'text-amber-300':'text-gray-200'}`}>{outputStats.peak>0?(20*Math.log10(outputStats.peak)).toFixed(1):'−∞'} dBFS</dd></div>
+              <div><dt className="inline">RMS </dt><dd className="inline text-gray-200">{outputStats.rms>0?(20*Math.log10(outputStats.rms)).toFixed(1):'−∞'} dBFS</dd></div>
+            </dl>
+          </section>
+          <section className="card"><SpectrumDisplay buffer={buffer} title={t('sfx.frequencySpectrum')}/></section>
         </div>
-
-        {/* ── Presets ─────────────────────────────────────────────── */}
-        <div className="card mb-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
-            <Zap className="w-5 h-5" />
-            {t('sfx.soundPresets')}
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-            {ALL_PRESET_NAMES.map((name) => (
-              <button
-                key={name}
-                onClick={() => handlePreset(name)}
-                className={`p-3 ${PRESET_COLORS[name]} hover:opacity-80 rounded-lg transition-all transform hover:scale-105 text-sm font-semibold shadow-lg text-white`}
-              >
-                {t(PRESET_LABEL_KEYS[name])}
-                {PRESET_SHORTCUTS[name] && (
-                  <span className="block text-[10px] opacity-70 mt-0.5">({PRESET_SHORTCUTS[name]})</span>
-                )}
-              </button>
-            ))}
+        <details className="sfx-analysis mb-4">
+          <summary className="text-sm text-gray-300 cursor-pointer py-2">{t('sfx.analysisDetails')}</summary>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-2">
+            <section className="card"><AmplitudeDisplay buffer={buffer} title={t('sfx.signalLevel')}/></section>
+            <section className="card"><EnvelopeDisplay buffer={buffer} sampleRate={sampleRate} title={t('sfx.volumeEnvelope')}/></section>
+            <section className="card"><ADSRDisplay attack={params.p_env_attack} sustain={params.p_env_sustain} decay={params.p_env_decay} punch={params.p_env_punch} title={t('sfx.adsrShape')}/></section>
           </div>
-        </div>
+        </details>
 
-        {/* ── Audio Quality & Actions ─────────────────────────────── */}
-        <div className="card mb-6">
+        {/* Secondary file/quality tools stay available without crowding playback. */}
+        <details className="card mb-4">
+          <summary className="text-sm text-gray-300 cursor-pointer mb-2">{t('sfx.qualityDetails')}</summary>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Sample Rate & Bit Depth */}
             <div>
@@ -684,7 +558,7 @@ export function SFXPanel() {
               </div>
             </div>
           </div>
-        </div>
+        </details>
 
         <SfxParameters />
 
