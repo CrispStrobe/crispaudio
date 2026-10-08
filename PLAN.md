@@ -1,3 +1,9 @@
+# Preview and seeking follow-up — local 0.6.3
+
+Fixed gap/tail preview loading, fullscreen request completion after close, visible
+fullscreen failure notices, frame stepping across the extended canvas and typed
+position viewport follow. Browser playback in intentional black is covered.
+
 # Timeline usability — local 0.6.2
 
 Implemented video removal/undo, pointer and keyboard track ordering, shared row

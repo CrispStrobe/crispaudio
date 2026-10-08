@@ -1,4 +1,4 @@
-# Media workspace — local 0.6.2
+# Media workspace — local 0.6.3
 
 CrispAudio edits audio-only projects and audio plus video projects. Open **Workspace**
 (the library icon in the main toolbar) for Media, Clip inspector, Microphone mix,
@@ -18,7 +18,8 @@ optional overlay with a close button. Preview can be hidden or expanded separate
   keeping all audio timings intact. Toolbar Trash removes selected clips and
   linked partners. Undo restores either operation.
 - Click **POS** or **DUR**, type seconds, mm:ss.mmm or hh:mm:ss.mmm, then Enter.
-  Escape cancels. DUR sets a minimum canvas length and cannot trim existing clips.
+  Escape cancels. A typed POS target outside the viewport scrolls into view.
+  DUR sets a minimum canvas length and cannot trim existing clips.
   Saved projects retain it; exports include silence and black picture after media.
 - **Import audio** asks for an existing track or a new track per file. New tracks
   start together at the playhead; multiple files on one track are consecutive.
@@ -33,6 +34,8 @@ optional overlay with a close button. Preview can be hidden or expanded separate
   overlaps and choose **Crossfade selected audio overlap** for S-curve envelopes.
 - **Expand video** opens a body-level viewer that fills the viewport and requests
   native desktop/browser fullscreen. Play/pause and frame-step stay visible.
+  Picture gaps and extended tails stay black without pausing audio to load a
+  camera. Frame stepping uses project FPS across the full canvas.
   Escape or Close expanded video returns to the timeline; unavailable native
   fullscreen falls back to a window-filling viewer.
 

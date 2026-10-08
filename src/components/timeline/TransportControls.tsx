@@ -21,10 +21,19 @@ import { useProjectStore } from '../../stores/projectStore';
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-const PositionDisplay = React.memo(function PositionDisplay() {
+function seekTimeline(time:number,width?:number,stop=false) {
+  const state=useProjectStore.getState(),duration=timelineDuration(state.project);
+  time=Math.max(0,Math.min(duration,time));
+  if(stop)state.setIsPlaying(false);
+  state.setPlayheadPosition(time);
+  if(width&&(time<state.scrollOffset||time>=state.scrollOffset+width/state.zoomLevel)){
+    state.setScrollOffset(Math.max(0,Math.min(duration-width/state.zoomLevel,time-width/state.zoomLevel/2)));
+  }
+}
+const PositionDisplay = React.memo(function PositionDisplay({width}: {width?:number}) {
   const position = useProjectStore((s) => s.playheadPosition);
   const {t}=useTranslation();
-  return <TimeField label={t('timeline.positionShort')} value={position} onCommit={time=>{const state=useProjectStore.getState();state.setIsPlaying(false);state.setPlayheadPosition(Math.min(timelineDuration(state.project),time));}}/>;
+  return <TimeField label={t('timeline.positionShort')} value={position} onCommit={time=>seekTimeline(time,width,true)}/>;
 });
 
 function TimelineScrubber({width}: {width?: number}) {
@@ -34,15 +43,7 @@ function TimelineScrubber({width}: {width?: number}) {
   return <input type="range" min={0} max={Math.max(duration, 0.01)} step={0.01}
     value={Math.min(position, duration)} disabled={duration <= 0}
     aria-label={t('timeline.seek')} className="slider-styled w-full min-w-20"
-    onChange={(e) => {
-      const state = useProjectStore.getState();
-      const time = +e.target.value;
-      state.setPlayheadPosition(time);
-      if (width && (time < state.scrollOffset || time >= state.scrollOffset + width / state.zoomLevel)) {
-        state.setScrollOffset(Math.max(0, Math.min(timelineDuration(state.project) - width / state.zoomLevel, time - width / state.zoomLevel / 2)));
-      }
-
-    }} />;
+    onChange={e=>seekTimeline(+e.target.value,width)} />;
 }
 
 export const TransportControls = React.memo(function TransportControls({viewportWidth}: {viewportWidth?:number}) {
@@ -149,7 +150,7 @@ export const TransportControls = React.memo(function TransportControls({viewport
         <span className="position-label text-xs text-gray-500 uppercase tracking-wide">
           {t('timeline.positionShort')}
         </span>
-        <PositionDisplay />
+        <PositionDisplay width={viewportWidth} />
       </div>
 
       <div className="timeline-scrubber flex-1 min-w-24"><TimelineScrubber width={viewportWidth} /></div>

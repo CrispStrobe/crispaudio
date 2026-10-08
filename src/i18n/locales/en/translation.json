@@ -610,13 +610,14 @@
     "display": "Waveforms"
   },
   "video": {
+    "noPicture": "No video clip here · black output",
     "track": "Video",
     "locked": "Source clock · locked",
     "seek": "Seek video on the shared timeline",
     "noThumbnails": "Thumbnails unavailable",
     "fullscreen": "Expand video",
-    "stepBack": "Step back approximately 33 milliseconds",
-    "stepForward": "Step forward approximately 33 milliseconds",
+    "stepBack": "Previous frame",
+    "stepForward": "Next frame",
     "range": "Export range",
     "in": "In (s)",
     "out": "Out (s)",

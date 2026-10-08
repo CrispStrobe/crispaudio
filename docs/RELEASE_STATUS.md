@@ -191,3 +191,27 @@ and complete WebKit recovery store were backed up under the private validation
 folder (`ux/native-autosave-before-062.json`, `ux/recovery-before-062/WebKit`).
 The ordinary Workspace → Recover last arrangement action can resume the cache;
 installation does not substitute an older interview project for current work.
+
+
+## Local 0.6.3 preview and position follow-up
+
+Picture gaps and extended tails now show intentional black without preparing an
+unrelated default camera or holding up audio startup. The hidden last decoder is
+retained across gaps. Expanded frame stepping follows project FPS and the full
+canvas. Fullscreen failure notices stay inside the viewer; late browser requests
+are exited after close, and preexisting fullscreen is preserved. Typed POS uses
+the scrubber's viewport-follow rules while stopping playback for an exact seek.
+
+Verified: all 1,234 frontend tests, lint, TypeScript/Vite and macOS bundle build.
+New regressions cover gap startup, secondary-source decoder retention, fullscreen
+tail stepping, late browser fullscreen completion, visible failure notices and
+typed position scrolling. Browser checks additionally exercise real audio
+playback inside a picture gap, no extra source preparation, visible cursor after
+typed seek, expanded black tail/frame stepping, Escape and picture restoration.
+Native fullscreen and physical iOS remain outside these browser checks.
+
+Installed and launched the ad-hoc-signed local 0.6.3 app. Current autosave and
+WebKit recovery were preserved in the private validation folder under
+`ux/native-autosave-before-063.json` and `ux/recovery-before-063/WebKit`.
+Temporary Vite servers from this editor validation were stopped. No Apple upload
+or release tag was requested. Native/media code is unchanged from tested 0.6.2.

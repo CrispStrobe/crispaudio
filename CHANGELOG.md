@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.2]
+## [Unreleased — local version 0.6.3]
+
+- Picture gaps and the extended canvas stay black without reloading the default
+  camera or blocking audio startup. The viewer remains available in empty regions.
+- Fullscreen frame stepping follows the whole canvas and project frame rate.
+  Failure notices remain inside the expanded viewer. A late browser fullscreen
+  request is exited if the viewer has already closed; existing fullscreen is kept.
+- Typing POS scrolls an off-screen target into view without disturbing a visible
+  target. Scrubber and typed position use the same viewport rules.
+
+## [Local version 0.6.2]
 
 - Remove the video lane while keeping audio; undo restores links and picture.
 - Pointer/touch/keyboard track reordering replaces the ineffective native drag handle.

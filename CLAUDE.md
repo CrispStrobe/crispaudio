@@ -146,3 +146,14 @@ stream-copy export. Reject containment/triple picture stacks. Expanded viewer is
 a portal outside transformed panels. Import keeps desktop paths, checks project
 identity after async decode and yields during waveform scanning; decode itself
 cannot be cancelled and GUI audio remains bounded by decoded-buffer memory.
+
+
+## Preview and seeking 0.6.3
+
+Only resolve a video URL for an active clip. In picture gaps retain the hidden
+last decoder and an empty black frame; never mark intentional black as loading
+or fall back to preparing the default camera. Stable media keys preserve that
+node across gaps. Expanded frame steps clamp to timelineDuration, not picture
+ends. Browser fullscreen requests can complete after close/unmount; exit late
+owned requests and preserve preexisting fullscreen. Keep failure notices inside
+the portal. POS and scrubber use shared viewport-follow rules.

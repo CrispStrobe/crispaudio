@@ -48,4 +48,19 @@ describe('interview touch workflow', () => {
     expect(onTouchArrange).toHaveBeenCalledOnce();
     expect(screen.getByRole('button',{name:'timeline.splitAtPlayhead'})).toBeDisabled();
   });
+  it('brings a typed POS into view and keeps an already visible position steady',()=>{
+    useProjectStore.setState({zoomLevel:100,scrollOffset:0,isPlaying:true});
+    render(<TransportControls viewportWidth={200}/>);
+    const field=screen.getByLabelText('timeline.positionShort');
+    act(()=>field.focus());fireEvent.change(field,{target:{value:'8'}});fireEvent.keyDown(field,{key:'Enter'});
+    expect(useProjectStore.getState().playheadPosition).toBe(8);
+    expect(useProjectStore.getState().scrollOffset).toBe(7);
+    expect(useProjectStore.getState().isPlaying).toBe(false);
+    act(()=>field.focus());fireEvent.change(field,{target:{value:'8.5'}});fireEvent.keyDown(field,{key:'Enter'});
+    expect(useProjectStore.getState().scrollOffset).toBe(7);
+    act(()=>field.focus());fireEvent.change(field,{target:{value:'100'}});fireEvent.keyDown(field,{key:'Enter'});
+    expect(useProjectStore.getState().playheadPosition).toBe(10);
+    expect(useProjectStore.getState().scrollOffset).toBe(8);
+  });
+
 });

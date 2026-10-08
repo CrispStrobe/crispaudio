@@ -1,3 +1,6 @@
+> Local 0.6.3 keeps picture gaps/tails black without blocking audio; expanded
+> frame stepping follows the full canvas. Typed POS brings its target into view.
+
 > Local 0.6.2 adds editable POS/DUR, shared 24–640 px row height, working track
 > grips, video removal, partial picture overlaps, audio crossfades, fullscreen
 > viewer and import destinations. The **?** button explains timeline controls.

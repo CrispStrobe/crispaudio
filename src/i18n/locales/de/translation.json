@@ -610,13 +610,14 @@
     "display": "Wellenformen"
   },
   "video": {
+    "noPicture": "Hier kein Videoclip · schwarze Ausgabe",
     "track": "Video",
     "locked": "Quellzeit · gesperrt",
     "seek": "Video auf gemeinsamer Zeitleiste positionieren",
     "noThumbnails": "Vorschaubilder nicht verfügbar",
     "fullscreen": "Video vergrößern",
-    "stepBack": "Etwa 33 Millisekunden zurück",
-    "stepForward": "Etwa 33 Millisekunden vor",
+    "stepBack": "Vorheriges Bild",
+    "stepForward": "Nächstes Bild",
     "range": "Exportbereich",
     "in": "Anfang (s)",
     "out": "Ende (s)",
