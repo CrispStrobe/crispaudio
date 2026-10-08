@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Draggable red playhead; audio zoom leaves a fitted picture overview with an audio-window indicator.
 - Magnetic clip-edge snapping, exact positions, sample/ms keyboard and touch nudges.
+- Auto-sync explicitly rejects competing near-equal correlation peaks, fixing platform-dependent confidence on periodic material.
 - Parameterized track envelopes, with corrected curved/mid-fade resume behavior for segments.
 - Non-destructive single-source video clips: split, move, source trim, delete/gaps, black fades and incoming transitions.
 - Desktop/CLI edit-video compositor: dissolves, black/white dips, directional wipes/pushes, blur, zoom, pixelize, whip, glitch and shaded 2D page peel. Expensive interactive previews are labelled approximations.

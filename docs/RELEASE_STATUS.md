@@ -108,7 +108,7 @@ clips/transitions. Source files remain untouched. Picture and sound edit
 independently. Advanced preview is approximate; page peel is a shaded 2D fold.
 No new Apple release/tag/upload was requested.
 
-Validation: 1,167 frontend tests, lint/production build, 17 native tests, 7 media
+Validation: 1,167 frontend tests, lint/production build, 17 native tests, 8 media
 tests; existing generated-media CLI regression and new real-FFmpeg picture
 composition checks (cuts, black gaps, fades, 17 transitions, section + trimmed mix,
 invalid overlaps). Browser checks at five sizes cover video split/dissolve, fitted
@@ -116,3 +116,9 @@ overview under zoom, nudging, mouse/touch cursor dragging, non-activating touch
 labels, Voice handoff/return, and rendered audio fade amplitudes including resume.
 These use real browser media/audio with mocked native file dialogs/IPC; they do
 not replace native WebKit/fullscreen or physical iPhone/iPad testing.
+
+The previous main CI failure exposed FFT tie-dependent confidence for periodic
+audio. Sync now rejects templates with a distant correlation peak within 2% of
+the winner, excluding a 100 ms neighbourhood of one peak. Repeating tones and
+identical broadband material require review on every platform. Unique noisy
+signals, inverted quiet signals and measured clock drift remain covered.

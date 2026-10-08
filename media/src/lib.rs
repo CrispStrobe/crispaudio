@@ -193,7 +193,7 @@ fn median(mut values: Vec<f64>) -> f64 {
 
 /// FFT normalized correlation, invariant to gain and polarity. Window means and
 /// energies are computed from prefix sums; quiet windows cannot win by loudness.
-fn match_template(source: &[f32], template: &[f32]) -> Option<(usize, f64)> {
+fn match_template(source: &[f32], template: &[f32], separation: usize) -> Option<(usize, f64)> {
     let m = template.len();
     if m == 0 || source.len() < m {
         return None;
@@ -228,6 +228,7 @@ fn match_template(source: &[f32], template: &[f32]) -> Option<(usize, f64)> {
         squares += (v as f64).powi(2);
     }
     let mut best = (0, 0.0_f64);
+    let mut scores = vec![0.0_f32; source.len() - m + 1];
     for i in 0..=source.len() - m {
         if i > 0 {
             let old = source[i - 1] as f64;
@@ -239,10 +240,23 @@ fn match_template(source: &[f32], template: &[f32]) -> Option<(usize, f64)> {
         let denom = (variance * energy).sqrt();
         if denom > 1e-12 {
             let score = ((a[i + m - 1].re as f64 / n as f64) / denom).abs().min(1.0);
+            scores[i] = score as f32;
             if score > best.1 {
                 best = (i, score);
             }
         }
+    }
+    // A distant, nearly equal peak is an ambiguous offset, even when a
+    // platform's FFT rounding happens to choose consistent winning positions.
+    // Ignore the neighbourhood of one peak (speech autocorrelation is broad).
+    let alternative = scores
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| i.abs_diff(best.0) > separation.max(1))
+        .map(|(_, score)| *score as f64)
+        .fold(0.0_f64, f64::max);
+    if best.1 <= 0.0 || alternative >= best.1 * 0.98 {
+        return None;
     }
     Some(best)
 }
@@ -257,7 +271,9 @@ pub fn estimate(reference: &[f32], source: &[f32], sample_rate: usize) -> Result
     let mut anchors = Vec::new();
     for i in 0..9 {
         let start = available * (i + 1) / 10;
-        if let Some((position, score)) = match_template(source, &reference[start..start + window]) {
+        if let Some((position, score)) =
+            match_template(source, &reference[start..start + window], sample_rate / 10)
+        {
             anchors.push(Anchor {
                 video_time: start as f64 / sample_rate as f64,
                 source_time: position as f64 / sample_rate as f64,
@@ -856,6 +872,13 @@ mod tests {
         assert!(a.reliable, "{a:?}");
         assert!((a.offset - 3.5).abs() < 0.002);
         assert!((a.rate - 1.0002).abs() < 0.00002);
+    }
+    #[test]
+    fn repeated_broadband_material_requires_review() {
+        let pattern = noise(1000);
+        let repeated: Vec<_> = (0..30000).map(|i| pattern[i % pattern.len()]).collect();
+        let alignment = estimate(&repeated[..20000], &repeated, 1000).unwrap();
+        assert!(!alignment.reliable, "{alignment:?}");
     }
     #[test]
     fn repeated_tone_requires_review() {
