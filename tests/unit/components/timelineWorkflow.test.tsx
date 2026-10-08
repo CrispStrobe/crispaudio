@@ -64,3 +64,28 @@ describe('interview touch workflow', () => {
   });
 
 });
+
+it('applies selected clip fades in one undo step and stops playback', () => {
+  useProjectStore.setState({selection:{startTime:0,endTime:10,segmentIds:['clip-0','clip-1']},isPlaying:true});
+  render(<TimelineActions touchArrange={false} onTouchArrange={()=>{}}/>);
+  fireEvent.click(screen.getByRole('button',{name:'fades.title'}));
+  fireEvent.click(screen.getByRole('button',{name:'fades.both'}));
+  expect(useProjectStore.getState().isPlaying).toBe(false);
+  expect(useProjectStore.getState().project.tracks.map(t=>[t.segments[0].fadeInDuration,t.segments[0].fadeOutDuration])).toEqual([[.25,.25],[.25,.25]]);
+  act(()=>useProjectStore.temporal.getState().undo());
+  expect(useProjectStore.getState().project.tracks.map(t=>t.segments[0].fadeInDuration)).toEqual([0,0]);
+});
+
+it('edits track and master racks independently through the mixer',()=>{
+  useProjectStore.setState({isPlaying:true});
+  render(<TimelineActions touchArrange={false} onTouchArrange={()=>{}}/>);
+  fireEvent.click(screen.getByRole('button',{name:'timeline.mixer'}));
+  const rack=within(screen.getByRole('region',{name:'Jacket rack.trackEffects'}));
+  fireEvent.change(rack.getByRole('combobox',{name:'timeline.addEffect'}),{target:{value:'highpass'}});
+  expect(useProjectStore.getState().project.tracks[0].effects?.[0].type).toBe('highpass');
+  expect(useProjectStore.getState().isPlaying).toBe(false);
+  const master=within(screen.getByRole('region',{name:'rack.masterEffects'}));
+  fireEvent.change(master.getByRole('combobox',{name:'timeline.addEffect'}),{target:{value:'compressor'}});
+  expect(useProjectStore.getState().project.masterEffects[0].type).toBe('compressor');
+  expect(useProjectStore.getState().project.tracks[1].effects??[]).toEqual([]);
+});

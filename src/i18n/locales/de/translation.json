@@ -516,7 +516,8 @@
     "fit": "Alles einpassen / Ansicht zurücksetzen",
     "viewTools": "Ansicht & Werkzeuge",
     "startTitle": "Mit einer Aufnahme beginnen",
-    "startHelp": "Eine Aufnahme importieren oder mehrere ausgerichtete Mikrofondateien für getrennte Spuren auswählen. Ein gespeichertes Projekt lässt sich ebenfalls öffnen."
+    "startHelp": "Eine Aufnahme importieren oder mehrere ausgerichtete Mikrofondateien für getrennte Spuren auswählen. Ein gespeichertes Projekt lässt sich ebenfalls öffnen.",
+    "addEffect": "Effekt hinzufügen"
   },
   "common": {
     "slotA": "A",
@@ -890,7 +891,9 @@
     "help_remove_title": "Spuren und Clips entfernen",
     "help_remove": "Der Papierkorb im Spurkopf entfernt die Spur. Video entfernen behält Audio und löst dessen Verknüpfung. Der Papierkorb in der Werkzeugleiste entfernt ausgewählte Clips samt verknüpften Audio-/Videopartnern. Rückgängig stellt beides wieder her.",
     "help_fullscreen_title": "Video im Vollbild",
-    "help_fullscreen": "Video vergrößern öffnet eine fensterfüllende Vorschau und fordert nach Möglichkeit nativen Vollbildmodus an. Wiedergabe und Einzelbildschritte bleiben sichtbar. Escape oder Verkleinern schließt die Ansicht. Im erweiterten Viewer schalten Links/Rechts Einzelbilder und die Leertaste die Wiedergabe. Tab bleibt bei den Viewer-Steuerelementen; Timeline-Bearbeitungstasten sind getrennt."
+    "help_fullscreen": "Video vergrößern öffnet eine fensterfüllende Vorschau und fordert nach Möglichkeit nativen Vollbildmodus an. Wiedergabe und Einzelbildschritte bleiben sichtbar. Escape oder Verkleinern schließt die Ansicht. Im erweiterten Viewer schalten Links/Rechts Einzelbilder und die Leertaste die Wiedergabe. Tab bleibt bei den Viewer-Steuerelementen; Timeline-Bearbeitungstasten sind getrennt.",
+    "help_fades_title": "Ausgewählte Clips blenden",
+    "help_fades": "Audio nutzt die gewählte Kurve; Video blendet linear von/zu Schwarz. Die Dauer wird auf die jeweilige Cliplänge begrenzt."
   },
   "analysis": {
     "outputSpectrogram": "Ausgabe-Spektrogramm",
@@ -898,6 +901,30 @@
     "processedSpectrogram": "Bearbeitetes Spektrogramm",
     "scale": "Hann-FFT · Farbe: −90 bis 0 dBFS",
     "sampled": "zeitlich abgetastete Übersicht",
-    "firstChannel": "Analyse: erster Audiokanal"
+    "firstChannel": "Analyse: erster Audiokanal",
+    "waveforms": "Wellenformen",
+    "spectrumHelp": "Relatives FFT-Spektrum eines repräsentativen lauten Fensters; keine kalibrierte Pegelanzeige."
+  },
+  "rack": {
+    "copy": "Effekte kopieren",
+    "paste": "Durch kopierte Effekte ersetzen",
+    "bypass": "Alle Effekte umgehen",
+    "enable": "Alle Effekte aktivieren",
+    "moveUp": "Effekt früher anwenden",
+    "moveDown": "Effekt später anwenden",
+    "trackEffects": "Spureffekte",
+    "masterEffects": "Master-Effekte",
+    "orderHelp": "Effekte laufen von oben nach unten. Änderungen stoppen die Wiedergabe; erneut abspielen zum Anhören."
+  },
+  "fades": {
+    "title": "Ausgewählte Clips blenden",
+    "help_one": "Blenden auf {{count}} ausgewählten Clip anwenden.",
+    "help_other": "Blenden auf {{count}} ausgewählte Clips anwenden.",
+    "duration": "Blendendauer",
+    "videoHelp": "Audio nutzt die gewählte Kurve; Video blendet linear von/zu Schwarz. Die Dauer wird auf die jeweilige Cliplänge begrenzt.",
+    "in": "Einblenden",
+    "out": "Ausblenden",
+    "both": "Beide Enden blenden",
+    "clear": "Blenden entfernen"
   }
 }

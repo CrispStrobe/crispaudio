@@ -27,6 +27,7 @@ export class TimelineEngine {
   private sources: Map<string, AudioSource>;
   private activeSources: AudioBufferSourceNode[] = [];
   private masterGain: GainNode;
+  private playbackNodes = new Set<AudioNode>();
 
   constructor(ctx: AudioContext, masterGain?: GainNode) {
     this.ctx = ctx;
@@ -54,28 +55,44 @@ export class TimelineEngine {
   play(project: TimelineProject, startTime: number): void {
     this.stop();
 
-    const now = this.ctx.currentTime;
+    // Capture all nodes created by this graph, including effect oscillators and
+    // feedback loops, so repeated play/stop cannot leave a live processing graph.
+    const nodes = this.playbackNodes;
+    const ctx = new Proxy(this.ctx, {
+      get(target, key) {
+        const value = Reflect.get(target, key, target);
+        if (typeof value !== 'function') return value;
+        return (...args: unknown[]) => {
+          const result = value.apply(target, args);
+          if (String(key).startsWith('create') && result && typeof result.disconnect === 'function') nodes.add(result);
+          return result;
+        };
+      },
+    });
+    const masterInput = ctx.createGain();
+    this.applyEffects(ctx, masterInput, project.masterEffects).connect(this.masterGain);
+    const now = ctx.currentTime;
     const tracksToPlay = audibleTracks(project.tracks);
 
     for (const track of tracksToPlay) {
       if (!track.segments.length) continue;
-      const trackGain = this.ctx.createGain();
+      const trackGain = ctx.createGain();
       const trackStart=Math.min(...track.segments.map(clip=>clip.startTime));
       const trackEnd=Math.max(0,...track.segments.map(clip=>clip.startTime+clip.duration));
-      const trackFade=this.ctx.createGain();
+      const trackFade=ctx.createGain();
       scheduleEnvelope(trackFade.gain,now+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
-      const automated=this.ctx.createGain();scheduleGain(automated.gain,track.automation,now,startTime);
-      trackFade.connect(automated);this.applyEffects(this.ctx,automated,track.effects??[]).connect(trackGain);
+      const automated=ctx.createGain();scheduleGain(automated.gain,track.automation,now,startTime);
+      trackFade.connect(automated);this.applyEffects(ctx,automated,track.effects??[]).connect(trackGain);
       trackGain.gain.value = track.volume;
 
       // Pan
       if (track.pan !== 0) {
-        const panner = this.ctx.createStereoPanner();
+        const panner = ctx.createStereoPanner();
         panner.pan.value = Math.max(-1, Math.min(1, track.pan));
         trackGain.connect(panner);
-        panner.connect(this.masterGain);
+        panner.connect(masterInput);
       } else {
-        trackGain.connect(this.masterGain);
+        trackGain.connect(masterInput);
       }
 
       for (const segment of track.segments) {
@@ -95,20 +112,20 @@ export class TimelineEngine {
         // When (in AudioContext time) should this segment start?
         const contextStartTime = now + Math.max(0, segment.startTime - startTime);
 
-        const bufSrc = this.ctx.createBufferSource();
+        const bufSrc = ctx.createBufferSource();
         bufSrc.buffer = source.buffer;
 
-        const segGain = this.ctx.createGain();
+        const segGain = ctx.createGain();
         segGain.gain.value = segment.gain;
 
         bufSrc.connect(segGain);
 
         // Apply effects chain
         let currentNode: AudioNode = segGain;
-        currentNode = this.applyEffects(this.ctx, currentNode, segment.effects);
+        currentNode = this.applyEffects(ctx, currentNode, segment.effects);
 
         // Apply fades via gain automation
-        const fadeGain = this.ctx.createGain();
+        const fadeGain = ctx.createGain();
         currentNode.connect(fadeGain);
         this.applyFade(fadeGain, segment, contextStartTime, segPlayStart);
 
@@ -130,7 +147,15 @@ export class TimelineEngine {
         // Already stopped
       }
     }
+    const stopped = new Set<AudioNode>(this.activeSources);
     this.activeSources = [];
+    for (const node of this.playbackNodes) {
+      if (!stopped.has(node) && 'stop' in node && typeof node.stop === 'function') {
+        try { node.stop(); } catch { /* source may already have ended */ }
+      }
+      try { node.disconnect(); } catch { /* already disconnected */ }
+    }
+    this.playbackNodes.clear();
   }
 
   // ── Offline render ─────────────────────────────────────────────────────────
@@ -160,17 +185,9 @@ export class TimelineEngine {
     masterGain.gain.value = 1;
     masterGain.connect(offCtx.destination);
 
-    // Apply master effects
-    let masterOut: AudioNode = masterGain;
-    if (project.masterEffects.length) {
-      // We need a passthrough node to apply master effects onto
-      // Create a channel merger as a "bus" collector
-      const busMerger = offCtx.createGain();
-      busMerger.gain.value = 1;
-      masterOut = this.applyEffects(offCtx, busMerger, project.masterEffects);
-      masterOut.connect(offCtx.destination);
-      masterOut = busMerger;
-    }
+    // Same track → master-rack → output routing as realtime playback.
+    const masterOut = offCtx.createGain();
+    this.applyEffects(offCtx, masterOut, project.masterEffects).connect(masterGain);
 
     const tracksToRender = audibleTracks(project.tracks);
 

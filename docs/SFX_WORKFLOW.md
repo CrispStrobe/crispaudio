@@ -1,8 +1,8 @@
 # SFX and Voice workflow
 
-Sound presets stay visible in one horizontally scrollable row. Swipe sideways,
+Sound presets use one horizontally scrollable row. Swipe sideways,
 use the trackpad, or Tab between preset buttons. Names wrap inside each icon card
-in German and English. There is no collapse control.
+in German and English. Click the section heading to collapse or reopen them. Presets and waveforms start open; the frequency spectrum and spectrogram start closed. Closed charts do not run their analysis.
 
 Playback, loop, randomize, mutate, undo/redo, export and Send to Timeline share a
 compact icon bar. Hover for labels or hold on touch without activating a control.
@@ -15,6 +15,8 @@ rate, so switching away and back does not silently reroll a noisy sound. Editing
 one slot refreshes its waveform without changing the other slot's samples. The
 output uses the active slot at 0%, the opposite slot at 100%, and a separate
 parameter-interpolated render between those endpoints.
+
+Open Frequency spectrum for the familiar log-spaced FFT bars. It shows a representative loud window with relative normalization, not a calibrated level meter. Its axis follows the actual sample rate. Open Output spectrogram for time-frequency detail.
 
 The spectrogram describes that output, including a morphed output. Horizontal
 position is time, vertical position is frequency from DC to the actual Nyquist

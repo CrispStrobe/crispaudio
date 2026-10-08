@@ -11,6 +11,7 @@ import { canvasBgFlat, canvasTextColor, canvasEmptyColor } from '../../lib/theme
 export interface SpectrumDisplayProps {
   buffer: Float32Array | null;
   numBars?: number;
+  sampleRate?: number;
   title?: string;
   noSignalText?: string;
 }
@@ -18,6 +19,7 @@ export interface SpectrumDisplayProps {
 export function SpectrumDisplay({
   buffer,
   numBars = 32,
+  sampleRate = 44100,
   title,
   noSignalText,
 }: SpectrumDisplayProps) {
@@ -86,11 +88,12 @@ export function SpectrumDisplay({
     const { bars, maxVal } = spectrum;
     if (maxVal === 0) return;
 
-    const barW = Math.floor(lw / numBars) - 1;
+    const step = lw / numBars;
+    const barW = Math.max(1, step - 1);
     for (let i = 0; i < numBars; i++) {
       const norm = bars[i] / maxVal;
       const barH = Math.min(lh, norm * lh * 0.85);
-      const x = i * (barW + 1);
+      const x = i * step;
       const hue = 240 - (i / numBars) * 120;
       const lightness = 40 + norm * 30;
       ctx.fillStyle = `hsl(${hue}, 70%, ${lightness}%)`;
@@ -100,10 +103,14 @@ export function SpectrumDisplay({
     // Freq labels
     ctx.fillStyle = canvasTextColor();
     ctx.font = '9px monospace';
-    ctx.fillText('20Hz', 2, lh - 2);
-    ctx.fillText('1kHz', lw * 0.4, lh - 2);
-    ctx.fillText('20kHz', lw - 32, lh - 2);
-  }, [spectrum, numBars, resolvedNoSignal, canvasWidth]);
+    const n = buffer?.length ? Math.min(4096, 2 ** Math.floor(Math.log2(buffer.length))) : 4096;
+    const low = sampleRate / Math.max(2, n), high = sampleRate / 2;
+    const hz = (value: number) => value >= 1000 ? `${(value / 1000).toFixed(1)} kHz` : `${value.toFixed(0)} Hz`;
+    ctx.fillText(hz(low), 2, lh - 2);
+    ctx.textAlign = 'center'; ctx.fillText(hz(Math.sqrt(low * high)), lw / 2, lh - 2);
+    ctx.textAlign = 'right'; ctx.fillText(hz(high), lw - 2, lh - 2);
+    ctx.textAlign = 'left';
+  }, [spectrum, numBars, resolvedNoSignal, canvasWidth, sampleRate, buffer]);
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const canvasHeight = Math.floor(80 * dpr); // h-20 = 5rem = 80px

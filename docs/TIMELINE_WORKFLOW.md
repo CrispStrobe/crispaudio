@@ -1,3 +1,6 @@
+> Local 0.6.10 adds [batch fades and shared effects racks](DAW_EFFECTS.md), video
+> fade handles, consistent playback/master FX and collapsible analysis views.
+
 > Local 0.6.4 adds isolated fullscreen keyboard controls, edge scrolling during
 > track reorder and compact touch rows with audible/silent indicators.
 

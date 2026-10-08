@@ -63,7 +63,7 @@ describe('store render isolation', () => {
     render(<VoicePanel />);
     translate.mockClear();
     act(() => useVoiceStore.getState().setIsProcessing(true));
-    expect(translate.mock.calls.filter(([key]) => key === 'voice.frequencySpectrum')).toHaveLength(0);
+    expect(translate.mock.calls.filter(([key]) => key === 'voice.noAudio')).toHaveLength(0);
   });
   it('does not render SFX parameter controls for playback changes', () => {
     render(<SFXPanel />);

@@ -1,3 +1,5 @@
+import { CollapsibleSection } from '../shared/CollapsibleSection';
+import { SpectrumDisplay } from '../shared/SpectrumDisplay';
 import { ToolButton } from '../common/ToolButton';
 import { Coins, Crosshair, Flame, TrendingUp, HeartCrack, ArrowUp, Wind, MousePointer2, Waves, Radio, MousePointerClick, ScanLine, Orbit, TriangleAlert } from 'lucide-react';
 import { isNativeMac } from '../../lib/nativeMenuPlatform';
@@ -405,8 +407,7 @@ export function SFXPanel() {
           </div>
         </div>
 
-        <section className="sfx-presets mb-4" aria-label={t('sfx.soundPresets')}>
-          <h2 className="text-sm font-semibold text-gray-300 mb-2">{t('sfx.soundPresets')}</h2>
+        <CollapsibleSection title={t('sfx.soundPresets')} defaultOpen className="sfx-presets">
           <div className="sfx-preset-grid">
             {ALL_PRESET_NAMES.map(name=>{
               const Icon=PRESET_ICONS[name];
@@ -417,8 +418,9 @@ export function SFXPanel() {
               </button>;
             })}
           </div>
-        </section>
+        </CollapsibleSection>
 
+        <CollapsibleSection title={t('analysis.waveforms')} defaultOpen>
         <div className="sfx-output grid grid-cols-2 gap-3 mb-4">
           {(['A', 'B'] as const).map(slot => {
             const samples = slot === 'A' ? bufferA : bufferB;
@@ -429,14 +431,19 @@ export function SFXPanel() {
             </section>;
           })}
         </div>
-        <section className="card mb-4">
+        </CollapsibleSection>
+        <CollapsibleSection title={t('sfx.frequencySpectrum')}>
+          <SpectrumDisplay buffer={buffer} sampleRate={sampleRate}/>
+          <p className="text-xs text-gray-400 mt-2">{t('analysis.spectrumHelp')}</p>
+        </CollapsibleSection>
+        <CollapsibleSection title={t('analysis.outputSpectrogram')}>
           <SpectrogramDisplay buffer={buffer} sampleRate={sampleRate} title={t('analysis.outputSpectrogram')}/>
             <dl className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-400 mt-3 tabular-nums">
               <div><dt className="inline">{t('sfx.outputDuration')} </dt><dd className="inline text-gray-200">{outputStats.duration.toFixed(2)} s</dd></div>
               <div><dt className="inline">{t('sfx.outputPeak')} </dt><dd className={`inline ${isClipping?'text-amber-300':'text-gray-200'}`}>{outputStats.peak>0?(20*Math.log10(outputStats.peak)).toFixed(1):'−∞'} dBFS</dd></div>
               <div><dt className="inline">RMS </dt><dd className="inline text-gray-200">{outputStats.rms>0?(20*Math.log10(outputStats.rms)).toFixed(1):'−∞'} dBFS</dd></div>
             </dl>
-        </section>
+        </CollapsibleSection>
         <details className="sfx-analysis mb-4">
           <summary className="text-sm text-gray-300 cursor-pointer py-2">{t('sfx.analysisDetails')}</summary>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-2">

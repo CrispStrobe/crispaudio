@@ -4,7 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.9]
+## [Unreleased — local version 0.6.10]
+
+- Restore FFT frequency bars alongside the spectrogram in SFX and Voice. Make
+  presets, waveforms and analysis collapsible; spectrum/spectrogram start closed.
+  Correct spectrum labels for the actual sample rate; skip hidden chart analysis.
+- Add an ordered effects rack for clips, tracks and master: parameters, bypass,
+  remove, reorder and copy/replace chains across scopes. Track/master racks are
+  in the mixer; clip racks remain in Clip settings.
+- Route realtime playback through master effects just like GUI export. Dispose
+  effect nodes, feedback paths and modulation oscillators on stop/restart.
+- Add multi-selection AV fade controls with durations/curves and single-step undo.
+  Add frame-quantized video fade handles and envelope overlays on the timeline.
+- Allow overlapping video fade-in/out envelopes within each clip's duration and
+  multiply preview opacity to match FFmpeg export.
+
+## [Local version 0.6.9]
 
 - Keep SFX presets in one always-visible, horizontally scrollable row. Apply the
   same neutral icon preset strip and compact action buttons to Voice.

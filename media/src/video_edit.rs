@@ -89,7 +89,8 @@ pub fn validate(edit: &VideoEdit, source_duration: f64) -> Result<Vec<VideoClip>
                 .is_some_and(|id| !edit.sources.iter().any(|s| &s.id == id))
             || c.fade_in < 0.0
             || c.fade_out < 0.0
-            || c.fade_in + c.fade_out > c.duration
+            || c.fade_in > c.duration
+            || c.fade_out > c.duration
             || c.transition_duration < 0.0
             || !TRANSITIONS.contains(&c.transition.as_str())
         {
@@ -466,7 +467,75 @@ mod tests {
         edit.clips[1].transition = "fade".into();
         edit.clips[1].transition_duration = 1.0;
         assert!(validate(&edit, 10.0).is_ok());
+        edit.clips[1].fade_in = 2.0;
+        edit.clips[1].fade_out = 2.0;
+        assert!(validate(&edit, 10.0).is_ok()); // overlapping envelopes multiply
         edit.clips[1].fade_out = 4.0;
         assert!(validate(&edit, 10.0).is_err());
+    }
+    #[test]
+    #[ignore = "Requires FFmpeg; run explicitly on desktop"]
+    fn overlapping_fades_render_with_multiplicative_opacity() {
+        use std::process::Command;
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let folder =
+            std::env::temp_dir().join(format!("crispaudio-fades-{}-{stamp}", std::process::id()));
+        std::fs::create_dir_all(&folder).unwrap();
+        let source = folder.join("white.mp4");
+        let output = folder.join("faded.mp4");
+        assert!(Command::new("ffmpeg")
+            .args([
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=white:s=128x72:r=25:d=2",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p"
+            ])
+            .arg(&source)
+            .status()
+            .unwrap()
+            .success());
+        let mut picture = clip(0.0, 2.0);
+        picture.fade_in = 2.0;
+        picture.fade_out = 2.0;
+        let edit = VideoEdit {
+            path: source.to_string_lossy().into(),
+            sources: vec![],
+            frame_rate: Some(25.0),
+            duration: Some(2.0),
+            clips: vec![picture],
+        };
+        export_edit(&edit, output.to_str().unwrap(), None, 0.0, 2.0, false).unwrap();
+        let frame = Command::new("ffmpeg")
+            .args(["-v", "error", "-ss", "1", "-i"])
+            .arg(&output)
+            .args([
+                "-frames:v",
+                "1",
+                "-pix_fmt",
+                "gray",
+                "-f",
+                "rawvideo",
+                "pipe:1",
+            ])
+            .output()
+            .unwrap();
+        assert!(frame.status.success());
+        assert_eq!(frame.stdout.len(), 128 * 72);
+        let average =
+            frame.stdout.iter().map(|v| *v as f64).sum::<f64>() / frame.stdout.len() as f64;
+        assert!(
+            (55.0..75.0).contains(&average),
+            "midpoint should be 25% white, got {average}"
+        );
+        std::fs::remove_dir_all(folder).unwrap();
     }
 }

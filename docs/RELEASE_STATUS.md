@@ -359,3 +359,38 @@ populated spectrogram canvases. Physical iOS testing remains pending.
 Installed and launched ad-hoc-signed 0.6.9 at `~/Applications/CrispAudio-local.app`.
 Backups: private validation `ux/native-autosave-before-069.json` and
 `ux/recovery-before-069/WebKit`. No release tag or Apple upload was triggered.
+
+## Local 0.6.10 — collapsible analysis, fades and shared FX racks
+
+Frequency spectrum bars are restored beside the spectrogram in SFX and Voice.
+Presets and waveform sections can collapse; spectrum/spectrogram start closed
+and unmount their analysis while hidden. Spectrum labels follow sample rate.
+
+Clip, track and master racks share parameter editing, reordering, bypass,
+removal and independent copy/replace. Track/master racks are in the mixer.
+Realtime playback now runs master FX consistently with offline GUI export, and
+stop/restart disposes its effect graph and modulation oscillators. Rack edits
+stop playback so the next audition uses the reviewed settings.
+
+The fade tool applies durations/curves to selected AV clips in one undo step,
+without moving or trimming them. Video has draggable, frame-quantized fade
+handles and an opacity envelope. Overlapping video fade-in/out is accepted
+within each clip length; preview multiplication matches the native filters.
+See [Fades and effects](DAW_EFFECTS.md) for workflow and current limitations.
+
+Verified: 85 frontend suites / 1,269 tests, lint, TypeScript/Vite, 13 media tests
+and one explicitly run FFmpeg integration test. The FFmpeg test exports a white
+clip with overlapping fades and measures the expected 25% midpoint luminance.
+Chrome and WebKit German desktop/phone checks cover collapse/reopen, both FFT
+views, batch AV fades, picture fade dragging/undo and cross-scope rack copy.
+Their actual Web Audio engines produce identical samples for realtime-graph
+versus export-graph rendering with chorus and a low-pass master filter; maximum
+sample difference is zero in each browser. These are buffer/graph tests, not a
+physical output-device or iOS test.
+
+The macOS bundle passed, was ad-hoc signed, installed at
+`~/Applications/CrispAudio-local.app` and launched as 0.6.10. Current autosave and
+WebKit recovery were backed up under private validation
+`ux/native-autosave-before-0610.json` and `ux/recovery-before-0610/WebKit`.
+No Apple upload or release tag was triggered. Native CLI project rendering still
+rejects unsupported FX; GUI export is required for full Web Audio racks.

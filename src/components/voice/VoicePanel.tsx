@@ -1,3 +1,5 @@
+import { CollapsibleSection } from '../shared/CollapsibleSection';
+import { SpectrumDisplay } from '../shared/SpectrumDisplay';
 import { ToolButton } from '../common/ToolButton';
 import { SpectrogramDisplay } from '../shared/SpectrogramDisplay';
 import { AudioLines, Bot, Cpu, Radio, Orbit, Shield, Flame, Squirrel } from 'lucide-react';
@@ -372,8 +374,7 @@ export function VoicePanel() {
           </div>
         </div>
 
-        <section className="mb-4" aria-label={t('voice.presets')}>
-          <h2 className="text-sm font-semibold text-gray-300 mb-2">{t('voice.presets')}</h2>
+        <CollapsibleSection title={t('voice.presets')} defaultOpen>
           <div className="sfx-preset-grid">
             {PRESET_NAMES.map(name => {
               const Icon = PRESET_ICONS[name];
@@ -385,7 +386,7 @@ export function VoicePanel() {
               </button>;
             })}
           </div>
-        </section>
+        </CollapsibleSection>
 
         {/* ── A/B Controls ────────────────────────────────────────── */}
         <div className="card mb-4">
@@ -461,6 +462,7 @@ export function VoicePanel() {
         </div>
 
         {/* ── Visualizations ──────────────────────────────────────── */}
+        <CollapsibleSection title={t('analysis.waveforms')} defaultOpen>
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="card">
             <VoiceWaveform buffer={sourceBuffer} color="#3b82f6" title={t('voice.originalWaveform')} isPlaying={isPlaying && playingBuffer === 'source'} duration={sourceBuffer?.duration} />
@@ -469,11 +471,16 @@ export function VoicePanel() {
             <VoiceWaveform buffer={processedBuffer} color="#a855f7" title={t('voice.processedWaveform')} isPlaying={isPlaying && playingBuffer === 'processed'} duration={processedBuffer?.duration} />
           </div>
         </div>
-        <section className="card mb-4">
+        </CollapsibleSection>
+        <CollapsibleSection title={t('voice.frequencySpectrum')}>
+          <SpectrumDisplay buffer={analysisSamples} sampleRate={analysisBuffer?.sampleRate ?? 44100} title={t('voice.frequencySpectrum')}/>
+          <p className="text-xs text-gray-400 mt-2">{t('analysis.spectrumHelp')}</p>
+        </CollapsibleSection>
+        <CollapsibleSection title={t(processedBuffer ? 'analysis.processedSpectrogram' : 'analysis.sourceSpectrogram')}>
           <SpectrogramDisplay buffer={analysisSamples} sampleRate={analysisBuffer?.sampleRate ?? 44100}
             title={t(processedBuffer ? 'analysis.processedSpectrogram' : 'analysis.sourceSpectrogram')}/>
           <p className="text-xs text-gray-400 mt-1">{t('analysis.firstChannel')}</p>
-        </section>
+        </CollapsibleSection>
         <details className="mb-4">
           <summary className="text-sm text-gray-300 cursor-pointer py-2">{t('sfx.analysisDetails')}</summary>
           <div className="card"><VoiceLevels buffer={analysisBuffer}/></div>

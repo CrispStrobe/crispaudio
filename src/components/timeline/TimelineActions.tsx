@@ -1,3 +1,6 @@
+import { ClipFadeTools } from './ClipFadeTools';
+import { TrendingUp } from 'lucide-react';
+import { EffectChainEditor } from './EffectChainEditor';
 import { splitClips, projectClips, blendAudioOverlaps } from '../../lib/projectEdits';
 import { ToolButton } from '../common/ToolButton';
 import { Hand, Blend, SlidersHorizontal, Scissors, Layers, Settings2, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -13,9 +16,11 @@ import { SegmentEffectsPanel } from './SegmentEffectsPanel';
 /** Actions are visible and keyboard/touch accessible; no right-click required. */
 export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: { touchArrange: boolean; onTouchArrange: () => void; onInspector?:()=>void }) {
   const { t } = useTranslation();
+  const [fades, setFades] = useState(false);
   const [mixer, setMixer] = useState(false);
   const [inspector, setInspector] = useState(false);
   const video = useProjectStore(s=>s.project.video);
+  const masterEffects = useProjectStore(s=>s.project.masterEffects);
   const [nudge,setNudge]=useState(.001);
   const tracks = useProjectStore((s) => s.project.tracks);
   const selection = useProjectStore((s) => s.selection);
@@ -38,6 +43,7 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
       }}/>
       <ToolButton data-help="inspector" icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>onInspector?onInspector():setInspector(true)}/>
       <ToolButton data-help="overlap" icon={Blend} label={t('usability.blendAudio')} disabled={selected.length<2} onClick={()=>{try{const state=useProjectStore.getState();useProjectStore.setState({project:blendAudioOverlaps(state.project,selection?.segmentIds??[])});}catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:String(error)}));}}}/>
+      <ToolButton data-help="fades" icon={TrendingUp} label={t('fades.title')} disabled={!allSelected.length} onClick={() => setFades(true)}/>
       <ToolButton data-help="remove" icon={Trash2} label={t('timeline.delete')} disabled={!allSelected.length} onClick={deleteSelection}/>
       <span className="text-xs text-gray-400 hidden lg:block">{t('editing.nudge')}</span>
       <ToolButton data-help="nudge" icon={ArrowLeft} label={t('editing.nudgeLeft')} onClick={()=>nudgeSelection(-nudge)}/>
@@ -46,6 +52,9 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
       </select>
       <ToolButton data-help="nudge" icon={ArrowRight} label={t('editing.nudgeRight')} onClick={()=>nudgeSelection(nudge)}/>
     </div>
+    <Modal isOpen={fades && allSelected.length > 0} onClose={() => setFades(false)} title={t('fades.title')}>
+      <ClipFadeTools/>
+    </Modal>
     <Modal isOpen={inspector && allSelected.length > 0} onClose={() => setInspector(false)} title={t('timeline.clipSettings')}>
       {selectedVideo.length ? <VideoClipSettings id={selectedVideo[0].id}/> : <SegmentEffectsPanel onClose={() => setInspector(false)} />}
     </Modal>
@@ -74,6 +83,12 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
               </select>
             </label>)}
           </div>
+          <details>
+            <summary className="text-sm text-gray-300 cursor-pointer py-2">{t('rack.trackEffects')}</summary>
+            <EffectChainEditor effects={track.effects ?? []} label={`${track.name} ${t('rack.trackEffects')}`} onChange={effects => {
+              const state = useProjectStore.getState(); state.setIsPlaying(false); state.updateTrack(track.id, {effects});
+            }}/>
+          </details>
           <label className="flex items-center gap-3 text-sm text-gray-300">{t('timeline.trackVolume')}
             <input type="range" min={-60} max={40} step={0.5} className="slider-styled min-w-0 flex-1" value={track.volume > 0 ? Math.max(-60, 20 * Math.log10(track.volume)) : -60}
               onChange={(e) => useProjectStore.getState().updateTrack(track.id, { volume: +e.target.value <= -60 ? 0 : 10 ** (+e.target.value / 20) })} />
@@ -81,6 +96,13 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
           </label>
         </section>)}
       </div>
+      <section className="mt-4 p-3 rounded-xl bg-gray-950 border border-indigo-800">
+        <h3 className="font-semibold text-sm mb-2">{t('rack.masterEffects')}</h3>
+        {mixer && <EffectChainEditor effects={masterEffects} label={t('rack.masterEffects')} onChange={effects => {
+          const state = useProjectStore.getState();
+          useProjectStore.setState({project: {...state.project, masterEffects: effects}, isPlaying: false});
+        }}/>}
+      </section>
     </Modal>
   </>;
 }

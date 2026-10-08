@@ -516,7 +516,8 @@
     "fit": "Fit all / reset view",
     "viewTools": "View & tools",
     "startTitle": "Start with your audio",
-    "startHelp": "Import a recording, or select several aligned microphone files to create separate tracks. You can also open a saved project."
+    "startHelp": "Import a recording, or select several aligned microphone files to create separate tracks. You can also open a saved project.",
+    "addEffect": "Add effect"
   },
   "common": {
     "slotA": "A",
@@ -890,7 +891,9 @@
     "help_remove_title": "Remove tracks and clips",
     "help_remove": "Trash in a track header removes that lane. Removing video keeps its audio and unlinks it. The toolbar trash removes selected clips, including linked audio/video partners. Undo restores either action.",
     "help_fullscreen_title": "Fullscreen video",
-    "help_fullscreen": "Expand video opens a viewport-filling viewer and requests native fullscreen where available. Playback and frame-step controls stay visible. Escape or the shrink button closes it. In the expanded viewer, Left/Right steps frames and Space toggles playback. Tab stays among viewer controls; timeline editing shortcuts are isolated."
+    "help_fullscreen": "Expand video opens a viewport-filling viewer and requests native fullscreen where available. Playback and frame-step controls stay visible. Escape or the shrink button closes it. In the expanded viewer, Left/Right steps frames and Space toggles playback. Tab stays among viewer controls; timeline editing shortcuts are isolated.",
+    "help_fades_title": "Fade selected clips",
+    "help_fades": "Audio uses the chosen curve; video fades linearly to/from black. Durations are limited to each clip length."
   },
   "analysis": {
     "outputSpectrogram": "Output spectrogram",
@@ -898,6 +901,30 @@
     "processedSpectrogram": "Processed spectrogram",
     "scale": "Hann FFT · colour: −90 to 0 dBFS",
     "sampled": "sampled time overview",
-    "firstChannel": "Analysis: first audio channel"
+    "firstChannel": "Analysis: first audio channel",
+    "waveforms": "Waveforms",
+    "spectrumHelp": "Relative FFT spectrum of a representative loud window; not a calibrated level meter."
+  },
+  "rack": {
+    "copy": "Copy effects",
+    "paste": "Replace with copied effects",
+    "bypass": "Bypass all effects",
+    "enable": "Enable all effects",
+    "moveUp": "Move effect earlier",
+    "moveDown": "Move effect later",
+    "trackEffects": "Track effects",
+    "masterEffects": "Master effects",
+    "orderHelp": "Effects run from top to bottom. Changes stop playback; play again to audition."
+  },
+  "fades": {
+    "title": "Fade selected clips",
+    "help_one": "Apply fades to {{count}} selected clip.",
+    "help_other": "Apply fades to {{count}} selected clips.",
+    "duration": "Fade duration",
+    "videoHelp": "Audio uses the chosen curve; video fades linearly to/from black. Durations are limited to each clip length.",
+    "in": "Fade in",
+    "out": "Fade out",
+    "both": "Fade both ends",
+    "clear": "Remove fades"
   }
 }

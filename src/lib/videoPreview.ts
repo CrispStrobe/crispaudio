@@ -3,7 +3,7 @@ import type {VideoClip} from '../types/audio';
 export function clipOpacity(clip:VideoClip,time:number):number {
   const local=time-clip.startTime;
   if(local<0||local>=clip.duration)return 0;
-  return Math.min(1,clip.fadeIn>0?local/clip.fadeIn:1,clip.fadeOut>0?(clip.duration-local)/clip.fadeOut:1);
+  return Math.min(1,clip.fadeIn>0?local/clip.fadeIn:1)*Math.min(1,clip.fadeOut>0?(clip.duration-local)/clip.fadeOut:1);
 }
 export function transitionStyle(clip:VideoClip,time:number):{incoming:Record<string,string|number>;outgoing:Record<string,string|number>;background:string;approximate:boolean} {
   const p=Math.max(0,Math.min(1,(time-clip.startTime)/Math.max(.001,clip.transitionDuration)));
