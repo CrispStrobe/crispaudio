@@ -1,4 +1,4 @@
-# Fades and effects — local 0.6.11
+# Fades and effects — local 0.6.12
 
 ## Fade selected audio or video
 
@@ -57,6 +57,13 @@ contrast and saturation; use power to compare with the original, reset to clear
 settings, or copy to all selected picture clips. Linked audio is unaffected.
 Colour runs before picture fades/transitions in preview and native export.
 See [colour workflow and CLI recipes](VIDEO_COLOR.md).
+
+## Picture orientation
+
+Clip settings also provides quarter-turn rotation and horizontal/vertical
+mirroring. Rotated sources fit the existing frame; reset and copy-to-selection
+operate on pictures only. Preview, saved projects and MP4 export retain these
+settings. See [orientation workflow and CLI recipes](VIDEO_ORIENTATION.md).
 
 ## Analysis views and next editor work
 

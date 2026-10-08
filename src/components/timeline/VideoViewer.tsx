@@ -1,3 +1,4 @@
+import { videoTransformStyle } from '../../lib/videoTransform';
 import { videoColorFilter } from '../../lib/videoColor';
 import { createPortal } from 'react-dom';
 import { syncVideoElement } from '../../lib/videoTransport';
@@ -53,15 +54,20 @@ export function VideoViewer({children}: {children?:ReactNode}) {
       for(const [element,clip,style] of [[previousRef.current,outgoing,transition?.outgoing],[ref.current,incoming,transition?.incoming]] as const){
         if(!element)continue;
         const opacity=clip?clipOpacity(clip,state.playheadPosition):0;
-        element.style.opacity=String(opacity*Number(style?.opacity??1));element.style.transform=String(style?.transform??'none');element.style.clipPath=String(style?.clipPath??'none');element.style.filter=[videoColorFilter(clip?.colorCorrection),String(style?.filter??'')].filter(Boolean).join(' ')||'none';
+        element.style.opacity=String(opacity);
+        element.style.transform=videoTransformStyle(clip?.transform,element.videoWidth,element.videoHeight,element.clientWidth,element.clientHeight)||'none';
+        const layer=element.parentElement;
+        if(layer){layer.style.opacity=String(style?.opacity??1);layer.style.transform=String(style?.transform??'none');layer.style.clipPath=String(style?.clipPath??'none');}
+        element.style.filter=[videoColorFilter(clip?.colorCorrection),String(style?.filter??'')].filter(Boolean).join(' ')||'none';
         if(!clip||element.readyState<1||element.error){element.pause();continue;}
         const target=Math.max(0,Math.min(element.duration||Infinity,clip.sourceOffset+state.playheadPosition-clip.startTime));
         syncVideoElement(element,target,state.isPlaying,setError);
       }
     };
     const elements=[ref.current,previousRef.current];for(const element of elements){element?.addEventListener('loadedmetadata',sync);element?.addEventListener('canplay',sync);element?.addEventListener('seeked',sync);}
+    const observer=new ResizeObserver(sync);if(frameRef.current)observer.observe(frameRef.current);
     const unsubscribe=useProjectStore.subscribe(sync);sync();
-    return ()=>{unsubscribe();for(const element of elements){element?.pause();element?.removeEventListener('loadedmetadata',sync);element?.removeEventListener('canplay',sync);element?.removeEventListener('seeked',sync);}};
+    return ()=>{observer.disconnect();unsubscribe();for(const element of elements){element?.pause();element?.removeEventListener('loadedmetadata',sync);element?.removeEventListener('canplay',sync);element?.removeEventListener('seeked',sync);}};
   },[url,previousUrl,visible,attempt,expanded]);
   useEffect(()=>{
     if(!expanded || !hasVideo || !('__TAURI_INTERNALS__' in window))return;
@@ -117,8 +123,8 @@ export function VideoViewer({children}: {children?:ReactNode}) {
     }} className={expanded?'fixed inset-0 z-[70] bg-black p-4 flex flex-col gap-3':'video-viewer-compact flex flex-wrap gap-3 items-start'}>
       <div ref={frameRef} data-video-frame className={expanded?'relative bg-black w-full flex-1 min-h-0 overflow-hidden':'relative bg-black rounded-xl w-[140px] sm:w-[360px] max-w-full max-h-[18dvh] aspect-video overflow-hidden'}>
         {url&&<>
-        <video crossOrigin="anonymous" key={`${previousPath}-${previousUrl}-${attempt}-previous`} ref={previousRef} src={previousUrl || undefined} muted playsInline preload="metadata" aria-hidden="true" className="absolute inset-0 w-full h-full object-contain" onError={()=>setError(t('interview.previewFailed'))}/>
-        <video crossOrigin="anonymous" key={`${resolved?.path}-${url}-${attempt}`} ref={ref} data-timeline-preview src={url} muted playsInline preload="auto" aria-label={t('interview.preview')} className="absolute inset-0 w-full h-full object-contain" onCanPlay={()=>setError('')} onError={()=>setError(t('interview.previewFailed'))}/>
+        <div data-video-layer="previous" className="absolute inset-0"><video crossOrigin="anonymous" key={`${previousPath}-${previousUrl}-${attempt}-previous`} ref={previousRef} src={previousUrl || undefined} muted playsInline preload="metadata" aria-hidden="true" className="absolute inset-0 w-full h-full object-contain" onError={()=>setError(t('interview.previewFailed'))}/></div>
+        <div data-video-layer="current" className="absolute inset-0"><video crossOrigin="anonymous" key={`${resolved?.path}-${url}-${attempt}`} ref={ref} data-timeline-preview src={url} muted playsInline preload="auto" aria-label={t('interview.preview')} className="absolute inset-0 w-full h-full object-contain" onCanPlay={()=>setError('')} onError={()=>setError(t('interview.previewFailed'))}/></div>
         </>}
         <canvas ref={effectRef} width={320} height={180} className="absolute inset-0 w-full h-full object-contain pointer-events-none" style={{display:'none'}}/>
         <span ref={noticeRef} className="absolute bottom-0 left-0 text-[10px] text-white bg-black/80" style={{display:'none'}}>{t('editing.approximatePreview')}</span>

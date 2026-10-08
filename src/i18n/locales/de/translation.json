@@ -937,5 +937,15 @@
     "enable": "Farbkorrektur aktivieren",
     "applySelected": "Farbe auf ausgewählte Videoclips anwenden",
     "help": "Wirkt vor Blenden und Übergängen. Vorschau und Export nutzen dieselben Werte; Farbmanagement und Kodierung können kleine sichtbare Unterschiede verursachen."
+  },
+  "videoTransform": {
+    "title": "Bildausrichtung",
+    "left": "90° nach links drehen",
+    "right": "90° nach rechts drehen",
+    "horizontal": "Horizontal spiegeln",
+    "vertical": "Vertikal spiegeln",
+    "reset": "Ausrichtung zurücksetzen",
+    "copy": "Ausrichtung auf ausgewählte Videoclips anwenden",
+    "help": "Passt in den bestehenden Bildrahmen. Audio und Timing bleiben erhalten."
   }
 }

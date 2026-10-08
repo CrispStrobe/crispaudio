@@ -105,10 +105,12 @@ export interface ClipboardState {
   sourceIds: string[];
 }
 
+export interface VideoTransform { rotation: 0 | 90 | 180 | 270; flipHorizontal: boolean; flipVertical: boolean }
 export interface VideoColor { enabled: boolean; exposure: number; contrast: number; saturation: number }
 
 export interface VideoClip {
   colorCorrection?: VideoColor;
+  transform?: VideoTransform;
   sourceId?: string;
   linkGroup?: string;
   id: string;

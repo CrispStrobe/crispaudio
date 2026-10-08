@@ -9,7 +9,9 @@ vi.mock('@tauri-apps/api/core',()=>({invoke:native.invoke,convertFileSrc:(path:s
 vi.mock('@tauri-apps/api/window',()=>({getCurrentWindow:()=>({isFullscreen:async()=>false,setFullscreen:native.setFullscreen})}));
 vi.mock('react-i18next',()=>({useTranslation:()=>({t:(key:string)=>key})}));
 vi.mock('../../../src/components/timeline/VideoControls',()=>({VideoControls:()=>null}));
+let notifyResize:()=>void=()=>{};
 beforeEach(()=>{
+  vi.stubGlobal('ResizeObserver',class { constructor(callback:()=>void){notifyResize=callback;} observe(){} disconnect(){} });
   clearPreviewCache();
   native.invoke.mockReset().mockResolvedValue('/camera.mp4');native.setFullscreen.mockReset().mockResolvedValue(undefined);
   vi.spyOn(HTMLMediaElement.prototype,'pause').mockImplementation(()=>{});
@@ -17,8 +19,32 @@ beforeEach(()=>{
   const initial=useProjectStore.getInitialState();
   useProjectStore.setState({...initial,project:{...initial.project,video:{path:'/camera.mp4',duration:10,session:{} as never}},playheadPosition:4});
 });
-afterEach(()=>{cleanup();vi.restoreAllMocks();vi.useRealTimers();Reflect.deleteProperty(window,'__TAURI_INTERNALS__');Reflect.deleteProperty(document,'fullscreenElement');Reflect.deleteProperty(document,'exitFullscreen');Reflect.deleteProperty(document.documentElement,'requestFullscreen');});
+afterEach(()=>{cleanup();vi.unstubAllGlobals();vi.restoreAllMocks();vi.useRealTimers();Reflect.deleteProperty(window,'__TAURI_INTERNALS__');Reflect.deleteProperty(document,'fullscreenElement');Reflect.deleteProperty(document,'exitFullscreen');Reflect.deleteProperty(document.documentElement,'requestFullscreen');});
 describe('video viewer lifecycle',()=>{
+  it('refits rotated picture on resize',async()=>{
+    useProjectStore.setState(state=>({project:{...state.project,video:{...state.project.video!,clips:[{id:'v',startTime:0,duration:10,sourceOffset:0,fadeIn:0,fadeOut:0,transition:'cut',transitionDuration:0,transform:{rotation:90,flipHorizontal:true,flipVertical:false}}]}}}));
+    await act(async()=>{render(<VideoViewer/>);});
+    const video=screen.getByLabelText('interview.preview') as HTMLVideoElement;
+    Object.defineProperties(video,{readyState:{value:1},duration:{value:10},videoWidth:{value:1920},videoHeight:{value:1080},clientWidth:{value:320,configurable:true},clientHeight:{value:180,configurable:true}});
+    fireEvent.loadedMetadata(video);
+    expect(video.style.transform).toBe('scale(0.5625) scale(-1, 1) rotate(90deg)');
+    Object.defineProperties(video,{clientWidth:{value:180},clientHeight:{value:320}});
+    act(()=>notifyResize());
+    expect(video.style.transform).toBe('scale(1.7777777777777777) scale(-1, 1) rotate(90deg)');
+  });
+
+  it('keeps wipe direction in composition axes when the source is rotated',async()=>{
+    const base={sourceOffset:0,duration:6,fadeIn:0,fadeOut:0,transitionDuration:0};
+    useProjectStore.setState(state=>({playheadPosition:5,project:{...state.project,video:{...state.project.video!,clips:[{...base,id:'a',startTime:0,transition:'cut'},{...base,id:'b',startTime:4,transition:'wipeleft',transitionDuration:2,transform:{rotation:90,flipHorizontal:false,flipVertical:false}}]}}}));
+    await act(async()=>{render(<VideoViewer/>);});
+    const video=screen.getByLabelText('interview.preview') as HTMLVideoElement;
+    Object.defineProperties(video,{readyState:{value:1},duration:{value:10},videoWidth:{value:1920},videoHeight:{value:1080},clientWidth:{value:320},clientHeight:{value:180}});
+    fireEvent.loadedMetadata(video);
+    expect(video.style.transform).toContain('rotate(90deg)');
+    expect(video.style.clipPath).toBe('');
+    expect(video.parentElement!.style.clipPath).toBe('inset(0 0 0 50%)');
+    expect(video.parentElement!.style.transform).toBe('none');
+  });
   it('waits for metadata before seeking, then synchronizes the current position',async()=>{
     await act(async()=>{render(<VideoViewer/>);});
     const video=screen.getByLabelText('interview.preview') as HTMLVideoElement;

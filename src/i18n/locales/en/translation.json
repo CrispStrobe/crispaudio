@@ -937,5 +937,15 @@
     "enable": "Enable colour correction",
     "applySelected": "Apply colour to selected picture clips",
     "help": "Applied before fades and transitions. Preview and export use the same settings; colour management and encoding may cause small visual differences."
+  },
+  "videoTransform": {
+    "title": "Picture orientation",
+    "left": "Rotate left 90°",
+    "right": "Rotate right 90°",
+    "horizontal": "Mirror horizontally",
+    "vertical": "Mirror vertically",
+    "reset": "Reset orientation",
+    "copy": "Apply orientation to selected picture clips",
+    "help": "Fits inside the existing picture frame. Audio and timing stay unchanged."
   }
 }

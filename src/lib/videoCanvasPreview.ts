@@ -1,20 +1,26 @@
+import { drawOrientedVideo } from './videoTransform';
 import { applyVideoColorPixels } from './videoColor';
 import { clipOpacity } from './videoPreview';
 import type {VideoClip} from '../types/audio';
 const frames = new WeakMap<HTMLVideoElement, {key:string; canvas:HTMLCanvasElement}>();
 function appearance(video: HTMLVideoElement, clip: VideoClip | undefined, time:number, width:number, height:number): HTMLCanvasElement {
   const opacity=clip?clipOpacity(clip,time):1;
-  const key=JSON.stringify([video.currentTime,clip?.colorCorrection,opacity,width,height]);
+  const key=JSON.stringify([video.currentTime,clip?.colorCorrection,clip?.transform,opacity,width,height]);
   const cached=frames.get(video); if(cached?.key===key)return cached.canvas;
   const canvas=cached?.canvas??document.createElement('canvas');canvas.width=width;canvas.height=height;
   const ctx=canvas.getContext('2d');
   if(ctx){
-    ctx.drawImage(video,0,0,width,height);
-    if(clip?.colorCorrection?.enabled||opacity!==1){
-      // Asset protocol supplies CORS headers; anonymous video requests allow
-      // pixel access in WKWebView as well as Chromium. Foreign media may deny it.
-      try { const image=ctx.getImageData(0,0,width,height);applyVideoColorPixels(image.data,clip?.colorCorrection,opacity);ctx.putImageData(image,0,0); }
-      catch { ctx.globalCompositeOperation='source-atop';ctx.fillStyle=`rgba(0,0,0,${1-opacity})`;ctx.fillRect(0,0,width,height); }
+    const source=document.createElement('canvas');
+    source.width=width;source.height=Math.max(1,Math.round(width*video.videoHeight/Math.max(1,video.videoWidth)));
+    const sourceContext=source.getContext('2d');
+    if(sourceContext){
+      sourceContext.drawImage(video,0,0,source.width,source.height);
+      if(clip?.colorCorrection?.enabled){
+        try { const image=sourceContext.getImageData(0,0,source.width,source.height);applyVideoColorPixels(image.data,clip.colorCorrection);sourceContext.putImageData(image,0,0); }
+        catch { /* Foreign media may deny pixel access; local assets supply CORS. */ }
+      }
+      drawOrientedVideo(ctx,source,clip?.transform,width,height);
+      ctx.fillStyle=`rgba(0,0,0,${1-opacity})`;ctx.fillRect(0,0,width,height);
     }
   }
   frames.set(video,{key,canvas});return canvas;

@@ -4,6 +4,35 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoTransform {
+    pub rotation: u16,
+    pub flip_horizontal: bool,
+    pub flip_vertical: bool,
+}
+impl VideoTransform {
+    pub(crate) fn valid(&self) -> bool {
+        [0, 90, 180, 270].contains(&self.rotation)
+    }
+}
+fn orientation_filters(value: Option<&VideoTransform>) -> String {
+    let Some(t) = value else { return String::new() };
+    let mut filters = match t.rotation {
+        90 => "transpose=clock,".to_owned(),
+        180 => "hflip,vflip,".to_owned(),
+        270 => "transpose=cclock,".to_owned(),
+        _ => String::new(),
+    };
+    if t.flip_horizontal {
+        filters.push_str("hflip,");
+    }
+    if t.flip_vertical {
+        filters.push_str("vflip,");
+    }
+    filters
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VideoColor {
     pub enabled: bool,
     pub exposure: f64,
@@ -42,6 +71,8 @@ fn color_filters(color: Option<&VideoColor>) -> String {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VideoClip {
+    #[serde(default)]
+    pub transform: Option<VideoTransform>,
     #[serde(default)]
     pub color_correction: Option<VideoColor>,
     pub id: String,
@@ -118,6 +149,7 @@ pub fn validate(edit: &VideoEdit, source_duration: f64) -> Result<Vec<VideoClip>
         ]
         .iter()
         .all(|v| v.is_finite())
+            || c.transform.as_ref().is_some_and(|t| !t.valid())
             || c.color_correction
                 .as_ref()
                 .is_some_and(|color| !color.valid())
@@ -320,8 +352,11 @@ pub fn export_edit(
                 .unwrap_or(&edit.path),
         ]));
         let label = format!("p{input}");
-        let mut filters=format!("[{input}:v]fps={fps},scale={}:{}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad={}:{}:(ow-iw)/2:(oh-ih)/2,setsar=1,settb=AVTB,setpts=PTS-STARTPTS,format=yuv420p",width/2*2,height/2*2,width/2*2,height/2*2);
-        filters += &color_filters(c.color_correction.as_ref());
+        let mut filters = format!(
+            "[{input}:v]fps={fps}{}",
+            color_filters(c.color_correction.as_ref())
+        );
+        filters += &format!(",{}scale={}:{}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad={}:{}:(ow-iw)/2:(oh-ih)/2,setsar=1,settb=AVTB,setpts=PTS-STARTPTS,format=yuv420p",orientation_filters(c.transform.as_ref()),width/2*2,height/2*2,width/2*2,height/2*2);
         if c.fade_in > 0.0 {
             filters += &format!(",fade=t=in:st=0:d={}", c.fade_in);
         }
@@ -486,6 +521,7 @@ mod tests {
     fn clip(start: f64, duration: f64) -> VideoClip {
         VideoClip {
             color_correction: None,
+            transform: None,
             id: "c".into(),
             source_id: None,
             start_time: start,
@@ -690,6 +726,66 @@ mod tests {
         export_edit(&edit, bypass.to_str().unwrap(), None, 0.0, 1.0, false).unwrap();
         let bypassed = pixels(&bypass);
         assert!((0..3).all(|channel| (bypassed[channel] - original[channel]).abs() < 5.0));
+        std::fs::remove_dir_all(folder).unwrap();
+    }
+    #[test]
+    #[ignore = "Requires FFmpeg; run explicitly on desktop"]
+    fn orientation_export_rotates_then_mirrors_and_fits_black_bars() {
+        use std::process::Command;
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let folder = std::env::temp_dir().join(format!("crispaudio-orientation-{stamp}"));
+        std::fs::create_dir_all(&folder).unwrap();
+        let source = folder.join("source.mp4");
+        assert!(Command::new("ffmpeg").args(["-v","error","-f","lavfi","-i","color=c=black:s=128x72:r=25:d=1","-vf","drawbox=x=0:y=0:w=64:h=36:color=red:t=fill,drawbox=x=64:y=0:w=64:h=36:color=lime:t=fill,drawbox=x=0:y=36:w=64:h=36:color=blue:t=fill,drawbox=x=64:y=36:w=64:h=36:color=white:t=fill","-c:v","libx264","-pix_fmt","yuv420p"]).arg(&source).status().unwrap().success());
+        let mut picture = clip(0.0, 1.0);
+        picture.transform = Some(VideoTransform {
+            rotation: 90,
+            flip_horizontal: true,
+            flip_vertical: false,
+        });
+        let edit = VideoEdit {
+            path: source.to_string_lossy().into(),
+            sources: vec![],
+            frame_rate: Some(25.0),
+            duration: Some(1.0),
+            clips: vec![picture],
+        };
+        let output = folder.join("oriented.mp4");
+        export_edit(&edit, output.to_str().unwrap(), None, 0.0, 1.0, false).unwrap();
+        let frame = Command::new("ffmpeg")
+            .args(["-v", "error", "-i"])
+            .arg(&output)
+            .args([
+                "-frames:v",
+                "1",
+                "-pix_fmt",
+                "rgb24",
+                "-f",
+                "rawvideo",
+                "pipe:1",
+            ])
+            .output()
+            .unwrap();
+        assert!(frame.status.success());
+        assert_eq!(frame.stdout.len(), 128 * 72 * 3);
+        let pixel = |x: usize, y: usize| {
+            let i = (y * 128 + x) * 3;
+            [frame.stdout[i], frame.stdout[i + 1], frame.stdout[i + 2]]
+        };
+        let red = pixel(54, 18);
+        assert!(red[0] > 200 && red[1] < 30 && red[2] < 30, "{red:?}");
+        let blue = pixel(74, 18);
+        assert!(blue[2] > 200 && blue[0] < 30 && blue[1] < 30, "{blue:?}");
+        let green = pixel(54, 54);
+        assert!(
+            green[1] > 200 && green[0] < 30 && green[2] < 30,
+            "{green:?}"
+        );
+        assert!(pixel(74, 54).iter().all(|v| *v > 220));
+        assert!(pixel(10, 36).iter().all(|v| *v < 5));
         std::fs::remove_dir_all(folder).unwrap();
     }
 }

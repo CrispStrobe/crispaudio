@@ -413,3 +413,24 @@ Ad-hoc signature verification passed. No release tag or Apple upload was made.
   Apple distribution remain separate release gates.
 
 See [picture colour correction](VIDEO_COLOR.md) for GUI and CLI usage.
+
+## Local 0.6.12 verification
+
+Added per-picture rotation and mirroring; see [orientation workflow](VIDEO_ORIENTATION.md).
+The local macOS bundle is ad-hoc signed; this work does not trigger an Apple upload.
+
+- Frontend coverage: 89 suites / 1,280 tests passed across the suite and targeted
+  reruns. Three worker-start timeouts in the full run passed with one worker;
+  the viewer suite was rerun after the final transition-layer fix (11 tests).
+- Shared media: 16 regular tests passed. All three opt-in FFmpeg integration tests
+  passed, covering colour/bypass, overlapping fades, and a quarter-turn followed
+  by mirroring with measured corner colours and black padding.
+- WebKit: actual video preview orientation, deterministic canvas corner pixels,
+  colour transition regression, bypass/reset and English/German desktop/phone
+  bounds passed without page errors. Preview reference pixels matched exactly.
+- Lint, TypeScript/Vite and the native app bundle build passed. Physical iOS/iPadOS
+  testing and Apple distribution remain separate release gates.
+
+The preview separates source orientation from composition transitions, so a wipe
+or slide keeps its screen direction after source rotation. Resize recalculates
+picture fitting, including the expanded viewer. Source thumbnails are unchanged.

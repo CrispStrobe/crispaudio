@@ -1,3 +1,4 @@
+import { validVideoTransform } from './videoTransform';
 import { validVideoColor } from './videoColor';
 // ---------------------------------------------------------------------------
 // projectFile — JSON projects with linked desktop media or portable embedded
@@ -94,6 +95,7 @@ export async function deserializeProject(
     throw new Error('Unsupported CrispAudio project version');
   }
 
+  if (doc.project.video?.clips?.some(clip => !validVideoTransform(clip.transform))) throw new Error('Invalid picture orientation');
   if (doc.project.video?.clips?.some(clip => !validVideoColor(clip.colorCorrection))) throw new Error('Invalid video colour settings');
 
   const replacements=new Map<string,string>();

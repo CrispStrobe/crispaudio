@@ -13,7 +13,7 @@
    before clip fades and transitions.
 
 Preview and export share RGB operation order: exposure, clamp, contrast, clamp,
-saturation, then fade. Browser colour management and native encoding can introduce
+saturation, orientation/fitting, then fade. Black padding remains black. Browser colour management and native encoding can introduce
 small differences. Custom transition previews process small canvas frames; native
 exports use full resolution. External media that denies canvas pixel access cannot
 receive colour correction in custom canvas transitions. Local Tauri media supplies

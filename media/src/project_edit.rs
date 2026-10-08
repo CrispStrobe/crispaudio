@@ -128,15 +128,24 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             .collect();
         let operation = op["op"].as_str().ok_or("Missing operation")?;
         match operation {
-            "color" => {
+            "color" | "orientation" => {
                 let settings = op
                     .get("settings")
                     .ok_or("Missing colour settings; use null to reset")?;
                 if !settings.is_null() {
-                    let color: crate::video_edit::VideoColor =
-                        serde_json::from_value(settings.clone()).map_err(|e| e.to_string())?;
-                    if !color.valid() {
-                        return Err("Invalid video colour settings".into());
+                    let valid = if operation == "color" {
+                        serde_json::from_value::<crate::video_edit::VideoColor>(settings.clone())
+                            .map_err(|e| e.to_string())?
+                            .valid()
+                    } else {
+                        serde_json::from_value::<crate::video_edit::VideoTransform>(
+                            settings.clone(),
+                        )
+                        .map_err(|e| e.to_string())?
+                        .valid()
+                    };
+                    if !valid {
+                        return Err("Invalid picture settings".into());
                     }
                 }
                 let mut pictures: Vec<Value> = all
@@ -150,12 +159,17 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                 {
                     return Err("No selected picture clips".into());
                 }
+                let field = if operation == "color" {
+                    "colorCorrection"
+                } else {
+                    "transform"
+                };
                 for picture in &mut pictures {
                     if requested.contains(picture["id"].as_str().unwrap_or("")) {
                         if settings.is_null() {
-                            picture.as_object_mut().unwrap().remove("colorCorrection");
+                            picture.as_object_mut().unwrap().remove(field);
                         } else {
-                            picture["colorCorrection"] = settings.clone();
+                            picture[field] = settings.clone();
                         }
                     }
                 }
@@ -394,7 +408,10 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             _ => return Err(format!("Unknown recipe operation: {operation}")),
         }
     }
-    if operations.iter().any(|op| op["op"] != "color") {
+    if operations
+        .iter()
+        .any(|op| op["op"] != "color" && op["op"] != "orientation")
+    {
         out["project"]["duration"] = json!(clips(&out["project"])
             .iter()
             .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
@@ -739,5 +756,31 @@ mod tests {
         )
         .is_err());
         assert!(apply(&original,&json!([{"op":"color","ids":["v"],"settings":{"enabled":true,"exposure":3,"contrast":1,"saturation":1}}])).is_err());
+    }
+    #[test]
+    fn orientation_recipe_preserves_audio_and_duration_and_rejects_bad_rotation() {
+        let mut original = doc();
+        original["project"]["duration"] = json!(20);
+        let settings = json!({"rotation":90,"flipHorizontal":true,"flipVertical":false});
+        let edited = apply(
+            &original,
+            &json!([{"op":"orientation","ids":["v"],"settings":settings}]),
+        )
+        .unwrap();
+        assert_eq!(edited["project"]["tracks"], original["project"]["tracks"]);
+        assert_eq!(edited["project"]["duration"], 20);
+        assert_eq!(
+            edited["project"]["video"]["clips"][0]["transform"],
+            settings
+        );
+        let reset = apply(
+            &edited,
+            &json!([{"op":"orientation","ids":["v"],"settings":null}]),
+        )
+        .unwrap();
+        assert!(reset["project"]["video"]["clips"][0]
+            .get("transform")
+            .is_none());
+        assert!(apply(&original,&json!([{"op":"orientation","ids":["v"],"settings":{"rotation":45,"flipHorizontal":false,"flipVertical":false}}])).is_err());
     }
 }

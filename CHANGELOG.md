@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.11]
+## [Unreleased — local version 0.6.12]
+
+- Add per-picture 90° rotation and horizontal/vertical mirroring, reset and copy
+  to selected picture clips, with undo and saved project settings.
+- Fit rotated pictures inside the existing frame without stretching. Apply
+  screen-axis mirroring after rotation in CSS/canvas preview and native export.
+- Add CLI `orientation` recipes with bounds validation. Leave linked sound,
+  trims, canvas duration and export range unchanged for appearance-only recipes.
+- Apply colour correction to source pixels before fitting/padding so black bars
+  remain black, including custom transition previews.
+
+## [Local version 0.6.11]
 
 - Add per-picture-clip exposure, contrast and saturation, with bypass, reset and
   apply-to-selected-picture controls. Slider dragging creates one Undo step.
