@@ -11,6 +11,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  media-cli:
+    name: Media CLI integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './media -> target'
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: cargo test --manifest-path media/Cargo.toml
+      - run: cargo build --release --manifest-path media/Cargo.toml
+      - run: python3 scripts/test-media-cli.py media/target/release/crispaudio
   frontend:
     name: Frontend lint & test
     runs-on: ubuntu-latest

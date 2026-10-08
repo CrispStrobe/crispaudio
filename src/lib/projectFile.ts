@@ -1,7 +1,6 @@
 // ---------------------------------------------------------------------------
-// projectFile — (de)serialize a CrispAudio timeline project to/from a portable
-// JSON document. Audio sources are embedded as base64-encoded 16-bit WAV so a
-// saved project is fully self-contained.
+// projectFile — JSON projects with linked desktop media or portable embedded
+// 32-bit PCM WAV. Linked interviews retain their original video and aligned WAVs.
 // ---------------------------------------------------------------------------
 
 import type { AudioSource, TimelineProject } from '../types/audio';
@@ -11,7 +10,7 @@ import {
 } from '../audio/utils/audioBufferUtils';
 
 const FORMAT = 'crispaudio-project';
-const VERSION = 1;
+const VERSION = 2;
 
 interface SerializedSource {
   id: string;
@@ -19,7 +18,9 @@ interface SerializedSource {
   sampleRate: number;
   channels: number;
   duration: number;
-  wav: string; // base64-encoded 16-bit WAV
+  wav?: string; // portable project: base64-encoded 32-bit PCM WAV
+  path?: string; // linked desktop project: unchanged aligned audio on disk
+  provenance?: AudioSource['provenance'];
 }
 
 interface SerializedProject {
@@ -46,10 +47,11 @@ function base64ToArrayBuffer(b64: string): ArrayBuffer {
   return bytes.buffer;
 }
 
-/** Serialize the project structure + embedded audio to a JSON string. */
+/** Serialize project structure with portable audio or linked media references. */
 export function serializeProject(
   project: TimelineProject,
   sources: Map<string, AudioSource>,
+  mode: 'portable' | 'linked' = 'portable',
 ): string {
   const serializedSources: SerializedSource[] = Array.from(
     sources.values(),
@@ -59,7 +61,10 @@ export function serializeProject(
     sampleRate: src.sampleRate,
     channels: src.channels,
     duration: src.duration,
-    wav: arrayBufferToBase64(encodeAudioBufferToWav(src.buffer, 16)),
+    ...(mode === 'linked' && src.filePath
+      ? { path: src.filePath }
+      : { wav: arrayBufferToBase64(encodeAudioBufferToWav(src.buffer, 32)) }),
+    provenance: src.provenance,
   }));
 
   const doc: SerializedProject = {
@@ -83,11 +88,27 @@ export async function deserializeProject(
   if (doc.format !== FORMAT || !doc.project || !Array.isArray(doc.sources)) {
     throw new Error('Not a valid CrispAudio project file');
   }
+  if (doc.version !== 1 && doc.version !== VERSION) {
+    throw new Error('Unsupported CrispAudio project version');
+  }
 
   const sources = new Map<string, AudioSource>();
   for (const s of doc.sources) {
     try {
-      const buffer = await ctx.decodeAudioData(base64ToArrayBuffer(s.wav));
+      let bytes: ArrayBuffer;
+      if (s.path) {
+        if (!('__TAURI_INTERNALS__' in window)) throw new Error('Linked projects require the desktop app');
+        const { readFile } = await import('@tauri-apps/plugin-fs');
+        const file = await readFile(s.path);
+        bytes = file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer;
+      } else if (s.wav) {
+        bytes = base64ToArrayBuffer(s.wav);
+      } else {
+        throw new Error('Missing source audio');
+      }
+      const decoder = ctx.sampleRate && ctx.sampleRate !== s.sampleRate && typeof OfflineAudioContext !== 'undefined'
+        ? new OfflineAudioContext(s.channels, 1, s.sampleRate) : ctx;
+      const buffer = await decoder.decodeAudioData(bytes);
       const mono = buffer.getChannelData(0);
       const bins = Math.max(1, Math.min(8000, Math.ceil(buffer.duration * 200)));
       sources.set(s.id, {
@@ -98,8 +119,13 @@ export async function deserializeProject(
         duration: buffer.duration,
         sampleRate: buffer.sampleRate,
         channels: buffer.numberOfChannels,
+        provenance: s.provenance,
+        filePath: s.path,
       });
     } catch (err) {
+      // Linked sources must not silently disappear: doing so could produce a
+      // plausible but incomplete interview export.
+      if (s.path) throw new Error(`Cannot load linked audio "${s.path}": ${String(err)}`, { cause: err });
       console.error(`Failed to decode audio source "${s.name}":`, err);
       // Skip corrupt sources instead of crashing the entire project load
     }

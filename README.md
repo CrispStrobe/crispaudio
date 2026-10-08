@@ -1,5 +1,9 @@
 # CrispAudio
 
+Desktop interview synchronization, external microphone alignment, video preview
+and edited-audio video export are available in the Timeline and standalone CLI.
+See [Interview editing and CLI](docs/INTERVIEW_EDITING.md) for setup and usage.
+
 `React` | `TypeScript` | `Tauri 2` | `Vite` | `Zustand` | `Vitest`
 
 [![CI](https://github.com/CrispStrobe/crispaudio/actions/workflows/ci.yml/badge.svg)](https://github.com/CrispStrobe/crispaudio/actions/workflows/ci.yml)

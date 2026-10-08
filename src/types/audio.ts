@@ -6,9 +6,15 @@ export interface TimelineProject {
   id: string;
   name: string;
   sampleRate: number;
+  bitDepth?: number;
   tracks: TimelineTrack[];
   masterEffects: EffectConfig[];
   duration: number; // computed from segments
+  video?: {
+    path: string;
+    duration: number;
+    session: import('../lib/media').SyncSession;
+  };
 }
 
 export interface TimelineTrack {
@@ -65,6 +71,8 @@ export interface AudioSource {
   duration: number;
   sampleRate: number;
   channels: number;
+  provenance?: { path: string; offset: number; rate: number };
+  filePath?: string;
 }
 
 export interface TimelineSelection {

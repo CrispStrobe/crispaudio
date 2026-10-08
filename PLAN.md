@@ -1,5 +1,25 @@
 # CrispAudio — Production Readiness Plan
 
+## Interview editing (2026-10-08, Codex — implemented)
+
+- Merge `ios-native-features` into main and verify existing gates.
+- Add an internal desktop media module and standalone `crispaudio` CLI: probe,
+  correlate multiple anchors, estimate offset/drift, preserve channel count,
+  render aligned 24-bit audio, and remux video without re-encoding its picture.
+- Add a GUI sync/import workflow, video preview, confidence review, manual offset
+  adjustment, and export of the edited timeline onto the original video.
+- Preserve sample precision in portable projects and persist video/source metadata.
+- Verify synthetic offset/drift cases plus the real Canon/H6 interview. Keep all
+  personal recordings and generated media outside the repository.
+- Verified: frontend lint/build/tests; native macOS app build and 16 Rust tests;
+  five media DSP tests; generated-media CLI integration tests; browser GUI flow
+  calling the real CLI; full Canon/H6 export with unchanged picture/camera hashes
+  and residual alignment <= 1.75 ms across beginning/middle/end checks.
+- Picture cuts/multicam, speaker-to-mic automation, and transcript navigation are
+  follow-up work, documented in `docs/INTERVIEW_EDITING.md`.
+- No separate cross-application engine. FFmpeg/FFprobe are desktop prerequisites;
+  web/mobile keep the existing audio editor.
+
 > **Status: COMPLETE (v0.3.0)** — All items addressed. CI gates green: eslint clean,
 > `tsc --noEmit` clean, 845 JS + 11 Rust tests pass, `vite build` succeeds.
 > PWA service worker, full i18n (EN+DE), WCAG accessible, mobile responsive.

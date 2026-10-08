@@ -1,0 +1,22 @@
+[package]
+name = "crispaudio-media"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "CrispAudio's desktop interview media tools and CLI"
+
+[[bin]]
+name = "crispaudio"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rustfft = "6"
+clap = { version = "4", features = ["derive"] }
+
+[profile.dev]
+debug = 0
+
+[profile.test]
+debug = 0

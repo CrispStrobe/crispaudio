@@ -4,7 +4,7 @@
 // Lazy-initialises on first user interaction to comply with browser autoplay policy.
 // ---------------------------------------------------------------------------
 
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useMemo } from 'react';
 
 export interface AudioEngineHandle {
   getContext: () => AudioContext;
@@ -91,5 +91,5 @@ export function useAudioEngine(): AudioEngineHandle {
   // Ensure nodes are created
   const { masterGain, analyser } = getOrCreateCtx();
 
-  return { getContext, masterGain, analyser, resume };
+  return useMemo(() => ({ getContext, masterGain, analyser, resume }), [getContext, masterGain, analyser, resume]);
 }

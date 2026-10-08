@@ -534,5 +534,32 @@
   "licenses": {
     "title": "Third-Party Licenses",
     "intro": "CrispAudio is built with the following open-source packages."
+  },
+  "interview": {
+    "sync": "Sync video + audio",
+    "openSession": "Open sync session",
+    "exportVideo": "Export edited video",
+    "video": "Video",
+    "audio": "Audio recordings",
+    "session": "Sync session",
+    "analyzing": "Analyzing alignment…",
+    "loading": "Loading…",
+    "aligning": "Aligning and importing…",
+    "exporting": "Rendering audio and exporting video…",
+    "invalidSession": "Not a supported CrispAudio sync session",
+    "replace": "Import as a new project? Save your current project first if needed. You can undo this import in this session.",
+    "exported": "Exported: {{path}}",
+    "preview": "Interview video preview",
+    "previewFailed": "Video preview could not be loaded. Check that the original video still exists and its codec is supported.",
+    "review": "Review recording synchronization",
+    "reviewHelp": "Offset is the recorder time corresponding to video time zero. Positive values trim the beginning of the recording. Weak matches require manual review and confirmation. Select an output folder to keep the aligned tracks. Only the first microphone will play initially; use solo/mute to compare.",
+    "reliable": "Consistent match",
+    "uncertain": "Needs review",
+    "metrics": "correlation {{score}} · drift {{ppm}} ppm · residual {{residual}} ms",
+    "offset": "Offset (seconds)",
+    "confirmOffset": "I reviewed and confirmed this offset",
+    "import": "Align and import as new project",
+    "recover": "Recover interview autosave",
+    "matchLevels": "Match listening levels with constant gain (no denoising or compression)"
   }
 }

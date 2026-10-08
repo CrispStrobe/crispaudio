@@ -16,10 +16,11 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.6.2", features = [] }
 
 [dependencies]
+crispaudio-media = { path = "../media" }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.11.2", features = [] }
+tauri = { version = "2.11.2", features = ["protocol-asset"] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
@@ -29,3 +30,9 @@ tauri-plugin-crispaudio-native = { path = "plugins/crispaudio-native" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt"] }
+
+[profile.dev.package.crispaudio-media]
+opt-level = 3
+
+[profile.dev.package.rustfft]
+opt-level = 3

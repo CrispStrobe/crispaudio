@@ -51,6 +51,8 @@ import { computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
 import { downloadWavFile, encodeAudioBufferWav } from '../../lib/wavExport';
 import { useAudioExport } from '../../hooks/useAudioExport';
 import type { AudioSource } from '../../types/audio';
+import { InterviewTools } from './InterviewTools';
+import { useTimelineTransport } from '../../hooks/useTimelineTransport';
 
 // ── Track header ──────────────────────────────────────────────────────────────
 
@@ -183,16 +185,20 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
           )}
           <input
             type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={track.volume}
+            min={-60}
+            max={40}
+            step={0.5}
+            value={track.volume > 0 ? Math.max(-60, 20 * Math.log10(track.volume)) : -60}
+            title={`${track.volume > 0 ? (20 * Math.log10(track.volume)).toFixed(1) : '-∞'} dB`}
             onChange={(e) =>
-              updateTrack(track.id, { volume: parseFloat(e.target.value) })
+              updateTrack(track.id, { volume: Number(e.target.value) <= -60 ? 0 : 10 ** (Number(e.target.value) / 20) })
             }
             className="flex-1 slider-styled"
             aria-label={t('timeline.trackVolume')}
           />
+          <span className="text-[9px] text-gray-400 tabular-nums" title={t('timeline.trackVolume')}>
+            {track.volume > 0 ? `${(20 * Math.log10(track.volume)).toFixed(1)} dB` : '−∞'}
+          </span>
         </div>
       </div>
     </div>
@@ -213,7 +219,7 @@ export const TimelinePanel: React.FC = () => {
   const engineRef = useRef<TimelineEngine | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(800);
-  const wasPlayingRef = useRef(false);
+  const [projectError, setProjectError] = useState('');
 
   // Keep engine in sync with sources
   useEffect(() => {
@@ -221,9 +227,7 @@ export const TimelinePanel: React.FC = () => {
     const engine = new TimelineEngine(ctx, audioEngine.masterGain);
     engineRef.current = engine;
     return () => {
-      engine.stop();
       engineRef.current = null;
-      wasPlayingRef.current = false;
       useProjectStore.getState().setIsPlaying(false);
     };
   }, [audioEngine]);
@@ -232,66 +236,7 @@ export const TimelinePanel: React.FC = () => {
     engineRef.current?.setSources(store.sources);
   }, [store.sources]);
 
-  // Playback control
-  useEffect(() => {
-    const engine = engineRef.current;
-    if (!engine) return;
-
-    if (store.isPlaying && !wasPlayingRef.current) {
-      void audioEngine.resume();
-      engine.play(store.project, useProjectStore.getState().playheadPosition);
-      wasPlayingRef.current = true;
-    } else if (!store.isPlaying && wasPlayingRef.current) {
-      engine.stop();
-      wasPlayingRef.current = false;
-    }
-  }, [store.isPlaying, store.project, audioEngine]);
-
-  // Advance playhead while playing
-  useEffect(() => {
-    if (!store.isPlaying) return;
-    let lastTime = performance.now();
-    let raf: number | null = null;
-
-    const tick = (now: number) => {
-      raf = null;
-      if (document.visibilityState === 'hidden' || !useProjectStore.getState().isPlaying) return;
-      const dt = (now - lastTime) / 1000;
-      lastTime = now;
-      const store = useProjectStore.getState();
-      const newPos = store.playheadPosition + dt;
-
-      if (newPos >= store.project.duration && store.project.duration > 0) {
-        if (store.loopEnabled) {
-          store.setPlayheadPosition(0);
-          engineRef.current?.play(store.project, 0);
-        } else {
-          store.setIsPlaying(false);
-          store.setPlayheadPosition(store.project.duration);
-        }
-      } else {
-        store.setPlayheadPosition(newPos);
-      }
-
-      if (useProjectStore.getState().isPlaying) raf = requestAnimationFrame(tick);
-    };
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        if (raf !== null) cancelAnimationFrame(raf);
-        raf = null;
-      } else if (raf === null && useProjectStore.getState().isPlaying) {
-        // Audio keeps playing while hidden; retain lastTime to catch up.
-        raf = requestAnimationFrame(tick);
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    onVisibilityChange();
-    return () => {
-      if (raf !== null) cancelAnimationFrame(raf);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [store.isPlaying]);
+  useTimelineTransport(engineRef, audioEngine);
 
   // Track canvas width from container resize
   useEffect(() => {
@@ -424,16 +369,21 @@ export const TimelinePanel: React.FC = () => {
 
   // Save the whole project (structure + embedded audio) to a .json file.
   const handleSaveProject = useCallback(async () => {
+    setProjectError('');
     try {
-      const json = serializeProject(store.project, store.sources);
+      const used = new Set(store.project.tracks.flatMap((track) => track.segments.map((segment) => segment.sourceId)));
+      const sources = new Map([...store.sources].filter(([id]) => used.has(id)));
+      const json = serializeProject(store.project, sources, '__TAURI_INTERNALS__' in window ? 'linked' : 'portable');
       await saveProjectFile(json, store.project.name || 'project');
     } catch (err) {
       console.error('Save project failed:', err);
+      setProjectError(String(err));
     }
   }, [store.project, store.sources]);
 
   // Open a project file and replace the current session with it.
   const handleOpenProject = useCallback(async () => {
+    setProjectError('');
     try {
       const json = await openProjectFile();
       if (!json) return;
@@ -442,6 +392,7 @@ export const TimelinePanel: React.FC = () => {
       store.loadProjectState(project, sources);
     } catch (err) {
       console.error('Open project failed:', err);
+      setProjectError(String(err));
     }
   }, [audioEngine, store]);
 
@@ -474,6 +425,8 @@ export const TimelinePanel: React.FC = () => {
     <div className="flex flex-col h-full bg-gray-950 overflow-hidden panel-enter">
       {/* Transport bar */}
       <TransportControls />
+      <InterviewTools engine={engineRef} />
+      {projectError && <p role="alert" className="text-xs text-red-300 px-3 py-2">{projectError}</p>}
 
       {/* Toolbar — scrolls horizontally on narrow screens so nothing clips */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800 bg-gray-900 flex-shrink-0 overflow-x-auto [&>*]:shrink-0">

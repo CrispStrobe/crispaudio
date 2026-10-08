@@ -534,5 +534,32 @@
   "licenses": {
     "title": "Drittanbieter-Lizenzen",
     "intro": "CrispAudio verwendet die folgenden Open-Source-Pakete."
+  },
+  "interview": {
+    "sync": "Video + Audio synchronisieren",
+    "openSession": "Sync-Sitzung öffnen",
+    "exportVideo": "Bearbeitetes Video exportieren",
+    "video": "Video",
+    "audio": "Audioaufnahmen",
+    "session": "Sync-Sitzung",
+    "analyzing": "Synchronisierung wird analysiert…",
+    "loading": "Wird geladen…",
+    "aligning": "Wird ausgerichtet und importiert…",
+    "exporting": "Audio wird gerendert und Video exportiert…",
+    "invalidSession": "Keine unterstützte CrispAudio-Sync-Sitzung",
+    "replace": "Als neues Projekt importieren? Speichere bei Bedarf zuerst das aktuelle Projekt. Der Import lässt sich in dieser Sitzung rückgängig machen.",
+    "exported": "Exportiert: {{path}}",
+    "preview": "Interview-Videovorschau",
+    "previewFailed": "Videovorschau konnte nicht geladen werden. Prüfe, ob das Originalvideo noch vorhanden ist und sein Codec unterstützt wird.",
+    "review": "Synchronisierung prüfen",
+    "reviewHelp": "Der Versatz gibt die Recorder-Zeit bei Video-Zeit null an. Positive Werte schneiden den Anfang der Aufnahme ab. Unsichere Treffer müssen manuell geprüft und bestätigt werden. Wähle einen Ausgabeordner für die ausgerichteten Spuren. Anfangs spielt nur das erste Mikrofon; vergleiche mit Solo/Stumm.",
+    "reliable": "Konsistenter Treffer",
+    "uncertain": "Prüfung erforderlich",
+    "metrics": "Korrelation {{score}} · Drift {{ppm}} ppm · Abweichung {{residual}} ms",
+    "offset": "Versatz (Sekunden)",
+    "confirmOffset": "Ich habe diesen Versatz geprüft und bestätigt",
+    "import": "Ausrichten und als neues Projekt importieren",
+    "recover": "Interview-Autosicherung wiederherstellen",
+    "matchLevels": "Abhörpegel mit konstantem Gain angleichen (keine Entrauschung oder Kompression)"
   }
 }

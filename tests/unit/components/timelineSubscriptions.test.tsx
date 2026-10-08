@@ -7,7 +7,7 @@ import { useProjectStore } from '../../../src/stores/projectStore';
 const { translate, engine, playback } = vi.hoisted(() => ({
   playback: { stop: vi.fn(), play: vi.fn(), setSources: vi.fn() },
   translate: vi.fn((key: string) => key),
-  engine: { getContext: vi.fn(() => ({})), masterGain: {}, resume: vi.fn() },
+  engine: { getContext: vi.fn(() => ({ currentTime: 0 })), masterGain: {}, resume: vi.fn() },
 }));
 vi.mock('react-i18next', async (importOriginal) => ({ ...await importOriginal<typeof import('react-i18next')>(), useTranslation: () => ({ t: translate }) }));
 vi.mock('../../../src/hooks/useAudioEngine', () => ({ useAudioEngine: () => engine }));
@@ -18,6 +18,7 @@ vi.mock('../../../src/components/timeline/SegmentEffectsPanel', () => ({ Segment
 
 beforeEach(() => {
   useProjectStore.setState({ ...useProjectStore.getInitialState() });
+  engine.getContext.mockReturnValue({ currentTime: 0 });
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
   vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
   vi.stubGlobal('cancelAnimationFrame', vi.fn());
@@ -30,6 +31,7 @@ function animationClock() {
   vi.stubGlobal('requestAnimationFrame', vi.fn((cb: FrameRequestCallback) => { frames.set(++id, cb); return id; }));
   vi.stubGlobal('cancelAnimationFrame', vi.fn((key: number) => frames.delete(key)));
   return { frames, tick: (now: number) => act(() => {
+    engine.getContext().currentTime = now / 1000;
     const callbacks = [...frames.values()];
     frames.clear();
     callbacks.forEach((cb) => cb(now));
@@ -37,9 +39,9 @@ function animationClock() {
 }
 
 describe('timeline subscription isolation', () => {
-  it('stops owned playback and cancels animation on unmount', () => {
+  it('stops owned playback and cancels animation on unmount', async () => {
     const { unmount } = render(<TimelinePanel />);
-    act(() => useProjectStore.getState().setIsPlaying(true));
+    await act(async () => useProjectStore.getState().setIsPlaying(true));
     expect(playback.play).toHaveBeenCalledTimes(1);
     unmount();
     expect(playback.stop).toHaveBeenCalledTimes(1);
@@ -47,12 +49,12 @@ describe('timeline subscription isolation', () => {
     expect(cancelAnimationFrame).toHaveBeenCalled();
   });
 
-  it('suspends hidden animation and catches up once when visible', () => {
+  it('suspends hidden animation and catches up once when visible', async () => {
     const clock = animationClock();
     vi.spyOn(performance, 'now').mockReturnValue(0);
     const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
     render(<TimelinePanel />);
-    act(() => useProjectStore.getState().setIsPlaying(true));
+    await act(async () => useProjectStore.getState().setIsPlaying(true));
     clock.tick(1000);
     expect(useProjectStore.getState().playheadPosition).toBe(1);
     visibility.mockReturnValue('hidden');
@@ -67,12 +69,12 @@ describe('timeline subscription isolation', () => {
     expect(clock.frames.size).toBe(1);
   });
 
-  it('ends playback without leaving a scheduled frame', () => {
+  it('ends playback without leaving a scheduled frame', async () => {
     const clock = animationClock();
     vi.spyOn(performance, 'now').mockReturnValue(0);
     useProjectStore.setState((s) => ({ project: { ...s.project, duration: 1 } }));
     render(<TimelinePanel />);
-    act(() => useProjectStore.getState().setIsPlaying(true));
+    await act(async () => useProjectStore.getState().setIsPlaying(true));
     clock.tick(2000);
     expect(useProjectStore.getState().isPlaying).toBe(false);
     expect(useProjectStore.getState().playheadPosition).toBe(1);

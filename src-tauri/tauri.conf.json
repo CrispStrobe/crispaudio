@@ -22,12 +22,21 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost https://api.github.com; font-src 'self' data:"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: asset: http://asset.localhost https://asset.localhost; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost https://api.github.com; font-src 'self' data:",
+      "assetProtocol": {
+        "enable": true,
+        "scope": []
+      }
     }
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "appimage", "dmg", "msi"],
+    "targets": [
+      "deb",
+      "appimage",
+      "dmg",
+      "msi"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -37,7 +46,9 @@
     ],
     "fileAssociations": [
       {
-        "ext": ["crispaudio"],
+        "ext": [
+          "crispaudio"
+        ],
         "mimeType": "application/x-crispaudio"
       }
     ]

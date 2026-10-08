@@ -126,6 +126,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       segTop: number,
       segBottom: number,
       baseColor: string,
+      displayGain: number,
     ) => {
       const { peaks } = source;
       const { min: peakMin, max: peakMax } = peaks;
@@ -176,7 +177,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       for (let px = firstPixel; px <= lastPixel; px++) {
         const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
         const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
-        const maxVal = peakMax[clampedIdx];
+        const maxVal = Math.max(-1, Math.min(1, peakMax[clampedIdx] * displayGain));
         const y = midY - maxVal * halfHeight;
         if (px === firstPixel) {
           ctx.moveTo(segLeft + px, y);
@@ -190,7 +191,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         const px = segWidth - i;
         const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
         const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
-        const minVal = peakMin[clampedIdx];
+        const minVal = Math.max(-1, Math.min(1, peakMin[clampedIdx] * displayGain));
         const y = midY - minVal * halfHeight; // min is negative
         ctx.lineTo(segLeft + px, y);
       }
@@ -205,7 +206,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       for (let px = firstPixel; px <= lastPixel; px++) {
         const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
         const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
-        const maxVal = peakMax[clampedIdx];
+        const maxVal = Math.max(-1, Math.min(1, peakMax[clampedIdx] * displayGain));
         const y = midY - maxVal * halfHeight;
         if (px === firstPixel) {
           ctx.moveTo(segLeft + px, y);
@@ -220,7 +221,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       for (let px = firstPixel; px <= lastPixel; px++) {
         const peakIdx = Math.floor(peakStart + (px / segWidth) * peakRange);
         const clampedIdx = Math.min(peakCount - 1, Math.max(0, peakIdx));
-        const minVal = peakMin[clampedIdx];
+        const minVal = Math.max(-1, Math.min(1, peakMin[clampedIdx] * displayGain));
         const y = midY - minVal * halfHeight;
         if (px === firstPixel) {
           ctx.moveTo(segLeft + px, y);
@@ -343,7 +344,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       // Waveform
       const source = store.sources.get(seg.sourceId);
       if (source && segRight - segLeft > 4) {
-        drawWaveform(ctx, source, seg, segLeft, segRight, segTop + 6, segBottom, baseColor);
+        drawWaveform(ctx, source, seg, segLeft, segRight, segTop + 6, segBottom, baseColor, track.volume * seg.gain);
       }
 
       // Fade overlays

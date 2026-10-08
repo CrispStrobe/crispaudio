@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{audio_export, native_files, project};
+use commands::{audio_export, native_files, project, media};
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 use tauri::Manager;
 
@@ -30,6 +30,11 @@ pub fn run() {
             native_files::take_opened_files,
             native_files::read_opened_file,
             native_files::stage_share_file,
+            media::desktop_media_available,
+            media::analyze_media,
+            media::align_media,
+            media::export_media,
+            media::prepare_video_preview,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

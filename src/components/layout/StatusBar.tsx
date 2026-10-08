@@ -34,6 +34,8 @@ export function StatusBar() {
   const playhead = useProjectStore((s) => s.playheadPosition);
   const projectDuration = useProjectStore((s) => s.project.duration);
   const timelinePlaying = useProjectStore((s) => s.isPlaying);
+  const timelineSampleRate = useProjectStore((s) => s.project.sampleRate);
+  const timelineBitDepth = useProjectStore((s) => s.project.bitDepth);
 
   const modeLabel = t(`panels.${activePanel}`);
 
@@ -89,8 +91,8 @@ export function StatusBar() {
 
       {/* Right: sample rate + bit depth */}
       <div className="flex items-center gap-3">
-        <StatusChip label={t('common.sampleRateShort')} value={`${(sampleRate / 1000).toFixed(1)} kHz`} />
-        <StatusChip label={t('common.bitDepthShort')} value={`${bitDepth}-bit`} />
+        <StatusChip label={t('common.sampleRateShort')} value={`${((isTimeline ? timelineSampleRate : sampleRate) / 1000).toFixed(1)} kHz`} />
+        <StatusChip label={t('common.bitDepthShort')} value={`${isTimeline ? (timelineBitDepth ?? bitDepth) : bitDepth}-bit`} />
       </div>
     </footer>
   );

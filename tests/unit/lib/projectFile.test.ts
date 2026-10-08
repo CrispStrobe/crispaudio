@@ -94,7 +94,7 @@ describe('serializeProject', () => {
     const parsed = JSON.parse(json);
 
     expect(parsed.format).toBe('crispaudio-project');
-    expect(parsed.version).toBe(1);
+    expect(parsed.version).toBe(2);
     expect(parsed.project).toBeDefined();
     expect(parsed.project.id).toBe('proj-1');
     expect(Array.isArray(parsed.sources)).toBe(true);

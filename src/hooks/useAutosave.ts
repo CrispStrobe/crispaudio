@@ -6,6 +6,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useProjectStore } from '../stores/projectStore';
+import { serializeProject, deserializeProject } from '../lib/projectFile';
 
 const AUTOSAVE_KEY = 'crispaudio-autosave';
 const AUTOSAVE_INTERVAL_MS = 30_000; // 30 seconds
@@ -15,6 +16,7 @@ let clearGeneration = 0;
 interface AutosaveData {
   savedAt: string;
   project: ReturnType<typeof useProjectStore.getState>['project'];
+  linked?: string;
 }
 
 export function useAutosave() {
@@ -36,6 +38,13 @@ export function useAutosave() {
         savedAt: new Date().toISOString(),
         project,
       };
+      if (project.video && '__TAURI_INTERNALS__' in window) {
+        const used = new Set(project.tracks.flatMap((track) => track.segments.map((segment) => segment.sourceId)));
+        const sources = new Map([...useProjectStore.getState().sources].filter(([id]) => used.has(id)));
+        if (sources.size === used.size && [...sources.values()].every((source) => source.filePath)) {
+          data.linked = serializeProject(project, sources, 'linked');
+        }
+      }
       try {
         localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(data));
         lastSavedProject = project;
@@ -87,4 +96,17 @@ export function restoreAutosave(): boolean {
 export function clearAutosave(): void {
   localStorage.removeItem(AUTOSAVE_KEY);
   clearGeneration += 1;
+}
+
+/** Interview autosaves contain linked media references, never PCM in localStorage. */
+export function hasRecoverableAutosave(): boolean {
+  try { return !!JSON.parse(localStorage.getItem(AUTOSAVE_KEY) || '{}').linked; }
+  catch { return false; }
+}
+
+export async function restoreAutosaveAudio(ctx: BaseAudioContext): Promise<void> {
+  const data: AutosaveData = JSON.parse(localStorage.getItem(AUTOSAVE_KEY) || '{}');
+  if (!data.linked) throw new Error('This autosave has no linked media');
+  const restored = await deserializeProject(data.linked, ctx);
+  useProjectStore.getState().loadProjectState(restored.project, restored.sources);
 }
