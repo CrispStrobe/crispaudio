@@ -1,7 +1,9 @@
+import { prepareAudioImport, type AudioImportInput, type ImportPhase } from '../../lib/audioImport';
+import { TimelineHelp } from './TimelineHelp';
 import { TimelineWorkspace, type WorkspaceTab } from './TimelineWorkspace';
 import { Library } from 'lucide-react';
 import { ToolButton } from '../common/ToolButton';
-import { FilePlus2, Scan, Wrench } from 'lucide-react';
+import { FilePlus2, Scan, CircleHelp, AlignHorizontalJustifyCenter } from 'lucide-react';
 import { timelineDuration } from '../../lib/timelineView';
 import { TimelineNavigation } from './TimelineNavigation';
 import { TrackFiles } from './TrackFiles';
@@ -51,16 +53,14 @@ import { TimelineRuler } from './TimelineRuler';
 import { TimelineCanvas } from './TimelineCanvas';
 import { isIOSApp } from '../../lib/native';
 import { AlignmentView } from './AlignmentView';
-import { VideoLane, VIDEO_LANE_HEIGHT } from './VideoLane';
+import { VideoLane } from './VideoLane';
 import { Modal } from '../common/Modal';
 import { TimelineActions } from './TimelineActions';
 import { TRACK_HEADER_WIDTH, RULER_HEIGHT } from '../../hooks/useTimeline';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
 import { TimelineEngine } from '../../audio/engine/TimelineEngine';
-import { computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
 import { downloadWavFile, encodeAudioBufferWav } from '../../lib/wavExport';
 import { useAudioExport } from '../../hooks/useAudioExport';
-import type { AudioSource } from '../../types/audio';
 import { MediaTools } from './MediaTools';
 import { useTimelineTransport } from '../../hooks/useTimelineTransport';
 
@@ -68,9 +68,9 @@ import { useTimelineTransport } from '../../hooks/useTimelineTransport';
 
 interface TrackHeaderProps {
   trackIndex: number;
-  onDragStart: (e: React.DragEvent, trackId: string) => void;
-  onDragOver: (e: React.DragEvent, trackIndex: number) => void;
-  onDrop: (e: React.DragEvent, trackIndex: number) => void;
+  onDragStart: (e: React.PointerEvent, trackId: string) => void;
+  onDragOver: (e: React.PointerEvent, trackIndex: number) => void;
+  onDrop: (e: React.PointerEvent, trackIndex: number) => void;
   onDragEnd: () => void;
   isDragOver: boolean;
 }
@@ -99,27 +99,25 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
 
   return (
     <div
-      className={`flex flex-col justify-center px-2 border-b border-gray-900 bg-gray-850 select-none transition-colors ${
+      className={`flex flex-col justify-center overflow-hidden px-2 border-b border-gray-900 bg-gray-850 select-none transition-colors ${
         isDragOver ? 'bg-indigo-900/30 border-t-2 border-t-indigo-400' : ''
       }`}
       style={{ width: TRACK_HEADER_WIDTH, height: trackHeight }}
-      onDragOver={(e) => onDragOver(e, trackIndex)}
-      onDrop={(e) => onDrop(e, trackIndex)}
+      data-track-index={trackIndex}
     >
       <div className="track-heading flex items-center gap-1.5 mb-1">
         {/* Drag handle (desktop pointer) — HTML5 DnD doesn't fire on touch */}
-        <div
-          draggable
-          onDragStart={(e) => onDragStart(e, track.id)}
-          onDragEnd={onDragEnd}
-          className="hidden md:block flex-shrink-0 cursor-grab active:cursor-grabbing p-0.5 text-gray-600 hover:text-gray-400 transition-colors"
-          aria-label={t('timeline.reorderTrack')}
-          title={t('timeline.reorderTrack')}
-        >
+        <button type="button"
+          onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);onDragStart(e,track.id);}}
+          onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))onDragOver(e,trackIndex);}}
+          onPointerUp={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId)){e.currentTarget.releasePointerCapture(e.pointerId);onDrop(e,trackIndex);}}}
+          onPointerCancel={onDragEnd}
+          onKeyDown={e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();reorderTrack(track.id,trackIndex+(e.key==='ArrowUp'?-1:1));}}}
+          className="flex-shrink-0 cursor-grab active:cursor-grabbing p-0.5 text-gray-500" style={{touchAction:'none'}} aria-label={t('timeline.reorderTrack')} title={t('timeline.reorderTrack')}>
           <GripVertical className="w-3 h-3" />
-        </div>
+        </button>
         {/* Up/down reorder — works with touch and keyboard everywhere */}
-        <div className="track-reorder flex-shrink-0 flex flex-col -my-0.5">
+        <div className={`track-reorder flex-shrink-0 flex flex-col -my-0.5 ${trackHeight<56?'hidden':''}`}>
           <button
             type="button"
             onClick={() => reorderTrack(track.id, trackIndex - 1)}
@@ -158,7 +156,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
         </button>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className={`flex items-center gap-1 ${trackHeight<56?'hidden':''}`}>
         {/* Mute */}
         <button
           type="button"
@@ -220,7 +218,7 @@ export const TimelinePanel: React.FC = () => {
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [projectError, setProjectError] = useState('');
   const [touchArrange, setTouchArrange] = useState(false);
-  const [toolsOpen, setToolsOpen] = useState(false);
+  const [helpOpen,setHelpOpen]=useState(false);
   const [alignmentOpen, setAlignmentOpen] = useState(false);
   const [waveformMode, setWaveformMode] = useState<'normalized' | 'level'>('normalized');
 
@@ -265,39 +263,41 @@ export const TimelinePanel: React.FC = () => {
   const [draggedTrackId, setDraggedTrackId] = useState<string | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
 
+  const reorderDrag = useRef<{id:string;target:number}|null>(null);
   const handleTrackDragStart = useCallback(
-    (e: React.DragEvent, trackId: string) => {
+    (e: React.PointerEvent, trackId: string) => {
       setDraggedTrackId(trackId);
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', trackId);
+      reorderDrag.current={id:trackId,target:useProjectStore.getState().project.tracks.findIndex(track=>track.id===trackId)};
+      e.stopPropagation();
     },
     [],
   );
 
   const handleTrackDragOver = useCallback(
-    (e: React.DragEvent, index: number) => {
-      if (draggedTrackId === null) return;
+    (e: React.PointerEvent, index: number) => {
+      if (!reorderDrag.current) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      setDropTargetIndex(index);
+      const element=document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-track-index]');
+      const target=element?Number(element.dataset.trackIndex):index;
+      reorderDrag.current.target=target;setDropTargetIndex(target);
     },
-    [draggedTrackId],
+    [],
   );
 
   const reorderTrack = store.reorderTrack;
   const handleTrackDrop = useCallback(
-    (e: React.DragEvent, newIndex: number) => {
+    (e: React.PointerEvent, newIndex: number) => {
       e.preventDefault();
-      if (draggedTrackId !== null) {
-        reorderTrack(draggedTrackId, newIndex);
-      }
+      if (reorderDrag.current) reorderTrack(reorderDrag.current.id,reorderDrag.current.target??newIndex);
+      reorderDrag.current=null;
       setDraggedTrackId(null);
       setDropTargetIndex(null);
     },
-    [draggedTrackId, reorderTrack],
+    [reorderTrack],
   );
 
   const handleTrackDragEnd = useCallback(() => {
+    reorderDrag.current=null;
     setDraggedTrackId(null);
     setDropTargetIndex(null);
   }, []);
@@ -308,57 +308,45 @@ export const TimelinePanel: React.FC = () => {
   const handleUndo = useCallback(() => useProjectStore.temporal.getState().undo(), []);
   const handleRedo = useCallback(() => useProjectStore.temporal.getState().redo(), []);
 
-  // Decode dropped/picked audio files into sources + segments on the timeline.
-  const handleImportFiles = useCallback(
-    async (files: FileList | File[] | null) => {
-      if (!files || files.length === 0) return;
-      setProjectError('');
-      const ctx = audioEngine.getContext();
-      // Decoding does not need playback permission. Awaiting resume after a
-      // document picker can hang when the browser has no active user gesture.
-      const batch = Array.from(files);
-      const importPosition = useProjectStore.getState().playheadPosition;
-      for (const [index, file] of batch.entries()) {
-        try {
-          const arrayBuf = await file.arrayBuffer();
-          let decoded: AudioBuffer;
-          try {
-            // decodeAudioData detaches its input; pass a copy so the original
-            // bytes remain available for the glint fallback.
-            decoded = await ctx.decodeAudioData(arrayBuf.slice(0));
-          } catch {
-            // Ogg-Opus and other formats the platform can't decode natively.
-            const { decodeCompressedToBuffer } = await import('../../lib/codecs');
-            decoded = await decodeCompressedToBuffer(ctx, new Uint8Array(arrayBuf));
-          }
-          const mono = decoded.getChannelData(0);
-          const bins = Math.max(1, Math.min(8000, Math.ceil(decoded.duration * 200)));
-          const source: AudioSource = {
-            id: crypto.randomUUID(),
-            name: file.name,
-            buffer: decoded,
-            peaks: computeWaveformPeaks(mono, bins),
-            duration: decoded.duration,
-            sampleRate: decoded.sampleRate,
-            channels: decoded.numberOfChannels,
-          };
-          if (batch.length > 1) {
-            // Aligned microphone files must become separate tracks, not
-            // overlapping clips on the first track. Keep a single default mic.
-            const state = useProjectStore.getState();
-            state.addTrack(file.name);
-            const track = useProjectStore.getState().project.tracks.at(-1)!;
-            state.updateTrack(track.id, { muted: index > 0 });
-            state.importAudioSource(source, importPosition, track.id);
-          } else store.importAudioSource(source, importPosition);
-        } catch (err) {
-          console.error(`Failed to import ${file.name}:`, err);
-          setProjectError(`${file.name}: ${String(err)}`);
-        }
+  const [importOpen,setImportOpen]=useState(false);
+  const [importTarget,setImportTarget]=useState('new');
+  const importTargetRef=useRef('new');
+  const [pendingImport,setPendingImport]=useState<File[]|null>(null);
+  const [importProgress,setImportProgress]=useState<{name:string;phase:ImportPhase;index:number;total:number}|null>(null);
+  const importAbort=useRef<AbortController|null>(null);
+  useEffect(()=>()=>importAbort.current?.abort(),[]);
+  const handleImportFiles=useCallback(async(files:AudioImportInput[],target=importTargetRef.current)=>{
+    if(!files.length)return;
+    importAbort.current?.abort();const abort=new AbortController();importAbort.current=abort;
+    const initial=useProjectStore.getState(),projectId=initial.project.id,at=initial.playheadPosition;
+    setProjectError('');let offset=at;
+    try{
+      for(const [index,file] of files.entries()){
+        const source=await prepareAudioImport(audioEngine.getContext(),file,abort.signal,phase=>setImportProgress({name:file.name,phase,index:index+1,total:files.length}));
+        abort.signal.throwIfAborted();const state=useProjectStore.getState();
+        if(state.project.id!==projectId)throw new Error(t('usability.importProjectChanged'));
+        let trackId=target;
+        if(target==='new'){state.addTrack(file.name);trackId=useProjectStore.getState().project.tracks.at(-1)!.id;}
+        else if(!state.project.tracks.some(track=>track.id===target))throw new Error(t('usability.importTrackMissing'));
+        state.importAudioSource(source,target==='new'?at:offset,trackId);offset+=source.duration;
       }
-    },
-    [audioEngine, store],
-  );
+    }catch(error){if(!abort.signal.aborted)setProjectError(String(error));}
+    finally{if(importAbort.current===abort){setImportProgress(null);importAbort.current=null;}}
+  },[audioEngine,t]);
+  const fileInputs=(files:File[])=>files.map(file=>({name:file.name,read:()=>file.arrayBuffer()}));
+  const askImport=(files?:File[])=>{setPendingImport(files??null);setImportOpen(true);};
+  const chooseImport=async()=>{
+    setImportOpen(false);importTargetRef.current=importTarget;
+    if(pendingImport){void handleImportFiles(fileInputs(pendingImport),importTarget);setPendingImport(null);return;}
+    if('__TAURI_INTERNALS__' in window&&!isIOSApp()){
+      try{
+        const {open}=await import('@tauri-apps/plugin-dialog');const {readFile}=await import('@tauri-apps/plugin-fs');
+        const paths=await open({multiple:true,filters:[{name:t('timeline.importAudio'),extensions:['wav','mp3','m4a','aac','flac','ogg','opus','aif','aiff','caf']}]});
+        if(!paths)return;const list=typeof paths==='string'?[paths]:paths;
+        void handleImportFiles(list.map(path=>({name:path.split(/[\\/]/).pop()??path,filePath:path,read:async()=>{const bytes=await readFile(path);return bytes.byteOffset===0&&bytes.byteLength===bytes.buffer.byteLength?bytes.buffer as ArrayBuffer:bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer;}})),importTarget);
+      }catch(error){setProjectError(String(error));}
+    }else fileInputRef.current?.click();
+  };
 
   // Files opened from other apps ("Open in CrispAudio", Files, AirDrop):
   // projects replace the session, audio lands at the playhead.
@@ -380,7 +368,7 @@ export const TimelinePanel: React.FC = () => {
       }
       const audio = opened.filter((f) => !isProject(f.name));
       if (audio.length > 0) {
-        await handleImportFiles(audio.map((f) => new File([f.bytes], f.name)));
+        await handleImportFiles(audio.map(f=>({name:f.name,read:async()=>f.bytes})),'new');
       }
     })();
   }, [pendingOpenedCount, audioEngine, store, handleImportFiles]);
@@ -391,8 +379,8 @@ export const TimelinePanel: React.FC = () => {
     state.setScrollOffset(0);
     if (tracksAreaRef.current) {
       tracksAreaRef.current.scrollTop = 0;
-      const room = tracksAreaRef.current.clientHeight - RULER_HEIGHT - (state.project.video ? VIDEO_LANE_HEIGHT : 0);
-      state.setTrackHeight(Math.min(120, room / Math.max(1, state.project.tracks.length)));
+      const room = tracksAreaRef.current.clientHeight - RULER_HEIGHT;
+      state.setTrackHeight(Math.max(24, Math.min(120, room / Math.max(1, state.project.tracks.length + (state.project.video ? 1 : 0)))));
     }
   }, [canvasWidth]);
   const fittedProject = useRef('');
@@ -483,40 +471,20 @@ export const TimelinePanel: React.FC = () => {
 
       <div className="timeline-main-tools flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900 shrink-0">
         <input ref={fileInputRef} type="file" accept="audio/*" multiple className="hidden"
-          onChange={(e) => { void handleImportFiles(e.target.files); e.target.value = ''; }} />
+          onChange={(e) => { void handleImportFiles(fileInputs(Array.from(e.target.files??[]))); e.target.value = ''; }} />
         <ToolButton icon={FilePlus2} label={t('editor.newProject')} onClick={() => setResetOpen(true)}/>
         <ToolButton icon={FolderOpen} label={t('timeline.openProject')} onClick={() => void handleOpenProject()}/>
         <ToolButton icon={Save} label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}/>
-        <ToolButton icon={Upload} label={t('timeline.import')} onClick={() => fileInputRef.current?.click()}/>
+        <ToolButton icon={Upload} label={t('timeline.import')} onClick={() => askImport()}/>
         <ToolButton icon={Download} label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} />
         <AutoSyncTracks onError={setProjectError} />
         <ToolButton icon={Library} label={t('workspace.title')} aria-pressed={workspace!==null} onClick={()=>setWorkspace(old=>old?null:'media')}/>
-        <ToolButton icon={Wrench} label={t('timeline.viewTools')} onClick={() => setToolsOpen(true)}/>
-        <Modal isOpen={toolsOpen} onClose={() => setToolsOpen(false)} title={t('timeline.viewTools')}>
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <ToolButton icon={Undo2} label={t('timeline.undo')} onClick={handleUndo}/>
-              <ToolButton icon={Redo2} label={t('timeline.redo')} onClick={handleRedo}/>
-            </div>
-            <button className="timeline-tool" aria-pressed={store.snapEnabled} onClick={() => store.setSnapEnabled(!store.snapEnabled)}><Magnet size={16} />{t('timeline.snap')}</button>
-            <div className="flex items-center gap-2">
-              <ToolButton icon={ZoomOut} label={t('timeline.zoomOut')} onClick={handleZoomOut}/>
-              <input type="range" min={0.1} max={2000} step={0.1} value={store.zoomLevel} onChange={(e) => store.setZoomLevel(+e.target.value)} className="w-28 slider-styled" aria-label={t('timeline.zoomLevel')} />
-              <ToolButton icon={ZoomIn} label={t('timeline.zoomIn')} onClick={handleZoomIn}/>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button className="timeline-tool" disabled={store.project.tracks.length < 2} onClick={() => { useProjectStore.getState().setIsPlaying(false); setToolsOpen(false); setAlignmentOpen(true); }}>{t('alignment.title')}</button>
-              <label className="text-xs text-gray-400 flex items-center gap-2">{t('alignment.display')}
-                <select className="min-h-11 bg-gray-800 text-gray-100 rounded px-2" value={waveformMode} onChange={(e) => setWaveformMode(e.target.value as 'normalized' | 'level')}>
-                  <option value="normalized">{t('alignment.normalized')}</option><option value="level">{t('alignment.level')}</option>
-                </select>
-              </label>
-            </div>
-            <button className="timeline-tool" aria-label={t('timeline.addTrack')} onClick={handleAddTrack}><Plus size={16} />{t('timeline.addTrack')}</button>
-            <button className="timeline-tool" onClick={() => useUIStore.getState().openModal('tts')}><MessageSquare size={16} />{t('tts.title')}</button>
-          </div>
-        </Modal>
+        <ToolButton icon={Undo2} label={t('timeline.undo')} onClick={handleUndo}/>
+        <ToolButton icon={Redo2} label={t('timeline.redo')} onClick={handleRedo}/>
+        <ToolButton icon={Plus} label={t('timeline.addTrack')} onClick={handleAddTrack}/>
+        <ToolButton icon={MessageSquare} label={t('tts.title')} onClick={()=>useUIStore.getState().openModal('tts')}/>
+        <ToolButton icon={CircleHelp} label={t('usability.help')} onClick={()=>setHelpOpen(true)}/>
         {exportStage && <div className="flex flex-wrap gap-2 items-center">
           <span role="status" className="text-sm text-gray-300">{t(`audioExport.${exportStage}`)}</span>
           {exportStage === 'rendering' && <span className="text-xs text-gray-400">{t('audioExport.renderCancelNote')}</span>}
@@ -525,6 +493,21 @@ export const TimelinePanel: React.FC = () => {
         {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
       </div>
 
+      <TimelineHelp open={helpOpen} onClose={()=>setHelpOpen(false)}/>
+      <Modal isOpen={importOpen} onClose={()=>setImportOpen(false)} title={t('timeline.importAudio')}>
+        <p className="text-sm text-gray-300 mb-3">{t('usability.importDestinationHelp')}</p>
+        <label className="text-sm text-gray-300">{t('usability.destination')}
+          <select aria-label={t('usability.destination')} value={importTarget} onChange={e=>setImportTarget(e.target.value)} className="block w-full bg-gray-800 rounded p-3 my-3">
+            <option value="new">{t('usability.newTrackEach')}</option>
+            {store.project.tracks.map(track=><option key={track.id} value={track.id}>{track.name}</option>)}
+          </select>
+        </label>
+        <button className="timeline-tool" onClick={()=>void chooseImport()}>{t('usability.chooseFiles')}</button>
+      </Modal>
+      {importProgress&&<div role="status" className="flex items-center gap-2 px-3 py-2 text-xs text-gray-300">
+        <span>{importProgress.index}/{importProgress.total} · {importProgress.name} · {t(`usability.${importProgress.phase}`)}</span>
+        <button className="timeline-tool" onClick={()=>importAbort.current?.abort()}>{t('audioExport.cancel')}</button>
+      </div>}
       {alignmentOpen && <AlignmentView close={() => setAlignmentOpen(false)} />}
       <Modal isOpen={resetOpen} onClose={() => setResetOpen(false)} title={t('editor.newProject')}>
         <p className="text-sm text-gray-300 mb-4">{t('editor.newHelp')}</p>
@@ -542,8 +525,13 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Scan} label={t('timeline.fit')} disabled={!timelineDuration(store.project)} onClick={fitAll}/>
         <ToolButton icon={ZoomOut} label={t('timeline.zoomOut')} onClick={handleZoomOut}/>
         <ToolButton icon={ZoomIn} label={t('timeline.zoomIn')} onClick={handleZoomIn}/>
+        <ToolButton icon={Magnet} label={t('timeline.snap')} aria-pressed={store.snapEnabled} onClick={()=>store.setSnapEnabled(!store.snapEnabled)}/>
+        <ToolButton icon={AlignHorizontalJustifyCenter} label={t('alignment.title')} disabled={store.project.tracks.length<2} onClick={()=>{useProjectStore.getState().setIsPlaying(false);setAlignmentOpen(true);}}/>
+        <select aria-label={t('alignment.display')} className="bg-gray-800 rounded min-h-11 px-2 text-xs text-gray-200" value={waveformMode} onChange={e=>setWaveformMode(e.target.value as 'normalized'|'level')}>
+          <option value="normalized">{t('alignment.normalized')}</option><option value="level">{t('alignment.level')}</option>
+        </select>
         <label className="text-xs text-gray-400 flex items-center gap-2">{t('editor.trackHeight')}
-          <input aria-label={t('editor.trackHeight')} className="slider-styled w-24" type="range" min={64} max={240} value={store.trackHeight} onChange={e => store.setTrackHeight(+e.target.value)} />
+          <input aria-label={t('editor.trackHeight')} className="slider-styled w-24" type="range" min={24} max={640} value={store.trackHeight} onChange={e => store.setTrackHeight(+e.target.value)} />
         </label>
       </div>
       <TimelineActions onInspector={()=>setWorkspace('edit')} touchArrange={touchArrange} onTouchArrange={() => setTouchArrange((old) => !old)} />
@@ -559,7 +547,7 @@ export const TimelinePanel: React.FC = () => {
           <Upload className="w-10 h-10 text-indigo-400" />
           <h2 className="text-lg font-semibold text-gray-100">{t('timeline.startTitle')}</h2>
           <p className="text-sm text-gray-400 max-w-md">{t('timeline.startHelp')}</p>
-          <button className="timeline-tool !bg-indigo-600 !border-indigo-500" onClick={() => fileInputRef.current?.click()}>{t('timeline.importAudio')}</button>
+          <button className="timeline-tool !bg-indigo-600 !border-indigo-500" onClick={() => askImport()}>{t('timeline.importAudio')}</button>
         </div>}
         {/* Left: track headers column */}
         <div
@@ -576,9 +564,14 @@ export const TimelinePanel: React.FC = () => {
             </span>
           </div>
 
-          {store.project.video && <div className="shrink-0 px-3 flex flex-col justify-center gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: VIDEO_LANE_HEIGHT }}>
-            <span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
-            <span className="text-xs text-gray-400">{t('editing.alignedVideoTrack')}</span>
+          {store.project.video && <div className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
+            <div className="flex items-center justify-between gap-2"><span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
+              <button type="button" className="p-1 text-gray-400 hover:text-red-400" aria-label={t('usability.removeVideo')} title={t('usability.removeVideo')} onClick={()=>{
+                const state=useProjectStore.getState();const groups=new Set(state.project.video?.clips?.map(clip=>clip.linkGroup).filter(Boolean));
+                const project={...state.project,video:undefined,tracks:state.project.tracks.map(track=>({...track,segments:track.segments.map(clip=>clip.linkGroup&&groups.has(clip.linkGroup)?{...clip,linkGroup:undefined}:clip)}))};
+                useProjectStore.setState({project:{...project,duration:timelineDuration(project)},selection:null,isPlaying:false});
+              }}><Trash2 size={14}/></button></div>
+            {store.trackHeight>=56&&<span className="text-xs text-gray-400">{t('editing.alignedVideoTrack')}</span>}
           </div>}
           {/* Per-track headers — scroll locked to canvas */}
           <div className="flex-1">
@@ -607,7 +600,7 @@ export const TimelinePanel: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => askImport()}
                     className="px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-semibold transition-colors"
                   >
                     {t('timeline.importAudio')}
@@ -645,7 +638,7 @@ export const TimelinePanel: React.FC = () => {
               e.preventDefault();
               setIsDraggingFile(false);
               if (e.dataTransfer.files.length > 0) {
-                void handleImportFiles(e.dataTransfer.files);
+                askImport(Array.from(e.dataTransfer.files));
               }
             }}
           >

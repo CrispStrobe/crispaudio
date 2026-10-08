@@ -364,7 +364,10 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
     out["project"]["duration"] = json!(clips(&out["project"])
         .iter()
         .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
-        .fold(0.0, f64::max));
+        .fold(
+            out["project"]["minimumDuration"].as_f64().unwrap_or(0.0),
+            f64::max
+        ));
     Ok(out)
 }
 fn curve(progress: &str, kind: &str) -> String {
@@ -613,11 +616,11 @@ pub fn render_project(doc: &Value, output: &str, video: bool) -> Result<()> {
             .into_iter()
             .filter(|c| c.get("trackId").is_none())
             .collect();
-        let edit=serde_json::from_value(json!({"path":picture["path"],"sources":picture.get("sources").cloned().unwrap_or(json!([])),"frameRate":doc["project"].get("frameRate"),"clips":picture_clips})).map_err(|e|e.to_string())?;
+        let edit=serde_json::from_value(json!({"path":picture["path"],"sources":picture.get("sources").cloned().unwrap_or(json!([])),"frameRate":doc["project"].get("frameRate"),"duration":doc["project"]["duration"],"clips":picture_clips})).map_err(|e|e.to_string())?;
         let duration = picture_clips
             .iter()
             .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
-            .fold(0.0, f64::max);
+            .fold(doc["project"]["duration"].as_f64().unwrap_or(0.0), f64::max);
         crate::video_edit::export_edit(
             &edit,
             output,

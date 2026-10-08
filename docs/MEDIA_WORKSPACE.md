@@ -1,9 +1,40 @@
-# Media workspace — local 0.6.1
+# Media workspace — local 0.6.2
 
 CrispAudio edits audio-only projects and audio plus video projects. Open **Workspace**
 (the library icon in the main toolbar) for Media, Clip inspector, Microphone mix,
 and Transcript tabs. On desktop its width is draggable; on a phone it is an
 optional overlay with a close button. Preview can be hidden or expanded separately.
+
+## Everyday timeline controls
+
+- **?** explains Move & trim, zoom, reorder, overlaps, import and fullscreen.
+  The main toolbar holds undo/redo, add track and TTS; zoom and row height are
+  directly above the tracks. There is no separate View & tools dialog.
+- Drag an audio header's six-dot handle onto another header; arrow keys and the
+  adjacent up/down buttons also reorder. This changes display order, not timing.
+- Height changes video and audio together from 24 to 640 px. Compact audio rows
+  hide mixer controls; use Workspace → Microphone mix to adjust those controls.
+- Each audio header has Trash. Video Trash removes picture and unlinks its audio,
+  keeping all audio timings intact. Toolbar Trash removes selected clips and
+  linked partners. Undo restores either operation.
+- Click **POS** or **DUR**, type seconds, mm:ss.mmm or hh:mm:ss.mmm, then Enter.
+  Escape cancels. DUR sets a minimum canvas length and cannot trim existing clips.
+  Saved projects retain it; exports include silence and black picture after media.
+- **Import audio** asks for an existing track or a new track per file. New tracks
+  start together at the playhead; multiple files on one track are consecutive.
+  Ordinary audio imports are audible: review Mute/Solo before playback. Reading,
+  decoding and waveform stages are shown. Cancel discards the current file after
+  decoding completes; files already imported remain. Original desktop paths are
+  retained for linked saves. Compressed audio still needs full decoding; this is
+  not a disk-streaming editor. Waveform scanning yields to keep controls responsive.
+- Drag two picture clips into a partial overlap to create a dissolve. Change the
+  incoming transition in Clip settings. Complete containment and three simultaneous
+  picture clips are rejected. Audio overlaps mix freely; Shift-select two partial
+  overlaps and choose **Crossfade selected audio overlap** for S-curve envelopes.
+- **Expand video** opens a body-level viewer that fills the viewport and requests
+  native desktop/browser fullscreen. Play/pause and frame-step stay visible.
+  Escape or Close expanded video returns to the timeline; unavailable native
+  fullscreen falls back to a window-filling viewer.
 
 ## The Canon / H6 interview
 
@@ -54,8 +85,9 @@ preview caches a silent 640×360 proxy without changing the exported picture.
 
 Shift-select clips and Link; Unlink permits independent timing/camera changes.
 Linked groups move, trim, split, copy/paste and delete together. The two halves
-of a split receive separate link groups. Video source/transition changes require
-unlinking first, so a transition cannot silently move synchronized sound.
+of a split receive separate link groups. Changing a video source or changing overlap length in the inspector requires
+unlinking first. Dragging linked picture into an overlap moves its sound with it;
+automatic picture blending never shifts audio independently.
 
 Clip inspector supports exact timing, project frame rate, magnetic edges and a
 configurable time grid. Video trim handles and frame-step buttons complement

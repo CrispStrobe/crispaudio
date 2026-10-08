@@ -131,3 +131,18 @@ zoomLevel (pixels/second), scrollOffset and playhead scale as audio and ruler.
 Only ProjectOverview is fitted; it navigates the common viewport, not clip edits.
 VideoViewer keeps the picture fitted independently. Touch selection mode browses
 video and audio; Move & trim explicitly permits touch clip movement.
+
+
+## Timeline usability 0.6.2
+
+Audio and picture use trackHeight (24–640 px). Reorder uses pointer capture and
+header hit testing, not HTML5 file drag/drop. Video removal keeps sound and clears
+its matching link groups. Help and all controls need EN/DE translations.
+minimumDuration is the user's canvas floor; every duration recomputation must
+retain it. POS/DUR edits never destroy clips. Native picture export pads a black
+tail; audio exports silence. Video overlaps normalize incoming transitions only
+when picture timing changes; audio-only edits must preserve implicit picture for
+stream-copy export. Reject containment/triple picture stacks. Expanded viewer is
+a portal outside transformed panels. Import keeps desktop paths, checks project
+identity after async decode and yields during waveform scanning; decode itself
+cannot be cancelled and GUI audio remains bounded by decoded-buffer memory.

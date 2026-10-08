@@ -1,6 +1,6 @@
-import { splitClips, projectClips } from '../../lib/projectEdits';
+import { splitClips, projectClips, blendAudioOverlaps } from '../../lib/projectEdits';
 import { ToolButton } from '../common/ToolButton';
-import { Hand, SlidersHorizontal, Scissors, Layers, Settings2, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Hand, Blend, SlidersHorizontal, Scissors, Layers, Settings2, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { VideoClipSettings } from './VideoClipSettings';
 import { videoClips } from '../../lib/videoEditing';
 import { deleteSelection, nudgeSelection } from '../../lib/timelineEditing';
@@ -37,6 +37,7 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
         const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,projectClips(state.project).map(c=>c.id),position),selection:null});
       }}/>
       <ToolButton icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>onInspector?onInspector():setInspector(true)}/>
+      <ToolButton icon={Blend} label={t('usability.blendAudio')} disabled={selected.length<2} onClick={()=>{try{const state=useProjectStore.getState();useProjectStore.setState({project:blendAudioOverlaps(state.project,selection?.segmentIds??[])});}catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:String(error)}));}}}/>
       <ToolButton icon={Trash2} label={t('timeline.delete')} disabled={!allSelected.length} onClick={deleteSelection}/>
       <span className="text-xs text-gray-400 hidden lg:block">{t('editing.nudge')}</span>
       <ToolButton icon={ArrowLeft} label={t('editing.nudgeLeft')} onClick={()=>nudgeSelection(-nudge)}/>

@@ -33,9 +33,11 @@ describe('video viewer lifecycle',()=>{
     expect(screen.getByLabelText('interview.preview')).not.toBe(first);
   });
   it('expands visibly and restores native fullscreen on Escape',async()=>{
-    await act(async()=>{render(<VideoViewer/>);});
+    let host:HTMLElement;await act(async()=>{host=render(<div style={{transform:'translateX(0)'}}><VideoViewer/></div>).container;});
     await act(async()=>{fireEvent.click(screen.getByText('video.fullscreen'));});
-    expect(screen.getByText('editor.closeViewer').closest('.fixed')).toBeTruthy();
+    const overlay=screen.getByText('editor.closeViewer').closest('.fixed');
+    expect(overlay?.parentElement).toBe(document.body);
+    expect(host!.contains(overlay)).toBe(false);
     expect(native.setFullscreen).toHaveBeenCalledWith(true);
     await act(async()=>{fireEvent.keyDown(document,{key:'Escape'});});
     expect(native.setFullscreen).toHaveBeenCalledWith(false);

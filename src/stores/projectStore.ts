@@ -4,6 +4,7 @@ import { moveClips, trimClips, linkedIds, splitClips, removeClips } from '../lib
 // Zustand store with temporal (undo/redo) middleware for timeline state.
 // ---------------------------------------------------------------------------
 
+import { timelineDuration } from '../lib/timelineView';
 import { videoTimelineDuration, videoClips } from '../lib/videoEditing';
 import { create } from 'zustand';
 import { temporal } from 'zundo';
@@ -193,7 +194,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
+              duration: Math.max(state.project.minimumDuration ?? 0, videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -244,7 +245,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
+              duration: Math.max(state.project.minimumDuration ?? 0, videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -260,7 +261,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
+              duration: Math.max(state.project.minimumDuration ?? 0, videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -272,7 +273,7 @@ export const useProjectStore = create<ProjectState>()(
           if (!found) return state;
 
           if (found.segment.linkGroup) {
-            const project=moveClips(state.project,[segmentId],Math.max(0,newStartTime)-found.segment.startTime);
+            const project=moveClips(state.project,[segmentId],Math.max(0,newStartTime)-found.segment.startTime,true);
             if(newTrackId && newTrackId!==found.track.id){
               const moved=project.tracks.flatMap(t=>t.segments).find(c=>c.id===segmentId)!;
               project.tracks=project.tracks.map(t=>({...t,segments:t.segments.filter(c=>c.id!==segmentId).concat(t.id===newTrackId?[{...moved,trackId:newTrackId}]:[])}));
@@ -304,7 +305,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
+              duration: Math.max(state.project.minimumDuration ?? 0, videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -315,7 +316,7 @@ export const useProjectStore = create<ProjectState>()(
           const found = findSegmentById(state.project.tracks, segmentId);
           if (!found) return state;
 
-          if(found.segment.linkGroup)return {project:trimClips(state.project,[segmentId],side,side==='left'?found.segment.duration-newDuration:newDuration-found.segment.duration,state.sources)};
+          if(found.segment.linkGroup)return {project:trimClips(state.project,[segmentId],side,side==='left'?found.segment.duration-newDuration:newDuration-found.segment.duration,state.sources,true)};
           const { segment } = found;
           let patch: Partial<AudioSegment>;
 
@@ -343,7 +344,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
+              duration: Math.max(state.project.minimumDuration ?? 0, videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -390,7 +391,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
+              duration: Math.max(state.project.minimumDuration ?? 0, videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -481,7 +482,7 @@ export const useProjectStore = create<ProjectState>()(
         set({
           project: {
             ...project,
-            duration: Math.max(videoTimelineDuration(project.video), computeProjectDuration(project.tracks)),
+            duration: Math.max(project.minimumDuration ?? 0, videoTimelineDuration(project.video), computeProjectDuration(project.tracks)),
           },
           sources,
           selection: null,
@@ -546,7 +547,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
+              duration: Math.max(state.project.minimumDuration ?? 0, videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -571,7 +572,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
+              duration: Math.max(state.project.minimumDuration ?? 0, videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -731,7 +732,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,video,
-              duration: Math.max(videoTimelineDuration(video), computeProjectDuration(tracks)),
+              duration: Math.max(state.project.minimumDuration ?? 0, videoTimelineDuration(video), computeProjectDuration(tracks)),
             },
             selection: {
               startTime: minT,
@@ -758,10 +759,10 @@ export const useProjectStore = create<ProjectState>()(
 
       // ── View ──────────────────────────────────────────────────────────────────
 
-      setTrackHeight: (height) => set({ trackHeight: Math.max(64, Math.min(240, height)) }),
+      setTrackHeight: (height) => set({ trackHeight: Math.max(24, Math.min(640, height)) }),
       setVideoRange: (start, end) => set((state) => {
         const video = state.project.video;
-        if (!video || !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > videoTimelineDuration(video) || end <= start) return state;
+        if (!video || !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > timelineDuration(state.project) || end <= start) return state;
         return { project: { ...state.project, video: { ...video, inPoint: start, outPoint: end } } };
       }),
 

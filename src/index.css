@@ -458,11 +458,10 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
   .touch-arrange-toggle { display: inline-flex; align-items: center; }
   .timeline-editor button, .timeline-editor summary { min-height: 44px; min-width: 44px; }
   .timeline-editor .track-heading { margin-bottom: 0; }
-  .timeline-editor .track-reorder, .timeline-editor .track-remove, .timeline-editor .track-gain { display: none; }
+  .timeline-editor .track-reorder, .timeline-editor .track-gain { display: none; }
   .timeline-editor .track-heading input { min-height: 30px; font-size: 14px; }
   .timeline-editor input[type="range"] { min-height: 44px; }
   .timeline-transport { gap: 4px; }
-  .timeline-transport > div:last-child { display: none; }
   [role="dialog"] button, [role="dialog"] summary { min-height: 44px; min-width: 44px; }
   [role="dialog"] input[type="checkbox"] { width: 24px; height: 24px; }
   [role="dialog"] label { min-height: 44px; }
@@ -478,7 +477,7 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
 @media (max-width: 767px) {
   .timeline-main-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .timeline-main-tools > button > svg { display: none; }
-  .timeline-transport .position-label, .timeline-transport .transport-divider { display: none; }
+  .timeline-transport .transport-divider { display: none; }
 }
 /* Phone landscape must retain waveform space. Keep the primary actions in a
    single row; the selected-only split also remains in the long-press menu. */

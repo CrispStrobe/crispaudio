@@ -1,3 +1,11 @@
+# Timeline usability — local 0.6.2
+
+Implemented video removal/undo, pointer and keyboard track ordering, shared row
+height extremes, help, editable position/canvas duration, automatic partial-video
+dissolves, reviewed audio crossfades, portal fullscreen viewer and staged audio
+import into existing/new tracks. Longer canvas exports black picture and silence.
+Two simultaneous picture clips on one lane remain the composition limit.
+
 # Shared timeline — local 0.6.1
 
 Video clips now follow the audio ruler, zoom and horizontal scroll. A separate

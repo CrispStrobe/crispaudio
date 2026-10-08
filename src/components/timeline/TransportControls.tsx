@@ -1,3 +1,4 @@
+import { TimeField } from './TimeField';
 import { timelineDuration } from '../../lib/timelineView';
 // ---------------------------------------------------------------------------
 // CrispAudio — TransportControls
@@ -18,19 +19,12 @@ import { useProjectStore } from '../../stores/projectStore';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function formatTime(seconds: number): string {
-  const total = Math.max(0, seconds);
-  const mins = Math.floor(total / 60);
-  const secs = Math.floor(total % 60);
-  const ms = Math.floor((total % 1) * 100);
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const PositionDisplay = React.memo(function PositionDisplay() {
   const position = useProjectStore((s) => s.playheadPosition);
-  return <span className="font-mono text-sm text-white bg-gray-800 border border-gray-700 px-2 py-0.5 rounded min-w-[6rem] text-center tabular-nums">{formatTime(position)}</span>;
+  const {t}=useTranslation();
+  return <TimeField label={t('timeline.positionShort')} value={position} onCommit={time=>{const state=useProjectStore.getState();state.setIsPlaying(false);state.setPlayheadPosition(Math.min(timelineDuration(state.project),time));}}/>;
 });
 
 function TimelineScrubber({width}: {width?: number}) {
@@ -165,9 +159,12 @@ export const TransportControls = React.memo(function TransportControls({viewport
         <span className="position-label text-xs text-gray-500 uppercase tracking-wide">
           {t('timeline.durationShort')}
         </span>
-        <span className="font-mono text-sm text-gray-400 bg-gray-800/50 border border-gray-700/50 px-2 py-0.5 rounded min-w-[6rem] text-center tabular-nums">
-          {formatTime(duration)}
-        </span>
+        <TimeField label={t('timeline.durationShort')} value={duration} onCommit={seconds=>{
+          const state=useProjectStore.getState();
+          const content=timelineDuration({...state.project,minimumDuration:0});
+          const minimumDuration=Math.max(content,seconds);
+          useProjectStore.setState({project:{...state.project,minimumDuration,duration:minimumDuration}});
+        }}/>
       </div>
     </div>
   );

@@ -162,7 +162,7 @@ fn execute(cli: Cli) -> media::Result<()> {
                 .clips
                 .iter()
                 .map(|c| c.start_time + c.duration)
-                .fold(0.0, f64::max);
+                .fold(edit.duration.unwrap_or(0.0), f64::max);
             media::video_edit::export_edit(
                 &edit,
                 &output,

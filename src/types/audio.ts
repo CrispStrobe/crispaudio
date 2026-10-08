@@ -9,7 +9,8 @@ export interface TimelineProject {
   bitDepth?: number;
   tracks: TimelineTrack[];
   masterEffects: EffectConfig[];
-  duration: number; // computed from segments
+  duration: number; // computed from content and minimumDuration
+  minimumDuration?: number; // explicit empty canvas/export tail, seconds
   markers?: TimelineMarker[];
   transcript?: TranscriptCue[];
   syncHistory?: SyncDecision[];

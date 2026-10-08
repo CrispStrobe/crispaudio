@@ -160,3 +160,34 @@ checks assert congruent clip/cursor coordinates, overview keyboard and pointer
 navigation, real emulated touch swipes without clip mutations, five viewport
 sizes and the preceding media workspace/recovery regressions. These are browser
 checks, not physical iOS validation. No Apple upload is part of this local update.
+
+
+## Local 0.6.2 timeline usability
+
+Adds video removal with audio retained/links cleared; mouse, emulated touch and
+keyboard track reordering; shared 24–640 px row height; inline help; editable POS
+and minimum canvas duration; automatic two-picture dissolves on partial overlap;
+selected audio S-curve crossfades; a portal-based expanded viewer; staged,
+cancellable import into an existing track or a new track per file. Duration and
+trash controls remain available in touch layouts. Desktop import retains paths
+and avoids the former full encoded-file copy before decoding.
+
+Verified locally: 1,228 frontend tests, ESLint, TypeScript/Vite, 18 native tests,
+13 media tests and the macOS bundle build. Real FFmpeg checks include the new
+extended black tail, linked CLI edits and preceding composition regressions.
+Browser checks exercise real mouse/touch/keyboard ordering, row extremes, help,
+POS/DUR edits, linked overlap dissolves, applied audio fade curves, expanded
+viewer viewport geometry, removal/undo, both import destinations and five
+viewport sizes. A 253.72 s H6 mono WAV imported in 3.6–4.7 s in Chrome with
+responsive timer ticks, including fixture transfer, decode and waveform scan.
+That is a browser measurement, not a native file-read or compressed-audio promise.
+Native macOS fullscreen was requested through permitted window APIs; these browser
+checks do not prove physical fullscreen, iOS hardware behavior or long-file memory
+paging. No Apple upload or release tag is part of this local update.
+
+The ad-hoc-signed 0.6.2 local app is installed and running at
+`~/Applications/CrispAudio-local.app`. Before quitting 0.6.1, the current autosave
+and complete WebKit recovery store were backed up under the private validation
+folder (`ux/native-autosave-before-062.json`, `ux/recovery-before-062/WebKit`).
+The ordinary Workspace → Recover last arrangement action can resume the cache;
+installation does not substitute an older interview project for current work.

@@ -2,11 +2,14 @@
 
 Desktop interview synchronization, external microphone alignment, video preview
 and edited-audio video export are available in the Timeline and standalone CLI.
-Local version 0.6.1 aligns video and audio under one ruler, zoom and scroll, with a
+Local version 0.6.2 aligns video and audio under one ruler, zoom and scroll, with a
 separate project overview for navigation. The optional viewer keeps its picture
 fitted. Linked clips, transitions, magnetic edges, fades and track auto-sync work
 in the generic timeline. See [the timeline workflow](docs/TIMELINE_WORKFLOW.md)
-and [Media workspace](docs/MEDIA_WORKSPACE.md).
+and [Media workspace](docs/MEDIA_WORKSPACE.md). Use **?** for control help. POS and
+DUR accept typed timecodes; row height includes video. Import audio chooses an
+existing or new track. Partial picture overlaps dissolve; selected audio overlaps
+can crossfade. Expanded video opens a separate fullscreen viewer.
 See [Interview editing and CLI](docs/INTERVIEW_EDITING.md) for setup, the
 [Canon/H6 walkthrough](docs/INTERVIEW_WALKTHROUGH.md) for concrete steps, and
 [iOS/macOS release status](docs/RELEASE_STATUS.md) for platform limits. The audio

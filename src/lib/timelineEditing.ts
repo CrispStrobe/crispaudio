@@ -40,7 +40,7 @@ export function nudgeSelection(delta: number) {
   const shift=Math.max(delta,-Math.min(...selected.map(clip=>clip.startTime)));
   if(shift===0)return;
   try{useProjectStore.setState(current=>{
-    const project=moveClips(current.project,ids,shift);
+    const project=moveClips(current.project,ids,shift,true);
     return {project:{...project,duration:timelineDuration(project)},selection:current.selection?{...current.selection,startTime:current.selection.startTime+shift,endTime:current.selection.endTime+shift}:null};
   });}catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:String(error)}));}
 }

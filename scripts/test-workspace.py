@@ -16,14 +16,15 @@ with tempfile.TemporaryDirectory(prefix='crispaudio-workspace-') as directory:
     overwrite_thumb=subprocess.run([CLI,'prepare','--input',str(red),'--output',str(thumbnail),'--thumbnail'],capture_output=True);assert overwrite_thumb.returncode!=0
     def clip(id,start,duration,source=None):
         return dict(id=id,startTime=start,sourceOffset=0,duration=duration,fadeIn=0,fadeOut=0,transition='cut',transitionDuration=0,**(dict(sourceId=source) if source else {}))
-    def export(clips,name):
-        edit=root/(name+'.json');edit.write_text(json.dumps(dict(path=str(red),sources=[dict(id='b',path=str(blue))],frameRate=25,clips=clips)));output=root/(name+'.mp4');run(CLI,'edit-video','--edit',edit,'--output',output);return output
+    def export(clips,name,duration=None):
+        edit=root/(name+'.json');edit.write_text(json.dumps(dict(path=str(red),sources=[dict(id='b',path=str(blue))],frameRate=25,clips=clips,**(dict(duration=duration) if duration else {}))));output=root/(name+'.mp4');run(CLI,'edit-video','--edit',edit,'--output',output);return output
     def info(path):return json.loads(run('ffprobe','-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=nb_read_frames,width,height,avg_frame_rate:format=duration','-of','json',path))
     def rgb(path,time):return tuple(run('ffmpeg','-v','error','-ss',time,'-i',path,'-frames:v','1','-vf','scale=1:1','-pix_fmt','rgb24','-f','rawvideo','-')[:3])
     picture=export([clip('a',0,1.04),clip('b',1.04,1.04,'b')],'two-sources');meta=info(picture)
     assert meta['streams'][0]['nb_read_frames']=='52',meta
     assert meta['streams'][0]['width']==320 and meta['streams'][0]['height']==180,meta
     assert rgb(picture,.2)[0]>220 and rgb(picture,1.5)[2]>220
+    tail=export([clip('a',0,2)],'black-tail',3);assert info(tail)['streams'][0]['nb_read_frames']=='75';assert max(rgb(tail,2.8))<8
     many=export([clip(str(i),i*.073,.073,'b' if i%2 else None) for i in range(40)],'many-cuts');meta=info(many)
     assert meta['streams'][0]['nb_read_frames']=='73',meta
     assert abs(float(meta['format']['duration'])-2.92)<.001,meta

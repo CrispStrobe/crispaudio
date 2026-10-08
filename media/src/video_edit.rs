@@ -33,6 +33,8 @@ pub struct VideoEdit {
     pub sources: Vec<VideoSource>,
     #[serde(default)]
     pub frame_rate: Option<f64>,
+    #[serde(default)]
+    pub duration: Option<f64>,
     pub clips: Vec<VideoClip>,
 }
 const TRANSITIONS: &[&str] = &[
@@ -57,6 +59,12 @@ const TRANSITIONS: &[&str] = &[
 ];
 
 pub fn validate(edit: &VideoEdit, source_duration: f64) -> Result<Vec<VideoClip>> {
+    if edit
+        .duration
+        .is_some_and(|duration| !duration.is_finite() || duration < 0.0)
+    {
+        return Err("Invalid project duration".into());
+    }
     if edit.clips.is_empty() || edit.clips.len() > 256 {
         return Err("Video edit needs 1–256 clips".into());
     }
@@ -144,7 +152,8 @@ pub fn export_edit(
             return Err("Clip exceeds its video source".into());
         }
     }
-    let total = clips.last().unwrap().start_time + clips.last().unwrap().duration;
+    let total = (clips.last().unwrap().start_time + clips.last().unwrap().duration)
+        .max(edit.duration.unwrap_or(0.0));
     if !start.is_finite() || !end.is_finite() || start < 0.0 || end <= start || end > total + 1e-6 {
         return Err("Invalid edited video range".into());
     }
@@ -311,8 +320,9 @@ pub fn export_edit(
         }
         previous = next;
     }
+    let tail = (quantize(total) - clock).max(0.0);
     nodes.push(format!(
-        "[{previous}]trim=start={start}:end={end},setpts=PTS-STARTPTS[outv]"
+        "[{previous}]tpad=stop_mode=add:stop_duration={tail}:color=black,trim=start={start}:end={end},setpts=PTS-STARTPTS[outv]"
     ));
     if let Some(path) = mix {
         if !mix_is_trimmed {
@@ -449,6 +459,7 @@ mod tests {
             path: "unused".into(),
             sources: vec![],
             frame_rate: None,
+            duration: None,
             clips: vec![clip(0.0, 3.0), clip(2.0, 3.0)],
         };
         assert!(validate(&edit, 10.0).is_err());

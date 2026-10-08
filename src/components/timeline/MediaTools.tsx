@@ -109,7 +109,7 @@ export function MediaTools({ engine }: Props) {
     const output = await save({ defaultPath: `${state.project.name}.edited.mp4`, filters: [{ name: 'MP4', extensions: ['mp4'] }] });
     if (!output) return;
     const start = state.project.video.inPoint ?? 0;
-    const end = state.project.video.outPoint ?? videoTimelineDuration(state.project.video);
+    const end = state.project.video.outPoint ?? timelineDuration(state.project);
     if(state.project.video.clips){const error=validateVideoClips(videoClips(state.project.video),state.project.video.duration,state.project.video.sources);if(error)throw new Error(error);}
     const controller=new AbortController();exportAbort.current=controller;
     const jobId=crypto.randomUUID();exportJob.current=jobId;
@@ -121,8 +121,8 @@ export function MediaTools({ engine }: Props) {
     });
     try {
       controller.signal.throwIfAborted();
-      if(state.project.video.clips) await invoke('export_video_edit', {edit:{path:state.project.video.path,sources:state.project.video.sources,frameRate:state.project.frameRate,clips:state.project.video.clips},output,mix,start,end,jobId});
-      else await invoke('export_media', { session: state.project.video.session, output, mix, start, end,jobId });
+      if(state.project.video.clips||end>videoTimelineDuration(state.project.video)+1e-6)await invoke('export_video_edit', {edit:{path:state.project.video.path,sources:state.project.video.sources,frameRate:state.project.frameRate,duration:timelineDuration(state.project),clips:videoClips(state.project.video)},output,mix,start,end,jobId});
+      else await invoke('export_media',{session:state.project.video.session,output,mix,start,end,jobId});
       setNotice(t('interview.exported', { path: output }));
     } finally { exportJob.current=null;exportAbort.current=null;await remove(mix).catch(() => {}); }
   });

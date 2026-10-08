@@ -1,3 +1,8 @@
+> Local 0.6.2 adds editable POS/DUR, shared 24–640 px row height, working track
+> grips, video removal, partial picture overlaps, audio crossfades, fullscreen
+> viewer and import destinations. The **?** button explains timeline controls.
+> See [Media workspace](MEDIA_WORKSPACE.md#everyday-timeline-controls).
+
 > Local 0.6.1 puts editable video and audio on the same ruler, zoom and scroll.
 > The whole-project overview is separate; only the playback viewer stays fitted.
 > Local 0.6.0 adds [Media workspace](MEDIA_WORKSPACE.md): multiple picture sources,

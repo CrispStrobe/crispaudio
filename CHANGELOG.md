@@ -4,7 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.1]
+## [Unreleased — local version 0.6.2]
+
+- Remove the video lane while keeping audio; undo restores links and picture.
+- Pointer/touch/keyboard track reordering replaces the ineffective native drag handle.
+- Shared audio/video row height from 24–640 px; timeline help explains controls.
+- Editable POS/DUR fields accept seconds or timecodes. Extended canvas adds silent
+  audio and black picture to the exported tail, without trimming existing clips.
+- Drag partial video overlaps to create dissolves; crossfade selected overlapping
+  audio with S-curve envelopes. Two simultaneous picture clips are supported.
+- Expanded viewer escapes panel transforms, requests fullscreen and keeps playback
+  controls. Remove the redundant View & tools dialog and duplicate zoom controls.
+- Audio import chooses existing/new tracks, shows cancellable preparation stages,
+  yields during waveform scans and retains desktop paths for efficient saves.
+
+## [Local version 0.6.1]
 
 - Align editable video with audio and the ruler under shared zoom/scroll.
 - Separate whole-project navigation from the video track; drag the overview

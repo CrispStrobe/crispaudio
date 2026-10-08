@@ -105,7 +105,7 @@ describe('timeline subscription isolation', () => {
     const { container } = render(<TimelinePanel />);
     await act(async () => fireEvent.change(container.querySelector('input[type="file"]')!, { target: { files } }));
     expect(useProjectStore.getState().project.tracks.map((track) => [track.name, track.muted, track.segments[0]?.startTime])).toEqual([
-      ['Jacket.wav', false, 0], ['Room.wav', true, 0],
+      ['Jacket.wav', false, 0], ['Room.wav', false, 0],
     ]);
     expect(engine.resume).not.toHaveBeenCalled();
     engine.resume.mockReset();
@@ -123,7 +123,7 @@ describe('timeline subscription isolation', () => {
     render(<TransportControls />);
     translate.mockClear();
     act(() => useProjectStore.getState().setPlayheadPosition(2));
-    expect(screen.getByText('00:02.00')).toBeTruthy();
+    expect(screen.getByDisplayValue('00:02.000')).toBeTruthy();
     expect(translate).not.toHaveBeenCalledWith('timeline.play');
     act(() => useProjectStore.getState().addTrack('Other'));
     expect(translate).not.toHaveBeenCalledWith('timeline.play');
