@@ -78,6 +78,9 @@ not black media. Thumbnail capture now seeks slightly into the first displayable
 frame before drawing, while the tile stays anchored at zero. A decoded-frame
 wait and a new cache generation avoid retaining the black thumbnail. A small
 native FFmpeg first-thumbnail fallback avoids depending on WebKit canvas readiness.
+Each camera retains its own strip when selection changes. Trimming between
+sample times crops the preceding tile to the new clip start, avoiding empty
+leading strips. Thumbnail sources decode serially to bound background load.
 
 Playback also waits for the visible first decoded frame. Pending seeks are not
 replaced every transport tick, preventing decoder starvation on large originals.
@@ -96,6 +99,7 @@ crispaudio align --session sync.json --output-dir aligned
 crispaudio loudness aligned/track-01.aligned.wav
 crispaudio clean-audio --input aligned/track-01.aligned.wav --output jacket-clean.wav
 crispaudio prepare --input camera.mp4 --output camera-preview.mp4 --proxy
+crispaudio prepare --input camera.mp4 --output camera-first.jpg --thumbnail
 crispaudio edit-project --input interview.crispaudio --recipe cuts.json --output edit.crispaudio
 crispaudio render-project --input edit.crispaudio --output mix.wav
 crispaudio render-project --input edit.crispaudio --output interview.mp4 --video

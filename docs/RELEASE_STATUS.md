@@ -140,3 +140,10 @@ rendered automation and five desktop/phone viewport sizes. Canon first-frame
 capture was checked in WebKit and Chrome; the thumbnail strip additionally uses
 a native decoded first tile to avoid WKWebView's black initial canvas. The local
 0.6.0 bundle was installed and launched with the preceding arrangement backed up.
+
+Filmstrip follow-up: 1,206 frontend tests pass, including trimmed-start coverage,
+multiple-camera retention and serial decoder cancellation. Production image CSP
+was checked in WebKit and Chrome with native asset URLs. Real FFmpeg tests
+validate thumbnail dimensions, picture pixels and overwrite rejection. Browser
+workspace checks also cover per-camera images and IndexedDB audio recovery.
+The updated local 0.6.0 app was rebuilt and installed; no Apple upload was made.

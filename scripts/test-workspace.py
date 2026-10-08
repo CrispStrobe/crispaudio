@@ -8,6 +8,12 @@ def run(*args):
 with tempfile.TemporaryDirectory(prefix='crispaudio-workspace-') as directory:
     root=pathlib.Path(directory);red=root/'red.mp4';blue=root/'blue.mp4'
     for path,color,size,fps in [(red,'red','320x180',25),(blue,'blue','640x360',30)]:run('ffmpeg','-v','error','-f','lavfi','-i',f'color={color}:s={size}:r={fps}:d=3','-c:v','libx264','-threads','2',path)
+    thumbnail=root/'first.jpg';run(CLI,'prepare','--input',red,'--output',thumbnail,'--thumbnail')
+    thumbnail_info=json.loads(run('ffprobe','-v','error','-select_streams','v:0','-show_entries','stream=width,height','-of','json',thumbnail))
+    assert thumbnail_info['streams'][0]==dict(width=160,height=90),thumbnail_info
+    first_rgb=run('ffmpeg','-v','error','-i',thumbnail,'-frames:v','1','-vf','scale=1:1','-pix_fmt','rgb24','-f','rawvideo','-')
+    assert first_rgb[0]>220 and first_rgb[1]<30,tuple(first_rgb)
+    overwrite_thumb=subprocess.run([CLI,'prepare','--input',str(red),'--output',str(thumbnail),'--thumbnail'],capture_output=True);assert overwrite_thumb.returncode!=0
     def clip(id,start,duration,source=None):
         return dict(id=id,startTime=start,sourceOffset=0,duration=duration,fadeIn=0,fadeOut=0,transition='cut',transitionDuration=0,**(dict(sourceId=source) if source else {}))
     def export(clips,name):

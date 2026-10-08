@@ -59,7 +59,7 @@ enum Commands {
     Probe { input: String },
     /// Measure EBU R128 loudness and gain toward -16 LUFS, limited to -1 dBTP.
     Loudness { input: String },
-    /// Prepare a lightweight silent video proxy or extracted 48 kHz stereo WAV.
+    /// Prepare a video proxy, first thumbnail, or extracted 48 kHz stereo WAV.
     Prepare {
         #[arg(long)]
         input: String,
@@ -67,6 +67,8 @@ enum Commands {
         output: String,
         #[arg(long)]
         proxy: bool,
+        #[arg(long, conflicts_with = "proxy")]
+        thumbnail: bool,
     },
     /// Measure sample peak, RMS, activity proxy and a conservative gain suggestion (JSON).
     Levels { input: String },
@@ -175,8 +177,13 @@ fn execute(cli: Cli) -> media::Result<()> {
             input,
             output,
             proxy,
+            thumbnail,
         } => {
-            media::prepare_asset(&input, &output, proxy)?;
+            if thumbnail {
+                media::first_thumbnail(&input, &output)?;
+            } else {
+                media::prepare_asset(&input, &output, proxy)?;
+            }
             println!("{}", serde_json::json!({"output":output}));
         }
         Commands::Loudness { input } => println!(

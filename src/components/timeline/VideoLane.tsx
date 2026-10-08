@@ -1,9 +1,7 @@
-import { convertFileSrc } from '@tauri-apps/api/core';
-import { mediaJob } from '../../lib/mediaJob';
 import { linkedIds, moveClips, trimClips } from '../../lib/projectEdits';
 import { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { previewUrl } from '../../lib/previewCache';
+import { captureVideoThumbnails, thumbnailIntervals, type VideoThumbnail } from '../../lib/videoThumbnails';
 import { useProjectStore } from '../../stores/projectStore';
 import { PlayheadHandle } from './PlayheadHandle';
 import { videoClips, clipSource, frameTime } from '../../lib/videoEditing';
@@ -11,28 +9,7 @@ import { timelineDuration } from '../../lib/timelineView';
 import { snapClipStart } from '../../lib/timelineSnap';
 import { projectHistoryGesture } from '../../stores/projectStore';
 
-const thumbnailCache=new Map<string,{time:number;url:string}[]>();
 export const VIDEO_LANE_HEIGHT = 76;
-function waitFor(video: HTMLVideoElement, event: string, signal: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const cleanup = () => { clearTimeout(timeout); video.removeEventListener(event, ready); video.removeEventListener('error', fail); signal.removeEventListener('abort', fail); };
-    const ready = () => { cleanup(); resolve(); };
-    const fail = () => { cleanup(); reject(new Error('Video thumbnail unavailable')); };
-    const timeout = setTimeout(fail, 15000);
-    video.addEventListener(event, ready, { once: true }); video.addEventListener('error', fail, { once: true }); signal.addEventListener('abort', fail, { once: true });
-    if (signal.aborted) fail();
-  });
-}
-
-async function decodedVideoFrame(video:HTMLVideoElement,signal:AbortSignal):Promise<void>{
-  if(!video.requestVideoFrameCallback)return;
-  await new Promise<void>(resolve=>{
-    const done=()=>{clearTimeout(timer);video.cancelVideoFrameCallback(callback);signal.removeEventListener('abort',done);resolve();};
-    const timer=setTimeout(done,120);signal.addEventListener('abort',done,{once:true});const callback=video.requestVideoFrameCallback(done);
-    if(signal.aborted)done();
-  });
-}
-
 export function VideoLane({ width }: { width: number }) {
   const { t } = useTranslation();
   const video = useProjectStore((s) => s.project.video);
@@ -43,52 +20,34 @@ export function VideoLane({ width }: { width: number }) {
   const selected=selection?.segmentIds??[];
   const drag = useRef<{id:string;x:number;start:number;kind:'move'|'left'|'right';clips:ReturnType<typeof videoClips>;project:ReturnType<typeof useProjectStore.getState>['project']}|null>(null);
   useEffect(()=>()=>{if(drag.current){drag.current=null;projectHistoryGesture.end();}},[]);
-  const [thumbs, setThumbs] = useState<{ time: number; url: string }[]>([]);
-  const [failed, setFailed] = useState(false);
-  const selectedSource=clipSource(video,videoClips(video).find(c=>selected.includes(c.id)));
-  const videoPath = selectedSource?.path, duration = selectedSource?.duration;
+  const [thumbnails, setThumbnails] = useState<Record<string, VideoThumbnail[]>>({});
+  const [failures, setFailures] = useState<Record<string, boolean>>({});
+  // Stable through selection, moves and trims; rebuild only when sources change.
+  const sourcesKey = JSON.stringify([...new Map(videoClips(video).map(clip => {
+    const source = clipSource(video, clip);
+    return [source?.path, source && { path: source.path, duration: source.duration }];
+  })).values()].filter(Boolean));
   useEffect(() => {
-    if (!videoPath || !duration || !('__TAURI_INTERNALS__' in window)) return;
-    const cacheKey=`decoded-v2:${videoPath}:${duration}`;const cached=thumbnailCache.get(cacheKey);if(cached){let active=true;queueMicrotask(()=>{if(active){setThumbs(cached);setFailed(false);}});return()=>{active=false;};}
+    if (!('__TAURI_INTERNALS__' in window)) return;
     const abort = new AbortController();
-    const element = document.createElement('video');
-    element.muted = true; element.playsInline = true; element.preload = 'auto'; element.crossOrigin = 'anonymous';
-    const make = async () => {
-      try {
-        let firstTile:string|undefined;
-        try{const first=await mediaJob<string>('prepare_media_asset',{path:videoPath,proxy:false,thumbnail:true},abort.signal);if(first)firstTile=convertFileSrc(first);}catch{/* Browser capture remains available if native preparation fails. */}
-        if(abort.signal.aborted)return;
-        const url = await previewUrl(videoPath);
+    const sources = JSON.parse(sourcesKey) as { path: string; duration: number }[];
+    void (async () => {
+      for (const source of sources) {
         if (abort.signal.aborted) return;
-        setThumbs(firstTile?[{time:0,url:firstTile}]:[]); setFailed(false);
-        const loaded = waitFor(element, 'loadeddata', abort.signal);
-        element.src = url; element.load(); await loaded;
-        const canvas = document.createElement('canvas'); canvas.width = 160; canvas.height = 90;
-        const context = canvas.getContext('2d'); if (!context) return;
-        const result: { time: number; url: string }[] = [];
-        for (let i = 0; i < 8; i++) {
-          const time = Math.min(duration * i / 8, Math.max(0, duration - 0.05));
-          // Canon MP4 starts its first displayable frame after t=0. loadeddata
-          // alone can leave WebKit's canvas black. Force a real first seek,
-          // while keeping the thumbnail tile anchored at timeline zero.
-          const sampleTime=i===0?Math.min(.12,duration/2):time;
-          if (Math.abs(element.currentTime - sampleTime) > 0.001) {
-            const seeked = waitFor(element, 'seeked', abort.signal); element.currentTime = sampleTime; await seeked;
-          }
-          await decodedVideoFrame(element,abort.signal);
-          if (abort.signal.aborted) return;
-          context.drawImage(element, 0, 0, 160, 90);
-          result.push({ time, url: i===0&&firstTile?firstTile:canvas.toDataURL('image/jpeg', 0.65) });
-          setThumbs([...result]);
+        try {
+          await captureVideoThumbnails(source.path, source.duration, abort.signal, thumbs => {
+            if (!abort.signal.aborted) {
+              setThumbnails(previous => ({ ...previous, [source.path]: thumbs }));
+              setFailures(previous => ({ ...previous, [source.path]: false }));
+            }
+          });
+        } catch {
+          if (!abort.signal.aborted) setFailures(previous => ({ ...previous, [source.path]: true }));
         }
-        thumbnailCache.set(cacheKey,result);if(thumbnailCache.size>24)thumbnailCache.delete(thumbnailCache.keys().next().value!);
-        setFailed(false);
-      } catch { if (!abort.signal.aborted) setFailed(true); }
-      finally { element.removeAttribute('src'); element.load(); }
-    };
-    void make();
-    return () => { abort.abort(); element.removeAttribute('src'); element.load(); };
-  }, [videoPath, duration]);
+      }
+    })();
+    return () => abort.abort();
+  }, [sourcesKey]);
   if (!video) return null;
   const scale=width/total, clips=videoClips(video);
   const start=video.inPoint ?? 0,end=video.outPoint ?? total;
@@ -100,9 +59,9 @@ export function VideoLane({ width }: { width: number }) {
       onPointerMove={e=>{const moving=drag.current;if(!moving || moving.id!==clip.id || Math.abs(e.clientX-moving.x)<3)return;const state=useProjectStore.getState();const edges=[0,state.playheadPosition,...(state.project.markers??[]).map(m=>m.time),...moving.clips.filter(c=>c.id!==clip.id).flatMap(c=>[c.startTime,c.startTime+c.duration])];if(moving.kind!=='move'){try{const delta=frameTime((e.clientX-moving.x)/scale,state.project.frameRate??25);useProjectStore.setState({project:trimClips(moving.project,[clip.id],moving.kind,delta,state.sources)});}catch{/* Retain valid trim. */}return;}const time=snapClipStart(moving.start+(e.clientX-moving.x)/scale,clip.duration,edges,scale,state.snapEnabled&&!e.altKey);try{useProjectStore.setState({project:moveClips(moving.project,[clip.id],time-moving.start)});}catch{/* Keep the last valid placement when clips would overlap. */}}}
       onPointerUp={e=>{if(!drag.current)return;e.currentTarget.releasePointerCapture(e.pointerId);drag.current=null;projectHistoryGesture.end();}}
       onPointerCancel={()=>{drag.current=null;projectHistoryGesture.end();}}>
-      <div className="absolute inset-0 opacity-70 pointer-events-none">{thumbs.filter(thumb=>clipSource(video,clip)?.path===videoPath&&thumb.time>=clip.sourceOffset&&thumb.time<clip.sourceOffset+clip.duration).map(thumb=><img key={thumb.time} src={thumb.url} alt="" className="absolute h-full object-cover" style={{left:(thumb.time-clip.sourceOffset)*scale,width:Math.max(40,(duration??video.duration)/8*scale)}}/>)}</div>
+      <div className="absolute inset-0 opacity-70 pointer-events-none">{thumbnailIntervals(thumbnails[clipSource(video,clip)?.path??'']??[],clip.sourceOffset,clip.duration,clipSource(video,clip)?.duration??0).map(thumb=><img key={thumb.time} src={thumb.url} alt="" className="absolute h-full object-cover" style={{left:thumb.offset*scale,width:thumb.duration*scale}}/>)}</div>
       <span className="absolute left-1 top-0 px-1 rounded bg-black/70 text-[10px] text-white pointer-events-none">{clipSource(video,clip)?.name} · {clip.sourceOffset.toFixed(2)}–{(clip.sourceOffset+clip.duration).toFixed(2)}s{clip.transition!=='cut'?` · ${t(`editing.transition_${clip.transition}`)}`:''}</span>
-      {failed&&<span className="absolute bottom-0 left-1 text-xs text-gray-300">{t('video.noThumbnails')}</span>}
+      {failures[clipSource(video,clip)?.path??'']&&<span className="absolute bottom-0 left-1 text-xs text-gray-300">{t('video.noThumbnails')}</span>}
       <span data-trim="left" title={t('workspace.trimHandle')} className="absolute left-0 top-4 bottom-0 w-3 cursor-ew-resize border-l-2 border-white/60"/>
       <span data-trim="right" title={t('workspace.trimHandle')} className="absolute right-0 top-4 bottom-0 w-3 cursor-ew-resize border-r-2 border-white/60"/>
       {clip.fadeIn>0&&<span className="absolute bottom-0 left-0 border-b border-white/70" style={{width:clip.fadeIn*scale,transform:'rotate(-15deg)',transformOrigin:'left'}}/>}

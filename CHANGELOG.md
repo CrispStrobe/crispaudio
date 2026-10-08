@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased — local version 0.6.0]
 
+- Follow-up: retain thumbnails for every camera, cover trimmed clip starts,
+  permit native thumbnail images in the app policy, and expose first-thumbnail
+  preparation through the CLI (`prepare --thumbnail`).
+
 - Media bin, multiple video source files, linked audio/picture groups, copy/paste,
   frame trims, slip, ripple intervals, named draggable markers and frame rate/grid.
 - Optional resizable inspector and touch overlay; timed transcript import/search,
