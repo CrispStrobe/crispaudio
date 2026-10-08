@@ -1,3 +1,9 @@
+# Shared timeline — local 0.6.1
+
+Video clips now follow the audio ruler, zoom and horizontal scroll. A separate
+ProjectOverview navigates the entire arrangement; VideoViewer remains fitted.
+This supersedes the earlier fitted editable picture lane.
+
 # Media workspace progress — local 0.6.0
 
 Implemented multiple picture sources on one composition lane; linked AV editing;

@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.0]
+## [Unreleased — local version 0.6.1]
+
+- Align editable video with audio and the ruler under shared zoom/scroll.
+- Separate whole-project navigation from the video track; drag the overview
+  window to browse and the red cursor to seek. Playback picture stays fitted.
+- Touch selection mode browses video without moving clips; Move & trim permits
+  deliberate picture editing.
+
+## [Local version 0.6.0]
 
 - Follow-up: retain thumbnails for every camera, cover trimmed clip starts,
   permit native thumbnail images in the app policy, and expose first-thumbnail

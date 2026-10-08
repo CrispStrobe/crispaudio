@@ -123,3 +123,11 @@ Project format v3 reads v1/v2. Derived media in OS cache is copied to a sibling
 retain the last successful snapshot after errors. CLI project rendering rejects
 unsupported effects/pan explicitly. Native desktop job cancellation kills its
 FFmpeg child and removes owned staging output. GUI audio is not disk-paged yet.
+
+## Shared timeline 0.6.1
+
+Supersedes the 0.5/0.6 fitted VideoLane behavior: editable video uses the same
+zoomLevel (pixels/second), scrollOffset and playhead scale as audio and ruler.
+Only ProjectOverview is fitted; it navigates the common viewport, not clip edits.
+VideoViewer keeps the picture fitted independently. Touch selection mode browses
+video and audio; Move & trim explicitly permits touch clip movement.

@@ -552,7 +552,7 @@ export const TimelinePanel: React.FC = () => {
       {/* Main area: headers + canvas */}
       <div className="timeline-workarea flex flex-1 min-h-0 relative">
       <div ref={tracksAreaRef} className="timeline-tracks-area relative flex flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
-        onTouchStart={e => { const p = e.touches[0]; if (!touchArrange && p && !(e.target as HTMLElement).closest('[data-video-overview], [data-timeline-playhead]')) touchPan.current = {x:p.clientX,y:p.clientY,scroll:useProjectStore.getState().scrollOffset}; }}
+        onTouchStart={e => { const p = e.touches[0]; if (!touchArrange && p && !(e.target as HTMLElement).closest('[data-timeline-playhead]')) touchPan.current = {x:p.clientX,y:p.clientY,scroll:useProjectStore.getState().scrollOffset}; }}
         onTouchEnd={() => {touchPan.current=null;}}
         onTouchMove={e => { const start=touchPan.current, p=e.touches[0]; if (!start || !p || touchArrange) return; const dx=start.x-p.clientX; if (Math.abs(dx) > Math.abs(start.y-p.clientY)+8) { const state=useProjectStore.getState(); state.setScrollOffset(Math.min(Math.max(0,timelineDuration(state.project)-canvasWidth/state.zoomLevel),Math.max(0,start.scroll+dx/state.zoomLevel))); } }} >
         {!store.project.tracks.length && !store.project.video && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-5 bg-gray-950 text-center">
@@ -578,7 +578,7 @@ export const TimelinePanel: React.FC = () => {
 
           {store.project.video && <div className="shrink-0 px-3 flex flex-col justify-center gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: VIDEO_LANE_HEIGHT }}>
             <span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
-            <span className="text-xs text-gray-400">{t('editing.videoOverview')}</span>
+            <span className="text-xs text-gray-400">{t('editing.alignedVideoTrack')}</span>
           </div>}
           {/* Per-track headers — scroll locked to canvas */}
           <div className="flex-1">
@@ -628,7 +628,7 @@ export const TimelinePanel: React.FC = () => {
             <TimelineRuler width={canvasWidth} />
           </div>
 
-          {store.project.video && <VideoLane width={canvasWidth} />}
+          {store.project.video && <VideoLane width={canvasWidth} touchArrange={touchArrange} />}
 
           {/* Canvas (internally virtual-scrolled via store.scrollOffset) */}
           <div

@@ -33,6 +33,22 @@ describe('multiple camera filmstrips', () => {
     expect(root.container.querySelectorAll('img')).toHaveLength(2);
     expect(capture).toHaveBeenCalledTimes(2);
   });
+  it('uses the audio ruler scale and scroll instead of fitting video independently', async () => {
+    useProjectStore.setState({zoomLevel: 80, scrollOffset: 2});
+    let root!: ReturnType<typeof render>;
+    await act(async () => { root = render(<VideoLane width={1000}/>); });
+    const clips = root.container.querySelectorAll('button');
+    expect(clips[0].style.left).toBe('-160px');
+    expect(clips[0].style.width).toBe('400px');
+    expect(clips[1].style.left).toBe('240px');
+    await act(async () => { useProjectStore.getState().setZoomLevel(160); });
+    expect(clips[1].style.left).toBe('480px');
+    expect(clips[1].style.width).toBe('800px');
+    await act(async () => { useProjectStore.getState().setScrollOffset(6); });
+    expect(root.container.querySelectorAll('button')).toHaveLength(1);
+    expect(root.container.querySelector('button')?.style.left).toBe('-160px');
+    expect(capture).toHaveBeenCalledTimes(2);
+  });
   it('runs one background decoder at a time and cancels the queue on unmount', async () => {
     let complete!: () => void;
     let signal!: AbortSignal;

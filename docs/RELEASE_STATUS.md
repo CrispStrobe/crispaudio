@@ -147,3 +147,16 @@ was checked in WebKit and Chrome with native asset URLs. Real FFmpeg tests
 validate thumbnail dimensions, picture pixels and overwrite rejection. Browser
 workspace checks also cover per-camera images and IndexedDB audio recovery.
 The updated local 0.6.0 app was rebuilt and installed; no Apple upload was made.
+
+## Local 0.6.1 shared timeline
+
+Editable video now shares the audio ruler's zoom, horizontal scroll and cursor.
+Project overview is separate in the navigation bar; the playback viewer stays
+fitted. The native scrollbar width matches the timeline viewport even with the
+workspace open, avoiding scroll position feedback/clamping against window width.
+
+Verified: 1,209 frontend tests, lint, TypeScript/Vite and macOS app build. Browser
+checks assert congruent clip/cursor coordinates, overview keyboard and pointer
+navigation, real emulated touch swipes without clip mutations, five viewport
+sizes and the preceding media workspace/recovery regressions. These are browser
+checks, not physical iOS validation. No Apple upload is part of this local update.

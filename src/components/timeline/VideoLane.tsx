@@ -10,7 +10,7 @@ import { snapClipStart } from '../../lib/timelineSnap';
 import { projectHistoryGesture } from '../../stores/projectStore';
 
 export const VIDEO_LANE_HEIGHT = 76;
-export function VideoLane({ width }: { width: number }) {
+export function VideoLane({ width, touchArrange = false }: { width: number; touchArrange?: boolean }) {
   const { t } = useTranslation();
   const video = useProjectStore((s) => s.project.video);
   const zoom = useProjectStore((s) => s.zoomLevel);
@@ -49,13 +49,13 @@ export function VideoLane({ width }: { width: number }) {
     return () => abort.abort();
   }, [sourcesKey]);
   if (!video) return null;
-  const scale=width/total, clips=videoClips(video);
+  const scale=zoom, clips=videoClips(video);
   const start=video.inPoint ?? 0,end=video.outPoint ?? total;
-  return <div className="relative shrink-0 overflow-hidden bg-violet-950/20 border-b border-gray-700" style={{height:VIDEO_LANE_HEIGHT,width}} data-video-overview>
-    <div className="absolute inset-0" onPointerDown={e=>{const rect=e.currentTarget.getBoundingClientRect();const state=useProjectStore.getState();state.setIsPlaying(false);state.setSelection(null);state.setPlayheadPosition(Math.max(0,Math.min(total,(e.clientX-rect.left)/scale)));}}/>
-    {clips.map(clip=><button key={clip.id} className={`absolute top-1 bottom-5 rounded border overflow-hidden text-left ${selected.includes(clip.id)?'border-yellow-300 ring-1 ring-yellow-300':'border-violet-400'}`}
-      style={{left:clip.startTime*scale,width:Math.max(2,clip.duration*scale),minHeight:0,minWidth:0,touchAction:'none',background:'#312e81'}} aria-label={`${t('editing.videoClip')} ${clip.sourceOffset.toFixed(3)} s`} title={clipSource(video,clip)?.name}
-      onPointerDown={e=>{e.stopPropagation();e.currentTarget.setPointerCapture(e.pointerId);const state=useProjectStore.getState();state.setIsPlaying(false);const selectionIds=e.shiftKey?[...new Set([...(state.selection?.segmentIds??[]),...linkedIds(state.project,[clip.id])])]:linkedIds(state.project,[clip.id]);const all=state.project.tracks.flatMap(t=>t.segments).concat([]);const group=[...all,...clips].filter(c=>selectionIds.includes(c.id));state.setSelection({startTime:Math.min(...group.map(c=>c.startTime)),endTime:Math.max(...group.map(c=>c.startTime+c.duration)),segmentIds:selectionIds});projectHistoryGesture.begin();drag.current={id:clip.id,x:e.clientX,start:clip.startTime,kind:(e.target as HTMLElement).dataset.trim as 'left'|'right'||'move',clips,project:state.project};}}
+  return <div className="relative shrink-0 overflow-hidden bg-violet-950/20 border-b border-gray-700" style={{height:VIDEO_LANE_HEIGHT,width}} data-video-track>
+    <div className="absolute inset-0" onPointerDown={e=>{const rect=e.currentTarget.getBoundingClientRect();const state=useProjectStore.getState();state.setIsPlaying(false);state.setSelection(null);state.setPlayheadPosition(Math.max(0,Math.min(total,scroll+(e.clientX-rect.left)/scale)));}}/>
+    {clips.filter(clip=>clip.startTime+clip.duration>scroll&&clip.startTime<scroll+width/scale).map(clip=><button key={clip.id} className={`absolute top-1 bottom-1 rounded border overflow-hidden text-left ${selected.includes(clip.id)?'border-yellow-300 ring-1 ring-yellow-300':'border-violet-400'}`}
+      style={{left:(clip.startTime-scroll)*scale,width:Math.max(2,clip.duration*scale),minHeight:0,minWidth:0,touchAction:touchArrange?'none':'pan-y',background:'#312e81'}} aria-label={`${t('editing.videoClip')} ${clip.sourceOffset.toFixed(3)} s`} title={clipSource(video,clip)?.name}
+      onPointerDown={e=>{e.stopPropagation();e.currentTarget.setPointerCapture(e.pointerId);const state=useProjectStore.getState();state.setIsPlaying(false);const selectionIds=e.shiftKey?[...new Set([...(state.selection?.segmentIds??[]),...linkedIds(state.project,[clip.id])])]:linkedIds(state.project,[clip.id]);const all=state.project.tracks.flatMap(t=>t.segments).concat([]);const group=[...all,...clips].filter(c=>selectionIds.includes(c.id));state.setSelection({startTime:Math.min(...group.map(c=>c.startTime)),endTime:Math.max(...group.map(c=>c.startTime+c.duration)),segmentIds:selectionIds});if(e.pointerType==='touch'&&!touchArrange)return;projectHistoryGesture.begin();drag.current={id:clip.id,x:e.clientX,start:clip.startTime,kind:(e.target as HTMLElement).dataset.trim as 'left'|'right'||'move',clips,project:state.project};}}
       onPointerMove={e=>{const moving=drag.current;if(!moving || moving.id!==clip.id || Math.abs(e.clientX-moving.x)<3)return;const state=useProjectStore.getState();const edges=[0,state.playheadPosition,...(state.project.markers??[]).map(m=>m.time),...moving.clips.filter(c=>c.id!==clip.id).flatMap(c=>[c.startTime,c.startTime+c.duration])];if(moving.kind!=='move'){try{const delta=frameTime((e.clientX-moving.x)/scale,state.project.frameRate??25);useProjectStore.setState({project:trimClips(moving.project,[clip.id],moving.kind,delta,state.sources)});}catch{/* Retain valid trim. */}return;}const time=snapClipStart(moving.start+(e.clientX-moving.x)/scale,clip.duration,edges,scale,state.snapEnabled&&!e.altKey);try{useProjectStore.setState({project:moveClips(moving.project,[clip.id],time-moving.start)});}catch{/* Keep the last valid placement when clips would overlap. */}}}
       onPointerUp={e=>{if(!drag.current)return;e.currentTarget.releasePointerCapture(e.pointerId);drag.current=null;projectHistoryGesture.end();}}
       onPointerCancel={()=>{drag.current=null;projectHistoryGesture.end();}}>
@@ -67,9 +67,7 @@ export function VideoLane({ width }: { width: number }) {
       {clip.fadeIn>0&&<span className="absolute bottom-0 left-0 border-b border-white/70" style={{width:clip.fadeIn*scale,transform:'rotate(-15deg)',transformOrigin:'left'}}/>}
       {clip.fadeOut>0&&<span className="absolute bottom-0 right-0 border-b border-white/70" style={{width:clip.fadeOut*scale,transform:'rotate(15deg)',transformOrigin:'right'}}/>}
     </button>)}
-    <div className="absolute bottom-0 h-4 text-[10px] text-violet-200 pointer-events-none">{t('editing.videoOverview')} · 0–{total.toFixed(2)} s</div>
-    <div className="absolute bottom-0 h-4 border border-sky-300 bg-sky-400/20 pointer-events-none" style={{left:Math.min(width,scroll*scale),width:Math.max(0,Math.min(width-scroll*scale,width/zoom*scale))}} title={t('editing.audioWindow')}/>
-    {[start,end].map((time,i)=><div key={i} className="absolute inset-y-0 border-l border-emerald-400 pointer-events-none" style={{left:time*scale}}><span className="absolute bottom-4 text-[9px] bg-emerald-950 text-emerald-200">{i?'OUT':'IN'}</span></div>)}
-    <PlayheadHandle width={width} overviewDuration={total}/>
+    {[start,end].map((time,i)=><div key={i} className="absolute inset-y-0 border-l border-emerald-400 pointer-events-none" style={{left:(time-scroll)*scale}}><span className="absolute bottom-4 text-[9px] bg-emerald-950 text-emerald-200">{i?'OUT':'IN'}</span></div>)}
+    <PlayheadHandle width={width}/>
   </div>;
 }

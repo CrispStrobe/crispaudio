@@ -704,7 +704,11 @@
     "transition_slidedown": "Push / slide down",
     "transition_whip": "Whip pan",
     "transition_glitch": "Glitch",
-    "transition_pagepeel": "Page peel"
+    "transition_pagepeel": "Page peel",
+    "alignedVideoTrack": "Shared timeline",
+    "projectOverview": "Project overview",
+    "visibleTimelineRange": "Visible timeline range",
+    "overviewHelp": "Drag to browse the timeline; drag the red cursor to seek"
   },
   "workspace": {
     "title": "Workspace",

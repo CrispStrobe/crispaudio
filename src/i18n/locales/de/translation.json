@@ -704,7 +704,11 @@
     "transition_slidedown": "Schieben unten",
     "transition_whip": "Whip Pan",
     "transition_glitch": "Glitch",
-    "transition_pagepeel": "Seitenblättern"
+    "transition_pagepeel": "Seitenblättern",
+    "alignedVideoTrack": "Gemeinsame Zeitleiste",
+    "projectOverview": "Projektübersicht",
+    "visibleTimelineRange": "Sichtbarer Zeitbereich",
+    "overviewHelp": "Ziehen zum Verschieben der Ansicht; roten Cursor zum Springen ziehen"
   },
   "workspace": {
     "title": "Arbeitsbereich",

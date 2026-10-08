@@ -1,4 +1,4 @@
-# Media workspace — local 0.6.0
+# Media workspace — local 0.6.1
 
 CrispAudio edits audio-only projects and audio plus video projects. Open **Workspace**
 (the library icon in the main toolbar) for Media, Clip inspector, Microphone mix,
@@ -10,9 +10,12 @@ optional overlay with a close button. Preview can be hidden or expanded separate
 1. Open `MVI_8251.crispaudio` or use Add video + recordings to analyze and import
    the Canon camera, RODE jacket recording and H6 room recording. Review sync
    confidence, offset, drift and residual before importing. Keep originals.
-2. Choose Fit all. Audio zoom changes waveform detail; picture remains a fitted
-   overview. The two red cursors therefore have different horizontal scales.
-   A thumbnail covers an interval; it is not a frame-accurate filmstrip.
+2. Choose Fit all. Video and audio tracks share the ruler, time zoom, horizontal
+   scroll and red cursor, so synchronized events line up vertically. The viewer
+   above keeps its picture fitted independently of timeline zoom. The separate
+   Project overview below the tracks shows the entire arrangement; drag its blue
+   window to browse or its red cursor to seek. A thumbnail covers an interval;
+   it is not a frame-accurate filmstrip.
 3. Open Workspace → Microphone mix and select the jacket and room tracks.
    Suggest microphone sections measures each track relative to its active level,
    with hysteresis to avoid rapid switching. This is **not speaker recognition**:

@@ -1,3 +1,5 @@
+> Local 0.6.1 puts editable video and audio on the same ruler, zoom and scroll.
+> The whole-project overview is separate; only the playback viewer stays fitted.
 > Local 0.6.0 adds [Media workspace](MEDIA_WORKSPACE.md): multiple picture sources,
 > linked AV edits, ripple/slip/markers, mic automation, transcript exchange and recovery.
 > The single-source limitations in the historical 0.5.0 walkthrough below are superseded.
@@ -27,13 +29,13 @@ is an example, not a required workspace or editing mode.
 Transport and position are immediately above the track controls and ruler.
 Use the position slider or click the ruler/video lane to seek. Seeking within a
 fitted view keeps the view stable; seeking outside a zoomed view brings the
-playhead into view. The bottom **Browse timeline** control, arrow buttons and
+playhead into view. The bottom **Project overview**, arrow buttons and
 scrollbar move the visible window without moving clips or the playhead.
 
 Trackpad horizontal motion and Shift+wheel move left/right. Plain vertical wheel
 motion scrolls track lanes. Ctrl/Cmd+wheel zooms around the pointer. On touch,
 sideways swipes browse in selection mode; enable Move & trim for deliberate clip
-movement. The navigation slider works in either mode.
+movement. The overview window can be dragged in either mode.
 
 **Fit all / reset view** includes the complete picture and the longest audio
 clip, resets horizontal/vertical scrolling, and fits lane heights where possible.
