@@ -1,3 +1,4 @@
+import { validVideoColor } from './videoColor';
 // ---------------------------------------------------------------------------
 // projectFile — JSON projects with linked desktop media or portable embedded
 // 32-bit PCM WAV. Linked interviews retain their original video and aligned WAVs.
@@ -92,6 +93,8 @@ export async function deserializeProject(
   if (doc.version !== 1 && doc.version !== 2 && doc.version !== VERSION) {
     throw new Error('Unsupported CrispAudio project version');
   }
+
+  if (doc.project.video?.clips?.some(clip => !validVideoColor(clip.colorCorrection))) throw new Error('Invalid video colour settings');
 
   const replacements=new Map<string,string>();
   if(locateMissing && doc.project.video && '__TAURI_INTERNALS__' in window){

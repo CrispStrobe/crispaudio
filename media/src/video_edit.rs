@@ -4,8 +4,46 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct VideoColor {
+    pub enabled: bool,
+    pub exposure: f64,
+    pub contrast: f64,
+    pub saturation: f64,
+}
+impl VideoColor {
+    pub(crate) fn valid(&self) -> bool {
+        self.exposure.is_finite()
+            && (-2.0..=2.0).contains(&self.exposure)
+            && self.contrast.is_finite()
+            && (0.0..=2.0).contains(&self.contrast)
+            && self.saturation.is_finite()
+            && (0.0..=2.0).contains(&self.saturation)
+    }
+}
+
+/// RGB ordering matches browser brightness → contrast → saturation.
+fn color_filters(color: Option<&VideoColor>) -> String {
+    let Some(c) = color.filter(|c| c.enabled) else {
+        return String::new();
+    };
+    if c.exposure == 0.0 && c.contrast == 1.0 && c.saturation == 1.0 {
+        return String::new();
+    }
+    let exposure = 2.0_f64.powf(c.exposure);
+    let expression = format!("clip(val*{exposure},0,255)");
+    let contrast = format!("clip((val-127.5)*{}+127.5,0,255)", c.contrast);
+    let s = c.saturation;
+    let r = 0.213 * (1.0 - s);
+    let g = 0.715 * (1.0 - s);
+    let b = 0.072 * (1.0 - s);
+    format!(",format=rgb24,lutrgb=r='{expression}':g='{expression}':b='{expression}',lutrgb=r='{contrast}':g='{contrast}':b='{contrast}',colorchannelmixer=rr={}:rg={g}:rb={b}:gr={r}:gg={}:gb={b}:br={r}:bg={g}:bb={},format=yuv420p",r+s,g+s,b+s)
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VideoClip {
+    #[serde(default)]
+    pub color_correction: Option<VideoColor>,
     pub id: String,
     #[serde(default)]
     pub source_id: Option<String>,
@@ -80,6 +118,9 @@ pub fn validate(edit: &VideoEdit, source_duration: f64) -> Result<Vec<VideoClip>
         ]
         .iter()
         .all(|v| v.is_finite())
+            || c.color_correction
+                .as_ref()
+                .is_some_and(|color| !color.valid())
             || c.start_time < 0.0
             || c.source_offset < 0.0
             || c.duration < 1.0 / 120.0
@@ -280,6 +321,7 @@ pub fn export_edit(
         ]));
         let label = format!("p{input}");
         let mut filters=format!("[{input}:v]fps={fps},scale={}:{}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad={}:{}:(ow-iw)/2:(oh-ih)/2,setsar=1,settb=AVTB,setpts=PTS-STARTPTS,format=yuv420p",width/2*2,height/2*2,width/2*2,height/2*2);
+        filters += &color_filters(c.color_correction.as_ref());
         if c.fade_in > 0.0 {
             filters += &format!(",fade=t=in:st=0:d={}", c.fade_in);
         }
@@ -443,6 +485,7 @@ mod tests {
     use super::*;
     fn clip(start: f64, duration: f64) -> VideoClip {
         VideoClip {
+            color_correction: None,
             id: "c".into(),
             source_id: None,
             start_time: start,
@@ -536,6 +579,117 @@ mod tests {
             (55.0..75.0).contains(&average),
             "midpoint should be 25% white, got {average}"
         );
+        std::fs::remove_dir_all(folder).unwrap();
+    }
+    #[test]
+    fn colour_settings_are_optional_and_strictly_bounded() {
+        let mut picture = clip(0.0, 2.0);
+        let mut edit = VideoEdit {
+            path: "unused".into(),
+            sources: vec![],
+            frame_rate: None,
+            duration: None,
+            clips: vec![picture.clone()],
+        };
+        assert!(validate(&edit, 3.0).is_ok());
+        picture.color_correction = Some(VideoColor {
+            enabled: true,
+            exposure: 1.0,
+            contrast: 0.75,
+            saturation: 0.0,
+        });
+        edit.clips[0] = picture.clone();
+        assert!(validate(&edit, 3.0).is_ok());
+        assert!(color_filters(picture.color_correction.as_ref()).contains("colorchannelmixer"));
+        edit.clips[0].color_correction.as_mut().unwrap().exposure = 3.0;
+        assert!(validate(&edit, 3.0).is_err());
+        edit.clips[0].color_correction.as_mut().unwrap().enabled = false;
+        assert!(validate(&edit, 3.0).is_err());
+    }
+
+    #[test]
+    #[ignore = "Requires FFmpeg; run explicitly on desktop"]
+    fn colour_export_matches_rgb_reference_and_bypass() {
+        use std::process::Command;
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let folder =
+            std::env::temp_dir().join(format!("crispaudio-colour-{}-{stamp}", std::process::id()));
+        std::fs::create_dir_all(&folder).unwrap();
+        let source = folder.join("source.mp4");
+        assert!(Command::new("ffmpeg")
+            .args([
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=c=0x804020:s=128x72:r=25:d=1",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p"
+            ])
+            .arg(&source)
+            .status()
+            .unwrap()
+            .success());
+        let pixels = |path: &std::path::Path| {
+            let frame = Command::new("ffmpeg")
+                .args(["-v", "error", "-i"])
+                .arg(path)
+                .args([
+                    "-frames:v",
+                    "1",
+                    "-pix_fmt",
+                    "rgb24",
+                    "-f",
+                    "rawvideo",
+                    "pipe:1",
+                ])
+                .output()
+                .unwrap();
+            assert!(frame.status.success());
+            assert_eq!(frame.stdout.len(), 128 * 72 * 3);
+            let mut rgb = [0.0; 3];
+            for pixel in frame.stdout.chunks_exact(3) {
+                for channel in 0..3 {
+                    rgb[channel] += pixel[channel] as f64 / (128.0 * 72.0);
+                }
+            }
+            rgb
+        };
+        let original = pixels(&source);
+        let mut picture = clip(0.0, 1.0);
+        picture.color_correction = Some(VideoColor {
+            enabled: true,
+            exposure: 1.0,
+            contrast: 0.75,
+            saturation: 0.0,
+        });
+        let mut edit = VideoEdit {
+            path: source.to_string_lossy().into(),
+            sources: vec![],
+            frame_rate: Some(25.0),
+            duration: Some(1.0),
+            clips: vec![picture],
+        };
+        let graded = folder.join("graded.mp4");
+        export_edit(&edit, graded.to_str().unwrap(), None, 0.0, 1.0, false).unwrap();
+        let transformed = original.map(|v| ((v * 2.0).clamp(0.0, 255.0) - 127.5) * 0.75 + 127.5);
+        let expected = 0.213 * transformed[0] + 0.715 * transformed[1] + 0.072 * transformed[2];
+        let actual = pixels(&graded);
+        assert!(
+            actual.iter().all(|value| (value - expected).abs() < 8.0),
+            "expected {expected}, got {actual:?}"
+        );
+        edit.clips[0].color_correction.as_mut().unwrap().enabled = false;
+        let bypass = folder.join("bypass.mp4");
+        export_edit(&edit, bypass.to_str().unwrap(), None, 0.0, 1.0, false).unwrap();
+        let bypassed = pixels(&bypass);
+        assert!((0..3).all(|channel| (bypassed[channel] - original[channel]).abs() < 5.0));
         std::fs::remove_dir_all(folder).unwrap();
     }
 }

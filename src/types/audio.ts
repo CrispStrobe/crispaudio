@@ -105,7 +105,10 @@ export interface ClipboardState {
   sourceIds: string[];
 }
 
+export interface VideoColor { enabled: boolean; exposure: number; contrast: number; saturation: number }
+
 export interface VideoClip {
+  colorCorrection?: VideoColor;
   sourceId?: string;
   linkGroup?: string;
   id: string;

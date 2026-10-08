@@ -1,3 +1,4 @@
+import { videoColorFilter } from '../../lib/videoColor';
 import { createPortal } from 'react-dom';
 import { syncVideoElement } from '../../lib/videoTransport';
 import { ToolButton } from '../common/ToolButton';
@@ -47,12 +48,12 @@ export function VideoViewer({children}: {children?:ReactNode}) {
       const transition=incoming&&outgoing?transitionStyle(incoming,state.playheadPosition):null;
       if(frameRef.current)frameRef.current.style.backgroundColor=transition?.background??'black';
       const custom=incoming&&outgoing&&['whip','glitch','pagepeel','pixelize'].includes(incoming.transition);
-      if(effectRef.current){effectRef.current.style.display=custom?'':'none';if(custom&&ref.current&&previousRef.current)drawVideoTransition(effectRef.current,previousRef.current,ref.current,incoming,state.playheadPosition);}
+      if(effectRef.current){effectRef.current.style.display=custom?'':'none';if(custom&&ref.current&&previousRef.current)drawVideoTransition(effectRef.current,previousRef.current,ref.current,incoming,state.playheadPosition,outgoing);}
       if(noticeRef.current)noticeRef.current.style.display=transition?.approximate?'':'none';
       for(const [element,clip,style] of [[previousRef.current,outgoing,transition?.outgoing],[ref.current,incoming,transition?.incoming]] as const){
         if(!element)continue;
         const opacity=clip?clipOpacity(clip,state.playheadPosition):0;
-        element.style.opacity=String(opacity*Number(style?.opacity??1));element.style.transform=String(style?.transform??'none');element.style.clipPath=String(style?.clipPath??'none');element.style.filter=String(style?.filter??'none');
+        element.style.opacity=String(opacity*Number(style?.opacity??1));element.style.transform=String(style?.transform??'none');element.style.clipPath=String(style?.clipPath??'none');element.style.filter=[videoColorFilter(clip?.colorCorrection),String(style?.filter??'')].filter(Boolean).join(' ')||'none';
         if(!clip||element.readyState<1||element.error){element.pause();continue;}
         const target=Math.max(0,Math.min(element.duration||Infinity,clip.sourceOffset+state.playheadPosition-clip.startTime));
         syncVideoElement(element,target,state.isPlaying,setError);
@@ -116,8 +117,8 @@ export function VideoViewer({children}: {children?:ReactNode}) {
     }} className={expanded?'fixed inset-0 z-[70] bg-black p-4 flex flex-col gap-3':'video-viewer-compact flex flex-wrap gap-3 items-start'}>
       <div ref={frameRef} data-video-frame className={expanded?'relative bg-black w-full flex-1 min-h-0 overflow-hidden':'relative bg-black rounded-xl w-[140px] sm:w-[360px] max-w-full max-h-[18dvh] aspect-video overflow-hidden'}>
         {url&&<>
-        <video key={`${previousPath}-${previousUrl}-${attempt}-previous`} ref={previousRef} src={previousUrl || undefined} muted playsInline preload="metadata" aria-hidden="true" className="absolute inset-0 w-full h-full object-contain" onError={()=>setError(t('interview.previewFailed'))}/>
-        <video key={`${resolved?.path}-${url}-${attempt}`} ref={ref} data-timeline-preview src={url} muted playsInline preload="auto" aria-label={t('interview.preview')} className="absolute inset-0 w-full h-full object-contain" onCanPlay={()=>setError('')} onError={()=>setError(t('interview.previewFailed'))}/>
+        <video crossOrigin="anonymous" key={`${previousPath}-${previousUrl}-${attempt}-previous`} ref={previousRef} src={previousUrl || undefined} muted playsInline preload="metadata" aria-hidden="true" className="absolute inset-0 w-full h-full object-contain" onError={()=>setError(t('interview.previewFailed'))}/>
+        <video crossOrigin="anonymous" key={`${resolved?.path}-${url}-${attempt}`} ref={ref} data-timeline-preview src={url} muted playsInline preload="auto" aria-label={t('interview.preview')} className="absolute inset-0 w-full h-full object-contain" onCanPlay={()=>setError('')} onError={()=>setError(t('interview.previewFailed'))}/>
         </>}
         <canvas ref={effectRef} width={320} height={180} className="absolute inset-0 w-full h-full object-contain pointer-events-none" style={{display:'none'}}/>
         <span ref={noticeRef} className="absolute bottom-0 left-0 text-[10px] text-white bg-black/80" style={{display:'none'}}>{t('editing.approximatePreview')}</span>

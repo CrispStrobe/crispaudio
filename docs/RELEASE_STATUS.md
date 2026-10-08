@@ -394,3 +394,22 @@ WebKit recovery were backed up under private validation
 `ux/native-autosave-before-0610.json` and `ux/recovery-before-0610/WebKit`.
 No Apple upload or release tag was triggered. Native CLI project rendering still
 rejects unsupported FX; GUI export is required for full Web Audio racks.
+
+## Local 0.6.11 verification
+
+Installed and opened `~/Applications/CrispAudio-local.app` version 0.6.11 on
+October 8, 2026, preserving and backing up the native WebKit data and autosave.
+Ad-hoc signature verification passed. No release tag or Apple upload was made.
+
+- Frontend: 87 suites / 1,274 tests passed; lint and TypeScript/Vite build passed.
+- Native desktop command tests: 18 passed.
+- Shared media: 15 tests passed, two FFmpeg integration tests opt-in. The colour
+  export/bypass integration test was explicitly run and passed with real FFmpeg.
+- WebKit browser: actual video decoding and anonymous CORS canvas pixel access,
+  colour inspector controls, CSS preview, exact custom-transition reference
+  pixels, bypass/reset, desktop and phone layout bounds passed. WebKit reported
+  no Canvas2D filter support; the explicit RGB path still passed.
+- The native app bundle built successfully. Device testing on iPhone/iPad and
+  Apple distribution remain separate release gates.
+
+See [picture colour correction](VIDEO_COLOR.md) for GUI and CLI usage.

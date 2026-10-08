@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.10]
+## [Unreleased — local version 0.6.11]
+
+- Add per-picture-clip exposure, contrast and saturation, with bypass, reset and
+  apply-to-selected-picture controls. Slider dragging creates one Undo step.
+- Save colour settings in projects and apply them before fades/transitions in
+  both preview and native FFmpeg export. Preserve each source's appearance in
+  custom canvas transitions, including WebKit without Canvas filter support.
+- Add a validated CLI `color` recipe operation. Colour-only recipes preserve
+  linked audio, clip timing, export ranges and explicit canvas duration.
+
+## [Local version 0.6.10]
 
 - Restore FFT frequency bars alongside the spectrogram in SFX and Voice. Make
   presets, waveforms and analysis collapsible; spectrum/spectrogram start closed.

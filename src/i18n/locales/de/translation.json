@@ -926,5 +926,16 @@
     "out": "Ausblenden",
     "both": "Beide Enden blenden",
     "clear": "Blenden entfernen"
+  },
+  "videoColor": {
+    "title": "Farbkorrektur",
+    "exposure": "Belichtung",
+    "contrast": "Kontrast",
+    "saturation": "Sättigung",
+    "reset": "Farbkorrektur zurücksetzen",
+    "bypass": "Farbkorrektur umgehen",
+    "enable": "Farbkorrektur aktivieren",
+    "applySelected": "Farbe auf ausgewählte Videoclips anwenden",
+    "help": "Wirkt vor Blenden und Übergängen. Vorschau und Export nutzen dieselben Werte; Farbmanagement und Kodierung können kleine sichtbare Unterschiede verursachen."
   }
 }

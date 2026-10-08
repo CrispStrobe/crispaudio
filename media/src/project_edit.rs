@@ -128,6 +128,39 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             .collect();
         let operation = op["op"].as_str().ok_or("Missing operation")?;
         match operation {
+            "color" => {
+                let settings = op
+                    .get("settings")
+                    .ok_or("Missing colour settings; use null to reset")?;
+                if !settings.is_null() {
+                    let color: crate::video_edit::VideoColor =
+                        serde_json::from_value(settings.clone()).map_err(|e| e.to_string())?;
+                    if !color.valid() {
+                        return Err("Invalid video colour settings".into());
+                    }
+                }
+                let mut pictures: Vec<Value> = all
+                    .iter()
+                    .filter(|c| c.get("trackId").is_none())
+                    .cloned()
+                    .collect();
+                if !pictures
+                    .iter()
+                    .any(|c| requested.contains(c["id"].as_str().unwrap_or("")))
+                {
+                    return Err("No selected picture clips".into());
+                }
+                for picture in &mut pictures {
+                    if requested.contains(picture["id"].as_str().unwrap_or("")) {
+                        if settings.is_null() {
+                            picture.as_object_mut().unwrap().remove("colorCorrection");
+                        } else {
+                            picture["colorCorrection"] = settings.clone();
+                        }
+                    }
+                }
+                out["project"]["video"]["clips"] = json!(pictures);
+            }
             "move" | "slip" | "trim" => {
                 if chosen.is_empty() {
                     return Err("No selected clips".into());
@@ -361,13 +394,15 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             _ => return Err(format!("Unknown recipe operation: {operation}")),
         }
     }
-    out["project"]["duration"] = json!(clips(&out["project"])
-        .iter()
-        .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
-        .fold(
-            out["project"]["minimumDuration"].as_f64().unwrap_or(0.0),
-            f64::max
-        ));
+    if operations.iter().any(|op| op["op"] != "color") {
+        out["project"]["duration"] = json!(clips(&out["project"])
+            .iter()
+            .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
+            .fold(
+                out["project"]["minimumDuration"].as_f64().unwrap_or(0.0),
+                f64::max
+            ));
+    }
     Ok(out)
 }
 fn curve(progress: &str, kind: &str) -> String {
@@ -670,5 +705,39 @@ mod tests {
         assert_eq!(c[1]["sourceOffset"], 5.0);
         assert_eq!(c[1]["startTime"], 2.0);
         assert_eq!(d["project"]["duration"], 4.0);
+    }
+    #[test]
+    fn colour_recipe_preserves_linked_audio_range_and_canvas() {
+        let mut original = doc();
+        original["project"]["duration"] = json!(20);
+        original["project"]["video"]["inPoint"] = json!(2);
+        original["project"]["video"]["outPoint"] = json!(4);
+        let settings = json!({"enabled":true,"exposure":0.5,"contrast":1.1,"saturation":0.8});
+        let edited = apply(
+            &original,
+            &json!([{"op":"color","ids":["v"],"settings":settings}]),
+        )
+        .unwrap();
+        assert_eq!(edited["project"]["tracks"], original["project"]["tracks"]);
+        assert_eq!(edited["project"]["duration"], 20);
+        assert_eq!(edited["project"]["video"]["inPoint"], 2);
+        assert_eq!(
+            edited["project"]["video"]["clips"][0]["colorCorrection"],
+            settings
+        );
+        let reset = apply(
+            &edited,
+            &json!([{"op":"color","ids":["v"],"settings":null}]),
+        )
+        .unwrap();
+        assert!(reset["project"]["video"]["clips"][0]
+            .get("colorCorrection")
+            .is_none());
+        assert!(apply(
+            &original,
+            &json!([{"op":"color","ids":["a"],"settings":settings}])
+        )
+        .is_err());
+        assert!(apply(&original,&json!([{"op":"color","ids":["v"],"settings":{"enabled":true,"exposure":3,"contrast":1,"saturation":1}}])).is_err());
     }
 }

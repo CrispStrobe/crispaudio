@@ -1,3 +1,4 @@
+import { validVideoColor } from './videoColor';
 import type { TimelineProject, VideoClip, VideoSource } from '../types/audio';
 export const VIDEO_TRANSITIONS = ['cut', 'fade', 'fadeblack', 'fadewhite', 'wipeleft', 'wiperight', 'wipeup', 'wipedown', 'slideleft', 'slideright', 'slideup', 'slidedown', 'hblur', 'zoomin', 'pixelize', 'whip', 'glitch', 'pagepeel'] as const;
 export type VideoTransition = typeof VIDEO_TRANSITIONS[number];
@@ -15,6 +16,7 @@ export function validateVideoClips(clips: VideoClip[], sourceDuration: number, s
   const sorted = [...clips].sort((a,b) => a.startTime-b.startTime);
   for (let i=0; i<sorted.length; i++) {
     const clip=sorted[i], previous=sorted[i-1];
+    if (!validVideoColor(clip.colorCorrection)) return 'Invalid video colour settings';
     if (![clip.startTime,clip.duration,clip.sourceOffset,clip.fadeIn,clip.fadeOut,clip.transitionDuration].every(Number.isFinite) || clip.startTime<0 || clip.sourceOffset<0 || clip.duration<1/120 || clip.sourceOffset+clip.duration>(clip.sourceId ? sources?.find(s=>s.id===clip.sourceId)?.duration ?? -1 : sourceDuration)+1e-6 || clip.transitionDuration<0 || clip.fadeIn<0 || clip.fadeOut<0 || clip.fadeIn>clip.duration || clip.fadeOut>clip.duration || !VIDEO_TRANSITIONS.includes(clip.transition)) return 'Invalid video clip timing';
     if (previous) {
       const overlap=previous.startTime+previous.duration-clip.startTime;

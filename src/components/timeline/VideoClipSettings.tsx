@@ -1,3 +1,4 @@
+import { VideoColorControls } from './VideoColorControls';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
@@ -57,6 +58,7 @@ export function VideoClipSettings({id}: {id:string}) {
     <label className="flex items-center justify-between gap-3 text-sm text-gray-200">{t('editing.transitionDuration')}
       <NumberField key={`${id}-transition`} value={clip.transitionDuration} min={1/fps} step={1/fps} disabled={clip.transition==='cut'||!!clip.linkGroup} label={t('editing.transitionDuration')} onCommit={value=>transition(clip.transition,frameTime(value,fps))} onCancel={()=>setError('')}/>
     </label>
+    <VideoColorControls id={id}/>
     <p className="text-xs text-gray-400">{t('editing.transitionTiming')}</p>
     <p className="text-xs text-gray-400">{t('editing.advancedTransitions')}</p>
     {error&&<p role="alert" className="text-amber-300 text-sm">{error}</p>}

@@ -1,0 +1,32 @@
+import { act,render,fireEvent,screen,cleanup } from '@testing-library/react';
+import { afterEach,beforeEach,it,expect,vi } from 'vitest';
+import { VideoColorControls } from '../../../src/components/timeline/VideoColorControls';
+import { useProjectStore } from '../../../src/stores/projectStore';
+import type { VideoClip } from '../../../src/types/audio';
+vi.mock('react-i18next',()=>({useTranslation:()=>({t:(key:string)=>key})}));
+beforeEach(()=>{
+ const state=useProjectStore.getInitialState();
+ const clip: VideoClip={id:'a',startTime:0,sourceOffset:0,duration:2,fadeIn:0,fadeOut:0,transition:'cut',transitionDuration:0};
+ useProjectStore.setState({...state,project:{...state.project,video:{path:'/camera.mp4',duration:4,session:{} as never,clips:[clip,{...clip,id:'b',startTime:2}]}},selection:{startTime:0,endTime:4,segmentIds:['a','b']}});
+ useProjectStore.temporal.getState().clear();
+});
+afterEach(cleanup);
+it('coalesces a slider gesture, applies to selected pictures, bypasses and resets',()=>{
+ render(<VideoColorControls id="a"/>);
+ const slider=screen.getByRole('slider',{name:'videoColor.exposure'});
+ fireEvent.pointerDown(slider);
+ fireEvent.change(slider,{target:{value:'.5'}});fireEvent.change(slider,{target:{value:'1'}});
+ fireEvent.pointerUp(window);
+ expect(useProjectStore.getState().project.video!.clips![0].colorCorrection!.exposure).toBe(1);
+ act(()=>useProjectStore.temporal.getState().undo());
+ expect(useProjectStore.getState().project.video!.clips![0].colorCorrection).toBeUndefined();
+ act(()=>useProjectStore.temporal.getState().redo());
+ fireEvent.click(screen.getByRole('button',{name:'videoColor.applySelected'}));
+ expect(useProjectStore.getState().project.video!.clips![1].colorCorrection!.exposure).toBe(1);
+ fireEvent.click(screen.getByRole('button',{name:'videoColor.bypass'}));
+ expect(screen.getByRole('slider',{name:'videoColor.exposure'})).toBeDisabled();
+ expect(useProjectStore.getState().project.video!.clips![0].colorCorrection!.exposure).toBe(1);
+ fireEvent.click(screen.getByRole('button',{name:'videoColor.reset'}));
+ expect(useProjectStore.getState().project.video!.clips![0].colorCorrection).toBeUndefined();
+ expect(useProjectStore.getState().project.video!.clips![1].colorCorrection!.exposure).toBe(1);
+});

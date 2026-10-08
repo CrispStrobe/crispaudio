@@ -1,4 +1,4 @@
-# Fades and effects — local 0.6.10
+# Fades and effects — local 0.6.11
 
 ## Fade selected audio or video
 
@@ -50,6 +50,14 @@ Native CLI `render-project` still supports only its documented filters and rejec
 unsupported processing; it must not silently drop a rack. `edit-video` uses the
 same native picture fade validation/export as the GUI.
 
+## Picture colour correction
+
+Select a picture clip and open Clip settings → Colour correction. Adjust exposure,
+contrast and saturation; use power to compare with the original, reset to clear
+settings, or copy to all selected picture clips. Linked audio is unaffected.
+Colour runs before picture fades/transitions in preview and native export.
+See [colour workflow and CLI recipes](VIDEO_COLOR.md).
+
 ## Analysis views and next editor work
 
 SFX and Voice each have collapsible presets, parallel waveforms, an FFT frequency
@@ -60,6 +68,6 @@ colours use a fixed dBFS scale. See [SFX and Voice workflow](SFX_WORKFLOW.md).
 
 This completes the shared effects-rack and fade-editing workflow. Further DAW/
 video milestones include audio sends/returns, live effect automation, recording
-onto timeline lanes, stacked video compositing and colour correction. Existing
+onto timeline lanes, stacked video compositing and multicam switching. Existing
 single-picture-lane multi-source editing is not a stacked compositor or multicam
 switcher. The interface and tests should not imply those features already exist.

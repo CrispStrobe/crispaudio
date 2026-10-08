@@ -926,5 +926,16 @@
     "out": "Fade out",
     "both": "Fade both ends",
     "clear": "Remove fades"
+  },
+  "videoColor": {
+    "title": "Colour correction",
+    "exposure": "Exposure",
+    "contrast": "Contrast",
+    "saturation": "Saturation",
+    "reset": "Reset colour correction",
+    "bypass": "Bypass colour correction",
+    "enable": "Enable colour correction",
+    "applySelected": "Apply colour to selected picture clips",
+    "help": "Applied before fades and transitions. Preview and export use the same settings; colour management and encoding may cause small visual differences."
   }
 }
