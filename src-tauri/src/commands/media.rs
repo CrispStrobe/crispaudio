@@ -107,3 +107,8 @@ mod sync_tests {
         assert!(decode_sync_samples(&bytes).is_err());
     }
 }
+
+#[tauri::command]
+pub async fn export_video_edit(edit: media::video_edit::VideoEdit, output:String, mix:Option<String>, start:f64, end:f64) -> Result<(),String> {
+    tauri::async_runtime::spawn_blocking(move || media::video_edit::export_edit(&edit,&output,mix.as_deref(),start,end,true)).await.map_err(|e|e.to_string())?
+}

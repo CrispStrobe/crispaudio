@@ -34,6 +34,7 @@ pub fn run() {
             media::analyze_media,
             media::align_media,
             media::export_media,
+            media::export_video_edit,
             media::prepare_video_preview,
             media::estimate_track_sync,
         ])

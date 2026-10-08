@@ -19,7 +19,7 @@ import { useTimeline } from '../../hooks/useTimeline';
 import { sourceDisplayGain, waveformBounds } from '../../lib/waveformView';
 import { haptic } from '../../lib/native';
 import { useTimelineCanvasInvalidation } from './useTimelineCanvasInvalidation';
-import { useTimelineCanvasPlayhead } from './useTimelineCanvasPlayhead';
+import { PlayheadHandle } from './PlayheadHandle';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -83,7 +83,6 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 }) => {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const playheadRef = useTimelineCanvasPlayhead(width);
   const containerRef = useRef<HTMLDivElement>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -725,11 +724,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         onContextMenu={handleContextMenu}
       />
 
-      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div ref={playheadRef} data-timeline-playhead className="absolute top-0 bottom-0 w-[1.5px] bg-red-500">
-          <div className="absolute top-0 -left-1 w-2 h-2 rounded-full bg-red-500" />
-        </div>
-      </div>
+      <PlayheadHandle width={width} />
 
       {/* Context menu */}
       {contextMenu.visible && (

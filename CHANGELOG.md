@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.4.1]
+## [Unreleased — local version 0.5.0]
+
+- Draggable red playhead; audio zoom leaves a fitted picture overview with an audio-window indicator.
+- Magnetic clip-edge snapping, exact positions, sample/ms keyboard and touch nudges.
+- Parameterized track envelopes, with corrected curved/mid-fade resume behavior for segments.
+- Non-destructive single-source video clips: split, move, source trim, delete/gaps, black fades and incoming transitions.
+- Desktop/CLI edit-video compositor: dissolves, black/white dips, directional wipes/pushes, blur, zoom, pixelize, whip, glitch and shaded 2D page peel. Expensive interactive previews are labelled approximations.
+- Timeline-first navigation, compact labelled icons with non-activating touch long press, and Voice view round trips to the original clip.
+- Full project persistence includes picture edits. Video and sound remain independently editable; no ripple, multicam or multiple source videos.
+
+## [Local version 0.4.1]
 
 ### Added
 - Generic audio/video workflow with optional viewer, standalone camera import,

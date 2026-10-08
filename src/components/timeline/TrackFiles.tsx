@@ -1,3 +1,5 @@
+import { ToolButton } from '../common/ToolButton';
+import { FolderInput, Archive } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
@@ -32,8 +34,8 @@ export function TrackFiles({ context, onError }: { context: () => BaseAudioConte
     } catch(err) {onError(String(err));} finally {setBusy(false);}
   };
   return <>
-    <button className="timeline-tool" disabled={busy} onClick={()=>void load()}>{t('editor.loadTracks')}</button>
-    <button className="timeline-tool" disabled={busy || !tracks.length} onClick={()=>{setSelected(tracks.map(track=>track.id));setShow(true);}}>{t('editor.saveTracks')}</button>
+    <ToolButton icon={FolderInput} label={t('editor.loadTracks')} disabled={busy} onClick={()=>void load()}/>
+    <ToolButton icon={Archive} label={t('editor.saveTracks')} disabled={busy || !tracks.length} onClick={()=>{setSelected(tracks.map(track=>track.id));setShow(true);}}/>
     <Modal isOpen={show} onClose={()=>setShow(false)} title={t('editor.saveTracks')}>
       <p className="text-sm text-gray-300 mb-3">{t('editor.trackFilesHelp')}</p>
       {tracks.map(track=><label key={track.id} className="flex items-center gap-3 min-h-11 text-gray-200"><input type="checkbox" checked={selected.includes(track.id)} onChange={e=>setSelected(old=>e.target.checked?[...old,track.id]:old.filter(id=>id!==track.id))}/>{track.name}</label>)}

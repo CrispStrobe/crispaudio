@@ -27,37 +27,17 @@ beforeEach(resetStore);
 // openVoiceEffects
 // ---------------------------------------------------------------------------
 
-describe('uiStore — openVoiceEffects', () => {
-  it('sets activeModal to "voiceEffects"', () => {
-    useUIStore.getState().openVoiceEffects('seg-123');
-    expect(useUIStore.getState().activeModal).toBe('voiceEffects');
-  });
-
-  it('stores the target segment ID', () => {
-    useUIStore.getState().openVoiceEffects('seg-abc');
-    expect(useUIStore.getState().voiceEffectsTargetSegmentId).toBe('seg-abc');
-  });
-
-  it('closeModal clears segment ID', () => {
-    useUIStore.getState().openVoiceEffects('seg-123');
-    useUIStore.getState().closeModal();
+describe('uiStore — voice navigation', () => {
+  it('ignores a missing timeline clip rather than opening an empty modal', () => {
+    useUIStore.getState().openVoiceEffects('missing');
     expect(useUIStore.getState().activeModal).toBeNull();
     expect(useUIStore.getState().voiceEffectsTargetSegmentId).toBeNull();
   });
-
-  it('opening a different modal preserves and then clears segment ID on close', () => {
-    useUIStore.getState().openVoiceEffects('seg-xyz');
+  it('closing Settings preserves an ongoing Voice editing target', () => {
+    useUIStore.setState({voiceEffectsTargetSegmentId:'editing'});
     useUIStore.getState().openModal('settings');
-    expect(useUIStore.getState().activeModal).toBe('settings');
-    // voiceEffectsTargetSegmentId is still set (not cleared by openModal)
     useUIStore.getState().closeModal();
-    expect(useUIStore.getState().voiceEffectsTargetSegmentId).toBeNull();
-  });
-
-  it('does not change activePanel', () => {
-    useUIStore.getState().setActivePanel('timeline');
-    useUIStore.getState().openVoiceEffects('seg-123');
-    expect(useUIStore.getState().activePanel).toBe('timeline');
+    expect(useUIStore.getState().voiceEffectsTargetSegmentId).toBe('editing');
   });
 });
 

@@ -1,4 +1,5 @@
 //! Internal CrispAudio desktop media operations. No GUI or ASR dependency.
+pub mod video_edit;
 use rustfft::{num_complex::Complex, FftPlanner};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -122,11 +123,13 @@ pub fn probe(path: &str) -> Result<MediaInfo> {
     )?;
     let value: serde_json::Value = serde_json::from_slice(&out).map_err(|e| e.to_string())?;
     let streams = value["streams"].as_array().ok_or("No media streams")?;
-    let audio = streams
-        .iter()
-        .find(|s| s["codec_type"] == "audio")
-        .ok_or("Media has no audio stream")?;
     let has_video = streams.iter().any(|s| s["codec_type"] == "video");
+    let audio = streams.iter().find(|s| s["codec_type"] == "audio");
+    if audio.is_none() && !has_video {
+        return Err("Media has no audio or video stream".into());
+    }
+    let empty = serde_json::Value::Null;
+    let audio = audio.unwrap_or(&empty);
     let duration = value["format"]["duration"]
         .as_str()
         .and_then(|s| s.parse::<f64>().ok())
@@ -138,11 +141,11 @@ pub fn probe(path: &str) -> Result<MediaInfo> {
         path,
         duration,
         has_video,
-        channels: audio["channels"].as_u64().unwrap_or(1) as usize,
+        channels: audio["channels"].as_u64().unwrap_or(0) as usize,
         sample_rate: audio["sample_rate"]
             .as_str()
             .and_then(|s| s.parse().ok())
-            .unwrap_or(48000),
+            .unwrap_or(0),
     })
 }
 
@@ -360,7 +363,7 @@ pub fn estimate(reference: &[f32], source: &[f32], sample_rate: usize) -> Result
 
 pub fn analyze(video: &str, audio: &[String]) -> Result<Session> {
     let video = probe(video)?;
-    if !video.has_video {
+    if !video.has_video || video.channels == 0 {
         return Err("Reference must contain video and camera audio".into());
     }
     let reference = if audio.is_empty() {

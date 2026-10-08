@@ -158,7 +158,7 @@ export const TransportControls = React.memo(function TransportControls({viewport
         <PositionDisplay />
       </div>
 
-      <div className="flex-1 min-w-24"><TimelineScrubber width={viewportWidth} /></div>
+      <div className="timeline-scrubber flex-1 min-w-24"><TimelineScrubber width={viewportWidth} /></div>
 
       {/* Duration */}
       <div className="flex items-center gap-2">

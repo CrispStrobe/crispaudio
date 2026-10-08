@@ -46,6 +46,6 @@ describe('interview touch workflow', () => {
     render(<TimelineActions touchArrange={false} onTouchArrange={onTouchArrange} />);
     fireEvent.click(screen.getByText('timeline.touchArrangeOff'));
     expect(onTouchArrange).toHaveBeenCalledOnce();
-    expect(screen.getByText('timeline.splitAtPlayhead')).toBeDisabled();
+    expect(screen.getByRole('button',{name:'timeline.splitAtPlayhead'})).toBeDisabled();
   });
 });

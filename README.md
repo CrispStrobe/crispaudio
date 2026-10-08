@@ -2,7 +2,8 @@
 
 Desktop interview synchronization, external microphone alignment, video preview
 and edited-audio video export are available in the Timeline and standalone CLI.
-Local version 0.4.1 adds a generic audio/video workflow: optional viewer, track
+Local version 0.5.0 adds editable picture clips, transitions, a fitted video overview,
+precise nudging, magnetic edges and track fades to the generic audio/video workflow: optional viewer, track
 auto-sync, separate project/track files, adjacent transport and visible scrolling.
 See [the timeline workflow](docs/TIMELINE_WORKFLOW.md). Version 0.4.0 added a shared video filmstrip, alignment comparison, clearer
 quiet waveforms, a larger viewer, and in/out section exports.

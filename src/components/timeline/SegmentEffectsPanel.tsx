@@ -307,6 +307,8 @@ export const SegmentEffectsPanel: React.FC<{ onClose?: () => void }> = ({ onClos
           />
         </div>
 
+        <label className="flex items-center justify-between gap-3 text-sm text-gray-300">{t('editing.startTime')}<input key={`${seg.id}-${seg.startTime}`} type="number" min={0} step={.001} defaultValue={seg.startTime} aria-label={t('editing.startTime')} className="bg-gray-800 rounded p-2 w-32" onBlur={e=>{const value=Number(e.currentTarget.value);if(Number.isFinite(value)&&value>=0)store.moveSegment(seg.id,value);}} onKeyDown={e=>{if(e.key==='Enter')e.currentTarget.blur();}}/></label>
+        <p className="text-xs text-gray-400">{t('editing.precisionHelp')}</p>
         {/* Color */}
         <div className="space-y-1">
           <label className="text-xs font-medium text-gray-400">{t('timeline.color')}</label>

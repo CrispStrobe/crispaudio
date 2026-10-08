@@ -15,9 +15,9 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { panel: 'sfx', icon: Music2, labelKey: 'nav.sfx' },
-  { panel: 'voice', icon: Mic, labelKey: 'nav.voice' },
   { panel: 'timeline', icon: LayoutList, labelKey: 'nav.timeline' },
+  { panel: 'voice', icon: Mic, labelKey: 'nav.voice' },
+  { panel: 'sfx', icon: Music2, labelKey: 'nav.sfx' },
 ];
 
 interface SidebarProps {
@@ -47,24 +47,6 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         borderRight: '1px solid var(--border-subtle)',
       }}
     >
-      {/* Logo mark */}
-      <div
-        className="flex items-center justify-center mb-5"
-        style={{ width: 36, height: 36 }}
-        title="CrispAudio"
-      >
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" role="img" aria-label="CrispAudio">
-          <circle cx="12" cy="12" r="10" fill="#3b82f6" opacity="0.15" />
-          <path
-            d="M7 12 Q9 8 12 12 Q15 16 17 12"
-            stroke="#3b82f6"
-            strokeWidth="2"
-            strokeLinecap="round"
-            fill="none"
-          />
-        </svg>
-      </div>
-
       {/* Close button — mobile only */}
       {onClose && (
         <button

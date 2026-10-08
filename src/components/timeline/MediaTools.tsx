@@ -1,3 +1,6 @@
+import { ToolButton } from '../common/ToolButton';
+import { Film, Clapperboard } from 'lucide-react';
+import { videoClips, videoTimelineDuration, validateVideoClips } from '../../lib/videoEditing';
 import { timelineDuration } from '../../lib/timelineView';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -103,22 +106,24 @@ export function MediaTools({ engine }: Props) {
     const output = await save({ defaultPath: `${state.project.name}.edited.mp4`, filters: [{ name: 'MP4', extensions: ['mp4'] }] });
     if (!output) return;
     const start = state.project.video.inPoint ?? 0;
-    const end = state.project.video.outPoint ?? state.project.video.duration;
+    const end = state.project.video.outPoint ?? videoTimelineDuration(state.project.video);
+    if(state.project.video.clips){const error=validateVideoClips(videoClips(state.project.video),state.project.video.duration);if(error)throw new Error(error);}
     const rendered = await engine.current.renderToBuffer(state.project, start, end);
     const wav = await encodeAudioBufferWav(rendered, 24);
     const mix = await invoke<string>('stage_share_file', new Uint8Array(await wav.arrayBuffer()), {
       headers: { 'x-file-name': `video-mix-${crypto.randomUUID()}.wav` },
     });
     try {
-      await invoke('export_media', { session: state.project.video.session, output, mix, start, end });
+      if(state.project.video.clips) await invoke('export_video_edit', {edit:{path:state.project.video.path,clips:state.project.video.clips},output,mix,start,end});
+      else await invoke('export_media', { session: state.project.video.session, output, mix, start, end });
       setNotice(t('interview.exported', { path: output }));
     } finally { await remove(mix).catch(() => {}); }
   });
 
   const button = 'min-h-11 px-4 py-2 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-40';
-  const controls = (<div className="flex flex-wrap items-center gap-3">
-        <button className={`${button} !bg-indigo-600 !border-indigo-500`} disabled={!!busy || playing} onClick={() => setSetup(true)}>{t('interview.sync')}</button>
-        {video && <button className={button} disabled={!!busy || playing} onClick={exportVideo}>{t((video.inPoint ?? 0) > 0 || (video.outPoint ?? video.duration) < video.duration ? 'video.exportSection' : 'interview.exportVideo')}</button>}
+  const controls = (<div className="flex flex-wrap items-center gap-2">
+        <ToolButton icon={Film} label={t('interview.sync')} className="!bg-indigo-600 !border-indigo-500" disabled={!!busy || playing} onClick={() => setSetup(true)}/>
+        {video && <ToolButton icon={Clapperboard} disabled={!!busy || playing || !videoTimelineDuration(video)} onClick={exportVideo} label={t((video.inPoint ?? 0)>0 || (video.outPoint ?? videoTimelineDuration(video))<videoTimelineDuration(video)?'video.exportSection':'interview.exportVideo')}/>}
         <details className="relative">
           <summary className={`${button} cursor-pointer flex items-center`}>{t('interview.more')}</summary>
           <div className="absolute right-0 top-full mt-2 z-20 p-2 rounded-xl border border-gray-700 bg-gray-900 shadow-xl w-64 space-y-2">

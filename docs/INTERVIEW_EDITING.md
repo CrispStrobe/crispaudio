@@ -174,9 +174,10 @@ playhead or numeric seconds. Undo restores a range change. It does not move or
 trim the stored audio clips. Export section renders that interval of the current
 mix and encodes H.264/AAC for an accurate cut, retaining section camera audio as
 an alternative. Full-length export still copies compressed picture and camera
-audio. This is one locked source video and one export interval, not a multicam
-or arbitrary multi-clip montage editor. Camera + external audio setup is still
-required; silent video and standalone video import are not supported yet.
+audio. Local 0.5.0 supports non-destructive clips from one source video, with fades and
+transitions. Picture and audio are independent; see TIMELINE_WORKFLOW.md. Multicam
+and multiple source videos remain unsupported. External recordings are optional; camera-only GUI import is supported. Silent
+source video is accepted by CLI edit-video; guided GUI import requires camera audio.
 
 CLI equivalent (seconds on the original camera clock):
 

@@ -1,3 +1,5 @@
+import { ToolButton } from '../common/ToolButton';
+import { AudioLines } from 'lucide-react';
 import { isIOSApp } from '../../lib/native';
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
@@ -30,7 +32,7 @@ export function AutoSyncTracks({onError}:{onError:(error:string)=>void}) {
     }catch(err){report(String(err));}finally{setBusy(false);}
   };
   return <>
-    <button className="timeline-tool" disabled={!native || tracks.filter(track=>track.segments.length).length<2} title={!native?t('sync.desktop'):undefined} onClick={()=>{setReference(tracks.find(track=>track.segments.length)!.id);setSelected(tracks.filter(track=>track.segments.length).map(track=>track.id));setResults([]);setShow(true);}}>{t('sync.title')}</button>
+    <ToolButton icon={AudioLines} label={t('sync.title')} disabled={!native || tracks.filter(track=>track.segments.length).length<2} title={!native?t('sync.desktop'):t('sync.title')} onClick={()=>{setReference(tracks.find(track=>track.segments.length)!.id);setSelected(tracks.filter(track=>track.segments.length).map(track=>track.id));setResults([]);setShow(true);}}/>
     <Modal isOpen={show} onClose={()=>{if(!busy)setShow(false);}} title={t('sync.title')} widthClass="max-w-2xl">
       {error && <p role="alert" className="text-amber-300 mb-3">{error}</p>}
       <p className="text-sm text-gray-300 mb-3">{t('sync.help')}</p>

@@ -162,6 +162,7 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
 export function VoicePanel() {
   const { stage: exportStage, error: exportError, start: startExport, cancel: cancelExport } = useAudioExport();
   const { t } = useTranslation();
+  const timelineTarget = useUIStore(s => s.voiceEffectsTargetSegmentId);
   const settings = useVoiceStore((s) => s.activeSlot === 'A' ? s.settingsA : s.settingsB);
   const { activeSlot, morphAmount, sourceBuffer, processedBuffer, isProcessing, selectedPreset, setSourceBuffer, loadPreset, setIsProcessing, setProcessedBuffer, setActiveSlot, setMorphAmount, swapSlots, getEffectiveSettings } = useVoiceStore(useShallow((s) => ({
     activeSlot: s.activeSlot,
@@ -191,12 +192,14 @@ export function VoicePanel() {
       const buf = await stopRecording();
       if (buf) {
         setSourceBuffer(buf);
+        setProcessedBuffer(null);
+        useUIStore.setState({voiceEffectsTargetSegmentId:null});
       }
       setIsRecordProcessing(false);
     } else {
       await startRecording();
     }
-  }, [isRecording, startRecording, stopRecording, setSourceBuffer]);
+  }, [isRecording, startRecording, stopRecording, setSourceBuffer, setProcessedBuffer]);
 
   const handleUndo = useCallback(() => useVoiceStore.temporal.getState().undo(), []);
   const handleRedo = useCallback(() => useVoiceStore.temporal.getState().redo(), []);
@@ -270,7 +273,7 @@ export function VoicePanel() {
     if (!processedBuffer) return;
     const data = processedBuffer.getChannelData(0);
     const peaks = computeWaveformPeaks(data, 256);
-    useProjectStore.getState().importAudioSource({
+    const source = {
       id: crypto.randomUUID(),
       name: `Voice - ${new Date().toLocaleTimeString()}`,
       buffer: processedBuffer,
@@ -278,8 +281,13 @@ export function VoicePanel() {
       duration: processedBuffer.duration,
       sampleRate: processedBuffer.sampleRate,
       channels: processedBuffer.numberOfChannels,
-    });
-    useUIStore.getState().setActivePanel('timeline');
+    };
+    const target = useUIStore.getState().voiceEffectsTargetSegmentId;
+    const project = useProjectStore.getState();
+    if (target && project.project.tracks.some(track => track.segments.some(clip => clip.id === target))) {
+      project.replaceSegmentSource(target, source);
+    } else project.importAudioSource(source);
+    useUIStore.setState({ voiceEffectsTargetSegmentId: null, activePanel: 'timeline' });
   }, [processedBuffer]);
 
   // Keyboard shortcuts
@@ -338,7 +346,8 @@ export function VoicePanel() {
 
         {/* ── File Drop Zone + Record ─────────────────────────────── */}
         <div className="card mb-6">
-          <FileDropZone onFile={setSourceBuffer} />
+          {timelineTarget && <p className="text-sm text-violet-300 mb-3">{t('editing.voiceTarget')}</p>}
+          <FileDropZone onFile={buffer => { setSourceBuffer(buffer); setProcessedBuffer(null); useUIStore.setState({voiceEffectsTargetSegmentId:null}); }} />
           <div className="flex items-center justify-center gap-3 mt-4">
             <button
               onClick={handleRecordToggle}
@@ -519,10 +528,10 @@ export function VoicePanel() {
             onClick={sendToTimeline}
             disabled={!processedBuffer}
             className="px-5 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-            aria-label={t('voice.sendToTimeline')}
+            aria-label={t(timelineTarget ? 'editing.returnVoice' : 'voice.sendToTimeline')}
           >
             <SendHorizontal className="w-5 h-5" />
-            {t('voice.sendToTimeline')}
+            {t(timelineTarget ? 'editing.returnVoice' : 'voice.sendToTimeline')}
           </button>
 
           {/* Undo / Redo */}

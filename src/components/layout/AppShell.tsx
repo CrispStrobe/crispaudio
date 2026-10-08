@@ -43,7 +43,7 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Top row: sidebar + main */}
       <div className="flex flex-1 min-h-0">
-        <Sidebar mobileOpen={sidebarCollapsed} onClose={toggleSidebar} />
+        <Sidebar mobileOpen={sidebarCollapsed} onClose={() => useUIStore.setState({sidebarCollapsed:false})} />
         <main
           id="main-content"
           className="flex-1 min-w-0 overflow-hidden md:overflow-hidden overflow-y-auto pt-mobile-header"

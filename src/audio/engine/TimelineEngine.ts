@@ -1,3 +1,4 @@
+import { scheduleEnvelope } from '../../lib/audioEnvelope';
 import { audibleTracks } from '../../lib/timelineView';
 // ---------------------------------------------------------------------------
 // CrispAudio — TimelineEngine
@@ -9,7 +10,6 @@ import type {
   AudioSegment,
   AudioSource,
   EffectConfig,
-  FadeCurve,
 } from '../../types/audio';
 import { createReverb } from '../effects/Reverb';
 import { createDelay } from '../effects/Delay';
@@ -57,7 +57,13 @@ export class TimelineEngine {
     const tracksToPlay = audibleTracks(project.tracks);
 
     for (const track of tracksToPlay) {
+      if (!track.segments.length) continue;
       const trackGain = this.ctx.createGain();
+      const trackStart=Math.min(...track.segments.map(clip=>clip.startTime));
+      const trackEnd=Math.max(0,...track.segments.map(clip=>clip.startTime+clip.duration));
+      const trackFade=this.ctx.createGain();
+      scheduleEnvelope(trackFade.gain,now+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
+      trackFade.connect(trackGain);
       trackGain.gain.value = track.volume;
 
       // Pan
@@ -104,7 +110,7 @@ export class TimelineEngine {
         currentNode.connect(fadeGain);
         this.applyFade(fadeGain, segment, contextStartTime, segPlayStart);
 
-        fadeGain.connect(trackGain);
+        fadeGain.connect(trackFade);
 
         bufSrc.start(contextStartTime, bufferOffset, playDuration);
         this.activeSources.push(bufSrc);
@@ -167,7 +173,13 @@ export class TimelineEngine {
     const tracksToRender = audibleTracks(project.tracks);
 
     for (const track of tracksToRender) {
+      if (!track.segments.length) continue;
       const trackGain = offCtx.createGain();
+      const trackStart=Math.min(...track.segments.map(clip=>clip.startTime));
+      const trackEnd=Math.max(0,...track.segments.map(clip=>clip.startTime+clip.duration));
+      const trackFade=offCtx.createGain();
+      scheduleEnvelope(trackFade.gain,Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
+      trackFade.connect(trackGain);
       trackGain.gain.value = track.volume;
 
       if (track.pan !== 0) {
@@ -213,7 +225,7 @@ export class TimelineEngine {
         currentNode.connect(fadeGain);
         this.applyFade(fadeGain, segment, scheduleAt, segPlayStart);
 
-        fadeGain.connect(trackGain);
+        fadeGain.connect(trackFade);
 
         bufSrc.start(scheduleAt, bufferOffset, playDuration);
 
@@ -350,79 +362,6 @@ export class TimelineEngine {
     scheduleAt: number,
     segPlayStart: number,
   ): void {
-    const { fadeInDuration, fadeOutDuration, fadeInCurve, fadeOutCurve, duration } = segment;
-    const g = gainNode.gain;
-
-    g.setValueAtTime(1, 0);
-
-    // ── Fade in ────────────────────────────────────────────────────────────
-    if (fadeInDuration > 0 && segPlayStart < fadeInDuration) {
-      const fadeInEnd = scheduleAt + Math.max(0, fadeInDuration - segPlayStart);
-      const startGain = segPlayStart > 0
-        ? Math.min(1, segPlayStart / fadeInDuration)
-        : 0;
-
-      g.setValueAtTime(startGain, scheduleAt);
-      applyFadeCurve(g, fadeInCurve, scheduleAt, fadeInEnd, startGain, 1);
-    } else {
-      g.setValueAtTime(1, scheduleAt);
-    }
-
-    // ── Fade out ───────────────────────────────────────────────────────────
-    if (fadeOutDuration > 0) {
-      const playEnd = scheduleAt + (duration - segPlayStart);
-      const fadeOutStart = playEnd - fadeOutDuration;
-
-      if (fadeOutStart > scheduleAt) {
-        g.setValueAtTime(1, fadeOutStart);
-        applyFadeCurve(g, fadeOutCurve, fadeOutStart, playEnd, 1, 0.0001);
-      }
-    }
-  }
-}
-
-// ── Fade curve helpers ────────────────────────────────────────────────────────
-
-function applyFadeCurve(
-  param: AudioParam,
-  curve: FadeCurve,
-  startTime: number,
-  endTime: number,
-  startVal: number,
-  endVal: number,
-): void {
-  const duration = endTime - startTime;
-  if (duration <= 0) return;
-
-  switch (curve) {
-    case 'linear':
-      param.linearRampToValueAtTime(endVal, endTime);
-      break;
-
-    case 'exponential':
-      // exponentialRampToValueAtTime requires non-zero values
-      param.exponentialRampToValueAtTime(
-        Math.max(0.0001, endVal),
-        endTime,
-      );
-      break;
-
-    case 'scurve': {
-      // Approximate S-curve via a custom curve array
-      const steps = Math.max(2, Math.round(duration * 100));
-      const values = new Float32Array(steps);
-      const times = new Float32Array(steps);
-      for (let i = 0; i < steps; i++) {
-        const t = i / (steps - 1);
-        // Smooth step (3t² - 2t³)
-        const s = t * t * (3 - 2 * t);
-        values[i] = startVal + (endVal - startVal) * s;
-        times[i] = startTime + t * duration;
-      }
-      for (let i = 0; i < steps; i++) {
-        param.setValueAtTime(values[i], times[i]);
-      }
-      break;
-    }
+    scheduleEnvelope(gainNode.gain,scheduleAt,segPlayStart,segment.duration,segment.fadeInDuration,segment.fadeOutDuration,segment.fadeInCurve,segment.fadeOutCurve);
   }
 }

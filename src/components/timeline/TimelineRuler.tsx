@@ -6,7 +6,7 @@
 import React, { useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTimelineCanvasInvalidation } from './useTimelineCanvasInvalidation';
-import { useTimelineCanvasPlayhead } from './useTimelineCanvasPlayhead';
+import { PlayheadHandle } from './PlayheadHandle';
 import { useProjectStore } from '../../stores/projectStore';
 import { RULER_HEIGHT } from '../../hooks/useTimeline';
 
@@ -49,7 +49,6 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
   const zoomLevel = useProjectStore((s) => s.zoomLevel);
   const scrollOffset = useProjectStore((s) => s.scrollOffset);
   const setPlayheadPosition = useProjectStore((s) => s.setPlayheadPosition);
-  const playheadRef = useTimelineCanvasPlayhead(width);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -156,9 +155,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
       onClick={handleClick}
       aria-label={t('timeline.ruler')}
     />
-    <div ref={playheadRef} data-timeline-playhead aria-hidden="true" className="absolute top-0 bottom-0 w-px bg-red-500 pointer-events-none">
-      <div className="absolute top-0 -left-[5px] border-x-[5px] border-x-transparent border-t-[10px] border-t-red-500" />
-    </div>
+    <PlayheadHandle width={width}/>
     </div>
   );
 };

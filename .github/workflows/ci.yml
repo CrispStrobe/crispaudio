@@ -24,6 +24,7 @@ jobs:
       - run: cargo test --manifest-path media/Cargo.toml
       - run: cargo build --release --manifest-path media/Cargo.toml
       - run: python3 scripts/test-media-cli.py media/target/release/crispaudio
+      - run: python3 scripts/test-video-edit.py media/target/release/crispaudio
   frontend:
     name: Frontend lint & test
     runs-on: ubuntu-latest

@@ -4,6 +4,8 @@
 // ---------------------------------------------------------------------------
 
 import { create } from 'zustand';
+import { useVoiceStore } from './voiceStore';
+import { useProjectStore } from './projectStore';
 import type { OpenedFile } from '../lib/native';
 
 export type ActivePanel = 'sfx' | 'voice' | 'timeline';
@@ -39,7 +41,7 @@ const INITIAL_PANEL: ActivePanel =
     import.meta.env.VITE_INITIAL_PANEL as ActivePanel,
   )
     ? (import.meta.env.VITE_INITIAL_PANEL as ActivePanel)
-    : 'sfx';
+    : 'timeline';
 
 export const useUIStore = create<UIState>()((set, get) => ({
   activePanel: INITIAL_PANEL,
@@ -53,8 +55,23 @@ export const useUIStore = create<UIState>()((set, get) => ({
 
   setActivePanel: (panel) => set({ activePanel: panel }),
   openModal: (modal) => set({ activeModal: modal }),
-  closeModal: () => set({ activeModal: null, voiceEffectsTargetSegmentId: null }),
-  openVoiceEffects: (segmentId) => set({ activeModal: 'voiceEffects', voiceEffectsTargetSegmentId: segmentId }),
+  closeModal: () => set({ activeModal: null }),
+  openVoiceEffects: (segmentId) => {
+    const project = useProjectStore.getState();
+    const segment = project.project.tracks.flatMap(track => track.segments).find(clip => clip.id === segmentId);
+    const source = segment && project.sources.get(segment.sourceId);
+    if (!segment || !source) return;
+    const buffer = new AudioBuffer({ numberOfChannels: source.channels, sampleRate: source.sampleRate,
+      length: Math.max(1, Math.round(segment.duration * source.sampleRate)) });
+    for (let channel = 0; channel < source.channels; channel++) {
+      const start = Math.round(segment.sourceOffset * source.sampleRate);
+      buffer.copyToChannel(source.buffer.getChannelData(channel).subarray(start, start + buffer.length), channel);
+    }
+    project.setIsPlaying(false);
+    useVoiceStore.getState().setSourceBuffer(buffer);
+    useVoiceStore.getState().setProcessedBuffer(null);
+    set({ activePanel: 'voice', activeModal: null, voiceEffectsTargetSegmentId: segmentId });
+  },
   toggleSidebar: () =>
     set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setZoomLevel: (level) =>

@@ -3,6 +3,7 @@
 // Zustand store with temporal (undo/redo) middleware for timeline state.
 // ---------------------------------------------------------------------------
 
+import { videoTimelineDuration } from '../lib/videoEditing';
 import { create } from 'zustand';
 import { temporal } from 'zundo';
 import { createHistoryGesture } from './historyGesture';
@@ -64,7 +65,7 @@ interface ProjectState {
   addTrack: (name?: string) => void;
   removeTrack: (trackId: string) => void;
   reorderTrack: (trackId: string, newIndex: number) => void;
-  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'name' | 'muted' | 'solo' | 'volume' | 'pan'>>) => void;
+  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve'>>) => void;
 
   // Segment actions
   addSegment: (trackId: string, segment: AudioSegment) => void;
@@ -191,7 +192,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -242,7 +243,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -258,7 +259,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -294,7 +295,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -332,7 +333,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -378,7 +379,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -469,7 +470,7 @@ export const useProjectStore = create<ProjectState>()(
         set({
           project: {
             ...project,
-            duration: Math.max(project.video?.duration ?? 0, computeProjectDuration(project.tracks)),
+            duration: Math.max(videoTimelineDuration(project.video), computeProjectDuration(project.tracks)),
           },
           sources,
           selection: null,
@@ -534,7 +535,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -559,7 +560,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -648,7 +649,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };
         });
@@ -720,7 +721,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
             selection: {
               startTime: minT,
@@ -746,7 +747,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
+              duration: Math.max(videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
             selection: null,
           };
@@ -767,7 +768,7 @@ export const useProjectStore = create<ProjectState>()(
       setTrackHeight: (height) => set({ trackHeight: Math.max(64, Math.min(240, height)) }),
       setVideoRange: (start, end) => set((state) => {
         const video = state.project.video;
-        if (!video || !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > video.duration || end <= start) return state;
+        if (!video || !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > videoTimelineDuration(video) || end <= start) return state;
         return { project: { ...state.project, video: { ...video, inPoint: start, outPoint: end } } };
       }),
 

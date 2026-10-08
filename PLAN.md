@@ -1,3 +1,12 @@
+## Precision and picture editing (2026-10-08, local 0.5.0)
+
+Implemented fitted video overview, draggable playhead, magnetic edges, exact/ms/sample
+nudges, track fade envelopes and Voice round trips. Single-source picture clips now
+support split/move/source trim/delete and timed transitions in GUI + CLI. Export
+validates overlaps and never ripples audio implicitly. See TIMELINE_WORKFLOW.md.
+Remaining: multiple picture sources/lanes, linked AV groups/ripple editing, frame-rate
+selection, full 3D page simulation, native mobile video engine and device validation.
+
 # CrispAudio — Production Readiness Plan
 
 ## Generic timeline workflow (2026-10-08, local 0.4.1)

@@ -1,3 +1,5 @@
+import { ToolButton } from '../common/ToolButton';
+import { FilePlus2, Scan, Wrench } from 'lucide-react';
 import { timelineDuration } from '../../lib/timelineView';
 import { TimelineNavigation } from './TimelineNavigation';
 import { TrackFiles } from './TrackFiles';
@@ -476,25 +478,25 @@ export const TimelinePanel: React.FC = () => {
       <div className="timeline-main-tools flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900 shrink-0">
         <input ref={fileInputRef} type="file" accept="audio/*" multiple className="hidden"
           onChange={(e) => { void handleImportFiles(e.target.files); e.target.value = ''; }} />
-        <button className="timeline-tool" onClick={() => setResetOpen(true)}>{t('editor.newProject')}</button>
-        <button className="timeline-tool" aria-label={t('timeline.openProject')} onClick={() => void handleOpenProject()}><FolderOpen size={16} />{t('timeline.openProject')}</button>
-        <button className="timeline-tool" aria-label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}><Save size={16} />{t('timeline.saveProject')}</button>
-        <button className="timeline-tool" aria-label={t('timeline.import')} onClick={() => fileInputRef.current?.click()}><Upload size={16} />{t('timeline.import')}</button>
-        <button className="timeline-tool" aria-label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}><Download size={16} />{t('timeline.export')}</button>
+        <ToolButton icon={FilePlus2} label={t('editor.newProject')} onClick={() => setResetOpen(true)}/>
+        <ToolButton icon={FolderOpen} label={t('timeline.openProject')} onClick={() => void handleOpenProject()}/>
+        <ToolButton icon={Save} label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}/>
+        <ToolButton icon={Upload} label={t('timeline.import')} onClick={() => fileInputRef.current?.click()}/>
+        <ToolButton icon={Download} label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} />
         <AutoSyncTracks onError={setProjectError} />
-        <button className="timeline-tool" onClick={() => setToolsOpen(true)}>{t('timeline.viewTools')}</button>
+        <ToolButton icon={Wrench} label={t('timeline.viewTools')} onClick={() => setToolsOpen(true)}/>
         <Modal isOpen={toolsOpen} onClose={() => setToolsOpen(false)} title={t('timeline.viewTools')}>
           <div className="space-y-3">
             <div className="flex gap-2">
-              <button className="timeline-tool" aria-label={t('timeline.undo')} onClick={handleUndo}><Undo2 size={16} />{t('timeline.undo')}</button>
-              <button className="timeline-tool" aria-label={t('timeline.redo')} onClick={handleRedo}><Redo2 size={16} />{t('timeline.redo')}</button>
+              <ToolButton icon={Undo2} label={t('timeline.undo')} onClick={handleUndo}/>
+              <ToolButton icon={Redo2} label={t('timeline.redo')} onClick={handleRedo}/>
             </div>
             <button className="timeline-tool" aria-pressed={store.snapEnabled} onClick={() => store.setSnapEnabled(!store.snapEnabled)}><Magnet size={16} />{t('timeline.snap')}</button>
             <div className="flex items-center gap-2">
-              <button className="timeline-tool" aria-label={t('timeline.zoomOut')} onClick={handleZoomOut}><ZoomOut size={16} /></button>
+              <ToolButton icon={ZoomOut} label={t('timeline.zoomOut')} onClick={handleZoomOut}/>
               <input type="range" min={0.1} max={2000} step={0.1} value={store.zoomLevel} onChange={(e) => store.setZoomLevel(+e.target.value)} className="w-28 slider-styled" aria-label={t('timeline.zoomLevel')} />
-              <button className="timeline-tool" aria-label={t('timeline.zoomIn')} onClick={handleZoomIn}><ZoomIn size={16} /></button>
+              <ToolButton icon={ZoomIn} label={t('timeline.zoomIn')} onClick={handleZoomIn}/>
             </div>
             <div className="flex flex-wrap gap-2">
               <button className="timeline-tool" disabled={store.project.tracks.length < 2} onClick={() => { useProjectStore.getState().setIsPlaying(false); setToolsOpen(false); setAlignmentOpen(true); }}>{t('alignment.title')}</button>
@@ -530,9 +532,9 @@ export const TimelinePanel: React.FC = () => {
       <TransportControls viewportWidth={canvasWidth} />
       <div className="timeline-command-strip flex shrink-0 overflow-x-auto">
       <div className="timeline-view-tools flex flex-wrap items-center gap-2 px-3 py-1 border-b border-gray-800 shrink-0">
-        <button className="timeline-tool" disabled={!timelineDuration(store.project)} onClick={fitAll}>{t('timeline.fit')}</button>
-        <button className="timeline-tool" aria-label={t('timeline.zoomOut')} onClick={handleZoomOut}><ZoomOut size={16}/></button>
-        <button className="timeline-tool" aria-label={t('timeline.zoomIn')} onClick={handleZoomIn}><ZoomIn size={16}/></button>
+        <ToolButton icon={Scan} label={t('timeline.fit')} disabled={!timelineDuration(store.project)} onClick={fitAll}/>
+        <ToolButton icon={ZoomOut} label={t('timeline.zoomOut')} onClick={handleZoomOut}/>
+        <ToolButton icon={ZoomIn} label={t('timeline.zoomIn')} onClick={handleZoomIn}/>
         <label className="text-xs text-gray-400 flex items-center gap-2">{t('editor.trackHeight')}
           <input aria-label={t('editor.trackHeight')} className="slider-styled w-24" type="range" min={64} max={240} value={store.trackHeight} onChange={e => store.setTrackHeight(+e.target.value)} />
         </label>
@@ -542,10 +544,10 @@ export const TimelinePanel: React.FC = () => {
 
       {/* Main area: headers + canvas */}
       <div ref={tracksAreaRef} className="timeline-tracks-area relative flex flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
-        onTouchStart={e => { const p = e.touches[0]; if (!touchArrange && p) touchPan.current = {x:p.clientX,y:p.clientY,scroll:useProjectStore.getState().scrollOffset}; }}
+        onTouchStart={e => { const p = e.touches[0]; if (!touchArrange && p && !(e.target as HTMLElement).closest('[data-video-overview], [data-timeline-playhead]')) touchPan.current = {x:p.clientX,y:p.clientY,scroll:useProjectStore.getState().scrollOffset}; }}
         onTouchEnd={() => {touchPan.current=null;}}
         onTouchMove={e => { const start=touchPan.current, p=e.touches[0]; if (!start || !p || touchArrange) return; const dx=start.x-p.clientX; if (Math.abs(dx) > Math.abs(start.y-p.clientY)+8) { const state=useProjectStore.getState(); state.setScrollOffset(Math.min(Math.max(0,timelineDuration(state.project)-canvasWidth/state.zoomLevel),Math.max(0,start.scroll+dx/state.zoomLevel))); } }} >
-        {!store.project.tracks.length && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-5 bg-gray-950 text-center">
+        {!store.project.tracks.length && !store.project.video && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-5 bg-gray-950 text-center">
           <Upload className="w-10 h-10 text-indigo-400" />
           <h2 className="text-lg font-semibold text-gray-100">{t('timeline.startTitle')}</h2>
           <p className="text-sm text-gray-400 max-w-md">{t('timeline.startHelp')}</p>
@@ -568,7 +570,7 @@ export const TimelinePanel: React.FC = () => {
 
           {store.project.video && <div className="shrink-0 px-3 flex flex-col justify-center gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: VIDEO_LANE_HEIGHT }}>
             <span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
-            <span className="text-xs text-gray-400">{t('video.locked')}</span>
+            <span className="text-xs text-gray-400">{t('editing.videoOverview')}</span>
           </div>}
           {/* Per-track headers — scroll locked to canvas */}
           <div className="flex-1">

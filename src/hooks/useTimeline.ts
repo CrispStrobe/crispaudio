@@ -4,6 +4,8 @@
 // for the timeline canvas.
 // ---------------------------------------------------------------------------
 
+import { snapClipStart } from '../lib/timelineSnap';
+import { deleteSelection, nudgeSelection } from '../lib/timelineEditing';
 import { useRef, useCallback, useEffect } from 'react';
 import type { AudioSegment, TimelineTrack } from '../types/audio';
 import { projectHistoryGesture, useProjectStore } from '../stores/projectStore';
@@ -258,7 +260,9 @@ export function useTimeline() {
 
       if (ds.kind === 'move') {
         const dtTime = dx / zoomLevel;
-        const newStart = snapTime(ds.originalStartTime + dtTime);
+        const clip = store.project.tracks.flatMap(track => track.segments).find(clip => clip.id === ds.segmentId);
+        const edges = [0, store.playheadPosition, ...store.project.tracks.flatMap(track => track.segments.filter(clip => clip.id !== ds.segmentId).flatMap(clip => [clip.startTime, clip.startTime + clip.duration]))];
+        const newStart = snapClipStart(ds.originalStartTime + dtTime, clip?.duration ?? 0, edges, zoomLevel, store.snapEnabled && !e.altKey);
         const newTrackIndex = Math.max(
           0,
           Math.min(
@@ -287,7 +291,7 @@ export function useTimeline() {
         store.setSegmentFade(ds.segmentId, 'out', newFade);
       }
     },
-    [zoomLevel, snapTime],
+    [zoomLevel],
   );
 
   const onMouseUp = useCallback(() => {
@@ -332,10 +336,16 @@ export function useTimeline() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't steal shortcuts when focused on input elements
       const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+      if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable=true], [role=dialog]')) return;
 
       const store = useProjectStore.getState();
       const ctrl = e.ctrlKey || e.metaKey;
+
+      if (!ctrl && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) {
+        e.preventDefault();
+        nudgeSelection((e.code === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 0.1 : e.altKey ? 1 / store.project.sampleRate : 0.001));
+        return;
+      }
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -345,7 +355,7 @@ export function useTimeline() {
 
       if (e.code === 'Delete' || e.code === 'Backspace') {
         e.preventDefault();
-        store.deleteSelected();
+        deleteSelection();
         return;
       }
 

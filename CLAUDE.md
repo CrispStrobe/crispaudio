@@ -69,7 +69,7 @@ so phones retain waveform space. Browser viewport tests are not iOS validation.
 `waveformView.ts` aggregates pixel intervals and uses decoded first-channel
 samples at deep zoom. Display normalization never modifies audio gains.
 `AlignmentView` compares normalized pre-effect envelopes on the source clock.
-`VideoLane` shares zoom/scroll/playhead; one locked source video, no montage.
+`VideoLane` formerly shared zoom/scroll; see the 0.5.0 section below.
 Video in/out points persist in `TimelineProject.video` with undo; they only select
 an export interval. `export_segment` encodes accurate sections; full length keeps
 stream copy. CLI mixes are full-clock files, GUI mixes are already range-trimmed;
@@ -89,3 +89,16 @@ sends binary 1 kHz mono analysis to native estimate_track_sync; applying offsets
 one project mutation, preserves original sources and reports uncorrected drift.
 VideoViewer guards metadata, retries errors, and restores native fullscreen only
 if it entered it. Keep the in-window expansion fallback for unsupported platforms.
+
+## Precision/video editing 0.5.0
+
+The video lane is now a fitted overview (own scale/window indicator), not shared
+with audio zoom. videoEditing.ts derives one legacy clip when clips is undefined;
+empty clips means no picture. videoTimelineDuration uses edited ends. Never use
+source duration as edited duration. Video changes use atomic project mutations.
+media/src/video_edit.rs validates composition and exports via FFmpeg; GUI mixes
+are range-trimmed, CLI mix_is_trimmed is explicit. Audio does not follow picture
+implicitly. Advanced preview is approximate and labelled; page peel is a 2D fold.
+Audio track/segment envelopes share audioEnvelope.ts, including mid-fade resume.
+ToolButton labels hover/focus/long press; do not activate after a touch long press.
+Voice editing target survives closing Settings and resets on unrelated audio loads.

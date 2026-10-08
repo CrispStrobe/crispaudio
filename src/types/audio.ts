@@ -11,6 +11,7 @@ export interface TimelineProject {
   masterEffects: EffectConfig[];
   duration: number; // computed from segments
   video?: {
+    clips?: VideoClip[];
     path: string;
     duration: number;
     inPoint?: number;
@@ -27,6 +28,10 @@ export interface TimelineTrack {
   solo: boolean;
   volume: number;
   pan: number;
+  fadeInDuration?: number;
+  fadeOutDuration?: number;
+  fadeInCurve?: FadeCurve;
+  fadeOutCurve?: FadeCurve;
 }
 
 export interface AudioSegment {
@@ -87,4 +92,15 @@ export interface ClipboardState {
   operation: 'cut' | 'copy' | null;
   segments: AudioSegment[];
   sourceIds: string[];
+}
+
+export interface VideoClip {
+  id: string;
+  startTime: number;
+  duration: number;
+  sourceOffset: number;
+  fadeIn: number;
+  fadeOut: number;
+  transition: import('../lib/videoEditing').VideoTransition;
+  transitionDuration: number;
 }

@@ -13,6 +13,21 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Export a picture edit JSON {path, clips}; mix uses the edited timeline clock.
+    EditVideo {
+        #[arg(long)]
+        edit: String,
+        #[arg(long)]
+        output: String,
+        #[arg(long)]
+        mix: Option<String>,
+        #[arg(long, default_value_t = 0.0)]
+        start: f64,
+        #[arg(long)]
+        end: Option<f64>,
+        #[arg(long)]
+        mix_is_trimmed: bool,
+    },
     /// Inspect duration, channels, sample rate and video presence (JSON).
     Probe { input: String },
     /// Measure sample peak, RMS, activity proxy and a conservative gain suggestion (JSON).
@@ -58,6 +73,32 @@ enum Commands {
 
 fn execute(cli: Cli) -> media::Result<()> {
     match cli.command {
+        Commands::EditVideo {
+            edit,
+            output,
+            mix,
+            start,
+            end,
+            mix_is_trimmed,
+        } => {
+            let edit: media::video_edit::VideoEdit =
+                serde_json::from_slice(&std::fs::read(edit).map_err(|e| e.to_string())?)
+                    .map_err(|e| e.to_string())?;
+            let total = edit
+                .clips
+                .iter()
+                .map(|c| c.start_time + c.duration)
+                .fold(0.0, f64::max);
+            media::video_edit::export_edit(
+                &edit,
+                &output,
+                mix.as_deref(),
+                start,
+                end.unwrap_or(total),
+                mix_is_trimmed,
+            )?;
+            println!("{}", serde_json::json!({"output":output}));
+        }
         Commands::Probe { input } => println!(
             "{}",
             serde_json::to_string_pretty(&media::probe(&input)?).unwrap()

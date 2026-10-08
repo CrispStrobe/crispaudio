@@ -101,7 +101,7 @@ at beginning/middle/end. That does not independently verify visual lip sync.
 
 Repeat analysis/alignment for `MVI_8250.MP4` and `MVI_8249.MP4` separately, using
 the recorder files that overlap each video. Do not concatenate the camera clips
-or assume one offset applies to every clip. A montage/picture editing workflow
+or assume one offset applies to every clip. A multi-source montage/picture editing workflow
 is future work.
 
 ## GUI on macOS: fastest route using the prepared project
@@ -209,3 +209,12 @@ is not a substitute for testing a signed iPhone/iPad build.
 
 For the generic audio-only or audio/video editor and updated mute/solo, file and
 scroll controls, see [Timeline workflow](TIMELINE_WORKFLOW.md).
+
+### Local 0.5.0 picture edits
+
+See [Timeline workflow](TIMELINE_WORKFLOW.md) for split/move/source trim, picture
+transitions, fitted overview and CLI `edit-video`. For this interview, keep the
+continuous picture intact when the purpose is microphone switching only. A picture
+clip move does not move Tr1/LR/camera audio. Split all cuts all lanes in one step;
+subsequent moves remain independent. Match a picture edit with corresponding audio
+edits when changing the spoken sequence.

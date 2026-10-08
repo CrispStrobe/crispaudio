@@ -13,6 +13,7 @@ afterEach(cleanup);
 describe('video range entry', () => {
   it('allows intermediate digits before committing an end after the start', () => {
     render(<VideoControls />);
+    fireEvent.click(screen.getByRole('button',{name:'video.range'}));
     const end = screen.getByLabelText('video.out');
     fireEvent.focus(end);
     fireEvent.change(end, { target: { value: '1' } });
@@ -24,6 +25,7 @@ describe('video range entry', () => {
   });
   it('rejects an invalid end visibly and restores the valid range', () => {
     render(<VideoControls />);
+    fireEvent.click(screen.getByRole('button',{name:'video.range'}));
     const end = screen.getByLabelText('video.out');
     fireEvent.focus(end); fireEvent.change(end, { target: { value: '2' } }); fireEvent.blur(end);
     expect(useProjectStore.getState().project.video?.outPoint).toBe(254);

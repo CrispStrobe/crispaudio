@@ -1,3 +1,8 @@
+import { ToolButton } from '../common/ToolButton';
+import { Hand, SlidersHorizontal, Scissors, Layers, Settings2, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { VideoClipSettings } from './VideoClipSettings';
+import { videoClips } from '../../lib/videoEditing';
+import { splitSelectedVideo, deleteSelection, nudgeSelection } from '../../lib/timelineEditing';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { projectHistoryGesture, useProjectStore } from '../../stores/projectStore';
@@ -9,35 +14,41 @@ export function TimelineActions({ touchArrange, onTouchArrange }: { touchArrange
   const { t } = useTranslation();
   const [mixer, setMixer] = useState(false);
   const [inspector, setInspector] = useState(false);
+  const video = useProjectStore(s=>s.project.video);
+  const [nudge,setNudge]=useState(.001);
   const tracks = useProjectStore((s) => s.project.tracks);
   const selection = useProjectStore((s) => s.selection);
   const position = useProjectStore((s) => s.playheadPosition);
   const selected = tracks.flatMap((track) => track.segments).filter((clip) => selection?.segmentIds.includes(clip.id));
-  const splittable = selected.filter((clip) => position > clip.startTime && position < clip.startTime + clip.duration);
-  if (!tracks.length) return null;
+  const selectedVideo=videoClips(video).filter(clip=>selection?.segmentIds.includes(clip.id));
+  const allSelected=[...selected,...selectedVideo];
+  const splittable = allSelected.filter((clip) => position > clip.startTime && position < clip.startTime + clip.duration);
+  if (!tracks.length&&!video) return null;
   const button = 'min-h-11 px-3 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-40';
   return <>
     <div className="timeline-clip-actions flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 shrink-0" aria-label={t('timeline.clipActions')}>
-      <button className={`${button} touch-arrange-toggle`} aria-pressed={touchArrange} onClick={onTouchArrange}>{t(touchArrange ? 'timeline.touchArrangeOn' : 'timeline.touchArrangeOff')}</button>
-      <button className={button} onClick={() => setMixer(true)} disabled={!tracks.length}>{t('timeline.mixer')}</button>
-      <span className="clip-selection-note hidden md:block text-xs text-gray-400 max-w-40 truncate">{selected.length ? t('timeline.selectedCount', { count: selected.length }) : t('timeline.tapClip')}</span>
-      <button className={`${button} clip-split-selected`} disabled={!splittable.length} onClick={() => {
-        const state = useProjectStore.getState();
-        splittable.forEach((clip) => state.splitSegment(clip.id, position));
+      <ToolButton icon={Hand} label={t(touchArrange?'timeline.touchArrangeOn':'timeline.touchArrangeOff')} className="touch-arrange-toggle" aria-pressed={touchArrange} onClick={onTouchArrange}/>
+      <ToolButton icon={SlidersHorizontal} label={t('timeline.mixer')} disabled={!tracks.length} onClick={()=>setMixer(true)}/>
+      <ToolButton icon={Scissors} label={t('timeline.splitAtPlayhead')} className="clip-split-selected" disabled={!splittable.length} onClick={()=>{
+        const state=useProjectStore.getState();projectHistoryGesture.begin();
+        try {selected.forEach(clip=>state.splitSegment(clip.id,position));splitSelectedVideo(position);} finally {projectHistoryGesture.end();}
         state.setSelection(null);
-      }}>{t('timeline.splitAtPlayhead')}</button>
-      <button className={button} disabled={!tracks.some((track) => track.segments.some((clip) => position > clip.startTime && position < clip.startTime + clip.duration))} onClick={() => {
-        const state = useProjectStore.getState();
-        projectHistoryGesture.begin();
-        try { tracks.forEach((track) => track.segments.forEach((clip) => state.splitSegment(clip.id, position))); }
-        finally { projectHistoryGesture.end(); }
-        state.setSelection(null);
-      }}>{t('timeline.splitAll')}</button>
-      <button className={button} disabled={!selected.length} onClick={() => setInspector(true)}>{t('timeline.clipSettings')}</button>
-      <button className={button} disabled={!selected.length} onClick={() => useProjectStore.getState().deleteSelected()}>{t('timeline.delete')}</button>
+      }}/>
+      <ToolButton icon={Layers} label={t('timeline.splitAll')} onClick={()=>{
+        const state=useProjectStore.getState();projectHistoryGesture.begin();
+        try {tracks.forEach(track=>track.segments.forEach(clip=>state.splitSegment(clip.id,position)));splitSelectedVideo(position,true);}finally{projectHistoryGesture.end();}state.setSelection(null);
+      }}/>
+      <ToolButton icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>setInspector(true)}/>
+      <ToolButton icon={Trash2} label={t('timeline.delete')} disabled={!allSelected.length} onClick={deleteSelection}/>
+      <span className="text-xs text-gray-400 hidden lg:block">{t('editing.nudge')}</span>
+      <ToolButton icon={ArrowLeft} label={t('editing.nudgeLeft')} onClick={()=>nudgeSelection(-nudge)}/>
+      <select className="bg-gray-800 rounded min-h-11 px-1 text-xs text-gray-200 w-20" value={nudge} aria-label={t('editing.nudgeStep')} onChange={e=>setNudge(Number(e.target.value))}>
+        <option value={1/useProjectStore.getState().project.sampleRate}>{t('editing.sample')}</option><option value={.001}>1 ms</option><option value={.01}>10 ms</option><option value={1/30}>33 ms</option><option value={.1}>100 ms</option>
+      </select>
+      <ToolButton icon={ArrowRight} label={t('editing.nudgeRight')} onClick={()=>nudgeSelection(nudge)}/>
     </div>
-    <Modal isOpen={inspector && selected.length > 0} onClose={() => setInspector(false)} title={t('timeline.clipSettings')}>
-      <SegmentEffectsPanel onClose={() => setInspector(false)} />
+    <Modal isOpen={inspector && allSelected.length > 0} onClose={() => setInspector(false)} title={t('timeline.clipSettings')}>
+      {selectedVideo.length ? <VideoClipSettings id={selectedVideo[0].id}/> : <SegmentEffectsPanel onClose={() => setInspector(false)} />}
     </Modal>
     <Modal isOpen={mixer} onClose={() => setMixer(false)} title={t('timeline.mixer')} widthClass="max-w-2xl">
       <button className="timeline-tool mb-3" onClick={()=>{const state=useProjectStore.getState();tracks.forEach(track=>state.updateTrack(track.id,{solo:false}));}}>{t('editor.clearSolos')}</button>
@@ -55,6 +66,14 @@ export function TimelineActions({ touchArrange, onTouchArrange }: { touchArrange
             }}>{t('timeline.listenOnly')}</button>
             <button className={button} disabled={i === 0} aria-label={`${t('timeline.moveTrackUp')} ${track.name}`} onClick={() => useProjectStore.getState().reorderTrack(track.id, i - 1)}>↑</button>
             <button className={button} disabled={i === tracks.length - 1} aria-label={`${t('timeline.moveTrackDown')} ${track.name}`} onClick={() => useProjectStore.getState().reorderTrack(track.id, i + 1)}>↓</button>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {(['in','out'] as const).map(side=><label key={side} className="text-xs text-gray-300">{t(side==='in'?'timeline.fadeIn':'timeline.fadeOut')} (s)
+              <input type="number" min={0} step={.001} value={(side==='in'?track.fadeInDuration:track.fadeOutDuration)??0} aria-label={`${track.name} ${t(side==='in'?'timeline.fadeIn':'timeline.fadeOut')}`} className="bg-gray-800 rounded p-2 w-24 mx-2" onChange={e=>{const duration=Number(e.target.value);if(Number.isFinite(duration)&&duration>=0)useProjectStore.getState().updateTrack(track.id,side==='in'?{fadeInDuration:duration}:{fadeOutDuration:duration});}}/>
+              <select aria-label={`${track.name} ${t('editing.fadeCurve')} ${side}`} className="bg-gray-800 rounded p-2" value={(side==='in'?track.fadeInCurve:track.fadeOutCurve)??'linear'} onChange={e=>useProjectStore.getState().updateTrack(track.id,side==='in'?{fadeInCurve:e.target.value as 'linear'|'exponential'|'scurve'}:{fadeOutCurve:e.target.value as 'linear'|'exponential'|'scurve'})}>
+                {(['linear','exponential','scurve'] as const).map(curve=><option key={curve} value={curve}>{t(curve==='linear'?'timeline.curveLinear':curve==='exponential'?'timeline.curveExponential':'timeline.curveScurve')}</option>)}
+              </select>
+            </label>)}
           </div>
           <label className="flex items-center gap-3 text-sm text-gray-300">{t('timeline.trackVolume')}
             <input type="range" min={-60} max={40} step={0.5} className="slider-styled min-w-0 flex-1" value={track.volume > 0 ? Math.max(-60, 20 * Math.log10(track.volume)) : -60}

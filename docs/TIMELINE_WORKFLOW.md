@@ -1,4 +1,4 @@
-# Timeline workflow — local 0.4.1
+# Timeline workflow — local 0.5.0
 
 The Timeline is a general audio editor with optional video. A specific interview
 is an example, not a required workspace or editing mode.
@@ -83,9 +83,87 @@ The viewer waits for metadata before seeking, retries a transient load once, and
 provides **Retry video** for persistent failures. A missing linked file still
 requires restoring its path; Retry cannot restore deleted media.
 
-Video is one locked source lane. **Export range** sets a single source-clock
-in/out interval. Full-length export preserves compressed video and camera audio;
-a section encodes an accurate picture/audio cut. Audio clip edits do not cut the
-picture. Multiple video clips, ripple picture editing and multicam remain future
-work. Video import/export requires desktop FFmpeg/FFprobe; iOS/browser retain the
-audio editor. See INTERVIEW_WALKTHROUGH.md for the Canon/H6 example.
+Video uses non-destructive clips from one linked source. Select the picture clip,
+seek with the ruler/position slider, and **Split selected** (scissors) or **Split
+all** (layers). Split all cuts audio and picture in one undo step. Drag a video
+clip or use **Clip settings** to enter its timeline position, source start and
+duration. Deleting a clip leaves a black gap; it does not ripple other material.
+Audio stays on its own clock. Move/split audio separately when picture edits
+should change the sound. Multiple source videos, stacked video lanes and multicam
+are not implemented.
+
+The video strip is a **fitted overview**, with its own 0–duration label, even when
+audio zooms. The blue window shows the audio viewport; video and audio red lines
+represent the same time on different scales. Drag either red line to scrub. Click
+the overview background to seek; click a picture clip to select/move it. The audio
+ruler retains the zoomed scale. **Fit all** restores the whole audio arrangement.
+
+## Precision, fades and transitions
+
+- Move clips near another start/end to snap within eight screen pixels. Audio
+  considers clip edges across lanes; picture considers picture edges. Alt-drag
+  bypasses snapping. Toggle the magnet in View & tools to disable snapping.
+- Arrow left/right moves selected clips by 1 ms; Shift changes this to 100 ms;
+  Alt changes it to one project audio sample. With no selection, arrows seek.
+  Inputs, selectors and dialogs retain their own keys. The focused red handle
+  seeks rather than moving clips.
+- Touch uses the left/right nudge icons and a step selector (sample, 1/10/33/100 ms).
+  Clip settings accepts exact start times. Audio touch dragging still requires
+  Move & trim; picture clips have their own draggable overview hit targets.
+- Audio **Clip settings** has fade-in/out durations and linear/exponential/S-curve
+  shaping. The **Tracks & microphones** mixer also has track fades, timed from
+  the first segment start to the last end, including gaps. Track and segment
+  envelopes multiply; both realtime playback and export use them. Resuming inside
+  a fade preserves its instantaneous gain.
+- Picture **Clip settings** has fade-in/out to black and an incoming transition
+  with duration. Choosing an incoming transition overlaps the preceding clip,
+  moving this clip earlier. This shortens picture length; audio is unchanged.
+  Adjust the sound if appropriate. Overlaps must equal the transition duration,
+  remain shorter than both clips and never involve three clips. Invalid overlaps
+  block export rather than silently changing timing.
+- Available transitions: cross dissolve, dip to black/white, wipes and pushes in
+  four directions, horizontal blur, cross zoom, pixelize, whip pan, glitch and
+  page peel. The page peel is a 2D mirrored fold with shading, not a 3D page
+  simulation. Match cuts are made by lining up matching source frames and choosing
+  Cut; there is no automatic geometry detector.
+- Preview follows clip source offsets and displays black gaps. Expensive effects
+  have a labelled lightweight preview; exported effects use FFmpeg at source
+  resolution and frame rate (30 fps fallback for unknown frame rates). Picture
+  edit boundaries quantize to video frames; audio nudges remain sample based. Video export re-encodes edited clips; completely untouched legacy
+  video retains the stream-copy fast path. **Export range** now uses the edited
+  timeline clock. Projects preserve clips, fades, transitions and ranges.
+- Toolbar icons show names on mouse hover or keyboard focus. A touch long press
+  shows the name without activating the command. Dialog form actions retain text.
+  Timeline is first in the sidebar; the decorative logo is removed.
+- **Apply Voice Effects** loads the selected audio clip into Voice. Process it,
+  then **Apply to original clip and return** replaces that clip's source while
+  keeping its position, track controls and effects. Timeline Undo restores the
+  original. Loading/recording unrelated audio clears the return target. A changed
+  speed can change clip length, so check neighbouring clips before export.
+
+## CLI picture editing
+
+Use a JSON edit document containing a linked `path` and `clips` array. Each clip
+has `id`, `startTime`, `sourceOffset`, `duration`, `fadeIn`, `fadeOut`, `transition`
+and `transitionDuration`. Durations and positions are seconds. For example:
+
+```json
+{"path":"/absolute/source.mp4","clips":[
+  {"id":"a","startTime":0,"sourceOffset":0,"duration":5,"fadeIn":0.5,"fadeOut":0,"transition":"cut","transitionDuration":0},
+  {"id":"b","startTime":4,"sourceOffset":12,"duration":5,"fadeIn":0,"fadeOut":0.5,"transition":"fade","transitionDuration":1}
+]}
+```
+
+```bash
+crispaudio edit-video --edit picture.json --mix timeline-mix.wav --output edited.mp4
+crispaudio edit-video --edit picture.json --start 2 --end 7 \
+  --mix section-mix.wav --mix-is-trimmed --output section.mp4
+```
+
+The first mix uses the edited full timeline clock. The second already contains
+only the five-second selection. Omitting `--mix` intentionally produces silent
+picture; original camera audio is not automatically reused after rearranging
+picture. Output files must be new. CLI accepts silent source videos; the guided
+GUI media import still requires camera audio. Video import/export requires desktop
+FFmpeg/FFprobe; iOS/browser retain the audio editor. See INTERVIEW_WALKTHROUGH.md
+for the Canon/H6 example.

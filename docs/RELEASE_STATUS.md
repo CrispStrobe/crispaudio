@@ -99,3 +99,20 @@ reset/undo and portable track save/load with fresh IDs. These browser checks do
 not independently validate native WebKit playback or macOS fullscreen behavior.
 The ad-hoc-signed local app is rebuilt/reopened. No release tag or Apple upload.
 See [Timeline workflow](TIMELINE_WORKFLOW.md).
+
+## Local 0.5.0 precision and picture editing
+
+The local macOS app adds fitted video overview, draggable cursors, magnetic edge
+snapping, precise nudges, track/segment fade envelopes and single-source picture
+clips/transitions. Source files remain untouched. Picture and sound edit
+independently. Advanced preview is approximate; page peel is a shaded 2D fold.
+No new Apple release/tag/upload was requested.
+
+Validation: 1,167 frontend tests, lint/production build, 17 native tests, 7 media
+tests; existing generated-media CLI regression and new real-FFmpeg picture
+composition checks (cuts, black gaps, fades, 17 transitions, section + trimmed mix,
+invalid overlaps). Browser checks at five sizes cover video split/dissolve, fitted
+overview under zoom, nudging, mouse/touch cursor dragging, non-activating touch
+labels, Voice handoff/return, and rendered audio fade amplitudes including resume.
+These use real browser media/audio with mocked native file dialogs/IPC; they do
+not replace native WebKit/fullscreen or physical iPhone/iPad testing.
