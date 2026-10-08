@@ -1,3 +1,6 @@
+import { ToolButton } from '../common/ToolButton';
+import { SpectrogramDisplay } from '../shared/SpectrogramDisplay';
+import { AudioLines, Bot, Cpu, Radio, Orbit, Shield, Flame, Squirrel } from 'lucide-react';
 import { isNativeMac } from '../../lib/nativeMenuPlatform';
 // ---------------------------------------------------------------------------
 // CrispAudio — VoicePanel
@@ -5,7 +8,7 @@ import { isNativeMac } from '../../lib/nativeMenuPlatform';
 // Header → File drop → Presets → A/B → Actions → Visualizations → Tabbed params
 // ---------------------------------------------------------------------------
 
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import { VoiceParameters } from './VoiceParameters';
 import { useVoicePlayback } from '../../hooks/useVoicePlayback';
 import { useShallow } from 'zustand/react/shallow';
@@ -32,7 +35,7 @@ import { computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
 import { useMediaRecorder } from '../../hooks/useMediaRecorder';
 import { VoiceEngine } from '../../audio/engine/VoiceEngine';
 import type { VoicePresetName } from '../../types/voicelab';
-import { VoiceWaveform, VoiceSpectrum, VoiceLevels } from './VoiceVisualizations';
+import { VoiceWaveform, VoiceLevels } from './VoiceVisualizations';
 import { haptic } from '../../lib/native';
 
 const voiceEngine = new VoiceEngine();
@@ -46,16 +49,9 @@ const PRESET_NAMES: VoicePresetName[] = [
   'radio', 'metallic', 'demon', 'chipmunk',
 ];
 
-const PRESET_COLORS: Record<VoicePresetName, string> = {
-  original: 'bg-slate-600',
-  classicRobot: 'bg-red-600',
-  deepRobot: 'bg-purple-600',
-  alien: 'bg-green-600',
-  cyborg: 'bg-blue-600',
-  radio: 'bg-yellow-600',
-  metallic: 'bg-orange-600',
-  demon: 'bg-pink-600',
-  chipmunk: 'bg-indigo-600',
+const PRESET_ICONS = {
+  original: AudioLines, classicRobot: Bot, deepRobot: Cpu, alien: Orbit,
+  cyborg: Shield, radio: Radio, metallic: AudioLines, demon: Flame, chipmunk: Squirrel,
 };
 
 const PRESET_SHORTCUTS: Record<VoicePresetName, string> = {
@@ -124,7 +120,7 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
             ? 'border-blue-500 bg-blue-500/10 scale-[1.02]'
             : 'border-gray-600/30 bg-gray-800/30 hover:border-gray-500/50'
         }`}
-        style={{ padding: '2rem', minHeight: filename ? 80 : 120 }}
+        style={{ padding: '1rem', minHeight: 76 }}
       >
         <input
           ref={inputRef}
@@ -331,27 +327,26 @@ export function VoicePanel() {
   }, [isPlaying, handlePlay, handleStop, handleProcess, setActiveSlot, loadPreset, processedBuffer, sourceBuffer, handleUndo, handleRedo]);
 
 
+  const analysisBuffer = processedBuffer ?? sourceBuffer;
+  const analysisSamples = useMemo(() => analysisBuffer?.getChannelData(0) ?? null, [analysisBuffer]);
+
   return (
-    <div className="h-full overflow-y-auto panel-enter" style={{ background: 'var(--bg-primary)' }}>
+    <div className="voice-editor h-full overflow-y-auto panel-enter" style={{ background: 'var(--bg-primary)' }}>
       <div className="max-w-7xl mx-auto p-3 sm:p-6">
 
         {/* ── Header ──────────────────────────────────────────────── */}
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-2 gradient-title-voice">
+        <div className="mb-4">
+          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-2 gradient-title-voice">
             {t('panels.voice')}
           </h1>
           <p className="text-gray-400 text-sm sm:text-base">{t('voice.subtitle')}</p>
-          {/* Keyboard shortcuts hint is irrelevant on touch/small screens */}
-          <p className="hidden sm:block text-gray-500 text-xs mt-2">
-            {t('voice.shortcuts')}
-          </p>
         </div>
 
         {/* ── File Drop Zone + Record ─────────────────────────────── */}
-        <div className="card mb-6">
+        <div className="card mb-4">
           {timelineTarget && <p className="text-sm text-violet-300 mb-3">{t('editing.voiceTarget')}</p>}
           <FileDropZone onFile={buffer => { setSourceBuffer(buffer); setProcessedBuffer(null); useUIStore.setState({voiceEffectsTargetSegmentId:null}); }} />
-          <div className="flex items-center justify-center gap-3 mt-4">
+          <div className="flex items-center gap-3 mt-2">
             <button
               onClick={handleRecordToggle}
               disabled={isRecordProcessing}
@@ -377,36 +372,24 @@ export function VoicePanel() {
           </div>
         </div>
 
-        {/* ── Voice Presets ────────────────────────────────────────── */}
-        <div className="card mb-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
-            <Mic className="w-5 h-5" />
-            {t('voice.presets')}
-          </h3>
-          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3">
-            {PRESET_NAMES.map((name) => (
-              <button
-                key={name}
-                onClick={() => {
-                  loadPreset(name);
-                  haptic('selection');
-                }}
-                className={`p-3 rounded-lg transition-all transform hover:scale-105 text-sm font-semibold shadow-lg text-white ${
-                  selectedPreset === name
-                    ? `${PRESET_COLORS[name]} ring-2 ring-white/30`
-                    : `${PRESET_COLORS[name]} hover:opacity-80`
-                }`}
-              >
-                {t(`voice.preset_${name}`)}
-                <span className="block text-[10px] opacity-70 mt-0.5">({PRESET_SHORTCUTS[name]})</span>
-              </button>
-            ))}
+        <section className="mb-4" aria-label={t('voice.presets')}>
+          <h2 className="text-sm font-semibold text-gray-300 mb-2">{t('voice.presets')}</h2>
+          <div className="sfx-preset-grid">
+            {PRESET_NAMES.map(name => {
+              const Icon = PRESET_ICONS[name];
+              return <button key={name} className="sfx-preset" aria-label={t(`voice.preset_${name}`)}
+                aria-pressed={selectedPreset === name} title={t(`voice.preset_${name}`)}
+                onClick={() => { loadPreset(name); haptic('selection'); }}>
+                <Icon size={22} aria-hidden="true"/><span>{t(`voice.preset_${name}`)}</span>
+                <kbd aria-hidden="true">{PRESET_SHORTCUTS[name]}</kbd>
+              </button>;
+            })}
           </div>
-        </div>
+        </section>
 
         {/* ── A/B Controls ────────────────────────────────────────── */}
-        <div className="card mb-6">
-          <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 sm:gap-4">
+        <div className="card mb-4">
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 sm:gap-4">
             {/* Slots */}
             <div className="flex items-center gap-2">
               <button
@@ -459,119 +442,42 @@ export function VoicePanel() {
           </div>
         </div>
 
-        {/* ── Action Buttons ──────────────────────────────────────── */}
-        <div className="flex flex-wrap justify-center gap-3 mb-6">
-          {/* Play Source */}
-          <button
-            onClick={isPlaying ? handleStop : () => handlePlay(sourceBuffer, 'source')}
-            disabled={!sourceBuffer}
-            aria-label={isPlaying ? 'Stop source playback' : 'Play source audio'}
-            className={`px-5 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
-              isPlaying
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white'
-            }`}
-          >
-            {isPlaying ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-            {isPlaying ? t('voice.stop') : t('voice.playSource')}
-          </button>
-
-          {/* Play Processed */}
-          <button
-            onClick={isPlaying ? handleStop : () => handlePlay(processedBuffer, 'processed')}
-            disabled={!processedBuffer}
-            aria-label={isPlaying ? 'Stop processed playback' : 'Play processed audio'}
-            className={`px-5 py-3 rounded-lg transition-colors flex items-center gap-2 font-semibold ${
-              isPlaying
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-700 disabled:text-gray-500 text-white'
-            }`}
-          >
-            {isPlaying ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-            {isPlaying ? t('voice.stop') : t('voice.playProcessed')}
-          </button>
-
-          {/* Process */}
-          <button
-            onClick={handleProcess}
-            disabled={!sourceBuffer || isProcessing}
-            className="px-5 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-          >
-            {isProcessing ? (
-              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Shuffle className="w-5 h-5" />
-            )}
-            {isProcessing ? t('voice.processing') : t('voice.process')}
-          </button>
-
-          {/* Export */}
-          <button
-            onClick={downloadProcessed}
-            aria-label={t('voice.export')}
-            disabled={!processedBuffer || exportStage !== null}
-            className="px-5 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-          >
-            <Download className="w-5 h-5" />
-            {t('voice.export')}
-          </button>
-
-          {/* Send to Timeline */}
-          {exportStage && (
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <span role="status" aria-live="polite">{t(`audioExport.${exportStage}`)}</span>
-              <button type="button" onClick={cancelExport} aria-label={t('audioExport.cancel')} className="px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">
-                {t('audioExport.cancel')}
-              </button>
-            </div>
-          )}
+        <div className="sfx-actions flex flex-wrap items-center gap-2 mb-4">
+          <ToolButton icon={isPlaying ? Square : Play} label={isPlaying ? t('voice.stopSource') : t('voice.playSource')}
+            onClick={isPlaying ? handleStop : () => handlePlay(sourceBuffer, 'source')} disabled={!sourceBuffer}/>
+          <ToolButton icon={isPlaying ? Square : Play} label={isPlaying ? t('voice.stopProcessed') : t('voice.playProcessed')}
+            onClick={isPlaying ? handleStop : () => handlePlay(processedBuffer, 'processed')} disabled={!processedBuffer}
+            className="!bg-indigo-600 !border-indigo-500 !text-white"/>
+          <ToolButton icon={Shuffle} label={t(isProcessing ? 'voice.processing' : 'voice.process')}
+            onClick={handleProcess} disabled={!sourceBuffer || isProcessing}/>
+          <ToolButton icon={Undo2} label={t('common.undo')} onClick={handleUndo}/>
+          <ToolButton icon={Redo2} label={t('common.redo')} onClick={handleRedo}/>
+          <ToolButton icon={Download} label={t('voice.export')} onClick={downloadProcessed} disabled={!processedBuffer || exportStage !== null}/>
+          <ToolButton icon={SendHorizontal} label={t(timelineTarget ? 'editing.returnVoice' : 'voice.sendToTimeline')}
+            onClick={sendToTimeline} disabled={!processedBuffer}/>
+          {isProcessing && <span role="status" className="text-sm text-gray-300">{t('voice.processing')}</span>}
+          {exportStage && <><span role="status" className="text-sm text-gray-300">{t(`audioExport.${exportStage}`)}</span><button onClick={cancelExport} className="timeline-tool">{t('audioExport.cancel')}</button></>}
           {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
-
-          <button
-            onClick={sendToTimeline}
-            disabled={!processedBuffer}
-            className="px-5 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-700 disabled:text-gray-500 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-            aria-label={t(timelineTarget ? 'editing.returnVoice' : 'voice.sendToTimeline')}
-          >
-            <SendHorizontal className="w-5 h-5" />
-            {t(timelineTarget ? 'editing.returnVoice' : 'voice.sendToTimeline')}
-          </button>
-
-          {/* Undo / Redo */}
-          <button
-            onClick={handleUndo}
-            className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-            title={t('common.undo') + ' (Ctrl+Z)'}
-            aria-label={t('common.undo')}
-          >
-            <Undo2 className="w-5 h-5" />
-          </button>
-
-          <button
-            onClick={handleRedo}
-            className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 font-semibold text-white"
-            title={t('common.redo') + ' (Ctrl+Shift+Z)'}
-            aria-label={t('common.redo')}
-          >
-            <Redo2 className="w-5 h-5" />
-          </button>
         </div>
 
         {/* ── Visualizations ──────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="card">
             <VoiceWaveform buffer={sourceBuffer} color="#3b82f6" title={t('voice.originalWaveform')} isPlaying={isPlaying && playingBuffer === 'source'} duration={sourceBuffer?.duration} />
           </div>
           <div className="card">
             <VoiceWaveform buffer={processedBuffer} color="#a855f7" title={t('voice.processedWaveform')} isPlaying={isPlaying && playingBuffer === 'processed'} duration={processedBuffer?.duration} />
           </div>
-          <div className="card">
-            <VoiceSpectrum buffer={processedBuffer ?? sourceBuffer} />
-          </div>
-          <div className="card">
-            <VoiceLevels buffer={processedBuffer ?? sourceBuffer} />
-          </div>
         </div>
+        <section className="card mb-4">
+          <SpectrogramDisplay buffer={analysisSamples} sampleRate={analysisBuffer?.sampleRate ?? 44100}
+            title={t(processedBuffer ? 'analysis.processedSpectrogram' : 'analysis.sourceSpectrogram')}/>
+          <p className="text-xs text-gray-400 mt-1">{t('analysis.firstChannel')}</p>
+        </section>
+        <details className="mb-4">
+          <summary className="text-sm text-gray-300 cursor-pointer py-2">{t('sfx.analysisDetails')}</summary>
+          <div className="card"><VoiceLevels buffer={analysisBuffer}/></div>
+        </details>
 
         <VoiceParameters />
 

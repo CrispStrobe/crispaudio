@@ -387,7 +387,9 @@
     "record": "Aufnehmen",
     "stopRecording": "Aufnahme stoppen",
     "recordProcessing": "Verarbeitung...",
-    "loadAudioFile": "Audiodatei laden"
+    "loadAudioFile": "Audiodatei laden",
+    "stopSource": "Quellwiedergabe stoppen",
+    "stopProcessed": "Bearbeitete Wiedergabe stoppen"
   },
   "timeline": {
     "ruler": "Zeitleiste",
@@ -889,5 +891,13 @@
     "help_remove": "Der Papierkorb im Spurkopf entfernt die Spur. Video entfernen behält Audio und löst dessen Verknüpfung. Der Papierkorb in der Werkzeugleiste entfernt ausgewählte Clips samt verknüpften Audio-/Videopartnern. Rückgängig stellt beides wieder her.",
     "help_fullscreen_title": "Video im Vollbild",
     "help_fullscreen": "Video vergrößern öffnet eine fensterfüllende Vorschau und fordert nach Möglichkeit nativen Vollbildmodus an. Wiedergabe und Einzelbildschritte bleiben sichtbar. Escape oder Verkleinern schließt die Ansicht. Im erweiterten Viewer schalten Links/Rechts Einzelbilder und die Leertaste die Wiedergabe. Tab bleibt bei den Viewer-Steuerelementen; Timeline-Bearbeitungstasten sind getrennt."
+  },
+  "analysis": {
+    "outputSpectrogram": "Ausgabe-Spektrogramm",
+    "sourceSpectrogram": "Quell-Spektrogramm",
+    "processedSpectrogram": "Bearbeitetes Spektrogramm",
+    "scale": "Hann-FFT · Farbe: −90 bis 0 dBFS",
+    "sampled": "zeitlich abgetastete Übersicht",
+    "firstChannel": "Analyse: erster Audiokanal"
   }
 }

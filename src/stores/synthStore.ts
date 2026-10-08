@@ -29,6 +29,8 @@ interface SynthState {
   morphAmount: number;
   lockedParams: Set<keyof SynthParams>;
   buffer: Float32Array | null;
+  bufferA: Float32Array | null;
+  bufferB: Float32Array | null;
   sampleRate: number;
   bitDepth: number;
   isPlaying: boolean;
@@ -105,6 +107,18 @@ function mutateSynthParams(
 // Store implementation
 // ---------------------------------------------------------------------------
 
+// Reuse each rendered sound, including its random noise, until its parameters
+// or sample rate change. Weak keys allow discarded undo states to be collected.
+const slotCache = new WeakMap<SynthParams, Map<number, Float32Array>>();
+function renderSlot(params: SynthParams, rate: number): Float32Array {
+  let rates = slotCache.get(params);
+  if (!rates) { rates = new Map(); slotCache.set(params, rates); }
+  let samples = rates.get(rate);
+  if (!samples) { samples = generateSamples(params, rate); rates.set(rate, samples); }
+  return samples;
+}
+let lastMorph: { a: SynthParams; b: SynthParams; slot: string; amount: number; rate: number; samples: Float32Array } | undefined;
+
 export const synthHistoryGesture = createHistoryGesture();
 
 export const useSynthStore = create<SynthState>()(
@@ -116,6 +130,8 @@ export const useSynthStore = create<SynthState>()(
       morphAmount: 0,
       lockedParams: new Set<keyof SynthParams>(),
       buffer: null as Float32Array | null,
+      bufferA: null as Float32Array | null,
+      bufferB: null as Float32Array | null,
       sampleRate: 44100,
       bitDepth: 16,
       isPlaying: false,
@@ -178,21 +194,23 @@ export const useSynthStore = create<SynthState>()(
 
       generate() {
         const { paramsA, paramsB, activeSlot, morphAmount, sampleRate } = get();
-        let params: SynthParams;
-        if (morphAmount === 0) {
-          // No morphing — use the active slot directly
-          params = activeSlot === 'A' ? paramsA : paramsB;
-        } else if (morphAmount === 1) {
-          // Fully morphed — use the other slot
-          params = activeSlot === 'A' ? paramsB : paramsA;
+        const bufferA = renderSlot(paramsA, sampleRate);
+        const bufferB = renderSlot(paramsB, sampleRate);
+        let samples: Float32Array;
+        if (morphAmount === 0 || morphAmount === 1) {
+          const useA = (activeSlot === 'A') === (morphAmount === 0);
+          samples = useA ? bufferA : bufferB;
         } else {
-          // Interpolate from active toward other
-          const src = activeSlot === 'A' ? paramsA : paramsB;
-          const dst = activeSlot === 'A' ? paramsB : paramsA;
-          params = morphParams(src, dst, morphAmount);
+          if (!lastMorph || lastMorph.a !== paramsA || lastMorph.b !== paramsB ||
+              lastMorph.slot !== activeSlot || lastMorph.amount !== morphAmount || lastMorph.rate !== sampleRate) {
+            const src = activeSlot === 'A' ? paramsA : paramsB;
+            const dst = activeSlot === 'A' ? paramsB : paramsA;
+            lastMorph = { a: paramsA, b: paramsB, slot: activeSlot, amount: morphAmount,
+              rate: sampleRate, samples: generateSamples(morphParams(src, dst, morphAmount), sampleRate) };
+          }
+          samples = lastMorph.samples;
         }
-        const samples = generateSamples(params, sampleRate);
-        set((state) => { state.buffer = samples; });
+        set((state) => { state.buffer = samples; state.bufferA = bufferA; state.bufferB = bufferB; });
       },
 
       setIsPlaying(playing: boolean) {

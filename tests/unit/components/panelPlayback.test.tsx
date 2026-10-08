@@ -77,12 +77,14 @@ describe('store render isolation', () => {
     act(() => useVoiceStore.getState().setIsProcessing(true));
     expect(translate.mock.calls.filter(([key]) => key === 'voice.pitchShift')).toHaveLength(0);
   });
-  it('SFXPanel ignores inactive slot edits', () => {
-    const onRender = vi.fn();
-    render(<Profiler id="sfx" onRender={onRender}><SFXPanel /></Profiler>);
-    onRender.mockClear();
-    act(() => useSynthStore.setState({ paramsB: { ...useSynthStore.getState().paramsB, p_base_freq: 0.72 } }));
-    expect(onRender).not.toHaveBeenCalled();
+  it('refreshes the visible B waveform without changing the active A sound', () => {
+    render(<SFXPanel />);
+    const before = useSynthStore.getState();
+    act(() => useSynthStore.setState({ paramsB: { ...before.paramsB, p_base_freq: 0.72 } }));
+    const after = useSynthStore.getState();
+    expect(after.bufferB).not.toBe(before.bufferB);
+    expect(after.bufferA).toBe(before.bufferA);
+    expect(after.buffer).toBe(before.buffer);
   });
   it('VoicePanel ignores inactive slot edits', () => {
     const onRender = vi.fn();
@@ -101,13 +103,13 @@ describe('Voice playback', () => {
     };
     useVoiceStore.setState({ sourceBuffer: buffer, processedBuffer: buffer });
     const { unmount } = render(<VoicePanel />);
-    fireEvent.click(screen.getByRole('button', { name: 'Play source audio' }));
+    fireEvent.click(screen.getByRole('button', { name: 'voice.playSource' }));
     const ctx = FakeContext.instances[0];
     const oldEnded = ctx.sources[0].onended;
-    fireEvent.click(screen.getByRole('button', { name: 'Stop source playback' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Play processed audio' }));
+    fireEvent.click(screen.getByRole('button', { name: 'voice.stopSource' }));
+    fireEvent.click(screen.getByRole('button', { name: 'voice.playProcessed' }));
     act(() => oldEnded?.());
-    expect(screen.getByRole('button', { name: 'Stop processed playback' })).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'voice.stopProcessed' })).not.toBeNull();
     unmount();
     expect(ctx.sources[1].disconnect).toHaveBeenCalledOnce();
     expect(ctx.close).toHaveBeenCalledOnce();

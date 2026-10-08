@@ -4,7 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.8]
+## [Unreleased — local version 0.6.9]
+
+- Keep SFX presets in one always-visible, horizontally scrollable row. Apply the
+  same neutral icon preset strip and compact action buttons to Voice.
+- Restore side-by-side SFX A/B waveforms with independent rendered buffers;
+  keep noise samples stable when switching slots. Refresh output after undo,
+  morph and sample-rate changes.
+- Add genuine Hann-window FFT spectrograms for SFX output and Voice source or
+  processed audio, with time/frequency axes and a fixed −90 to 0 dBFS scale.
+  Cap analysis at 256 windows; label long audio as a sampled overview.
+- Replace Voice's misleading spectrum (previously a time-domain loudness chart)
+  and preserve parallel source/processed waveforms.
+
+## [Local version 0.6.8]
 
 - Add macOS File, Edit, View, Playback, Window and Help menus with standard
   shortcuts, enabled states and English/German labels. Project commands can open

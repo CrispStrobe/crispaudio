@@ -334,3 +334,28 @@ The macOS app bundle build passed. The ad-hoc-signed 0.6.8 local app is installe
 and launched. Current autosave and WebKit recovery were backed up under the
 private validation folder's `ux/native-autosave-before-068.json` and
 `ux/recovery-before-068/WebKit`. No Apple upload or release tag is included.
+
+## Local 0.6.9 — simultaneous SFX slots and real spectrograms
+
+SFX presets are one always-visible horizontally scrollable row. A/B waveforms
+now use separate cached slot renders, preserving the actual noise samples when
+switching slots. Output refreshes after undo, morphing and sample-rate changes.
+Voice uses the same neutral icon preset strip and compact action controls, with
+parallel original/processed waveforms. Its old loudness-based pseudo-spectrum
+has been replaced with a genuine time-frequency analysis.
+
+Both panels show Hann-window 1024-point FFT spectrograms, actual time/frequency
+axes and a fixed −90 to 0 dBFS amplitude scale. Work is bounded at 256 uniformly
+spaced windows; longer buffers explicitly say they are sampled overviews. Voice
+analyzes its first channel. See `docs/SFX_WORKFLOW.md` for limits and workflow.
+
+Verified: 82 frontend suites / 1,261 tests, lint, TypeScript/Vite and macOS app
+bundle build. New tests check tone frequency/amplitude, frequency changes over
+time, silence, bounded long-buffer analysis and independent stable A/B renders.
+Chrome and WebKit checks cover both panels in German at 1440, 1024 and 390 px,
+including single-row preset bounds, horizontal scrolling, parallel waveforms and
+populated spectrogram canvases. Physical iOS testing remains pending.
+
+Installed and launched ad-hoc-signed 0.6.9 at `~/Applications/CrispAudio-local.app`.
+Backups: private validation `ux/native-autosave-before-069.json` and
+`ux/recovery-before-069/WebKit`. No release tag or Apple upload was triggered.

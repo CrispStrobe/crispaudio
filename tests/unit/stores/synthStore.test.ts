@@ -282,3 +282,25 @@ describe('synthStore — setIsPlaying', () => {
     expect(useSynthStore.getState().isPlaying).toBe(false);
   });
 });
+
+describe('independent slot renders', () => {
+  it('retains the actual noisy sound when comparing slots and regenerating', () => {
+    resetStore();
+    useSynthStore.getState().setParams({wave_type: 3});
+    useSynthStore.getState().generate();
+    const {bufferA, bufferB, buffer} = useSynthStore.getState();
+    expect(buffer).toBe(bufferA);
+    expect(bufferA).not.toBe(bufferB);
+    useSynthStore.getState().setActiveSlot('B');
+    useSynthStore.getState().generate();
+    expect(useSynthStore.getState().buffer).toBe(bufferB);
+    expect(useSynthStore.getState().bufferA).toBe(bufferA);
+    useSynthStore.getState().setMorphAmount(1);
+    useSynthStore.getState().generate();
+    expect(useSynthStore.getState().buffer).toBe(bufferA);
+    useSynthStore.getState().setParams({p_base_freq: .9});
+    useSynthStore.getState().generate();
+    expect(useSynthStore.getState().bufferB).not.toBe(bufferB);
+    expect(useSynthStore.getState().bufferA).toBe(bufferA);
+  });
+});

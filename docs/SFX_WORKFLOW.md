@@ -1,24 +1,41 @@
-# SFX workflow
+# SFX and Voice workflow
 
-Choose an icon preset, then play the current A/B slot. Preset names wrap in German
-and English; each card shows its sound-type icon and keyboard hint. Playback,
-loop, randomize, mutate, undo/redo, export and Send to Timeline share a compact
-icon bar. Hover for labels or hold on touch without activating the control.
+Sound presets stay visible in one horizontally scrollable row. Swipe sideways,
+use the trackpad, or Tab between preset buttons. Names wrap inside each icon card
+in German and English. There is no collapse control.
 
-Switch A/B, copy a slot or swap slots to compare sounds. Morph blends the slots.
-The main waveform is the actual current output, labeled A, B or A/B blend.
-Duration, peak and RMS readings describe that same buffer. The spectrum also
-follows the current output. The older pair of charts duplicated this buffer and
-therefore did not provide a real simultaneous A/B comparison.
+Playback, loop, randomize, mutate, undo/redo, export and Send to Timeline share a
+compact icon bar. Hover for labels or hold on touch without activating a control.
+Switch A/B, copy a slot or swap slots to compare sounds. Morph interpolates sound
+parameters between the slots; it is not an audio crossfade.
+
+Both SFX slot waveforms remain visible side by side, including on narrow screens.
+Each uses its own rendered samples. Renders are cached by parameters and sample
+rate, so switching away and back does not silently reroll a noisy sound. Editing
+one slot refreshes its waveform without changing the other slot's samples. The
+output uses the active slot at 0%, the opposite slot at 100%, and a separate
+parameter-interpolated render between those endpoints.
+
+The spectrogram describes that output, including a morphed output. Horizontal
+position is time, vertical position is frequency from DC to the actual Nyquist
+frequency, and colour represents Hann-window FFT peak amplitude from −90 to
+0 dBFS. It is not normalized independently per time slice, so fades and quieter
+sounds remain quieter. Duration, peak and RMS describe the complete output.
+
+Analysis uses 1024-sample windows with a nominal 256-sample hop, capped at 256
+uniformly spaced windows. Long audio is explicitly marked as a sampled time
+overview: short events between windows may be missed. This is an offline buffer
+visualization, not a live microphone analyzer. No pitch estimates are implied.
 
 Open Level and envelope details for amplitude, volume envelope and ADSR graphs.
 Audio quality and preset files contains sample rate/bit depth, preset import and
 export, sharing and the alternate export control. These secondary panels start
-collapsed to preserve space for the sound and parameter controls. In the Basis,
-Envelope, Effects and Advanced tabs, change parameters and inspect the resulting
-waveform/spectrum. On macOS, menu Undo/Redo uses the active SFX history too.
+collapsed. Change parameters in the Basis, Envelope, Effects and Advanced tabs.
+On macOS, menu Undo/Redo uses the active panel's history too.
 
-Possible later additions are a time-frequency spectrogram for evolving noises,
-a pitch contour for tonal sweeps and an optional genuine A/B overlay with shared
-scaling. These are not part of the current view; the current charts describe one
-actual rendered output rather than simulating a comparison.
+In Voice, load or record audio, choose an icon preset, select A/B settings or
+morph, then Process. The original and processed waveforms remain side by side.
+The compact controls play either source, process, undo/redo, export or send the
+result to Timeline. The spectrogram shows processed audio when available,
+otherwise the source. Voice analysis uses the first channel and says so. Level
+details are optional. Process again after changing settings to update the result.

@@ -41,7 +41,7 @@ import { samplesToAudioBuffer, computeWaveformPeaks } from '../../audio/utils/au
 import { type SynthParams, ALL_PRESET_NAMES, type PresetName } from '../../types/synth';
 import * as sfxPresets from '../../audio/presets/sfxPresets';
 import { SfxWaveform } from './SfxWaveform';
-import { SpectrumDisplay } from '../shared/SpectrumDisplay';
+import { SpectrogramDisplay } from '../shared/SpectrogramDisplay';
 import { AmplitudeDisplay } from '../shared/AmplitudeDisplay';
 import { EnvelopeDisplay, ADSRDisplay } from '../shared/EnvelopeDisplay';
 import { haptic } from '../../lib/native';
@@ -106,10 +106,12 @@ export function SFXPanel() {
     const p = selectActiveParams(s);
     return { sound_vol: p.sound_vol, p_env_attack: p.p_env_attack, p_env_sustain: p.p_env_sustain, p_env_decay: p.p_env_decay, p_env_punch: p.p_env_punch };
   }));
-  const { activeSlot, morphAmount, buffer, sampleRate, bitDepth, isPlaying, setActiveSlot, setMorphAmount, swapSlots, copyToOther, generate, setParams, setIsPlaying, setExportSettings, mutateParams, exportParamsJSON, importParamsJSON, encodeShareLink, loadPreset: storeLoadPreset } = useSynthStore(useShallow((s) => ({
+  const { activeSlot, morphAmount, buffer, bufferA, bufferB, sampleRate, bitDepth, isPlaying, setActiveSlot, setMorphAmount, swapSlots, copyToOther, generate, setParams, setIsPlaying, setExportSettings, mutateParams, exportParamsJSON, importParamsJSON, encodeShareLink, loadPreset: storeLoadPreset } = useSynthStore(useShallow((s) => ({
     activeSlot: s.activeSlot,
     morphAmount: s.morphAmount,
     buffer: s.buffer,
+    bufferA: s.bufferA,
+    bufferB: s.bufferB,
     sampleRate: s.sampleRate,
     bitDepth: s.bitDepth,
     isPlaying: s.isPlaying,
@@ -210,11 +212,9 @@ export function SFXPanel() {
     [storeLoadPreset, generate],
   );
 
-  // Generate initial buffer on mount
-  useEffect(() => {
-    if (!buffer) generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const slotParams = useSynthStore(useShallow(s => [s.paramsA, s.paramsB] as const));
+  // Also refresh after undo, morphing and sample-rate changes.
+  useEffect(() => { generate(); }, [generate, slotParams, activeSlot, morphAmount, sampleRate]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -419,17 +419,24 @@ export function SFXPanel() {
           </div>
         </section>
 
-        <div className="sfx-output grid grid-cols-1 lg:grid-cols-3 gap-3 mb-4">
-          <section className="card lg:col-span-2">
-            <SfxWaveform buffer={buffer} isPlaying={isPlaying} title={morphAmount>0?t('sfx.mixedWaveform'):t(activeSlot==='A'?'sfx.waveformA':'sfx.waveformB')} duration={outputStats.duration} noSignalText={t('sfx.noSignal')}/>
+        <div className="sfx-output grid grid-cols-2 gap-3 mb-4">
+          {(['A', 'B'] as const).map(slot => {
+            const samples = slot === 'A' ? bufferA : bufferB;
+            return <section className="card min-w-0" key={slot}>
+              <SfxWaveform buffer={samples} isPlaying={isPlaying && buffer === samples}
+                title={t(slot === 'A' ? 'sfx.waveformA' : 'sfx.waveformB')}
+                duration={(samples?.length ?? 0) / sampleRate} noSignalText={t('sfx.noSignal')}/>
+            </section>;
+          })}
+        </div>
+        <section className="card mb-4">
+          <SpectrogramDisplay buffer={buffer} sampleRate={sampleRate} title={t('analysis.outputSpectrogram')}/>
             <dl className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-400 mt-3 tabular-nums">
               <div><dt className="inline">{t('sfx.outputDuration')} </dt><dd className="inline text-gray-200">{outputStats.duration.toFixed(2)} s</dd></div>
               <div><dt className="inline">{t('sfx.outputPeak')} </dt><dd className={`inline ${isClipping?'text-amber-300':'text-gray-200'}`}>{outputStats.peak>0?(20*Math.log10(outputStats.peak)).toFixed(1):'−∞'} dBFS</dd></div>
               <div><dt className="inline">RMS </dt><dd className="inline text-gray-200">{outputStats.rms>0?(20*Math.log10(outputStats.rms)).toFixed(1):'−∞'} dBFS</dd></div>
             </dl>
-          </section>
-          <section className="card"><SpectrumDisplay buffer={buffer} title={t('sfx.frequencySpectrum')}/></section>
-        </div>
+        </section>
         <details className="sfx-analysis mb-4">
           <summary className="text-sm text-gray-300 cursor-pointer py-2">{t('sfx.analysisDetails')}</summary>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-2">
