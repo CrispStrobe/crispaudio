@@ -359,14 +359,15 @@ pub fn estimate(reference: &[f32], source: &[f32], sample_rate: usize) -> Result
 }
 
 pub fn analyze(video: &str, audio: &[String]) -> Result<Session> {
-    if audio.is_empty() {
-        return Err("Select at least one external audio recording".into());
-    }
     let video = probe(video)?;
     if !video.has_video {
         return Err("Reference must contain video and camera audio".into());
     }
-    let reference = decode_analysis(&video.path)?;
+    let reference = if audio.is_empty() {
+        Vec::new()
+    } else {
+        decode_analysis(&video.path)?
+    };
     let mut tracks = Vec::new();
     for path in audio {
         let source = probe(path)?;
@@ -442,7 +443,7 @@ pub fn validate(session: &Session, allow_uncertain: bool) -> Result<()> {
     if session.format != "crispaudio-sync" || session.version != 1 {
         return Err("Unsupported sync session".into());
     }
-    if session.tracks.is_empty()
+    if !session.video.has_video
         || !session.video.duration.is_finite()
         || session.video.duration <= 0.0
     {

@@ -1,3 +1,4 @@
+import { audibleTracks } from '../../lib/timelineView';
 // ---------------------------------------------------------------------------
 // CrispAudio — TimelineEngine
 // Real-time playback and offline rendering for timeline projects.
@@ -53,11 +54,7 @@ export class TimelineEngine {
     this.stop();
 
     const now = this.ctx.currentTime;
-    const activeTracks = project.tracks.filter((t) => !t.muted);
-    const hasSolo = activeTracks.some((t) => t.solo);
-    const tracksToPlay = hasSolo
-      ? activeTracks.filter((t) => t.solo)
-      : activeTracks;
+    const tracksToPlay = audibleTracks(project.tracks);
 
     for (const track of tracksToPlay) {
       const trackGain = this.ctx.createGain();
@@ -167,11 +164,7 @@ export class TimelineEngine {
       masterOut = busMerger;
     }
 
-    const activeTracks = project.tracks.filter((t) => !t.muted);
-    const hasSolo = activeTracks.some((t) => t.solo);
-    const tracksToRender = hasSolo
-      ? activeTracks.filter((t) => t.solo)
-      : activeTracks;
+    const tracksToRender = audibleTracks(project.tracks);
 
     for (const track of tracksToRender) {
       const trackGain = offCtx.createGain();

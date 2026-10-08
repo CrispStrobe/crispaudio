@@ -1,5 +1,18 @@
 # CrispAudio — Production Readiness Plan
 
+## Generic timeline workflow (2026-10-08, local 0.4.1)
+
+- Replace the interview workspace with generic optional media tools.
+- Move transport adjacent to tracks; expose Fit all, time zoom, track height,
+  horizontal navigation and correct trackpad wheel axes.
+- Implement New project/reset with undo, full project files, reusable track files,
+  standalone camera import, and offset-only track auto-sync with drift reporting.
+- Guard video readiness, retry loading, expand viewer with native fullscreen and
+  fallback; preserve video duration through audio edits.
+- Define consistent temporary Solo override of saved Mute for playback/export.
+- Remaining: drift correction for arbitrary already edited tracks, silent-video
+  import, multiple picture clips/multicam, native/device UX validation.
+
 ## Interview editing (2026-10-08, Codex — implemented)
 
 - Merge `ios-native-features` into main and verify existing gates.

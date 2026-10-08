@@ -110,18 +110,18 @@ is future work.
    Open **Timeline**, then **Open project** and select the prepared
    `MVI_8251.crispaudio`. Keep `aligned-final/` and the original video in place:
    this project links those files rather than embedding them.
-2. Tap/click **Fit project** to see the whole interview. Play, pause, and use the
+2. Tap/click **Fit all / reset view** to see the whole interview. Play, pause, and use the
    position slider to seek. Open **View & tools** for zoom, snapping, undo/redo, and adding tracks.
    Zoom in for editing individual question boundaries. The video filmstrip stays
    on the same ruler as all audio tracks; click it to seek. Waveforms are visually
    normalized by default without changing the mix. In **View & tools**, switch
    waveform display if you need to see mix gain.
-   Open **Check alignment**, choose Camera and Tr1 (then LR), and inspect matching
+   Open **View & tools → Check alignment**, choose Camera and Tr1 (then LR), and inspect matching
    speech starts at Beginning/Middle/End. Try a 0.2–0.5 s window. This overlay
    does not change offsets; re-analyze/re-import if a correction is needed.
-3. Compare Tr1, LR, and Camera with the microphone buttons below the video.
-   These are **global mix changes**, not temporary headphone monitoring. A button
-   selects one track and clears other solo states; it changes the eventual export.
+3. Compare Tr1, LR, and Camera using **S** on their track headers. Solo temporarily
+   overrides saved mute; clear solos in **Tracks & microphones** to restore the
+   saved mix. Solo affects export too. The green dot marks effective audibility.
 4. Open **Tracks & microphones**. Rename tracks to e.g. `Main speaker — RØDE`,
    `Interviewer — H6 room`, and `Camera reference`. Adjust levels while listening.
    **Listen only** compares a single microphone; close the dialog when done.
@@ -140,8 +140,8 @@ is future work.
      natural pauses; short fades can soften switching clicks. This is manual
      source selection, not automatic speaker recognition.
 6. Play across every switch and check lip sync at the beginning and end. If a
-   microphone comparison button is used again, restore the intended track
-   mute/solo states before export.
+   solo button is used again, clear solos and restore the intended track
+   mute states before export.
 7. **Save project** to a new project file. Keep its linked media folder.
 8. Optionally open **Export range** below the microphone controls. Set the start
    and end at the playhead or enter seconds. Green IN/OUT markers and dark areas
@@ -161,7 +161,7 @@ multi-camera assembly are not implemented.
 
 ## GUI on macOS: start from the originals
 
-1. Open **Timeline → Sync video + audio**.
+1. Open **Timeline → Add video + recordings**.
 2. Choose `MVI_8251.MP4` in the camera step.
 3. Choose both `ZOOM0014_Tr1.WAV` and `ZOOM0014_LR.WAV` in the recorder step.
    Check the displayed filenames, then press **Analyze synchronization**.
@@ -196,7 +196,7 @@ launches desktop FFmpeg processes; a mobile media backend is still required.
    By default a finger scrolls vertically instead of moving audio. Enable
    **Move & trim** deliberately when dragging clips/edges, then turn it off.
 5. Follow the complementary-clip editing steps above. **Clip settings** opens a
-   dialog instead of shrinking the waveform area with a sidebar. **Fit project**
+   dialog instead of shrinking the waveform area with a sidebar. **Fit all / reset view**
    shows the full interview; zoom in for precision.
 6. Save an audio project and export the audio mix (WAV/24-bit in Settings).
    iOS project saves embed audio; desktop linked paths cannot be opened there.
@@ -206,3 +206,6 @@ This is the implemented interaction design, verified in a browser at phone and
 tablet sizes. Real-device audio, Files permissions, interruptions/backgrounding,
 VoiceOver, and long-recording memory use remain release gates; browser emulation
 is not a substitute for testing a signed iPhone/iPad build.
+
+For the generic audio-only or audio/video editor and updated mute/solo, file and
+scroll controls, see [Timeline workflow](TIMELINE_WORKFLOW.md).

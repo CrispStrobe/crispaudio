@@ -68,14 +68,14 @@ each source's original number of channels retained.
 
 ## GUI
 
-1. Open **Timeline → Sync video + audio**, choose the camera and recorder files in
+1. Open **Timeline → Add video + recordings**, choose the camera and recorder files in
    the labeled steps, check their names, then analyze synchronization.
 2. Review correlation, drift, residuals and offsets. Weak matches require an
    explicit manual confirmation. Optionally match listening levels.
 3. Choose a folder for the aligned WAVs and sync session, then import the project.
 4. Use the microphone buttons or **Tracks & microphones** to compare tracks.
    Initially only the first microphone plays. These controls change the export mix.
-   **Fit project** shows the full timeline. Select clips and use **Split selected**,
+   **Fit all / reset view** shows the full timeline. Select clips and use **Split selected**,
    **Split all at playhead**, **Delete**, and **Clip settings** to edit without
    right-clicking. The inspector opens in a dialog. Use the position slider to seek.
    On touch, enable **Move & trim** explicitly for clip dragging; otherwise tap
@@ -188,3 +188,6 @@ crispaudio export --session aligned/session.json \
 With CLI `--mix`, supply the full source-clock mix, starting at camera time zero,
 covering at least the selected end. The CLI seeks it with the picture. The GUI
 renders an already trimmed temporary mix and uses the backend's trimmed-mix path.
+
+For the generic audio-only or audio/video editor and updated mute/solo, file and
+scroll controls, see [Timeline workflow](TIMELINE_WORKFLOW.md).

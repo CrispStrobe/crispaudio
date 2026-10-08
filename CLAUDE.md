@@ -75,3 +75,17 @@ an export interval. `export_segment` encodes accurate sections; full length keep
 stream copy. CLI mixes are full-clock files, GUI mixes are already range-trimmed;
 keep that distinction or section audio will seek twice. No Apple release tag was
 created for these local features. See docs/INTERVIEW_EDITING.md and RELEASE_STATUS.md.
+
+## Generic timeline 0.4.1
+
+See docs/TIMELINE_WORKFLOW.md. MediaTools and VideoViewer are optional, not an
+interview-specific workspace. timelineDuration includes video plus all clip ends.
+Time zoom and track height are separate view state; hook hit tests and canvas/header
+geometry must use the same trackHeight. TimelineNavigation plus the parent passive:
+false wheel handler own horizontal browsing; plain vertical scroll stays native.
+Solo overrides stored mute temporarily via audibleTracks in both engine paths.
+TrackFiles loads arrangements additively with new source/track/clip IDs. AutoSyncTracks
+sends binary 1 kHz mono analysis to native estimate_track_sync; applying offsets is
+one project mutation, preserves original sources and reports uncorrected drift.
+VideoViewer guards metadata, retries errors, and restores native fullscreen only
+if it entered it. Keep the in-window expansion fallback for unsupported platforms.

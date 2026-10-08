@@ -1,3 +1,7 @@
+import { timelineDuration } from '../../lib/timelineView';
+import { TimelineNavigation } from './TimelineNavigation';
+import { TrackFiles } from './TrackFiles';
+import { AutoSyncTracks } from './AutoSyncTracks';
 // ---------------------------------------------------------------------------
 // CrispAudio — TimelinePanel
 // Top-level layout for the DaVinci-style timeline editor.
@@ -46,14 +50,14 @@ import { AlignmentView } from './AlignmentView';
 import { VideoLane, VIDEO_LANE_HEIGHT } from './VideoLane';
 import { Modal } from '../common/Modal';
 import { TimelineActions } from './TimelineActions';
-import { TRACK_HEADER_WIDTH, TRACK_HEIGHT, RULER_HEIGHT } from '../../hooks/useTimeline';
+import { TRACK_HEADER_WIDTH, RULER_HEIGHT } from '../../hooks/useTimeline';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
 import { TimelineEngine } from '../../audio/engine/TimelineEngine';
 import { computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
 import { downloadWavFile, encodeAudioBufferWav } from '../../lib/wavExport';
 import { useAudioExport } from '../../hooks/useAudioExport';
 import type { AudioSource } from '../../types/audio';
-import { InterviewTools } from './InterviewTools';
+import { MediaTools } from './MediaTools';
 import { useTimelineTransport } from '../../hooks/useTimelineTransport';
 
 // ── Track header ──────────────────────────────────────────────────────────────
@@ -77,12 +81,15 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
 }) {
   const { t } = useTranslation();
   const track = useProjectStore((s) => s.project.tracks[trackIndex]);
+  const trackHeight = useProjectStore((s) => s.trackHeight);
+  const hasSolo = useProjectStore((s) => s.project.tracks.some(t => t.solo));
   const trackCount = useProjectStore((s) => s.project.tracks.length);
   const updateTrack = useProjectStore((s) => s.updateTrack);
   const removeTrack = useProjectStore((s) => s.removeTrack);
   const reorderTrack = useProjectStore((s) => s.reorderTrack);
   if (!track) return null;
 
+  const audible = hasSolo ? track.solo : !track.muted;
   const isFirst = trackIndex === 0;
   const isLast = trackIndex === trackCount - 1;
 
@@ -91,7 +98,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
       className={`flex flex-col justify-center px-2 border-b border-gray-900 bg-gray-850 select-none transition-colors ${
         isDragOver ? 'bg-indigo-900/30 border-t-2 border-t-indigo-400' : ''
       }`}
-      style={{ width: TRACK_HEADER_WIDTH, height: TRACK_HEIGHT }}
+      style={{ width: TRACK_HEADER_WIDTH, height: trackHeight }}
       onDragOver={(e) => onDragOver(e, trackIndex)}
       onDrop={(e) => onDrop(e, trackIndex)}
     >
@@ -157,7 +164,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
               ? 'bg-amber-700 text-amber-200'
               : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
           }`}
-          title={t('timeline.mute')}
+          title={t(track.solo && track.muted ? 'editor.muteOverridden' : 'timeline.mute')}
           aria-label={`${t('timeline.mute')} ${track.name}`}
           aria-pressed={track.muted}
         >
@@ -180,6 +187,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
           S
         </button>
 
+        <span title={t(audible ? 'editor.audible' : 'editor.silent')} className={`w-2 h-2 rounded-full ${audible ? 'bg-emerald-400' : 'bg-gray-600'}`} />
         <span className="ml-auto text-xs text-gray-400 tabular-nums" title={t('timeline.trackVolume')}>
           {track.volume > 0 ? `${(20 * Math.log10(track.volume)).toFixed(1)} dB` : '−∞'}
         </span>
@@ -195,12 +203,15 @@ export const TimelinePanel: React.FC = () => {
     project: s.project, sources: s.sources, selection: s.selection,
     isPlaying: s.isPlaying, zoomLevel: s.zoomLevel, snapEnabled: s.snapEnabled,
     reorderTrack: s.reorderTrack, addTrack: s.addTrack,
-    setZoomLevel: s.setZoomLevel, setSnapEnabled: s.setSnapEnabled,
+    trackHeight: s.trackHeight, setTrackHeight: s.setTrackHeight, setZoomLevel: s.setZoomLevel, setSnapEnabled: s.setSnapEnabled,
     importAudioSource: s.importAudioSource, loadProjectState: s.loadProjectState,
   })));
   const audioEngine = useAudioEngine();
   const engineRef = useRef<TimelineEngine | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const tracksAreaRef = useRef<HTMLDivElement>(null);
+  const touchPan = useRef<{x: number; y: number; scroll: number} | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [projectError, setProjectError] = useState('');
   const [touchArrange, setTouchArrange] = useState(false);
@@ -368,6 +379,43 @@ export const TimelinePanel: React.FC = () => {
     })();
   }, [pendingOpenedCount, audioEngine, store, handleImportFiles]);
 
+  const fitAll = useCallback(() => {
+    const state = useProjectStore.getState(), duration = timelineDuration(state.project);
+    state.setZoomLevel(Math.max(.1, (canvasWidth - 8) / Math.max(.01, duration)));
+    state.setScrollOffset(0);
+    if (tracksAreaRef.current) {
+      tracksAreaRef.current.scrollTop = 0;
+      const room = tracksAreaRef.current.clientHeight - RULER_HEIGHT - (state.project.video ? VIDEO_LANE_HEIGHT : 0);
+      state.setTrackHeight(Math.min(120, room / Math.max(1, state.project.tracks.length)));
+    }
+  }, [canvasWidth]);
+  const fittedProject = useRef('');
+  useEffect(() => {
+    if (canvasWidth > 0 && timelineDuration(store.project) > 0 && fittedProject.current !== store.project.id) {
+      fittedProject.current = store.project.id; fitAll();
+    }
+  }, [store.project, canvasWidth, fitAll]);
+  useEffect(() => {
+    const area = tracksAreaRef.current; if (!area) return;
+    const wheel = (event: WheelEvent) => {
+      const state = useProjectStore.getState();
+      const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? canvasWidth : 1;
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        const x = Math.max(0, event.clientX - area.getBoundingClientRect().left - TRACK_HEADER_WIDTH);
+        const time = state.scrollOffset + x / state.zoomLevel;
+        const zoom = Math.max(.1, Math.min(2000, state.zoomLevel * Math.exp(-event.deltaY * scale * .005)));
+        state.setZoomLevel(zoom);
+        state.setScrollOffset(Math.min(Math.max(0, timelineDuration(state.project) - canvasWidth / zoom), Math.max(0, time - x / zoom)));
+      } else if (Math.abs(event.deltaX) > Math.abs(event.deltaY) || event.shiftKey) {
+        event.preventDefault();
+        const delta = (event.shiftKey ? event.deltaY || event.deltaX : event.deltaX) * scale;
+        state.setScrollOffset(Math.min(Math.max(0, timelineDuration(state.project) - canvasWidth / state.zoomLevel), Math.max(0, state.scrollOffset + delta / state.zoomLevel)));
+      }
+    };
+    area.addEventListener('wheel', wheel, {passive: false}); return () => area.removeEventListener('wheel', wheel);
+  }, [canvasWidth]);
+
   // Save the whole project (structure + embedded audio) to a .json file.
   const handleSaveProject = useCallback(async () => {
     setProjectError('');
@@ -422,19 +470,19 @@ export const TimelinePanel: React.FC = () => {
 
   return (
     <div className="timeline-editor flex flex-col h-full bg-gray-950 overflow-hidden panel-enter">
-      {/* Transport bar */}
-      <TransportControls />
-      <InterviewTools engine={engineRef} onCheckAlignment={() => { useProjectStore.getState().setIsPlaying(false); setAlignmentOpen(true); }} />
+
       {projectError && <p role="alert" className="text-xs text-red-300 px-3 py-2">{projectError}</p>}
 
       <div className="timeline-main-tools flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900 shrink-0">
         <input ref={fileInputRef} type="file" accept="audio/*" multiple className="hidden"
           onChange={(e) => { void handleImportFiles(e.target.files); e.target.value = ''; }} />
+        <button className="timeline-tool" onClick={() => setResetOpen(true)}>{t('editor.newProject')}</button>
         <button className="timeline-tool" aria-label={t('timeline.openProject')} onClick={() => void handleOpenProject()}><FolderOpen size={16} />{t('timeline.openProject')}</button>
         <button className="timeline-tool" aria-label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}><Save size={16} />{t('timeline.saveProject')}</button>
         <button className="timeline-tool" aria-label={t('timeline.import')} onClick={() => fileInputRef.current?.click()}><Upload size={16} />{t('timeline.import')}</button>
         <button className="timeline-tool" aria-label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}><Download size={16} />{t('timeline.export')}</button>
-        <button className="timeline-tool" disabled={store.project.duration <= 0} onClick={() => { store.setZoomLevel(canvasWidth / store.project.duration); useProjectStore.getState().setScrollOffset(0); }}>{t('timeline.fit')}</button>
+        <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} />
+        <AutoSyncTracks onError={setProjectError} />
         <button className="timeline-tool" onClick={() => setToolsOpen(true)}>{t('timeline.viewTools')}</button>
         <Modal isOpen={toolsOpen} onClose={() => setToolsOpen(false)} title={t('timeline.viewTools')}>
           <div className="space-y-3">
@@ -469,10 +517,34 @@ export const TimelinePanel: React.FC = () => {
       </div>
 
       {alignmentOpen && <AlignmentView close={() => setAlignmentOpen(false)} />}
+      <Modal isOpen={resetOpen} onClose={() => setResetOpen(false)} title={t('editor.newProject')}>
+        <p className="text-sm text-gray-300 mb-4">{t('editor.newHelp')}</p>
+        <button className="timeline-tool" onClick={() => void handleSaveProject()}>{t('timeline.saveProject')}</button>
+        <button className="timeline-tool ml-2" onClick={() => {
+          const state = useProjectStore.getState();
+          state.loadProjectState({ id: crypto.randomUUID(), name: t('editor.untitled'), sampleRate: 48000, tracks: [], masterEffects: [], duration: 0 }, state.sources);
+          state.setScrollOffset(0); state.setZoomLevel(100); state.setTrackHeight(80); setResetOpen(false);
+        }}>{t('editor.clearArrangement')}</button>
+      </Modal>
+      <MediaTools engine={engineRef} />
+      <TransportControls viewportWidth={canvasWidth} />
+      <div className="timeline-command-strip flex shrink-0 overflow-x-auto">
+      <div className="timeline-view-tools flex flex-wrap items-center gap-2 px-3 py-1 border-b border-gray-800 shrink-0">
+        <button className="timeline-tool" disabled={!timelineDuration(store.project)} onClick={fitAll}>{t('timeline.fit')}</button>
+        <button className="timeline-tool" aria-label={t('timeline.zoomOut')} onClick={handleZoomOut}><ZoomOut size={16}/></button>
+        <button className="timeline-tool" aria-label={t('timeline.zoomIn')} onClick={handleZoomIn}><ZoomIn size={16}/></button>
+        <label className="text-xs text-gray-400 flex items-center gap-2">{t('editor.trackHeight')}
+          <input aria-label={t('editor.trackHeight')} className="slider-styled w-24" type="range" min={64} max={240} value={store.trackHeight} onChange={e => store.setTrackHeight(+e.target.value)} />
+        </label>
+      </div>
       <TimelineActions touchArrange={touchArrange} onTouchArrange={() => setTouchArrange((old) => !old)} />
+      </div>
 
       {/* Main area: headers + canvas */}
-      <div className="relative flex flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+      <div ref={tracksAreaRef} className="timeline-tracks-area relative flex flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+        onTouchStart={e => { const p = e.touches[0]; if (!touchArrange && p) touchPan.current = {x:p.clientX,y:p.clientY,scroll:useProjectStore.getState().scrollOffset}; }}
+        onTouchEnd={() => {touchPan.current=null;}}
+        onTouchMove={e => { const start=touchPan.current, p=e.touches[0]; if (!start || !p || touchArrange) return; const dx=start.x-p.clientX; if (Math.abs(dx) > Math.abs(start.y-p.clientY)+8) { const state=useProjectStore.getState(); state.setScrollOffset(Math.min(Math.max(0,timelineDuration(state.project)-canvasWidth/state.zoomLevel),Math.max(0,start.scroll+dx/state.zoomLevel))); } }} >
         {!store.project.tracks.length && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-5 bg-gray-950 text-center">
           <Upload className="w-10 h-10 text-indigo-400" />
           <h2 className="text-lg font-semibold text-gray-100">{t('timeline.startTitle')}</h2>
@@ -581,6 +653,7 @@ export const TimelinePanel: React.FC = () => {
 
       </div>
 
+      <TimelineNavigation width={canvasWidth} />
       {/* Status bar */}
       <div className="flex items-center gap-4 px-4 py-1 bg-gray-900 border-t border-gray-800 text-xs text-gray-500 flex-shrink-0 select-none">
         <span>

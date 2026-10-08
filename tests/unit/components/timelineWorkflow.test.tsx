@@ -35,11 +35,11 @@ describe('interview touch workflow', () => {
     fireEvent.click(within(room).getByText('timeline.listenOnly'));
     expect(useProjectStore.getState().project.tracks.map((track) => [track.muted, track.solo])).toEqual([[true, false], [false, false]]);
   });
-  it('seeks and brings that position into the visible timeline', () => {
+  it('seeks without destroying the fitted view', () => {
     render(<TransportControls />);
     fireEvent.change(screen.getByLabelText('timeline.seek'), { target: { value: '8' } });
     expect(useProjectStore.getState().playheadPosition).toBe(8);
-    expect(useProjectStore.getState().scrollOffset).toBe(7);
+    expect(useProjectStore.getState().scrollOffset).toBe(0);
   });
   it('does not require precision clip selection to toggle touch arrangement', () => {
     const onTouchArrange = vi.fn();

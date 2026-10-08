@@ -1,9 +1,10 @@
+import { timelineDuration } from '../../lib/timelineView';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { readFile, remove } from '@tauri-apps/plugin-fs';
-import { VideoControls } from './VideoControls';
+import { VideoViewer } from './VideoViewer';
 import { Modal } from '../common/Modal';
 import { useProjectStore } from '../../stores/projectStore';
 import { canAlign, projectFromSession } from '../../lib/media';
@@ -12,61 +13,29 @@ import type { TimelineEngine } from '../../audio/engine/TimelineEngine';
 import { encodeAudioBufferWav } from '../../lib/wavExport';
 import { hasRecoverableAutosave, restoreAutosaveAudio } from '../../hooks/useAutosave';
 
-interface Props { engine: React.RefObject<TimelineEngine | null>; onCheckAlignment?: () => void }
+interface Props { engine: React.RefObject<TimelineEngine | null> }
 
-export function InterviewTools({ engine, onCheckAlignment }: Props) {
+export function MediaTools({ engine }: Props) {
   const { t } = useTranslation();
   const [available, setAvailable] = useState(false);
   const [show, setShow] = useState(false);
   const [setup, setSetup] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState('');
   const [selectedAudio, setSelectedAudio] = useState<string[]>([]);
-  const [showPreview, setShowPreview] = useState(true);
   const [session, setSession] = useState<SyncSession | null>(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [previewUrl, setPreviewUrl] = useState('');
   const [recoverable, setRecoverable] = useState(hasRecoverableAutosave);
   const [matchLevels, setMatchLevels] = useState(false);
   const video = useProjectStore((s) => s.project.video);
   const playing = useProjectStore((s) => s.isPlaying);
-  const tracks = useProjectStore((s) => s.project.tracks);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const actionRef = useRef(false);
 
   useEffect(() => {
     if (!('__TAURI_INTERNALS__' in window)) return;
     invoke<boolean>('desktop_media_available').then(setAvailable).catch(() => {});
   }, []);
-
-  const videoPath = video?.path;
-  useEffect(() => {
-    let active = true;
-    if (videoPath && available) {
-      invoke<string>('prepare_video_preview', { path: videoPath }).then((path) => {
-        if (active) setPreviewUrl(convertFileSrc(path));
-      }).catch((err) => { if (active) setError(String(err)); });
-    }
-    return () => { active = false; };
-  }, [videoPath, available]);
-
-  // Use the same timeline position for video and audio; never use camera audio
-  // alongside the selected timeline microphone. Avoid seeking on every frame.
-  useEffect(() => {
-    const sync = () => {
-      const el = videoRef.current;
-      if (!el) return;
-      const state = useProjectStore.getState();
-      if (Math.abs(el.currentTime - state.playheadPosition) > 0.08) el.currentTime = state.playheadPosition;
-      if (state.isPlaying && el.paused) void el.play().catch((err) => setError(String(err)));
-      if (!state.isPlaying && !el.paused) el.pause();
-    };
-    const unsubscribe = useProjectStore.subscribe(sync);
-    const element = videoRef.current;
-    sync();
-    return () => { unsubscribe(); element?.pause(); };
-  }, [previewUrl, showPreview]);
 
   async function perform(stage: string, task: () => Promise<void>) {
     if (actionRef.current) return;
@@ -147,55 +116,29 @@ export function InterviewTools({ engine, onCheckAlignment }: Props) {
   });
 
   const button = 'min-h-11 px-4 py-2 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-40';
-  if (!available) return <details className="shrink-0 px-3 py-2 border-b border-gray-800 text-sm text-gray-400">
-    <summary className="cursor-pointer min-h-11 flex items-center">{t('interview.mobileTitle')}</summary>
-    <p className="pb-2 max-w-2xl">{t('interview.mobileHelp')}</p>
-  </details>;
-  return <>
-    <section className="shrink-0 border-b border-gray-800 bg-gray-900/70 px-3 py-3" aria-label={t('interview.title')}>
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-40">
-          <h2 className="font-semibold text-gray-100 text-sm">{video ? t('interview.editTitle') : t('interview.title')}</h2>
-          <p className="text-xs text-gray-400 mt-1">{video ? t('interview.editHelp') : t('interview.steps')}</p>
-        </div>
+  const controls = (<div className="flex flex-wrap items-center gap-3">
         <button className={`${button} !bg-indigo-600 !border-indigo-500`} disabled={!!busy || playing} onClick={() => setSetup(true)}>{t('interview.sync')}</button>
         {video && <button className={button} disabled={!!busy || playing} onClick={exportVideo}>{t((video.inPoint ?? 0) > 0 || (video.outPoint ?? video.duration) < video.duration ? 'video.exportSection' : 'interview.exportVideo')}</button>}
         <details className="relative">
           <summary className={`${button} cursor-pointer flex items-center`}>{t('interview.more')}</summary>
           <div className="absolute right-0 top-full mt-2 z-20 p-2 rounded-xl border border-gray-700 bg-gray-900 shadow-xl w-64 space-y-2">
             <button className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={loadSession}>{t('interview.openSession')}</button>
+            {video && <button className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={()=>{
+              const state=useProjectStore.getState(), project={...state.project,video:undefined};
+              useProjectStore.setState({project:{...project,duration:timelineDuration(project)},isPlaying:false});
+            }}>{t('editor.detachVideo')}</button>}
             {recoverable && <button className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={recover}>{t('interview.recover')}</button>}
           </div>
         </details>
-      </div>
+      </div>);
+  if (!available) return null;
+  return <>
+    <section className="shrink-0 border-b border-gray-800 bg-gray-900/70 px-3 py-1" aria-label={t('interview.title')}>
+      {!video && controls}
       {busy && <p role="status" className="text-sm text-indigo-300 mt-2">{busy}</p>}
       {error && <p role="alert" className="text-sm text-red-300 break-words mt-2">{error}</p>}
       {notice && <p role="status" className="text-sm text-green-300 break-words mt-2">{notice}</p>}
-      {video && <div className="mt-3 flex flex-wrap gap-3 items-start">
-        {showPreview && previewUrl && <video key={previewUrl} ref={videoRef} src={previewUrl} muted playsInline preload="metadata"
-          aria-label={t('interview.preview')} className="bg-black rounded-xl w-full sm:w-[420px] xl:w-[520px] max-w-full max-h-[28dvh] object-contain"
-          onLoadedMetadata={() => { if (videoRef.current) videoRef.current.currentTime = useProjectStore.getState().playheadPosition; }}
-          onError={() => setError(t('interview.previewFailed'))} />}
-        <div className="flex-1 min-w-40">
-          <p className="text-xs text-gray-400 mb-2">{t('interview.listenHelp')}</p>
-          <div className="flex flex-wrap gap-2">{tracks.map((track) => <button key={track.id} className={button}
-            aria-pressed={!track.muted && !tracks.some((other) => other.id !== track.id && !other.muted)}
-            onClick={() => {
-              const state = useProjectStore.getState();
-              tracks.forEach((other) => state.updateTrack(other.id, { muted: other.id !== track.id, solo: false }));
-            }}>{track.name}</button>)}</div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            <button className={button} disabled={tracks.length < 2} onClick={onCheckAlignment}>{t('alignment.title')}</button>
-            {[-1, 1].map((direction) => <button key={direction} className={button} aria-label={t(direction < 0 ? 'video.stepBack' : 'video.stepForward')} onClick={() => {
-              const state = useProjectStore.getState(); state.setIsPlaying(false);
-              state.setPlayheadPosition(Math.max(0, Math.min(video.duration, state.playheadPosition + direction / 30)));
-            }}>{direction < 0 ? '−' : '+'} 33 ms</button>)}
-            {showPreview && <button className={button} onClick={() => { void videoRef.current?.requestFullscreen().catch((err) => setError(String(err))); }}>{t('video.fullscreen')}</button>}
-          </div>
-          <VideoControls />
-          <button className="min-h-11 text-xs text-gray-400 underline" onClick={() => setShowPreview((old) => !old)}>{t(showPreview ? 'interview.hidePreview' : 'interview.showPreview')}</button>
-        </div>
-      </div>}
+      {video && <VideoViewer>{controls}</VideoViewer>}
     </section>
     <Modal isOpen={setup} onClose={() => { if (!busy) setSetup(false); }} title={t('interview.sync')} widthClass="max-w-2xl">
       <ol className="space-y-5 text-sm text-gray-300">
@@ -211,7 +154,7 @@ export function InterviewTools({ engine, onCheckAlignment }: Props) {
       </ol>
       <p className="text-sm text-gray-400 mt-4">{t('interview.setupHelp')}</p>
       {error && <p role="alert" className="text-red-300 mt-2">{error}</p>}
-      <button className={`${button} mt-4 !bg-indigo-600`} disabled={!!busy || !selectedVideo || !selectedAudio.length} onClick={analyze}>{busy || t('interview.analyze')}</button>
+      <button className={`${button} mt-4 !bg-indigo-600`} disabled={!!busy || !selectedVideo} onClick={analyze}>{busy || t('interview.analyze')}</button>
     </Modal>
     <Modal isOpen={show} onClose={() => { if (!busy) setShow(false); }} title={t('interview.review')} widthClass="max-w-3xl">
       <p className="text-sm text-gray-300 mb-3">{t('interview.reviewHelp')}</p>

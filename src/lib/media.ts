@@ -18,7 +18,7 @@ export interface SyncSession {
 }
 
 export function canAlign(session: SyncSession): boolean {
-  return session.tracks.length > 0 && session.tracks.every(({ alignment: a }) =>
+  return session.video.has_video && session.video.duration > 0 && session.tracks.every(({ alignment: a }) =>
     Number.isFinite(a.offset) && Number.isFinite(a.rate) && a.rate >= 0.99 && a.rate <= 1.01 && (a.reliable || a.manual));
 }
 

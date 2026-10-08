@@ -40,6 +40,7 @@ export function TimelineActions({ touchArrange, onTouchArrange }: { touchArrange
       <SegmentEffectsPanel onClose={() => setInspector(false)} />
     </Modal>
     <Modal isOpen={mixer} onClose={() => setMixer(false)} title={t('timeline.mixer')} widthClass="max-w-2xl">
+      <button className="timeline-tool mb-3" onClick={()=>{const state=useProjectStore.getState();tracks.forEach(track=>state.updateTrack(track.id,{solo:false}));}}>{t('editor.clearSolos')}</button>
       <p className="text-sm text-gray-400 mb-4">{t('timeline.mixerHelp')}</p>
       <div className="space-y-4">
         {mixer && tracks.map((track, i) => <section key={track.id} className="p-3 rounded-xl bg-gray-950 border border-gray-700 space-y-2">

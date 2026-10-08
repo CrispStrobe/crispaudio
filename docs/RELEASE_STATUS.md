@@ -78,3 +78,24 @@ cover five touch/desktop viewports; the desktop IPC mock exercised real video
 thumbnail generation, alignment comparison and range entry at MacBook size.
 This does not establish native WebKit thumbnail or iOS device behavior. Local
 native build/signature and process launch were verified without OS screen capture.
+
+## Generic timeline build 0.4.1
+
+The local macOS app now provides a general audio timeline with optional video,
+adjacent transport, visible horizontal navigation, independent time zoom/lane
+height, Fit all, New project/reset, full project files and reusable track files.
+Solo temporarily overrides stored mute in both playback and export. Standalone
+camera import is supported; silent video remains unsupported. Auto-sync tracks
+reviews native correlation results and applies offsets as one undoable edit;
+clock drift is reported, not corrected by this action. Desktop video import still
+renders corrected recorder audio. The expanded viewer requests native fullscreen
+and has an in-window fallback; Escape restores a fullscreen mode it entered.
+
+Verification: 1,162 frontend tests, lint/build, 17 native Rust tests, six media
+Rust tests and generated-media CLI checks pass. Browser checks cover five screen
+sizes and the final compact command rows. Mocked native IPC with real media
+exercised preview/show/hide/expansion, panning/fit, auto-sync review/apply/undo,
+reset/undo and portable track save/load with fresh IDs. These browser checks do
+not independently validate native WebKit playback or macOS fullscreen behavior.
+The ad-hoc-signed local app is rebuilt/reopened. No release tag or Apple upload.
+See [Timeline workflow](TIMELINE_WORKFLOW.md).

@@ -69,6 +69,7 @@ export type DragState =
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useTimeline() {
+  const trackHeight = useProjectStore((state) => state.trackHeight);
   const zoomLevel = useProjectStore((state) => state.zoomLevel);
   const scrollOffset = useProjectStore((state) => state.scrollOffset);
   const snapEnabled = useProjectStore((state) => state.snapEnabled);
@@ -100,9 +101,9 @@ export function useTimeline() {
 
   const canvasYToTrackIndex = useCallback(
     (canvasY: number): number => {
-      return Math.floor(canvasY / TRACK_HEIGHT);
+      return Math.floor(canvasY / trackHeight);
     },
-    [],
+    [trackHeight],
   );
 
   // ── Snapping ──────────────────────────────────────────────────────────────
@@ -130,7 +131,7 @@ export function useTimeline() {
       }
 
       const track: TimelineTrack = tracks[trackIndex];
-      const localY = canvasY - trackIndex * TRACK_HEIGHT;
+      const localY = canvasY - trackIndex * useProjectStore.getState().trackHeight;
 
       // Test each segment in reverse order (top-most rendered last = highest z)
       for (let i = track.segments.length - 1; i >= 0; i--) {
@@ -262,7 +263,7 @@ export function useTimeline() {
           0,
           Math.min(
             store.project.tracks.length - 1,
-            ds.originalTrackIndex + Math.round((canvasY - ds.startY) / TRACK_HEIGHT),
+            ds.originalTrackIndex + Math.round((canvasY - ds.startY) / useProjectStore.getState().trackHeight),
           ),
         );
         const newTrackId = store.project.tracks[newTrackIndex]?.id;

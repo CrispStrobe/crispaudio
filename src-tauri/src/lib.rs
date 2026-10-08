@@ -35,6 +35,7 @@ pub fn run() {
             media::align_media,
             media::export_media,
             media::prepare_video_preview,
+            media::estimate_track_sync,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

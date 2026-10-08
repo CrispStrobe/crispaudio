@@ -54,6 +54,7 @@ interface ProjectState {
   clipboard: ClipboardState;
   playheadPosition: number;
   isPlaying: boolean;
+  trackHeight: number;
   zoomLevel: number; // pixels per second
   scrollOffset: number; // horizontal scroll in seconds
   snapEnabled: boolean;
@@ -105,6 +106,7 @@ interface ProjectState {
   setLoopEnabled: (enabled: boolean) => void;
 
   // View
+  setTrackHeight: (height: number) => void;
   setVideoRange: (start: number, end: number) => void;
   setZoomLevel: (level: number) => void;
   setScrollOffset: (offset: number) => void;
@@ -154,6 +156,7 @@ export const useProjectStore = create<ProjectState>()(
       clipboard: { operation: null, segments: [], sourceIds: [] },
       playheadPosition: 0,
       isPlaying: false,
+      trackHeight: 80,
       zoomLevel: 100, // 100 pixels per second default
       scrollOffset: 0,
       snapEnabled: true,
@@ -188,7 +191,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
           };
         });
@@ -239,7 +242,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
           };
         });
@@ -255,7 +258,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
           };
         });
@@ -291,7 +294,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
           };
         });
@@ -329,7 +332,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
           };
         });
@@ -375,7 +378,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
           };
         });
@@ -466,7 +469,7 @@ export const useProjectStore = create<ProjectState>()(
         set({
           project: {
             ...project,
-            duration: computeProjectDuration(project.tracks),
+            duration: Math.max(project.video?.duration ?? 0, computeProjectDuration(project.tracks)),
           },
           sources,
           selection: null,
@@ -531,7 +534,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
           };
         });
@@ -556,7 +559,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
           };
         });
@@ -645,7 +648,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
           };
         });
@@ -717,7 +720,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
             selection: {
               startTime: minT,
@@ -743,7 +746,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
-              duration: computeProjectDuration(tracks),
+              duration: Math.max(state.project.video?.duration ?? 0, computeProjectDuration(tracks)),
             },
             selection: null,
           };
@@ -761,6 +764,7 @@ export const useProjectStore = create<ProjectState>()(
 
       // ── View ──────────────────────────────────────────────────────────────────
 
+      setTrackHeight: (height) => set({ trackHeight: Math.max(64, Math.min(240, height)) }),
       setVideoRange: (start, end) => set((state) => {
         const video = state.project.video;
         if (!video || !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end > video.duration || end <= start) return state;

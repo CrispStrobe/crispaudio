@@ -4,9 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.4.0]
+## [Unreleased — local version 0.4.1]
 
 ### Added
+- Generic audio/video workflow with optional viewer, standalone camera import,
+  New project reset, reusable Save/Load tracks, and audio-track auto-sync review.
+- Visible horizontal navigation, trackpad deltaX/Shift+wheel panning, pointer
+  centered zoom, lane-height controls and Fit all including picture/audio extent.
+### Fixed
+- Video waits for metadata before seeking and retries a transient first failure;
+  expansion has a visible fallback plus native fullscreen with window restoration.
+- Solo temporarily overrides saved mute consistently in playback and export.
+- Transport sits beside tracks; seeking no longer destroys an already fitted view.
+- Removing audio no longer truncates a linked video's timeline duration.
+
+### Earlier October additions
 - Shared video filmstrip lane, larger/fullscreen viewer, approximate 33 ms seeking,
   and a persisted in/out export range with accurate picture/audio section cuts.
 - Alignment inspection overlay with selectable microphones, 100 ms–10 s windows,

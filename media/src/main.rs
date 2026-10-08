@@ -21,7 +21,7 @@ enum Commands {
     Analyze {
         #[arg(long)]
         video: String,
-        #[arg(long, required = true)]
+        #[arg(long)]
         audio: Vec<String>,
         #[arg(long)]
         output: String,

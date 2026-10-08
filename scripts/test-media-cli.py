@@ -100,6 +100,13 @@ with tempfile.TemporaryDirectory(prefix="CrispAudio media test ") as temporary:
         cli("export", "--session", output_dir / "session.json", "--output", root / "bad.mp4", "--start", str(start), "--end", str(end), succeeds=False)
     assert not (root / "bad.mp4").exists()
 
+    # Standalone video import uses its own camera audio, no external recorder required.
+    camera_session_path = root / "camera-only.json"
+    camera_session = json.loads(cli("analyze", "--video", video, "--output", camera_session_path))
+    assert camera_session["tracks"] == []
+    camera_aligned = json.loads(cli("align", "--session", camera_session_path, "--output-dir", root / "camera-only"))
+    assert camera_aligned["camera_path"] and Path(camera_aligned["camera_path"]).exists()
+
     # Camera starts before the external recorder: the aligned recording must
     # contain silence until its actual start, not move the whole interview.
     full_video = root / "early camera.mp4"

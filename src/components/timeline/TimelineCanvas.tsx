@@ -15,7 +15,7 @@ import type { AudioSegment, TimelineTrack, AudioSource } from '../../types/audio
 import { useProjectStore } from '../../stores/projectStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../stores/uiStore';
-import { useTimeline, TRACK_HEIGHT } from '../../hooks/useTimeline';
+import { useTimeline } from '../../hooks/useTimeline';
 import { sourceDisplayGain, waveformBounds } from '../../lib/waveformView';
 import { haptic } from '../../lib/native';
 import { useTimelineCanvasInvalidation } from './useTimelineCanvasInvalidation';
@@ -94,6 +94,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     time: 0,
   });
 
+  const trackHeight = useProjectStore((s) => s.trackHeight);
   const tracks = useProjectStore((s) => s.project.tracks);
   const store = useProjectStore(useShallow((s) => ({
     sources: s.sources, selection: s.selection, zoomLevel: s.zoomLevel,
@@ -114,7 +115,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     snapTime,
   } = useTimeline();
 
-  const totalHeight = Math.max(3, tracks.length) * TRACK_HEIGHT;
+  const totalHeight = Math.max(3, tracks.length) * trackHeight;
 
   useEffect(() => {
     onHeightChange?.(totalHeight);
@@ -294,8 +295,8 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     ) => {
       const segLeft = timeToPixels(seg.startTime);
       const segRight = timeToPixels(seg.startTime + seg.duration);
-      const segTop = trackIndex * TRACK_HEIGHT + 4;
-      const segBottom = trackIndex * TRACK_HEIGHT + TRACK_HEIGHT - 4;
+      const segTop = trackIndex * trackHeight + 4;
+      const segBottom = trackIndex * trackHeight + trackHeight - 4;
 
       // Cull off-screen segments
       const canvasWidth = canvasRef.current?.width ?? 0;
@@ -362,7 +363,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
       void track;
     },
-    [timeToPixels, store.sources, drawWaveform, drawFadeOverlay, waveformMode],
+    [timeToPixels, store.sources, drawWaveform, drawFadeOverlay, waveformMode, trackHeight],
   );
 
   const draw = useCallback(() => {
@@ -393,14 +394,14 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     for (let i = 0; i < Math.max(tracks.length, 1); i++) {
       const tc = getTrackColors();
       ctx.fillStyle = i % 2 === 0 ? tc.even : tc.odd;
-      ctx.fillRect(0, i * TRACK_HEIGHT, cssWidth, TRACK_HEIGHT);
+      ctx.fillRect(0, i * trackHeight, cssWidth, trackHeight);
 
       // Track divider
       ctx.strokeStyle = tc.even; // segment border matches track bg
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(0, (i + 1) * TRACK_HEIGHT - 0.5);
-      ctx.lineTo(cssWidth, (i + 1) * TRACK_HEIGHT - 0.5);
+      ctx.moveTo(0, (i + 1) * trackHeight - 0.5);
+      ctx.lineTo(cssWidth, (i + 1) * trackHeight - 0.5);
       ctx.stroke();
     }
 
@@ -455,38 +456,12 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     store.scrollOffset,
     store.selection,
     timeToPixels,
-    drawSegment,
+    drawSegment, trackHeight,
   ]);
 
   useTimelineCanvasInvalidation(draw);
 
   // ── Mouse wheel zoom ──────────────────────────────────────────────────────
-
-  const onWheel = useCallback(
-    (e: React.WheelEvent<HTMLCanvasElement>) => {
-      e.preventDefault();
-
-      if (e.ctrlKey || e.metaKey) {
-        // Zoom centered on cursor
-        const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
-        const cursorX = e.clientX - rect.left;
-        const timeAtCursor = store.scrollOffset + cursorX / store.zoomLevel;
-
-        const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-        const newZoom = Math.max(10, Math.min(2000, store.zoomLevel * factor));
-
-        // Keep time-at-cursor stable
-        const newScroll = Math.max(0, timeAtCursor - cursorX / newZoom);
-        store.setZoomLevel(newZoom);
-        store.setScrollOffset(newScroll);
-      } else {
-        // Horizontal scroll
-        const delta = e.deltaY / store.zoomLevel;
-        store.setScrollOffset(Math.max(0, store.scrollOffset + delta));
-      }
-    },
-    [store],
-  );
 
   // ── Mouse move for cursor ─────────────────────────────────────────────────
 
@@ -747,7 +722,6 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         onPointerMove={handleMouseMoveWithCursor}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        onWheel={onWheel}
         onContextMenu={handleContextMenu}
       />
 

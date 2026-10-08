@@ -460,3 +460,15 @@ describe('video export range', () => {
     expect(useProjectStore.getState().project).toBe(original);
   });
 });
+
+describe('video project duration',()=>{
+  it('preserves the complete picture when audio clips are removed',()=>{
+    const initial=useProjectStore.getState();
+    const project={...initial.project,video:{path:'/camera.mp4',duration:20,session:{} as never}};
+    initial.loadProjectState(project,new Map());
+    expect(useProjectStore.getState().project.duration).toBe(20);
+    initial.addTrack();const id=useProjectStore.getState().project.tracks[0].id;
+    initial.removeTrack(id);
+    expect(useProjectStore.getState().project.duration).toBe(20);
+  });
+});

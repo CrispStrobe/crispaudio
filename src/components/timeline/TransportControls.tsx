@@ -1,3 +1,4 @@
+import { timelineDuration } from '../../lib/timelineView';
 // ---------------------------------------------------------------------------
 // CrispAudio — TransportControls
 // Play / Pause / Stop / Loop / Skip + time display
@@ -32,10 +33,10 @@ const PositionDisplay = React.memo(function PositionDisplay() {
   return <span className="font-mono text-sm text-white bg-gray-800 border border-gray-700 px-2 py-0.5 rounded min-w-[6rem] text-center tabular-nums">{formatTime(position)}</span>;
 });
 
-function TimelineScrubber() {
+function TimelineScrubber({width}: {width?: number}) {
   const { t } = useTranslation();
   const position = useProjectStore((s) => s.playheadPosition);
-  const duration = useProjectStore((s) => s.project.duration);
+  const duration = useProjectStore((s) => timelineDuration(s.project));
   return <input type="range" min={0} max={Math.max(duration, 0.01)} step={0.01}
     value={Math.min(position, duration)} disabled={duration <= 0}
     aria-label={t('timeline.seek')} className="slider-styled w-full min-w-20"
@@ -43,15 +44,18 @@ function TimelineScrubber() {
       const state = useProjectStore.getState();
       const time = +e.target.value;
       state.setPlayheadPosition(time);
-      state.setScrollOffset(Math.max(0, time - 1));
+      if (width && (time < state.scrollOffset || time >= state.scrollOffset + width / state.zoomLevel)) {
+        state.setScrollOffset(Math.max(0, Math.min(timelineDuration(state.project) - width / state.zoomLevel, time - width / state.zoomLevel / 2)));
+      }
+
     }} />;
 }
 
-export const TransportControls: React.FC = React.memo(function TransportControls() {
+export const TransportControls = React.memo(function TransportControls({viewportWidth}: {viewportWidth?:number}) {
   const { t } = useTranslation();
   const isPlaying = useProjectStore((s) => s.isPlaying);
   const loopEnabled = useProjectStore((s) => s.loopEnabled);
-  const duration = useProjectStore((s) => s.project.duration);
+  const duration = useProjectStore((s) => timelineDuration(s.project));
   const setIsPlaying = useProjectStore((s) => s.setIsPlaying);
   const setLoopEnabled = useProjectStore((s) => s.setLoopEnabled);
   const setPlayheadPosition = useProjectStore((s) => s.setPlayheadPosition);
@@ -78,7 +82,7 @@ export const TransportControls: React.FC = React.memo(function TransportControls
   }, [loopEnabled, setLoopEnabled]);
 
   return (
-    <div className="timeline-transport flex flex-wrap items-center gap-2 px-3 py-2 bg-gray-900 border-b border-gray-700 select-none shrink-0">
+    <div className="timeline-transport flex flex-wrap items-center gap-2 px-3 py-1 bg-gray-900 border-b border-gray-700 select-none shrink-0">
       {/* Skip to start */}
       <button
         type="button"
@@ -154,7 +158,7 @@ export const TransportControls: React.FC = React.memo(function TransportControls
         <PositionDisplay />
       </div>
 
-      <div className="flex-1 min-w-24"><TimelineScrubber /></div>
+      <div className="flex-1 min-w-24"><TimelineScrubber width={viewportWidth} /></div>
 
       {/* Duration */}
       <div className="flex items-center gap-2">
