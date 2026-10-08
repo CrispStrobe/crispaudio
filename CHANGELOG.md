@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.3]
+## [Unreleased — local version 0.6.4]
+
+- Expanded viewer traps focus, isolates editing shortcuts, steps frames with
+  Left/Right and toggles playback with Space; closing restores the expand button.
+- Track grips auto-scroll near vertical edges and accept drops over waveforms.
+  Escape, cancelled pointers and lost capture stop the drag; timing stays intact.
+- Compact touch rows fit names, grips and trash, hide mixer controls below 96 px
+  and retain an audible/silent indicator. Desktop compact rows remain below 56 px.
+- Confine the playhead hit area to the timeline so it cannot cover adjacent
+  track header controls at the viewport edges.
+
+## [Local version 0.6.3]
 
 - Picture gaps and the extended canvas stay black without reloading the default
   camera or blocking audio startup. The viewer remains available in empty regions.

@@ -800,7 +800,7 @@
     "help_navigation_title": "Zoom und Navigation",
     "help_navigation": "Video, Audio und Lineal teilen dieselbe Zeitskala. Umschalt+Mausrad oder horizontales Trackpad bewegt die Ansicht; Strg/Cmd+Mausrad zoomt. Alles einpassen setzt die Ansicht zurück. Blaues Übersichtsfenster zum Navigieren, roten Cursor zum Springen ziehen.",
     "help_reorder_title": "Spurreihenfolge",
-    "help_reorder": "Den Sechs-Punkte-Griff auf einen anderen Audiospurkopf ziehen. Pfeiltasten am Griff oder Auf/Ab-Tasten ändern die Reihenfolge präzise. Die Reihenfolge ändert weder Zeitposition noch Klang.",
+    "help_reorder": "Den Sechs-Punkte-Griff auf einen anderen Audiospurkopf ziehen. Pfeiltasten am Griff oder Auf/Ab-Tasten ändern die Reihenfolge präzise. Die Reihenfolge ändert weder Zeitposition noch Klang. Zum Scrollen an den oberen oder unteren Rand ziehen; Escape bricht das Ziehen ab. Das Ablegen funktioniert auch über einer Wellenform.",
     "help_overlap_title": "Überlappungen und Blenden",
     "help_overlap": "Überlappende Audioclips werden gemischt. Zwei teilweise überlappende Clips mit Umschalt auswählen und die Überblendung anwenden: S-Kurven werden eingefügt. Zwei Videoclips teilweise überlappen lassen erzeugt eine weiche Blende; Clip-Einstellungen ändern den Übergang. Drei gleichzeitige Videoclips oder vollständige Verschachtelung unterstützt diese Kompositionsspur nicht.",
     "help_time_title": "Position und Dauer",
@@ -808,10 +808,10 @@
     "help_import_title": "Audio importieren",
     "help_import": "Eine vorhandene Zielspur oder je Datei eine neue Spur wählen. Lesen, Dekodieren und Wellenformaufbereitung werden angezeigt und können abgebrochen werden. Desktop-Dateiverknüpfungen bleiben für effizientes Speichern erhalten. Große komprimierte Aufnahmen müssen weiterhin dekodiert werden.",
     "help_height_title": "Spurhöhe",
-    "help_height": "Die Höhe wirkt auf Video und Audio, von 24 bis 640 Pixeln. Kompakte Audiozeilen blenden Mischpultregler aus; Stumm, Solo und Pegel lassen sich im Mischer ändern.",
+    "help_height": "Die Höhe wirkt auf Video und Audio, von 24 bis 640 Pixeln. Kompakte Audiozeilen blenden Mischpultregler aus; Stumm, Solo und Pegel lassen sich im Mischer ändern. Ein kleiner Statuspunkt zeigt auch bei kompakten Spuren, ob sie hörbar sind.",
     "help_remove_title": "Spuren und Clips entfernen",
     "help_remove": "Der Papierkorb im Spurkopf entfernt die Spur. Video entfernen behält Audio und löst dessen Verknüpfung. Der Papierkorb in der Werkzeugleiste entfernt ausgewählte Clips samt verknüpften Audio-/Videopartnern. Rückgängig stellt beides wieder her.",
     "help_fullscreen_title": "Video im Vollbild",
-    "help_fullscreen": "Video vergrößern öffnet eine fensterfüllende Vorschau und fordert nach Möglichkeit nativen Vollbildmodus an. Wiedergabe und Einzelbildschritte bleiben sichtbar. Escape oder Verkleinern schließt die Ansicht."
+    "help_fullscreen": "Video vergrößern öffnet eine fensterfüllende Vorschau und fordert nach Möglichkeit nativen Vollbildmodus an. Wiedergabe und Einzelbildschritte bleiben sichtbar. Escape oder Verkleinern schließt die Ansicht. Im erweiterten Viewer schalten Links/Rechts Einzelbilder und die Leertaste die Wiedergabe. Tab bleibt bei den Viewer-Steuerelementen; Timeline-Bearbeitungstasten sind getrennt."
   }
 }

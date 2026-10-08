@@ -104,15 +104,18 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
       }`}
       style={{ width: TRACK_HEADER_WIDTH, height: trackHeight }}
       data-track-index={trackIndex}
+      data-track-header
+      data-compact={trackHeight<56}
+      data-touch-compact={trackHeight<96}
     >
       <div className="track-heading flex items-center gap-1.5 mb-1">
-        {/* Drag handle (desktop pointer) — HTML5 DnD doesn't fire on touch */}
-        <button type="button"
+        <button type="button" data-track-reorder
           onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);onDragStart(e,track.id);}}
           onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))onDragOver(e,trackIndex);}}
-          onPointerUp={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId)){e.currentTarget.releasePointerCapture(e.pointerId);onDrop(e,trackIndex);}}}
+          onPointerUp={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId)){onDrop(e,trackIndex);e.currentTarget.releasePointerCapture(e.pointerId);}}}
           onPointerCancel={onDragEnd}
-          onKeyDown={e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();reorderTrack(track.id,trackIndex+(e.key==='ArrowUp'?-1:1));}}}
+          onLostPointerCapture={onDragEnd}
+          onKeyDown={e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.stopPropagation();e.preventDefault();reorderTrack(track.id,trackIndex+(e.key==='ArrowUp'?-1:1));}}}
           className="flex-shrink-0 cursor-grab active:cursor-grabbing p-0.5 text-gray-500" style={{touchAction:'none'}} aria-label={t('timeline.reorderTrack')} title={t('timeline.reorderTrack')}>
           <GripVertical className="w-3 h-3" />
         </button>
@@ -139,10 +142,13 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
             <ChevronDown className="w-3 h-3" />
           </button>
         </div>
+        <span className={`track-compact-status hidden shrink-0 w-2 h-2 rounded-full ${audible?'bg-emerald-400':'bg-gray-600'}`}
+          role="status" aria-label={`${track.name}: ${t(audible?'editor.audible':'editor.silent')}`} title={t(audible?'editor.audible':'editor.silent')}/>
         <input
           type="text"
           aria-label={t('timeline.trackName')}
           value={track.name}
+          title={track.name}
           onChange={(e) => updateTrack(track.id, { name: e.target.value })}
           className="flex-1 min-w-0 bg-transparent text-xs font-medium text-gray-200 focus:outline-none focus:bg-gray-700 rounded px-1 py-0.5"
         />
@@ -151,12 +157,13 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
           onClick={() => removeTrack(track.id)}
           className="track-remove p-0.5 text-gray-600 hover:text-red-400 transition-colors"
           aria-label={t('timeline.removeTrack')}
+          title={t('timeline.removeTrack')}
         >
           <Trash2 className="w-3 h-3" />
         </button>
       </div>
 
-      <div className={`flex items-center gap-1 ${trackHeight<56?'hidden':''}`}>
+      <div className={`track-mixer flex items-center gap-1 ${trackHeight<56?'hidden':''}`}>
         {/* Mute */}
         <button
           type="button"
@@ -263,25 +270,32 @@ export const TimelinePanel: React.FC = () => {
   const [draggedTrackId, setDraggedTrackId] = useState<string | null>(null);
   const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
 
-  const reorderDrag = useRef<{id:string;target:number}|null>(null);
+  const reorderDrag = useRef<{id:string;target:number;x:number;y:number}|null>(null);
+  const updateTrackDragTarget=useCallback((x:number,y:number)=>{
+    const drag=reorderDrag.current,area=tracksAreaRef.current;if(!drag||!area)return;
+    drag.x=x;drag.y=y;
+    const rect=area.getBoundingClientRect();
+    // A track may be dragged over its waveform as well as its header.
+    const headerX=rect.left+TRACK_HEADER_WIDTH/2;
+    const element=document.elementFromPoint(headerX,y)?.closest<HTMLElement>('[data-track-index]');
+    if(element){const index=Number(element.dataset.trackIndex);drag.target=index;setDropTargetIndex(index);}
+  },[]);
   const handleTrackDragStart = useCallback(
     (e: React.PointerEvent, trackId: string) => {
       setDraggedTrackId(trackId);
-      reorderDrag.current={id:trackId,target:useProjectStore.getState().project.tracks.findIndex(track=>track.id===trackId)};
+      reorderDrag.current={id:trackId,target:useProjectStore.getState().project.tracks.findIndex(track=>track.id===trackId),x:e.clientX,y:e.clientY};
       e.stopPropagation();
     },
     [],
   );
 
   const handleTrackDragOver = useCallback(
-    (e: React.PointerEvent, index: number) => {
+    (e: React.PointerEvent) => {
       if (!reorderDrag.current) return;
       e.preventDefault();
-      const element=document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-track-index]');
-      const target=element?Number(element.dataset.trackIndex):index;
-      reorderDrag.current.target=target;setDropTargetIndex(target);
+      updateTrackDragTarget(e.clientX,e.clientY);
     },
-    [],
+    [updateTrackDragTarget],
   );
 
   const reorderTrack = store.reorderTrack;
@@ -301,6 +315,23 @@ export const TimelinePanel: React.FC = () => {
     setDraggedTrackId(null);
     setDropTargetIndex(null);
   }, []);
+  useEffect(()=>{
+    if(!draggedTrackId)return;
+    let frame=0,last=performance.now();
+    const tick=(now:number)=>{
+      const drag=reorderDrag.current,area=tracksAreaRef.current;if(!drag||!area)return;
+      const rect=area.getBoundingClientRect(),edge=Math.min(48,rect.height/3);
+      if(edge>0&&drag.y>=rect.top&&drag.y<=rect.bottom){
+        const velocity=drag.y<rect.top+edge?-(rect.top+edge-drag.y)/edge:drag.y>rect.bottom-edge?(drag.y-rect.bottom+edge)/edge:0;
+        area.scrollTop+=velocity*Math.min(32,now-last)*.6;
+        updateTrackDragTarget(drag.x,drag.y);
+      }
+      last=now;frame=requestAnimationFrame(tick);
+    };
+    const cancel=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();handleTrackDragEnd();}};
+    frame=requestAnimationFrame(tick);document.addEventListener('keydown',cancel);
+    return()=>{cancelAnimationFrame(frame);document.removeEventListener('keydown',cancel);};
+  },[draggedTrackId,handleTrackDragEnd,updateTrackDragTarget]);
 
   const handleAddTrack = useCallback(() => store.addTrack(), [store]);
   const handleZoomIn = useCallback(() => store.setZoomLevel(store.zoomLevel * 1.25), [store]);
@@ -540,7 +571,7 @@ export const TimelinePanel: React.FC = () => {
       {/* Main area: headers + canvas */}
       <div className="timeline-workarea flex flex-1 min-h-0 relative">
       <div ref={tracksAreaRef} className="timeline-tracks-area relative flex flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
-        onTouchStart={e => { const p = e.touches[0]; if (!touchArrange && p && !(e.target as HTMLElement).closest('[data-timeline-playhead]')) touchPan.current = {x:p.clientX,y:p.clientY,scroll:useProjectStore.getState().scrollOffset}; }}
+        onTouchStart={e => { const p = e.touches[0]; if (!touchArrange && p && !(e.target as HTMLElement).closest('[data-timeline-playhead], [data-track-reorder]')) touchPan.current = {x:p.clientX,y:p.clientY,scroll:useProjectStore.getState().scrollOffset}; }}
         onTouchEnd={() => {touchPan.current=null;}}
         onTouchMove={e => { const start=touchPan.current, p=e.touches[0]; if (!start || !p || touchArrange) return; const dx=start.x-p.clientX; if (Math.abs(dx) > Math.abs(start.y-p.clientY)+8) { const state=useProjectStore.getState(); state.setScrollOffset(Math.min(Math.max(0,timelineDuration(state.project)-canvasWidth/state.zoomLevel),Math.max(0,start.scroll+dx/state.zoomLevel))); } }} >
         {!store.project.tracks.length && !store.project.video && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-5 bg-gray-950 text-center">
@@ -564,14 +595,14 @@ export const TimelinePanel: React.FC = () => {
             </span>
           </div>
 
-          {store.project.video && <div className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
-            <div className="flex items-center justify-between gap-2"><span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
+          {store.project.video && <div data-track-header data-compact={store.trackHeight<56} data-touch-compact={store.trackHeight<96} className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
+            <div className="track-heading flex items-center justify-between gap-2"><span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
               <button type="button" className="p-1 text-gray-400 hover:text-red-400" aria-label={t('usability.removeVideo')} title={t('usability.removeVideo')} onClick={()=>{
                 const state=useProjectStore.getState();const groups=new Set(state.project.video?.clips?.map(clip=>clip.linkGroup).filter(Boolean));
                 const project={...state.project,video:undefined,tracks:state.project.tracks.map(track=>({...track,segments:track.segments.map(clip=>clip.linkGroup&&groups.has(clip.linkGroup)?{...clip,linkGroup:undefined}:clip)}))};
                 useProjectStore.setState({project:{...project,duration:timelineDuration(project)},selection:null,isPlaying:false});
               }}><Trash2 size={14}/></button></div>
-            {store.trackHeight>=56&&<span className="text-xs text-gray-400">{t('editing.alignedVideoTrack')}</span>}
+            {store.trackHeight>=56&&<span className="track-subtitle text-xs text-gray-400">{t('editing.alignedVideoTrack')}</span>}
           </div>}
           {/* Per-track headers — scroll locked to canvas */}
           <div className="flex-1">

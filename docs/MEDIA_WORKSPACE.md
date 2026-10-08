@@ -1,4 +1,4 @@
-# Media workspace — local 0.6.3
+# Media workspace — local 0.6.4
 
 CrispAudio edits audio-only projects and audio plus video projects. Open **Workspace**
 (the library icon in the main toolbar) for Media, Clip inspector, Microphone mix,
@@ -11,9 +11,13 @@ optional overlay with a close button. Preview can be hidden or expanded separate
   The main toolbar holds undo/redo, add track and TTS; zoom and row height are
   directly above the tracks. There is no separate View & tools dialog.
 - Drag an audio header's six-dot handle onto another header; arrow keys and the
-  adjacent up/down buttons also reorder. This changes display order, not timing.
+  adjacent up/down buttons also reorder. Hold near the top/bottom edge to scroll
+  through a long track list; drops over waveforms also work. Escape cancels the
+  active drag. This changes display order, not timing.
 - Height changes video and audio together from 24 to 640 px. Compact audio rows
-  hide mixer controls; use Workspace → Microphone mix to adjust those controls.
+  hide mixer controls (below 56 px on desktop, 96 px on touch); an audible/silent
+  dot remains visible. Use the toolbar Mixer or Workspace → Microphone mix to
+  adjust controls. Compact rows intentionally use smaller header targets.
 - Each audio header has Trash. Video Trash removes picture and unlinks its audio,
   keeping all audio timings intact. Toolbar Trash removes selected clips and
   linked partners. Undo restores either operation.
@@ -36,7 +40,9 @@ optional overlay with a close button. Preview can be hidden or expanded separate
   native desktop/browser fullscreen. Play/pause and frame-step stay visible.
   Picture gaps and extended tails stay black without pausing audio to load a
   camera. Frame stepping uses project FPS across the full canvas.
-  Escape or Close expanded video returns to the timeline; unavailable native
+  Left/Right steps frames and Space toggles playback. Tab stays within viewer
+  controls; clip-editing shortcuts cannot alter the underlying arrangement.
+  Escape or Close expanded video returns focus to the expand button; unavailable native
   fullscreen falls back to a window-filling viewer.
 
 ## The Canon / H6 interview

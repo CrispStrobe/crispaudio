@@ -215,3 +215,29 @@ WebKit recovery were preserved in the private validation folder under
 `ux/native-autosave-before-063.json` and `ux/recovery-before-063/WebKit`.
 Temporary Vite servers from this editor validation were stopped. No Apple upload
 or release tag was requested. Native/media code is unchanged from tested 0.6.2.
+
+
+## Local 0.6.4 interaction follow-up
+
+Expanded viewer now traps focus and owns keyboard events. Left/Right steps frames,
+Space toggles playback, Escape closes and focus returns to the compact expand
+button. Underlying clip editing shortcuts cannot alter the arrangement from the
+viewer. Track grips scroll at vertical edges, permit drops over waveforms and
+cancel on Escape/pointer cancellation/lost capture. Compact header controls fit
+24–96 px rows, preserve readable names and retain audible/silent status; full
+mixer controls return at 56 px on desktop and 96 px on touch. Playhead hit regions
+are clipped to the viewport instead of extending over neighbouring headers.
+
+Verified: all 1,235 frontend tests, lint, TypeScript/Vite and macOS bundle build.
+Browser integration uses 14 tracks to check mouse and emulated touch edge-scroll
+drops, cancellation, Undo and unchanged timing; compact header geometry at 24,
+56, 80 and 96 px; zero-position header hit testing; selected clips under isolated
+viewer arrows/Delete/Undo/Space; Tab wrap, Escape/focus restoration and four
+responsive viewports. Native fullscreen/physical iOS remain outside these browser
+checks. Both desktop and iOS CI for preceding 0.6.3 completed successfully.
+
+The ad-hoc-signed 0.6.4 local app is installed and launched. Current autosave and
+complete WebKit recovery were preserved under the private validation folder's
+`ux/native-autosave-before-064.json` and `ux/recovery-before-064/WebKit`. The test
+preview server was stopped. Native/media implementation is unchanged; no Apple
+upload or release tag was requested.

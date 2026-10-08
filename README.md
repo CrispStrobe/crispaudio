@@ -2,7 +2,7 @@
 
 Desktop interview synchronization, external microphone alignment, video preview
 and edited-audio video export are available in the Timeline and standalone CLI.
-Local version 0.6.3 aligns video and audio under one ruler, zoom and scroll, with a
+Local version 0.6.4 aligns video and audio under one ruler, zoom and scroll, with a
 separate project overview for navigation. The optional viewer keeps its picture
 fitted. Linked clips, transitions, magnetic edges, fades and track auto-sync work
 in the generic timeline. See [the timeline workflow](docs/TIMELINE_WORKFLOW.md)

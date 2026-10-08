@@ -13,6 +13,9 @@ export function useTimelineCanvasPlayhead(width: number, overviewDuration?: numb
       ref.current.setAttribute('aria-valuenow', String(playheadPosition));
       ref.current.setAttribute('aria-valuemax', String(timelineDuration(useProjectStore.getState().project)));
       ref.current.style.transform = `translateX(${x}px)`;
+      // The broad cursor target must not cover neighbouring track controls
+      // when the red line is at either viewport edge.
+      ref.current.style.clipPath=`inset(0px ${Math.max(0,x+12-width)}px 0px ${Math.max(0,12-x)}px)`;
       ref.current.style.display = x >= 0 && x <= width ? '' : 'none';
     };
     const unsubscribe = useProjectStore.subscribe((state, previous) => {

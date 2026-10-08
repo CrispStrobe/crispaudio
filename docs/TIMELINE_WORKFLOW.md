@@ -1,3 +1,6 @@
+> Local 0.6.4 adds isolated fullscreen keyboard controls, edge scrolling during
+> track reorder and compact touch rows with audible/silent indicators.
+
 > Local 0.6.3 keeps picture gaps/tails black without blocking audio; expanded
 > frame stepping follows the full canvas. Typed POS brings its target into view.
 

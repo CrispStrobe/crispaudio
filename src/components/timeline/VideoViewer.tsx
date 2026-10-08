@@ -6,7 +6,7 @@ import { drawVideoTransition } from '../../lib/videoCanvasPreview';
 import { activeVideoClips, clipSource } from '../../lib/videoEditing';
 import { timelineDuration } from '../../lib/timelineView';
 import { clipOpacity, transitionStyle } from '../../lib/videoPreview';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { previewUrl } from '../../lib/previewCache';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
@@ -17,6 +17,12 @@ export function VideoViewer({children}: {children?:ReactNode}) {
   const hasVideo=useProjectStore(s=>!!s.project.video);
   const enteredDocument=useRef(false);
   const wantsExpanded=useRef(false);
+  const viewerRef=useRef<HTMLDivElement>(null);
+  const focusViewerButton=useCallback(()=>{
+    const button=viewerRef.current?.querySelector<HTMLButtonElement>('[data-video-expand]');
+    button?.focus();return !!button;
+  },[]);
+  const stepFrame=(direction:number)=>{const state=useProjectStore.getState();state.setIsPlaying(false);state.setPlayheadPosition(Math.max(0,Math.min(timelineDuration(state.project),state.playheadPosition+direction/(state.project.frameRate??25))));};
   const [fullscreenError,setFullscreenError]=useState('');
   const path=useProjectStore(s=>{const clip=activeVideoClips(s.project.video,s.playheadPosition).at(-1);return clip?clipSource(s.project.video,clip)?.path:undefined;});
   const previousPath=useProjectStore(s=>{const clips=activeVideoClips(s.project.video,s.playheadPosition);return clips.length>1?clipSource(s.project.video,clips.at(-2))?.path:undefined;});
@@ -85,8 +91,29 @@ export function VideoViewer({children}: {children?:ReactNode}) {
     return()=>document.removeEventListener('fullscreenchange',changed);
   },[expanded]);
   useEffect(()=>()=>{wantsExpanded.current=false;if(enteredDocument.current&&document.fullscreenElement){enteredDocument.current=false;void document.exitFullscreen().catch(()=>{});}},[]);
+  useEffect(()=>{
+    if(!expanded)return;
+    const previousFocus=document.activeElement as HTMLElement|null;
+    focusViewerButton();
+    return()=>{
+      if(!focusViewerButton()&&previousFocus?.isConnected)previousFocus.focus();
+    };
+  },[expanded,focusViewerButton]);
   if(!hasVideo)return null;
-  const content = <div className={expanded?'fixed inset-0 z-[70] bg-black p-4 flex flex-col gap-3':'video-viewer-compact flex flex-wrap gap-3 items-start'}>
+  const content = <div ref={viewerRef} role={expanded?'dialog':undefined} aria-modal={expanded?true:undefined} aria-label={expanded?t('interview.preview'):undefined}
+    onKeyDown={e=>{
+      if(!expanded)return;
+      // Viewer keys must never reach timeline clip-editing shortcuts.
+      e.stopPropagation();
+      if(e.key==='Escape'){e.preventDefault();wantsExpanded.current=false;setExpanded(false);}
+      else if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){e.preventDefault();stepFrame(e.key==='ArrowLeft'?-1:1);}
+      else if(e.code==='Space'){e.preventDefault();const state=useProjectStore.getState();state.setIsPlaying(!state.isPlaying);}
+      else if(e.key==='Tab'){
+        const buttons=[...e.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')],first=buttons[0],last=buttons.at(-1);
+        if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
+        else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+      }
+    }} className={expanded?'fixed inset-0 z-[70] bg-black p-4 flex flex-col gap-3':'video-viewer-compact flex flex-wrap gap-3 items-start'}>
       <div ref={frameRef} data-video-frame className={expanded?'relative bg-black w-full flex-1 min-h-0 overflow-hidden':'relative bg-black rounded-xl w-[140px] sm:w-[360px] max-w-full max-h-[18dvh] aspect-video overflow-hidden'}>
         {url&&<>
         <video key={`${previousPath}-${previousUrl}-${attempt}-previous`} ref={previousRef} src={previousUrl || undefined} muted playsInline preload="metadata" aria-hidden="true" className="absolute inset-0 w-full h-full object-contain" onError={()=>setError(t('interview.previewFailed'))}/>
@@ -100,10 +127,10 @@ export function VideoViewer({children}: {children?:ReactNode}) {
         {!expanded && <div className="mb-2">{children}</div>}
         <div className="flex flex-wrap gap-2">
           {expanded && <ToolButton icon={playing?Pause:Play} label={t(playing?'timeline.pause':'timeline.play')} onClick={()=>useProjectStore.getState().setIsPlaying(!playing)}/>}
-          {expanded && [-1,1].map(direction=><ToolButton key={direction} icon={direction<0?SkipBack:SkipForward} label={t(direction<0?'video.stepBack':'video.stepForward')} onClick={()=>{const state=useProjectStore.getState();state.setIsPlaying(false);state.setPlayheadPosition(Math.max(0,Math.min(timelineDuration(state.project),state.playheadPosition+direction/(state.project.frameRate??25))));}}/>)}
+          {expanded && [-1,1].map(direction=><ToolButton key={direction} icon={direction<0?SkipBack:SkipForward} label={t(direction<0?'video.stepBack':'video.stepForward')} onClick={()=>stepFrame(direction)}/>)}
           {!expanded && <VideoControls/>}
           {!expanded && <ToolButton icon={EyeOff} label={t('interview.hidePreview')} onClick={()=>setVisible(false)}/>}
-          <ToolButton icon={expanded?Minimize:Maximize} label={t(expanded?'editor.closeViewer':'video.fullscreen')} aria-pressed={expanded} onClick={()=>{if(expanded){wantsExpanded.current=false;setExpanded(false);}else{wantsExpanded.current=true;setExpanded(true);setFullscreenError('');if(!('__TAURI_INTERNALS__' in window)&&!document.fullscreenElement&&document.documentElement.requestFullscreen){void document.documentElement.requestFullscreen().then(()=>{if(wantsExpanded.current)enteredDocument.current=true;else if(document.fullscreenElement)void document.exitFullscreen();}).catch(error=>{if(wantsExpanded.current)setFullscreenError(String(error));});}}}}/>
+          <ToolButton data-video-expand icon={expanded?Minimize:Maximize} label={t(expanded?'editor.closeViewer':'video.fullscreen')} aria-pressed={expanded} onClick={()=>{if(expanded){wantsExpanded.current=false;setExpanded(false);}else{wantsExpanded.current=true;setExpanded(true);setFullscreenError('');if(!('__TAURI_INTERNALS__' in window)&&!document.fullscreenElement&&document.documentElement.requestFullscreen){void document.documentElement.requestFullscreen().then(()=>{if(wantsExpanded.current)enteredDocument.current=true;else if(document.fullscreenElement)void document.exitFullscreen();}).catch(error=>{if(wantsExpanded.current)setFullscreenError(String(error));});}}}}/>
         </div>
       </div>
       {path&&error&&<p role="alert" className="text-sm text-amber-300 shrink-0">{error} <button className="timeline-tool" onClick={()=>setAttempt(n=>n+1)}>{t('editor.retryPreview')}</button></p>}

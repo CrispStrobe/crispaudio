@@ -800,7 +800,7 @@
     "help_navigation_title": "Zoom and navigation",
     "help_navigation": "Video, audio and ruler share one time scale. Shift+wheel or sideways trackpad motion scrolls; Ctrl/Cmd+wheel zooms. Fit all resets the view. Drag the blue overview window to browse or its red cursor to seek.",
     "help_reorder_title": "Track order",
-    "help_reorder": "Drag the six-dot handle onto another audio track header. Use its arrow keys or the up/down buttons for precise ordering. Reordering changes display order, not timing or sound.",
+    "help_reorder": "Drag the six-dot handle onto another audio track header. Use its arrow keys or the up/down buttons for precise ordering. Reordering changes display order, not timing or sound. Hold near the top or bottom edge to scroll to other tracks; Escape cancels a drag. You can drop over a waveform as well as a header.",
     "help_overlap_title": "Overlaps and blending",
     "help_overlap": "Audio clips mix when they overlap. Shift-select two partially overlapping clips and use Crossfade selected audio overlap to add S-curve fades. Drag two video clips into a partial overlap to create a cross dissolve; Clip settings changes its transition. Three simultaneous video clips or complete containment are not supported on this composition lane.",
     "help_time_title": "Position and duration",
@@ -808,10 +808,10 @@
     "help_import_title": "Import audio",
     "help_import": "Choose an existing destination track or a new track for each file. Reading, decoding and waveform preparation are shown separately and can be cancelled. Desktop file links are retained for efficient saves. Large compressed recordings still need decoding.",
     "help_height_title": "Track height",
-    "help_height": "The height control affects both video and audio, from 24 to 640 pixels. Compact audio rows hide mixer controls; open the mixer to change Mute, Solo or gain.",
+    "help_height": "The height control affects both video and audio, from 24 to 640 pixels. Compact audio rows hide mixer controls; open the mixer to change Mute, Solo or gain. A small status dot still shows whether a compact track is audible.",
     "help_remove_title": "Remove tracks and clips",
     "help_remove": "Trash in a track header removes that lane. Removing video keeps its audio and unlinks it. The toolbar trash removes selected clips, including linked audio/video partners. Undo restores either action.",
     "help_fullscreen_title": "Fullscreen video",
-    "help_fullscreen": "Expand video opens a viewport-filling viewer and requests native fullscreen where available. Playback and frame-step controls stay visible. Escape or the shrink button closes it."
+    "help_fullscreen": "Expand video opens a viewport-filling viewer and requests native fullscreen where available. Playback and frame-step controls stay visible. Escape or the shrink button closes it. In the expanded viewer, Left/Right steps frames and Space toggles playback. Tab stays among viewer controls; timeline editing shortcuts are isolated."
   }
 }

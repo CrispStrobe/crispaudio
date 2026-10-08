@@ -94,4 +94,25 @@ describe('video viewer lifecycle',()=>{
     expect(screen.getByText('usability.fullscreenFallback').closest('.fixed')).toBeTruthy();
   });
 
+  it('owns viewer keyboard shortcuts, traps Tab and returns focus on close',async()=>{
+    await act(async()=>{render(<VideoViewer/>);});
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'video.fullscreen'}));});
+    const close=screen.getByRole('button',{name:'editor.closeViewer'}),play=screen.getByRole('button',{name:'timeline.play'});
+    expect(close).toHaveFocus();
+    const globalKey=vi.fn();window.addEventListener('keydown',globalKey);
+    try{
+      fireEvent.keyDown(close,{key:'ArrowRight',code:'ArrowRight'});
+      expect(useProjectStore.getState().playheadPosition).toBeCloseTo(4.04);
+      fireEvent.keyDown(close,{key:'Delete',code:'Delete'});
+      fireEvent.keyDown(close,{key:' ',code:'Space'});
+      expect(useProjectStore.getState().isPlaying).toBe(true);
+      expect(globalKey).not.toHaveBeenCalled();
+      fireEvent.keyDown(close,{key:'Tab',code:'Tab'});expect(play).toHaveFocus();
+      fireEvent.keyDown(play,{key:'Tab',code:'Tab',shiftKey:true});expect(close).toHaveFocus();
+      await act(async()=>{fireEvent.keyDown(close,{key:'Escape',code:'Escape'});});
+      expect(screen.getByRole('button',{name:'video.fullscreen'})).toHaveFocus();
+      expect(screen.queryByRole('dialog')).toBeNull();
+    }finally{window.removeEventListener('keydown',globalKey);}
+  });
+
 });

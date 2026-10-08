@@ -157,3 +157,15 @@ node across gaps. Expanded frame steps clamp to timelineDuration, not picture
 ends. Browser fullscreen requests can complete after close/unmount; exit late
 owned requests and preserve preexisting fullscreen. Keep failure notices inside
 the portal. POS and scrubber use shared viewport-follow rules.
+
+
+## Interaction 0.6.4
+
+Expanded viewer owns focus and keyboard events: arrows step frames, Space toggles
+playback, Tab cycles controls and Escape restores the compact expand button. Never
+let viewer keys reach timeline clip editing. Track reorder uses header-centre hit
+testing even when the pointer is over a waveform; edge scrolling runs only during
+an active pointer drag. Cancel RAF on Escape/cancel/lost capture/unmount. Exclude
+grips from horizontal touch browsing. Playhead targets are clipped at both viewport
+edges so the broad target cannot cover headers. Compact headers fit actual row
+height; hide mixer below 56 px on desktop/96 px on touch and retain audible status.

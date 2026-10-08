@@ -1,3 +1,9 @@
+# Interaction follow-up — local 0.6.4
+
+Implemented fullscreen focus/keyboard isolation, long-list track drag scrolling,
+Escape/capture cancellation, compact touch header geometry and status indicators.
+Playhead hit targets no longer extend into neighbouring track controls.
+
 # Preview and seeking follow-up — local 0.6.3
 
 Fixed gap/tail preview loading, fullscreen request completion after close, visible
