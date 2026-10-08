@@ -4,6 +4,9 @@ CrispAudio now has a desktop interview workflow and a standalone CLI. The code
 lives inside this repository (`media/`), and the Tauri app calls the same internal
 operations. There is no separate engine shared with CrisperWeaver.
 
+For the actual Canon/RØDE/H6 recordings, see the [step-by-step walkthrough](INTERVIEW_WALKTHROUGH.md).
+For iOS/macOS distribution limits, see [release status](RELEASE_STATUS.md).
+
 ## Prerequisites and build
 
 Install FFmpeg/FFprobe (macOS: `brew install ffmpeg`). The desktop app also looks in
@@ -17,7 +20,8 @@ npm ci
 npm run tauri build
 ```
 
-The CLI is built independently of Tauri and needs no window server. The GUI
+The CLI is built independently of Tauri and needs no window server.
+The iOS simulator workflow checks compilation/launch on main without uploading. The GUI
 workflow is desktop-only; existing web/mobile audio features remain available.
 FFmpeg executables are prerequisites, not bundled into the application.
 
@@ -64,12 +68,18 @@ each source's original number of channels retained.
 
 ## GUI
 
-1. Open **Timeline → Sync video + audio**, select the camera video and recordings.
+1. Open **Timeline → Sync video + audio**, choose the camera and recorder files in
+   the labeled steps, check their names, then analyze synchronization.
 2. Review correlation, drift, residuals and offsets. Weak matches require an
    explicit manual confirmation. Optionally match listening levels.
 3. Choose a folder for the aligned WAVs and sync session, then import the project.
-4. Use solo/mute to compare tracks. Initially only the first microphone plays.
-   Trim/split clips, adjust fades and track gain, and preview against the video.
+4. Use the microphone buttons or **Tracks & microphones** to compare tracks.
+   Initially only the first microphone plays. These controls change the export mix.
+   **Fit project** shows the full timeline. Select clips and use **Split selected**,
+   **Split all at playhead**, **Delete**, and **Clip settings** to edit without
+   right-clicking. The inspector opens in a dialog. Use the position slider to seek.
+   On touch, enable **Move & trim** explicitly for clip dragging; otherwise tap
+   selects and vertical swipes scroll. Video preview can be hidden.
 5. **Save project** keeps linked media references for imported interviews. Keep the
    aligned folder and original video; moving them requires restoring their paths.
 6. **Export edited video** renders the active timeline mix to the original video's
@@ -79,7 +89,7 @@ each source's original number of channels retained.
 Project version 2 can also embed 32-bit PCM WAV for portable audio projects;
 version 1 projects still load. Linked projects avoid repeated PCM/base64 copies
 when saving long interviews. Missing linked audio fails visibly instead of
-silently exporting an incomplete interview. Interview autosaves store linked
+silently exporting an incomplete interview. On iOS, saves embed audio rather than linking desktop paths. Interview autosaves store linked
 references; **Recover interview autosave** restores both the arrangement and its
 audio. Other audio projects retain the prior layout-only autosave behavior.
 
@@ -88,6 +98,15 @@ constrained to a -1.5 dBFS sample peak. It applies constant gain only, with no
 compression or denoising. This is an activity estimate, not calibrated loudness,
 SNR, a speaker label or a microphone quality score. Multiple simultaneously
 enabled microphones can produce comb filtering; select the desired source.
+
+## Touch and layout
+
+Primary Open/Save/Import/Export actions remain visible on phones. View & tools
+opens zoom/snapping/undo in a dialog. The mixer and clip inspector also use
+dialogs, leaving the waveform area available. Controls target 44 CSS pixels for
+touch; this follows [Apple’s touch control guidance](https://developer.apple.com/design/tips/)
+but does not itself establish native accessibility compliance. The global reset
+now sits in the CSS base layer so Tailwind spacing utilities apply normally.
 
 ## Alignment limits
 

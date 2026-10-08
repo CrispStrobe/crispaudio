@@ -2,7 +2,10 @@
 
 Desktop interview synchronization, external microphone alignment, video preview
 and edited-audio video export are available in the Timeline and standalone CLI.
-See [Interview editing and CLI](docs/INTERVIEW_EDITING.md) for setup and usage.
+See [Interview editing and CLI](docs/INTERVIEW_EDITING.md) for setup, the
+[Canon/H6 walkthrough](docs/INTERVIEW_WALKTHROUGH.md) for concrete steps, and
+[iOS/macOS release status](docs/RELEASE_STATUS.md) for platform limits. The audio
+editor has touch controls; automatic video sync and MP4 export remain desktop-only.
 
 `React` | `TypeScript` | `Tauri 2` | `Vite` | `Zustand` | `Vitest`
 

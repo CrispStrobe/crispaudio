@@ -4,6 +4,17 @@ CrispAudio-specific companion to the general playbook (`~/code/appstore.md`).
 It records the concrete values, what's already automated in this repo, and the
 steps that only a human (browser/Apple account) can do.
 
+## Current status (2026-10-08)
+
+The signing/setup notes below are historical. The Aug 17 iOS release workflow
+completed its upload step, so the July checklist must not be read as current
+proof that no app record exists. This audit did not verify present ASC processing,
+TestFlight, or public store availability. No October feature build has been
+submitted. See [current distribution status and release gates](RELEASE_STATUS.md).
+Automatic video synchronization/export is desktop-only; iOS currently edits
+aligned audio prepared on desktop. Device UX and audio validation are required
+before the next mobile release.
+
 ## Constants
 
 | Field | Value |

@@ -7,7 +7,7 @@ npm run dev          # Web dev server (Vite, port 5173)
 npm run tauri dev    # Desktop app (Tauri + Vite)
 npm run build        # Production web build
 npm run tauri build  # Desktop app bundle
-npm test             # Vitest (845+ tests)
+npm test             # Vitest (1147+ tests)
 npm run test:watch   # Vitest watch mode
 npm run lint         # ESLint
 npm run typecheck    # tsc --noEmit
@@ -16,7 +16,8 @@ npm run typecheck    # tsc --noEmit
 ## Architecture
 
 - **Frontend:** React 19 + TypeScript + Tailwind CSS 4 + Vite 8
-- **Backend:** Tauri 2 (Rust) — WAV export, project save/load
+- **Backend:** Tauri 2 (Rust) — WAV export, project save/load, desktop media commands
+- **Interview media:** internal `media/` Rust crate + CLI, desktop FFmpeg prerequisite; no mobile subprocess support
 - **State:** Zustand 5 with immer (SFX), zundo (SFX + Voice + Timeline undo/redo), persist (settings)
 - **i18n:** react-i18next — EN + DE, all UI strings use `t()`
 - **Tests:** Vitest + jsdom + @testing-library/react
@@ -51,4 +52,14 @@ tests/unit/         Unit tests (stores/, audio/, components/, hooks/, lib/)
 - Frontend: lint + typecheck + test + vite build
 - Rust: cargo check + cargo test on Linux/macOS/Windows
 - Release: triggered by `v*` tags, builds Linux/macOS/Windows/iOS/Android
+- macOS App Store: separate `mac-v*` tag/manual workflow (last signing run failed).
+- Main pushes do not submit to Apple. See docs/RELEASE_STATUS.md before tagging.
 - Vercel: auto-deploys web version on push to main
+
+## Interview UX
+
+Read docs/INTERVIEW_WALKTHROUGH.md for the real Canon/H6 example. Keep user media
+outside git. Microphone comparison controls alter the export mix; state this
+explicitly. Touch defaults to selection/vertical scroll, with an explicit
+Move & trim mode. Keep clip actions visible and use dialogs for mixer/inspector
+so phones retain waveform space. Browser viewport tests are not iOS validation.

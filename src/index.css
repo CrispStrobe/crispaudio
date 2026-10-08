@@ -90,10 +90,10 @@ html.light .bg-indigo-900\/40 {
   background-color: rgba(99, 102, 241, 0.15) !important;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Resets belong below utilities in the cascade. An unlayered universal
+   reset overrides every Tailwind padding/margin utility, flattening the UI. */
+@layer base {
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 }
 
 html, body, #root {
@@ -443,4 +443,49 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
     min-width: 44px;
     min-height: 44px;
   }
+}
+
+/* Interview editor: clear action states and touch targets without enlarging
+   waveform rows (their geometry is shared with canvas hit testing). */
+.timeline-editor button:focus-visible, .timeline-editor summary:focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 2px;
+}
+.timeline-editor button[aria-pressed="true"] { border-color: #a5b4fc; color: #c7d2fe; background-color: #312e81; }
+.timeline-transport > button { min-height: 44px; min-width: 44px; }
+.touch-arrange-toggle { display: none; }
+@media (pointer: coarse), (max-width: 767px) {
+  .touch-arrange-toggle { display: inline-flex; align-items: center; }
+  .timeline-editor button, .timeline-editor summary { min-height: 44px; min-width: 44px; }
+  .timeline-editor .track-heading { margin-bottom: 0; }
+  .timeline-editor .track-reorder, .timeline-editor .track-remove, .timeline-editor .track-gain { display: none; }
+  .timeline-editor .track-heading input { min-height: 30px; font-size: 14px; }
+  .timeline-editor input[type="range"] { min-height: 44px; }
+  .timeline-transport { gap: 4px; }
+  .timeline-transport > div:last-child { display: none; }
+  [role="dialog"] button, [role="dialog"] summary { min-height: 44px; min-width: 44px; }
+  [role="dialog"] input[type="checkbox"] { width: 24px; height: 24px; }
+  [role="dialog"] label { min-height: 44px; }
+}
+.timeline-tool { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 12px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: #e5e7eb; font-size: 13px; }
+.timeline-tool:hover { background: #374151; }
+.timeline-tool:disabled { opacity: .4; }
+@media (max-width: 767px) {
+  .timeline-clip-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .timeline-clip-actions button { padding-inline: 6px; font-size: 12px; }
+  .timeline-tool { padding-inline: 9px; }
+}
+@media (max-width: 767px) {
+  .timeline-main-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .timeline-main-tools > button > svg { display: none; }
+  .timeline-transport .position-label, .timeline-transport .transport-divider { display: none; }
+}
+/* Phone landscape must retain waveform space. Keep the primary actions in a
+   single row; the selected-only split also remains in the long-press menu. */
+@media (pointer: coarse) and (max-height: 500px) {
+  .timeline-editor > details { display: none; }
+  .timeline-transport, .timeline-main-tools, .timeline-clip-actions { padding-top: 4px; padding-bottom: 4px; }
+  .timeline-clip-actions { display: flex; flex-wrap: nowrap; overflow-x: auto; }
+  .timeline-clip-actions > * { flex-shrink: 0; }
+  .timeline-clip-actions .clip-selection-note, .timeline-clip-actions .clip-split-selected { display: none; }
 }

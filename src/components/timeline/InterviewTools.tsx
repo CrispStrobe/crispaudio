@@ -17,6 +17,10 @@ export function InterviewTools({ engine }: Props) {
   const { t } = useTranslation();
   const [available, setAvailable] = useState(false);
   const [show, setShow] = useState(false);
+  const [setup, setSetup] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState('');
+  const [selectedAudio, setSelectedAudio] = useState<string[]>([]);
+  const [showPreview, setShowPreview] = useState(true);
   const [session, setSession] = useState<SyncSession | null>(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -26,6 +30,7 @@ export function InterviewTools({ engine }: Props) {
   const [matchLevels, setMatchLevels] = useState(false);
   const video = useProjectStore((s) => s.project.video);
   const playing = useProjectStore((s) => s.isPlaying);
+  const tracks = useProjectStore((s) => s.project.tracks);
   const videoRef = useRef<HTMLVideoElement>(null);
   const actionRef = useRef(false);
 
@@ -59,7 +64,7 @@ export function InterviewTools({ engine }: Props) {
     const element = videoRef.current;
     sync();
     return () => { unsubscribe(); element?.pause(); };
-  }, [previewUrl]);
+  }, [previewUrl, showPreview]);
 
   async function perform(stage: string, task: () => Promise<void>) {
     if (actionRef.current) return;
@@ -70,13 +75,17 @@ export function InterviewTools({ engine }: Props) {
     finally { actionRef.current = false; setBusy(''); }
   }
 
-  const choose = () => perform(t('interview.analyzing'), async () => {
-    const selectedVideo = await open({ multiple: false, filters: [{ name: t('interview.video'), extensions: ['mp4', 'mov', 'mkv', 'm4v'] }] });
-    if (typeof selectedVideo !== 'string') return;
-    const audio = await open({ multiple: true, filters: [{ name: t('interview.audio'), extensions: ['wav', 'flac', 'm4a', 'mp3', 'aiff'] }] });
-    if (!audio) return;
-    const next = await invoke<SyncSession>('analyze_media', { video: selectedVideo, audio: Array.isArray(audio) ? audio : [audio] });
-    setSession(next); setShow(true);
+  const chooseVideo = () => perform(t('interview.loading'), async () => {
+    const file = await open({ multiple: false, filters: [{ name: t('interview.video'), extensions: ['mp4', 'mov', 'mkv', 'm4v'] }] });
+    if (typeof file === 'string') setSelectedVideo(file);
+  });
+  const chooseAudio = () => perform(t('interview.loading'), async () => {
+    const files = await open({ multiple: true, filters: [{ name: t('interview.audio'), extensions: ['wav', 'flac', 'm4a', 'mp3', 'aiff'] }] });
+    if (files) setSelectedAudio(Array.isArray(files) ? files : [files]);
+  });
+  const analyze = () => perform(t('interview.analyzing'), async () => {
+    const next = await invoke<SyncSession>('analyze_media', { video: selectedVideo, audio: selectedAudio });
+    setSession(next); setSetup(false); setShow(true);
   });
 
   const loadSession = () => perform(t('interview.loading'), async () => {
@@ -133,24 +142,64 @@ export function InterviewTools({ engine }: Props) {
     } finally { await remove(mix).catch(() => {}); }
   });
 
-  if (!available) return null;
-  const button = 'px-3 py-1 rounded border border-gray-700 text-xs text-gray-200 hover:bg-gray-800 disabled:opacity-40';
+  const button = 'min-h-11 px-4 py-2 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-40';
+  if (!available) return <details className="shrink-0 px-3 py-2 border-b border-gray-800 text-sm text-gray-400">
+    <summary className="cursor-pointer min-h-11 flex items-center">{t('interview.mobileTitle')}</summary>
+    <p className="pb-2 max-w-2xl">{t('interview.mobileHelp')}</p>
+  </details>;
   return <>
-    <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800">
-      <button className={button} disabled={!!busy || playing} onClick={choose}>{t('interview.sync')}</button>
-      <button className={button} disabled={!!busy || playing} onClick={loadSession}>{t('interview.openSession')}</button>
-      {recoverable && <button className={button} disabled={!!busy || playing} onClick={recover}>{t('interview.recover')}</button>}
-      {video && <button className={button} disabled={!!busy || playing} onClick={exportVideo}>{t('interview.exportVideo')}</button>}
-      {busy && <span role="status" className="text-xs text-indigo-300">{busy}</span>}
-      {error && <span role="alert" className="text-xs text-red-300">{error}</span>}
-      {notice && <span role="status" className="text-xs text-green-300">{notice}</span>}
-    </div>
-    {video && previewUrl && <div className="bg-black flex justify-center flex-shrink-0">
-      <video key={previewUrl} ref={videoRef} src={previewUrl} muted playsInline preload="metadata"
-        aria-label={t('interview.preview')} className="max-h-48 max-w-full"
-        onLoadedMetadata={() => { if (videoRef.current) videoRef.current.currentTime = useProjectStore.getState().playheadPosition; }}
-        onError={() => setError(t('interview.previewFailed'))} />
-    </div>}
+    <section className="shrink-0 border-b border-gray-800 bg-gray-900/70 px-3 py-3" aria-label={t('interview.title')}>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-40">
+          <h2 className="font-semibold text-gray-100 text-sm">{video ? t('interview.editTitle') : t('interview.title')}</h2>
+          <p className="text-xs text-gray-400 mt-1">{video ? t('interview.editHelp') : t('interview.steps')}</p>
+        </div>
+        <button className={`${button} !bg-indigo-600 !border-indigo-500`} disabled={!!busy || playing} onClick={() => setSetup(true)}>{t('interview.sync')}</button>
+        {video && <button className={button} disabled={!!busy || playing} onClick={exportVideo}>{t('interview.exportVideo')}</button>}
+        <details className="relative">
+          <summary className={`${button} cursor-pointer flex items-center`}>{t('interview.more')}</summary>
+          <div className="absolute right-0 top-full mt-2 z-20 p-2 rounded-xl border border-gray-700 bg-gray-900 shadow-xl w-64 space-y-2">
+            <button className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={loadSession}>{t('interview.openSession')}</button>
+            {recoverable && <button className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={recover}>{t('interview.recover')}</button>}
+          </div>
+        </details>
+      </div>
+      {busy && <p role="status" className="text-sm text-indigo-300 mt-2">{busy}</p>}
+      {error && <p role="alert" className="text-sm text-red-300 break-words mt-2">{error}</p>}
+      {notice && <p role="status" className="text-sm text-green-300 break-words mt-2">{notice}</p>}
+      {video && <div className="mt-3 flex flex-wrap gap-3 items-start">
+        {showPreview && previewUrl && <video key={previewUrl} ref={videoRef} src={previewUrl} muted playsInline preload="metadata"
+          aria-label={t('interview.preview')} className="bg-black rounded-xl w-64 max-w-full max-h-36 object-contain"
+          onLoadedMetadata={() => { if (videoRef.current) videoRef.current.currentTime = useProjectStore.getState().playheadPosition; }}
+          onError={() => setError(t('interview.previewFailed'))} />}
+        <div className="flex-1 min-w-40">
+          <p className="text-xs text-gray-400 mb-2">{t('interview.listenHelp')}</p>
+          <div className="flex flex-wrap gap-2">{tracks.map((track) => <button key={track.id} className={button}
+            aria-pressed={!track.muted && !tracks.some((other) => other.id !== track.id && !other.muted)}
+            onClick={() => {
+              const state = useProjectStore.getState();
+              tracks.forEach((other) => state.updateTrack(other.id, { muted: other.id !== track.id, solo: false }));
+            }}>{track.name}</button>)}</div>
+          <button className="min-h-11 text-xs text-gray-400 underline" onClick={() => setShowPreview((old) => !old)}>{t(showPreview ? 'interview.hidePreview' : 'interview.showPreview')}</button>
+        </div>
+      </div>}
+    </section>
+    <Modal isOpen={setup} onClose={() => { if (!busy) setSetup(false); }} title={t('interview.sync')} widthClass="max-w-2xl">
+      <ol className="space-y-5 text-sm text-gray-300">
+        <li><h3 className="font-semibold mb-2">{t('interview.pickVideo')}</h3>
+          <button className={button} disabled={!!busy} onClick={chooseVideo}>{t('interview.video')}</button>
+          <p className="break-all mt-2 text-gray-400">{selectedVideo || t('interview.notSelected')}</p>
+        </li>
+        <li><h3 className="font-semibold mb-2">{t('interview.pickAudio')}</h3>
+          <button className={button} disabled={!!busy} onClick={chooseAudio}>{t('interview.audio')}</button>
+          <ul className="mt-2 text-gray-400">{selectedAudio.map((path) => <li className="break-all" key={path}>{path}</li>)}</ul>
+          {!selectedAudio.length && <p className="mt-2 text-gray-400">{t('interview.notSelected')}</p>}
+        </li>
+      </ol>
+      <p className="text-sm text-gray-400 mt-4">{t('interview.setupHelp')}</p>
+      {error && <p role="alert" className="text-red-300 mt-2">{error}</p>}
+      <button className={`${button} mt-4 !bg-indigo-600`} disabled={!!busy || !selectedVideo || !selectedAudio.length} onClick={analyze}>{busy || t('interview.analyze')}</button>
+    </Modal>
     <Modal isOpen={show} onClose={() => { if (!busy) setShow(false); }} title={t('interview.review')} widthClass="max-w-3xl">
       <p className="text-sm text-gray-300 mb-3">{t('interview.reviewHelp')}</p>
       <div className="space-y-3 max-h-[55vh] overflow-y-auto">
@@ -160,9 +209,9 @@ export function InterviewTools({ engine }: Props) {
             {t(track.alignment.reliable ? 'interview.reliable' : 'interview.uncertain')}
             {' · '}{t('interview.metrics', { score: track.alignment.confidence.toFixed(2), ppm: ((track.alignment.rate - 1) * 1e6).toFixed(1), residual: track.alignment.residual_ms.toFixed(1) })}
           </p>
-          <label className="flex items-center gap-2 mt-2">{t('interview.offset')}
+          <label className="flex flex-wrap items-center gap-2 mt-2 min-h-11">{t('interview.offset')}
             <input type="number" step="0.001" value={track.alignment.offset} disabled={!!busy}
-              className="bg-gray-900 border border-gray-600 rounded p-1 w-36"
+              className="bg-gray-900 border border-gray-600 rounded p-2 min-h-11 w-36"
               onChange={(event) => {
                 const offset = event.currentTarget.valueAsNumber;
                 if (!Number.isFinite(offset)) return;
@@ -171,7 +220,7 @@ export function InterviewTools({ engine }: Props) {
                 } : { ...tr, aligned_path: null }) }));
               }} />
           </label>
-          <label className="flex items-center gap-2 mt-2"><input type="checkbox" checked={track.alignment.manual} disabled={!!busy}
+          <label className="flex flex-wrap items-center gap-2 mt-2 min-h-11"><input type="checkbox" checked={track.alignment.manual} disabled={!!busy}
             onChange={(event) => {
               const manual = event.currentTarget.checked;
               setSession((old) => old && ({ ...old, tracks: old.tracks.map((tr, n) => n === i ? { ...tr, alignment: { ...tr.alignment, manual } } : tr) }));

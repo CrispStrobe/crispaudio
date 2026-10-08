@@ -761,7 +761,7 @@ export const useProjectStore = create<ProjectState>()(
       // ── View ──────────────────────────────────────────────────────────────────
 
       setZoomLevel: (level) =>
-        set({ zoomLevel: Math.max(10, Math.min(2000, level)) }),
+        set({ zoomLevel: Math.max(0.1, Math.min(2000, level)) }),
 
       setScrollOffset: (offset) =>
         set({ scrollOffset: Math.max(0, offset) }),

@@ -20,6 +20,21 @@
 - No separate cross-application engine. FFmpeg/FFprobe are desktop prerequisites;
   web/mobile keep the existing audio editor.
 
+## Touch workflow and release readiness (2026-10-08)
+
+- Fixed global CSS reset overriding Tailwind spacing utilities.
+- Implemented guided file setup, explicit microphone comparison, preview toggle,
+  waveform fit, position scrubber, visible clip split/delete actions, track mixer,
+  and dialog-based clip inspector. Shared vertical scrolling keeps headers aligned.
+- Touch selects/scrolls by default; moving/trimming is an explicit mode. Batch WAV
+  import creates separate microphone tracks. iOS saves portable embedded audio.
+- Documented exact Canon/H6 CLI and GUI steps and current distribution evidence.
+- Open: real-device iPhone/iPad validation; full native mobile video workflow;
+  macOS App Store signing and sandbox/media packaging. Do not describe the new
+  interview feature as available on iOS or submitted to Apple.
+
+## Historical v0.3.0 baseline
+
 > **Status: COMPLETE (v0.3.0)** — All items addressed. CI gates green: eslint clean,
 > `tsc --noEmit` clean, 845 JS + 11 Rust tests pass, `vite build` succeeds.
 > PWA service worker, full i18n (EN+DE), WCAG accessible, mobile responsive.

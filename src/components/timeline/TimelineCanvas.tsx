@@ -68,6 +68,7 @@ interface ContextMenuState {
 interface TimelineCanvasProps {
   /** Total width of the canvas area in CSS px (excluding track header). */
   width: number;
+  touchArrange?: boolean;
   /** Called when the canvas height changes (for parent layout). */
   onHeightChange?: (height: number) => void;
 }
@@ -75,6 +76,7 @@ interface TimelineCanvasProps {
 export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
   width,
   onHeightChange,
+  touchArrange = false,
 }) => {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -98,6 +100,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     selectSegment: s.selectSegment, copy: s.copy, cut: s.cut, paste: s.paste,
   })));
   const {
+    hitTest,
     onMouseDown,
     onMouseMove,
     onMouseUp,
@@ -553,14 +556,14 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         if (dx > LONG_PRESS_MOVE_TOL || dy > LONG_PRESS_MOVE_TOL) clearLongPress();
       }
 
-      onMouseMove(e);
+      if (!('pointerType' in e && e.pointerType === 'touch' && !touchArrange)) onMouseMove(e);
 
       const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
       setCursor(getCursor(cx, cy));
     },
-    [onMouseMove, getCursor, clearLongPress],
+    [onMouseMove, getCursor, clearLongPress, touchArrange],
   );
 
   // ── Pointer handlers (unify mouse / touch / pen) ─────────────────────────
@@ -575,7 +578,13 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       } catch {
         /* setPointerCapture can throw if the pointer is already gone */
       }
-      onMouseDown(e);
+      if (e.pointerType === 'touch' && !touchArrange) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
+        const state = useProjectStore.getState();
+        if ('segment' in hit) state.selectSegment(hit.segment.id, false);
+        else { state.setPlayheadPosition(hit.time); state.setSelection(null); }
+      } else onMouseDown(e);
 
       // Touch has no right-click: press-and-hold (without moving) opens the
       // context menu and cancels the tentative drag started above.
@@ -590,7 +599,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         longPressRef.current = { timer, x: clientX, y: clientY };
       }
     },
-    [onMouseDown, onMouseUp, openContextMenuAt],
+    [onMouseDown, onMouseUp, openContextMenuAt, touchArrange, hitTest],
   );
 
   const handlePointerUp = useCallback(
@@ -750,7 +759,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       <canvas
         ref={canvasRef}
         className="block"
-        style={{ cursor, width, height: totalHeight, touchAction: 'none' }}
+        style={{ cursor, width, height: totalHeight, touchAction: touchArrange ? 'none' : 'pan-y' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handleMouseMoveWithCursor}
         onPointerUp={handlePointerUp}

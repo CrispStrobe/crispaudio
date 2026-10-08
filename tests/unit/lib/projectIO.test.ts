@@ -140,7 +140,7 @@ describe('openProjectFile — browser fallback', () => {
     const result = await promise;
     expect(result).toBeNull();
     expect(inputEl.type).toBe('file');
-    expect(inputEl.accept).toBe('.json,application/json');
+    expect(inputEl.accept).toBe('.crispaudio,.json,application/json');
     expect(inputEl.click).toHaveBeenCalled();
 
     createSpy.mockRestore();

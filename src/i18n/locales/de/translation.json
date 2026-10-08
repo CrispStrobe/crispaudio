@@ -452,7 +452,22 @@
       "release": "Release",
       "knee": "Knee"
     },
-    "trackName": "Spurname"
+    "trackName": "Spurname",
+    "clipActions": "Clip-Aktionen",
+    "mixer": "Spuren & Mikrofone",
+    "tapClip": "Clip zum Bearbeiten auswählen",
+    "splitAtPlayhead": "Auswahl teilen",
+    "splitAll": "Alle am Abspielkopf teilen",
+    "clipSettings": "Clip-Einstellungen",
+    "listenOnly": "Nur diese anhören",
+    "mixerHelp": "Hier Mikrofone benennen und Pegel einstellen. „Nur diese anhören“ aktiviert eine Spur zum Vergleichen; das ändert auch den exportierten Mix.",
+    "seek": "Position im Projekt",
+    "touchArrangeOn": "Verschieben & Kürzen: an",
+    "touchArrangeOff": "Verschieben & Kürzen: aus",
+    "fit": "Projekt einpassen",
+    "viewTools": "Ansicht & Werkzeuge",
+    "startTitle": "Mit einer Aufnahme beginnen",
+    "startHelp": "Eine Aufnahme importieren oder mehrere ausgerichtete Mikrofondateien für getrennte Spuren auswählen. Ein gespeichertes Projekt lässt sich ebenfalls öffnen."
   },
   "common": {
     "slotA": "A",
@@ -560,6 +575,21 @@
     "confirmOffset": "Ich habe diesen Versatz geprüft und bestätigt",
     "import": "Ausrichten und als neues Projekt importieren",
     "recover": "Interview-Autosicherung wiederherstellen",
-    "matchLevels": "Abhörpegel mit konstantem Gain angleichen (keine Entrauschung oder Kompression)"
+    "matchLevels": "Abhörpegel mit konstantem Gain angleichen (keine Entrauschung oder Kompression)",
+    "title": "Interview vorbereiten",
+    "editTitle": "Interview bearbeiten",
+    "steps": "1 Dateien wählen → 2 Synchronisation prüfen → 3 Bearbeiten & exportieren",
+    "editHelp": "Mikrofon wählen, Ton bearbeiten und mit dem ursprünglichen Bild exportieren.",
+    "more": "Mehr",
+    "listenHelp": "Mikrofone vergleichen. Diese Tasten ändern den aktiven Mix für die gesamte Timeline.",
+    "hidePreview": "Videovorschau ausblenden",
+    "showPreview": "Videovorschau anzeigen",
+    "pickVideo": "1. Kameravideo wählen",
+    "pickAudio": "2. Audiodateien des Recorders wählen",
+    "notSelected": "Noch keine Datei ausgewählt",
+    "setupHelp": "Ansteckmikrofon und Raummikrofon zusammen auswählen. Die Synchronisation wird vor dem Import geprüft. Originale bleiben unverändert.",
+    "analyze": "3. Synchronisation analysieren",
+    "mobileTitle": "Interviewaufnahmen bearbeiten?",
+    "mobileHelp": "Automatischer Videoabgleich und MP4-Export benötigen derzeit die Desktop-App mit FFmpeg. Auf iPhone/iPad die ausgerichteten WAVs aus Dateien importieren, in der Timeline bearbeiten und den Audiomix exportieren. Verknüpfte Desktop-Projekte enthalten Mac-Dateipfade und lassen sich nicht direkt übertragen."
   }
 }

@@ -217,7 +217,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
 
 // ── Main panel ────────────────────────────────────────────────────────────────
 
-export const SegmentEffectsPanel: React.FC = () => {
+export const SegmentEffectsPanel: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const { t } = useTranslation();
   const store = useProjectStore();
   const [addMenuOpen, setAddMenuOpen] = useState(false);
@@ -239,7 +239,7 @@ export const SegmentEffectsPanel: React.FC = () => {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleClose = () => store.setSelection(null);
+  const handleClose = () => onClose ? onClose() : store.setSelection(null);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     store.setSegmentName(seg.id, e.target.value);
@@ -280,9 +280,9 @@ export const SegmentEffectsPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 border-l border-gray-700 w-64 flex-shrink-0 overflow-hidden">
-      {/* Panel header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700 flex-shrink-0">
+    <div className="flex flex-col h-full bg-gray-900 w-full flex-shrink-0 overflow-hidden">
+      {/* A dialog provides its own heading and close control. */}
+      {!onClose && <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700 flex-shrink-0">
         <span className="text-sm font-semibold text-gray-200">{t('timeline.segment')}</span>
         <button
           type="button"
@@ -292,7 +292,7 @@ export const SegmentEffectsPanel: React.FC = () => {
         >
           <X className="w-4 h-4" />
         </button>
-      </div>
+      </div>}
 
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
         {/* Name */}

@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- Desktop interview synchronization and drift correction, standalone media CLI,
+  linked projects, video preview, and edited-audio MP4 export.
+- Guided file selection/review, microphone comparison, full track mixer, timeline
+  fit/scrubbing, visible clip actions, and a dialog-based clip inspector.
+- Canon M50/RØDE/H6 walkthrough and explicit iOS/macOS distribution status.
+
+### Fixed
+- Put the global CSS reset in the base layer so Tailwind padding/margins work
+  throughout the interface instead of being overridden.
+- Touch selection no longer starts a clip move unless Move & trim is enabled.
+- Track labels and waveforms share vertical scrolling.
+- Batch audio import creates separate microphone tracks at the same position.
+- iOS project saves embed audio instead of preserving inaccessible desktop links.
+- Project pickers accept both `.crispaudio` and `.json`; file access errors are
+  displayed instead of being silently treated as cancellation.
+- Audio import decodes without waiting for playback permission after a picker.
+
+### Platform limits
+- Automatic video sync/export requires desktop FFmpeg. No October Apple release
+  has been submitted. Mobile device testing and Mac App Store packaging remain.
+
 ## [0.3.0] - 2026-06-07
 
 ### Added

@@ -452,7 +452,22 @@
       "release": "Release",
       "knee": "Knee"
     },
-    "trackName": "Track name"
+    "trackName": "Track name",
+    "clipActions": "Clip actions",
+    "mixer": "Tracks & microphones",
+    "tapClip": "Select a clip to edit",
+    "splitAtPlayhead": "Split selected",
+    "splitAll": "Split all at playhead",
+    "clipSettings": "Clip settings",
+    "listenOnly": "Listen only",
+    "mixerHelp": "Rename microphones and adjust their levels here. Listen only switches to one track for comparison; it changes the exported mix too.",
+    "seek": "Seek in project",
+    "touchArrangeOn": "Move & trim: on",
+    "touchArrangeOff": "Move & trim: off",
+    "fit": "Fit project",
+    "viewTools": "View & tools",
+    "startTitle": "Start with your audio",
+    "startHelp": "Import a recording, or select several aligned microphone files to create separate tracks. You can also open a saved project."
   },
   "common": {
     "slotA": "A",
@@ -560,6 +575,21 @@
     "confirmOffset": "I reviewed and confirmed this offset",
     "import": "Align and import as new project",
     "recover": "Recover interview autosave",
-    "matchLevels": "Match listening levels with constant gain (no denoising or compression)"
+    "matchLevels": "Match listening levels with constant gain (no denoising or compression)",
+    "title": "Build your interview",
+    "editTitle": "Interview workspace",
+    "steps": "1 Choose files → 2 Check sync → 3 Edit & export",
+    "editHelp": "Choose a microphone, edit the audio, then export with the original picture.",
+    "more": "More",
+    "listenHelp": "Compare microphones. These buttons change the active mix for the whole timeline.",
+    "hidePreview": "Hide video preview",
+    "showPreview": "Show video preview",
+    "pickVideo": "1. Choose the camera video",
+    "pickAudio": "2. Choose the recorder audio files",
+    "notSelected": "No file selected yet",
+    "setupHelp": "Select the jacket microphone and room microphone together. You will review synchronization before importing. Originals stay untouched.",
+    "analyze": "3. Analyze synchronization",
+    "mobileTitle": "Working with interview recordings?",
+    "mobileHelp": "Automatic video sync and MP4 export currently require the desktop app with FFmpeg. On iPhone/iPad, import aligned WAVs from Files, edit their audio on the timeline, and export the mix. Desktop linked projects contain Mac file paths and cannot be transferred directly."
   }
 }

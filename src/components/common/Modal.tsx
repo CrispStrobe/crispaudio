@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export const Modal: React.FC<ModalProps> = ({
   widthClass = 'max-w-md',
   children,
 }) => {
+  const { t } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -34,9 +36,10 @@ export const Modal: React.FC<ModalProps> = ({
   // Focus close button when opened
   useEffect(() => {
     if (isOpen) {
+      const previousFocus = document.activeElement as HTMLElement | null;
       // Small delay so portal has mounted
       const id = setTimeout(() => closeBtnRef.current?.focus(), 50);
-      return () => clearTimeout(id);
+      return () => { clearTimeout(id); if (previousFocus?.isConnected) previousFocus.focus(); };
     }
   }, [isOpen]);
 
@@ -99,7 +102,7 @@ export const Modal: React.FC<ModalProps> = ({
           relative z-10 w-full ${widthClass}
           bg-gray-900 border border-gray-700
           rounded-xl shadow-2xl shadow-black/60
-          flex flex-col max-h-[90vh]
+          flex flex-col max-h-[85dvh]
           animate-in fade-in zoom-in-95 duration-150
         `}
         style={{ animation: 'modalIn 0.15s ease-out both' }}
@@ -121,12 +124,12 @@ export const Modal: React.FC<ModalProps> = ({
             type="button"
             onClick={onClose}
             className="
-              -mr-1 w-6 h-6 flex items-center justify-center rounded
+              -mr-1 w-11 h-11 flex items-center justify-center rounded
               text-gray-500 hover:text-gray-200 hover:bg-gray-700
               transition-colors
               focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400
             "
-            aria-label="Close modal"
+            aria-label={t('timeline.closePanel')}
           >
             <X className="w-4 h-4" />
           </button>

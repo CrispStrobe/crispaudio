@@ -17,8 +17,6 @@ import React, {
 import {
   Plus,
   Trash2,
-  Volume2,
-  VolumeX,
   ZoomIn,
   ZoomOut,
   Magnet,
@@ -43,7 +41,9 @@ import { saveProjectFile, openProjectFile } from '../../lib/projectIO';
 import { TransportControls } from './TransportControls';
 import { TimelineRuler } from './TimelineRuler';
 import { TimelineCanvas } from './TimelineCanvas';
-import { SegmentEffectsPanel } from './SegmentEffectsPanel';
+import { isIOSApp } from '../../lib/native';
+import { Modal } from '../common/Modal';
+import { TimelineActions } from './TimelineActions';
 import { TRACK_HEADER_WIDTH, TRACK_HEIGHT, RULER_HEIGHT } from '../../hooks/useTimeline';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
 import { TimelineEngine } from '../../audio/engine/TimelineEngine';
@@ -93,7 +93,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
       onDragOver={(e) => onDragOver(e, trackIndex)}
       onDrop={(e) => onDrop(e, trackIndex)}
     >
-      <div className="flex items-center gap-1.5 mb-1">
+      <div className="track-heading flex items-center gap-1.5 mb-1">
         {/* Drag handle (desktop pointer) — HTML5 DnD doesn't fire on touch */}
         <div
           draggable
@@ -106,7 +106,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
           <GripVertical className="w-3 h-3" />
         </div>
         {/* Up/down reorder — works with touch and keyboard everywhere */}
-        <div className="flex-shrink-0 flex flex-col -my-0.5">
+        <div className="track-reorder flex-shrink-0 flex flex-col -my-0.5">
           <button
             type="button"
             onClick={() => reorderTrack(track.id, trackIndex - 1)}
@@ -138,7 +138,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
         <button
           type="button"
           onClick={() => removeTrack(track.id)}
-          className="p-0.5 text-gray-600 hover:text-red-400 transition-colors"
+          className="track-remove p-0.5 text-gray-600 hover:text-red-400 transition-colors"
           aria-label={t('timeline.removeTrack')}
         >
           <Trash2 className="w-3 h-3" />
@@ -150,12 +150,13 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
         <button
           type="button"
           onClick={() => updateTrack(track.id, { muted: !track.muted })}
-          className={`flex items-center justify-center w-6 h-5 rounded text-[10px] font-bold transition-colors ${
+          className={`flex items-center justify-center shrink-0 w-8 h-8 rounded text-xs font-bold transition-colors ${
             track.muted
               ? 'bg-amber-700 text-amber-200'
               : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
           }`}
           title={t('timeline.mute')}
+          aria-label={`${t('timeline.mute')} ${track.name}`}
           aria-pressed={track.muted}
         >
           M
@@ -165,41 +166,21 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
         <button
           type="button"
           onClick={() => updateTrack(track.id, { solo: !track.solo })}
-          className={`flex items-center justify-center w-6 h-5 rounded text-[10px] font-bold transition-colors ${
+          className={`flex items-center justify-center shrink-0 w-8 h-8 rounded text-xs font-bold transition-colors ${
             track.solo
               ? 'bg-yellow-600 text-yellow-100'
               : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
           }`}
           title={t('timeline.solo')}
+          aria-label={`${t('timeline.solo')} ${track.name}`}
           aria-pressed={track.solo}
         >
           S
         </button>
 
-        {/* Volume icon + slider */}
-        <div className="flex-1 flex items-center gap-1">
-          {track.muted ? (
-            <VolumeX className="w-3 h-3 text-gray-600 flex-shrink-0" />
-          ) : (
-            <Volume2 className="w-3 h-3 text-gray-500 flex-shrink-0" />
-          )}
-          <input
-            type="range"
-            min={-60}
-            max={40}
-            step={0.5}
-            value={track.volume > 0 ? Math.max(-60, 20 * Math.log10(track.volume)) : -60}
-            title={`${track.volume > 0 ? (20 * Math.log10(track.volume)).toFixed(1) : '-∞'} dB`}
-            onChange={(e) =>
-              updateTrack(track.id, { volume: Number(e.target.value) <= -60 ? 0 : 10 ** (Number(e.target.value) / 20) })
-            }
-            className="flex-1 slider-styled"
-            aria-label={t('timeline.trackVolume')}
-          />
-          <span className="text-[9px] text-gray-400 tabular-nums" title={t('timeline.trackVolume')}>
-            {track.volume > 0 ? `${(20 * Math.log10(track.volume)).toFixed(1)} dB` : '−∞'}
-          </span>
-        </div>
+        <span className="ml-auto text-xs text-gray-400 tabular-nums" title={t('timeline.trackVolume')}>
+          {track.volume > 0 ? `${(20 * Math.log10(track.volume)).toFixed(1)} dB` : '−∞'}
+        </span>
       </div>
     </div>
   );
@@ -220,6 +201,8 @@ export const TimelinePanel: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [projectError, setProjectError] = useState('');
+  const [touchArrange, setTouchArrange] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   // Keep engine in sync with sources
   useEffect(() => {
@@ -308,9 +291,13 @@ export const TimelinePanel: React.FC = () => {
   const handleImportFiles = useCallback(
     async (files: FileList | File[] | null) => {
       if (!files || files.length === 0) return;
+      setProjectError('');
       const ctx = audioEngine.getContext();
-      await audioEngine.resume();
-      for (const file of Array.from(files)) {
+      // Decoding does not need playback permission. Awaiting resume after a
+      // document picker can hang when the browser has no active user gesture.
+      const batch = Array.from(files);
+      const importPosition = useProjectStore.getState().playheadPosition;
+      for (const [index, file] of batch.entries()) {
         try {
           const arrayBuf = await file.arrayBuffer();
           let decoded: AudioBuffer;
@@ -334,9 +321,18 @@ export const TimelinePanel: React.FC = () => {
             sampleRate: decoded.sampleRate,
             channels: decoded.numberOfChannels,
           };
-          store.importAudioSource(source, useProjectStore.getState().playheadPosition);
+          if (batch.length > 1) {
+            // Aligned microphone files must become separate tracks, not
+            // overlapping clips on the first track. Keep a single default mic.
+            const state = useProjectStore.getState();
+            state.addTrack(file.name);
+            const track = useProjectStore.getState().project.tracks.at(-1)!;
+            state.updateTrack(track.id, { muted: index > 0 });
+            state.importAudioSource(source, importPosition, track.id);
+          } else store.importAudioSource(source, importPosition);
         } catch (err) {
           console.error(`Failed to import ${file.name}:`, err);
+          setProjectError(`${file.name}: ${String(err)}`);
         }
       }
     },
@@ -358,6 +354,7 @@ export const TimelinePanel: React.FC = () => {
           store.loadProjectState(project, sources);
         } catch (err) {
           console.error(`Failed to open project ${file.name}:`, err);
+          setProjectError(`${file.name}: ${String(err)}`);
         }
       }
       const audio = opened.filter((f) => !isProject(f.name));
@@ -373,7 +370,7 @@ export const TimelinePanel: React.FC = () => {
     try {
       const used = new Set(store.project.tracks.flatMap((track) => track.segments.map((segment) => segment.sourceId)));
       const sources = new Map([...store.sources].filter(([id]) => used.has(id)));
-      const json = serializeProject(store.project, sources, '__TAURI_INTERNALS__' in window ? 'linked' : 'portable');
+      const json = serializeProject(store.project, sources, '__TAURI_INTERNALS__' in window && !isIOSApp() ? 'linked' : 'portable');
       await saveProjectFile(json, store.project.name || 'project');
     } catch (err) {
       console.error('Save project failed:', err);
@@ -418,193 +415,60 @@ export const TimelinePanel: React.FC = () => {
     });
   }, [store.project, store.sources, defaultBitDepth, startExport]);
 
-  const showEffectsPanel =
-    store.selection !== null && store.selection.segmentIds.length > 0;
 
   return (
-    <div className="flex flex-col h-full bg-gray-950 overflow-hidden panel-enter">
+    <div className="timeline-editor flex flex-col h-full bg-gray-950 overflow-hidden panel-enter">
       {/* Transport bar */}
       <TransportControls />
       <InterviewTools engine={engineRef} />
       {projectError && <p role="alert" className="text-xs text-red-300 px-3 py-2">{projectError}</p>}
 
-      {/* Toolbar — scrolls horizontally on narrow screens so nothing clips */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800 bg-gray-900 flex-shrink-0 overflow-x-auto [&>*]:shrink-0">
-        {/* Undo / Redo */}
-        <button
-          type="button"
-          onClick={handleUndo}
-          className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-          title={t('timeline.undoTooltip')}
-          aria-label={t('timeline.undo')}
-        >
-          <Undo2 className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={handleRedo}
-          className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-          title={t('timeline.redoTooltip')}
-          aria-label={t('timeline.redo')}
-        >
-          <Redo2 className="w-4 h-4" />
-        </button>
-
-        <div className="w-px h-5 bg-gray-700 mx-1" />
-
-        {/* Snap toggle */}
-        <button
-          type="button"
-          onClick={() => store.setSnapEnabled(!store.snapEnabled)}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
-            store.snapEnabled
-              ? 'bg-indigo-900/50 text-indigo-300 border border-indigo-700'
-              : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800 border border-transparent'
-          }`}
-          aria-pressed={store.snapEnabled}
-          title={t('timeline.snapToGrid')}
-        >
-          <Magnet className="w-3.5 h-3.5" />
-          {t('timeline.snap')}
-        </button>
-
-        <div className="w-px h-5 bg-gray-700 mx-1" />
-
-        {/* Zoom controls */}
-        <button
-          type="button"
-          onClick={handleZoomOut}
-          className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-          title={t('timeline.zoomOut')}
-          aria-label={t('timeline.zoomOut')}
-        >
-          <ZoomOut className="w-4 h-4" />
-        </button>
-        <input
-          type="range"
-          min={10}
-          max={2000}
-          step={5}
-          value={store.zoomLevel}
-          onChange={(e) => store.setZoomLevel(parseFloat(e.target.value))}
-          className="w-24 slider-styled"
-          aria-label={t('timeline.zoomLevel')}
-        />
-        <button
-          type="button"
-          onClick={handleZoomIn}
-          className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-          title={t('timeline.zoomIn')}
-          aria-label={t('timeline.zoomIn')}
-        >
-          <ZoomIn className="w-4 h-4" />
-        </button>
-        <span className="text-xs text-gray-600 ml-1 min-w-[3rem]">
-          {store.zoomLevel.toFixed(0)} px/s
-        </span>
-
-        <div className="flex-1" />
-
-        {/* Open / Save project */}
-        <button
-          type="button"
-          onClick={() => void handleOpenProject()}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
-          title={t('timeline.openProject')}
-          aria-label={t('timeline.openProject')}
-        >
-          <FolderOpen className="w-3.5 h-3.5" />
-          {t('timeline.openProject')}
-        </button>
-        <button
-          type="button"
-          onClick={() => void handleSaveProject()}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
-          title={t('timeline.saveProject')}
-          aria-label={t('timeline.saveProject')}
-        >
-          <Save className="w-3.5 h-3.5" />
-          {t('timeline.saveProject')}
-        </button>
-
-        <div className="w-px h-5 bg-gray-700 mx-1" />
-
-        {/* Import audio */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="audio/*"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            void handleImportFiles(e.target.files);
-            e.target.value = '';
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
-          title={t('timeline.import')}
-          aria-label={t('timeline.import')}
-        >
-          <Upload className="w-3.5 h-3.5" />
-          {t('timeline.import')}
-        </button>
-
-        {/* TTS */}
-        <button
-          type="button"
-          onClick={() => useUIStore.getState().openModal('tts')}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-teal-800 border border-teal-700 text-xs text-teal-200 hover:text-white hover:bg-teal-700 transition-colors"
-          title={t('tts.title')}
-          aria-label={t('tts.title')}
-        >
-          <MessageSquare className="w-3.5 h-3.5" />
-          {t('tts.title')}
-        </button>
-
-        {/* Export mix */}
-        <button
-          type="button"
-          onClick={() => void handleExportMix()}
-          disabled={exportStage !== null || store.project.duration <= 0}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title={t('timeline.export')}
-          aria-label={t('timeline.export')}
-        >
-          <Download className="w-3.5 h-3.5" />
-          {t('timeline.export')}
-        </button>
-
-          {exportStage && (
-            <div className="flex items-center gap-2 text-sm text-gray-300">
-              <span role="status" aria-live="polite">{t(`audioExport.${exportStage}`)}</span>
-              {exportStage === 'rendering' && <span className="text-xs text-gray-400">{t('audioExport.renderCancelNote')}</span>}
-              <button type="button" onClick={cancelExport} aria-label={t('audioExport.cancel')} className="px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 text-white">
-                {t('audioExport.cancel')}
-              </button>
+      <div className="timeline-main-tools flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900 shrink-0">
+        <input ref={fileInputRef} type="file" accept="audio/*" multiple className="hidden"
+          onChange={(e) => { void handleImportFiles(e.target.files); e.target.value = ''; }} />
+        <button className="timeline-tool" aria-label={t('timeline.openProject')} onClick={() => void handleOpenProject()}><FolderOpen size={16} />{t('timeline.openProject')}</button>
+        <button className="timeline-tool" aria-label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}><Save size={16} />{t('timeline.saveProject')}</button>
+        <button className="timeline-tool" aria-label={t('timeline.import')} onClick={() => fileInputRef.current?.click()}><Upload size={16} />{t('timeline.import')}</button>
+        <button className="timeline-tool" aria-label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}><Download size={16} />{t('timeline.export')}</button>
+        <button className="timeline-tool" disabled={store.project.duration <= 0} onClick={() => { store.setZoomLevel(canvasWidth / store.project.duration); useProjectStore.getState().setScrollOffset(0); }}>{t('timeline.fit')}</button>
+        <button className="timeline-tool" onClick={() => setToolsOpen(true)}>{t('timeline.viewTools')}</button>
+        <Modal isOpen={toolsOpen} onClose={() => setToolsOpen(false)} title={t('timeline.viewTools')}>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <button className="timeline-tool" aria-label={t('timeline.undo')} onClick={handleUndo}><Undo2 size={16} />{t('timeline.undo')}</button>
+              <button className="timeline-tool" aria-label={t('timeline.redo')} onClick={handleRedo}><Redo2 size={16} />{t('timeline.redo')}</button>
             </div>
-          )}
-          {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
-
-        {/* Add track */}
-        <button
-          type="button"
-          onClick={handleAddTrack}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-gray-800 border border-gray-700 text-xs text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
-          aria-label={t('timeline.addTrack')}
-        >
-          <Plus className="w-3.5 h-3.5" />
-          {t('timeline.addTrack')}
-        </button>
+            <button className="timeline-tool" aria-pressed={store.snapEnabled} onClick={() => store.setSnapEnabled(!store.snapEnabled)}><Magnet size={16} />{t('timeline.snap')}</button>
+            <div className="flex items-center gap-2">
+              <button className="timeline-tool" aria-label={t('timeline.zoomOut')} onClick={handleZoomOut}><ZoomOut size={16} /></button>
+              <input type="range" min={0.1} max={2000} step={0.1} value={store.zoomLevel} onChange={(e) => store.setZoomLevel(+e.target.value)} className="w-28 slider-styled" aria-label={t('timeline.zoomLevel')} />
+              <button className="timeline-tool" aria-label={t('timeline.zoomIn')} onClick={handleZoomIn}><ZoomIn size={16} /></button>
+            </div>
+            <button className="timeline-tool" aria-label={t('timeline.addTrack')} onClick={handleAddTrack}><Plus size={16} />{t('timeline.addTrack')}</button>
+            <button className="timeline-tool" onClick={() => useUIStore.getState().openModal('tts')}><MessageSquare size={16} />{t('tts.title')}</button>
+          </div>
+        </Modal>
+        {exportStage && <div className="flex flex-wrap gap-2 items-center">
+          <span role="status" className="text-sm text-gray-300">{t(`audioExport.${exportStage}`)}</span>
+          {exportStage === 'rendering' && <span className="text-xs text-gray-400">{t('audioExport.renderCancelNote')}</span>}
+          <button className="timeline-tool" onClick={cancelExport}>{t('audioExport.cancel')}</button>
+        </div>}
+        {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
       </div>
 
-      {/* Main area: headers + canvas + effects panel */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <TimelineActions touchArrange={touchArrange} onTouchArrange={() => setTouchArrange((old) => !old)} />
+
+      {/* Main area: headers + canvas */}
+      <div className="relative flex flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+        {!store.project.tracks.length && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-5 bg-gray-950 text-center">
+          <Upload className="w-10 h-10 text-indigo-400" />
+          <h2 className="text-lg font-semibold text-gray-100">{t('timeline.startTitle')}</h2>
+          <p className="text-sm text-gray-400 max-w-md">{t('timeline.startHelp')}</p>
+          <button className="timeline-tool !bg-indigo-600 !border-indigo-500" onClick={() => fileInputRef.current?.click()}>{t('timeline.importAudio')}</button>
+        </div>}
         {/* Left: track headers column */}
         <div
-          className="flex flex-col flex-shrink-0 border-r border-gray-800 overflow-hidden bg-gray-900"
+          className="timeline-track-headers flex flex-col flex-shrink-0 border-r border-gray-800 bg-gray-900"
           style={{ width: TRACK_HEADER_WIDTH }}
         >
           {/* Spacer aligns with ruler */}
@@ -618,7 +482,7 @@ export const TimelinePanel: React.FC = () => {
           </div>
 
           {/* Per-track headers — scroll locked to canvas */}
-          <div className="flex-1 overflow-y-hidden">
+          <div className="flex-1">
             {store.project.tracks.map((t, i) => (
               <TrackHeader
                 key={t.id}
@@ -658,7 +522,7 @@ export const TimelinePanel: React.FC = () => {
         {/* Center: ruler + scrollable canvas */}
         <div
           ref={scrollContainerRef}
-          className="flex flex-col flex-1 min-w-0 overflow-hidden"
+          className="flex flex-col flex-1 min-w-0"
         >
           {/* Ruler */}
           <div className="flex-shrink-0" style={{ height: RULER_HEIGHT }}>
@@ -667,7 +531,7 @@ export const TimelinePanel: React.FC = () => {
 
           {/* Canvas (internally virtual-scrolled via store.scrollOffset) */}
           <div
-            className={`flex-1 overflow-y-auto overflow-x-hidden relative transition-colors ${
+            className={`flex-1 relative transition-colors ${
               isDraggingFile ? 'bg-indigo-900/20 ring-2 ring-inset ring-indigo-500/50' : ''
             }`}
             onDragOver={(e) => {
@@ -684,7 +548,7 @@ export const TimelinePanel: React.FC = () => {
               }
             }}
           >
-            <TimelineCanvas width={canvasWidth} />
+            <TimelineCanvas width={canvasWidth} touchArrange={touchArrange} />
             {isDraggingFile && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                 <div className="bg-gray-900/80 backdrop-blur rounded-xl px-6 py-4 border border-indigo-500/50 text-indigo-300 font-semibold">
@@ -695,8 +559,7 @@ export const TimelinePanel: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: segment effects panel */}
-        {showEffectsPanel && <SegmentEffectsPanel />}
+
       </div>
 
       {/* Status bar */}

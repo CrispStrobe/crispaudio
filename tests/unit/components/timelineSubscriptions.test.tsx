@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TimelinePanel } from '../../../src/components/timeline/TimelinePanel';
 import { TransportControls } from '../../../src/components/timeline/TransportControls';
@@ -91,6 +91,24 @@ describe('timeline subscription isolation', () => {
     act(() => useProjectStore.getState().updateTrack(second.id, { name: 'Renamed' }));
     expect(screen.getByDisplayValue('Renamed')).toBeTruthy();
     expect(translate.mock.calls.filter(([key]) => key === 'timeline.trackName')).toHaveLength(1);
+  });
+
+  it('imports aligned microphones separately without waiting for playback permission', async () => {
+    const decoded = { duration: 12, sampleRate: 48000, numberOfChannels: 1, getChannelData: () => new Float32Array(100) };
+    engine.getContext.mockReturnValue({ currentTime: 0, decodeAudioData: vi.fn().mockResolvedValue(decoded) } as unknown as ReturnType<typeof engine.getContext>);
+    engine.resume.mockImplementation(() => new Promise(() => {}));
+    const files = ['Jacket.wav', 'Room.wav'].map((name) => {
+      const file = new File([], name, { type: 'audio/wav' });
+      Object.defineProperty(file, 'arrayBuffer', { value: async () => new ArrayBuffer(8) });
+      return file;
+    });
+    const { container } = render(<TimelinePanel />);
+    await act(async () => fireEvent.change(container.querySelector('input[type="file"]')!, { target: { files } }));
+    expect(useProjectStore.getState().project.tracks.map((track) => [track.name, track.muted, track.segments[0]?.startTime])).toEqual([
+      ['Jacket.wav', false, 0], ['Room.wav', true, 0],
+    ]);
+    expect(engine.resume).not.toHaveBeenCalled();
+    engine.resume.mockReset();
   });
 
   it('keeps panel and track headers out of playhead updates', () => {

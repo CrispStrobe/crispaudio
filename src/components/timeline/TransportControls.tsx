@@ -32,6 +32,21 @@ const PositionDisplay = React.memo(function PositionDisplay() {
   return <span className="font-mono text-sm text-white bg-gray-800 border border-gray-700 px-2 py-0.5 rounded min-w-[6rem] text-center tabular-nums">{formatTime(position)}</span>;
 });
 
+function TimelineScrubber() {
+  const { t } = useTranslation();
+  const position = useProjectStore((s) => s.playheadPosition);
+  const duration = useProjectStore((s) => s.project.duration);
+  return <input type="range" min={0} max={Math.max(duration, 0.01)} step={0.01}
+    value={Math.min(position, duration)} disabled={duration <= 0}
+    aria-label={t('timeline.seek')} className="slider-styled w-full min-w-20"
+    onChange={(e) => {
+      const state = useProjectStore.getState();
+      const time = +e.target.value;
+      state.setPlayheadPosition(time);
+      state.setScrollOffset(Math.max(0, time - 1));
+    }} />;
+}
+
 export const TransportControls: React.FC = React.memo(function TransportControls() {
   const { t } = useTranslation();
   const isPlaying = useProjectStore((s) => s.isPlaying);
@@ -63,7 +78,7 @@ export const TransportControls: React.FC = React.memo(function TransportControls
   }, [loopEnabled, setLoopEnabled]);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-gray-900 border-b border-gray-700 select-none overflow-x-auto [&>*]:shrink-0">
+    <div className="timeline-transport flex flex-wrap items-center gap-2 px-3 py-2 bg-gray-900 border-b border-gray-700 select-none shrink-0">
       {/* Skip to start */}
       <button
         type="button"
@@ -79,7 +94,7 @@ export const TransportControls: React.FC = React.memo(function TransportControls
       <button
         type="button"
         onClick={handlePlayPause}
-        className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow"
+        className="flex items-center justify-center w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow"
         title={isPlaying ? t('timeline.pauseTooltip') : t('timeline.playTooltip')}
         aria-label={isPlaying ? t('timeline.pause') : t('timeline.play')}
       >
@@ -129,19 +144,21 @@ export const TransportControls: React.FC = React.memo(function TransportControls
       </button>
 
       {/* Divider */}
-      <div className="w-px h-6 bg-gray-700 mx-1" />
+      <div className="transport-divider w-px h-6 bg-gray-700 mx-1" />
 
       {/* Current time */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500 uppercase tracking-wide">
+        <span className="position-label text-xs text-gray-500 uppercase tracking-wide">
           {t('timeline.positionShort')}
         </span>
         <PositionDisplay />
       </div>
 
+      <div className="flex-1 min-w-24"><TimelineScrubber /></div>
+
       {/* Duration */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500 uppercase tracking-wide">
+        <span className="position-label text-xs text-gray-500 uppercase tracking-wide">
           {t('timeline.durationShort')}
         </span>
         <span className="font-mono text-sm text-gray-400 bg-gray-800/50 border border-gray-700/50 px-2 py-0.5 rounded min-w-[6rem] text-center tabular-nums">

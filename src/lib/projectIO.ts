@@ -9,7 +9,7 @@
 import { save, open } from '@tauri-apps/plugin-dialog';
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 
-const FILTERS = [{ name: 'CrispAudio Project', extensions: ['json'] }];
+const FILTERS = [{ name: 'CrispAudio Project', extensions: ['crispaudio', 'json'] }];
 
 function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -30,8 +30,7 @@ export async function saveProjectFile(
       await writeTextFile(path, json);
       return true;
     } catch (err) {
-      console.error('Failed to save project:', err);
-      return false;
+      throw new Error(`Cannot save project: ${String(err)}`, { cause: err });
     }
   }
 
@@ -54,8 +53,7 @@ export async function openProjectFile(): Promise<string | null> {
       if (!selected || typeof selected !== 'string') return null;
       return await readTextFile(selected);
     } catch (err) {
-      console.error('Failed to open project:', err);
-      return null;
+      throw new Error(`Cannot open project: ${String(err)}`, { cause: err });
     }
   }
 
@@ -63,7 +61,7 @@ export async function openProjectFile(): Promise<string | null> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,application/json';
+    input.accept = '.crispaudio,.json,application/json';
     input.onchange = () => {
       const file = input.files?.[0];
       if (!file) {
