@@ -11,11 +11,14 @@ import { Modal } from './Modal';
 import { useUIStore } from '../../stores/uiStore';
 import { openExternal } from '../../lib/openExternal';
 import licensesData from '../../generated/licenses.json';
+import glintNotice from '../../lib/glint/LICENSE?raw';
+import flacNotice from '../../lib/flac/LICENSE.libFLAC?raw';
+import wrapperNotice from '../../lib/flac/LICENSE.wrapper?raw';
 
 const REPO_URL = 'https://github.com/CrispStrobe/crispaudio';
 const WEB_URL = 'https://crispaudio-psi.vercel.app';
 const RELEASES_API = 'https://api.github.com/repos/CrispStrobe/crispaudio/releases/latest';
-const CURRENT_VERSION = '0.6.12';
+const CURRENT_VERSION = '0.7.0';
 
 interface LicenseEntry {
   name: string;
@@ -251,6 +254,11 @@ export function AboutModal() {
             ))}
           </div>
         </section>
+
+        <details className="text-xs">
+          <summary className="cursor-pointer">{t('mediaFormats.notices')}</summary>
+          <pre className="whitespace-pre-wrap break-words mt-3 max-h-64 overflow-y-auto">{`Glint\n${glintNotice}\n\nlibFLAC\n${flacNotice}\n\nlibflacjs\n${wrapperNotice}`}</pre>
+        </details>
 
         {/* Copyright */}
         <p className="text-[10px] text-center" style={{ color: 'var(--text-muted)' }}>

@@ -1,5 +1,5 @@
 // Data-only worker protocol: safe to import on either side of the boundary.
-export type CompressedFormat = 'mp3' | 'aac' | 'opus';
+export type CompressedFormat = 'mp3' | 'aac' | 'opus' | 'flac';
 
 export type CodecJob =
   | { type: 'wav'; channelData: ArrayBuffer[]; sampleRate: number; bitDepth: number; mode: 'mono-float' | 'multichannel-pcm' }

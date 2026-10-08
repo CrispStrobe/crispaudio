@@ -7,6 +7,12 @@ use crispaudio_media as media;
     about = "CrispAudio interview synchronization and video export"
 )]
 struct Cli {
+    /// Native Apple or optional FFmpeg compatibility backend. Apple never falls back.
+    #[arg(long,global=true,value_parser=["auto","apple","ffmpeg"])]
+    backend: Option<String>,
+    /// Picture export: mp4, mov, vp9 (WebM), av1 (WebM).
+    #[arg(long,global=true,value_parser=["mp4","mov","vp9","av1"])]
+    video_format: Option<String>,
     #[command(subcommand)]
     command: Commands,
 }
@@ -112,6 +118,11 @@ enum Commands {
 }
 
 fn execute(cli: Cli) -> media::Result<()> {
+    // CLI initialization precedes media jobs/threads; GUI uses per-edit fields.
+    if let Some(ref backend) = cli.backend {
+        std::env::set_var("CRISPAUDIO_MEDIA_BACKEND", backend);
+    }
+
     match cli.command {
         Commands::CleanAudio {
             input,
@@ -142,9 +153,17 @@ fn execute(cli: Cli) -> media::Result<()> {
             output,
             video,
         } => {
-            let doc: serde_json::Value =
+            let mut doc: serde_json::Value =
                 serde_json::from_slice(&std::fs::read(input).map_err(|e| e.to_string())?)
                     .map_err(|e| e.to_string())?;
+            if video {
+                if let Some(backend) = cli.backend.as_ref() {
+                    doc["project"]["video"]["backend"] = serde_json::json!(backend);
+                }
+                if let Some(format) = cli.video_format.as_ref() {
+                    doc["project"]["video"]["outputFormat"] = serde_json::json!(format);
+                }
+            }
             media::project_edit::render_project(&doc, &output, video)?;
         }
         Commands::EditVideo {
@@ -155,9 +174,15 @@ fn execute(cli: Cli) -> media::Result<()> {
             end,
             mix_is_trimmed,
         } => {
-            let edit: media::video_edit::VideoEdit =
+            let mut edit: media::video_edit::VideoEdit =
                 serde_json::from_slice(&std::fs::read(edit).map_err(|e| e.to_string())?)
                     .map_err(|e| e.to_string())?;
+            if cli.backend.is_some() {
+                edit.backend = cli.backend.clone();
+            }
+            if cli.video_format.is_some() {
+                edit.output_format = cli.video_format.clone();
+            }
             let total = edit
                 .clips
                 .iter()
@@ -258,5 +283,37 @@ fn main() {
     if let Err(error) = execute(Cli::parse()) {
         eprintln!("{error}");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod cli_tests {
+    use super::*;
+    #[test]
+    fn global_format_and_backend_flags_validate_before_work() {
+        let cli = Cli::try_parse_from([
+            "crispaudio",
+            "probe",
+            "sample.mov",
+            "--backend",
+            "apple",
+            "--video-format",
+            "vp9",
+        ])
+        .unwrap();
+        assert_eq!(cli.backend.as_deref(), Some("apple"));
+        assert_eq!(cli.video_format.as_deref(), Some("vp9"));
+        assert!(
+            Cli::try_parse_from(["crispaudio", "probe", "sample.mov", "--backend", "unknown"])
+                .is_err()
+        );
+        assert!(Cli::try_parse_from([
+            "crispaudio",
+            "probe",
+            "sample.mov",
+            "--video-format",
+            "unknown"
+        ])
+        .is_err());
     }
 }

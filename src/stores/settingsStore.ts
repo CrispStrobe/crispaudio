@@ -13,7 +13,7 @@ export type Theme = 'dark' | 'light' | 'system';
 
 export const SAMPLE_RATES = [22050, 44100, 48000] as const;
 export const BIT_DEPTHS = [8, 16, 24, 32] as const;
-export const EXPORT_FORMATS = ['wav', 'mp3', 'aac', 'opus'] as const;
+export const EXPORT_FORMATS = ['wav', 'flac', 'mp3', 'aac', 'opus'] as const;
 
 export type SampleRate = (typeof SAMPLE_RATES)[number];
 export type BitDepth = (typeof BIT_DEPTHS)[number];

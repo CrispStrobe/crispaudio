@@ -22,6 +22,9 @@ interface Props { engine: React.RefObject<TimelineEngine | null>; panelTarget: H
 
 export function MediaTools({ engine, panelTarget }: Props) {
   const { t } = useTranslation();
+  const [exportOptions,setExportOptions]=useState(false);
+  const [videoFormat,setVideoFormat]=useState('mp4');
+  const [mediaBackend,setMediaBackend]=useState(navigator.userAgent.includes('Mac')?'apple':'ffmpeg');
   const [available, setAvailable] = useState(false);
   const [show, setShow] = useState(false);
   const [setup, setSetup] = useState(false);
@@ -55,7 +58,7 @@ export function MediaTools({ engine, panelTarget }: Props) {
   }
 
   const chooseVideo = () => perform(t('interview.loading'), async () => {
-    const file = await open({ multiple: false, filters: [{ name: t('interview.video'), extensions: ['mp4', 'mov', 'mkv', 'm4v'] }] });
+    const file = await open({ multiple: false, filters: [{ name: t('interview.video'), extensions: ['mp4', 'mov', 'mkv', 'm4v', 'webm', 'avi', 'ogv', 'mpeg', 'mpg'] }] });
     if (typeof file === 'string') setSelectedVideo(file);
   });
   const chooseAudio = () => perform(t('interview.loading'), async () => {
@@ -108,7 +111,8 @@ export function MediaTools({ engine, panelTarget }: Props) {
   const exportVideo = () => perform(t('interview.exporting'), async () => {
     const state = useProjectStore.getState();
     if (!state.project.video || !engine.current) return;
-    const output = await save({ defaultPath: `${state.project.name}.edited.mp4`, filters: [{ name: 'MP4', extensions: ['mp4'] }] });
+    const ext=['vp9','av1'].includes(videoFormat)?'webm':videoFormat;
+    const output = await save({ defaultPath: `${state.project.name}.edited.${ext}`, filters: [{ name: ext.toUpperCase(), extensions: [ext] }] });
     if (!output) return;
     const start = state.project.video.inPoint ?? 0;
     const end = state.project.video.outPoint ?? timelineDuration(state.project);
@@ -123,8 +127,8 @@ export function MediaTools({ engine, panelTarget }: Props) {
     });
     try {
       controller.signal.throwIfAborted();
-      if(state.project.video.clips||end>videoTimelineDuration(state.project.video)+1e-6)await invoke('export_video_edit', {edit:{path:state.project.video.path,sources:state.project.video.sources,frameRate:state.project.frameRate,duration:timelineDuration(state.project),clips:videoClips(state.project.video)},output,mix,start,end,jobId});
-      else await invoke('export_media',{session:state.project.video.session,output,mix,start,end,jobId});
+      await invoke('export_video_edit', {edit:{path:state.project.video.path,sources:state.project.video.sources,frameRate:state.project.frameRate,duration:timelineDuration(state.project),clips:videoClips(state.project.video),backend:mediaBackend,outputFormat:videoFormat},output,mix,start,end,jobId});
+      setExportOptions(false);
       setNotice(t('interview.exported', { path: output }));
     } finally { exportJob.current=null;exportAbort.current=null;await remove(mix).catch(() => {}); }
   });
@@ -132,7 +136,7 @@ export function MediaTools({ engine, panelTarget }: Props) {
   const button = 'min-h-11 px-4 py-2 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-40';
   const controls = (<div className="timeline-media-actions">
         <ToolButton data-help="sync" icon={Film} label={t('interview.sync')} className="!bg-indigo-600 !border-indigo-500" disabled={!!busy || playing} onClick={() => setSetup(true)}/>
-        {video && <ToolButton icon={Clapperboard} disabled={!!busy || playing || !videoTimelineDuration(video)} onClick={exportVideo} label={t((video.inPoint ?? 0)>0 || (video.outPoint ?? videoTimelineDuration(video))<videoTimelineDuration(video)?'video.exportSection':'interview.exportVideo')}/>}
+        {video && <ToolButton icon={Clapperboard} disabled={!!busy || playing || !videoTimelineDuration(video)} onClick={()=>setExportOptions(true)} label={t((video.inPoint ?? 0)>0 || (video.outPoint ?? videoTimelineDuration(video))<videoTimelineDuration(video)?'video.exportSection':'interview.exportVideo')}/>}
         <OverflowMenu label={t('interview.more')}>
             <button role="menuitem" className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={loadSession}>{t('interview.openSession')}</button>
             {video && <button role="menuitem" className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={()=>{
@@ -147,10 +151,24 @@ export function MediaTools({ engine, panelTarget }: Props) {
     {controls}
     {panelTarget && (video || busy || error || notice) && createPortal(<section className="relative z-30 shrink-0 border-b border-gray-800 bg-gray-900/70 px-3 py-1" aria-label={t('interview.title')}>
       {busy && <p role="status" className="text-sm text-indigo-300 mt-2">{busy}{busy===t('interview.exporting')&&<button className="timeline-tool" onClick={()=>{exportAbort.current?.abort();if(exportJob.current)void invoke('cancel_media_job',{jobId:exportJob.current});}}>{t('common.cancel')}</button>}</p>}
-      {error && <p role="alert" className="text-sm text-red-300 break-words mt-2">{error}</p>}
+      {error && !exportOptions && <p role="alert" className="text-sm text-red-300 break-words mt-2">{error}</p>}
       {notice && <p role="status" className="text-sm text-green-300 break-words mt-2">{notice}</p>}
       {video && <VideoViewer/>}
     </section>, panelTarget)}
+    <Modal isOpen={exportOptions} onClose={()=>{if(!busy)setExportOptions(false);}} title={t('mediaFormats.title')} widthClass="max-w-lg">
+      <div className="space-y-4">
+        <label className="block text-sm">{t('mediaFormats.format')}<select aria-label={t('mediaFormats.format')} value={videoFormat} disabled={!!busy} className="w-full bg-gray-800 p-2 rounded mt-2" onChange={e=>{setVideoFormat(e.target.value);if(['vp9','av1'].includes(e.target.value))setMediaBackend('ffmpeg');}}>
+          <option value="mp4">MP4 · H.264 / AAC</option><option value="mov">MOV · H.264 / AAC</option><option value="vp9">WebM · VP9 / Opus</option><option value="av1">WebM · AV1 / Opus</option>
+        </select></label>
+        <label className="block text-sm">{t('mediaFormats.backend')}<select aria-label={t('mediaFormats.backend')} value={mediaBackend} disabled={!!busy} className="w-full bg-gray-800 p-2 rounded mt-2" onChange={e=>setMediaBackend(e.target.value)}>
+          <option value="apple" disabled={['vp9','av1'].includes(videoFormat)}>{t('mediaFormats.apple')}</option><option value="ffmpeg">{t('mediaFormats.ffmpeg')}</option><option value="auto">{t('mediaFormats.auto')}</option>
+        </select></label>
+        <p className="text-sm text-gray-400">{t(mediaBackend==='apple'?'mediaFormats.appleHelp':'mediaFormats.ffmpegHelp')}</p>
+        {error && <p role="alert" className="text-sm text-red-300 break-words">{error}</p>}
+        <button className={button} disabled={!!busy||playing} onClick={exportVideo}>{t('mediaFormats.export')}</button>
+        {busy && <div role="status" className="text-sm text-indigo-300">{busy}<button className="timeline-tool ml-2" onClick={()=>{exportAbort.current?.abort();if(exportJob.current)void invoke('cancel_media_job',{jobId:exportJob.current});}}>{t('common.cancel')}</button></div>}
+      </div>
+    </Modal>
     <Modal isOpen={setup} onClose={() => { if (!busy) setSetup(false); }} title={t('interview.sync')} widthClass="max-w-2xl">
       <ol className="space-y-5 text-sm text-gray-300">
         <li><h3 className="font-semibold mb-2">{t('interview.pickVideo')}</h3>

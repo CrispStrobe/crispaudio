@@ -46,7 +46,7 @@ export function TimelineWorkspace({tab,onTab,onClose}:{tab:WorkspaceTab;onTab:(t
       {tab==='media'&&<>
         <p className="text-gray-400">{t('workspace.mediaHelp')}</p>
         {hasRecoverableAutosave()&&<button className="timeline-tool" disabled={busy} onClick={()=>void perform(()=>restoreAutosaveAudio(new OfflineAudioContext(2,1,48000)))}>{t('workspace.restore')}</button>}
-        <ToolButton icon={Film} disabled={!native||busy} label={t('workspace.addVideo')} onClick={()=>void perform(async signal=>{const files=await open({multiple:true,filters:[{name:'Video',extensions:['mp4','mov','mkv','m4v']}]});for(const path of (Array.isArray(files)?files:files?[files]:[])){signal.throwIfAborted();await importVideo(path,withAudio,signal);}})}/>
+        <ToolButton icon={Film} disabled={!native||busy} label={t('workspace.addVideo')} onClick={()=>void perform(async signal=>{const files=await open({multiple:true,filters:[{name:'Video',extensions:['mp4','mov','mkv','m4v','webm','avi','ogv','mpeg','mpg']}]});for(const path of (Array.isArray(files)?files:files?[files]:[])){signal.throwIfAborted();await importVideo(path,withAudio,signal);}})}/>
         {!native&&<p>{t('sync.desktop')}</p>}
         <label className="flex gap-2 items-center min-h-11"><input type="checkbox" checked={withAudio} onChange={e=>setWithAudio(e.target.checked)}/>{t('workspace.cameraAudio')}</label>
         {videoSources(project.video).map(source=><div className="rounded bg-gray-950 p-2 space-y-2" key={source.id}><p className="break-all">{source.name}</p><p className="text-xs text-gray-400">{source.duration.toFixed(2)} s</p><button className="timeline-tool" onClick={()=>void run(()=>{

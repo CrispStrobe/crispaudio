@@ -17,7 +17,7 @@ npm run typecheck    # tsc --noEmit
 
 - **Frontend:** React 19 + TypeScript + Tailwind CSS 4 + Vite 8
 - **Backend:** Tauri 2 (Rust) — WAV export, project save/load, desktop media commands
-- **Interview media:** internal `media/` Rust crate + CLI, desktop FFmpeg prerequisite; no mobile subprocess support
+- **Interview media:** internal `media/` Rust crate + CLI, macOS 13+ Apple backend and optional desktop FFmpeg compatibility; no mobile subprocess support
 - **State:** Zustand 5 with immer (SFX), zundo (SFX + Voice + Timeline undo/redo), persist (settings)
 - **i18n:** react-i18next — EN + DE, all UI strings use `t()`
 - **Tests:** Vitest + jsdom + @testing-library/react
@@ -169,3 +169,19 @@ an active pointer drag. Cancel RAF on Escape/cancel/lost capture/unmount. Exclud
 grips from horizontal touch browsing. Playhead targets are clipped at both viewport
 edges so the broad target cannot cover headers. Compact headers fit actual row
 height; hide mixer below 56 px on desktop/96 px on touch and retain audible status.
+
+
+## Formats and backend policy 0.7.0
+
+Read docs/MEDIA_FORMATS_AND_LICENSES.md. FLAC export uses the pinned MIT libflacjs
+wrapper and BSD libFLAC 1.3.4 in the codec worker; signed 24-bit quantization and
+STREAMINFO MD5 are deliberate. Regenerate vendored assets with scripts/vendor-flac.mjs.
+Full codec notices are bundled through AboutModal raw imports.
+Apple media uses a build-time Swift helper embedded in the Rust crate, extracted
+into an owned private temp directory per cancellable job. Apple-only mode must
+never silently use FFmpeg. Export backend/format are explicit per edit; WebM VP9
+and AV1 still require optional FFmpeg. Strict Apple supports cuts/dissolves,
+colour/orientation/fades, gaps/tails and supplied mixed audio. Advanced transitions
+and CLI project audio mixing still need FFmpeg. Never claim a permissive-only
+WebM backend or iOS video implementation exists. GUI mixed audio is range-trimmed;
+CLI mix-is-trimmed remains explicit. Preserve atomic no-overwrite publication.

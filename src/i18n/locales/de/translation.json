@@ -947,5 +947,17 @@
     "reset": "Ausrichtung zurücksetzen",
     "copy": "Ausrichtung auf ausgewählte Videoclips anwenden",
     "help": "Passt in den bestehenden Bildrahmen. Audio und Timing bleiben erhalten."
+  },
+  "mediaFormats": {
+    "title": "Video exportieren",
+    "format": "Dateiformat",
+    "backend": "Medien-Backend",
+    "apple": "Apple nativ (macOS 13+)",
+    "ffmpeg": "FFmpeg-Kompatibilität (optional)",
+    "auto": "Automatisch (ggf. FFmpeg)",
+    "appleHelp": "Verwendet Apple-Systemcodecs. Unterstützt Schnitte, weiche Blenden, Ein-/Ausblenden, Farbe und Ausrichtung. Andere Übergänge benötigen FFmpeg; diese Auswahl wechselt nie automatisch.",
+    "ffmpegHelp": "Benötigt separat installiertes FFmpeg mit passendem Encoder. Die Lizenz hängt vom Build ab; Homebrew kann GPL-Komponenten enthalten. AV1 kann langsam sein.",
+    "export": "Exportieren",
+    "notices": "Urheberrechts- und Lizenzhinweise der mitgelieferten Codecs"
   }
 }

@@ -4,7 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.6.12]
+## [Unreleased — local version 0.7.0]
+
+- Add worker-based 24-bit FLAC export in SFX, Voice and Timeline with lossless
+  compression, final stream checksum, cancellation and MIT/BSD codec notices.
+- Add a bundled MIT macOS media helper using Apple system frameworks for probing,
+  thumbnails, proxies, audio extraction and MP4/MOV picture composition. Support
+  cuts, cross dissolves, gaps/tails, fades, per-clip colour and orientation.
+- Add explicit Apple/FFmpeg/automatic video backend choices. Strict Apple mode
+  never falls back; advanced transitions remain optional FFmpeg operations.
+- Add VP9/Opus and AV1/Opus WebM export through optional FFmpeg, matching GUI/CLI
+  options and output validation. Offer WebM/AVI/OGV/MPEG imports where decodable.
+- Document codec source licences separately from patents, including Glint's AAC-LC
+  scope and the remaining permissive-only WebM/iOS/backend work.
+
+## [Local version 0.6.12]
 
 - Add per-picture 90° rotation and horizontal/vertical mirroring, reset and copy
   to selected picture clips, with undo and saved project settings.

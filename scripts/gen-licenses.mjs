@@ -49,6 +49,8 @@ for (const name of deps) {
 }
 
 const outDir = join(root, 'src', 'generated');
+entries.push({name:'glint (vendored codec WASM)',version:'vendored',license:'MIT',repository:'https://github.com/CrispStrobe/glint'});
+entries.push({name:'libFLAC (via libflacjs)',version:'1.3.4 (libflacjs 5.6.0 build)',license:'BSD-3-Clause',repository:'https://github.com/xiph/flac'});
 await mkdir(outDir, { recursive: true });
 await writeFile(
   join(outDir, 'licenses.json'),

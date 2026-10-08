@@ -1,4 +1,4 @@
-# Distribution and platform status — 2026-10-08
+# Distribution and platform status — 2026-10-09
 
 Pushing `main` runs CI/web deployment workflows and the unsigned iOS simulator
 check. It does **not** automatically
@@ -434,3 +434,34 @@ The local macOS bundle is ad-hoc signed; this work does not trigger an Apple upl
 The preview separates source orientation from composition transitions, so a wipe
 or slide keeps its screen direction after source rotation. Resize recalculates
 picture fitting, including the expanded viewer. Source thumbnails are unchanged.
+
+
+## Local formats and Apple media backend 0.7.0
+
+Adds 24-bit FLAC audio export across SFX, Voice and Timeline, native macOS 13+
+media preparation and edited MP4/MOV export, explicit export backend selection,
+and optional FFmpeg WebM VP9/Opus and AV1/Opus exports. Full Glint/libFLAC/wrapper
+copyright notices are embedded in About. See MEDIA_FORMATS_AND_LICENSES.md for
+format variants, codec patent scope and the remaining compatibility dependency.
+
+Validation: 90 frontend suites / 1,283 tests; actual WebKit worker FLAC output
+passed `flac -t` with its final MD5 and decoded within 24-bit quantization error.
+WebKit export options passed EN/DE desktop/phone layout checks with mocked IPC.
+Native reference renders covered colour/bypass, orientation and multiplicative
+fades; integration covered black gaps/tails, section audio, native MOV, unsupported
+transition rejection and optional VP9/AV1 WebM codec identification. Browser checks
+are not native IPC or physical iOS validation.
+
+The native Apple helper is desktop macOS only. Advanced transitions, CLI project
+audio rendering, long-file alignment/DSP and WebM still require optional FFmpeg.
+No permissive-only bundled WebM implementation is claimed. No Apple upload or
+release tag was triggered for this milestone. Store sandboxing/signing and actual
+iOS device validation remain release gates.
+
+Installed and launched ad-hoc-signed `~/Applications/CrispAudio-local.app` 0.7.0.
+The existing native autosave and WebKit state were backed up privately and retained.
+Final checks: frontend lint/typecheck/production bundle; 16 media unit tests,
+one CLI parser test, 18 Tauri tests, four explicit media integration tests,
+including a two-source native dissolve and native reference renders with the
+application's FFmpeg/FFprobe paths set to nonexistent files. Desktop signature
+verification passed. No release tag, TestFlight or App Store submission was made.

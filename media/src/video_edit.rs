@@ -1,5 +1,5 @@
 //! Non-destructive multi-source picture edits, shared by CLI and desktop.
-use crate::{probe, run, strings, Result};
+use crate::{run, strings, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -97,6 +97,10 @@ pub struct VideoSource {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VideoEdit {
+    #[serde(default)]
+    pub backend: Option<String>,
+    #[serde(default)]
+    pub output_format: Option<String>,
     pub path: String,
     #[serde(default)]
     pub sources: Vec<VideoSource>,
@@ -200,7 +204,19 @@ pub fn export_edit(
     if Path::new(output).exists() {
         return Err("Output already exists; choose a new filename".into());
     }
-    let info = probe(&edit.path)?;
+    let backend = edit
+        .backend
+        .as_deref()
+        .map(crate::apple::Backend::parse)
+        .transpose()?
+        .unwrap_or(crate::apple::Backend::configured()?);
+    if edit
+        .frame_rate
+        .is_some_and(|fps| !fps.is_finite() || fps < 1.0 || fps > 120.0)
+    {
+        return Err("Frame rate must be 1–120 fps".into());
+    }
+    let info = crate::probe_with_backend(&edit.path, backend)?;
     if !info.has_video {
         return Err("Source has no video".into());
     }
@@ -210,7 +226,7 @@ pub fn export_edit(
         if durations.contains_key(&source.id) {
             return Err("Duplicate video source ID".into());
         }
-        let source_info = probe(&source.path)?;
+        let source_info = crate::probe_with_backend(&source.path, backend)?;
         if !source_info.has_video {
             return Err("Source has no video".into());
         }
@@ -232,9 +248,48 @@ pub fn export_edit(
         return Err("Invalid edited video range".into());
     }
     if let Some(path) = mix {
-        if probe(path)?.duration + 0.01 < if mix_is_trimmed { end - start } else { end } {
+        if crate::probe_with_backend(path, backend)?.duration + 0.01
+            < if mix_is_trimmed { end - start } else { end }
+        {
             return Err("Mix does not cover the edited video range".into());
         }
+    }
+    let format =
+        edit.output_format
+            .as_deref()
+            .unwrap_or(if output.to_lowercase().ends_with(".webm") {
+                "vp9"
+            } else if output.to_lowercase().ends_with(".mov") {
+                "mov"
+            } else {
+                "mp4"
+            });
+    if !["mp4", "mov", "vp9", "av1"].contains(&format) {
+        return Err("Unsupported video output format".into());
+    }
+    let expected = if ["vp9", "av1"].contains(&format) {
+        "webm"
+    } else {
+        format
+    };
+    if !Path::new(output)
+        .extension()
+        .is_some_and(|ext| ext.to_string_lossy().eq_ignore_ascii_case(expected))
+    {
+        return Err(format!("Output extension must be .{expected}"));
+    }
+
+    if ["mp4", "mov"].contains(&format) {
+        let mut native = edit.clone();
+        native.clips = clips.clone();
+        native.duration = Some(total);
+        if crate::apple::export(&native, output, mix, start, end, mix_is_trimmed, backend)? {
+            return Ok(());
+        }
+    } else if backend == crate::apple::Backend::Apple {
+        return Err(
+            "Apple backend does not encode WebM; choose optional FFmpeg for VP9/AV1".into(),
+        );
     }
     let geometry = run(
         "ffprobe",
@@ -419,7 +474,11 @@ pub fn export_edit(
             "-map",
             &format!("{input}:a:0"),
             "-c:a",
-            "aac",
+            if ["vp9", "av1"].contains(&format) {
+                "libopus"
+            } else {
+                "aac"
+            },
             "-b:a",
             "192k",
         ]));
@@ -434,8 +493,13 @@ pub fn export_edit(
         .map_err(|e| e.to_string())?
         .as_nanos();
     let staged = parent.join(format!(
-        ".crispaudio-edit-{}-{stamp}.mp4",
-        std::process::id()
+        ".crispaudio-edit-{}-{stamp}.{}",
+        std::process::id(),
+        if ["vp9", "av1"].contains(&format) {
+            "webm"
+        } else {
+            format
+        }
     ));
     std::fs::OpenOptions::new()
         .write(true)
@@ -445,21 +509,53 @@ pub fn export_edit(
     // We own only this staging file. Never remove an output another writer made.
     args.retain(|arg| arg != "-n");
     args.push("-y".into());
+    if format == "vp9" {
+        args.extend(strings(&[
+            "-c:v",
+            "libvpx-vp9",
+            "-threads",
+            "2",
+            "-row-mt",
+            "1",
+            "-cpu-used",
+            "4",
+            "-crf",
+            "30",
+            "-b:v",
+            "0",
+        ]));
+    } else if format == "av1" {
+        args.extend(strings(&[
+            "-c:v",
+            "libsvtav1",
+            "-threads",
+            "2",
+            "-svtav1-params",
+            "lp=2",
+            "-preset",
+            "8",
+            "-crf",
+            "30",
+        ]));
+    } else {
+        args.extend(strings(&[
+            "-c:v",
+            "libx264",
+            "-threads",
+            "2",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "18",
+            "-movflags",
+            "+faststart",
+        ]));
+    }
     args.extend(strings(&[
-        "-c:v",
-        "libx264",
-        "-threads",
-        "2",
-        "-preset",
-        "veryfast",
-        "-crf",
-        "18",
         "-pix_fmt",
         "yuv420p",
         "-t",
         &(end - start).to_string(),
-        "-movflags",
-        "+faststart",
         &staged.to_string_lossy(),
     ]));
     let result = run("ffmpeg", &args).and_then(|_| {
@@ -536,6 +632,8 @@ mod tests {
     #[test]
     fn ambiguous_overlap_and_invalid_fades_are_rejected() {
         let mut edit = VideoEdit {
+            backend: None,
+            output_format: None,
             path: "unused".into(),
             sources: vec![],
             frame_rate: None,
@@ -586,6 +684,8 @@ mod tests {
         picture.fade_in = 2.0;
         picture.fade_out = 2.0;
         let edit = VideoEdit {
+            backend: None,
+            output_format: None,
             path: source.to_string_lossy().into(),
             sources: vec![],
             frame_rate: Some(25.0),
@@ -621,6 +721,8 @@ mod tests {
     fn colour_settings_are_optional_and_strictly_bounded() {
         let mut picture = clip(0.0, 2.0);
         let mut edit = VideoEdit {
+            backend: None,
+            output_format: None,
             path: "unused".into(),
             sources: vec![],
             frame_rate: None,
@@ -706,6 +808,8 @@ mod tests {
             saturation: 0.0,
         });
         let mut edit = VideoEdit {
+            backend: None,
+            output_format: None,
             path: source.to_string_lossy().into(),
             sources: vec![],
             frame_rate: Some(25.0),
@@ -747,6 +851,8 @@ mod tests {
             flip_vertical: false,
         });
         let edit = VideoEdit {
+            backend: None,
+            output_format: None,
             path: source.to_string_lossy().into(),
             sources: vec![],
             frame_rate: Some(25.0),
@@ -787,5 +893,190 @@ mod tests {
         assert!(pixel(74, 54).iter().all(|v| *v > 220));
         assert!(pixel(10, 36).iter().all(|v| *v < 5));
         std::fs::remove_dir_all(folder).unwrap();
+    }
+    #[test]
+    #[ignore = "Requires native Apple backend and FFmpeg reference tools"]
+    #[cfg(target_os = "macos")]
+    fn apple_gaps_tail_section_audio_and_optional_webm_formats() {
+        use std::process::Command;
+        let folder = tempfile::tempdir().unwrap();
+        let source = folder.path().join("source.mp4");
+        assert!(Command::new("ffmpeg")
+            .args([
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=c=red:s=128x72:r=25:d=2",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p"
+            ])
+            .arg(&source)
+            .status()
+            .unwrap()
+            .success());
+        let mix = folder.path().join("mix.wav");
+        assert!(Command::new("ffmpeg")
+            .args([
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=440:sample_rate=48000:duration=1.4",
+                "-c:a",
+                "pcm_s16le"
+            ])
+            .arg(&mix)
+            .status()
+            .unwrap()
+            .success());
+        let mut edit = VideoEdit {
+            backend: Some("apple".into()),
+            output_format: Some("mov".into()),
+            path: source.to_string_lossy().into_owned(),
+            sources: vec![],
+            frame_rate: Some(25.0),
+            duration: Some(2.4),
+            clips: vec![clip(0.0, 0.8), clip(1.2, 0.8)],
+        };
+        let output = folder.path().join("native.mov");
+        export_edit(
+            &edit,
+            output.to_str().unwrap(),
+            Some(mix.to_str().unwrap()),
+            1.0,
+            2.4,
+            true,
+        )
+        .unwrap();
+        let frame_at = |time: &str| {
+            let frame = Command::new("ffmpeg")
+                .args(["-v", "error", "-ss", time, "-i"])
+                .arg(&output)
+                .args([
+                    "-frames:v",
+                    "1",
+                    "-pix_fmt",
+                    "rgb24",
+                    "-f",
+                    "rawvideo",
+                    "pipe:1",
+                ])
+                .output()
+                .unwrap();
+            assert!(frame.status.success());
+            assert_eq!(frame.stdout.len(), 128 * 72 * 3);
+            [
+                frame.stdout[1000 * 3],
+                frame.stdout[1000 * 3 + 1],
+                frame.stdout[1000 * 3 + 2],
+            ]
+        };
+        assert!(frame_at("0.08").iter().all(|v| *v < 5));
+        assert!(frame_at("0.5")[0] > 220);
+        assert!(frame_at("1.2").iter().all(|v| *v < 5));
+        let audio = Command::new("ffmpeg")
+            .args(["-v", "error", "-i"])
+            .arg(&output)
+            .args(["-t", "0.2", "-vn", "-f", "f32le", "pipe:1"])
+            .output()
+            .unwrap();
+        assert!(audio.status.success());
+        assert!(
+            audio
+                .stdout
+                .chunks_exact(4)
+                .map(|b| f32::from_le_bytes(b.try_into().unwrap()).abs())
+                .fold(0.0f32, f32::max)
+                > 0.05
+        );
+        // Two independently decoded sources must blend on the common clock.
+        let blue = folder.path().join("blue.mp4");
+        assert!(Command::new("ffmpeg")
+            .args([
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=c=blue:s=128x72:r=25:d=2",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p"
+            ])
+            .arg(&blue)
+            .status()
+            .unwrap()
+            .success());
+        let mut dissolve = edit.clone();
+        dissolve.clips = vec![clip(0.0, 1.0), clip(0.5, 1.0)];
+        dissolve.clips[1].source_id = Some("blue".into());
+        dissolve.clips[1].transition = "fade".into();
+        dissolve.clips[1].transition_duration = 0.5;
+        dissolve.sources = vec![VideoSource {
+            id: "blue".into(),
+            path: blue.to_string_lossy().into_owned(),
+        }];
+        dissolve.duration = Some(1.5);
+        let blended = folder.path().join("dissolve.mov");
+        export_edit(&dissolve, blended.to_str().unwrap(), None, 0.0, 1.5, false).unwrap();
+        let frame = Command::new("ffmpeg")
+            .args(["-v", "error", "-ss", "0.76", "-i"])
+            .arg(&blended)
+            .args([
+                "-frames:v",
+                "1",
+                "-pix_fmt",
+                "rgb24",
+                "-f",
+                "rawvideo",
+                "pipe:1",
+            ])
+            .output()
+            .unwrap();
+        assert!(frame.status.success());
+        let rgb = &frame.stdout[3000..3003];
+        assert!(
+            (100..=150).contains(&rgb[0]) && rgb[1] < 10 && (110..=155).contains(&rgb[2]),
+            "dissolve pixel {rgb:?}"
+        );
+        // Strict Apple rejects an unsupported effect, without producing a file.
+        edit.clips[1].transition = "glitch".into();
+        edit.clips[1].start_time = 0.6;
+        edit.clips[1].transition_duration = 0.2;
+        let rejected = folder.path().join("rejected.mov");
+        assert!(export_edit(&edit, rejected.to_str().unwrap(), None, 0.0, 1.4, false).is_err());
+        assert!(!rejected.exists());
+        edit.clips = vec![clip(0.0, 1.0)];
+        edit.duration = Some(1.0);
+        edit.backend = Some("ffmpeg".into());
+        for format in ["vp9", "av1"] {
+            edit.output_format = Some(format.into());
+            let output = folder.path().join(format!("{format}.webm"));
+            export_edit(
+                &edit,
+                output.to_str().unwrap(),
+                Some(mix.to_str().unwrap()),
+                0.0,
+                1.0,
+                false,
+            )
+            .unwrap();
+            let probe = Command::new("ffprobe")
+                .args(["-v", "error", "-show_streams", "-of", "json"])
+                .arg(output)
+                .output()
+                .unwrap();
+            assert!(probe.status.success());
+            let value: serde_json::Value = serde_json::from_slice(&probe.stdout).unwrap();
+            let streams = value["streams"].as_array().unwrap();
+            assert!(streams.iter().any(|s| s["codec_name"] == format));
+            assert!(streams.iter().any(|s| s["codec_name"] == "opus"));
+        }
     }
 }

@@ -3,7 +3,7 @@ import createGlint from './glint/glint.mjs';
 import glintWasmUrl from './glint/glint.wasm?url';
 import type { CompressedFormat } from './codecProtocol';
 
-const GLINT_FORMAT: Record<CompressedFormat, number> = { mp3: 0, aac: 1, opus: 2 };
+const GLINT_FORMAT: Record<Exclude<CompressedFormat,'flac'>, number> = { mp3: 0, aac: 1, opus: 2 };
 type GlintModule = Awaited<ReturnType<typeof createGlint>>;
 let modPromise: Promise<GlintModule> | null = null;
 function loadGlint(): Promise<GlintModule> {
@@ -36,6 +36,7 @@ export async function encodeCompressed(
   format: CompressedFormat,
   bitrateKbps = 192,
 ): Promise<ArrayBuffer> {
+  if(format==='flac'){const {encodeFlac}=await import('./flacRuntime');return encodeFlac(pcm,channels,sampleRate);}
   const m = await loadGlint();
   const owned = allocations(m);
   let ptr = 0;

@@ -253,3 +253,11 @@ lightweight proxies and recovery are described in [Media workspace](docs/MEDIA_W
 The desktop CLI also edits project recipes and renders linked arrangements.
 Video remains desktop-only; GUI audio is decoded in memory. See the workflow for
 limits and supported CLI processing.
+
+### Media formats and native backend (local 0.7.0)
+
+Audio export now includes 24-bit FLAC alongside WAV, MP3, AAC and Opus. Mac video
+export offers a native Apple backend for MP4/MOV cuts, dissolves, fades, colour and
+orientation, plus explicitly optional FFmpeg compatibility for other transitions
+and VP9/AV1 WebM. See [formats, CLI and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md)
+for the exact support matrix and remaining platform limitations.

@@ -7,21 +7,24 @@
 
 import { runCodec } from './codecClient';
 
-export type CompressedFormat = 'mp3' | 'aac' | 'opus';
+export type CompressedFormat = 'mp3' | 'aac' | 'opus' | 'flac';
 export type AudioFormat = 'wav' | CompressedFormat;
 
 const MIME: Record<CompressedFormat, string> = {
+  flac: 'audio/flac',
   mp3: 'audio/mpeg',
   aac: 'audio/aac',
   opus: 'audio/ogg',
 };
 export const FORMAT_EXT: Record<AudioFormat, string> = {
+  flac: 'flac',
   wav: 'wav',
   mp3: 'mp3',
   aac: 'aac',
   opus: 'opus',
 };
 export const FORMAT_LABEL: Record<AudioFormat, string> = {
+  flac: 'FLAC (24-bit)',
   wav: 'WAV',
   mp3: 'MP3',
   aac: 'AAC',

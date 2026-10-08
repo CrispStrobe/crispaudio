@@ -165,7 +165,7 @@ export function SettingsModal() {
               >
                 {EXPORT_FORMATS.map((f) => (
                   <option key={f} value={f}>
-                    {f.toUpperCase()}
+                    {f==='flac'?'FLAC (24-bit)':f.toUpperCase()}
                   </option>
                 ))}
               </select>
@@ -178,7 +178,7 @@ export function SettingsModal() {
                 id="settings-bitrate"
                 className={selectClass}
                 value={defaultBitrateKbps}
-                disabled={defaultExportFormat === 'wav'}
+                disabled={defaultExportFormat === 'wav' || defaultExportFormat === 'flac'}
                 onChange={(e) => setDefaultBitrateKbps(Number(e.target.value))}
               >
                 {BITRATES.map((b) => (

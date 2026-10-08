@@ -947,5 +947,17 @@
     "reset": "Reset orientation",
     "copy": "Apply orientation to selected picture clips",
     "help": "Fits inside the existing picture frame. Audio and timing stay unchanged."
+  },
+  "mediaFormats": {
+    "title": "Export video",
+    "format": "File format",
+    "backend": "Media backend",
+    "apple": "Apple native (macOS 13+)",
+    "ffmpeg": "FFmpeg compatibility (optional)",
+    "auto": "Automatic (may use FFmpeg)",
+    "appleHelp": "Uses Apple system codecs. Supports cuts, cross dissolves, fades, colour and orientation. Other transitions require FFmpeg; this choice never falls back.",
+    "ffmpegHelp": "Requires a separately installed FFmpeg with the chosen encoder. Its licence depends on that build; the Homebrew build may include GPL components. AV1 can be slow.",
+    "export": "Export",
+    "notices": "Bundled codec copyright and licence notices"
   }
 }

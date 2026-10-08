@@ -1,4 +1,5 @@
 //! Internal CrispAudio desktop media operations. No GUI or ASR dependency.
+pub mod apple;
 pub mod jobs;
 pub mod project_edit;
 pub mod video_edit;
@@ -91,6 +92,11 @@ fn tool(name: &str) -> PathBuf {
 }
 
 fn run(name: &str, args: &[String]) -> Result<Vec<u8>> {
+    if ["ffmpeg", "ffprobe"].contains(&name)
+        && apple::Backend::configured()? == apple::Backend::Apple
+    {
+        return Err("This operation requires optional FFmpeg; Apple-only mode forbids compatibility fallback".into());
+    }
     let out = run_command(Command::new(tool(name)).args(args))?;
     if !out.status.success() {
         return Err(format!(
@@ -106,8 +112,14 @@ fn strings(args: &[&str]) -> Vec<String> {
 }
 
 pub fn probe(path: &str) -> Result<MediaInfo> {
+    probe_with_backend(path, apple::Backend::configured()?)
+}
+pub fn probe_with_backend(path: &str, backend: apple::Backend) -> Result<MediaInfo> {
     let path = fs::canonicalize(path).map_err(|e| format!("Cannot open {path}: {e}"))?;
     let path = path.to_string_lossy().into_owned();
+    if let Some(bytes) = apple::attempt(backend, &["probe".into(), path.clone()], None)? {
+        return serde_json::from_slice(&bytes).map_err(|e| e.to_string());
+    }
     let out = run(
         "ffprobe",
         &strings(&[
@@ -900,6 +912,9 @@ pub fn prepare_asset(path: &str, output: &str, proxy: bool) -> Result<()> {
     if Path::new(output).exists() {
         return Err("Output already exists".into());
     }
+    if apple::prepare(if proxy { "proxy" } else { "audio" }, path, output)? {
+        return Ok(());
+    }
     if proxy {
         run("ffmpeg", &strings(&["-v","error","-nostdin","-n","-threads","1","-i",path,"-an","-vf","scale=640:360:force_original_aspect_ratio=decrease,pad=640:360:(ow-iw)/2:(oh-ih)/2","-c:v","libx264","-preset","ultrafast","-crf","26","-threads","2","-movflags","+faststart",output]))?;
     } else {
@@ -1069,6 +1084,9 @@ pub fn first_thumbnail(path: &str, output: &str) -> Result<()> {
     }
     let duration = probe(path)?.duration;
     let at = 0.12f64.min(duration / 2.0).to_string();
+    if apple::prepare("thumbnail", path, output)? {
+        return Ok(());
+    }
     run(
         "ffmpeg",
         &strings(&[
