@@ -304,8 +304,9 @@ effect during development. The normal run covers all supported effects.
 
 Use the optimised CLI build for timing measurements and long reverb exports.
 The local installed CLI uses that build; the debug CLI can be much slower for
-FFT processing even though its results match. The GUI renders audio through
-Web Audio and is unaffected by the CLI's Rust debug optimisation setting.
+FFT processing even though its results match. GUI Web Audio export is unaffected
+by Rust settings; native GUI exports use the optimised media crate even in the
+local debug app bundle.
 
 ## Desktop GUI video export (local 0.7.8)
 
@@ -330,3 +331,40 @@ The picture backend selector still applies to MP4/MOV/WebM composition.
 This improves export memory, not import/playback: source buffers already loaded
 in Web Audio remain in the editor. Audio-only GUI exports still use the encoder
 worker and Web Audio rendering. CLI usage and supported audio formats are unchanged.
+
+## Direct timeline WAV export (local 0.7.9)
+
+Set audio export format to WAV and choose the bit depth in Settings. On Mac,
+linked 48 kHz mono/stereo timeline projects now open the save dialog first, then
+stream the mix to a new `.wav` file. No extra rendered AudioBuffer, encoded Blob,
+PCM transfer through IPC or duration-sized export cache is created. Cancel in
+render progress to stop the registered media job. Existing destination files
+are protected; choose a new filename. Native errors remain visible.
+
+WAV uses integer PCM at 8, 16, 24 or 32 bits, preserving the former GUI encoder's
+clipping and rounding. Float peaks above unity are clipped for integer export;
+no automatic normalisation or dither is applied. Generated/in-memory sources,
+other project rates/platforms and compressed formats retain the prior Web Audio
+and codec-worker path. Source buffers remain loaded for import/playback.
+
+The CLI exposes the same integer writer without changing its float default:
+
+```sh
+~/Applications/crispaudio-cli-local render-project --input project.crispaudio --output mix-24.wav --wav-bit-depth 24 --backend apple
+```
+
+The flag accepts only 8/16/24/32, cannot be combined with `--video`, and requires
+the native mixer. Without the flag CLI WAV output remains stereo 48 kHz float32,
+which also remains the video mix format so headroom is retained until encoding.
+
+For exact native integer PCM parity, use the same optional Playwright/WebKit
+configuration and Vite server described above, then run:
+
+```sh
+CRISPAUDIO_TEST_CLI="$PWD/media/target-cli/release/crispaudio" node scripts/test-native-pcm.mjs
+```
+
+This compares all PCM bytes with actual `TimelineEngine` rendering and the GUI
+WAV encoder at four depths, including random stereo samples, silence, rounding
+ties and values above full scale. WAV container headers may differ. Fixtures and
+results stay in a fresh temporary folder; FFmpeg is disabled for native mixing.

@@ -45,6 +45,9 @@ enum Commands {
         output: String,
         #[arg(long)]
         video: bool,
+        /// Native integer PCM WAV depth; omitted keeps 32-bit float WAV.
+        #[arg(long, conflicts_with="video", value_parser=["8","16","24","32"])]
+        wav_bit_depth: Option<String>,
     },
     /// Export a picture edit JSON {path, clips}; mix uses the edited timeline clock.
     EditVideo {
@@ -152,6 +155,7 @@ fn execute(cli: Cli) -> media::Result<()> {
             input,
             output,
             video,
+            wav_bit_depth,
         } => {
             let mut doc: serde_json::Value =
                 serde_json::from_slice(&std::fs::read(input).map_err(|e| e.to_string())?)
@@ -164,7 +168,17 @@ fn execute(cli: Cli) -> media::Result<()> {
                     doc["project"]["video"]["outputFormat"] = serde_json::json!(format);
                 }
             }
-            media::project_edit::render_project(&doc, &output, video)?;
+            if let Some(depth) = wav_bit_depth {
+                if media::apple::Backend::configured()? == media::apple::Backend::Ffmpeg {
+                    return Err(
+                        "--wav-bit-depth requires the native mixer; select --backend apple or auto"
+                            .into(),
+                    );
+                }
+                media::audio_mix::render_pcm(&doc, &output, depth.parse().unwrap())?;
+            } else {
+                media::project_edit::render_project(&doc, &output, video)?;
+            }
         }
         Commands::EditVideo {
             edit,
@@ -289,6 +303,45 @@ fn main() {
 #[cfg(test)]
 mod cli_tests {
     use super::*;
+    #[test]
+    fn pcm_depth_flags_validate_and_conflict_with_video() {
+        for depth in ["8", "16", "24", "32"] {
+            assert!(Cli::try_parse_from([
+                "crispaudio",
+                "render-project",
+                "--input",
+                "p.crispaudio",
+                "--output",
+                "mix.wav",
+                "--wav-bit-depth",
+                depth
+            ])
+            .is_ok());
+        }
+        assert!(Cli::try_parse_from([
+            "crispaudio",
+            "render-project",
+            "--input",
+            "p.crispaudio",
+            "--output",
+            "mix.wav",
+            "--wav-bit-depth",
+            "12"
+        ])
+        .is_err());
+        assert!(Cli::try_parse_from([
+            "crispaudio",
+            "render-project",
+            "--input",
+            "p.crispaudio",
+            "--output",
+            "mix.mp4",
+            "--video",
+            "--wav-bit-depth",
+            "24"
+        ])
+        .is_err());
+    }
     #[test]
     fn global_format_and_backend_flags_validate_before_work() {
         let cli = Cli::try_parse_from([

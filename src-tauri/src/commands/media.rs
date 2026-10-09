@@ -257,3 +257,27 @@ pub async fn export_linked_project_video(
     .await
     .map_err(|e| e.to_string())?
 }
+
+/// Save an integer WAV directly to disk; no decoded PCM or WAV bytes cross IPC.
+#[tauri::command]
+pub async fn export_linked_project_wav(
+    document: serde_json::Value,
+    output: String,
+    bit_depth: u16,
+    job_id: Option<String>,
+) -> Result<(), String> {
+    if !cfg!(target_os = "macos")
+        || document["format"] != "crispaudio-project"
+        || document["version"] != 3
+        || document["project"]["sampleRate"] != 48000
+    {
+        return Err("Native WAV export requires a linked 48 kHz project on macOS".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        media::jobs::run(job_id, || {
+            media::audio_mix::render_pcm(&document, &output, bit_depth)
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

@@ -285,3 +285,17 @@ section is sought once and retains prior effect history. Native failures must
 stay visible. mediaJob owns cancellation registration/retry for both paths;
 the Web Audio path removes its staged mix even if cancellation arrives after
 staging. This avoids a second render/IPC buffer; import/playback are still decoded.
+
+## Direct GUI WAV 0.7.9
+
+useAudioExport accepts direct run jobs as well as Blob-producing requests. Direct
+jobs create no Blob/cache entry, retain current-controller guards, and expose
+rendering only after the save dialog returns. Cancellation must prevent stale
+results/errors from replacing a restarted job. Use mediaJob for native cancels.
+render_pcm writes directly in blocks at 8/16/24/32 bits. Match Timeline's JS
+integer encoder, not the older mono Rust float-WAV command: clamp float to [-1,1],
+quantise in double, and round with floor(x+0.5), including negative ties. WAV8
+maps unsigned JS bytes to signed Hound samples by subtracting 128. WAV32 here is
+integer PCM; default render()/video intermediates remain float32 and preserve
+headroom. CLI --wav-bit-depth explicitly selects native PCM and conflicts with
+video/explicit FFmpeg. Count output bytes at the selected depth for RIFF limits.

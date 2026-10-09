@@ -22,7 +22,7 @@ import wrapperNotice from '../../lib/flac/LICENSE.wrapper?raw';
 const REPO_URL = 'https://github.com/CrispStrobe/crispaudio';
 const WEB_URL = 'https://crispaudio-psi.vercel.app';
 const RELEASES_API = 'https://api.github.com/repos/CrispStrobe/crispaudio/releases/latest';
-const CURRENT_VERSION = '0.7.8';
+const CURRENT_VERSION = '0.7.9';
 
 interface LicenseEntry {
   name: string;

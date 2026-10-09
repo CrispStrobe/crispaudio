@@ -503,13 +503,39 @@ struct Track {
 }
 /// Streams blocks to an owned staging file, with atomic no-overwrite publication.
 pub fn render(doc: &Value, output: &str) -> Result<()> {
+    render_wav(doc, output, None)
+}
+/// Integer PCM export matching Timeline's worker quantisation. Float CLI/video
+/// intermediates keep the existing render() endpoint and preserve headroom.
+pub fn render_pcm(doc: &Value, output: &str, bit_depth: u16) -> Result<()> {
+    if ![8, 16, 24, 32].contains(&bit_depth) {
+        return Err("WAV PCM bit depth must be 8, 16, 24 or 32".into());
+    }
+    if !Path::new(output)
+        .extension()
+        .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("wav"))
+    {
+        return Err("PCM audio export requires a .wav filename".into());
+    }
+    render_wav(doc, output, Some(bit_depth))
+}
+fn pcm_sample(value: f32, bit_depth: u16) -> i32 {
+    let value = value.clamp(-1.0, 1.0) as f64;
+    if bit_depth == 8 {
+        ((value + 1.0) * 127.5 + 0.5).floor() as i32 - 128
+    } else {
+        (value * ((1u64 << (bit_depth - 1)) - 1) as f64 + 0.5).floor() as i32
+    }
+}
+fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
     if Path::new(output).exists() {
         return Err("Output already exists".into());
     }
     let project = &doc["project"];
     let duration = positive(project, "duration", None)?;
     let total = frames(duration)?;
-    if total == 0 || total as u64 * 8 + 128 > u32::MAX as u64 {
+    if total == 0 || total as u64 * 2 * (pcm_depth.unwrap_or(32) as u64 / 8) + 128 > u32::MAX as u64
+    {
         return Err("Empty arrangement or output exceeds standard WAV size limits".into());
     }
     let tracks = project["tracks"].as_array().ok_or("Missing tracks")?;
@@ -672,8 +698,12 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
         WavSpec {
             channels: 2,
             sample_rate: RATE as u32,
-            bits_per_sample: 32,
-            sample_format: SampleFormat::Float,
+            bits_per_sample: pcm_depth.unwrap_or(32),
+            sample_format: if pcm_depth.is_some() {
+                SampleFormat::Int
+            } else {
+                SampleFormat::Float
+            },
         },
     )
     .map_err(|e| e.to_string())?;
@@ -726,7 +756,13 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
                 if !value.is_finite() {
                     return Err("Audio mix exceeded finite float range".into());
                 }
-                writer.write_sample(value).map_err(|e| e.to_string())?;
+                if let Some(depth) = pcm_depth {
+                    writer
+                        .write_sample(pcm_sample(value, depth))
+                        .map_err(|e| e.to_string())?;
+                } else {
+                    writer.write_sample(value).map_err(|e| e.to_string())?;
+                }
             }
         }
     }
@@ -772,6 +808,34 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+    #[test]
+    fn pcm_depths_preserve_gui_rounding_silence_polarity_and_clip_headroom() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = source(folder.path(), 1, &[0.0, -0.5, 0.5, -2.0, 2.0]);
+        let expected: [(u16, [i32; 5]); 4] = [
+            (8, [0, -64, 63, -128, 127]),
+            (16, [0, -16383, 16384, -32767, 32767]),
+            (24, [0, -4194303, 4194304, -8388607, 8388607]),
+            (32, [0, -1073741823, 1073741824, -2147483647, 2147483647]),
+        ];
+        for (depth, values) in expected {
+            let target = folder.path().join(format!("pcm-{depth}.wav"));
+            render_pcm(&project(&input), target.to_str().unwrap(), depth).unwrap();
+            let mut reader = WavReader::open(&target).unwrap();
+            assert_eq!(reader.spec().sample_format, SampleFormat::Int);
+            assert_eq!(reader.spec().bits_per_sample, depth);
+            assert_eq!(reader.spec().channels, 2);
+            let samples: Vec<i32> = reader.samples::<i32>().map(|v| v.unwrap()).collect();
+            for (i, v) in values.into_iter().enumerate() {
+                assert_eq!(&samples[i * 2..i * 2 + 2], &[v, v]);
+            }
+            assert_eq!(samples.len(), 7680);
+            assert!(render_pcm(&project(&input), target.to_str().unwrap(), depth).is_err());
+        }
+        let bad = folder.path().join("invalid.wav");
+        assert!(render_pcm(&project(&input), bad.to_str().unwrap(), 12).is_err());
+        assert!(!bad.exists());
     }
     fn impulse(folder: &Path) -> PathBuf {
         let path = source(folder, 2, &[0.0, 0.0]);

@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.8]
+## [Unreleased — local version 0.7.9]
+
+- Save eligible Mac timeline WAV mixes directly with the native streaming mixer,
+  without a rendered AudioBuffer, encoded Blob or PCM IPC transfer.
+- Preserve GUI integer PCM settings at 8/16/24/32 bits, including clipping and
+  JavaScript rounding; retain float WAV for default CLI/video intermediates.
+- Add native CLI `--wav-bit-depth`, direct-job progress/cancellation ownership,
+  and visible export error details. Other formats retain the encoder worker.
+
+## [Local version 0.7.8]
 
 - Stream linked 48 kHz mono/stereo project audio from disk during macOS GUI video
   export, sharing the native CLI mixer and all current timeline rack effects.

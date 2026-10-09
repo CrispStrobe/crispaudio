@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export type AudioExportStage = 'rendering' | 'encoding';
-interface ExportRequest {
+interface BlobExportRequest {
   key: readonly unknown[];
   stage: AudioExportStage;
   produce: (signal: AbortSignal, setStage: (stage: AudioExportStage) => void) => Promise<Blob>;
   save: (blob: Blob) => Promise<unknown>;
 }
+
+interface DirectExportRequest {
+  stage: AudioExportStage | null;
+  run: (signal: AbortSignal, setStage: (stage: AudioExportStage | null) => void) => Promise<boolean>;
+}
+type ExportRequest = BlobExportRequest | DirectExportRequest;
 
 type CacheKeyPart = { weak: WeakRef<object> } | { value: unknown };
 
@@ -55,6 +61,10 @@ export function useAudioExport() {
     setError(null);
     setStage(request.stage);
     try {
+      if ('run' in request) {
+        const saved = await request.run(controller.signal, next => { if (current()) setStage(next); });
+        return current() && saved;
+      }
       const cached = cache.current;
       const hit = cached && matchesKey(cached.key, request.key);
       const blob = hit ? cached.blob : await request.produce(controller.signal, next => { if (current()) setStage(next); });

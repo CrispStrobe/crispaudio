@@ -152,3 +152,23 @@ it('cancels encoding and prevents a late completion from saving or resetting a r
   expect(save).toHaveBeenCalledExactlyOnceWith(blob);
   expect(result.current.stage).toBeNull();
 });
+
+it('runs direct disk exports without Blob caching and owns their progress', async () => {
+  const { result } = renderHook(() => useAudioExport());
+  const run = vi.fn(async (_signal: AbortSignal, stage: (next: 'rendering') => void) => { stage('rendering'); return true; });
+  await act(async () => { expect(await result.current.start({ stage: null, run })).toBe(true); });
+  await act(async () => { expect(await result.current.start({ stage: null, run })).toBe(true); });
+  expect(run).toHaveBeenCalledTimes(2); expect(result.current.stage).toBeNull();
+});
+it('a cancelled direct job cannot overwrite a restarted job or report a late error', async () => {
+  const { result } = renderHook(() => useAudioExport());
+  const old = deferred<boolean>(); const next = deferred<boolean>(); let signal!: AbortSignal;
+  let first!: Promise<boolean>; let second!: Promise<boolean>;
+  act(() => { first = result.current.start({ stage: 'rendering', run: s => { signal = s; return old.promise; } }); });
+  act(() => { result.current.cancel(); second = result.current.start({ stage: 'rendering', run: () => next.promise }); });
+  expect(signal.aborted).toBe(true);
+  await act(async () => { old.reject(new Error('Old failure')); expect(await first).toBe(false); });
+  expect(result.current.error).toBeNull(); expect(result.current.stage).toBe('rendering');
+  await act(async () => { next.resolve(true); expect(await second).toBe(true); });
+  expect(result.current.stage).toBeNull();
+});

@@ -807,3 +807,54 @@ from this single run. The project, output and measurements live outside git in
 
 Remaining work includes disk-paged import/playback and audio-only GUI export,
 permissive-only WebM and iOS picture composition.
+
+## Local 0.7.9 — direct desktop timeline WAV
+
+Installed and launched `~/Applications/CrispAudio-local.app` version 0.7.9 and
+updated the optimised standalone CLI. Both ad-hoc signatures verified; the one
+autosave JSON remains unchanged. WebKit state and autosave are backed up under
+`ux/recovery-before-079/`. No release tag or Apple upload was triggered.
+
+Eligible Mac timeline WAV exports use the linked native mixer directly. The save
+dialog runs first, then the cancellable job writes the mix in blocks to a new
+file. No rendered AudioBuffer, PCM IPC payload, encoded Blob or duration-sized
+result cache is created. Direct jobs share the export hook's controller guards,
+so late failures/completions cannot overwrite a restarted job. Native errors
+are shown with their detail. Existing output files remain protected; cancelled
+or failed staging is cleaned up before publication.
+
+WAV honors the GUI's 8/16/24/32-bit integer setting: clamp at full scale, use the
+same asymmetric negative-tie rounding as JavaScript, and retain no dither.
+WAV8 uses the correct unsigned disk representation through signed Hound samples.
+GUI WAV32 remains integer PCM. CLI/video default float32 still preserves peaks
+above unity; the new `--wav-bit-depth` flag explicitly selects native PCM. It
+accepts the same four depths, conflicts with video and rejects explicit FFmpeg
+mixing. DSP and source files are unchanged. Compressed GUI exports, audible
+in-memory sources, multichannel/non-48-kHz projects and other platforms retain
+the former Web Audio/worker path. Import/playback still hold decoded source buffers.
+
+Validation: 36 media Rust tests passed, including independent PCM values for
+silence, positive/negative half levels, rounding ties and clipped headroom at
+all depths; output protection and invalid-depth rejection are checked. Both CLI
+parser tests passed. Seven older picture integrations remain opt-in and were
+not repeated for this WAV writer change. All 21 targeted frontend tests passed,
+including direct-job cancellation/restart, save-dialog cancellation, late dialog
+results and surfaced failures. ESLint, TypeScript/production build, optimised CLI
+and debug macOS bundle passed. The optional actual-WebKit PCM harness passed all
+four depths with byte-identical audio payloads for random stereo, boundary/tie
+samples and clipping. Container headers are not required to match. Fixtures and
+results are archived outside git under `ux/native-pcm-079/`. DSP calculations
+were unchanged; the prior 56 effect comparisons were not repeated. CI for 0.7.8
+is still queued/running at this checkpoint; the new push also starts CI.
+
+The full 253.72-second interview, with default master compression, exported to
+stereo 48 kHz/24-bit PCM in 2.62 seconds (2.18 user / 0.18 system), about 97 times
+faster than playback. Peak CLI RSS was 2,719,744 bytes (2.59 MiB); this single
+warm-cache direct-PCM run excludes editor buffers, OS cache and other processes.
+Independent RIFF inspection confirmed 12,178,560 frames and the selected depth;
+file size is 73,071,428 bytes. The private derived project, WAV and measurement
+are under `ux/real-pcm-079-8gwtf97h/`; originals were not rewritten.
+
+No codec or dependency was added; the 26-entry licence manifest is unchanged.
+Remaining work includes disk-paged import/playback, streaming compressed-audio
+export, permissive-only WebM and iOS picture composition.

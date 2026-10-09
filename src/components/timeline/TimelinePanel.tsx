@@ -49,7 +49,8 @@ import { useProjectStore } from '../../stores/projectStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../stores/uiStore';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { serializeProject, deserializeProject } from '../../lib/projectFile';
+import { exportLinkedWav } from '../../lib/linkedWavExport';
+import { serializeProject, deserializeProject, linkedRenderDocument } from '../../lib/projectFile';
 import { saveProjectFile, openProjectFile } from '../../lib/projectIO';
 import { TransportControls } from './TransportControls';
 import { TimelineRuler } from './TimelineRuler';
@@ -482,6 +483,13 @@ export const TimelinePanel: React.FC = () => {
     if (!engine || store.project.duration <= 0) return;
     const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } = useSettingsStore.getState();
     const name = store.project.name || 'crispaudio_mix';
+    const document = fmt === 'wav' && '__TAURI_INTERNALS__' in window && !isIOSApp()
+      && navigator.userAgent.includes('Mac') ? linkedRenderDocument(store.project, store.sources) : null;
+    if (document) {
+      await startExport({ stage: null, run: (signal, setStage) =>
+        exportLinkedWav(document, `${name}.wav`, defaultBitDepth, signal, setStage) });
+      return;
+    }
     await startExport({
       key: [store.project, store.sources, defaultBitDepth, fmt, kbps],
       stage: 'rendering',
@@ -561,7 +569,7 @@ export const TimelinePanel: React.FC = () => {
           {exportStage === 'rendering' && <span className="text-xs text-gray-400">{t('audioExport.renderCancelNote')}</span>}
           <button className="timeline-tool" onClick={cancelExport}>{t('audioExport.cancel')}</button>
         </div>}
-        {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}</span>}
+        {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}: {String(exportError)}</span>}
       </div>
 
       {helpOpen&&<TimelineHelp open onClose={()=>setHelpOpen(false)}/>}

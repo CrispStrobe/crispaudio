@@ -306,3 +306,10 @@ mono/stereo projects. Full-clock DSP preserves effect history in section exports
 without a second full Web Audio mix or PCM transfer through IPC. In-memory sounds
 and other project rates retain Web Audio. Import/playback buffers remain loaded;
 this is an export improvement. See `docs/MEDIA_WORKSPACE.md` for the workflow.
+
+### Local 0.7.9 — direct timeline WAV export
+
+Eligible Mac timeline WAV exports now stream directly to disk with the chosen
+8/16/24/32-bit integer PCM setting. Cancellation and errors stay in the export
+UI; other formats keep the worker. CLI `--wav-bit-depth` selects the same integer
+writer while its omitted default remains float WAV. See `docs/MEDIA_WORKSPACE.md`.
