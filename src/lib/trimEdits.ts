@@ -100,8 +100,10 @@ export function trimToPlayhead(p:TimelineProject,ids:string[],side:'left'|'right
 
 /** Ripple trims use saved lane scope and the reviewed range-edit contract. */
 export function rippleTrim(p:TimelineProject,ids:string[],side:'left'|'right',delta:number,sources:Sources):TimelineProject{
- const selected=chosen(p,ids),edge=side==='left'?selected[0].startTime:selected[0].startTime+selected[0].duration;
- if(selected.some(c=>!same(side==='left'?c.startTime:c.startTime+c.duration,edge)))fail('sharedCut');
+ const selected=chosen(p,ids),pictures=[...videoClips(p.video)].sort((a,b)=>a.startTime-b.startTime);
+ const incoming=(c:Clip)=>{if('trackId' in c)return 0;const i=pictures.findIndex(v=>v.id===c.id),prev=pictures[i-1];return prev?Math.max(0,prev.startTime+prev.duration-c.startTime):0;};
+ const edge=side==='left'?selected[0].startTime+incoming(selected[0]):selected[0].startTime+selected[0].duration;
+ if(selected.some(c=>!same(side==='left'?c.startTime+incoming(c):c.startTime+c.duration,edge)))fail('sharedCut');
  if(!Number.isFinite(delta)||delta===0)fail('amount');
  if(p.video&&p.video.rippleEnabled!==false){if(!same(edge,frameTime(edge,p.frameRate??25)))fail('frameEdge');delta=frameTime(edge+delta,p.frameRate??25)-edge;}
  if(delta===0)fail('amount');
@@ -111,6 +113,23 @@ export function rippleTrim(p:TimelineProject,ids:string[],side:'left'|'right',de
  unlocked(p,new Set(selected.map(c=>c.id)));
  if(selected.some(c=>{const n=sourceLength(p,c,sources);return n===undefined||(side==='left'?(c.sourceOffset+delta<0||c.duration-delta<.01):(c.duration+delta<.01||c.sourceOffset+c.duration+delta>n+1e-6));}))fail('handles');
  const shorten=side==='left'?delta>0:delta<0;
+ const picture=selected.find(c=>!('trackId' in c));
+ if(picture&&pictures.some(c=>c.transition!=='cut'&&c.transitionDuration>0)){
+  if(validateVideoClips(pictures,p.video!.duration,p.video!.sources))fail('blendTopology');
+  const index=pictures.findIndex(c=>c.id===picture.id),next=pictures[index+1],head=incoming(picture),tail=next?Math.max(0,picture.startTime+picture.duration-next.startTime):0,fps=p.frameRate??25;
+  if(!Number.isFinite(fps)||fps<=0||[picture.startTime,picture.startTime+picture.duration,picture.startTime+head,...(tail>0?[next!.startTime]:[])].some(t=>!same(t,frameTime(t,fps))))fail('frameEdge');
+  if(picture.duration+(side==='left'?-delta:delta)<head+tail+1/fps-1e-6)fail('handles');
+  const trimmedClips=new Map<string,Clip>();
+  for(const c of selected){
+   const bound=sourceLength(p,c,sources);if(bound===undefined||!Number.isFinite(bound)||![c.startTime,c.sourceOffset,c.duration].every(Number.isFinite)||c.startTime<0||c.sourceOffset<0||c.sourceOffset+c.duration>bound+1e-6)fail('handles');
+   trimmedClips.set(c.id,fitFade({...c,sourceOffset:c.sourceOffset+(side==='left'?delta:0),duration:c.duration+(side==='left'?-delta:delta)}));
+  }
+  const shift=side==='left'?-delta:delta;
+  for(const c of pictures)if(c.id!==picture.id)trimmedClips.set(c.id,c.startTime>picture.startTime?{...c,startTime:c.startTime+shift}:c);
+  const result=editTimeRange(p,shorten?Math.min(edge,edge+delta):edge,shorten?Math.max(edge,edge+delta):edge+Math.abs(delta),shorten?'extract':'insert',{trimmedClips});
+  // Newly revealed source speech was not part of the previous acoustic alignment.
+  return !shorten&&p.transcriptLayout?{...result,transcriptLayout:p.transcriptLayout}:result;
+ }
  if(shorten)return editTimeRange(p,Math.min(edge,edge+delta),Math.max(edge,edge+delta),'extract');
  const length=Math.abs(delta),insert=editTimeRange(p,edge,edge+length,'insert'),selectedIds=new Set(selected.map(c=>c.id));
  return mapClips(insert,c=>selectedIds.has(c.id)?fitFade(side==='left'?{...c,startTime:c.startTime-length,sourceOffset:c.sourceOffset-length,duration:c.duration+length}:{...c,duration:c.duration+length}):c);

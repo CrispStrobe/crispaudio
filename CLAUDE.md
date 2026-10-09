@@ -489,3 +489,17 @@ picture validation, source limits, locks/group closure and ambiguous-lane reject
 remain enforced. Markers/automation stay fixed; old acoustic alignment is stale.
 Optional `test-slide-blend.py` verifies both native Apple transition windows;
 `test-trim-edits.mjs` covers dialog/undo and GUI/CLI recipe parity.
+
+
+## Transition ripple trims 0.8.10
+
+Ripple left trims compare logical incoming picture boundaries with linked audio.
+Reviewed trim shapes preserve selected IDs/links and transition metadata; following
+picture shifts with duration change. `rangeEdits.trimmedClips` and crate-internal
+`range_edit::apply_trim` share original scope/lock/group/global retiming checks.
+Changed overrides count as affected even when a clip ends at an insertion point.
+Recipe JSON cannot supply native overrides; ordinary range edits retain the blend
+boundary guard. Initial/final picture topology and source/body/frame limits apply.
+Shortening retimes surviving alignment; extending source speech keeps its old layout
+signature stale. Optional `test-ripple-blend.py` checks all four native edge/direction
+cases; trim browser harness verifies GUI/CLI parity and one-step undo.

@@ -444,7 +444,7 @@ The transition must already have a valid two-clip overlap matching its duration.
 Both overlap edges must lie on project frame boundaries. Each neighbouring clip
 must retain at least one frame outside the overlap. Source limits, locked/grouped
 lanes, ambiguous neighbours and conflicts with another transition block the edit.
-Ripple/range operations through picture blends remain restricted. CLI uses
+Generic range boundaries through picture blends remain restricted. CLI uses
 `[{"op":"roll","ids":["left-clip-id"],"seconds":0.08}]` for cuts and transitions.
 
 The optional macOS `scripts/test-roll-blend.py /path/to/crispaudio` verifies the
@@ -469,3 +469,30 @@ it before speech cuts. CLI uses the same `slide` ids/seconds recipe.
 
 Optional macOS verification: `python3 scripts/test-slide-blend.py /path/to/crispaudio`
 checks both moved dissolve windows in Apple exports using synthetic colour sources.
+
+
+## Ripple trims through picture transitions
+
+Select linked clips, open **Trim tools**, choose **Ripple trim left/right edge**,
+and enter the signed displacement. Positive left trims shorten; positive right
+trims extend. Left trims keep the clip start fixed, change its source offset and
+move following participating material by the opposite displacement. Right trims
+keep the source start fixed and shift following material with the edited end.
+
+Existing incoming/outgoing picture transition types and overlap lengths remain
+fixed. The incoming window stays at the selected clip's start; the outgoing window
+and following picture move with its new end. Linked sound follows the logical edit
+boundary, accounting for incoming picture handles. Selected clip IDs/source links
+stay intact. Review saved ripple participation first: locks and incomplete linked
+or named-group scopes block the operation. Fixed lanes stay fixed.
+
+Markers, canvas floor, included track automation and unaffected transcript cues
+use the range-retiming rules. Cue boundaries still require review. Surviving word
+alignment is retained after shortening; extending source speech makes old acoustic
+alignment stale until re-ASR. Each selected picture must retain a frame outside
+its overlaps. Source/media files are never changed; Apply is one undo step.
+
+CLI uses `ripple-trim` with `ids`, `side` and `seconds`. The transition policy is
+internal to reviewed trims: generic lift/extract/insert boundaries through blends
+remain blocked. Optional native check:
+`python3 scripts/test-ripple-blend.py /path/to/crispaudio`.

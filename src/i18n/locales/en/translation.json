@@ -1025,7 +1025,7 @@
     "playhead-left": "Trim left edge to playhead",
     "playhead-right": "Trim right edge to playhead",
     "help": "For a roll, select the clips on the left of a shared cut or picture transition. Linked sound and picture follow together. The transition keeps its type and length; its overlap window moves with the edit. Positive values move later; source handles are checked.",
-    "rippleHelp": "Ripple uses saved track participation and retimes global canvas, markers and transcript. Review scope in Edit time range first.",
+    "rippleHelp": "Ripple uses saved lane participation and retimes the canvas, markers, automation and transcript. Linked picture transitions keep their type and overlap length. Review scope in Edit time range first; extending source speech requires fresh ASR alignment.",
     "selection": "Select clips for this trim.",
     "amount": "Enter a valid nonzero trim amount.",
     "sharedCut": "Selected linked clips must share the edited edge.",

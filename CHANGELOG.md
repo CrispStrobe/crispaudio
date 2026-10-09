@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.9]
+## [Unreleased — local version 0.8.10]
+
+- Ripple-trim linked clips through incoming/outgoing picture transitions in both
+  directions, preserving blend windows/types and clip/source-link identities.
+- Reuse scoped range handling for locks, groups, markers, automation and transcript
+  retiming; include clips ending exactly at an insertion point in extension checks.
+- Keep newly revealed source speech alignment stale until re-ASR. Generic range
+  boundaries through picture blends remain blocked pending their own edit policy.
+
+## [Local version 0.8.9]
 
 - Slide a fixed middle clip through incoming/outgoing picture transitions while
   retaining both overlap windows, transition types and linked audio offsets.

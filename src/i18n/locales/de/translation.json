@@ -1025,7 +1025,7 @@
     "playhead-left": "Linke Kante bis Abspielkopf trimmen",
     "playhead-right": "Rechte Kante bis Abspielkopf trimmen",
     "help": "Für einen rollenden Schnitt die Clips links von einer Schnittkante oder einem Videoübergang wählen. Verbundener Ton und Bild folgen. Art und Länge des Übergangs bleiben gleich; sein Überlappungsfenster verschiebt sich mit dem Schnitt. Positive Werte verschieben nach hinten; Quellreserven werden geprüft.",
-    "rippleHelp": "Nachrücken verwendet die gespeicherte Spurbeteiligung und verschiebt Gesamtdauer, Marker und Transkript. Den Umfang vorher unter Zeitbereich bearbeiten prüfen.",
+    "rippleHelp": "Nachrücken verwendet die gespeicherte Spurbeteiligung und verschiebt Gesamtdauer, Marker, Automation und Transkript. Verbundene Videoübergänge behalten Art und Überlappungslänge. Umfang vorher unter Zeitbereich bearbeiten prüfen; erweiterte Sprachquellen benötigen neue ASR-Ausrichtung.",
     "selection": "Clips für diesen Schnitt auswählen.",
     "amount": "Einen gültigen Schnittwert eingeben.",
     "sharedCut": "Ausgewählte verbundene Clips müssen dieselbe Schnittkante haben.",

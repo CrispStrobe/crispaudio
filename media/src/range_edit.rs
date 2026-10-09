@@ -58,6 +58,10 @@ fn gain_at(points: &[Value], t: f64) -> Result<f64> {
     number(sorted.last().unwrap(), "value")
 }
 pub fn apply(p: &Value, op: &Value) -> Result<Value> {
+    apply_trim(p, op, &HashMap::new())
+}
+/// Internal clip shapes reviewed by advanced ripple trims; not a JSON recipe option.
+pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) -> Result<Value> {
     let operation = op["operation"].as_str().unwrap_or("extract");
     let mut start = number(op, "start")?;
     let mut end = number(op, "end")?;
@@ -122,11 +126,15 @@ pub fn apply(p: &Value, op: &Value) -> Result<Value> {
     let affected = |c: &Value| {
         let a = c["startTime"].as_f64().unwrap_or(0.0);
         let b = a + c["duration"].as_f64().unwrap_or(0.0);
-        if operation == "insert" || operation == "extract" {
-            b > start
-        } else {
-            a < end && b > start
-        }
+        let replacement = trims
+            .get(c["id"].as_str().unwrap_or(""))
+            .is_some_and(|t| t != c);
+        replacement
+            || if operation == "insert" || operation == "extract" {
+                b > start
+            } else {
+                a < end && b > start
+            }
     };
     let groups: HashSet<&str> = all
         .iter()
@@ -171,7 +179,8 @@ pub fn apply(p: &Value, op: &Value) -> Result<Value> {
     };
     if video
         && picture.iter().any(|c| {
-            c["transition"] != "cut"
+            !trims.contains_key(c["id"].as_str().unwrap_or(""))
+                && c["transition"] != "cut"
                 && boundaries.iter().any(|t| {
                     *t > c["startTime"].as_f64().unwrap_or(0.0)
                         && *t
@@ -198,6 +207,9 @@ pub fn apply(p: &Value, op: &Value) -> Result<Value> {
     let mut edit = |c: &Value| -> Result<Vec<Value>> {
         if !included(c) || !affected(c) {
             return Ok(vec![c.clone()]);
+        }
+        if let Some(trim) = trims.get(c["id"].as_str().unwrap_or("")) {
+            return Ok(vec![trim.clone()]);
         }
         let a = number(c, "startTime")?;
         let b = a + number(c, "duration")?;

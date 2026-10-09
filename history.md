@@ -130,3 +130,11 @@ Fixed-content slides retain incoming/outgoing picture overlap windows, transitio
 types and linked audio offsets. Linked edit boundaries account for picture handles,
 while the middle source content and outer timeline endpoints stay fixed.
 Ripple/range edits through picture blends remain unfinished.
+
+
+## Local 0.8.10 — ripple trims through transitions
+
+Linked ripple trims retain incoming/outgoing picture transition windows and types,
+preserve clip/source-link identities and retime following scoped material. Locks,
+groups, markers, automation and transcript checks share the range-edit contract.
+Generic range boundaries through blends remain a separate unfinished increment.

@@ -319,9 +319,38 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
     if !matches!(side, "left" | "right") {
         return Err("Invalid trim side".into());
     }
+    let mut ordered_picture: Vec<_> = all.iter().filter(|c| c.get("trackId").is_none()).collect();
+    ordered_picture.sort_by(|a, b| {
+        a["startTime"]
+            .as_f64()
+            .unwrap_or(0.0)
+            .total_cmp(&b["startTime"].as_f64().unwrap_or(0.0))
+    });
+    let incoming = |c: &Value| -> f64 {
+        if c.get("trackId").is_some() {
+            return 0.0;
+        }
+        let index = ordered_picture
+            .iter()
+            .position(|p| p["id"] == c["id"])
+            .unwrap_or(0);
+        index
+            .checked_sub(1)
+            .map(|i| {
+                (ordered_picture[i]["startTime"].as_f64().unwrap_or(0.0)
+                    + ordered_picture[i]["duration"].as_f64().unwrap_or(0.0)
+                    - c["startTime"].as_f64().unwrap_or(0.0))
+                .max(0.0)
+            })
+            .unwrap_or(0.0)
+    };
     let edge = number(left[0], "startTime")?
         + if side == "left" && operation != "roll" {
-            0.0
+            if operation == "ripple-trim" {
+                incoming(left[0])
+            } else {
+                0.0
+            }
         } else {
             number(left[0], "duration")?
         };
@@ -329,7 +358,11 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
     for c in &left {
         let end = number(c, "startTime")?
             + if side == "left" && operation != "roll" {
-                0.0
+                if operation == "ripple-trim" {
+                    incoming(c)
+                } else {
+                    0.0
+                }
             } else {
                 number(c, "duration")?
             };
@@ -506,6 +539,99 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
         } else {
             json!({"operation":"insert","start":edge,"end":edge+delta.abs()})
         };
+        if let Some(pic) = left
+            .iter()
+            .find(|c| c.get("trackId").is_none())
+            .filter(|_| {
+                ordered_picture.iter().any(|c| {
+                    c["transition"] != "cut"
+                        && c["transitionDuration"].as_f64().unwrap_or(0.0) > 0.0
+                })
+            })
+        {
+            let p = &doc["project"]["video"];
+            let edit=serde_json::from_value(json!({"path":p["path"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":ordered_picture})).map_err(|e|e.to_string())?;
+            crate::video_edit::validate(&edit, number(p, "duration")?)?;
+            let index = ordered_picture
+                .iter()
+                .position(|c| c["id"] == pic["id"])
+                .unwrap();
+            let head = incoming(pic);
+            let next = ordered_picture.get(index + 1);
+            let tail = next
+                .map(|c| {
+                    (pic["startTime"].as_f64().unwrap() + pic["duration"].as_f64().unwrap()
+                        - c["startTime"].as_f64().unwrap())
+                    .max(0.0)
+                })
+                .unwrap_or(0.0);
+            let mut edges = vec![
+                number(pic, "startTime")?,
+                number(pic, "startTime")? + number(pic, "duration")?,
+                number(pic, "startTime")? + head,
+            ];
+            if tail > 0.0 {
+                edges.push(number(next.unwrap(), "startTime")?);
+            }
+            if edges.iter().any(|t| !equal(*t, (*t * fps).round() / fps)) {
+                return Err("Ripple transition trims need frame-aligned overlap edges".into());
+            }
+            if number(pic, "duration")? + if side == "left" { -delta } else { delta }
+                < head + tail + 1.0 / fps - 1e-6
+            {
+                return Err("Trim consumes picture transition handles".into());
+            }
+            let mut trims = HashMap::new();
+            for c in &left {
+                let offset = number(c, "sourceOffset")?;
+                let length = number(c, "duration")?;
+                if number(c, "startTime")? < 0.0
+                    || offset < 0.0
+                    || offset + length > bounds(doc, c)? + 1e-6
+                {
+                    return Err("Trim exceeds source handles".into());
+                }
+                let mut trimmed = (*c).clone();
+                trimmed["sourceOffset"] = json!(offset + if side == "left" { delta } else { 0.0 });
+                let duration = length + if side == "left" { -delta } else { delta };
+                trimmed["duration"] = json!(duration);
+                let audio = c.get("trackId").is_some();
+                for key in if audio {
+                    ["fadeInDuration", "fadeOutDuration"]
+                } else {
+                    ["fadeIn", "fadeOut"]
+                } {
+                    if let Some(v) = trimmed[key].as_f64() {
+                        trimmed[key] = json!(v.min(if audio { duration } else { duration / 2.0 }));
+                    }
+                }
+                trims.insert(
+                    c["id"].as_str().ok_or("Missing clip id")?.to_owned(),
+                    trimmed,
+                );
+            }
+            let shift = if side == "left" { -delta } else { delta };
+            for c in &ordered_picture {
+                if c["id"] == pic["id"] {
+                    continue;
+                }
+                let mut trimmed = (*c).clone();
+                if number(c, "startTime")? > number(pic, "startTime")? {
+                    trimmed["startTime"] = json!(number(c, "startTime")? + shift);
+                }
+                trims.insert(
+                    c["id"].as_str().ok_or("Missing clip id")?.to_owned(),
+                    trimmed,
+                );
+            }
+            out["project"] = crate::range_edit::apply_trim(&doc["project"], &range, &trims)?;
+            if !shorten {
+                if let Some(layout) = doc["project"].get("transcriptLayout") {
+                    out["project"]["transcriptLayout"] = layout.clone();
+                }
+            }
+            return Ok(out);
+        }
         out["project"] = crate::range_edit::apply(&doc["project"], &range)?;
         if shorten {
             return Ok(out);
@@ -1322,6 +1448,56 @@ mod tests {
         assert_eq!(audio[1]["linkGroup"], picture[1]["linkGroup"]);
         assert_ne!(audio[0]["linkGroup"], audio[1]["linkGroup"]);
         assert_eq!(audio[1]["sourceOffset"], 4.0);
+    }
+    #[test]
+    fn ripple_trims_both_transition_edges_and_retimes_the_canvas() {
+        let d = json!({"format":"crispaudio-project","version":3,"project":{"duration":15,"minimumDuration":15,"frameRate":25,"sampleRate":48000,"markers":[{"id":"m","name":"Later","time":12}],"tracks":[{"id":"t","segments":[{"id":"a","trackId":"t","sourceId":"s","linkGroup":"left","startTime":0,"sourceOffset":2,"duration":5},{"id":"b","trackId":"t","sourceId":"s","linkGroup":"middle","startTime":5,"sourceOffset":7,"duration":5},{"id":"c","trackId":"t","sourceId":"s","linkGroup":"right","startTime":10,"sourceOffset":12,"duration":5}]}],"video":{"path":"v.mp4","duration":20,"clips":[{"id":"v","linkGroup":"left","startTime":0,"sourceOffset":2,"duration":5,"transition":"cut"},{"id":"w","linkGroup":"middle","startTime":4.6,"sourceOffset":6.6,"duration":5.4,"transition":"fade","transitionDuration":0.4},{"id":"x","linkGroup":"right","startTime":9.6,"sourceOffset":11.6,"duration":5.4,"transition":"wipeleft","transitionDuration":0.4}]}},"sources":[{"id":"s","duration":20}]});
+        for side in ["left", "right"] {
+            for delta in [-0.2, 0.2] {
+                let out = apply(
+                    &d,
+                    &json!([{"op":"ripple-trim","ids":["b"],"side":side,"seconds":delta}]),
+                )
+                .unwrap();
+                let shift = if side == "left" { -delta } else { delta };
+                let v = out["project"]["video"]["clips"].as_array().unwrap();
+                for i in [1, 2] {
+                    assert!(
+                        (v[i - 1]["startTime"].as_f64().unwrap()
+                            + v[i - 1]["duration"].as_f64().unwrap()
+                            - v[i]["startTime"].as_f64().unwrap()
+                            - 0.4)
+                            .abs()
+                            < 1e-9
+                    );
+                    assert_eq!(v[i]["transitionDuration"], 0.4);
+                }
+                assert!((out["project"]["duration"].as_f64().unwrap() - 15.0 - shift).abs() < 1e-9);
+                assert!(
+                    (out["project"]["markers"][0]["time"].as_f64().unwrap() - 12.0 - shift).abs()
+                        < 1e-9
+                );
+                assert_eq!(out["project"]["tracks"][0]["segments"][1]["id"], "b");
+                assert_eq!(v[1]["linkGroup"], "middle");
+            }
+        }
+        let mut locked = d.clone();
+        locked["project"]["video"]["locked"] = json!(true);
+        assert!(apply(
+            &locked,
+            &json!([{"op":"ripple-trim","ids":["b"],"side":"right","seconds":-0.2}])
+        )
+        .is_err());
+        assert!(apply(
+            &d,
+            &json!([{"op":"ripple-trim","ids":["b"],"side":"left","seconds":4.8}])
+        )
+        .is_err());
+        assert!(apply(
+            &d,
+            &json!([{"op":"range-edit","operation":"extract","start":9.8,"end":10}])
+        )
+        .is_err());
     }
     #[test]
     fn slide_keeps_both_picture_overlaps_and_linked_audio_content() {

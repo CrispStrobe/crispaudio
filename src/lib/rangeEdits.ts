@@ -5,7 +5,7 @@ import { gainAt } from './mixAutomation';
 
 type Clip=AudioSegment|VideoClip;
 export type RangeOperation='lift'|'extract'|'insert';
-export interface RangeEditOptions {trackIds?:string[];includeVideo?:boolean;retimeGlobal?:boolean}
+export interface RangeEditOptions {trackIds?:string[];includeVideo?:boolean;retimeGlobal?:boolean;/** Internal reviewed ripple-trim shapes; never imported from recipe JSON. */trimmedClips?:Map<string,Clip>}
 export class RangeEditError extends Error {}
 const fail=(key:string):never=>{throw new RangeEditError(`rangeEdits.${key}`);};
 
@@ -20,13 +20,13 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
   const retimeGlobal=options.retimeGlobal??(includeVideo||(!project.video&&ids.size===project.tracks.length));
   const all:Clip[]=[...project.tracks.flatMap(t=>t.segments),...videoClips(project.video)];
   const included=(clip:Clip)=>'trackId' in clip?ids.has(clip.trackId):includeVideo;
-  const affected=(clip:Clip)=>operation==='insert'?clip.startTime+clip.duration>start:operation==='extract'?clip.startTime+clip.duration>start:clip.startTime<end&&clip.startTime+clip.duration>start;
+  const affected=(clip:Clip)=>{const trim=options.trimmedClips?.get(clip.id);return !!(trim&&trim!==clip)||(operation==='insert'||operation==='extract'?clip.startTime+clip.duration>start:clip.startTime<end&&clip.startTime+clip.duration>start);};
   const groups=new Set(all.filter(c=>included(c)&&affected(c)&&c.linkGroup).map(c=>c.linkGroup));
   if(all.some(c=>c.linkGroup&&groups.has(c.linkGroup)&&!included(c)))fail('linkedScope');
   if(project.groupEditingEnabled!==false){const editGroups=new Set(all.filter(c=>included(c)&&affected(c)&&c.editGroup).map(c=>c.editGroup!.id));if(all.some(c=>c.editGroup&&editGroups.has(c.editGroup.id)&&!included(c)))fail('groupScope');}
   if(project.tracks.some(t=>ids.has(t.id)&&t.locked&&t.segments.some(affected))||(includeVideo&&project.video?.locked&&videoClips(project.video).some(affected)))fail('locked');
   // Preserve untouched transitions; crossing a blend needs an explicit trim policy.
-  if(includeVideo&&videoClips(project.video).some(c=>c.transition!=='cut'&&[start,...(operation==='insert'?[]:[end])].some(t=>t>c.startTime&&t<c.startTime+c.transitionDuration)))fail('transitionBoundary');
+  if(includeVideo&&videoClips(project.video).some(c=>!options.trimmedClips?.has(c.id)&&c.transition!=='cut'&&[start,...(operation==='insert'?[]:[end])].some(t=>t>c.startTime&&t<c.startTime+c.transitionDuration)))fail('transitionBoundary');
   if(retimeGlobal&&project.transcript?.some(c=>[start,...(operation==='insert'?[]:[end])].some(t=>t>c.start&&t<c.end)))fail('cueBoundary');
   const length=end-start,groupsForRight=new Map<string,string>();
   const newGroup=(group?:string)=>{if(!group)return undefined;if(!groupsForRight.has(group))groupsForRight.set(group,crypto.randomUUID());return groupsForRight.get(group);};
@@ -36,6 +36,7 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
   };
   const edit=(clip:Clip):Clip[]=>{
     if(!included(clip)||!affected(clip))return [clip];
+    const trimmed=options.trimmedClips?.get(clip.id);if(trimmed)return [trimmed];
     const a=clip.startTime,b=a+clip.duration;
     if(operation==='insert'){
       if(a>=start)return [{...clip,startTime:a+length}];

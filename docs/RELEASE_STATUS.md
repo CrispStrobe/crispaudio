@@ -1281,3 +1281,35 @@ under `ux/slide-blend-089/`, outside this repository.
 Ripple/range edits through blends remain unfinished. No new iOS device validation,
 release tag or Apple submission. README remains a current capability overview;
 version notes stay in history.md and these records.
+
+## Local 0.8.10 — ripple trims through transitions (2026-10-09)
+
+Built, installed and launched 0.8.10; app/CLI ad hoc signatures verified and one
+existing autosave preserved. Frontend: 101 files / 1,366 tests passed. Native:
+54 media tests + 3 CLI tests passed, 10 optional integrations ignored. Lint,
+TypeScript production web build, release CLI and desktop bundle passed.
+
+Linked ripple trims preserve incoming/outgoing transition types/overlap lengths
+and selected clip/source-link identities. Reviewed shapes share existing scoped
+range checks for locks, groups, automation, canvas, markers and transcript timing.
+Clips ending at an insertion point are included when their reviewed shape changes.
+Shortening retimes surviving aligned words; extending source speech requires new
+acoustic alignment. Generic range boundaries through picture blends remain blocked.
+
+Headless Chrome exercised the ripple dialog and undo, with eighteen GUI/CLI recipe
+comparisons. The native synthetic check covers left/right shortening/extension:
+incoming dissolve stays fixed, outgoing dissolve follows the new end, and picture
+duration becomes 5.4/5.8 seconds as expected. Reproduce with
+`scripts/test-ripple-blend.py /path/to/crispaudio`; installed FFmpeg creates/inspects
+fixtures, Apple performs the actual project exports.
+
+A private Canon/H6 derivative removes 59.92–60.00 s with a right ripple trim,
+retains two 0.4-second picture overlaps and all three microphone offsets, and ends
+at approximately 253.64 s. Rendered 44–61.92 s audio matches original 44–62 s with
+that interval removed byte for byte (860,160 stereo frames). Native edited MP4
+59–61 s audio/picture both measure 2 seconds. Original media/project are untouched;
+private artifacts remain in `ux/ripple-blend-0810/`, outside the repository.
+
+No new iOS device validation, release tag or Apple submission. Generic range blend
+policies remain unfinished. README describes current support; version narratives
+stay in history.md and implementation records.

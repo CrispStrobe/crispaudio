@@ -97,5 +97,19 @@ try{
    const frontend=await page.evaluate(async({p,seconds})=>{const {slideClips}=await import('/src/lib/trimEdits.ts');return slideClips(p,['b'],seconds,new Map([['s',{duration:20}]]));},{p:slideBlend,seconds});assert.deepEqual(semantic(native),semantic(frontend));parity.push({op:'slide-blend',seconds});
   }
  }
- console.log(JSON.stringify({blendSlide:'passed',blendRoll:'passed',slide:'passed',dialog:'passed',handles:'blocked',undo:'passed',navigation:'passed',cliParity:parity.length}));
+ await page.evaluate(async p=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.setState({project:p,selection:{segmentIds:['b'],startTime:5,endTime:10}});useProjectStore.temporal.getState().clear();},slideBlend);
+ await page.getByRole('button',{name:'Trim tools',exact:true}).click();await dialog.locator('select').selectOption('ripple-right');await dialog.getByLabel('Move edge by (seconds)').fill('-0.08');await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
+ const rippled=await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;});assert.ok(Math.abs(rippled.duration-14.92)<1e-9);assert.equal(rippled.video.clips[1].transitionDuration,.4);assert.equal(rippled.video.clips[1].id,'w');assert.equal(rippled.tracks[0].segments[1].id,'b');
+ await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.temporal.getState().undo();});
+ assert.deepEqual(semantic(await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;})),semantic(slideBlend));
+ if(process.env.CRISPAUDIO_CLI){
+  const input=join(temp,'ripple-blend.crispaudio');await writeFile(input,JSON.stringify({format:'crispaudio-project',version:3,project:slideBlend,sources:[{id:'s',duration:20}]}));
+  for(const side of ['left','right'])for(const seconds of [.08,-.08]){
+   const recipe=join(temp,'ripple-blend.json'),output=join(temp,'ripple-blend-out.crispaudio');await rm(output,{force:true});await writeFile(recipe,JSON.stringify([{op:'ripple-trim',ids:['b'],side,seconds}]));
+   execFileSync(process.env.CRISPAUDIO_CLI,['edit-project','--input',input,'--recipe',recipe,'--output',output]);
+   const native=JSON.parse(await readFile(output,'utf8')).project;
+   const frontend=await page.evaluate(async({p,side,seconds})=>{const {rippleTrim}=await import('/src/lib/trimEdits.ts');return rippleTrim(p,['b'],side,seconds,new Map([['s',{duration:20}]]));},{p:slideBlend,side,seconds});assert.deepEqual(semantic(native),semantic(frontend));parity.push({op:'ripple-blend',side,seconds});
+  }
+ }
+ console.log(JSON.stringify({blendRipple:'passed',blendSlide:'passed',blendRoll:'passed',slide:'passed',dialog:'passed',handles:'blocked',undo:'passed',navigation:'passed',cliParity:parity.length}));
 }finally{await browser.close();await rm(temp,{recursive:true,force:true});}

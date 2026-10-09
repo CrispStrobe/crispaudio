@@ -111,3 +111,26 @@ it('reviews transition slide limits and rejects consumed handles, locks and stal
  p.transcriptLayout=speechLayout(p);expect(()=>deleteSpokenWord(slideClips(p,['b'],.2,sources),'word')).toThrow('spoken.stale');
  const bad=slideBlendFixture();bad.video!.clips![2].transitionDuration=.3;expect(()=>slideClips(bad,['b'],.2,sources)).toThrow('blendTopology');
 });
+it('ripple trims either edge in both directions while retaining linked transition windows',()=>{
+ for(const side of ['left','right'] as const)for(const delta of [.2,-.2]){
+  const p=slideBlendFixture();p.minimumDuration=15;p.markers=[{id:'m',name:'later',time:12}];const before=JSON.stringify(p);
+  const out=rippleTrim(p,['b'],side,delta,sources),[l,m,r]=out.video!.clips!,shift=side==='left'?-delta:delta;
+  expect(m.startTime).toBe(4.6);expect(m.sourceOffset).toBeCloseTo(6.6+(side==='left'?delta:0),12);expect(m.duration).toBeCloseTo(5.4+shift,12);
+  expect(l.startTime+l.duration-m.startTime).toBeCloseTo(.4,12);expect(m.startTime+m.duration-r.startTime).toBeCloseTo(.4,12);
+  expect(m.transition).toBe('fade');expect(r.transition).toBe('wipeleft');expect(out.duration).toBeCloseTo(15+shift,12);expect(out.minimumDuration).toBeCloseTo(15+shift,12);expect(out.markers![0].time).toBeCloseTo(12+shift,12);
+  expect(out.tracks[0].segments[1].id).toBe('b');expect(m.linkGroup).toBe(out.tracks[0].segments[1].linkGroup);expect(out.tracks[0].segments[1].startTime-m.startTime).toBeCloseTo(.4,12);
+  expect(JSON.stringify(p)).toBe(before);
+ }
+});
+it('ripple trims transition exits and respects downstream locks, scope, cues and handles',()=>{
+ const p=slideBlendFixture();const out=rippleTrim(p,['a'],'right',-.2,sources);expect(out.video!.clips![1].startTime).toBeCloseTo(4.4,12);expect(out.duration).toBeCloseTo(14.8,12);
+ p.tracks.push({...p.tracks[0],id:'other',locked:true,segments:[{...p.tracks[0].segments[2],id:'later',trackId:'other',linkGroup:undefined}]});expect(()=>rippleTrim(p,['a'],'right',-.2,sources)).toThrow('locked');p.tracks.pop();
+ p.tracks[0].rippleEnabled=false;expect(()=>rippleTrim(p,['b'],'left',.2,sources)).toThrow('scope');p.tracks[0].rippleEnabled=true;
+ p.transcript=[{id:'cue',start:9.7,end:10.1,text:'speech'}];expect(()=>rippleTrim(p,['b'],'right',-.2,sources)).toThrow('cueBoundary');p.transcript=undefined;
+ expect(()=>rippleTrim(p,['b'],'right',-4.8,sources)).toThrow('handles');expect(()=>rippleTrim(p,['b'],'left',-8,sources)).toThrow('handles');
+});
+it('retimes aligned surviving words after shortening and invalidates newly revealed speech',()=>{
+ const p=slideBlendFixture();p.transcript=[{id:'cue',start:11,end:12,text:'Hallo',words:[{id:'word',start:11,end:12,text:'Hallo'}]}];p.transcriptLayout=speechLayout(p);
+ const shorter=rippleTrim(p,['b'],'right',-.2,sources);expect(shorter.transcript![0].words![0].start).toBe(10.8);expect(shorter.transcriptLayout).toEqual(speechLayout(shorter));
+ const longer=rippleTrim(p,['b'],'right',.2,sources);expect(()=>deleteSpokenWord(longer,'word')).toThrow('spoken.stale');
+});
