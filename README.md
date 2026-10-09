@@ -277,3 +277,8 @@ Local 0.7.3 extends native CLI racks with bit crushing and ring modulation.
 It also fixes their GUI processing: bit crushing keeps silence at zero, and
 ring modulation now has a working wet/dry control. Delay, chorus, reverb,
 oversampled distortion and compression still require GUI rendering.
+
+Local 0.7.4 adds native CLI delay and chorus with stereo tails and bounded delay
+buffers, checked against actual macOS WebKit rendering. Reverb, oversampled
+distortion and compression still require GUI export. See the reusable DSP
+comparison instructions in `docs/MEDIA_WORKSPACE.md`.

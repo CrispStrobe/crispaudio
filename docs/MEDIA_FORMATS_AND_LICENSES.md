@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.3
+# Formats and licensing — local 0.7.4
 
 ## Current GUI
 
@@ -73,12 +73,17 @@ rendering uses the global backend policy; picture JSON export options are retain
 CLI project mixing now streams to **48 kHz, stereo, 32-bit float WAV** using
 Apache-2.0 Hound and MIT DSP. It supports linked mono/stereo sources, source
 trims/offsets, overlaps, mute/solo, gains, pan, track/clip fade curves, gain
-automation and enabled low/high-pass, bit-crusher and ring-modulator effects at
-clip, track and master level.
+automation and enabled low/high-pass, bit-crusher, ring-modulator, delay and
+chorus effects at clip, track and master level.
 Filter resonance and pan follow Web Audio definitions; fades match the GUI's
 sampled ramp schedule. Ring modulation uses the project clock and a true wet/dry
 blend; bit crushing preserves silence and interpolates the GUI waveshaper curve.
-Other enabled effects (delay, chorus, reverb, distortion and compressor) still
+Delay and chorus include fractional delay interpolation and tails within the
+chosen canvas. Delay feedback timing follows measured macOS WebKit behavior;
+other browser engines may differ. Chorus preserves the GUI's two wet delay lines
+and uses the project clock for modulation. All audible racks share a 64 MiB
+delay-buffer limit and a 1024-enabled-effect limit; larger racks fail explicitly.
+Other enabled effects (reverb, distortion and compressor) still
 fail explicitly; use GUI export.
 
 Native 48 kHz PCM WAVs (8/16/24/32-bit integer or 32-bit float) are read directly.

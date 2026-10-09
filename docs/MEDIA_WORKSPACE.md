@@ -233,7 +233,7 @@ preview/native/FFmpeg effects are approximate equivalents; page peel is a shaded
 2D fold. These desktop changes do not implement video composition on iOS.
 
 
-## Native linked-project CLI export (local 0.7.3)
+## Native linked-project CLI export (local 0.7.4)
 
 The installed local command is `~/Applications/crispaudio-cli-local`. Save a linked
 project from the desktop app so its source paths remain accessible, then run:
@@ -246,10 +246,41 @@ project from the desktop app so its source paths remain accessible, then run:
 The first command streams the full-clock 48 kHz float WAV mix. The second creates
 that mix in an owned temporary folder and exports the saved video in/out range.
 Solo, mute, pan, gains, automation, overlaps and fade ramps retain their project
-meaning. Low/high-pass, bit-crusher and ring-modulator effects work at clip, track
-and master level. Ring modulation now correctly blends dry/carrier signals; the
+meaning. Low/high-pass, bit-crusher, ring-modulator, delay and chorus effects work
+at clip, track and master level. Ring modulation now correctly blends dry/carrier signals; the
 bit crusher keeps silence at zero rather than introducing DC bias. Other enabled
 FX require GUI rendering and fail explicitly in the CLI. Native mode never
 switches to FFmpeg. Select compatibility explicitly for an unsupported native
 input/video codec; its audio mixer has narrower support. Audio output currently
 requires a `.wav` filename. Source media and the project file are never rewritten.
+
+Delay and chorus retain their tails inside the chosen duration. Extend DUR before
+export if you want the full decay past the last clip. Clip fades apply after clip
+FX; a fade ending at zero also silences that clip's later FX tail. Track FX apply
+after the track envelope. Delay feedback matches measured macOS WebKit timing,
+including its 128-frame feedback step; timing on other browser engines can differ.
+Chorus sums its two wet delay lines, as the GUI does. Native racks use at most
+64 MiB of delay-buffer state and 1024 enabled effects across the audible project.
+Reverb, oversampled distortion and compression still require GUI export.
+
+### Compare native DSP with WebKit
+
+`scripts/test-native-effects.mjs` generates temporary mono/stereo fixtures, renders
+the same saved project through the CLI and actual `TimelineEngine`, and compares
+float PCM directly. It tests all three racks, overlaps, delayed starts, pan,
+automation, fades, maximum delay, modulation depths and wet/dry endpoints.
+It needs a separately built CLI, a running Vite server and optional Playwright
+with WebKit installed; it never imports your project or changes app autosave.
+
+```sh
+npm run dev -- --host 127.0.0.1 --port 5190
+# In another terminal; build the CLI into its own target, not the Tauri target:
+CARGO_TARGET_DIR=media/target-cli cargo build --manifest-path media/Cargo.toml --bin crispaudio
+CRISPAUDIO_TEST_CLI="$PWD/media/target-cli/debug/crispaudio" node scripts/test-native-effects.mjs
+```
+
+Playwright can be provided through `CRISPAUDIO_PLAYWRIGHT_MODULE` (absolute path
+to its `index.mjs`) without adding it to application dependencies. Optionally set
+`CRISPAUDIO_WEBKIT_EXECUTABLE` or `CRISPAUDIO_TEST_URL`. The harness prints its
+owned temporary folder with saved PCM, projects and `results.json`. It disables
+FFmpeg/FFprobe for native renders and needs neither for PCM comparison.

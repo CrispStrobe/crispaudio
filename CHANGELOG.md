@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.3]
+## [Unreleased — local version 0.7.4]
+
+- Add native CLI delay and chorus at clip, track and master level, with bounded
+  stereo delay lines, fractional interpolation and tails inside the chosen canvas.
+- Match measured macOS WebKit delay feedback timing and absolute-time chorus LFOs;
+  preserve the GUI's two-line chorus mix. Keep reverb/distortion/compressor explicit.
+- Bound all audible racks to 64 MiB of delay-buffer state and 1024 enabled effects.
+- Add a reusable real-WebKit/native PCM comparison harness requiring no FFmpeg,
+  plus impulse, tail, stereo, fractional-delay and allocation-limit regressions.
+
+## [Local version 0.7.3]
 
 - Add native CLI bit crushing and ring modulation at clip, track and master level.
   Keep oscillator phase on the project clock, including clips that start later.

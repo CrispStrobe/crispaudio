@@ -176,8 +176,88 @@ impl Biquad {
         out
     }
 }
+// State allocation is independent of project duration and capped across all racks.
+const MAX_EFFECT_STATE: usize = 64 * 1024 * 1024;
+struct EffectBudget {
+    bytes: usize,
+    count: usize,
+}
+impl EffectBudget {
+    fn reserve(&mut self, bytes: usize) -> Result<()> {
+        if self.count >= 1024 || bytes > MAX_EFFECT_STATE - self.bytes {
+            return Err("Native effect rack exceeds 1024 effects or 64 MiB state budget".into());
+        }
+        self.count += 1;
+        self.bytes += bytes;
+        Ok(())
+    }
+}
+struct Delay {
+    history: Vec<[f32; 2]>,
+    cursor: usize,
+    frames: f64,
+    feedback_history: [[f32; 2]; 128],
+    feedback_cursor: usize,
+    feedback: f64,
+    mix: f64,
+}
+impl Delay {
+    fn at(&mut self, input: [f64; 2]) -> [f64; 2] {
+        let whole = self.frames.floor() as usize;
+        let fraction = self.frames - whole as f64;
+        let length = self.history.len();
+        // WebKit feeds the cyclic branch from the preceding render quantum.
+        // Its direct input still uses the requested delay, including zero.
+        for ch in 0..2 {
+            self.history[self.cursor][ch] = (input[ch]
+                + self.feedback_history[self.feedback_cursor][ch] as f64 * self.feedback)
+                as f32;
+        }
+        let near = self.history[(self.cursor + length - whole) % length];
+        let far = self.history[(self.cursor + length - whole - 1) % length];
+        let mut output = [0.0; 2];
+        for ch in 0..2 {
+            let delayed = (near[ch] as f64 + (far[ch] as f64 - near[ch] as f64) * fraction) as f32;
+            self.feedback_history[self.feedback_cursor][ch] = delayed;
+            output[ch] = input[ch] * (1.0 - self.mix) + delayed as f64 * self.mix;
+        }
+        self.feedback_cursor = (self.feedback_cursor + 1) % 128;
+        self.cursor = (self.cursor + 1) % length;
+        output
+    }
+}
+struct Chorus {
+    history: Vec<[f32; 2]>,
+    cursor: usize,
+    rates: [f64; 2],
+    depth: f32,
+    mix: f64,
+}
+impl Chorus {
+    fn at(&mut self, input: [f64; 2], frame: u32) -> [f64; 2] {
+        self.history[self.cursor] = input.map(|v| v as f32);
+        let mut wet = [0.0; 2];
+        for (rate, base) in self.rates.into_iter().zip([0.02f32, 0.03f32]) {
+            let phase = std::f64::consts::TAU * rate * frame as f64 / RATE;
+            let seconds = base + phase.sin() as f32 * self.depth;
+            let delay = seconds.clamp(0.0, 0.1) as f64 * RATE;
+            let whole = delay.floor() as usize;
+            let fraction = delay - whole as f64;
+            let length = self.history.len();
+            let near = self.history[(self.cursor + length - whole) % length];
+            let far = self.history[(self.cursor + length - whole - 1) % length];
+            for ch in 0..2 {
+                wet[ch] += near[ch] as f64 + (far[ch] as f64 - near[ch] as f64) * fraction;
+            }
+        }
+        self.cursor = (self.cursor + 1) % self.history.len();
+        std::array::from_fn(|ch| input[ch] * (1.0 - self.mix) + wet[ch] * self.mix)
+    }
+}
 enum Effect {
     Filter(Biquad),
+    Delay(Box<Delay>),
+    Chorus(Chorus),
     BitCrush { levels: f64, mix: f64 },
     RingMod { frequency: f64, mix: f64 },
 }
@@ -185,6 +265,8 @@ impl Effect {
     fn at(&mut self, input: [f64; 2], frame: u32) -> [f64; 2] {
         match self {
             Self::Filter(filter) => filter.at(input),
+            Self::Delay(delay) => delay.at(input),
+            Self::Chorus(chorus) => chorus.at(input, frame),
             Self::BitCrush { levels, mix } => input.map(|v| {
                 // Web Audio interpolates the 65536-entry Float32 waveshaper
                 // table; rounding the input directly gives different edges.
@@ -205,7 +287,7 @@ impl Effect {
         }
     }
 }
-fn filters(effects: &Value) -> Result<Vec<Effect>> {
+fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
     let mut out = Vec::new();
     if effects.is_null() {
         return Ok(out);
@@ -214,6 +296,40 @@ fn filters(effects: &Value) -> Result<Vec<Effect>> {
     for effect in effects.iter().filter(|e| e["enabled"] == true) {
         let params = &effect["params"];
         let kind = effect["type"].as_str().ok_or("Missing effect type")?;
+        if kind == "chorus" {
+            let length = (RATE * 0.1) as usize + 2;
+            budget.reserve(length * std::mem::size_of::<[f32; 2]>())?;
+            let rate = finite(params, "rate", Some(1.5))?;
+            out.push(Effect::Chorus(Chorus {
+                history: vec![[0.0; 2]; length],
+                cursor: 0,
+                rates: [
+                    rate.clamp(-RATE / 2.0, RATE / 2.0) as f32 as f64,
+                    (rate * 1.2).clamp(-RATE / 2.0, RATE / 2.0) as f32 as f64,
+                ],
+                depth: (finite(params, "depth", Some(0.5))?.clamp(0.0, 1.0) * 0.01) as f32,
+                mix: finite(params, "mix", Some(0.3))?.clamp(0.0, 1.0) as f32 as f64,
+            }));
+            continue;
+        }
+        if kind == "delay" {
+            // Match measured WebKit direct delay and cyclic feedback latency.
+            let time = finite(params, "time", Some(0.3))?.clamp(0.0, 2.0) as f32 as f64;
+            let frames = time * RATE;
+            let length = frames.ceil() as usize + 2;
+            budget.reserve((length + 128) * std::mem::size_of::<[f32; 2]>())?;
+            out.push(Effect::Delay(Box::new(Delay {
+                history: vec![[0.0; 2]; length],
+                cursor: 0,
+                frames,
+                feedback_history: [[0.0; 2]; 128],
+                feedback_cursor: 0,
+                feedback: finite(params, "feedback", Some(0.4))?.clamp(0.0, 0.95) as f32 as f64,
+                mix: finite(params, "mix", Some(0.3))?.clamp(0.0, 1.0) as f32 as f64,
+            })));
+            continue;
+        }
+        budget.reserve(0)?;
         if kind == "bitcrush" || kind == "ringmod" {
             let mix = finite(params, "mix", Some(0.5))?.clamp(0.0, 1.0) as f32 as f64;
             out.push(if kind == "bitcrush" {
@@ -362,7 +478,8 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
         .filter(|p| !p.as_os_str().is_empty())
         .unwrap_or(Path::new("."));
     let directory = tempfile::tempdir_in(parent).map_err(|e| e.to_string())?;
-    let mut master_filters = filters(&project["masterEffects"])?;
+    let mut effect_budget = EffectBudget { bytes: 0, count: 0 };
+    let mut master_filters = filters(&project["masterEffects"], &mut effect_budget)?;
     let solo = tracks.iter().any(|t| t["solo"] == true);
     let mut buses = Vec::new();
     let mut prepared: HashMap<String, (PathBuf, bool, u32)> = HashMap::new();
@@ -385,7 +502,7 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
         let mut start = f64::INFINITY;
         let mut stop = 0.0f64;
         let mut mono = true;
-        let track_filters = filters(&track["effects"])?;
+        let track_filters = filters(&track["effects"], &mut effect_budget)?;
         let automation = Automation::parse(&track["automation"])?;
         for c in segments {
             clip_count += 1;
@@ -409,7 +526,7 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
                 return Err("Audio clip is shorter than one sample".into());
             }
             let envelope = Envelope::parse(c, length)?;
-            let clip_filters = filters(&c["effects"])?;
+            let clip_filters = filters(&c["effects"], &mut effect_budget)?;
             let clip_gain = positive(c, "gain", Some(1.0))?;
             let source_id = c["sourceId"].as_str().ok_or("Missing audio source ID")?;
             if !prepared.contains_key(source_id) {
@@ -594,6 +711,102 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+    fn impulse(folder: &Path) -> PathBuf {
+        let path = source(folder, 2, &[0.0, 0.0]);
+        let mut writer = WavWriter::create(
+            &path,
+            WavSpec {
+                channels: 2,
+                sample_rate: 48000,
+                bits_per_sample: 32,
+                sample_format: SampleFormat::Float,
+            },
+        )
+        .unwrap();
+        writer.write_sample(1.0f32).unwrap();
+        writer.write_sample(-0.5f32).unwrap();
+        for _ in 1..4800 {
+            writer.write_sample(0.0f32).unwrap();
+            writer.write_sample(0.0f32).unwrap();
+        }
+        writer.finalize().unwrap();
+        path
+    }
+    #[test]
+    fn delay_retains_stereo_echo_tails_after_a_one_frame_clip() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = impulse(folder.path());
+        for (time, first, next) in [(0.0, 0, 128), (0.001, 48, 224)] {
+            let mut doc = project(&input);
+            let clip = &mut doc["project"]["tracks"][0]["segments"][0];
+            clip["duration"] = json!(1.0 / RATE);
+            clip["effects"] = json!([{"type":"delay","enabled":true,"params":{"time":time,"feedback":0.5,"mix":1}}]);
+            let target = folder.path().join(format!("delay-{time}.wav"));
+            render(&doc, target.to_str().unwrap()).unwrap();
+            let pcm = output(&target);
+            assert!((pcm[first * 2] - 1.0).abs() < 1e-5);
+            assert!((pcm[next * 2] - 0.5).abs() < 1e-5);
+            assert!((pcm[next * 2 + 1] + 0.25).abs() < 1e-5);
+            assert_eq!(pcm.len(), 7680); // tails stay within the chosen canvas
+        }
+    }
+    #[test]
+    fn fractional_delay_interpolates_impulses() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = impulse(folder.path());
+        let mut doc = project(&input);
+        doc["project"]["masterEffects"] =
+            json!([{"type":"delay","enabled":true,"params":{"time":0.0001,"feedback":0,"mix":1}}]);
+        let target = folder.path().join("fractional.wav");
+        render(&doc, target.to_str().unwrap()).unwrap();
+        let pcm = output(&target);
+        assert!((pcm[8] - 0.2).abs() < 1e-6);
+        assert!((pcm[10] - 0.8).abs() < 1e-6);
+        assert_eq!(pcm[12], 0.0);
+    }
+    #[test]
+    fn chorus_has_two_delay_lines_and_preserves_dry_endpoint() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = impulse(folder.path());
+        for mix in [0.0, 1.0] {
+            let mut doc = project(&input);
+            let clip = &mut doc["project"]["tracks"][0]["segments"][0];
+            clip["duration"] = json!(1.0 / RATE);
+            clip["effects"] =
+                json!([{"type":"chorus","enabled":true,"params":{"rate":0,"depth":0,"mix":mix}}]);
+            let target = folder.path().join(format!("chorus-{mix}.wav"));
+            render(&doc, target.to_str().unwrap()).unwrap();
+            let pcm = output(&target);
+            assert_eq!(pcm[0], 1.0 - mix as f32);
+            for frame in [960, 1440] {
+                assert!((pcm[frame * 2] - mix as f32).abs() < 1e-4);
+                assert!((pcm[frame * 2 + 1] + mix as f32 * 0.5).abs() < 1e-4);
+            }
+        }
+    }
+    #[test]
+    fn effect_state_and_count_limits_fail_before_allocating() {
+        let delay = json!([{"type":"delay","enabled":true,"params":{"time":2}}]);
+        let mut budget = EffectBudget {
+            bytes: MAX_EFFECT_STATE - 100,
+            count: 0,
+        };
+        assert!(filters(&delay, &mut budget).is_err());
+        assert_eq!(budget.bytes, MAX_EFFECT_STATE - 100);
+        assert_eq!(budget.count, 0);
+        let mut budget = EffectBudget {
+            bytes: 0,
+            count: 1024,
+        };
+        assert!(filters(&delay, &mut budget).is_err());
+        assert_eq!(budget.bytes, 0);
+        assert!(filters(
+            &json!([{"type":"delay","enabled":false,"params":{"time":"invalid"}}]),
+            &mut budget
+        )
+        .unwrap()
+        .is_empty());
     }
     #[test]
     fn bitcrusher_preserves_silence_and_blends_quantized_pcm() {

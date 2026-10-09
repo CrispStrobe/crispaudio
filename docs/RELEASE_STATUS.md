@@ -561,3 +561,53 @@ No codec dependencies or licensing scope changed. Native delay, chorus, reverb,
 oversampled distortion and compressor remain unsupported and fail explicitly;
 GUI Web Audio handles them. Disk-paged GUI rendering, a permissive-only WebM
 backend and iOS picture export are still unfinished.
+
+## Local native delay/chorus build 0.7.4
+
+Installed, ad-hoc signed and launched `~/Applications/CrispAudio-local.app` 0.7.4;
+updated and verified the signed standalone CLI too. Native WebKit state was backed
+up and the autosaved arrangement was confirmed unchanged. No release tag,
+TestFlight upload or Apple submission was made.
+
+Native clip/track/master racks now include delay and chorus. Delay preserves
+fractional timing and the measured macOS WebKit feedback-branch latency of 128
+frames; its direct delay is not clamped to that minimum. An impulse through the
+actual GUI graph at zero delay appears immediately, then repeats at frame 128;
+a 48-frame delay first appears at frame 48 and repeats at frame 224. This is a
+measured WebKit compatibility choice, not a claim that all Web Audio engines
+have identical cyclic timing. Chorus retains the two wet delay lines and their
+absolute render-context LFO phases. Existing GUI effects/settings are unchanged.
+Tails continue inside the chosen canvas; clip fades still follow clip FX.
+All audible racks have a 64 MiB delay-buffer budget and a 1024-enabled-effect
+limit, checked before buffer allocation. Reverb/distortion/compressor remain
+explicit native errors and work through GUI Web Audio export.
+
+Validation: 27 media Rust tests and one CLI parser test passed; six older desktop
+integration tests remain opt-in and were not rerun for this DSP-only change.
+New regressions verify one-frame clip tails, stereo echoes, fractional interpolation,
+chorus dry/wet endpoints and allocation/count limits. ESLint, frontend TypeScript
+compilation/production bundling and the debug macOS app build passed. Full frontend
+1,284-test coverage last ran in 0.7.3; that commit's desktop and iOS CI both passed.
+This build changes native DSP, documentation and version labels; its main push
+triggers fresh CI.
+
+`scripts/test-native-effects.mjs` is a reusable 27-case comparison with actual
+WebKit `TimelineEngine` rendering: stereo/mono, all three racks, delayed starts,
+overlaps, pan, sampled fades, automation, maximum two-second delay and modulation.
+FFmpeg/FFprobe are disabled, and WAV/extensible float PCM is read directly.
+The largest measured sample error/RMS was 8.35e-7/8.82e-8 for delay,
+3.56e-5/1.07e-6 for chorus, 3.51e-5/3.35e-7 for bit crushing and
+3.06e-7/2.72e-8 for ring modulation. Fixture results do not establish universal
+sample identity. The harness retains its owned temporary fixtures; an archived
+copy lives outside git at `~/code/transcripts/2026-Studienwoche/CrispAudio-validation/ux/native-effects-074/`.
+
+A real interview section, source time 30–38 seconds, rendered with clip delay
+and master chorus in 0.77 seconds (0.68 user / 0.05 system), about 10.4 times faster
+than playback, in the debug CLI. Peak CLI RSS was 4,440,064 bytes (4.23 MiB).
+This single warm-cache run uses directly decoded 48 kHz WAV and excludes OS cache
+and other processes; it is not a general codec or release-build benchmark.
+Its derived project and WAV are outside git under `ux/real-interview-074-41c0dujw/`
+in that same private validation folder. Original sources/projects were unchanged.
+
+No codec dependencies or licensing scope changed. GUI disk-paged rendering,
+permissive-only WebM and iOS picture export remain unfinished.

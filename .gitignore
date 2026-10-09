@@ -38,3 +38,6 @@ pnpm-debug.log*
 .env*.local
 
 media/target/
+
+# Standalone CLI comparison build (keep separate from the Tauri target)
+media/target-cli/

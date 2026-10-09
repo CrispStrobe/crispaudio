@@ -213,4 +213,16 @@ absolute render-context time even for later clips. BitCrush uses symmetric
 quantisation so its even-length interpolated curve maps zero to zero. Native
 waveshaping interpolates the same 65536-entry Float32 curve, not a direct step.
 The old GUI DC bias and mix bug are intentionally corrected for saved settings.
-Delay/chorus/reverb/distortion/compressor remain explicit native errors.
+Delay/chorus were added in 0.7.4; reverb/distortion/compressor remain explicit native errors.
+
+## Native delay/chorus 0.7.4
+
+Delay's requested time remains independent of WebKit's measured 128-frame
+feedback-branch step. Do not replace this with a minimum 128-frame direct delay;
+impulse tests and actual WebKit comparisons catch that audible mismatch. Chorus
+uses float AudioParam values, two wet delay lines and absolute render-clock LFO
+phase. Maintain 64 MiB total delay-buffer / 1024 enabled-effect limits before
+allocation. Box the delay variant to keep other Effect values small. The portable
+`scripts/test-native-effects.mjs` compares all supported racks with real WebKit,
+reads float/extensible WAV directly and keeps fixtures in owned temporary folders.
+Use a separate CARGO_TARGET_DIR for its CLI to avoid replacing the Tauri binary.
