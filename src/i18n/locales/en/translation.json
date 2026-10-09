@@ -39,7 +39,8 @@
     "Voice": "Voice",
     "Window": "Window",
     "Zoom In Timeline": "Zoom In Timeline",
-    "Zoom Out Timeline": "Zoom Out Timeline"
+    "Zoom Out Timeline": "Zoom Out Timeline",
+    "Export Selected Audio Range…": "Export selected audio range…"
   },
   "app": {
     "name": "CrispAudio",
@@ -974,7 +975,9 @@
     "lock": "Lock track edits",
     "unlock": "Unlock track edits",
     "lockedNotice": "Unlock “{{name}}” before changing its clips.",
-    "rangeHelp": "Drag the ruler to select a time range. Drag its edges or enter exact start/end times. Play range uses this range; Loop repeats it. Clip selection stays separate."
+    "rangeHelp": "Drag the ruler to select a time range. Drag its edges or enter exact start/end times. Play range uses this range; Loop repeats it. Clip selection stays separate.",
+    "exportAudio": "Export selected audio range",
+    "useForVideo": "Use selected time range"
   },
   "rangeEdits": {
     "title": "Edit time range",

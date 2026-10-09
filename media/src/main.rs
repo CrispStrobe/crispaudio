@@ -51,6 +51,11 @@ enum Commands {
         /// Native AAC bitrate for .aac/.m4a; AAC output defaults to 192 kbps.
         #[arg(long, conflicts_with_all=["video","wav_bit_depth"],value_parser=["96","128","192","256","320"])]
         audio_bitrate_kbps: Option<String>,
+        /// Export bounds on the arrangement clock; omitted means the full mix.
+        #[arg(long)]
+        start: Option<f64>,
+        #[arg(long)]
+        end: Option<f64>,
     },
     /// Export a picture edit JSON {path, clips}; mix uses the edited timeline clock.
     EditVideo {
@@ -160,10 +165,36 @@ fn execute(cli: Cli) -> media::Result<()> {
             video,
             wav_bit_depth,
             audio_bitrate_kbps,
+            start,
+            end,
         } => {
             let mut doc: serde_json::Value =
                 serde_json::from_slice(&std::fs::read(input).map_err(|e| e.to_string())?)
                     .map_err(|e| e.to_string())?;
+            if start.is_some() || end.is_some() {
+                let a = start.unwrap_or(0.0);
+                let b = end.unwrap_or(
+                    doc["project"]["duration"]
+                        .as_f64()
+                        .ok_or("Missing project duration")?,
+                );
+                if !a.is_finite()
+                    || !b.is_finite()
+                    || a < 0.0
+                    || b <= a
+                    || b > doc["project"]["duration"]
+                        .as_f64()
+                        .ok_or("Missing project duration")?
+                {
+                    return Err("Invalid export range".into());
+                }
+                if video {
+                    doc["project"]["video"]["inPoint"] = serde_json::json!(a);
+                    doc["project"]["video"]["outPoint"] = serde_json::json!(b);
+                } else {
+                    doc["renderRange"] = serde_json::json!({"start":a,"end":b});
+                }
+            }
             if video {
                 if let Some(backend) = cli.backend.as_ref() {
                     doc["project"]["video"]["backend"] = serde_json::json!(backend);

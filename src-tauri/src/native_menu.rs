@@ -119,6 +119,7 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
                 enabled && context.content,
                 Some("CmdOrCtrl+Shift+E"),
             )?,
+            &item("export-range", "Export Selected Audio Range…", "Ausgewählten Audiobereich exportieren…", enabled && context.edit_range, None)?,
             &sep()?,
             &Native::close_window(app, None)?,
         ],

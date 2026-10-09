@@ -39,7 +39,8 @@
     "Voice": "Stimme",
     "Window": "Fenster",
     "Zoom In Timeline": "Zeitleiste vergrößern",
-    "Zoom Out Timeline": "Zeitleiste verkleinern"
+    "Zoom Out Timeline": "Zeitleiste verkleinern",
+    "Export Selected Audio Range…": "Ausgewählten Audiobereich exportieren…"
   },
   "app": {
     "name": "CrispAudio",
@@ -974,7 +975,9 @@
     "lock": "Spurbearbeitung sperren",
     "unlock": "Spurbearbeitung entsperren",
     "lockedNotice": "„{{name}}“ entsperren, bevor die Clips geändert werden.",
-    "rangeHelp": "Auf dem Zeitlineal ziehen, um einen Bereich auszuwählen. Die Ränder ziehen oder Anfang und Ende genau eingeben. Bereich abspielen nutzt diesen Bereich; Schleife wiederholt ihn. Die Clipauswahl bleibt erhalten."
+    "rangeHelp": "Auf dem Zeitlineal ziehen, um einen Bereich auszuwählen. Die Ränder ziehen oder Anfang und Ende genau eingeben. Bereich abspielen nutzt diesen Bereich; Schleife wiederholt ihn. Die Clipauswahl bleibt erhalten.",
+    "exportAudio": "Ausgewählten Audiobereich exportieren",
+    "useForVideo": "Ausgewählten Zeitbereich verwenden"
   },
   "rangeEdits": {
     "title": "Zeitbereich bearbeiten",

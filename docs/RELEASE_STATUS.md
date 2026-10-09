@@ -1100,3 +1100,23 @@ shortened arrangement. Originals and source media were untouched. No physical
 iOS claim or new dependency. Older codec integrations were not rerun because
 their implementations were unchanged. Range export, advanced trims, named groups
 and M2–M10 remain outstanding; paging/codecs stay deferred.
+
+## Local 0.8.2 — selected range export (M1 in progress)
+
+Installed/launched signed local app and optimised CLI; one autosave preserved,
+WebKit/JSON backup under `ux/recovery-before-082/`. No Apple submission/tag.
+Explicit selected audio export retains full DSP preroll and crops at rounded
+sample bounds. Native output remains bounded; browser export retains preroll
+AudioBuffer memory. File menu action and EN/DE labels included. Video range
+can explicitly reuse the selected interval; CLI --start/--end covers both media.
+
+95 frontend files / 1316 tests, lint, TS/web build, 44 ordinary Rust media tests,
+three parser tests, release CLI and debug app bundle passed. Native FLAC, AAC
+and M4A opt-in integrations were rerun and passed. Actual WebKit delay-tail range
+export was identical to a full-render slice (1920 frames, maximum error zero).
+The private real interview derivative exported 44–48 seconds as WAV, FLAC, M4A
+and MP4. WAV matched the full-mix PCM slice byte for byte; WAV/FLAC/MP4 measured
+4 seconds. M4A's packet duration was 4.053333 seconds, but reference decoding
+returned exactly 192000 stereo frames / 4 seconds. Original project untouched.
+Seven other opt-in integrations were not rerun. Physical mobile validation and
+advanced trim/groups/mixer/picture-stack milestones remain outstanding.

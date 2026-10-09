@@ -371,3 +371,17 @@ global retiming includes minimumDuration, markers and transcript cues. GUI previ
 the immutable project then commits once, rechecking project identity. CLI range-edit
 and legacy ripple share this helper. Optional scripts/test-range-edits.mjs checks
 the real dialog/undo and native semantic parity without comparing generated IDs.
+
+## Range export 0.8.2
+
+Native transient document.renderRange bounds (not saved project metadata) instruct
+audio_mix to process frames from zero through end, writing only frames >= start.
+Round both boundaries at 48 kHz, reject empty/invalid ranges before staging, and
+size-check output frames. Never seek directly to start: DSP history would change.
+FLAC/AAC encoders validate the cropped WAV's frame count. FFmpeg audio fallback
+rejects renderRange. CLI --start/--end sets transient audio bounds or picture
+In/Out on its document copy. GUI audio action is explicit; video range has a
+reviewed reuse action. TimelineEngine.renderMixRange renders 0→rounded end then
+crops; this browser path still uses preroll memory. Optional WebKit range harness
+checks a delay tail against full-render samples. Never claim packet-based M4A
+duration is decoded length; packet padding may remain while decode is exact.

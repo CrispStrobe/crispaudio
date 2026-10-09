@@ -353,7 +353,9 @@ pub fn apply(p: &Value, op: &Value) -> Result<Value> {
         v.remove("outPoint");
     }
     if global {
-        if let Some(floor)=p["minimumDuration"].as_f64(){out["minimumDuration"]=json!(retime(floor));}
+        if let Some(floor) = p["minimumDuration"].as_f64() {
+            out["minimumDuration"] = json!(retime(floor));
+        }
         if let Some(markers) = p["markers"].as_array() {
             out["markers"] = json!(markers
                 .iter()

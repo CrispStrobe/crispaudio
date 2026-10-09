@@ -164,6 +164,19 @@ export class TimelineEngine {
 
   // ── Offline render ─────────────────────────────────────────────────────────
 
+  /** Preserve DSP history at range start, then crop at exact sample boundaries. */
+  async renderMixRange(project:TimelineProject,start:number,end:number,signal?:AbortSignal):Promise<AudioBuffer>{
+    signal?.throwIfAborted();
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>project.duration)throw new Error('Invalid audio export range');
+    const first=Math.round(start*project.sampleRate),last=Math.round(end*project.sampleRate);
+    if(last<=first)throw new Error('Empty audio export range');
+    const full=await this.renderToBuffer(project,0,last/project.sampleRate,signal);
+    signal?.throwIfAborted();
+    const result=this.ctx.createBuffer(full.numberOfChannels,last-first,project.sampleRate);
+    for(let ch=0;ch<full.numberOfChannels;ch++)result.copyToChannel(full.getChannelData(ch).subarray(first,last),ch);
+    return result;
+  }
+
   /**
    * Render the project (or a time range) to an AudioBuffer offline.
    * Useful for export and preview generation.

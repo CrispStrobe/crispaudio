@@ -465,6 +465,12 @@ pub fn render_audio(doc: &Value, output: &str) -> Result<()> {
     render_audio_ffmpeg(doc, output)
 }
 fn render_audio_ffmpeg(doc: &Value, output: &str) -> Result<()> {
+    if doc.get("renderRange").is_some() {
+        return Err(
+            "Sample-bounded range mixing requires the native mixer; select --backend apple or auto"
+                .into(),
+        );
+    }
     let project = &doc["project"];
     let duration = number(project, "duration")?;
     if duration <= 0.0 {

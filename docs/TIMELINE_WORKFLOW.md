@@ -254,7 +254,7 @@ Lock status persists and Undo/Redo restores complete historical snapshots.
 Explicitly loading/resetting a project remains available.
 
 CLI `edit-project` recipes also reject edits that change locked audio/picture
-clips. Rendering is unaffected by locks. Range export and advanced trim tools
+clips. Rendering is unaffected by locks. Advanced trim tools
 follow in the next M1 slices; see PLAN.md. The optional actual
 WebKit check is `scripts/test-timeline-range.mjs`, using CRISPAUDIO_TEST_URL,
 CRISPAUDIO_PLAYWRIGHT_MODULE and CRISPAUDIO_WEBKIT_EXECUTABLE as needed.
@@ -290,3 +290,32 @@ all lanes). Legacy `ripple` uses extract with that scope. `edit-project` writes 
 new file and refuses to overwrite one. The optional WebKit dialog/undo/parity
 check is `scripts/test-range-edits.mjs`; set CRISPAUDIO_CLI for native parity and
 CRISPAUDIO_PROJECT to check an existing interview without modifying it.
+
+## Export a selected range — local 0.8.2
+
+Select a range, then use **Export selected audio range** in the main toolbar
+or macOS File menu. It uses the current export format/quality setting and adds
+the range bounds to the suggested filename. Mix gain, mute/solo, automation and
+effects retain their usual meaning. Normal Export Mix still exports everything.
+
+Export processes the timeline from zero to retain effect history, then writes
+only the requested sample interval. Native Mac WAV/FLAC/AAC/M4A output stays
+bounded in memory; browser/in-memory export renders through the range end and
+crops its AudioBuffer, so a late range still requires preroll time and memory.
+Existing AAC priming/container behavior remains. No extra fade is applied.
+
+For picture, open **Video range**, choose **Use selected time range**, review
+In/Out, then use the existing video export. This explicit choice is saved; audio
+edit ranges do not silently replace picture bounds.
+
+```sh
+crispaudio --backend apple render-project --input interview.crispaudio \
+  --output passage.wav --start 44 --end 48
+crispaudio --backend apple render-project --input interview.crispaudio \
+  --output passage.mp4 --video --start 44 --end 48
+```
+
+Audio CLI bounds require the native mixer; the optional FFmpeg compatibility
+mixer rejects them rather than exporting the full timeline by mistake. Picture
+uses its existing frame-bounded composition behavior. Bounds are export-only;
+they do not change the source project.

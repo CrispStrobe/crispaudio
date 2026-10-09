@@ -9,6 +9,12 @@ import type { TimelineProject } from '../../../src/types/audio';
 const document = linkedRenderDocument({ id: 'p', name: 'empty', sampleRate: 48000,
   duration: 1, tracks: [], masterEffects: [] } as TimelineProject, new Map())!;
 beforeEach(() => { vi.resetAllMocks(); });
+it('passes explicit transient bounds without changing the saved project',async()=>{
+ vi.mocked(save).mockResolvedValue('/range.wav');
+ await exportLinkedAudio(document,'range.wav','wav',24,new AbortController().signal,vi.fn(),192,{start:.2,end:.6});
+ expect(invoke).toHaveBeenCalledWith('export_linked_project_wav',{document:{...document,renderRange:{start:.2,end:.6}},output:'/range.wav',bitDepth:24,jobId:expect.any(String)});
+ expect(document).not.toHaveProperty('renderRange');
+});
 it('saves directly with the chosen bit depth after selecting the destination', async () => {
   vi.mocked(save).mockResolvedValue('/mix.wav'); const stage = vi.fn();
   await expect(exportLinkedAudio(document, 'mix.wav', 'wav', 24, new AbortController().signal, stage)).resolves.toBe(true);

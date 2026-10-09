@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.1]
+## [Unreleased — local version 0.8.2]
+
+- Add explicit selected audio-range export and a macOS File menu action.
+- Preserve DSP history before the range, with sample-bounded native output and
+  Web Audio cropping; normal mix exports remain full length.
+- Add CLI render-project --start/--end for audio and picture, and a GUI action
+  to reuse the selected time range as picture export In/Out.
+
+## [Local version 0.8.1]
 
 - Add reviewed range lift, extract and insert-gap with audio/picture scope,
   persistent ripple participation and a resulting-duration preview.

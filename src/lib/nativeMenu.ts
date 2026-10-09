@@ -9,7 +9,7 @@ import i18n from '../i18n';
 export const textEditing = () => document.activeElement instanceof HTMLElement&&!!document.activeElement.closest('textarea,[contenteditable="true"],input:not([type="range"]):not([type="checkbox"]):not([type="button"]):not([type="file"])');
 export const menuBlocked = () => useUIStore.getState().activeModal!==null||!!document.querySelector('[role="dialog"],[data-timeline-help="true"]');
 const editActions=new Set(['undo','redo','cut','copy','paste','delete','select-all','deselect','split']);
-const timelineActions=new Set(['new','open','save','import','export',...editActions,'add-track','zoom-in','zoom-out','fit','height-up','height-down','workspace','snap','play','stop','start','end','loop','range-mode','play-range','clear-range','help']);
+const timelineActions=new Set(['new','open','save','import','export','export-range',...editActions,'add-track','zoom-in','zoom-out','fit','height-up','height-down','workspace','snap','play','stop','start','end','loop','range-mode','play-range','clear-range','help']);
 type Handler=(action:string)=>void|Promise<void>;
 let handler:Handler|undefined,pending:string|undefined,busy=false;
 export const nativeMenuBusy=()=>busy;

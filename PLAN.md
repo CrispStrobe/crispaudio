@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-09, during local 0.8.1 implementation. This section is the current plan.
+Updated 2026-10-09, during local 0.8.2 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -87,8 +87,12 @@ participation, linked scope checks, automation boundary values and explicit
 canvas/marker/transcript retiming, with GUI/CLI parity and undo validation.
 Unaffected picture transitions remain; boundaries through blends or transcript
 cues require review rather than silently damaging them. M1 is not complete:
-range export, advanced transition trims, rolling/ripple trims, edit navigation
+advanced transition trims, rolling/ripple trims, edit navigation
 and named groups remain.
+Local 0.8.2 adds explicit selected audio-range export with full DSP preroll,
+native bounded output, CLI audio/video export bounds and a reviewed action to
+reuse the selected range for picture export. Real interview WAV samples match
+the full mix slice; WebKit preserves delay history and exact sample counts.
 Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
 seamless musical looping. Paging and new codec work remain deferred.
 

@@ -533,8 +533,20 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
     }
     let project = &doc["project"];
     let duration = positive(project, "duration", None)?;
-    let total = frames(duration)?;
-    if total == 0 || total as u64 * 2 * (pcm_depth.unwrap_or(32) as u64 / 8) + 128 > u32::MAX as u64
+    // Render from zero to preserve delay/reverb/filter/automation history;
+    // publish only the requested sample interval. Export bounds are transient.
+    let (first, total) = if let Some(range) = doc.get("renderRange") {
+        let start = positive(range, "start", None)?;
+        let end = positive(range, "end", None)?;
+        if end <= start || end > duration {
+            return Err("Invalid audio export range".into());
+        }
+        (frames(start)?, frames(end)?)
+    } else {
+        (0, frames(duration)?)
+    };
+    if total <= first
+        || (total - first) as u64 * 2 * (pcm_depth.unwrap_or(32) as u64 / 8) + 128 > u32::MAX as u64
     {
         return Err("Empty arrangement or output exceeds standard WAV size limits".into());
     }
@@ -756,6 +768,9 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
                 if !value.is_finite() {
                     return Err("Audio mix exceeded finite float range".into());
                 }
+                if block + (i as u32) < first {
+                    continue;
+                }
                 if let Some(depth) = pcm_depth {
                     writer
                         .write_sample(pcm_sample(value, depth))
@@ -808,6 +823,36 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+    #[test]
+    fn range_matches_full_mix_slice_including_effect_history() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = source(folder.path(), 1, &[0.2]);
+        let mut doc = project(&input);
+        doc["project"]["tracks"][0]["automation"] =
+            json!([{"time":0,"value":0.1},{"time":0.08,"value":0.9}]);
+        doc["project"]["masterEffects"] = json!([{"type":"delay","enabled":true,"params":{"time":0.01,"feedback":0.4,"mix":0.5}},{"type":"compressor","enabled":true,"params":{"threshold":-24,"ratio":3,"attack":0.005,"release":0.1,"knee":6}}]);
+        let full = folder.path().join("full.wav");
+        render(&doc, full.to_str().unwrap()).unwrap();
+        doc["renderRange"] = json!({"start":0.03001,"end":0.07001});
+        let range = folder.path().join("range.wav");
+        render(&doc, range.to_str().unwrap()).unwrap();
+        assert_eq!(
+            output(&range),
+            output(&full)
+                [frames(0.03001).unwrap() as usize * 2..frames(0.07001).unwrap() as usize * 2]
+        );
+        for bounds in [
+            json!({"start":-1,"end":0.07}),
+            json!({"start":0.04,"end":0.03}),
+            json!({"start":0,"end":0.2}),
+            json!({"start":0.03,"end":0.030001}),
+        ] {
+            doc["renderRange"] = bounds;
+            let target = folder.path().join("invalid.wav");
+            assert!(render(&doc, target.to_str().unwrap()).is_err());
+            assert!(!target.exists());
+        }
     }
     #[test]
     fn pcm_depths_preserve_gui_rounding_silence_polarity_and_clip_headroom() {

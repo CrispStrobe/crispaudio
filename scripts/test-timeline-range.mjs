@@ -31,5 +31,15 @@ try{
   const rendered=await context.startRendering(),samples=rendered.getChannelData(0);
   return {inside:Math.max(...samples.slice(0,9600)),outside:Math.max(...samples.slice(9600))};
  });assert.ok(audio.inside>.01);assert.equal(audio.outside,0);
- console.log(JSON.stringify({range,after,audio}));
+ const exportAudio=await page.evaluate(async()=>{
+  const {TimelineEngine}=await import('/src/audio/engine/TimelineEngine.ts');
+  const context=new OfflineAudioContext(2,48000,48000),buffer=context.createBuffer(1,48000,48000);buffer.getChannelData(0).fill(.1);
+  const engine=new TimelineEngine(context);engine.setSources(new Map([['s',{id:'s',buffer}]]));
+  const project={duration:.1,sampleRate:48000,masterEffects:[{type:'delay',enabled:true,params:{time:.01,feedback:.4,mix:.5}}],tracks:[{volume:1,pan:0,muted:false,solo:false,automation:[{time:0,value:.1},{time:.1,value:.9}],segments:[{sourceId:'s',startTime:0,duration:.02,sourceOffset:0,gain:1,fadeInDuration:0,fadeOutDuration:0,effects:[]}]}]};
+  const full=await engine.renderToBuffer(project),slice=await engine.renderMixRange(project,.03001,.07001);
+  let difference=0,peak=0;
+  for(let ch=0;ch<2;ch++)for(let i=0;i<slice.length;i++){difference=Math.max(difference,Math.abs(slice.getChannelData(ch)[i]-full.getChannelData(ch)[i+Math.round(.03001*48000)]));peak=Math.max(peak,Math.abs(slice.getChannelData(ch)[i]));}
+  return {frames:slice.length,difference,peak};
+ });assert.equal(exportAudio.frames,1920);assert.equal(exportAudio.difference,0);assert.ok(exportAudio.peak>0);
+ console.log(JSON.stringify({range,after,audio,exportAudio}));
 }finally{await browser.close();}

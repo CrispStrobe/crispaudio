@@ -484,25 +484,27 @@ export const TimelinePanel: React.FC = () => {
     }
   }, [audioEngine, store, t]);
 
-  // Offline-render the whole project and download it as a WAV.
-  const handleExportMix = useCallback(async () => {
+  // Range export is explicit and preserves effect history before its start.
+  const handleExportMix = useCallback(async (selectedRange=false) => {
     const engine = engineRef.current;
     if (!engine || store.project.duration <= 0) return;
     const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } = useSettingsStore.getState();
-    const name = store.project.name || 'crispaudio_mix';
+    const range=selectedRange?store.project.editRange:undefined;
+    if(selectedRange&&!range)return;
+    const name = (store.project.name || 'crispaudio_mix')+(range?`_${range.start.toFixed(3)}-${range.end.toFixed(3)}`:'');
     const nativeFormat = fmt === 'wav' || fmt === 'flac' || fmt === 'aac' ? fmt : null;
     const document = nativeFormat && '__TAURI_INTERNALS__' in window && !isIOSApp()
       && navigator.userAgent.includes('Mac') ? linkedRenderDocument(store.project, store.sources) : null;
     if (document && nativeFormat) {
       await startExport({ stage: null, run: (signal, setStage) =>
-        exportLinkedAudio(document, `${name}.${nativeFormat}`, nativeFormat, defaultBitDepth, signal, setStage, kbps) });
+        exportLinkedAudio(document, `${name}.${nativeFormat}`, nativeFormat, defaultBitDepth, signal, setStage, kbps, range) });
       return;
     }
     await startExport({
-      key: [store.project, store.sources, defaultBitDepth, fmt, kbps],
+      key: [store.project, store.sources, defaultBitDepth, fmt, kbps, range],
       stage: 'rendering',
       produce: async (signal, setStage) => {
-        const rendered = await engine.renderToBuffer(store.project, 0, undefined, signal);
+        const rendered = range?await engine.renderMixRange(store.project,range.start,range.end,signal):await engine.renderToBuffer(store.project, 0, undefined, signal);
         signal.throwIfAborted();
         setStage('encoding');
         if (fmt === 'wav') return encodeAudioBufferWav(rendered, defaultBitDepth, signal);
@@ -523,6 +525,7 @@ export const TimelinePanel: React.FC = () => {
       case 'save':await handleSaveProject();break;
       case 'import':askImport();break;
       case 'export':await handleExportMix();break;
+      case 'export-range':await handleExportMix(true);break;
       case 'undo':handleUndo();break;
       case 'redo':handleRedo();break;
       case 'cut':state.cut();break;
@@ -566,6 +569,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton data-help="files" icon={Save} label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}/>
         <ToolButton data-help="import" icon={Upload} label={t('timeline.import')} onClick={() => askImport()}/>
         <ToolButton icon={Download} label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}/>
+        {store.project.editRange&&<ToolButton icon={Download} label={t('ranges.exportAudio')} disabled={exportStage!==null} onClick={()=>void handleExportMix(true)}/>}
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} />
         <AutoSyncTracks onError={setProjectError} />
         <ToolButton icon={Library} label={t('workspace.title')} aria-pressed={workspace!==null} onClick={()=>setWorkspace(old=>old?null:'media')}/>
