@@ -233,7 +233,7 @@ preview/native/FFmpeg effects are approximate equivalents; page peel is a shaded
 2D fold. These desktop changes do not implement video composition on iOS.
 
 
-## Native linked-project CLI export (local 0.7.2)
+## Native linked-project CLI export (local 0.7.3)
 
 The installed local command is `~/Applications/crispaudio-cli-local`. Save a linked
 project from the desktop app so its source paths remain accessible, then run:
@@ -246,7 +246,9 @@ project from the desktop app so its source paths remain accessible, then run:
 The first command streams the full-clock 48 kHz float WAV mix. The second creates
 that mix in an owned temporary folder and exports the saved video in/out range.
 Solo, mute, pan, gains, automation, overlaps and fade ramps retain their project
-meaning. Low/high-pass filters work at clip, track and master level. Other enabled
+meaning. Low/high-pass, bit-crusher and ring-modulator effects work at clip, track
+and master level. Ring modulation now correctly blends dry/carrier signals; the
+bit crusher keeps silence at zero rather than introducing DC bias. Other enabled
 FX require GUI rendering and fail explicitly in the CLI. Native mode never
 switches to FFmpeg. Select compatibility explicitly for an unsupported native
 input/video codec; its audio mixer has narrower support. Audio output currently

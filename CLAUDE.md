@@ -194,7 +194,7 @@ CLI mix-is-trimmed remains explicit. Preserve atomic no-overwrite publication.
 
 media/src/audio_mix.rs streams 1024-frame stereo float WAV blocks via Apache-2.0
 Hound. Never silently omit enabled DSP: support low/high-pass filters at all
-racks; other effects fail explicitly. Preserve Web Audio pan law, Q in dB,
+racks; bitcrush/ringmod added in 0.7.3; other effects fail explicitly. Preserve Web Audio pan law, Q in dB,
 100 Hz sampled fade ramps, automation, mute/solo and source offsets. Direct
 48 kHz PCM WAV decoding works without Apple; other mono/stereo sources use
 Apple audio-f32 decoding. AVAssetWriter rejects float WAVE output, so that helper
@@ -203,3 +203,14 @@ staging folders, finite PCM checks, clip/source bounds and job cancellation.
 Round timing to the 48 kHz grid; permit only one rounding sample or at most 1 ms
 of short native converter tail padding. CLI output is bounded by standard WAV
 limits and 256 audible clips. GUI Web Audio rendering is not disk-paged yet.
+
+## Native effects 0.7.3
+
+Native Effect racks support low/high-pass, bitcrush and ringmod at every level.
+RingModulator's intrinsic modulation gain must stay zero; scale the carrier by
+mix, because AudioParam inputs add to the intrinsic value. Oscillator phase uses
+absolute render-context time even for later clips. BitCrush uses symmetric
+quantisation so its even-length interpolated curve maps zero to zero. Native
+waveshaping interpolates the same 65536-entry Float32 curve, not a direct step.
+The old GUI DC bias and mix bug are intentionally corrected for saved settings.
+Delay/chorus/reverb/distortion/compressor remain explicit native errors.

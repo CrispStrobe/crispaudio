@@ -39,13 +39,14 @@ export function createBitCrush(
  * Build a waveshaper curve that quantises to `bits` levels.
  * The curve maps every possible input value [-1, 1] to its quantised equivalent.
  */
-function buildBitCrushCurve(bits: number, samples = 65536): Float32Array<ArrayBuffer> {
+export function buildBitCrushCurve(bits: number, samples = 65536): Float32Array<ArrayBuffer> {
   const curve = new Float32Array(samples);
   const levels = Math.pow(2, bits - 1);
 
+  // Symmetric quantisation keeps zero input silent (flooring adds DC bias).
   for (let i = 0; i < samples; i++) {
     const x = (i * 2) / (samples - 1) - 1; // [-1, 1]
-    curve[i] = Math.floor(x * levels) / levels;
+    curve[i] = Math.round(x * levels) / levels;
   }
 
   return curve;

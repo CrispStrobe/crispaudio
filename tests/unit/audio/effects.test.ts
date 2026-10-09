@@ -14,6 +14,7 @@ import {
 import type { DistortionAlgorithm } from '../../../src/audio/effects/Distortion';
 import {
   createBitCrush,
+  buildBitCrushCurve,
 } from '../../../src/audio/effects/BitCrush';
 import {
   createLowpass,
@@ -189,37 +190,19 @@ describe('applyDistortion — export signature', () => {
 });
 
 // ---------------------------------------------------------------------------
-// BitCrush — pure curve logic via a local reimplementation
+// BitCrush — actual quantisation curve
 // ---------------------------------------------------------------------------
-// buildBitCrushCurve is private, so we replicate its logic here to test the
-// mathematical properties, then test the public createBitCrush for its signature.
-
-/**
- * Local replica of the private buildBitCrushCurve function (same algorithm).
- */
-function buildBitCrushCurveLocal(
-  bits: number,
-  samples = 65536,
-): Float32Array {
-  const curve = new Float32Array(samples);
-  const levels = Math.pow(2, bits - 1);
-  for (let i = 0; i < samples; i++) {
-    const x = (i * 2) / (samples - 1) - 1;
-    curve[i] = Math.floor(x * levels) / levels;
-  }
-  return curve;
-}
 
 describe('BitCrush curve — 16-bit is near-identity', () => {
   it('produces Float32Array of the correct length', () => {
-    const curve = buildBitCrushCurveLocal(16);
+    const curve = buildBitCrushCurve(16);
     expect(curve).toBeInstanceOf(Float32Array);
     expect(curve.length).toBe(65536);
   });
 
   it('16-bit: maximum deviation from identity is at most 1/32768 (≈ 3e-5)', () => {
     // With 16 bits, levels = 32768.  The quantisation error per sample is ≤ 1/32768.
-    const curve = buildBitCrushCurveLocal(16, 65536);
+    const curve = buildBitCrushCurve(16, 65536);
     let maxErr = 0;
     for (let i = 0; i < curve.length; i++) {
       const x = (i * 2) / (65535) - 1;
@@ -230,7 +213,7 @@ describe('BitCrush curve — 16-bit is near-identity', () => {
   });
 
   it('16-bit: first sample ≈ -1, last sample ≈ 1', () => {
-    const curve = buildBitCrushCurveLocal(16, 65536);
+    const curve = buildBitCrushCurve(16, 65536);
     expect(curve[0]).toBeCloseTo(-1, 3);
     expect(curve[curve.length - 1]).toBeCloseTo(1, 3);
   });
@@ -240,13 +223,13 @@ describe('BitCrush curve — 1-bit produces few output levels', () => {
   it('has very few distinct values', () => {
     // 1-bit quantization: levels = 2^(1-1) = 1, so output = round(x*1)/1
     // Produces {-1, 0, 1} — 3 distinct values
-    const curve = buildBitCrushCurveLocal(1, 1024);
+    const curve = buildBitCrushCurve(1, 1024);
     const uniqueValues = new Set(Array.from(curve).map((v) => Math.round(v * 1e6)));
     expect(uniqueValues.size).toBeLessThanOrEqual(3);
   });
 
   it('1-bit values are only in {-1, 0, 1}', () => {
-    const curve = buildBitCrushCurveLocal(1, 1024);
+    const curve = buildBitCrushCurve(1, 1024);
     for (const v of curve) {
       const rounded = Math.round(v);
       expect(rounded >= -1 && rounded <= 1).toBe(true);
@@ -256,15 +239,15 @@ describe('BitCrush curve — 1-bit produces few output levels', () => {
 
 describe('BitCrush curve — bit depth comparisons', () => {
   it('higher bit depth produces more unique output levels', () => {
-    const levels8 = new Set(Array.from(buildBitCrushCurveLocal(8, 4096)).map((v) => v.toFixed(6)));
-    const levels4 = new Set(Array.from(buildBitCrushCurveLocal(4, 4096)).map((v) => v.toFixed(6)));
+    const levels8 = new Set(Array.from(buildBitCrushCurve(8, 4096)).map((v) => v.toFixed(6)));
+    const levels4 = new Set(Array.from(buildBitCrushCurve(4, 4096)).map((v) => v.toFixed(6)));
     expect(levels8.size).toBeGreaterThan(levels4.size);
   });
 
   it('8-bit has a reasonable number of distinct levels', () => {
     // levels = 2^(8-1) = 128, output values are multiples of 1/128
     // Could be up to 257 with zero included; allow some headroom
-    const curve = buildBitCrushCurveLocal(8, 65536);
+    const curve = buildBitCrushCurve(8, 65536);
     const unique = new Set(Array.from(curve).map((v) => Math.round(v * 128)));
     expect(unique.size).toBeLessThanOrEqual(258);
     expect(unique.size).toBeGreaterThan(100);
@@ -306,5 +289,18 @@ describe('Filter — export signatures', () => {
     expect(createLowpass).not.toBe(createHighpass);
     expect(createHighpass).not.toBe(createBandpass);
     expect(createLowpass).not.toBe(createBandpass);
+  });
+});
+
+
+describe('BitCrush silence and DC symmetry', () => {
+  it('keeps the central interpolated sample silent at every bit depth', () => {
+    for (let bits = 1; bits <= 16; bits++) {
+      const curve = buildBitCrushCurve(bits);
+      expect((curve[32767] + curve[32768]) / 2).toBe(0);
+      for (const i of [0, 100, 16000, 32000]) {
+        expect(curve[i] + curve[65535 - i]).toBe(0);
+      }
+    }
   });
 });

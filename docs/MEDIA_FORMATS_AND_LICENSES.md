@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.2
+# Formats and licensing — local 0.7.3
 
 ## Current GUI
 
@@ -73,9 +73,13 @@ rendering uses the global backend policy; picture JSON export options are retain
 CLI project mixing now streams to **48 kHz, stereo, 32-bit float WAV** using
 Apache-2.0 Hound and MIT DSP. It supports linked mono/stereo sources, source
 trims/offsets, overlaps, mute/solo, gains, pan, track/clip fade curves, gain
-automation and enabled low/high-pass filters at clip, track and master level.
+automation and enabled low/high-pass, bit-crusher and ring-modulator effects at
+clip, track and master level.
 Filter resonance and pan follow Web Audio definitions; fades match the GUI's
-sampled ramp schedule. Other enabled effects fail explicitly; use GUI export.
+sampled ramp schedule. Ring modulation uses the project clock and a true wet/dry
+blend; bit crushing preserves silence and interpolates the GUI waveshaper curve.
+Other enabled effects (delay, chorus, reverb, distortion and compressor) still
+fail explicitly; use GUI export.
 
 Native 48 kHz PCM WAVs (8/16/24/32-bit integer or 32-bit float) are read directly.
 On Mac, Apple decodes/resamples other inputs into an owned float WAV without an

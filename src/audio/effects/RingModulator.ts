@@ -27,23 +27,12 @@ export function createRingModulator(
   carrier.type = 'sine';
   carrier.frequency.value = Math.max(0.1, freq);
 
-  // Drive the carrier amplitude to 1 so it simply multiplies
-  carrierGain.gain.value = 1;
-
   const mixClamped = Math.max(0, Math.min(1, mix));
+  // AudioParam inputs add to its intrinsic value. Keep that value zero,
+  // then scale the carrier itself to obtain a true wet/dry blend.
+  carrierGain.gain.value = mixClamped;
   dryGain.gain.value = 1 - mixClamped;
-  modulatedGain.gain.value = mixClamped;
-
-  // Connect carrier → gain to modulate; source drives the GainNode gain param
-  // Actual ring-mod topology: source signal multiplied by carrier
-  // We achieve this by routing the carrier through a GainNode whose gain
-  // is the audio signal. Web Audio does not expose AudioParam multiplication
-  // directly, so we use the well-known trick: set modulatedGain's gain to 0
-  // and use the carrier to modulate it via source → AudioParam.
-  //
-  // Simpler equivalent used here: mix dry + (dry × carrier) weighted by mix.
-  // For a true ring-mod (dry × carrier) effect, feed source into modulatedGain
-  // and use the carrier to control its gain AudioParam.
+  modulatedGain.gain.value = 0;
 
   // Source feeds the ring-mod gain node
   source.connect(modulatedGain);

@@ -176,14 +176,66 @@ impl Biquad {
         out
     }
 }
-fn filters(effects: &Value) -> Result<Vec<Biquad>> {
+enum Effect {
+    Filter(Biquad),
+    BitCrush { levels: f64, mix: f64 },
+    RingMod { frequency: f64, mix: f64 },
+}
+impl Effect {
+    fn at(&mut self, input: [f64; 2], frame: u32) -> [f64; 2] {
+        match self {
+            Self::Filter(filter) => filter.at(input),
+            Self::BitCrush { levels, mix } => input.map(|v| {
+                // Web Audio interpolates the 65536-entry Float32 waveshaper
+                // table; rounding the input directly gives different edges.
+                let index = (v.clamp(-1.0, 1.0) + 1.0) * 32767.5;
+                let left = index.floor();
+                let right = (left + 1.0).min(65535.0);
+                let table = |i: f64| {
+                    (((i * 2.0 / 65535.0 - 1.0) * *levels).round() / *levels) as f32 as f64
+                };
+                let wet = table(left) + (table(right) - table(left)) * (index - left);
+                v * (1.0 - *mix) + wet * *mix
+            }),
+            Self::RingMod { frequency, mix } => {
+                // Oscillators start at context time zero, even for a later clip.
+                let phase = std::f64::consts::TAU * *frequency * frame as f64 / RATE;
+                input.map(|v| v * (1.0 - *mix + *mix * phase.sin()))
+            }
+        }
+    }
+}
+fn filters(effects: &Value) -> Result<Vec<Effect>> {
     let mut out = Vec::new();
     if effects.is_null() {
         return Ok(out);
     }
     let effects = effects.as_array().ok_or("Invalid effect rack")?;
     for effect in effects.iter().filter(|e| e["enabled"] == true) {
-        let low=match effect["type"].as_str(){Some("lowpass")=>true,Some("highpass")=>false,_=>return Err("Native CLI supports low/high-pass filters only; render other enabled effects in the GUI".into())};
+        let params = &effect["params"];
+        let kind = effect["type"].as_str().ok_or("Missing effect type")?;
+        if kind == "bitcrush" || kind == "ringmod" {
+            let mix = finite(params, "mix", Some(0.5))?.clamp(0.0, 1.0) as f32 as f64;
+            out.push(if kind == "bitcrush" {
+                let bits = finite(params, "bits", Some(8.0))?.round().clamp(1.0, 16.0);
+                Effect::BitCrush {
+                    levels: 2.0f64.powf(bits - 1.0),
+                    mix,
+                }
+            } else {
+                Effect::RingMod {
+                    frequency: finite(params, "freq", Some(200.0))?.clamp(0.1, RATE / 2.0) as f32
+                        as f64,
+                    mix,
+                }
+            });
+            continue;
+        }
+        let low = match kind {
+            "lowpass" => true,
+            "highpass" => false,
+            _ => return Err(format!("Native CLI does not support enabled effect '{kind}'; render this effect in the GUI")),
+        };
         let freq = finite(
             &effect["params"],
             "freq",
@@ -204,17 +256,17 @@ fn filters(effects: &Value) -> Result<Vec<Biquad>> {
         } else {
             [(1.0 + cosine) / 2.0, -(1.0 + cosine), (1.0 + cosine) / 2.0]
         };
-        out.push(Biquad {
+        out.push(Effect::Filter(Biquad {
             b: b.map(|v| v / denominator),
             a: [-2.0 * cosine / denominator, (1.0 - alpha) / denominator],
             state: [[0.0; 2]; 2],
-        });
+        }));
     }
     Ok(out)
 }
-fn process(filters: &mut [Biquad], mut sample: [f64; 2]) -> [f64; 2] {
+fn process(filters: &mut [Effect], mut sample: [f64; 2], frame: u32) -> [f64; 2] {
     for f in filters {
-        sample = f.at(sample);
+        sample = f.at(sample, frame);
     }
     sample
 }
@@ -280,7 +332,7 @@ struct Clip {
     end: u32,
     gain: f64,
     envelope: Envelope,
-    filters: Vec<Biquad>,
+    filters: Vec<Effect>,
 }
 struct Track {
     clips: Vec<Clip>,
@@ -290,7 +342,7 @@ struct Track {
     mono: bool,
     envelope: Envelope,
     automation: Automation,
-    filters: Vec<Biquad>,
+    filters: Vec<Effect>,
 }
 /// Streams blocks to an owned staging file, with atomic no-overwrite publication.
 pub fn render(doc: &Value, output: &str) -> Result<()> {
@@ -477,21 +529,21 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
                         [0.0; 2]
                     };
                     let gain = clip.envelope.at((frame - clip.start) as f64 / RATE);
-                    let raw = process(&mut clip.filters, raw);
+                    let raw = process(&mut clip.filters, raw, frame);
                     for ch in 0..2 {
                         value[ch] += raw[ch] * gain;
                     }
                 }
                 let factor = bus.envelope.at(time - bus.start) * bus.automation.at(time);
-                value = process(&mut bus.filters, value.map(|v| v * factor));
+                value = process(&mut bus.filters, value.map(|v| v * factor), frame);
                 value = pan(value.map(|v| v * bus.gain), bus.pan, bus.mono);
                 for ch in 0..2 {
                     master[i as usize][ch] += value[ch];
                 }
             }
         }
-        for frame in master {
-            for value in process(&mut master_filters, frame) {
+        for (i, sample) in master.into_iter().enumerate() {
+            for value in process(&mut master_filters, sample, block + i as u32) {
                 let value = value as f32;
                 if !value.is_finite() {
                     return Err("Audio mix exceeded finite float range".into());
@@ -542,6 +594,45 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+    #[test]
+    fn bitcrusher_preserves_silence_and_blends_quantized_pcm() {
+        let folder = tempfile::tempdir().unwrap();
+        for (value, mix, expected) in [
+            (0.0f32, 1.0, 0.0),
+            (0.22, 1.0, 0.25),
+            (-0.22, 1.0, -0.25),
+            (0.22, 0.5, 0.235),
+            (0.22, 0.0, 0.22),
+        ] {
+            let input = source(folder.path(), 1, &[value]);
+            let mut doc = project(&input);
+            doc["project"]["tracks"][0]["segments"][0]["effects"] =
+                json!([{"type":"bitcrush","enabled":true,"params":{"bits":4,"mix":mix}}]);
+            let target = folder.path().join(format!("mix-{value}-{mix}.wav"));
+            render(&doc, target.to_str().unwrap()).unwrap();
+            assert!((output(&target)[200] - expected).abs() < 1e-6);
+        }
+    }
+    #[test]
+    fn ring_modulation_uses_project_clock_and_wet_dry_mix() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = source(folder.path(), 1, &[0.25]);
+        for mix in [0.0, 0.5, 1.0] {
+            let mut doc = project(&input);
+            let clip = &mut doc["project"]["tracks"][0]["segments"][0];
+            clip["startTime"] = json!(0.01);
+            clip["duration"] = json!(0.05);
+            clip["effects"] =
+                json!([{"type":"ringmod","enabled":true,"params":{"freq":100,"mix":mix}}]);
+            let target = folder.path().join(format!("ring-{mix}.wav"));
+            render(&doc, target.to_str().unwrap()).unwrap();
+            let pcm = output(&target);
+            assert_eq!(pcm[100], 0.0);
+            for (frame, carrier) in [(480, 0.0), (600, 1.0), (840, -1.0)] {
+                assert!((pcm[frame * 2] as f64 - 0.25 * (1.0 - mix + mix * carrier)).abs() < 1e-6);
+            }
+        }
     }
     #[test]
     fn overlapping_clips_solo_pan_fades_automation_and_silent_tail() {

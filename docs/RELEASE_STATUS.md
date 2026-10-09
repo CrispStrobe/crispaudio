@@ -522,3 +522,42 @@ That excludes OS cache/other processes and is not whole-GUI memory use. Its 30â€
 section also rendered natively to 1920Ã—1080 H.264/AAC MP4 (8.0 s output) in 15.1 s,
 including the full audio mix. Validation files remain private outside git.
 No release tag, TestFlight or App Store submission was made.
+
+## Local native effects build 0.7.3
+
+Installed, ad-hoc signed and launched `~/Applications/CrispAudio-local.app` 0.7.3;
+updated the signed `~/Applications/crispaudio-cli-local` command too. Backed up
+native WebKit state and confirmed the autosaved arrangement remained unchanged.
+No Apple submission, release tag or TestFlight upload was made.
+
+Native CLI clip/track/master racks now support bit crushing and ring modulation
+in addition to low/high-pass filters. Fixed two shared GUI DSP bugs: ring
+modulation scales the carrier instead of adding it at full strength regardless
+of mix, and symmetric bit-crusher quantisation keeps silence at zero. Existing
+saved values still load, but these effects intentionally sound different from
+older builds. Voice uses the corrected ring-modulator graph too.
+
+Validation: 90 frontend suites / 1,284 tests passed, ESLint passed, and the Tauri
+production frontend plus debug macOS bundle built successfully. Media Rust tests:
+23 passed, six desktop integration tests remained opt-in; one CLI parser test
+passed. New PCM regressions check wet/dry endpoints, silence, quantisation and
+absolute oscillator phase for later clips. Previous 0.7.2 desktop and iOS CI
+both passed; this build's CI is triggered by its main push.
+
+Six real WebKit OfflineAudioContext/native CLI comparisons combine overlapping
+clips, later starts, nonlinear fades, automation, pan and all three racks.
+Wet/dry settings 0, 0.35 and 1 passed for both effects. Maximum sample error was
+3.51e-5 for bit crushing (RMS 3.35e-7) and 3.06e-7 for ring modulation (RMS
+2.72e-8). These are fixture measurements, not proof of sample-identical behavior
+for all inputs. Implementation follows the Web Audio waveshaper interpolation
+and additive AudioParam semantics: https://www.w3.org/TR/webaudio-1.0/.
+Private reproducible harness and PCM/results are outside git:
+`.crisperweaver-deps/crispaudio-browser/native-mix-073.mjs` and
+`transcripts/2026-Studienwoche/CrispAudio-validation/ux/native-mix-073/` under
+`~/code`. Native rendering was tested with FFmpeg/FFprobe paths disabled;
+FFmpeg only decoded the resulting WAV for the independent comparison.
+
+No codec dependencies or licensing scope changed. Native delay, chorus, reverb,
+oversampled distortion and compressor remain unsupported and fail explicitly;
+GUI Web Audio handles them. Disk-paged GUI rendering, a permissive-only WebM
+backend and iOS picture export are still unfinished.

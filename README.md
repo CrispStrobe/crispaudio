@@ -272,3 +272,8 @@ including pan, fades, automation and low/high-pass racks. On Mac, supported
 linked projects can render directly to MP4/MOV with `--video --backend apple`,
 without FFmpeg. Unsupported DSP fails explicitly; GUI rendering retains broader
 FX support and currently uses decoded audio buffers.
+
+Local 0.7.3 extends native CLI racks with bit crushing and ring modulation.
+It also fixes their GUI processing: bit crushing keeps silence at zero, and
+ring modulation now has a working wet/dry control. Delay, chorus, reverb,
+oversampled distortion and compression still require GUI rendering.

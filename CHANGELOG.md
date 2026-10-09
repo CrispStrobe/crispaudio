@@ -4,7 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.2]
+## [Unreleased — local version 0.7.3]
+
+- Add native CLI bit crushing and ring modulation at clip, track and master level.
+  Keep oscillator phase on the project clock, including clips that start later.
+- Fix GUI ring modulation: scale the carrier, keeping the gain's intrinsic value
+  zero so the wet/dry control actually works. This also corrects Voice processing.
+- Use symmetric bit-crusher quantisation, keeping silence at zero and removing
+  the old negative DC bias. Saved effect settings retain their values; these two
+  effects deliberately sound different from older builds because of the fixes.
+- Compare actual WebKit and native renders with overlapping clips, fades and
+  three racks; keep unsupported native DSP explicit. No new codec dependencies.
+
+## [Local version 0.7.2]
 
 - Add bounded-memory native CLI project mixing: 48 kHz float WAV, mono/stereo pan,
   mute/solo, overlapping clips, gains, sampled fade curves, gain automation and
