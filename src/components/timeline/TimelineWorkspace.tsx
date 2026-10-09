@@ -1,3 +1,4 @@
+import { RangeEditError } from '../../lib/rangeEdits';
 import { mediaJob } from '../../lib/mediaJob';
 import { computeWaveformPeaks } from '../../audio/utils/audioBufferUtils';
 import { hasRecoverableAutosave, restoreAutosaveAudio } from '../../hooks/useAutosave';
@@ -29,7 +30,7 @@ export function TimelineWorkspace({tab,onTab,onClose}:{tab:WorkspaceTab;onTab:(t
   useEffect(()=>{localStorage.setItem('crispaudio-inspector-width',String(width));},[width]);
   const ids=selection?.segmentIds??[],audio=project.tracks.flatMap(t=>t.segments).find(c=>ids.includes(c.id)),video=videoClips(project.video).find(c=>ids.includes(c.id));
   const native='__TAURI_INTERNALS__' in window&&!isIOSApp();
-  const run=async(task:()=>Promise<void>|void)=>{setError('');try{await task();}catch(err){setError(String(err));}};
+  const run=async(task:()=>Promise<void>|void)=>{setError('');try{await task();}catch(err){setError(err instanceof RangeEditError?t(err.message):String(err));}};
   const perform=async(task:(signal:AbortSignal)=>Promise<void>)=>{if(busy)return;setBusy(true);const controller=new AbortController();abort.current=controller;await run(()=>task(controller.signal));if(abort.current===controller){abort.current=null;setBusy(false);}};
   const commit=(next:typeof project)=>useProjectStore.setState({project:next,isPlaying:false});
   const step=1/(project.frameRate??25),chosenTrack=project.tracks.find(t=>t.id===trackId)??project.tracks[0];

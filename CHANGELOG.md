@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.0]
+## [Unreleased — local version 0.8.1]
+
+- Add reviewed range lift, extract and insert-gap with audio/picture scope,
+  persistent ripple participation and a resulting-duration preview.
+- Keep linked AV splits aligned, excluded tracks fixed and automation values
+  at edit boundaries; explicitly choose canvas/marker/transcript retiming.
+- Preserve unaffected picture transitions; explain blocked blend/cue boundaries.
+- Add matching CLI `range-edit` recipes and align legacy ripple with that scope.
+
+## [Local version 0.8.0]
 
 - Add saved time ranges independent of selected clips, with ruler dragging,
   keyboard-adjustable handles, exact bounds and audio/picture highlights.

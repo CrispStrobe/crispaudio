@@ -1077,3 +1077,26 @@ M1 remains in progress: range export, scoped lift/extract/insert, ripple
 participation, transition-aware ripple, advanced trims and named groups follow.
 M2–M10 are still planned. Long-recording paging and additional codecs remain
 lower priority as requested; see the active roadmap in PLAN.md.
+
+## Local 0.8.1 — reviewed scoped range edits (M1 in progress)
+
+Installed and launched the ad-hoc-signed Mac app and optimised CLI. Signatures
+verified, one autosaved arrangement preserved exactly; backup is under
+`ux/recovery-before-081/`. No tag or Apple upload.
+
+GUI and CLI now support lift/extract/insert-gap, saved track/picture participation,
+linked scope protection, untouched transitions, automation boundary values and
+optional canvas/marker/transcript retiming. The dialog previews duration and
+blocked operations. Boundaries through blends or transcript cues still require
+review first; advanced transition trims remain planned.
+
+Validation: 95 frontend files / 1315 tests, ESLint, TypeScript/web build, 43
+ordinary media Rust tests and three parser tests passed. Release CLI and debug
+Mac bundle passed. Actual headless WebKit tested partial-link rejection, saved
+scope, apply and undo. Native/GUI semantic parity passed for all three operations
+and the real Canon/H6 interview. A private derivative removed 45–47 seconds;
+native Apple WAV export measured 251.720 seconds, stereo 48 kHz, matching the
+shortened arrangement. Originals and source media were untouched. No physical
+iOS claim or new dependency. Older codec integrations were not rerun because
+their implementations were unchanged. Range export, advanced trims, named groups
+and M2–M10 remain outstanding; paging/codecs stay deferred.

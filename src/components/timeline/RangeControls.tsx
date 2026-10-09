@@ -1,4 +1,6 @@
-import { MousePointer2, ScanLine, Play, X } from 'lucide-react';
+import { MousePointer2, ScanLine, Play, X, Scissors } from 'lucide-react';
+import { useState } from 'react';
+import { RangeEditDialog } from './RangeEditDialog';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
 import { ToolButton } from '../common/ToolButton';
@@ -6,6 +8,7 @@ import { TimeField } from './TimeField';
 
 /** Range selection is independent of clip selection and the picture export interval. */
 export function RangeControls() {
+  const [tools,setTools]=useState(false);
   const { t } = useTranslation();
   const mode = useProjectStore(s=>s.selectionMode);
   const range = useProjectStore(s=>s.project.editRange);
@@ -20,7 +23,9 @@ export function RangeControls() {
       <TimeField label={t('ranges.start')} value={range.start} onCommit={start=>setRange(start,range.end)}/>
       <TimeField label={t('ranges.end')} value={range.end} onCommit={end=>setRange(range.start,end)}/>
       <ToolButton data-help="range" icon={Play} label={t('ranges.play')} onClick={playRange}/>
+      <ToolButton data-help="range" icon={Scissors} label={t('rangeEdits.title')} onClick={()=>setTools(true)}/>
       <ToolButton data-help="range" icon={X} label={t('ranges.clear')} onClick={clear}/>
     </>}
+    {tools&&<RangeEditDialog onClose={()=>setTools(false)}/>}
   </div>;
 }

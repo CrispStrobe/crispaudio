@@ -975,5 +975,29 @@
     "unlock": "Unlock track edits",
     "lockedNotice": "Unlock “{{name}}” before changing its clips.",
     "rangeHelp": "Drag the ruler to select a time range. Drag its edges or enter exact start/end times. Play range uses this range; Loop repeats it. Clip selection stays separate."
+  },
+  "rangeEdits": {
+    "title": "Edit time range",
+    "explain": "Lift removes content and leaves a gap. Extract closes the gap on included tracks. Insert adds a gap of the selected length at its start.",
+    "operation": "Operation",
+    "lift": "Lift — leave a gap",
+    "extract": "Extract — close the gap",
+    "insert": "Insert gap",
+    "tracks": "Tracks included",
+    "global": "Apply this edit to canvas duration, global markers and transcript cues",
+    "linkHelp": "Linked picture and sound must both be included. Save scope remembers which tracks participate in future range edits.",
+    "saveScope": "Save scope",
+    "scopeSaved": "Track participation saved.",
+    "lockedLabel": "Locked",
+    "apply": "Apply edit",
+    "invalid": "Choose a valid range inside the timeline.",
+    "scope": "Include at least one existing track.",
+    "linkedScope": "Include all linked picture and sound tracks, or unlink the clips first.",
+    "locked": "Unlock the affected tracks or explicitly exclude them from this edit.",
+    "transitionBoundary": "A range boundary crosses a video transition. Move the boundary outside the blend, or edit the affected transition first. Other transitions may remain.",
+    "cueBoundary": "A range boundary crosses a transcript cue. Move it to a cue boundary or review/edit that cue first.",
+    "pictureTopology": "This cut would create an unsupported picture overlap. Adjust its boundaries or the affected transition.",
+    "changed": "The arrangement changed. Review the current range again.",
+    "duration": "Canvas: {{before}} s → {{after}} s"
   }
 }

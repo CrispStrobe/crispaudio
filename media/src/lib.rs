@@ -1120,3 +1120,5 @@ pub fn first_thumbnail(path: &str, output: &str) -> Result<()> {
     )?;
     Ok(())
 }
+
+pub mod range_edit;

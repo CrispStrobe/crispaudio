@@ -19,6 +19,7 @@ export interface TimelineProject {
   snapGrid?: number; // seconds, 0 disables the time grid
   video?: {
     locked?: boolean;
+    rippleEnabled?: boolean;
     sources?: VideoSource[];
     clips?: VideoClip[];
     path: string;
@@ -31,6 +32,7 @@ export interface TimelineProject {
 
 export interface TimelineTrack {
   locked?: boolean;
+  rippleEnabled?: boolean;
   id: string;
   name: string;
   segments: AudioSegment[];

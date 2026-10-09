@@ -975,5 +975,29 @@
     "unlock": "Spurbearbeitung entsperren",
     "lockedNotice": "„{{name}}“ entsperren, bevor die Clips geändert werden.",
     "rangeHelp": "Auf dem Zeitlineal ziehen, um einen Bereich auszuwählen. Die Ränder ziehen oder Anfang und Ende genau eingeben. Bereich abspielen nutzt diesen Bereich; Schleife wiederholt ihn. Die Clipauswahl bleibt erhalten."
+  },
+  "rangeEdits": {
+    "title": "Zeitbereich bearbeiten",
+    "explain": "Herausheben entfernt Inhalt und lässt eine Lücke. Extrahieren schließt die Lücke auf den gewählten Spuren. Lücke einfügen nutzt die Bereichslänge am Bereichsanfang.",
+    "operation": "Aktion",
+    "lift": "Herausheben — Lücke lassen",
+    "extract": "Extrahieren — Lücke schließen",
+    "insert": "Lücke einfügen",
+    "tracks": "Einbezogene Spuren",
+    "global": "Diese Bearbeitung auch auf die Canvas-Länge, globale Marker und Transkriptabschnitte anwenden",
+    "linkHelp": "Verknüpftes Bild und Ton müssen gemeinsam einbezogen werden. Auswahl speichern merkt die teilnehmenden Spuren für weitere Bereichsbearbeitungen.",
+    "saveScope": "Auswahl speichern",
+    "scopeSaved": "Spurteilnahme gespeichert.",
+    "lockedLabel": "Gesperrt",
+    "apply": "Bearbeitung anwenden",
+    "invalid": "Einen gültigen Bereich innerhalb der Timeline wählen.",
+    "scope": "Mindestens eine vorhandene Spur einbeziehen.",
+    "linkedScope": "Alle verknüpften Bild- und Tonspuren einbeziehen oder die Clips zuerst entknüpfen.",
+    "locked": "Die betroffenen Spuren entsperren oder ausdrücklich von der Bearbeitung ausschließen.",
+    "transitionBoundary": "Eine Bereichsgrenze liegt in einem Videoübergang. Die Grenze außerhalb der Blende setzen oder den betroffenen Übergang zuerst bearbeiten. Andere Übergänge können bleiben.",
+    "cueBoundary": "Eine Bereichsgrenze liegt in einem Transkriptabschnitt. Sie an dessen Rand setzen oder den Abschnitt zuerst prüfen/bearbeiten.",
+    "pictureTopology": "Dieser Schnitt würde eine nicht unterstützte Bildüberlappung erzeugen. Die Grenzen oder den betroffenen Übergang anpassen.",
+    "changed": "Die Anordnung hat sich geändert. Den aktuellen Bereich erneut prüfen.",
+    "duration": "Canvas: {{before}} s → {{after}} s"
   }
 }

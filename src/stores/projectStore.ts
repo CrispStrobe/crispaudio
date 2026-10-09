@@ -74,7 +74,7 @@ interface ProjectState {
   addTrack: (name?: string) => void;
   removeTrack: (trackId: string) => void;
   reorderTrack: (trackId: string, newIndex: number) => void;
-  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'effects'>>) => void;
+  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'rippleEnabled' | 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'effects'>>) => void;
 
   // Segment actions
   addSegment: (trackId: string, segment: AudioSegment) => void;

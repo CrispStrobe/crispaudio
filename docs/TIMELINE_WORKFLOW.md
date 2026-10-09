@@ -254,7 +254,39 @@ Lock status persists and Undo/Redo restores complete historical snapshots.
 Explicitly loading/resetting a project remains available.
 
 CLI `edit-project` recipes also reject edits that change locked audio/picture
-clips. Rendering is unaffected by locks. Range export, ripple participation and
-scoped range edits follow in the next M1 slices; see PLAN.md. The optional actual
+clips. Rendering is unaffected by locks. Range export and advanced trim tools
+follow in the next M1 slices; see PLAN.md. The optional actual
 WebKit check is `scripts/test-timeline-range.mjs`, using CRISPAUDIO_TEST_URL,
 CRISPAUDIO_PLAYWRIGHT_MODULE and CRISPAUDIO_WEBKIT_EXECUTABLE as needed.
+
+## Scoped range editing — local 0.8.1
+
+1. Select a time range and open **Edit time range** beside its numeric bounds.
+2. Choose **Lift** to remove content but leave a gap, **Extract** to close it,
+   or **Insert gap** to insert the selected duration at the range start.
+3. Check the audio and picture lanes that should follow the edit. Leave music
+   unchecked when it must stay in place. **Save scope** remembers this choice.
+4. Choose whether canvas duration, global markers and transcript cues follow.
+   Review the resulting duration. Excluded clips can still extend the canvas.
+5. Apply once; Undo restores the complete edit. Original media is unchanged.
+
+Linked picture and sound must both participate. Locked affected lanes block the
+edit; explicitly exclude an independent locked lane or unlock it. Range boundaries
+inside a video blend or transcript cue require adjustment/review first. Other
+transitions remain. Existing outer fades are preserved; a cut that would leave
+invalid picture fades/overlaps is blocked rather than silently changing them.
+Audio automation retains values at the edit boundary and shifts with included
+tracks. Picture participation quantizes boundaries to project frames.
+
+CLI recipes use the same contract:
+
+```json
+[{"op":"range-edit","operation":"extract","start":45,"end":47,
+  "trackIds":["mic-track-id"],"includeVideo":true,"retimeGlobal":true}]
+```
+
+Omit trackIds/includeVideo to use saved participation (older projects default to
+all lanes). Legacy `ripple` uses extract with that scope. `edit-project` writes a
+new file and refuses to overwrite one. The optional WebKit dialog/undo/parity
+check is `scripts/test-range-edits.mjs`; set CRISPAUDIO_CLI for native parity and
+CRISPAUDIO_PROJECT to check an existing interview without modifying it.

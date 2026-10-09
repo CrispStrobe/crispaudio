@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-09, during local 0.8.0 implementation. This section is the current plan.
+Updated 2026-10-09, during local 0.8.1 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -38,7 +38,8 @@ playback/render paths and native media backends. Existing capabilities include:
   WAV/FLAC/AAC/M4A and MP4/MOV paths; optional installed FFmpeg compatibility.
 
 These are foundations to extend, not features to reinvent. In particular,
-`rippleRange` currently rejects picture transitions; gain automation has point
+Range edits preserve unaffected picture transitions and reject boundaries through
+a blend pending advanced trim semantics; gain automation has point
 entry rather than a full direct-edit lane; `project.video.clips` is a single
 composition lane; timeline effects lack parametric EQ, a dedicated limiter,
 sends/buses and general parameter automation. Timeline recording/takes are not
@@ -81,8 +82,13 @@ Local 0.8.0 implements the first slice: saved independent time ranges, ruler
 selection/handles/numeric bounds, selected-range playback and loop boundaries,
 contextual help/EN–DE/macOS playback commands, and persisted audio/picture clip
 locks enforced on direct/linked edits and CLI recipes. Range shading covers audio
-and picture. M1 is not complete: range export, scoped lift/extract/insert, ripple
-participation, transition-aware ripple, advanced trims and named groups remain.
+and picture. Local 0.8.1 adds reviewed scoped lift/extract/insert-gap, saved ripple
+participation, linked scope checks, automation boundary values and explicit
+canvas/marker/transcript retiming, with GUI/CLI parity and undo validation.
+Unaffected picture transitions remain; boundaries through blends or transcript
+cues require review rather than silently damaging them. M1 is not complete:
+range export, advanced transition trims, rolling/ripple trims, edit navigation
+and named groups remain.
 Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
 seamless musical looping. Paging and new codec work remain deferred.
 

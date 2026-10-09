@@ -1,3 +1,4 @@
+import { editTimeRange } from './rangeEdits';
 import type { TimelineProject, AudioSegment, VideoClip, TimelineSelection } from '../types/audio';
 import { videoClips, clipSource, validateVideoClips, frameTime } from './videoEditing';
 import { timelineDuration } from './timelineView';
@@ -58,21 +59,7 @@ export function trimClips(p:TimelineProject,ids:string[],side:'left'|'right',del
 }
 /** Delete an interval across all tracks, closing the gap and keeping linked offsets. */
 export function rippleRange(p:TimelineProject,start:number,end:number):TimelineProject {
-  if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start)throw new Error('Invalid ripple range');
-  // Transition handles need deliberate editing, not an implicit reconstruction.
-  if(videoClips(p.video).some(c=>c.transition!=='cut'))throw new Error('Remove video transitions before ripple editing');
-  const rightGroups=new Map<string,string>();
-  const cut=(c:Clip):Clip[]=>{
-    const stop=c.startTime+c.duration, gap=end-start;
-    if(stop<=start)return [c];if(c.startTime>=end)return [{...c,startTime:c.startTime-gap}];
-    const parts:Clip[]=[];
-    if(c.startTime<start)parts.push({...c,duration:start-c.startTime,...('trackId' in c?{fadeOutDuration:0}:{fadeOut:0})});
-    if(stop>end){let group: string|undefined;if(c.linkGroup){group=rightGroups.get(c.linkGroup);if(!group){group=crypto.randomUUID();rightGroups.set(c.linkGroup,group);}}parts.push({...c,linkGroup:group,id:crypto.randomUUID(),startTime:start,sourceOffset:c.sourceOffset+end-c.startTime,duration:stop-end,...('trackId' in c?{fadeInDuration:0}:{fadeIn:0})});}
-    return parts;
-  };
-  const retime=(time:number)=>time<start?time:time>=end?time-(end-start):start;
-  return finish({...p,tracks:p.tracks.map(t=>({...t,segments:t.segments.flatMap(c=>cut(c) as AudioSegment[]),automation:t.automation?.map(point=>({...point,time:retime(point.time)}))})),video:p.video?{...p.video,clips:videoClips(p.video).flatMap(c=>cut(c) as VideoClip[]),inPoint:undefined,outPoint:undefined}:undefined,
-    markers:p.markers?.filter(m=>m.time<start||m.time>=end).map(m=>({...m,time:retime(m.time)})),transcript:p.transcript?.flatMap(c=>c.end<=start?[c]:c.start>=end?[{...c,start:retime(c.start),end:retime(c.end)}]:[])});
+  return editTimeRange(p,start,end,'extract');
 }
 export function splitClips(p:TimelineProject,ids:string[],time:number):TimelineProject {
   const selected=linkedIds(p,ids),groups=new Map<string,string>();

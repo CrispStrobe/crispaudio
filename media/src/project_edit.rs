@@ -128,6 +128,9 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             .collect();
         let operation = op["op"].as_str().ok_or("Missing operation")?;
         match operation {
+            "range-edit" => {
+                out["project"] = crate::range_edit::apply(&out["project"], op)?;
+            }
             "color" | "orientation" => {
                 let settings = op
                     .get("settings")
@@ -278,96 +281,9 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                 })?;
             }
             "ripple" => {
-                let start = number(op, "start")?;
-                let end = number(op, "end")?;
-                if start < 0.0 || end <= start {
-                    return Err("Invalid ripple range".into());
-                }
-                if all
-                    .iter()
-                    .any(|c| c.get("trackId").is_none() && c["transition"] != "cut")
-                {
-                    return Err("Remove video transitions before ripple editing".into());
-                }
-                let gap = end - start;
-                mutate(&mut out["project"], |c| {
-                    let a = number(c, "startTime")?;
-                    let b = a + number(c, "duration")?;
-                    if b <= start {
-                        return Ok(vec![c.clone()]);
-                    }
-                    if a >= end {
-                        let mut c = c.clone();
-                        c["startTime"] = json!(a - gap);
-                        return Ok(vec![c]);
-                    }
-                    let mut pieces = Vec::new();
-                    if a < start {
-                        let mut left = c.clone();
-                        left["duration"] = json!(start - a);
-                        left[if c.get("trackId").is_some() {
-                            "fadeOutDuration"
-                        } else {
-                            "fadeOut"
-                        }] = json!(0);
-                        trim_fades(&mut left);
-                        pieces.push(left);
-                    }
-                    if b > end {
-                        let mut right = c.clone();
-                        right["id"] = json!(id());
-                        right["startTime"] = json!(start);
-                        right["sourceOffset"] = json!(number(c, "sourceOffset")? + end - a);
-                        right["duration"] = json!(b - end);
-                        right[if c.get("trackId").is_some() {
-                            "fadeInDuration"
-                        } else {
-                            "fadeIn"
-                        }] = json!(0);
-                        trim_fades(&mut right);
-                        pieces.push(right);
-                    }
-                    Ok(pieces)
-                })?;
-                for key in ["markers", "transcript"] {
-                    if let Some(items) = out["project"][key].as_array_mut() {
-                        items.retain(|v| {
-                            let a = v[if key == "markers" { "time" } else { "start" }]
-                                .as_f64()
-                                .unwrap_or(0.0);
-                            let b = v["end"].as_f64().unwrap_or(a);
-                            a >= end || b <= start
-                        });
-                        for item in items {
-                            for time in if key == "markers" {
-                                vec!["time"]
-                            } else {
-                                vec!["start", "end"]
-                            } {
-                                let value = number(item, time)?;
-                                if value >= end {
-                                    item[time] = json!(value - gap);
-                                }
-                            }
-                        }
-                    }
-                }
-                if let Some(tracks) = out["project"]["tracks"].as_array_mut() {
-                    for track in tracks {
-                        if let Some(points) = track["automation"].as_array_mut() {
-                            for point in points {
-                                let time = number(point, "time")?;
-                                point["time"] = json!(if time < start {
-                                    time
-                                } else if time >= end {
-                                    time - gap
-                                } else {
-                                    start
-                                });
-                            }
-                        }
-                    }
-                }
+                let mut options = op.clone();
+                options["operation"] = json!("extract");
+                out["project"] = crate::range_edit::apply(&out["project"], &options)?;
             }
             "marker" => {
                 let time = number(op, "at")?;

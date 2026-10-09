@@ -359,3 +359,15 @@ snapshots; explicit loadProjectState bypasses protection and clears rangePlaybac
 Use i18next's existing singleton for notices, not the UI-initialising i18n module.
 CLI recipes compare protected clip data before publishing an edited document.
 No API control is a substitute for this central commit guard.
+
+## Scoped range edits 0.8.1
+
+rangeEdits.ts and media/src/range_edit.rs share lift/extract/insert semantics.
+Track/video rippleEnabled defaults true. Require the whole affected link group
+in scope; locked affected lanes reject atomically. Preserve excluded lanes and
+unaffected transitions. Block boundaries inside blends/cues; validate resulting
+picture topology. Retime included track automation with boundary values; optional
+global retiming includes minimumDuration, markers and transcript cues. GUI previews
+the immutable project then commits once, rechecking project identity. CLI range-edit
+and legacy ripple share this helper. Optional scripts/test-range-edits.mjs checks
+the real dialog/undo and native semantic parity without comparing generated IDs.
