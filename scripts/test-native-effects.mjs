@@ -62,6 +62,13 @@ for (const time of [0, 0.0001, 0.01337, 0.3, 2]) {
 for (const depth of [0, 0.5, 1]) {
   for (const rate of [0, 1.5, 7.3]) cases.push({ type: 'chorus', params: { rate, depth, mix: 0.4 } });
 }
+for (const size of [0, 0.25, 0.5]) {
+  cases.push({ type: 'reverb', params: { size, decay: 1.5, mix: 0.3 } });
+}
+cases.push({ type: 'reverb', rack: 'master', params: { size: 1, decay: 3, mix: 1 } });
+cases.push({ type: 'reverb', mono: true, params: { size: 0.25, decay: 0.8, mix: 0.5 } });
+for (const mix of [0, 1]) cases.push({ type: 'reverb', mono: true, params: { size: 0, decay: 0.01, mix } });
+cases.push({ type: 'reverb', rack: 'master', impulse: true, params: { size: 1, decay: 0.01, mix: 1 } });
 for (const type of ['bitcrush', 'ringmod']) {
   for (const mix of [0, 0.35, 1]) cases.push({ type, params: { bits: 4, freq: 137.25, mix } });
 }
@@ -78,21 +85,27 @@ try {
   await page.goto(process.env.CRISPAUDIO_TEST_URL || 'http://127.0.0.1:5190');
   await page.waitForLoadState('networkidle');
   for (const [index, test] of cases.entries()) {
+    if (process.env.CRISPAUDIO_TEST_EFFECT && test.type !== process.env.CRISPAUDIO_TEST_EFFECT) continue;
     const channels = test.mono ? 1 : 2;
-    const data = test.mono ? Float32Array.from({ length: sampleRate }, (_, i) => stereo[i * 2]) : stereo;
+    const base = test.mono ? Float32Array.from({ length: sampleRate }, (_, i) => stereo[i * 2]) : stereo;
+    const data = test.impulse ? base.slice() : base;
+    if (test.impulse) {
+      data.fill(0);
+      for (const i of [7200, 31200]) { data[i * channels] = 0.8; if (channels === 2) data[i * channels + 1] = -0.4; }
+    }
     const source = path.join(output, `source-${index}.wav`);
     fs.writeFileSync(source, wav(data, channels));
     const fx = { type: test.type, enabled: true, params: test.params };
     const filter = (type, freq, q) => ({ type, enabled: true, params: { freq, q } });
     const segment = (id, startTime, sourceOffset, duration, gain) => ({ id, sourceId: 's', trackId: 't',
       startTime, sourceOffset, duration, gain, fadeInDuration: 0.12, fadeOutDuration: 0.14,
-      fadeInCurve: 'scurve', fadeOutCurve: 'exponential', effects: [fx, filter('lowpass', 5000, 1)] });
+      fadeInCurve: 'scurve', fadeOutCurve: 'exponential', effects: [...(test.rack === 'master' ? [] : [fx]), filter('lowpass', 5000, 1)] });
     const project = { id: 'p', name: 'native-reference', sampleRate,
-      duration: test.params.time === 2 ? 3.2 : 1.2,
+      duration: test.type === 'reverb' ? (test.params.size === 1 ? 6 : 2) : test.params.time === 2 ? 3.2 : 1.2,
       tracks: [{ id: 't', volume: 0.8, pan: 0.35, muted: false, solo: true,
         fadeInDuration: 0.08, fadeOutDuration: 0.1, fadeInCurve: 'exponential', fadeOutCurve: 'scurve',
         automation: [{ time: 0, value: 0.2 }, { time: 0.2, value: 0.9 }, { time: 0.5, value: 0.5 }],
-        effects: [filter('highpass', 250, 1), fx],
+        effects: [filter('highpass', 250, 1), ...(test.rack === 'master' ? [] : [fx])],
         segments: [segment('a', 0.037, 0.1, 0.3, 1), segment('b', 0.2, 0.6, 0.3, 0.7)] }],
       masterEffects: [fx, filter('lowpass', 3500, 2)] };
     const request = path.join(output, `${index}.crispaudio`);

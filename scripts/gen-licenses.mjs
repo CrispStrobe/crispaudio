@@ -48,6 +48,51 @@ for (const name of deps) {
   });
 }
 
+// RustFFT and its already-linked dependencies: distribute under their MIT option.
+entries.push(...[
+  {
+    "name": "rustfft (Rust FFT)",
+    "version": "6.4.1",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/ejmahler/RustFFT"
+  },
+  {
+    "name": "strength_reduce (Rust FFT dependency)",
+    "version": "0.2.4",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "http://github.com/ejmahler/strength_reduce"
+  },
+  {
+    "name": "transpose (Rust FFT dependency)",
+    "version": "0.2.3",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/ejmahler/transpose"
+  },
+  {
+    "name": "num-complex (Rust FFT dependency)",
+    "version": "0.4.6",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/rust-num/num-complex"
+  },
+  {
+    "name": "num-integer (Rust FFT dependency)",
+    "version": "0.1.47",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/rust-num/num-integer"
+  },
+  {
+    "name": "num-traits (Rust FFT dependency)",
+    "version": "0.2.19",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/rust-num/num-traits"
+  },
+  {
+    "name": "primal-check (Rust FFT dependency)",
+    "version": "0.3.4",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/huonw/primal"
+  }
+]);
 entries.push({name:'hound (Rust WAV I/O)',version:'3.5.1',license:'Apache-2.0',repository:'https://github.com/ruuda/hound'});
 const outDir = join(root, 'src', 'generated');
 entries.push({name:'glint (vendored codec WASM)',version:'vendored',license:'MIT',repository:'https://github.com/CrispStrobe/glint'});

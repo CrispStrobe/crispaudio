@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.4
+# Formats and licensing — local 0.7.5
 
 ## Current GUI
 
@@ -74,7 +74,7 @@ CLI project mixing now streams to **48 kHz, stereo, 32-bit float WAV** using
 Apache-2.0 Hound and MIT DSP. It supports linked mono/stereo sources, source
 trims/offsets, overlaps, mute/solo, gains, pan, track/clip fade curves, gain
 automation and enabled low/high-pass, bit-crusher, ring-modulator, delay and
-chorus effects at clip, track and master level.
+chorus and convolution reverb effects at clip, track and master level.
 Filter resonance and pan follow Web Audio definitions; fades match the GUI's
 sampled ramp schedule. Ring modulation uses the project clock and a true wet/dry
 blend; bit crushing preserves silence and interpolates the GUI waveshaper curve.
@@ -82,8 +82,12 @@ Delay and chorus include fractional delay interpolation and tails within the
 chosen canvas. Delay feedback timing follows measured macOS WebKit behavior;
 other browser engines may differ. Chorus preserves the GUI's two wet delay lines
 and uses the project clock for modulation. All audible racks share a 64 MiB
-delay-buffer limit and a 1024-enabled-effect limit; larger racks fail explicitly.
-Other enabled effects (reverb, distortion and compressor) still
+DSP-buffer limit and a 1024-enabled-effect limit; larger racks fail explicitly.
+Reverb reproduces the GUI's seeded stereo response, WebKit level calibration
+and wet/dry blend, using zero-latency FFT convolution. It turns mono sound
+into stereo before pan. Its 0.1–5 second response buffers share the state budget.
+WebKit calibration/timing is the reference; other browser engines can differ.
+Other enabled effects (distortion and compressor) still
 fail explicitly; use GUI export.
 
 Native 48 kHz PCM WAVs (8/16/24/32-bit integer or 32-bit float) are read directly.
@@ -175,3 +179,12 @@ Sources: [Fraunhofer on MP3 patents](https://www.audioblog.iis.fraunhofer.com/mp
 [Via LA AAC programme](https://www.via-la.com/licensing-programs/aac/),
 [Opus copyright and patent-licence references](https://github.com/xiph/opus/blob/main/COPYING),
 [Glint source and profile description](https://github.com/CrispStrobe/glint).
+
+Native convolution uses the already-linked RustFFT 6.4.1. RustFFT and its
+strength_reduce, transpose, num-complex, num-integer, num-traits and primal-check
+dependencies offer MIT OR Apache-2.0; the app distributes their MIT notices in
+About. This adds no new codec or GPL dependency.
+
+Reverb normalisation references: [WebKit calibration implementation](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/audio/Reverb.cpp)
+and [Web Audio ConvolverNode semantics](https://www.w3.org/TR/webaudio-1.0/#ConvolverNode).
+The native convolver is our implementation; WebKit code is not bundled or ported.

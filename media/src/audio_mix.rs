@@ -257,6 +257,7 @@ impl Chorus {
 enum Effect {
     Filter(Biquad),
     Delay(Box<Delay>),
+    Reverb(Box<crate::reverb::Reverb>),
     Chorus(Chorus),
     BitCrush { levels: f64, mix: f64 },
     RingMod { frequency: f64, mix: f64 },
@@ -266,6 +267,7 @@ impl Effect {
         match self {
             Self::Filter(filter) => filter.at(input),
             Self::Delay(delay) => delay.at(input),
+            Self::Reverb(reverb) => reverb.at(input),
             Self::Chorus(chorus) => chorus.at(input, frame),
             Self::BitCrush { levels, mix } => input.map(|v| {
                 // Web Audio interpolates the 65536-entry Float32 waveshaper
@@ -296,6 +298,18 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
     for effect in effects.iter().filter(|e| e["enabled"] == true) {
         let params = &effect["params"];
         let kind = effect["type"].as_str().ok_or("Missing effect type")?;
+        if kind == "reverb" {
+            let size = finite(params, "size", Some(0.5))?.clamp(0.0, 1.0);
+            let decay = finite(params, "decay", Some(1.5))?.max(0.01);
+            let mix = finite(params, "mix", Some(0.3))?.clamp(0.0, 1.0);
+            budget.reserve(crate::reverb::Reverb::state_bytes(
+                crate::reverb::Reverb::length(size),
+            ))?;
+            out.push(Effect::Reverb(Box::new(crate::reverb::Reverb::new(
+                size, decay, mix,
+            )?)));
+            continue;
+        }
         if kind == "chorus" {
             let length = (RATE * 0.1) as usize + 2;
             budget.reserve(length * std::mem::size_of::<[f32; 2]>())?;
@@ -503,6 +517,9 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
         let mut stop = 0.0f64;
         let mut mono = true;
         let track_filters = filters(&track["effects"], &mut effect_budget)?;
+        if track_filters.iter().any(|e| matches!(e, Effect::Reverb(_))) {
+            mono = false;
+        }
         let automation = Automation::parse(&track["automation"])?;
         for c in segments {
             clip_count += 1;
@@ -527,6 +544,9 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
             }
             let envelope = Envelope::parse(c, length)?;
             let clip_filters = filters(&c["effects"], &mut effect_budget)?;
+            if clip_filters.iter().any(|e| matches!(e, Effect::Reverb(_))) {
+                mono = false;
+            }
             let clip_gain = positive(c, "gain", Some(1.0))?;
             let source_id = c["sourceId"].as_str().ok_or("Missing audio source ID")?;
             if !prepared.contains_key(source_id) {
@@ -752,6 +772,26 @@ mod tests {
         }
     }
     #[test]
+    fn reverb_keeps_stereo_tail_after_clip_and_finishes_inside_canvas() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = impulse(folder.path());
+        let mut doc = project(&input);
+        doc["project"]["duration"] = json!(0.15);
+        let clip = &mut doc["project"]["tracks"][0]["segments"][0];
+        clip["duration"] = json!(1.0 / RATE);
+        clip["effects"] =
+            json!([{"type":"reverb","enabled":true,"params":{"size":0,"decay":1.5,"mix":1}}]);
+        let target = folder.path().join("reverb.wav");
+        render(&doc, target.to_str().unwrap()).unwrap();
+        let pcm = output(&target);
+        assert!(pcm[0] > 0.3); // GUI retains 30% dry even at mix=1
+        assert!(pcm[64].abs() > 0.0001);
+        assert!(pcm[65] < 0.0);
+        assert!(pcm[4799 * 2].abs() > 0.0001);
+        assert!(pcm[6000 * 2..].iter().all(|v| v.abs() < 1e-7));
+        assert_eq!(pcm.len(), 14400);
+    }
+    #[test]
     fn fractional_delay_interpolates_impulses() {
         let folder = tempfile::tempdir().unwrap();
         let input = impulse(folder.path());
@@ -793,6 +833,10 @@ mod tests {
             count: 0,
         };
         assert!(filters(&delay, &mut budget).is_err());
+        assert_eq!(budget.bytes, MAX_EFFECT_STATE - 100);
+        assert_eq!(budget.count, 0);
+        let reverb = json!([{ "type": "reverb", "enabled": true, "params": { "size": 1 } }]);
+        assert!(filters(&reverb, &mut budget).is_err());
         assert_eq!(budget.bytes, MAX_EFFECT_STATE - 100);
         assert_eq!(budget.count, 0);
         let mut budget = EffectBudget {

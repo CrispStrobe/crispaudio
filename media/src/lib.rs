@@ -3,6 +3,7 @@ pub mod apple;
 pub mod audio_mix;
 pub mod jobs;
 pub mod project_edit;
+mod reverb;
 pub mod video_edit;
 use rustfft::{num_complex::Complex, FftPlanner};
 use serde::{Deserialize, Serialize};

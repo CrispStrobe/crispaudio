@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.4]
+## [Unreleased — local version 0.7.5]
+
+- Add native CLI convolution reverb at clip, track and master level with the
+  GUI's seeded stereo response, WebKit level calibration and dry/wet blend.
+- Use direct early samples and FFT tail partitions for zero added latency and
+  bounded state. Propagate mono-to-stereo reverb through the track's pan law.
+- Extend the reusable WebKit/native tests with reverb sizes, five-second tails,
+  short decays, mono sources and impulses; add independent convolution/tail tests.
+- Bundle MIT notices for the already-linked RustFFT and its arithmetic dependencies.
+  Keep distortion and compressor unsupported in the CLI.
+
+## [Local version 0.7.4]
 
 - Add native CLI delay and chorus at clip, track and master level, with bounded
   stereo delay lines, fractional interpolation and tails inside the chosen canvas.

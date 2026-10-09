@@ -282,3 +282,7 @@ Local 0.7.4 adds native CLI delay and chorus with stereo tails and bounded delay
 buffers, checked against actual macOS WebKit rendering. Reverb, oversampled
 distortion and compression still require GUI export. See the reusable DSP
 comparison instructions in `docs/MEDIA_WORKSPACE.md`.
+
+Local 0.7.5 adds native convolution reverb matching the GUI's seeded stereo
+response and macOS WebKit level calibration, with bounded FFT buffers and no
+added latency. Distortion and compression still require GUI export.

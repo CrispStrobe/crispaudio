@@ -611,3 +611,55 @@ in that same private validation folder. Original sources/projects were unchanged
 
 No codec dependencies or licensing scope changed. GUI disk-paged rendering,
 permissive-only WebM and iOS picture export remain unfinished.
+
+## Local native convolution build 0.7.5
+
+Installed, ad-hoc signed and launched `~/Applications/CrispAudio-local.app` 0.7.5;
+installed and verified the optimised release build of the standalone CLI at
+`~/Applications/crispaudio-cli-local`. Backed up native WebKit state and confirmed
+the autosaved arrangement unchanged. No release tag, TestFlight upload or Apple
+submission was made.
+
+Native clip/track/master racks now include convolution reverb. Its seeded stereo
+impulse, 0.1–5 second length, decay and dry/wet blend match the existing GUI.
+RMS normalisation uses WebKit's -58 dB calibration rather than the specification's
+rounded constant. References: [WebKit](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/audio/Reverb.cpp),
+[Web Audio](https://www.w3.org/TR/webaudio-1.0/#ConvolverNode). The convolution code
+is our implementation, using the existing RustFFT dependency; no WebKit code is
+bundled or ported. Thirty-two direct early samples plus nonuniform FFT tail
+bands and a uniform later frequency-delay line introduce no extra latency.
+Mono sources become stereo before the track's pan law, including at mix=0.
+Conservative convolution-buffer reservations share the existing 64 MiB budget;
+very large racks fail explicitly. Preparation observes cancellation. FFT plan
+metadata and general process memory are separate from that DSP-buffer budget.
+Distortion and compression remain explicit native errors; GUI export handles them.
+
+Validation: 30 media Rust tests and one CLI parser test passed; six existing
+native-video integration tests remain opt-in and were not rerun for this DSP
+change. New checks compare partition boundaries with independent sparse
+convolution, verify seeded stereo reproducibility, and render a one-frame clip's
+complete reverb tail. ESLint, frontend TypeScript/production build and the debug
+macOS bundle passed. All 35 real WebKit/native release-CLI comparisons passed,
+including eight reverb cases (sizes, mono, dry/wet endpoints, short decay,
+impulses and five-second tails). Maximum reverb sample error was 3.20e-7;
+maximum RMS error was 8.43e-8. Fixtures establish measured agreement, not
+sample identity for every possible project/browser. A development-server
+reload interrupted an earlier run; the full stable-file rerun passed.
+Archived fixtures/results are outside git under
+`~/code/transcripts/2026-Studienwoche/CrispAudio-validation/ux/native-reverb-075/`.
+
+The real interview's source time 30–38 seconds, with master reverb size=0.5,
+decay=1.5 and mix=0.3, rendered in 0.30 seconds (0.25 user / 0.03 system) with
+the release CLI, about 26.7 times faster than playback. Peak CLI RSS was
+12,681,216 bytes (12.09 MiB). The debug CLI took 16.32 seconds; its PCM was
+identical to the release output for this section. These are single warm-cache
+runs on direct 48 kHz WAV, excluding OS cache and other processes; do not
+extrapolate them to all codecs or effects. Private derived project/audio lives
+under `ux/real-reverb-075-nby481qp/` in that same validation folder. Originals
+were unchanged. The GUI audio renderer still uses Web Audio.
+
+RustFFT 6.4.1 and its strength_reduce, transpose, num-complex, num-integer,
+num-traits and primal-check dependencies were already linked. Their MIT option
+notices are now bundled in About, and the generated manifest has 24 entries.
+No new codec/GPL dependency was added. GUI disk-paged rendering, permissive-only
+WebM and iOS picture export remain unfinished.

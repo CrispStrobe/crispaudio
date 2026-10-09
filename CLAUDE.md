@@ -213,7 +213,7 @@ absolute render-context time even for later clips. BitCrush uses symmetric
 quantisation so its even-length interpolated curve maps zero to zero. Native
 waveshaping interpolates the same 65536-entry Float32 curve, not a direct step.
 The old GUI DC bias and mix bug are intentionally corrected for saved settings.
-Delay/chorus were added in 0.7.4; reverb/distortion/compressor remain explicit native errors.
+Delay/chorus were added in 0.7.4; reverb was added in 0.7.5; distortion/compressor remain explicit native errors.
 
 ## Native delay/chorus 0.7.4
 
@@ -226,3 +226,21 @@ allocation. Box the delay variant to keep other Effect values small. The portabl
 `scripts/test-native-effects.mjs` compares all supported racks with real WebKit,
 reads float/extensible WAV directly and keeps fixtures in owned temporary folders.
 Use a separate CARGO_TARGET_DIR for its CLI to avoid replacing the Tauri binary.
+
+## Native convolution 0.7.5
+
+media/src/reverb.rs keeps 32 direct IR samples, dyadic FFT bands, and a 4096-frame
+uniform frequency-delay line for later tails. Each group's IR begins at its
+block size, so block results are ready before their output clock: no added
+latency or shifting automation/envelopes. Normalise the seeded stereo IR using
+measured WebKit -58 dB calibration, not the rounded 0.00125 spec constant.
+Reverb expands mono into stereo, including mix=0; update the track pan law.
+Keep the GUI dry blend 1-0.7*mix and 48 kHz float input. Reserve conservative
+convolution state before allocation inside the shared 64 MiB DSP-buffer limit;
+plan metadata is outside that buffer reservation. Do not silently omit FX on
+budget errors. Reverb preparation checks cancellation. RustFFT/dependency MIT
+notices are bundled in About; keep them and the manifest synced to Cargo.lock.
+
+Install the optimised standalone CLI for convolution performance measurements;
+never use its build directory for the Tauri binary. Debug convolution may render
+slower than playback without implying the release CLI has that performance.

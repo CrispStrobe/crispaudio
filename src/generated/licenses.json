@@ -95,6 +95,48 @@
     "homepage": "https://github.com/pmndrs/zustand"
   },
   {
+    "name": "rustfft (Rust FFT)",
+    "version": "6.4.1",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/ejmahler/RustFFT"
+  },
+  {
+    "name": "strength_reduce (Rust FFT dependency)",
+    "version": "0.2.4",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "http://github.com/ejmahler/strength_reduce"
+  },
+  {
+    "name": "transpose (Rust FFT dependency)",
+    "version": "0.2.3",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/ejmahler/transpose"
+  },
+  {
+    "name": "num-complex (Rust FFT dependency)",
+    "version": "0.4.6",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/rust-num/num-complex"
+  },
+  {
+    "name": "num-integer (Rust FFT dependency)",
+    "version": "0.1.47",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/rust-num/num-integer"
+  },
+  {
+    "name": "num-traits (Rust FFT dependency)",
+    "version": "0.2.19",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/rust-num/num-traits"
+  },
+  {
+    "name": "primal-check (Rust FFT dependency)",
+    "version": "0.3.4",
+    "license": "MIT (chosen from MIT OR Apache-2.0)",
+    "repository": "https://github.com/huonw/primal"
+  },
+  {
     "name": "hound (Rust WAV I/O)",
     "version": "3.5.1",
     "license": "Apache-2.0",
