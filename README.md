@@ -321,3 +321,11 @@ with signed 24-bit quantisation and final MD5 verification. CLI `render-project`
 accepts a `.flac` destination on Mac. Other projects keep the libFLAC worker;
 compressed bytes can differ by preset while decoded PCM is preserved. No new
 codec dependency is added. See `docs/MEDIA_WORKSPACE.md` for usage and disk space.
+
+### Local 0.7.11 — native timeline AAC
+
+Eligible Mac timeline AAC exports now stream from disk with the selected bitrate.
+CLI `.aac` output uses the same native AAC-LC/ADTS path; `--audio-bitrate-kbps`
+selects 96/128/192/256/320 kbps (default 192). Packet validation checks actual
+length and layout. ADTS has codec priming/padding; use WAV/FLAC for exact timing.
+No new codec dependency is added. See `docs/MEDIA_WORKSPACE.md` for details.

@@ -314,3 +314,18 @@ before checking STREAMINFO; ARC finalises the header/checksum. Cancel kills the
 owned helper process and removes staging. No populated metadata means failure.
 linkedAudioExport now handles WAV and FLAC with direct jobs; all other formats
 keep the worker. Numeric stable-version comparisons handle 0.7.9 → 0.7.10.
+
+## Native AAC 0.7.11
+
+The shared audio_encode pipeline now handles FLAC and AAC without changing their
+DSP/float intermediates. AAC uses AVAudioFile, AAC-LC stereo 48 kHz, ADTS .aac,
+selected 96/128/192/256/320 kbps and constant bitrate strategy. Clip samples at
+full scale, do not normalise. Validate headers/payloads with bounded buffers,
+check cancellation per packet and reject excess packets early. Actual ADTS
+packet count *1024, not FFprobe's bitrate estimate, defines decoded duration.
+Accept source frames through source+4096 for priming/padding; tested priming is
+2112 frames, 44 ms. ADTS has no gapless trim metadata: never call it sample-exact
+or use it for the video's already-trimmed PCM mix. GUI forwards bitrateKbps;
+CLI --audio-bitrate-kbps requires AAC and conflicts with video/WAV depth.
+Other platforms, rates and in-memory sources keep the Glint worker. Rerun the
+native FLAC integration after shared pipeline changes. No dependency added.

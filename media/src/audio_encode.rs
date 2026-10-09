@@ -1,4 +1,4 @@
-//! Disk-backed Apple FLAC export; no redistributed codec dependency.
+//! Disk-backed Apple FLAC and AAC export; no redistributed codec dependency.
 use crate::{
     apple::{attempt, Backend},
     Result,
@@ -6,21 +6,40 @@ use crate::{
 use serde_json::Value;
 use std::{fs::File, io::Read, path::Path};
 
+enum Codec {
+    Flac,
+    Aac(u32),
+}
 pub fn render_flac(doc: &Value, output: &str) -> Result<()> {
+    render_encoded(doc, output, Codec::Flac)
+}
+pub fn render_aac(doc: &Value, output: &str, bitrate_kbps: u32) -> Result<()> {
+    if ![96, 128, 192, 256, 320].contains(&bitrate_kbps) {
+        return Err("AAC bitrate must be 96, 128, 192, 256 or 320 kbps".into());
+    }
+    render_encoded(doc, output, Codec::Aac(bitrate_kbps))
+}
+fn render_encoded(doc: &Value, output: &str, codec: Codec) -> Result<()> {
+    let extension = match codec {
+        Codec::Flac => "flac",
+        Codec::Aac(_) => "aac",
+    };
     if Path::new(output).exists() {
         return Err("Output already exists; choose a new filename".into());
     }
     if !Path::new(output)
         .extension()
-        .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("flac"))
+        .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case(extension))
     {
-        return Err("FLAC export requires a .flac filename".into());
+        return Err(format!(
+            "Native audio export requires a .{extension} filename"
+        ));
     }
     if Backend::configured()? == Backend::Ffmpeg {
-        return Err("Native FLAC export requires --backend apple or auto".into());
+        return Err("Native compressed audio export requires --backend apple or auto".into());
     }
     if !cfg!(target_os = "macos") {
-        return Err("Native FLAC export requires macOS".into());
+        return Err("Native compressed audio export requires macOS".into());
     }
     let parent = Path::new(output)
         .parent()
@@ -32,28 +51,89 @@ pub fn render_flac(doc: &Value, output: &str) -> Result<()> {
     let frames = hound::WavReader::open(&mix)
         .map_err(|e| e.to_string())?
         .duration() as u64;
-    let staging = folder.path().join("mix.flac");
-    attempt(
-        Backend::Apple,
-        &[
-            "encode-flac".into(),
-            mix.to_string_lossy().into_owned(),
-            staging.to_string_lossy().into_owned(),
-        ],
-        None,
-    )?
-    .ok_or("Native FLAC encoder unavailable")?;
-    let mut header = [0u8; 42];
-    File::open(&staging)
-        .map_err(|e| e.to_string())?
-        .read_exact(&mut header)
-        .map_err(|e| e.to_string())?;
-    validate_streaminfo(&header, frames)?;
+    let staging = folder.path().join(format!("mix.{extension}"));
+    let operation = match codec {
+        Codec::Flac => "encode-flac",
+        Codec::Aac(_) => "encode-aac",
+    };
+    let mut args = vec![
+        operation.into(),
+        mix.to_string_lossy().into_owned(),
+        staging.to_string_lossy().into_owned(),
+    ];
+    if let Codec::Aac(bitrate) = codec {
+        args.push(bitrate.to_string());
+    }
+    attempt(Backend::Apple, &args, None)?.ok_or("Native audio encoder unavailable")?;
+    match codec {
+        Codec::Flac => {
+            let mut header = [0u8; 42];
+            File::open(&staging)
+                .map_err(|e| e.to_string())?
+                .read_exact(&mut header)
+                .map_err(|e| e.to_string())?;
+            validate_streaminfo(&header, frames)?;
+        }
+        Codec::Aac(_) => {
+            validate_adts(File::open(&staging).map_err(|e| e.to_string())?, frames)?;
+        }
+    }
     if crate::jobs::cancelled() {
         return Err("Operation cancelled".into());
     }
-    std::fs::hard_link(staging, output).map_err(|e| format!("Cannot publish FLAC: {e}"))?;
+    std::fs::hard_link(staging, output)
+        .map_err(|e| format!("Cannot publish compressed audio: {e}"))?;
     Ok(())
+}
+// ADTS has no gapless metadata. Validate real packet duration instead of a
+// bitrate-derived estimate, allowing at most one AAC priming/padding envelope.
+fn validate_adts(input: impl Read, source_frames: u64) -> Result<u64> {
+    let mut input = std::io::BufReader::new(input);
+    let mut header = [0u8; 7];
+    let mut payload = [0u8; 8192];
+    let mut packets = 0u64;
+    loop {
+        if crate::jobs::cancelled() {
+            return Err("Operation cancelled".into());
+        }
+        match input.read(&mut header[..1]).map_err(|e| e.to_string())? {
+            0 => break,
+            _ => {}
+        }
+        input
+            .read_exact(&mut header[1..])
+            .map_err(|_| "Truncated ADTS header")?;
+        if header[0] != 255
+            || header[1] & 0xf6 != 0xf0
+            || header[2] >> 6 != 1
+            || (header[2] >> 2) & 15 != 3
+            || ((header[2] & 1) << 2) | (header[3] >> 6) != 2
+            || header[6] & 3 != 0
+        {
+            return Err("AAC export must contain stereo 48 kHz AAC-LC ADTS packets".into());
+        }
+        let length = (((header[3] & 3) as usize) << 11)
+            | ((header[4] as usize) << 3)
+            | (header[5] as usize >> 5);
+        let minimum = if header[1] & 1 == 1 { 7 } else { 9 };
+        if length <= minimum {
+            return Err("Invalid ADTS packet length".into());
+        }
+        input
+            .read_exact(&mut payload[..length - 7])
+            .map_err(|_| "Truncated ADTS packet")?;
+        packets += 1;
+        if packets * 1024 > source_frames + 4096 {
+            return Err("AAC output exceeded its priming/padding bound".into());
+        }
+    }
+    let frames = packets * 1024;
+    if frames < source_frames || frames > source_frames + 4096 || packets == 0 {
+        return Err(
+            "AAC packet duration does not cover the mix within its priming/padding bound".into(),
+        );
+    }
+    Ok(frames)
 }
 fn validate_streaminfo(header: &[u8; 42], frames: u64) -> Result<()> {
     if &header[..4] != b"fLaC" || header[4] & 127 != 0 || header[5..8] != [0, 0, 34] {
@@ -73,6 +153,108 @@ fn validate_streaminfo(header: &[u8; 42], frames: u64) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn adts_rejects_truncated_wrong_layout_and_wrong_duration() {
+        let packet = [255, 241, 76, 128, 1, 31, 252, 0];
+        assert_eq!(validate_adts(&packet[..], 1024).unwrap(), 1024);
+        assert!(validate_adts(&packet[..7], 1024).is_err());
+        let mut wrong = packet;
+        wrong[2] = 72;
+        assert!(validate_adts(&wrong[..], 1024).is_err());
+        assert!(validate_adts(&packet[..], 2048).is_err());
+        assert!(validate_adts(&[][..], 0).is_err());
+    }
+    #[test]
+    #[ignore = "Requires macOS AAC encoding and FFmpeg reference decoding"]
+    #[cfg(target_os = "macos")]
+    fn native_aac_bitrates_preserve_stereo_signal_and_packet_clock() {
+        use hound::{SampleFormat, WavSpec, WavWriter};
+        use serde_json::json;
+        let folder = tempfile::tempdir().unwrap();
+        let source = folder.path().join("source.wav");
+        let mut writer = WavWriter::create(
+            &source,
+            WavSpec {
+                channels: 2,
+                sample_rate: 48000,
+                bits_per_sample: 32,
+                sample_format: SampleFormat::Float,
+            },
+        )
+        .unwrap();
+        let mut reference = Vec::new();
+        for i in 0..24000 {
+            let t = i as f32 / 48000.0;
+            let envelope = if (0.07..0.14).contains(&t) {
+                0.3
+            } else if (0.2..0.38).contains(&t) {
+                0.15
+            } else {
+                0.0
+            };
+            let pair = [
+                envelope * (std::f32::consts::TAU * 500.0 * t).sin(),
+                envelope * (std::f32::consts::TAU * 2200.0 * t).sin(),
+            ];
+            for sample in pair {
+                writer.write_sample(sample).unwrap();
+            }
+            reference.push(pair);
+        }
+        writer.finalize().unwrap();
+        let doc = json!({"project":{"duration":0.5,"tracks":[{"volume":1,"pan":0,"segments":[{"sourceId":"s","startTime":0,"sourceOffset":0,"duration":0.5,"gain":1}]}]},"sources":[{"id":"s","path":source}]});
+        for bitrate in [96, 128, 192, 256, 320] {
+            let target = folder.path().join(format!("mix-{bitrate}.aac"));
+            render_aac(&doc, target.to_str().unwrap(), bitrate).unwrap();
+            let frames = validate_adts(File::open(&target).unwrap(), 24000).unwrap();
+            let decoded = std::process::Command::new("ffmpeg")
+                .args(["-v", "error", "-i"])
+                .arg(&target)
+                .args(["-f", "f32le", "pipe:1"])
+                .output()
+                .unwrap();
+            assert!(decoded.status.success());
+            let samples: Vec<f32> = decoded
+                .stdout
+                .chunks_exact(4)
+                .map(|b| f32::from_le_bytes(b.try_into().unwrap()))
+                .collect();
+            assert_eq!(samples.len() as u64, frames * 2);
+            let error = |lag: usize| {
+                let mut sum = 0.0f64;
+                for i in (0..24000).step_by(32) {
+                    for ch in 0..2 {
+                        let difference =
+                            samples[(i + lag) * 2 + ch] as f64 - reference[i][ch] as f64;
+                        sum += difference * difference;
+                    }
+                }
+                sum / 1500.0
+            };
+            let limit = (frames - 24000) as usize;
+            let coarse = (0..=limit)
+                .step_by(16)
+                .min_by(|a, b| error(*a).total_cmp(&error(*b)))
+                .unwrap();
+            let lag = (coarse.saturating_sub(16)..=(coarse + 16).min(limit))
+                .min_by(|a, b| error(*a).total_cmp(&error(*b)))
+                .unwrap();
+            assert!(
+                lag <= 4096 && error(lag) < 0.0002,
+                "{bitrate} kbps: lag {lag}, error {}",
+                error(lag)
+            );
+            println!(
+                "AAC {bitrate} kbps: {} packets, priming {lag} frames, aligned RMS error {}",
+                frames / 1024,
+                error(lag).sqrt()
+            );
+            assert!(render_aac(&doc, target.to_str().unwrap(), bitrate).is_err());
+        }
+        let bad = folder.path().join("invalid.aac");
+        assert!(render_aac(&doc, bad.to_str().unwrap(), 12).is_err());
+        assert!(!bad.exists());
+    }
     #[test]
     fn streaminfo_rejects_unfinalised_or_wrong_layout() {
         let mut header = [0u8; 42];

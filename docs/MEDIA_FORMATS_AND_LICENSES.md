@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.10
+# Formats and licensing — local 0.7.11
 
 ## Current GUI
 
@@ -16,8 +16,13 @@ float-to-24-bit quantization; it does not preserve arbitrary 32-bit float values
 Bitrate does not apply to WAV/FLAC. Mac timeline WAV export for linked 48 kHz
 mono/stereo projects streams directly to disk, honoring the 8/16/24/32-bit integer
 PCM preference. Integer export clips to full scale and matches the GUI worker's
-rounding without dither. Linked Mac FLAC exports also write directly to disk; other audio exports use the
-cancellable encoder worker.
+rounding without dither. Linked Mac FLAC and AAC exports also write directly to disk; other audio exports
+use the cancellable encoder worker. Native AAC uses AAC-LC in ADTS `.aac` at the
+selected 96/128/192/256/320 kbps with constant bitrate strategy. It is lossy;
+encoder output can differ from the worker. ADTS carries no gapless metadata:
+measured priming is 2,112 frames (44 ms), with a final packet-padding tail.
+Use WAV/FLAC when exact decoded timing is needed. Packet counts give duration
+more reliably than tools that estimate ADTS duration from bitrate.
 
 Video import offers MP4, MOV, MKV, M4V, WebM, AVI, OGV and MPEG/MPG. Apple handles
 its supported containers/codecs first on macOS; optional installed FFmpeg handles
@@ -133,7 +138,10 @@ Eligible timeline WAV exports also stream from disk; compressed-audio exports
 and other projects still render with Web Audio. CLI also exports native Mac FLAC when the output ends in `.flac`, preserving
 stereo 48 kHz and signed 24-bit PCM. It uses an owned float mix on disk and the
 Apple encoder; explicit FFmpeg mode fails rather than choosing another FLAC
-backend. MP3/AAC/Opus exports remain in the GUI codec worker. No permissive-only bundled WebM implementation is claimed.
+backend. CLI native Mac `.aac` output is also supported: AAC-LC, ADTS, stereo 48 kHz.
+`--audio-bitrate-kbps` selects the same five bitrates, default 192. It requires
+`.aac` output and conflicts with `--video`/`--wav-bit-depth`; native audio never
+falls back to FFmpeg. MP3/Opus remain in the GUI codec worker. No permissive-only bundled WebM implementation is claimed.
 
 ```sh
 crispaudio render-project --input saved.crispaudio --output mix.wav --backend apple

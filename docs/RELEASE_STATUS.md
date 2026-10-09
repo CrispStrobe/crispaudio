@@ -915,3 +915,58 @@ measurement live under `ux/real-flac-0710-u_9ywxnh/`; originals were not rewritt
 Remaining work includes disk-paged import/playback, streaming MP3/AAC/Opus
 export, permissive-only WebM and iOS picture composition. Native FLAC was tested
 on this Mac; unsupported system encoder configurations fail explicitly.
+
+## Local 0.7.11 — native Mac AAC-LC
+
+Installed and launched `~/Applications/CrispAudio-local.app` version 0.7.11
+and updated the optimised standalone CLI. Both ad-hoc signatures verified.
+The one autosave JSON remains unchanged; WebKit data and the JSON backup are
+under `ux/recovery-before-0711/`. No release tag or Apple upload was triggered.
+
+Eligible linked 48 kHz Mac timeline AAC export now uses the native mixer and
+Apple system encoder, retaining the existing `.aac` ADTS format. The GUI
+passes its configured bitrate; CLI `render-project` accepts
+`--audio-bitrate-kbps 96|128|192|256|320` (default 192 for AAC). Other projects
+and platforms retain the existing worker. WAV and FLAC paths remain available.
+No codec dependency or redistributed binary was added; the 26-entry licence
+manifest remains unchanged.
+
+The encoder uses 4096-frame buffers from an owned float WAV, with finite-sample
+validation and clipping rather than automatic normalisation. A bounded ADTS
+parser verifies AAC-LC, stereo 48 kHz, packet completeness and the actual
+packet clock before atomic no-overwrite publication. Cancellation removes
+owned temporary files. Explicit FFmpeg mixing is rejected for this endpoint;
+FFmpeg was used only as an independent reference decoder in validation.
+Disk space is needed for the temporary WAV plus encoded output. Import and
+playback buffers are still loaded.
+
+ADTS has no gapless metadata. The five bitrate signal tests measured 2,112
+priming frames (44 ms) plus end padding. WAV/FLAC remain the choices for exact
+timeline exchange. Duration estimates based on ADTS bitrate can be inaccurate;
+validation uses packet counts and independent decoded frame counts instead.
+
+Validation: all 38 ordinary media Rust tests and three CLI parser tests passed;
+nine platform integrations are opt-in. The new AAC integration was explicitly
+run at all five bitrates and passed, checking independently decoded stereo
+bursts, priming alignment, signal error, packet clock and no-overwrite behavior.
+The FLAC PCM/checksum integration was repeated and passed because encoder
+orchestration is shared. Seven older picture integrations were not repeated.
+All 23 targeted export frontend tests, ESLint, TypeScript/production build,
+release CLI and debug macOS app bundle passed. Prior DSP/PCM/WebKit suites
+were not repeated because those implementations are unchanged. The 0.7.10
+iOS CI passed; desktop CI was still queued at this milestone. This push
+starts new CI.
+
+The full 253.72-second interview with default master compression exported
+at 192 kbps in 4.67 seconds (4.03 user / 0.35 system), about 54 times faster
+than playback. Output is 6,173,961 bytes. Independent ADTS inspection and
+full decoding agreed on 11,896 packets / 12,181,504 stereo frames, or
+253.781333 seconds including priming and padding. Source duration remains
+12,178,560 frames. macOS time reported peak RSS 15,761,408 bytes (15.0 MiB);
+this single warm-cache direct-PCM-source run excludes editor buffers, OS
+cache and other processes. The derived project, AAC and validation JSON
+are under `ux/real-aac-0711-hqkpne2a/`; originals were not rewritten.
+
+Remaining work includes disk-paged import/playback, streaming MP3/Opus export,
+permissive-only WebM and iOS picture composition. Native AAC was tested on
+this Mac; unsupported system encoder configurations fail explicitly.

@@ -492,6 +492,12 @@ fn automation(points: &Value, time: &str) -> Result<String> {
 pub fn render_audio(doc: &Value, output: &str) -> Result<()> {
     if std::path::Path::new(output)
         .extension()
+        .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("aac"))
+    {
+        return crate::audio_encode::render_aac(doc, output, 192);
+    }
+    if std::path::Path::new(output)
+        .extension()
         .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("flac"))
     {
         return crate::audio_encode::render_flac(doc, output);
@@ -501,7 +507,8 @@ pub fn render_audio(doc: &Value, output: &str) -> Result<()> {
         .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("wav"))
     {
         return Err(
-            "CLI audio rendering exports WAV or native Mac FLAC; choose .wav or .flac".into(),
+            "CLI audio rendering exports WAV or native Mac FLAC/AAC; choose .wav, .flac or .aac"
+                .into(),
         );
     }
     let backend = crate::apple::Backend::configured()?;

@@ -98,6 +98,24 @@ func encodeFlac(_ path:String,_ destination:String) throws {
         try output.write(from:buffer)
     }
 }
+// AAC-LC in ADTS, preserving the GUI's .aac container and bitrate control.
+func encodeAac(_ path:String,_ destination:String,_ bitrate:Int) throws {
+    guard [96,128,192,256,320].contains(bitrate) else {try fail("AAC bitrate must be 96, 128, 192, 256 or 320 kbps")}
+    let input=try AVAudioFile(forReading:URL(fileURLWithPath:path),commonFormat:.pcmFormatFloat32,interleaved:false)
+    guard input.processingFormat.sampleRate==48000,input.processingFormat.channelCount==2,input.length>0 else {try fail("AAC input must be stereo 48 kHz PCM")}
+    let settings:[String:Any]=[AVFormatIDKey:kAudioFormatMPEG4AAC,AVSampleRateKey:48000,AVNumberOfChannelsKey:2,AVEncoderBitRateKey:bitrate*1000,AVEncoderBitRateStrategyKey:AVAudioBitRateStrategy_Constant]
+    let output=try AVAudioFile(forWriting:URL(fileURLWithPath:destination),settings:settings,commonFormat:.pcmFormatFloat32,interleaved:false)
+    guard let buffer=AVAudioPCMBuffer(pcmFormat:input.processingFormat,frameCapacity:4096) else {try fail("AAC buffer allocation failed")}
+    while input.framePosition<input.length {
+        try input.read(into:buffer,frameCount:AVAudioFrameCount(min(4096,input.length-input.framePosition)))
+        guard buffer.frameLength>0,let channels=buffer.floatChannelData else {try fail("Incomplete AAC input")}
+        for ch in 0..<2 {for i in 0..<Int(buffer.frameLength) {
+            guard channels[ch][i].isFinite else {try fail("Non-finite AAC sample")}
+            channels[ch][i]=max(-1,min(1,channels[ch][i]))
+        }}
+        try output.write(from:buffer)
+    }
+}
 @main struct Main {
  static func main() async {
   do {try await run()}catch {FileHandle.standardError.write(Data((error.localizedDescription+"\n").utf8));exit(1)}
@@ -116,6 +134,7 @@ func encodeFlac(_ path:String,_ destination:String) throws {
   guard args.count>=4,!FileManager.default.fileExists(atPath:args[3]) else {try fail("Missing output or output exists")}
   let output=args[3]
   if operation=="encode-flac" {try encodeFlac(args[2],output);return}
+  if operation=="encode-aac" {guard args.count>4,let bitrate=Int(args[4]) else {try fail("Missing AAC bitrate")};try encodeAac(args[2],output,bitrate);return}
   if operation=="thumbnail" {
     let generator=AVAssetImageGenerator(asset:asset);generator.appliesPreferredTrackTransform=true;generator.maximumSize=CGSize(width:640,height:360)
     let (image,_)=try await generator.image(at:CMTime(seconds:min(0.12,(try await asset.load(.duration).seconds)/2),preferredTimescale:60000))

@@ -37,7 +37,7 @@ enum Commands {
         #[arg(long)]
         output: String,
     },
-    /// Render linked project audio to WAV or native macOS FLAC.
+    /// Render linked project audio to WAV or native macOS FLAC/AAC.
     RenderProject {
         #[arg(long)]
         input: String,
@@ -48,6 +48,9 @@ enum Commands {
         /// Native integer PCM WAV depth; omitted keeps 32-bit float WAV.
         #[arg(long, conflicts_with="video", value_parser=["8","16","24","32"])]
         wav_bit_depth: Option<String>,
+        /// Native AAC bitrate; AAC output defaults to 192 kbps.
+        #[arg(long, conflicts_with_all=["video","wav_bit_depth"],value_parser=["96","128","192","256","320"])]
+        audio_bitrate_kbps: Option<String>,
     },
     /// Export a picture edit JSON {path, clips}; mix uses the edited timeline clock.
     EditVideo {
@@ -156,6 +159,7 @@ fn execute(cli: Cli) -> media::Result<()> {
             output,
             video,
             wav_bit_depth,
+            audio_bitrate_kbps,
         } => {
             let mut doc: serde_json::Value =
                 serde_json::from_slice(&std::fs::read(input).map_err(|e| e.to_string())?)
@@ -168,7 +172,9 @@ fn execute(cli: Cli) -> media::Result<()> {
                     doc["project"]["video"]["outputFormat"] = serde_json::json!(format);
                 }
             }
-            if let Some(depth) = wav_bit_depth {
+            if let Some(bitrate) = audio_bitrate_kbps {
+                media::audio_encode::render_aac(&doc, &output, bitrate.parse().unwrap())?;
+            } else if let Some(depth) = wav_bit_depth {
                 if media::apple::Backend::configured()? == media::apple::Backend::Ffmpeg {
                     return Err(
                         "--wav-bit-depth requires the native mixer; select --backend apple or auto"
@@ -303,6 +309,58 @@ fn main() {
 #[cfg(test)]
 mod cli_tests {
     use super::*;
+    #[test]
+    fn aac_bitrate_flags_validate_and_reject_other_export_modes() {
+        for bitrate in ["96", "128", "192", "256", "320"] {
+            assert!(Cli::try_parse_from([
+                "crispaudio",
+                "render-project",
+                "--input",
+                "p.crispaudio",
+                "--output",
+                "mix.aac",
+                "--audio-bitrate-kbps",
+                bitrate
+            ])
+            .is_ok());
+        }
+        assert!(Cli::try_parse_from([
+            "crispaudio",
+            "render-project",
+            "--input",
+            "p.crispaudio",
+            "--output",
+            "mix.aac",
+            "--audio-bitrate-kbps",
+            "12"
+        ])
+        .is_err());
+        assert!(Cli::try_parse_from([
+            "crispaudio",
+            "render-project",
+            "--input",
+            "p.crispaudio",
+            "--output",
+            "mix.mp4",
+            "--video",
+            "--audio-bitrate-kbps",
+            "192"
+        ])
+        .is_err());
+        assert!(Cli::try_parse_from([
+            "crispaudio",
+            "render-project",
+            "--input",
+            "p.crispaudio",
+            "--output",
+            "mix.wav",
+            "--wav-bit-depth",
+            "24",
+            "--audio-bitrate-kbps",
+            "192"
+        ])
+        .is_err());
+    }
     #[test]
     fn pcm_depth_flags_validate_and_conflict_with_video() {
         for depth in ["8", "16", "24", "32"] {

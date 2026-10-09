@@ -39,3 +39,11 @@ it('FLAC chooses the native codec with its fixed 24-bit depth rather than the WA
   expect(invoke).toHaveBeenCalledExactlyOnceWith('export_linked_project_flac',
     { document, output: '/mix.flac', jobId: expect.any(String) });
 });
+
+it('AAC preserves its ADTS extension and forwards the selected bitrate', async () => {
+  vi.mocked(save).mockResolvedValue('/mix.aac');
+  await exportLinkedAudio(document, 'mix.aac', 'aac', 24, new AbortController().signal, vi.fn(), 256);
+  expect(invoke).toHaveBeenCalledExactlyOnceWith('export_linked_project_aac',
+    { document, output: '/mix.aac', bitrateKbps: 256, jobId: expect.any(String) });
+  expect(save).toHaveBeenCalledWith({ defaultPath: 'mix.aac', filters: [{ name: 'AAC Audio', extensions: ['aac'] }] });
+});

@@ -483,12 +483,12 @@ export const TimelinePanel: React.FC = () => {
     if (!engine || store.project.duration <= 0) return;
     const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } = useSettingsStore.getState();
     const name = store.project.name || 'crispaudio_mix';
-    const nativeFormat = fmt === 'wav' || fmt === 'flac' ? fmt : null;
+    const nativeFormat = fmt === 'wav' || fmt === 'flac' || fmt === 'aac' ? fmt : null;
     const document = nativeFormat && '__TAURI_INTERNALS__' in window && !isIOSApp()
       && navigator.userAgent.includes('Mac') ? linkedRenderDocument(store.project, store.sources) : null;
     if (document && nativeFormat) {
       await startExport({ stage: null, run: (signal, setStage) =>
-        exportLinkedAudio(document, `${name}.${nativeFormat}`, nativeFormat, defaultBitDepth, signal, setStage) });
+        exportLinkedAudio(document, `${name}.${nativeFormat}`, nativeFormat, defaultBitDepth, signal, setStage, kbps) });
       return;
     }
     await startExport({

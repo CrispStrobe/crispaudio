@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.10]
+## [Unreleased — local version 0.7.11]
+
+- Stream eligible Mac timeline AAC exports through the native mixer and system
+  encoder, preserving AAC-LC in ADTS `.aac` and the existing bitrate choices.
+- Add CLI `.aac` output and `--audio-bitrate-kbps` (96/128/192/256/320, default 192).
+- Validate every ADTS packet, stereo 48 kHz layout and actual packet duration;
+  bound priming/padding explicitly instead of relying on bitrate estimates.
+- Share atomic publication and cancellable temporary-file ownership with FLAC.
+
+## [Local version 0.7.10]
 
 - Add bounded native 24-bit FLAC export in the Mac timeline GUI and CLI using
   Apple's system encoder, with the GUI's quantisation and final STREAMINFO MD5.

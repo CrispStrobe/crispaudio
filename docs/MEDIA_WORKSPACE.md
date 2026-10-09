@@ -402,3 +402,36 @@ at the separate release CLI. The native render disables FFmpeg/FFprobe; referenc
 decoding requires FFmpeg (`CRISPAUDIO_REFERENCE_FFMPEG` may specify its path).
 The test compares decoded PCM and both STREAMINFO MD5 values, not compressed
 bytes. Fixtures/results stay in a fresh temporary directory.
+
+## Native Mac timeline AAC (local 0.7.11)
+
+Choose AAC and a bitrate in Settings, then export to a new `.aac` destination.
+Linked 48 kHz mono/stereo projects on Mac now stream through the native mixer and
+system encoder. Other sources/rates/platforms keep the codec worker. Native AAC
+uses AAC-LC, stereo 48 kHz and the existing ADTS container, with the selected
+96/128/192/256/320 kbps and constant bitrate strategy. It creates an owned float
+WAV on disk, encodes in 4096-frame chunks and cleans both stages on cancellation
+or failure. No encoded Blob or duration-sized PCM transfer crosses IPC.
+
+```sh
+~/Applications/crispaudio-cli-local render-project --input project.crispaudio --output mix.aac --audio-bitrate-kbps 192 --backend apple
+```
+
+A `.aac` output without the bitrate flag defaults to 192 kbps. The flag accepts
+only the five Settings choices, requires AAC output and conflicts with video
+and WAV-depth flags. Explicit FFmpeg mode is rejected by this native endpoint.
+Every ADTS packet is checked before atomic publication; profile, sample rate,
+channels, packet framing and duration must be consistent. Validation allows at
+most 4096 extra decoded frames for codec priming and final packet padding.
+
+ADTS is not gapless. The tested Apple encoder adds 2,112 priming frames (44 ms);
+packet padding can extend the end. Some probes estimate duration from bitrate
+and can report a misleading value; decoded packet counts are authoritative.
+Use WAV/FLAC for a timing-sensitive intermediate or a later video replacement.
+Apple and Glint encode AAC differently; neither compressed bytes nor decoded
+samples are expected to be identical. This is a memory/export improvement,
+not a change to import/playback buffers. MP3/Opus still use the worker.
+
+Apple documents the [ADTS file type](https://developer.apple.com/documentation/audiotoolbox/kaudiofileaac_adtstype)
+and [encoder bitrate setting](https://developer.apple.com/documentation/avfaudio/avencoderbitratekey).
+Only system frameworks are used; no new codec dependency is redistributed.

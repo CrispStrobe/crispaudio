@@ -55,6 +55,7 @@ pub fn run() {
             media::export_linked_project_video,
             media::export_linked_project_wav,
             media::export_linked_project_flac,
+            media::export_linked_project_aac,
             media::prepare_video_preview,
             media::estimate_track_sync,
         ])
