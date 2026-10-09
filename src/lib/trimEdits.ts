@@ -1,6 +1,6 @@
 import type {TimelineProject,AudioSegment,VideoClip} from '../types/audio';
 import {projectClips,linkedIds,mapClips,trimClips} from './projectEdits';
-import {clipSource,videoClips,frameTime} from './videoEditing';
+import {clipSource,videoClips,frameTime,validateVideoClips} from './videoEditing';
 import {editTimeRange} from './rangeEdits';
 type Clip=AudioSegment|VideoClip;
 type Sources=Map<string,{duration:number}>;
@@ -19,14 +19,24 @@ export function rollCut(p:TimelineProject,ids:string[],delta:number,sources:Sour
  if(left.some(c=>!same(c.startTime+c.duration,cut)))fail('sharedCut');
  for(const clip of left){
   const lane='trackId' in clip?p.tracks.find(t=>t.id===clip.trackId)?.segments??[]:videoClips(p.video);
-  const candidates=lane.filter(c=>c.id!==clip.id&&same(c.startTime,cut));
+  const candidates=lane.filter(c=>c.id!==clip.id&&(same(c.startTime,cut)||(!('trackId' in c)&&c.startTime>clip.startTime&&c.startTime<cut&&c.startTime+c.duration>cut&&c.transition!=='cut'&&same(c.transitionDuration,cut-c.startTime))));
   if(candidates.length!==1)fail('adjacent');rights.push(candidates[0]);
  }
  const leftIds=new Set(left.map(c=>c.id)),rightIds=new Set(rights.map(c=>c.id));
  if([...rightIds].some(id=>leftIds.has(id))||linkedIds(p,[...rightIds]).some(id=>!rightIds.has(id)))fail('linkedCut');
  unlocked(p,new Set([...leftIds,...rightIds]));
- if(rights.some(c=>!('trackId' in c)&&c.transition!=='cut'))fail('blend');
- if(left.some(c=>!('trackId' in c)))delta=frameTime(cut+delta,p.frameRate??25)-cut;
+ const picture=left.some(c=>!('trackId' in c)),fps=p.frameRate??25;
+ if(picture){
+  if(!Number.isFinite(fps)||fps<=0||!same(cut,frameTime(cut,fps)))fail('frameEdge');
+  if(validateVideoClips(videoClips(p.video),p.video!.duration,p.video!.sources))fail('blendTopology');
+  if(rights.some(c=>!('trackId' in c)&&(!same(c.startTime,frameTime(c.startTime,fps))||(c.transition!=='cut'&&cut-c.startTime<1e-6))))fail('blendTopology');
+  delta=frameTime(cut+delta,fps)-cut;
+ }
+ for(let i=0;i<left.length;i++){
+  const l=left[i],r=rights[i],overlap='trackId' in r?0:Math.max(0,cut-r.startTime),width=picture?1/fps:.01;
+  if(l.duration+delta<overlap+width-1e-6||r.duration-delta<overlap+width-1e-6)fail('handles');
+  for(const c of [l,r]){const n=sourceLength(p,c,sources);if(n===undefined||!Number.isFinite(n)||!Number.isFinite(c.startTime)||c.startTime<0||!Number.isFinite(c.sourceOffset)||c.sourceOffset<0||!Number.isFinite(c.duration)||c.duration<=0||c.sourceOffset+c.duration>n+1e-6)fail('handles');}
+ }
  if(left.some(c=>{const n=sourceLength(p,c,sources);return n===undefined||c.duration+delta<.01||c.sourceOffset+c.duration+delta>n+1e-6;})||rights.some(c=>c.duration-delta<.01||c.sourceOffset+delta<0))fail('handles');
  return mapClips(p,c=>leftIds.has(c.id)?fitFade({...c,duration:c.duration+delta}):rightIds.has(c.id)?fitFade({...c,startTime:c.startTime+delta,sourceOffset:c.sourceOffset+delta,duration:(c.startTime+c.duration)-(c.startTime+delta)}):c);
 }

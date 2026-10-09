@@ -329,13 +329,33 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
     };
     let mut right_ids = HashSet::new();
     if operation == "roll" {
+        if picture {
+            let p = &doc["project"]["video"];
+            let pictures: Vec<_> = all
+                .iter()
+                .filter(|c| c.get("trackId").is_none())
+                .cloned()
+                .collect();
+            let edit=serde_json::from_value(json!({"path":p["path"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
+            crate::video_edit::validate(&edit, number(p, "duration")?)?;
+        }
         for c in &left {
             let neighbours: Vec<_> = all
                 .iter()
                 .filter(|n| {
                     n["id"] != c["id"]
                         && n.get("trackId") == c.get("trackId")
-                        && n["startTime"].as_f64().is_some_and(|v| equal(v, edge))
+                        && n["startTime"].as_f64().is_some_and(|v| {
+                            equal(v, edge)
+                                || (n.get("trackId").is_none()
+                                    && v > c["startTime"].as_f64().unwrap_or(f64::NAN)
+                                    && v < edge
+                                    && v + n["duration"].as_f64().unwrap_or(f64::NAN) > edge
+                                    && n["transition"] != "cut"
+                                    && n["transitionDuration"]
+                                        .as_f64()
+                                        .is_some_and(|d| equal(d, edge - v)))
+                        })
                 })
                 .collect();
             if neighbours.len() != 1 {
@@ -347,8 +367,44 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
                 return Err("Left and right selections overlap".into());
             }
             right_ids.insert(id.to_owned());
-            if n.get("trackId").is_none() && n["transition"] != "cut" {
-                return Err("Rolling a blend is not supported; choose a cut".into());
+            if picture {
+                if !equal(edge, (edge * fps).round() / fps)
+                    || (n.get("trackId").is_none()
+                        && !equal(
+                            number(n, "startTime")?,
+                            (number(n, "startTime")? * fps).round() / fps,
+                        ))
+                {
+                    return Err("Rolling picture edits require frame-aligned edges".into());
+                }
+                if n.get("trackId").is_none()
+                    && equal(number(n, "startTime")?, edge)
+                    && n["transition"] != "cut"
+                {
+                    return Err("Roll needs a cut or an existing picture overlap".into());
+                }
+            }
+            let overlap = if n.get("trackId").is_none() {
+                (edge - number(n, "startTime")?).max(0.0)
+            } else {
+                0.0
+            };
+            let width = if picture { 1.0 / fps } else { 0.01 };
+            if number(c, "duration")? + delta < overlap + width - 1e-6
+                || number(n, "duration")? - delta < overlap + width - 1e-6
+            {
+                return Err("Trim exceeds transition source handles".into());
+            }
+            for clip in [*c, n] {
+                let offset = number(clip, "sourceOffset")?;
+                let length = number(clip, "duration")?;
+                if number(clip, "startTime")? < 0.0
+                    || offset < 0.0
+                    || length <= 0.0
+                    || offset + length > bounds(doc, clip)? + 1e-6
+                {
+                    return Err("Trim exceeds source handles".into());
+                }
             }
             if number(n, "duration")? - delta < 0.01 || number(n, "sourceOffset")? + delta < 0.0 {
                 return Err("Trim exceeds source handles".into());
@@ -1235,6 +1291,44 @@ mod tests {
         assert_eq!(audio[1]["linkGroup"], picture[1]["linkGroup"]);
         assert_ne!(audio[0]["linkGroup"], audio[1]["linkGroup"]);
         assert_eq!(audio[1]["sourceOffset"], 4.0);
+    }
+    #[test]
+    fn rolling_picture_overlap_preserves_transition_and_linked_sound() {
+        let d = json!({"format":"crispaudio-project","version":3,"project":{"duration":10,"frameRate":25,"tracks":[{"id":"t","segments":[{"id":"a","trackId":"t","sourceId":"s","linkGroup":"left","startTime":0,"sourceOffset":2,"duration":5},{"id":"b","trackId":"t","sourceId":"s","linkGroup":"right","startTime":5,"sourceOffset":7,"duration":5}]}],"video":{"path":"v.mp4","duration":20,"clips":[{"id":"v","linkGroup":"left","startTime":0,"sourceOffset":2,"duration":5,"transition":"cut"},{"id":"w","linkGroup":"right","startTime":4.6,"sourceOffset":6.6,"duration":5.4,"transition":"fade","transitionDuration":0.4}]}},"sources":[{"id":"s","duration":20}]});
+        for delta in [0.2, -0.2] {
+            let out = apply(&d, &json!([{"op":"roll","ids":["a"],"seconds":delta}])).unwrap();
+            let left = &out["project"]["video"]["clips"][0];
+            let right = &out["project"]["video"]["clips"][1];
+            assert!(
+                (left["duration"].as_f64().unwrap() - right["startTime"].as_f64().unwrap() - 0.4)
+                    .abs()
+                    < 1e-9
+            );
+            assert_eq!(right["transition"], "fade");
+            assert_eq!(right["transitionDuration"], 0.4);
+            assert!(
+                (right["startTime"].as_f64().unwrap() + right["duration"].as_f64().unwrap() - 10.0)
+                    .abs()
+                    < 1e-9
+            );
+            assert!(
+                (out["project"]["tracks"][0]["segments"][1]["startTime"]
+                    .as_f64()
+                    .unwrap()
+                    - right["startTime"].as_f64().unwrap()
+                    - 0.4)
+                    .abs()
+                    < 1e-9
+            );
+            assert_eq!(out["project"]["duration"], 10.0);
+        }
+        assert!(apply(&d, &json!([{"op":"roll","ids":["a"],"seconds":-4.6}])).is_err());
+        let mut bad = d.clone();
+        bad["project"]["video"]["clips"][1]["transitionDuration"] = json!(0.3);
+        assert!(apply(&bad, &json!([{"op":"roll","ids":["a"],"seconds":0.2}])).is_err());
+        let mut locked = d.clone();
+        locked["project"]["video"]["locked"] = json!(true);
+        assert!(apply(&locked, &json!([{"op":"roll","ids":["a"],"seconds":0.2}])).is_err());
     }
     #[test]
     fn slide_preserves_content_and_linked_outer_endpoints() {

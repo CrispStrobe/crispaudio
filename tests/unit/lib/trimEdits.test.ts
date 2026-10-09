@@ -1,4 +1,5 @@
 import {expect,it} from 'vitest';
+import {VIDEO_TRANSITIONS} from '../../../src/lib/videoEditing';
 import {rollCut,rippleTrim,trimToPlayhead,adjacentEdit,slideClips,slideLimits} from '../../../src/lib/trimEdits';
 import {speechLayout,deleteSpokenWord} from '../../../src/lib/spokenEdits';
 import type {TimelineProject} from '../../../src/types/audio';
@@ -18,7 +19,7 @@ it('rejects source limits, ambiguous neighbours and locked linked lanes',()=>{
  p.tracks[0].locked=true;expect(()=>rollCut(p,['v'],.2,sources)).toThrow('locked');p.tracks[0].locked=false;
  p.tracks[0].segments.push({...p.tracks[0].segments[1],id:'duplicate',linkGroup:undefined});expect(()=>rollCut(p,['a'],.2,sources)).toThrow('adjacent');
 });
-it('requires the complete right link group and a cut rather than a blend',()=>{
+it('requires the complete right link group',()=>{
  const p=fixture();p.tracks.push({...p.tracks[0],id:'other',segments:[{...p.tracks[0].segments[1],id:'other-b',trackId:'other'}]});expect(()=>rollCut(p,['a'],.2,sources)).toThrow('linkedCut');
 });
 it('trims to playhead without moving later clips; ripple trims retime later lanes',()=>{
@@ -68,4 +69,25 @@ it('keeps markers and automation at timeline positions and clamps only neighbour
 it('invalidates old acoustic timestamps after sliding audio',()=>{
  const p=slideFixture();p.transcript=[{id:'cue',start:6,end:7,text:'Hallo',words:[{id:'word',start:6,end:7,text:'Hallo'}]}];p.transcriptLayout=speechLayout(p);
  const out=slideClips(p,['b'],.2,sources);expect(()=>deleteSpokenWord(out,'word')).toThrow('spoken.stale');
+});
+function blendFixture(transition:typeof VIDEO_TRANSITIONS[number]='fade'){
+ const p=fixture();p.frameRate=25;Object.assign(p.video!.clips![1],{startTime:4.6,sourceOffset:6.6,duration:5.4,transition,transitionDuration:.4});return p;
+}
+it('rolls every supported picture overlap both ways while preserving transition and AV offsets',()=>{
+ for(const transition of VIDEO_TRANSITIONS.filter(t=>t!=='cut'))for(const delta of [.2,-.2]){
+  const p=blendFixture(transition),out=rollCut(p,['a'],delta,sources),[l,r]=out.video!.clips!;
+  expect(l.duration).toBe(5+delta);expect(r.startTime).toBe(4.6+delta);expect(r.sourceOffset).toBe(6.6+delta);expect(r.startTime+r.duration).toBe(10);
+  expect(l.startTime+l.duration-r.startTime).toBeCloseTo(.4,12);expect(r.transition).toBe(transition);expect(r.transitionDuration).toBe(.4);expect(out.duration).toBe(10);
+  expect(out.tracks[0].segments[1].startTime-r.startTime).toBeCloseTo(.4,12);expect(out.tracks[0].segments[1].sourceOffset-r.sourceOffset).toBeCloseTo(.4,12);
+ }
+});
+it('blocks consumed transition handles, off-frame overlaps and invalid or triple overlap topology',()=>{
+ const p=blendFixture();for(const delta of [-4.6,5])expect(()=>rollCut(p,['a'],delta,sources)).toThrow('handles');
+ p.video!.clips![1].transitionDuration=.3;expect(()=>rollCut(p,['a'],.2,sources)).toThrow();p.video!.clips![1].transitionDuration=.4;
+ p.video!.clips![1].startTime=4.61;p.video!.clips![1].transitionDuration=.39;p.video!.clips![1].duration=5.39;expect(()=>rollCut(p,['a'],.2,sources)).toThrow('blendTopology');
+ const triple=blendFixture();triple.video!.clips!.push({...triple.video!.clips![1],id:'third',startTime:4.7,duration:1});expect(()=>rollCut(triple,['a'],.2,sources)).toThrow();
+});
+it('blocks moving a valid transition into its next transition and preserves the original',()=>{
+ const p=blendFixture();p.duration=12;p.video!.clips!.push({...p.video!.clips![1],id:'third',linkGroup:undefined,startTime:9.6,sourceOffset:0,duration:2.4});
+ const before=JSON.stringify(p);expect(()=>rollCut(p,['a'],4.68,sources)).toThrow();expect(JSON.stringify(p)).toBe(before);
 });

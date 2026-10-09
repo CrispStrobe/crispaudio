@@ -462,3 +462,17 @@ dialog/undo and GUI/CLI recipe parity. M1 still requires advanced transition tri
 CrispEmbed/crisp-docx contextual word alignment is unnecessary for deletion-only
 transcript matching; acoustic timestamps still come from CrispASR forced alignment.
 No AGPL crisp-docx source/dependencies were copied into this MIT application.
+
+
+## Transition rolling 0.8.8
+
+`rollCut`/CLI `roll` accept existing two-clip picture overlaps matching the incoming
+transition duration. Keep transition properties unchanged; move left end and right
+start/source offset by the same frame displacement. Preserve outer endpoints and
+relative linked audio/picture offsets. Validate original/final topology, source
+handles, frame-aligned overlap edges, locks/groups and at least one frame beyond
+the overlap on each clip. Slide/ripple/range blend semantics remain unfinished.
+`test-trim-edits.mjs` covers real dialog/undo and recipe parity; optional macOS
+`test-roll-blend.py` checks actual native dissolve colours and output duration.
+Keep README about current capabilities; version narratives belong in history.md,
+CHANGELOG.md and implementation records, not append-only README sections.

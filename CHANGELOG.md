@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.7]
+## [Unreleased — local version 0.8.8]
+
+- Roll existing two-clip picture transitions while preserving their type, overlap
+  duration and outer endpoints; linked audio follows the same frame displacement.
+- Validate source handles, frame edges and transition topology before applying;
+  reject consumed overlaps, locks and conflicts with neighbouring transitions.
+- Add actual Trim tools/undo/GUI–CLI checks and a synthetic native Apple render
+  check for the moved dissolve window. Slide/ripple blend edits remain restricted.
+
+## [Local version 0.8.7]
 
 - Add reviewed slide editing in Trim tools and CLI recipes: keep selected source
   content/duration fixed while trimming neighbours across linked sound/picture.

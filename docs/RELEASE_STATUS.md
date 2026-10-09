@@ -1225,3 +1225,29 @@ Incoming picture blends and ambiguous overlapping lanes are rejected. Timeline
 markers/automation stay fixed; existing acoustic alignment becomes stale and must
 be regenerated before speech cuts. Shared frontend supports touch controls, but
 this increment has no new iOS device validation. No release tag/Apple submission.
+
+## Local 0.8.8 — rolling picture transitions (2026-10-09)
+
+Built, installed and launched 0.8.8; app/CLI ad hoc signatures verified and one
+existing autosave preserved. Frontend: 101 files / 1,361 tests passed. Native:
+52 media tests + 3 CLI tests passed, 10 optional integrations ignored. Lint,
+TypeScript production web build, release CLI and desktop bundle passed.
+
+Headless Chrome exercised Trim tools, transition roll/undo and twelve GUI/CLI
+comparisons. Unit checks cover every supported transition type in both directions,
+frame edges, consumed handles and conflicts with neighbouring transitions.
+A synthetic native Apple dissolve retained its 0.4-second length and 3.6-second
+picture duration; its red/blue midpoint moved from 1.8 to 2.0 seconds. The optional
+`scripts/test-roll-blend.py` creates and inspects these colour fixtures with
+installed FFmpeg/FFprobe; Apple performs the actual project export.
+
+On a private Canon/H6 derivative, rolling a 0.4-second picture overlap +0.08 s
+moved the left end to 45.08 s and right start to 44.68 s. Three microphones
+retained their relative picture/source offsets, and the 253.72-second canvas
+stayed fixed. The rendered 44–46 s audio remained byte-identical (96,000 stereo
+frames); exported MP4 audio/picture both measured 2 seconds. Original media/project
+were untouched; private artifacts are in `ux/roll-blend-088/` outside the repo.
+
+Slide/ripple/range blend semantics remain unfinished. No new iOS device
+validation, release tag or Apple submission for this increment. README describes
+current support; chronological notes stay in history.md and these records.

@@ -327,7 +327,8 @@ toolbar or macOS Edit menu. Choose Roll to move that cut: the left clips grow or
 shrink, the adjacent right clips change source offset and duration, and their
 outer endpoints stay fixed. All linked audio/picture cuts must align. Ambiguous
 neighbours, incomplete right-hand links, locked lanes and exhausted source handles
-block the edit. Rolling currently requires a cut, not a picture blend.
+block the edit. Rolling also accepts a valid two-clip picture transition; its
+overlap window moves while its type and duration stay fixed.
 
 Ripple left/right trims shorten or extend the selected edge and shift following
 material on saved participating lanes. Review scope under Edit time range first.
@@ -427,3 +428,24 @@ clip's source content without moving it; slide moves its fixed content instead.
 CLI recipe: `[{"op":"slide","ids":["middle-clip-id"],"seconds":0.08}]`.
 Use `crispaudio edit-project --input project.crispaudio --recipe slide.json
 --output slid.crispaudio`; the input project and source media remain unchanged.
+
+
+## Rolling a picture transition
+
+Select the clips to the left of the transition and open **Trim tools → Roll cut /
+transition**. Enter the signed displacement and review Apply. The left clip gains
+or releases source frames; the right clip starts later/earlier and adjusts its
+source offset, preserving its outer endpoint. Its incoming transition keeps the
+same type and overlap duration. Linked audio moves by the same frame displacement;
+its existing offset relative to picture stays unchanged. Undo restores all lanes.
+
+The transition must already have a valid two-clip overlap matching its duration.
+Both overlap edges must lie on project frame boundaries. Each neighbouring clip
+must retain at least one frame outside the overlap. Source limits, locked/grouped
+lanes, ambiguous neighbours and conflicts with another transition block the edit.
+Slide and ripple operations through picture blends remain restricted. CLI uses
+`[{"op":"roll","ids":["left-clip-id"],"seconds":0.08}]` for cuts and transitions.
+
+The optional macOS `scripts/test-roll-blend.py /path/to/crispaudio` verifies the
+moved dissolve in native Apple exports using generated colour clips. It uses
+installed FFmpeg/FFprobe for fixture creation/inspection; no user media is needed.

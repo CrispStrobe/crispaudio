@@ -114,3 +114,11 @@ save dialog or give CLI `render-project` a `.m4a` output. The file records
 priming/padding metadata for gapless-aware decoders, with its valid frame count
 checked against the source. ADTS `.aac` remains available; WAV/FLAC remain
 lossless options. No codec dependency is added.
+
+
+## Local 0.8.8 — transition-aware rolling
+
+Rolling trims preserve an existing two-clip picture transition's type and overlap
+length while moving its window, with linked audio following the same displacement.
+Source handles, frame boundaries, locks and neighbouring transition topology are
+validated. Slide/ripple/range operations through blends remain future work.
