@@ -14,13 +14,14 @@ import licensesData from '../../generated/licenses.json';
 import glintNotice from '../../lib/glint/LICENSE?raw';
 import houndNotice from '../../lib/licenses/hound.txt?raw';
 import rustfftNotice from '../../lib/licenses/rustfft.txt?raw';
+import webkitOversamplingNotice from '../../lib/licenses/webkit-oversampling.txt?raw';
 import flacNotice from '../../lib/flac/LICENSE.libFLAC?raw';
 import wrapperNotice from '../../lib/flac/LICENSE.wrapper?raw';
 
 const REPO_URL = 'https://github.com/CrispStrobe/crispaudio';
 const WEB_URL = 'https://crispaudio-psi.vercel.app';
 const RELEASES_API = 'https://api.github.com/repos/CrispStrobe/crispaudio/releases/latest';
-const CURRENT_VERSION = '0.7.5';
+const CURRENT_VERSION = '0.7.6';
 
 interface LicenseEntry {
   name: string;
@@ -259,7 +260,7 @@ export function AboutModal() {
 
         <details className="text-xs">
           <summary className="cursor-pointer">{t('mediaFormats.notices')}</summary>
-          <pre className="whitespace-pre-wrap break-words mt-3 max-h-64 overflow-y-auto">{`Glint\n${glintNotice}\n\nlibFLAC\n${flacNotice}\n\nlibflacjs\n${wrapperNotice}\n\n${houndNotice}\n\n${rustfftNotice}`}</pre>
+          <pre className="whitespace-pre-wrap break-words mt-3 max-h-64 overflow-y-auto">{`Glint\n${glintNotice}\n\nlibFLAC\n${flacNotice}\n\nlibflacjs\n${wrapperNotice}\n\n${houndNotice}\n\n${rustfftNotice}\n\n${webkitOversamplingNotice}`}</pre>
         </details>
 
         {/* Copyright */}

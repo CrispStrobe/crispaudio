@@ -137,6 +137,12 @@
     "repository": "https://github.com/huonw/primal"
   },
   {
+    "name": "WebKit oversampling filters (Rust adaptation)",
+    "version": "ae88abe108bc",
+    "license": "BSD-3-Clause",
+    "repository": "https://github.com/WebKit/WebKit/tree/ae88abe108bcccf28bd309adeed1d0522595e901/Source/WebCore/platform/audio"
+  },
+  {
     "name": "hound (Rust WAV I/O)",
     "version": "3.5.1",
     "license": "Apache-2.0",

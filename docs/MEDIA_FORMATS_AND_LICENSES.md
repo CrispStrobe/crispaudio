@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.5
+# Formats and licensing — local 0.7.6
 
 ## Current GUI
 
@@ -74,7 +74,8 @@ CLI project mixing now streams to **48 kHz, stereo, 32-bit float WAV** using
 Apache-2.0 Hound and MIT DSP. It supports linked mono/stereo sources, source
 trims/offsets, overlaps, mute/solo, gains, pan, track/clip fade curves, gain
 automation and enabled low/high-pass, bit-crusher, ring-modulator, delay and
-chorus and convolution reverb effects at clip, track and master level.
+chorus, convolution reverb and oversampled distortion at clip, track and master
+level.
 Filter resonance and pan follow Web Audio definitions; fades match the GUI's
 sampled ramp schedule. Ring modulation uses the project clock and a true wet/dry
 blend; bit crushing preserves silence and interpolates the GUI waveshaper curve.
@@ -87,8 +88,10 @@ Reverb reproduces the GUI's seeded stereo response, WebKit level calibration
 and wet/dry blend, using zero-latency FFT convolution. It turns mono sound
 into stereo before pan. Its 0.1–5 second response buffers share the state budget.
 WebKit calibration/timing is the reference; other browser engines can differ.
-Other enabled effects (distortion and compressor) still
-fail explicitly; use GUI export.
+Timeline distortion uses the GUI's tanh curve, interpolated from 256 Float32
+entries with four-times oversampling. Its wet path includes the same filter
+delay (192 frames at 48 kHz); dry sound stays immediate. Filter tails fit within
+the chosen canvas. Compressor still fails explicitly; use GUI export.
 
 Native 48 kHz PCM WAVs (8/16/24/32-bit integer or 32-bit float) are read directly.
 On Mac, Apple decodes/resamples other inputs into an owned float WAV without an
@@ -187,4 +190,8 @@ About. This adds no new codec or GPL dependency.
 
 Reverb normalisation references: [WebKit calibration implementation](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/platform/audio/Reverb.cpp)
 and [Web Audio ConvolverNode semantics](https://www.w3.org/TR/webaudio-1.0/#ConvolverNode).
-The native convolver is our implementation; WebKit code is not bundled or ported.
+The native convolver is our implementation. Distortion's resampling kernels and
+phase conventions adapt WebKit UpSampler/DownSampler under BSD-3-Clause. Their
+copyright and complete licence are bundled in About. Source revision
+`ae88abe108bcccf28bd309adeed1d0522595e901` is recorded in the source and notice.
+This adds no codec or GPL dependency.

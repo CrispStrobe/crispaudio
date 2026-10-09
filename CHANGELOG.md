@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.5]
+## [Unreleased — local version 0.7.6]
+
+- Add native CLI timeline distortion with the GUI's 256-entry tanh curve,
+  four-times oversampling, wet/dry mix and bounded stereo filter state.
+- Match the wet path's 192-frame filter delay and retain short-clip tails.
+- Adapt WebKit's resampling kernels/phase conventions under BSD-3-Clause, pin
+  their source revision and bundle the copyright/licence notice in About.
+- Extend WebKit comparisons with drive/mix endpoints, mono, unfiltered impulses
+  and 18/19.5 kHz tones. Compression is the remaining native rack effect to add.
+
+## [Local version 0.7.5]
 
 - Add native CLI convolution reverb at clip, track and master level with the
   GUI's seeded stereo response, WebKit level calibration and dry/wet blend.

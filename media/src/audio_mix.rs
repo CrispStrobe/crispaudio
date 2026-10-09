@@ -1,4 +1,5 @@
-//! Bounded-memory linked-project mixer. Own MIT DSP; hound Apache-2.0 WAV I/O.
+//! Bounded-memory linked-project mixer. MIT DSP and BSD-3-Clause oversampling;
+//! hound Apache-2.0 WAV I/O.
 //! Apple only supplies float PCM decoding/resampling for other input layouts.
 use crate::Result;
 use hound::{SampleFormat, WavReader, WavSpec, WavWriter};
@@ -257,6 +258,7 @@ impl Chorus {
 enum Effect {
     Filter(Biquad),
     Delay(Box<Delay>),
+    Distortion(Box<crate::distortion::Distortion>),
     Reverb(Box<crate::reverb::Reverb>),
     Chorus(Chorus),
     BitCrush { levels: f64, mix: f64 },
@@ -267,6 +269,7 @@ impl Effect {
         match self {
             Self::Filter(filter) => filter.at(input),
             Self::Delay(delay) => delay.at(input),
+            Self::Distortion(distortion) => distortion.at(input),
             Self::Reverb(reverb) => reverb.at(input),
             Self::Chorus(chorus) => chorus.at(input, frame),
             Self::BitCrush { levels, mix } => input.map(|v| {
@@ -298,6 +301,15 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
     for effect in effects.iter().filter(|e| e["enabled"] == true) {
         let params = &effect["params"];
         let kind = effect["type"].as_str().ok_or("Missing effect type")?;
+        if kind == "distortion" {
+            let drive = finite(params, "drive", Some(0.5))?.clamp(0.0, 1.0);
+            let mix = finite(params, "mix", Some(0.5))?.clamp(0.0, 1.0);
+            budget.reserve(std::mem::size_of::<crate::distortion::Distortion>())?;
+            out.push(Effect::Distortion(Box::new(
+                crate::distortion::Distortion::new(drive, mix),
+            )));
+            continue;
+        }
         if kind == "reverb" {
             let size = finite(params, "size", Some(0.5))?.clamp(0.0, 1.0);
             let decay = finite(params, "decay", Some(1.5))?.max(0.01);
@@ -790,6 +802,23 @@ mod tests {
         assert!(pcm[4799 * 2].abs() > 0.0001);
         assert!(pcm[6000 * 2..].iter().all(|v| v.abs() < 1e-7));
         assert_eq!(pcm.len(), 14400);
+    }
+    #[test]
+    fn oversampled_distortion_keeps_the_wet_tail_after_a_one_frame_clip() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = impulse(folder.path());
+        let mut doc = project(&input);
+        let clip = &mut doc["project"]["tracks"][0]["segments"][0];
+        clip["duration"] = json!(1.0 / RATE);
+        clip["effects"] =
+            json!([{"type":"distortion","enabled":true,"params":{"drive":0.5,"mix":1}}]);
+        let target = folder.path().join("distortion.wav");
+        render(&doc, target.to_str().unwrap()).unwrap();
+        let pcm = output(&target);
+        assert!(pcm[192 * 2] > 0.01);
+        assert!(pcm[192 * 2 + 1] < -0.01);
+        assert!(pcm[600 * 2..].iter().all(|v| v.abs() < 1e-7));
+        assert_eq!(pcm.len(), 7680);
     }
     #[test]
     fn fractional_delay_interpolates_impulses() {

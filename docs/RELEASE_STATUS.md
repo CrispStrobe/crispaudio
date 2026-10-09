@@ -663,3 +663,50 @@ num-traits and primal-check dependencies were already linked. Their MIT option
 notices are now bundled in About, and the generated manifest has 24 entries.
 No new codec/GPL dependency was added. GUI disk-paged rendering, permissive-only
 WebM and iOS picture export remain unfinished.
+
+## Local native oversampling build 0.7.6
+
+Installed, ad-hoc signed and launched `~/Applications/CrispAudio-local.app` 0.7.6;
+updated and verified the optimised `~/Applications/crispaudio-cli-local`. Native
+WebKit state was backed up and the autosaved arrangement confirmed unchanged.
+No release tag, TestFlight upload or Apple submission was made.
+
+Native clip/track/master racks now support timeline distortion: the existing
+256-entry Float32 tanh curve and four-times oversampling. Two upsampling stages
+and two downsampling stages retain the GUI wet path's 192-frame filter delay
+(4 ms at 48 kHz); dry sound stays immediate. Do not move clips or automation to
+compensate. Filter tails continue after short clips inside the chosen canvas.
+Stereo state is bounded and reserved in the shared DSP budget before allocation.
+Timeline does not yet expose other distortion algorithms; GUI settings/behaviour
+remain unchanged. Compressor is the only remaining unsupported native rack type.
+
+Resampling kernels and phase conventions adapt WebKit's [UpSampler](https://github.com/WebKit/WebKit/blob/ae88abe108bcccf28bd309adeed1d0522595e901/Source/WebCore/platform/audio/UpSampler.cpp)
+and [DownSampler](https://github.com/WebKit/WebKit/blob/ae88abe108bcccf28bd309adeed1d0522595e901/Source/WebCore/platform/audio/DownSampler.cpp)
+under BSD-3-Clause. Their copyright and complete licence are retained in the Rust
+source and bundled About notice; the source revision is pinned. The generated
+manifest has 25 entries. This is compatible with the requested permissive licence
+scope and adds no codec, GPL binary or package dependency.
+
+Validation: 33 media Rust tests plus one CLI parser test passed; six existing
+video integration tests remain opt-in and were not rerun for this DSP change.
+New checks cover exact dry output, silence, stereo polarity, wet impulse delay
+and a one-frame clip's filter tail. ESLint, frontend TypeScript/production build,
+release CLI and debug macOS app bundle passed. All 47 actual WebKit/native
+comparisons passed, including 12 distortion cases across drive/mix settings,
+mono, unfiltered impulses and 18/19.5 kHz tones. Maximum distortion sample error
+was 3.86e-6 and maximum RMS error 1.41e-7. The high-frequency case's maximum error
+was 6.86e-7; tests compare waveforms and timing, not a universal proof of alias
+suppression or sample identity. Archived fixtures/results live outside git under
+`~/code/transcripts/2026-Studienwoche/CrispAudio-validation/ux/native-distortion-076/`.
+The previous 0.7.5 commit passed both desktop and iOS CI; this push triggers new CI.
+
+The real interview source section 30–38 seconds, with master drive=0.5 and
+mix=0.4, rendered in 0.45 seconds (0.43 user / 0.01 system) using the optimised
+CLI, about 17.8 times faster than playback. Peak CLI RSS was 2,703,360 bytes
+(2.58 MiB). This single warm-cache run uses direct 48 kHz WAV and excludes OS
+cache and other processes; do not extrapolate to all codecs or racks. The private
+derived project and WAV live under `ux/real-distortion-076-4p_7hl9t/` in the same
+validation folder. Original sources/projects were unchanged.
+
+Compression still requires GUI export. GUI disk-paged rendering, permissive-only
+WebM and iOS picture export also remain unfinished.

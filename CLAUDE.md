@@ -213,7 +213,7 @@ absolute render-context time even for later clips. BitCrush uses symmetric
 quantisation so its even-length interpolated curve maps zero to zero. Native
 waveshaping interpolates the same 65536-entry Float32 curve, not a direct step.
 The old GUI DC bias and mix bug are intentionally corrected for saved settings.
-Delay/chorus were added in 0.7.4; reverb was added in 0.7.5; distortion/compressor remain explicit native errors.
+Delay/chorus were added in 0.7.4; reverb was added in 0.7.5; distortion was added in 0.7.6; compressor remains an explicit native error.
 
 ## Native delay/chorus 0.7.4
 
@@ -244,3 +244,16 @@ notices are bundled in About; keep them and the manifest synced to Cargo.lock.
 Install the optimised standalone CLI for convolution performance measurements;
 never use its build directory for the Tauri binary. Debug convolution may render
 slower than playback without implying the release CLI has that performance.
+
+## Native oversampling 0.7.6
+
+media/src/distortion.rs adapts WebKit UpSampler/DownSampler filter kernels and
+phase conventions under BSD-3-Clause. Keep its copyright header, pinned source
+revision and About notice. Two 2x upsamplers, the 256-entry Float32 tanh curve,
+and two 2x downsamplers retain a 192-frame wet delay at 48 kHz. Dry stays immediate;
+do not shift clips/automation to compensate. Quantise intermediate samples to
+float, retain the odd decimation phase and account for fixed filter state before
+allocation. Timeline's existing drive/mix controls still select tanh; other curve
+algorithms are not configurable timeline effects yet. Compressor stays explicit.
+WebKit tests include unfiltered impulses and 18/19.5 kHz tones to verify aliasing
+and timing beyond ordinary low-pass-filtered fixtures.

@@ -286,3 +286,7 @@ comparison instructions in `docs/MEDIA_WORKSPACE.md`.
 Local 0.7.5 adds native convolution reverb matching the GUI's seeded stereo
 response and macOS WebKit level calibration, with bounded FFT buffers and no
 added latency. Distortion and compression still require GUI export.
+
+Local 0.7.6 adds native timeline distortion with four-times oversampling and
+the GUI's wet-path filter delay. Its WebKit resampling adaptation carries
+BSD-3-Clause notices. Compression still requires GUI export.
