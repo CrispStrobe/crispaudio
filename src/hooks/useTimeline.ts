@@ -1,3 +1,4 @@
+import {adjacentEdit} from '../lib/trimEdits';
 // ---------------------------------------------------------------------------
 // CrispAudio — useTimeline
 // Coordinate-conversion, hit-testing, drag state, and keyboard shortcuts
@@ -345,6 +346,7 @@ export function useTimeline() {
       if(isNativeMac()&&((e.metaKey&&['KeyZ','KeyC','KeyX','KeyV','KeyA'].includes(e.code))||e.code==='Backspace'))return;
       const store = useProjectStore.getState();
       const ctrl = e.ctrlKey || e.metaKey;
+      if(ctrl&&e.altKey&&(e.code==='ArrowLeft'||e.code==='ArrowRight')){if(isNativeMac())return;e.preventDefault();store.setIsPlaying(false);store.setPlayheadPosition(adjacentEdit(store.project,store.playheadPosition,e.code==='ArrowLeft'?-1:1));return;}
 
       if (!ctrl && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) {
         e.preventDefault();

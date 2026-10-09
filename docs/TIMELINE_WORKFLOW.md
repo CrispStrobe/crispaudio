@@ -319,3 +319,37 @@ Audio CLI bounds require the native mixer; the optional FFmpeg compatibility
 mixer rejects them rather than exporting the full timeline by mistake. Picture
 uses its existing frame-bounded composition behavior. Bounds are export-only;
 they do not change the source project.
+
+## Rolling, ripple and playhead trims — local 0.8.3
+
+Select the clips **left of a shared cut**, then open **Trim tools** in the clip
+toolbar or macOS Edit menu. Choose Roll to move that cut: the left clips grow or
+shrink, the adjacent right clips change source offset and duration, and their
+outer endpoints stay fixed. All linked audio/picture cuts must align. Ambiguous
+neighbours, incomplete right-hand links, locked lanes and exhausted source handles
+block the edit. Rolling currently requires a cut, not a picture blend.
+
+Ripple left/right trims shorten or extend the selected edge and shift following
+material on saved participating lanes. Review scope under Edit time range first.
+Canvas, markers, transcript and included automation follow its range contract;
+crossed cue/blend boundaries require review. Positive amounts move an edge later:
+positive left trims shorten; positive right trims extend. Left extensions can
+reveal earlier source audio even at timeline zero. No media file is rewritten.
+
+Trim left/right to playhead changes a shared selected edge without shifting later
+clips. It may leave a gap; a picture overlap without a matching blend is blocked.
+Review the duration and Apply once; Undo restores the whole operation. Picture
+edits use project frame boundaries. Source limits are checked, not silently
+clamped to a different requested trim.
+
+Use **Previous/Next edit point** or Cmd/Ctrl+Alt+Left/Right to seek distinct clip
+starts/ends and canvas boundaries. Playback stops; clip selection remains.
+
+```json
+[{"op":"roll","ids":["left-clip-id"],"seconds":0.08},
+ {"op":"ripple-trim","ids":["left-clip-id"],"side":"right","seconds":-0.08}]
+```
+
+`trim-to-playhead` uses `side` and `at` (seconds). The recipe includes linked clips
+automatically and applies the same limits. The optional WebKit/native parity
+harness is `scripts/test-trim-edits.mjs`, using the range harness environment vars.

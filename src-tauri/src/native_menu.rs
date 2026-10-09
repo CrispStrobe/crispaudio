@@ -199,6 +199,9 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
     }
     edit.append_items(&[
         &sep()?,
+        &item("trim-tools","Trim Tools…","Schnittwerkzeuge…",timeline&&context.selection,None)?,
+        &item("previous-edit","Previous Edit Point","Vorherige Schnittkante",timeline&&context.content,Some("CmdOrCtrl+Alt+Left"))?,
+        &item("next-edit","Next Edit Point","Nächste Schnittkante",timeline&&context.content,Some("CmdOrCtrl+Alt+Right"))?,
         &item(
             "split",
             "Split Selected at Playhead",

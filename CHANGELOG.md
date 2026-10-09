@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.2]
+## [Unreleased — local version 0.8.3]
+
+- Add reviewed rolling cuts, ripple trims and trim-to-playhead for linked AV,
+  with source-handle limits, track protection and resulting-duration preview.
+- Add previous/next edit-point controls, Cmd/Ctrl+Alt+Left/Right navigation,
+  macOS Edit menu actions and contextual EN/DE trim explanations.
+- Add matching CLI roll, ripple-trim and trim-to-playhead recipes.
+
+## [Local version 0.8.2]
 
 - Add explicit selected audio-range export and a macOS File menu action.
 - Preserve DSP history before the range, with sample-bounded native output and

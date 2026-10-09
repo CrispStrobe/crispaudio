@@ -1120,3 +1120,28 @@ and MP4. WAV matched the full-mix PCM slice byte for byte; WAV/FLAC/MP4 measured
 returned exactly 192000 stereo frames / 4 seconds. Original project untouched.
 Seven other opt-in integrations were not rerun. Physical mobile validation and
 advanced trim/groups/mixer/picture-stack milestones remain outstanding.
+
+## Local 0.8.3 — reviewed trims and edit navigation (M1 in progress)
+
+Installed/launched the signed local app and optimised CLI, preserved the one
+autosave exactly, backed up WebKit/JSON under `ux/recovery-before-083/`.
+Added rolling shared cuts, ripple left/right trims, trim-to-playhead and edit-point
+navigation with macOS menu/browser shortcuts, contextual help and EN/DE labels.
+Source handles, lane locks, ambiguous neighbours, incomplete right link groups
+and unsupported picture blends are checked. Ripple uses saved lane participation
+and the existing explicit range contract; its global-retiming defaults apply.
+Slide editing, advanced blend trims, named groups and command search remain.
+
+Validation: 96 frontend files / 1323 tests, ESLint, TypeScript/web build, 45
+ordinary media Rust tests and three parser tests passed; release CLI/debug Mac
+bundle passed. Actual WebKit dialog tested source-limit rejection, rolling Apply,
+undo and navigation. Eight native/GUI trim cases matched. The real Canon/H6
+project was copied, all three microphone clips linked to picture, and split at
+45 seconds. A roll moved the cut to 45.08 with unchanged sample-rounded length;
+ripple shortening moved it to 44.92 and reduced the arrangement to 253.64 seconds.
+The derivative's 44–46 second WAV rendered stereo 48 kHz / exactly two seconds.
+Private fixtures are under `ux/trim-edit-083/`; source project/media untouched.
+A precision regression compares outer endpoints within double precision and
+exact sample counts; decimal binary representation may differ by one floating
+unit. Ten opt-in platform/codec integrations were not repeated: their code was
+unchanged. No dependency, tag, Apple upload or physical mobile validation added.

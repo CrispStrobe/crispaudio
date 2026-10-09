@@ -40,7 +40,10 @@
     "Window": "Fenster",
     "Zoom In Timeline": "Zeitleiste vergrößern",
     "Zoom Out Timeline": "Zeitleiste verkleinern",
-    "Export Selected Audio Range…": "Ausgewählten Audiobereich exportieren…"
+    "Export Selected Audio Range…": "Ausgewählten Audiobereich exportieren…",
+    "Trim Tools…": "Schnittwerkzeuge…",
+    "Previous Edit Point": "Vorherige Schnittkante",
+    "Next Edit Point": "Nächste Schnittkante"
   },
   "app": {
     "name": "CrispAudio",
@@ -898,7 +901,9 @@
     "help_range_title": "Zeitbereich",
     "help_lock_title": "Spursperre",
     "help_range": "Auf dem Zeitlineal ziehen, um einen Bereich auszuwählen. Die Ränder ziehen oder Anfang und Ende genau eingeben. Bereich abspielen nutzt diesen Bereich; Schleife wiederholt ihn. Die Clipauswahl bleibt erhalten.",
-    "help_lock": "Schützt die Clips dieser Spur vor Änderungen, auch über verknüpftes Bild, Einfügen und Löschen der Spur. Stumm, Solo, Pegel und Panorama bleiben bedienbar. Vor der Bearbeitung entsperren."
+    "help_lock": "Schützt die Clips dieser Spur vor Änderungen, auch über verknüpftes Bild, Einfügen und Löschen der Spur. Stumm, Solo, Pegel und Panorama bleiben bedienbar. Vor der Bearbeitung entsperren.",
+    "help_trim_title": "Schnittwerkzeuge",
+    "help_trim": "Für einen rollenden Schnitt die Clips links von einer gemeinsamen Schnittkante auswählen. Verbundener Ton und Bild folgen gemeinsam. Positive Werte verschieben die Kante nach hinten; verfügbare Quellreserven werden vor dem Anwenden geprüft."
   },
   "analysis": {
     "outputSpectrogram": "Ausgabe-Spektrogramm",
@@ -1002,5 +1007,29 @@
     "pictureTopology": "Dieser Schnitt würde eine nicht unterstützte Bildüberlappung erzeugen. Die Grenzen oder den betroffenen Übergang anpassen.",
     "changed": "Die Anordnung hat sich geändert. Den aktuellen Bereich erneut prüfen.",
     "duration": "Canvas: {{before}} s → {{after}} s"
+  },
+  "trimEdits": {
+    "title": "Schnittwerkzeuge",
+    "mode": "Schnittvorgang",
+    "delta": "Kante verschieben um (Sekunden)",
+    "roll": "Gemeinsamen Schnitt verschieben",
+    "ripple-left": "Linke Kante mit Nachrücken trimmen",
+    "ripple-right": "Rechte Kante mit Nachrücken trimmen",
+    "playhead-left": "Linke Kante bis Abspielkopf trimmen",
+    "playhead-right": "Rechte Kante bis Abspielkopf trimmen",
+    "help": "Für einen rollenden Schnitt die Clips links von einer gemeinsamen Schnittkante auswählen. Verbundener Ton und Bild folgen gemeinsam. Positive Werte verschieben die Kante nach hinten; verfügbare Quellreserven werden vor dem Anwenden geprüft.",
+    "rippleHelp": "Nachrücken verwendet die gespeicherte Spurbeteiligung und verschiebt Gesamtdauer, Marker und Transkript. Den Umfang vorher unter Zeitbereich bearbeiten prüfen.",
+    "selection": "Clips für diesen Schnitt auswählen.",
+    "amount": "Einen gültigen Schnittwert eingeben.",
+    "sharedCut": "Ausgewählte verbundene Clips müssen dieselbe Schnittkante haben.",
+    "adjacent": "Jeder ausgewählte linke Clip braucht genau einen angrenzenden rechten Clip.",
+    "linkedCut": "Die angrenzenden Clips müssen die vollständige rechte Verbindungsgruppe enthalten.",
+    "blend": "Rollende Schnitte durch eine Videoblende werden noch nicht unterstützt. Eine harte Schnittkante wählen oder die Blende zuerst bearbeiten.",
+    "handles": "Dieser Schnitt überschreitet die verfügbaren Quellreserven oder lässt einen Clip zu kurz werden.",
+    "locked": "Die betroffenen linken und rechten Spuren vor dem Trimmen entsperren.",
+    "scope": "Ausgewählte Spuren müssen am Nachrücken teilnehmen. Gespeicherten Umfang zuerst prüfen.",
+    "frameEdge": "Nachrücken mit Bild benötigt eine Schnittkante auf einer Bildgrenze.",
+    "previous": "Vorherige Schnittkante",
+    "next": "Nächste Schnittkante"
   }
 }

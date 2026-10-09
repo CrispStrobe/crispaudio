@@ -40,7 +40,10 @@
     "Window": "Window",
     "Zoom In Timeline": "Zoom In Timeline",
     "Zoom Out Timeline": "Zoom Out Timeline",
-    "Export Selected Audio Range…": "Export selected audio range…"
+    "Export Selected Audio Range…": "Export selected audio range…",
+    "Trim Tools…": "Trim tools…",
+    "Previous Edit Point": "Previous edit point",
+    "Next Edit Point": "Next edit point"
   },
   "app": {
     "name": "CrispAudio",
@@ -898,7 +901,9 @@
     "help_range_title": "Time range",
     "help_lock_title": "Track lock",
     "help_range": "Drag the ruler to select a time range. Drag its edges or enter exact start/end times. Play range uses this range; Loop repeats it. Clip selection stays separate.",
-    "help_lock": "Protects this track’s clips from edits, including linked picture edits, paste and track deletion. Mute, solo, level and pan still work. Unlock before editing."
+    "help_lock": "Protects this track’s clips from edits, including linked picture edits, paste and track deletion. Mute, solo, level and pan still work. Unlock before editing.",
+    "help_trim_title": "Trim tools",
+    "help_trim": "For a roll, select the clips on the left of one shared cut. Linked sound and picture follow together. Positive values move the edge later; source handles are checked before applying."
   },
   "analysis": {
     "outputSpectrogram": "Output spectrogram",
@@ -1002,5 +1007,29 @@
     "pictureTopology": "This cut would create an unsupported picture overlap. Adjust its boundaries or the affected transition.",
     "changed": "The arrangement changed. Review the current range again.",
     "duration": "Canvas: {{before}} s → {{after}} s"
+  },
+  "trimEdits": {
+    "title": "Trim tools",
+    "mode": "Trim operation",
+    "delta": "Move edge by (seconds)",
+    "roll": "Roll shared cut",
+    "ripple-left": "Ripple trim left edge",
+    "ripple-right": "Ripple trim right edge",
+    "playhead-left": "Trim left edge to playhead",
+    "playhead-right": "Trim right edge to playhead",
+    "help": "For a roll, select the clips on the left of one shared cut. Linked sound and picture follow together. Positive values move the edge later; source handles are checked before applying.",
+    "rippleHelp": "Ripple uses saved track participation and retimes global canvas, markers and transcript. Review scope in Edit time range first.",
+    "selection": "Select clips for this trim.",
+    "amount": "Enter a valid nonzero trim amount.",
+    "sharedCut": "Selected linked clips must share the edited edge.",
+    "adjacent": "Each selected left clip needs exactly one adjacent right clip.",
+    "linkedCut": "The adjacent clips must include the complete right-hand link group.",
+    "blend": "Rolling through a picture blend is not supported yet. Choose a cut or edit the blend first.",
+    "handles": "This trim exceeds available source handles or leaves a clip too short.",
+    "locked": "Unlock the affected left and right tracks before trimming.",
+    "scope": "Selected lanes must participate in ripple edits. Review their saved scope first.",
+    "frameEdge": "A ripple edit with picture needs a frame-aligned cut.",
+    "previous": "Previous edit point",
+    "next": "Next edit point"
   }
 }

@@ -1,4 +1,5 @@
 import { registerTimelineMenu } from '../../lib/nativeMenu';
+import {adjacentEdit} from '../../lib/trimEdits';
 import { deleteSelection } from '../../lib/timelineEditing';
 import { projectClips, projectSelection, splitClips } from '../../lib/projectEdits';
 import { prepareAudioImport, type AudioImportInput, type ImportPhase } from '../../lib/audioImport';
@@ -526,6 +527,8 @@ export const TimelinePanel: React.FC = () => {
       case 'import':askImport();break;
       case 'export':await handleExportMix();break;
       case 'export-range':await handleExportMix(true);break;
+      case 'trim-tools':window.dispatchEvent(new Event('crispaudio-trim-tools'));break;
+      case 'previous-edit':case 'next-edit':state.setIsPlaying(false);state.setPlayheadPosition(adjacentEdit(state.project,state.playheadPosition,action==='previous-edit'?-1:1));break;
       case 'undo':handleUndo();break;
       case 'redo':handleRedo();break;
       case 'cut':state.cut();break;

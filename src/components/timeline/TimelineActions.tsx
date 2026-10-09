@@ -1,4 +1,7 @@
 import { ClipFadeTools } from './ClipFadeTools';
+import {TrimEditDialog} from './TrimEditDialog';
+import {adjacentEdit} from '../../lib/trimEdits';
+import {MoveHorizontal,ChevronsLeft,ChevronsRight} from 'lucide-react';
 import { TrendingUp } from 'lucide-react';
 import { EffectChainEditor } from './EffectChainEditor';
 import { splitClips, projectClips, blendAudioOverlaps } from '../../lib/projectEdits';
@@ -7,7 +10,7 @@ import { Hand, Blend, SlidersHorizontal, Scissors, Layers, Settings2, Trash2, Ar
 import { VideoClipSettings } from './VideoClipSettings';
 import { videoClips } from '../../lib/videoEditing';
 import { deleteSelection, nudgeSelection } from '../../lib/timelineEditing';
-import { useState } from 'react';
+import { useEffect,useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
 import { Modal } from '../common/Modal';
@@ -17,6 +20,8 @@ import { SegmentEffectsPanel } from './SegmentEffectsPanel';
 export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: { touchArrange: boolean; onTouchArrange: () => void; onInspector?:()=>void }) {
   const { t } = useTranslation();
   const [fades, setFades] = useState(false);
+  const [trim,setTrim]=useState(false);
+  useEffect(()=>{const open=()=>setTrim(true);window.addEventListener('crispaudio-trim-tools',open);return()=>window.removeEventListener('crispaudio-trim-tools',open);},[]);
   const [mixer, setMixer] = useState(false);
   const [inspector, setInspector] = useState(false);
   const video = useProjectStore(s=>s.project.video);
@@ -42,6 +47,8 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
         const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,projectClips(state.project).map(c=>c.id),position),selection:null});
       }}/>
       <ToolButton data-help="inspector" icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>onInspector?onInspector():setInspector(true)}/>
+      <ToolButton data-help="trim" icon={MoveHorizontal} label={t('trimEdits.title')} disabled={!allSelected.length} onClick={()=>setTrim(true)}/>
+      {([-1,1] as const).map(direction=><ToolButton key={`edit-${direction}`} icon={direction<0?ChevronsLeft:ChevronsRight} label={t(direction<0?'trimEdits.previous':'trimEdits.next')} onClick={()=>{const state=useProjectStore.getState();state.setIsPlaying(false);state.setPlayheadPosition(adjacentEdit(state.project,state.playheadPosition,direction));}}/>)}
       <ToolButton data-help="overlap" icon={Blend} label={t('usability.blendAudio')} disabled={selected.length<2} onClick={()=>{try{const state=useProjectStore.getState();useProjectStore.setState({project:blendAudioOverlaps(state.project,selection?.segmentIds??[])});}catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:String(error)}));}}}/>
       <ToolButton data-help="fades" icon={TrendingUp} label={t('fades.title')} disabled={!allSelected.length} onClick={() => setFades(true)}/>
       <ToolButton data-help="remove" icon={Trash2} label={t('timeline.delete')} disabled={!allSelected.length} onClick={deleteSelection}/>
@@ -52,6 +59,7 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
       </select>
       <ToolButton data-help="nudge" icon={ArrowRight} label={t('editing.nudgeRight')} onClick={()=>nudgeSelection(nudge)}/>
     </div>
+    {trim&&<TrimEditDialog onClose={()=>setTrim(false)}/>}
     <Modal isOpen={fades && allSelected.length > 0} onClose={() => setFades(false)} title={t('fades.title')}>
       <ClipFadeTools/>
     </Modal>

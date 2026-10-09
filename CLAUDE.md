@@ -385,3 +385,19 @@ reviewed reuse action. TimelineEngine.renderMixRange renders 0→rounded end the
 crops; this browser path still uses preroll memory. Optional WebKit range harness
 checks a delay tail against full-render samples. Never claim packet-based M4A
 duration is decoded length; packet padding may remain while decode is exact.
+
+## Advanced trim slice 0.8.3
+
+trimEdits.ts and project_edit::advanced_trim share roll/ripple-trim/playhead trim.
+Select left clips of a common cut, resolve one abutting neighbour per lane, and
+require the whole right link group. Source bounds and locks reject before commit;
+rolling blends/ambiguous neighbours remain unsupported. Right roll durations use
+the original outer endpoint. Compare sample counts/tolerance for floating sums,
+not bitwise decimal duration equality. Ripple extension inserts the gap before
+growing the target; validating a standalone extension first would wrongly reject
+the old neighbour overlap. Ripple shortening delegates to range-edit. Picture
+participation requires a frame-aligned ripple edge. GUI previews immutable state
+and commits once; native recipes preserve unknown metadata and final lock checks.
+Edit navigation skips equal boundaries and stops playback. Native accelerators
+own macOS navigation; browser handles Cmd/Ctrl+Alt+Left/Right. Optional actual
+WebKit script checks dialog/source limits/undo/navigation and eight recipe cases.

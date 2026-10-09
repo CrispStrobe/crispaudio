@@ -92,6 +92,203 @@ fn trim_fades(c: &mut Value) {
         }
     }
 }
+fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<Value> {
+    let mut out = doc.clone();
+    let operation = op["op"].as_str().unwrap();
+    let all = clips(&doc["project"]);
+    let left: Vec<&Value> = all
+        .iter()
+        .filter(|c| selected.contains(c["id"].as_str().unwrap_or("")))
+        .collect();
+    if left.is_empty() {
+        return Err("Select clips for a shared-edge trim".into());
+    }
+    let side = op["side"].as_str().unwrap_or("right");
+    if !matches!(side, "left" | "right") {
+        return Err("Invalid trim side".into());
+    }
+    let edge = number(left[0], "startTime")?
+        + if side == "left" && operation != "roll" {
+            0.0
+        } else {
+            number(left[0], "duration")?
+        };
+    let equal = |a: f64, b: f64| (a - b).abs() < 1e-6;
+    for c in &left {
+        let end = number(c, "startTime")?
+            + if side == "left" && operation != "roll" {
+                0.0
+            } else {
+                number(c, "duration")?
+            };
+        if !equal(edge, end) {
+            return Err("Selected linked clips must share the edited edge".into());
+        }
+    }
+    let fps = doc["project"]["frameRate"].as_f64().unwrap_or(25.0);
+    if !fps.is_finite() || fps <= 0.0 {
+        return Err("Invalid frame rate".into());
+    }
+    let picture = left.iter().any(|c| c.get("trackId").is_none())
+        || (operation == "ripple-trim"
+            && !doc["project"]["video"].is_null()
+            && doc["project"]["video"]["rippleEnabled"] != false);
+    if operation == "ripple-trim" && picture && !equal(edge, (edge * fps).round() / fps) {
+        return Err("Ripple picture edits require a frame-aligned cut".into());
+    }
+    let raw = if operation == "trim-to-playhead" {
+        number(op, "at")? - edge
+    } else {
+        number(op, "seconds")?
+    };
+    let delta = if picture {
+        ((edge + raw) * fps).round() / fps - edge
+    } else {
+        raw
+    };
+    let mut right_ids = HashSet::new();
+    if operation == "roll" {
+        for c in &left {
+            let neighbours: Vec<_> = all
+                .iter()
+                .filter(|n| {
+                    n["id"] != c["id"]
+                        && n.get("trackId") == c.get("trackId")
+                        && n["startTime"].as_f64().is_some_and(|v| equal(v, edge))
+                })
+                .collect();
+            if neighbours.len() != 1 {
+                return Err("Each left clip needs one adjacent right clip".into());
+            }
+            let n = neighbours[0];
+            let id = n["id"].as_str().ok_or("Missing clip id")?;
+            if selected.contains(id) {
+                return Err("Left and right selections overlap".into());
+            }
+            right_ids.insert(id.to_owned());
+            if n.get("trackId").is_none() && n["transition"] != "cut" {
+                return Err("Rolling a blend is not supported; choose a cut".into());
+            }
+            if number(n, "duration")? - delta < 0.01 || number(n, "sourceOffset")? + delta < 0.0 {
+                return Err("Trim exceeds source handles".into());
+            }
+        }
+        let groups: HashSet<_> = all
+            .iter()
+            .filter(|c| right_ids.contains(c["id"].as_str().unwrap_or("")))
+            .filter_map(|c| c["linkGroup"].as_str())
+            .collect();
+        if all.iter().any(|c| {
+            c["linkGroup"].as_str().is_some_and(|g| groups.contains(g))
+                && !right_ids.contains(c["id"].as_str().unwrap_or(""))
+        }) {
+            return Err("Include every linked right-hand clip".into());
+        }
+    }
+    for c in &left {
+        let source = bounds(doc, c)?;
+        let length = number(c, "duration")?;
+        let offset = number(c, "sourceOffset")?;
+        if operation != "roll" && side == "left" {
+            if (operation != "ripple-trim" && edge + delta < 0.0)
+                || offset + delta < 0.0
+                || length - delta < 0.01
+            {
+                return Err("Trim exceeds source handles".into());
+            }
+        } else if length + delta < 0.01 || offset + length + delta > source + 1e-6 {
+            return Err("Trim exceeds source handles".into());
+        }
+    }
+    if operation == "ripple-trim" {
+        if delta == 0.0 {
+            return Err("Choose a nonzero trim".into());
+        }
+        for c in &left {
+            let excluded = if let Some(track) = c["trackId"].as_str() {
+                doc["project"]["tracks"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .find(|t| t["id"] == track)
+                    .is_some_and(|t| t["rippleEnabled"] == false)
+            } else {
+                doc["project"]["video"]["rippleEnabled"] == false
+            };
+            if excluded {
+                return Err("Selected lanes must participate in ripple edits".into());
+            }
+        }
+        let shorten = if side == "left" {
+            delta > 0.0
+        } else {
+            delta < 0.0
+        };
+        let range = if shorten {
+            json!({"operation":"extract","start":edge.min(edge+delta),"end":edge.max(edge+delta)})
+        } else {
+            json!({"operation":"insert","start":edge,"end":edge+delta.abs()})
+        };
+        out["project"] = crate::range_edit::apply(&doc["project"], &range)?;
+        if shorten {
+            return Ok(out);
+        }
+    }
+    mutate(&mut out["project"], |c| {
+        let mut c = c.clone();
+        let id = c["id"].as_str().unwrap_or("");
+        if selected.contains(id) || right_ids.contains(id) {
+            let start = number(&c, "startTime")?;
+            let offset = number(&c, "sourceOffset")?;
+            let length = number(&c, "duration")?;
+            if operation == "roll" {
+                if right_ids.contains(id) {
+                    c["startTime"] = json!(start + delta);
+                    c["sourceOffset"] = json!(offset + delta);
+                    c["duration"] = json!((start + length) - (start + delta));
+                } else {
+                    c["duration"] = json!(length + delta);
+                }
+            } else if operation == "ripple-trim" {
+                if side == "left" {
+                    c["startTime"] = json!(start - delta.abs());
+                    c["sourceOffset"] = json!(offset - delta.abs());
+                }
+                c["duration"] = json!(length + delta.abs());
+            } else {
+                if side == "left" {
+                    c["startTime"] = json!(start + delta);
+                    c["sourceOffset"] = json!(offset + delta);
+                }
+                c["duration"] = json!(length + if side == "left" { -delta } else { delta });
+            }
+            let duration = number(&c, "duration")?;
+            let audio = c.get("trackId").is_some();
+            for key in if audio {
+                ["fadeInDuration", "fadeOutDuration"]
+            } else {
+                ["fadeIn", "fadeOut"]
+            } {
+                if let Some(v) = c[key].as_f64() {
+                    c[key] = json!(v.min(if audio { duration } else { duration / 2.0 }));
+                }
+            }
+        }
+        Ok(vec![c])
+    })?;
+    if !out["project"]["video"].is_null() {
+        let p = &out["project"]["video"];
+        let pictures: Vec<_> = clips(&out["project"])
+            .into_iter()
+            .filter(|c| c.get("trackId").is_none())
+            .collect();
+        let edit=serde_json::from_value(json!({"path":p["path"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
+        if !pictures.is_empty() {
+            crate::video_edit::validate(&edit, number(p, "duration")?)?;
+        }
+    }
+    Ok(out)
+}
 pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
     if doc["format"] != "crispaudio-project" || !doc["project"]["tracks"].is_array() {
         return Err("Expected CrispAudio project".into());
@@ -128,6 +325,9 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             .collect();
         let operation = op["op"].as_str().ok_or("Missing operation")?;
         match operation {
+            "roll" | "ripple-trim" | "trim-to-playhead" => {
+                out = advanced_trim(&out, op, &selected)?;
+            }
             "range-edit" => {
                 out["project"] = crate::range_edit::apply(&out["project"], op)?;
             }
@@ -674,6 +874,49 @@ mod tests {
     use super::*;
     fn doc() -> Value {
         json!({"format":"crispaudio-project","version":2,"project":{"id":"p","duration":6,"tracks":[{"id":"t","segments":[{"id":"a","linkGroup":"g","trackId":"t","sourceId":"s","startTime":1,"sourceOffset":2,"duration":5}]}],"video":{"path":"unused","duration":10,"clips":[{"id":"v","linkGroup":"g","startTime":1,"sourceOffset":2,"duration":5,"transition":"cut"}]}},"sources":[{"id":"s","duration":10}]})
+    }
+    #[test]
+    fn advanced_trim_keeps_linked_cuts_and_ripple_clocks() {
+        let d = json!({"format":"crispaudio-project","version":3,"project":{"duration":10,"tracks":[{"id":"t","segments":[{"id":"a","trackId":"t","sourceId":"s","linkGroup":"left","startTime":0,"sourceOffset":2,"duration":5},{"id":"b","trackId":"t","sourceId":"s","linkGroup":"right","startTime":5,"sourceOffset":7,"duration":5}]}],"video":{"path":"v.mp4","duration":20,"clips":[{"id":"v","linkGroup":"left","startTime":0,"sourceOffset":2,"duration":5,"transition":"cut"},{"id":"w","linkGroup":"right","startTime":5,"sourceOffset":7,"duration":5,"transition":"cut"}]}},"sources":[{"id":"s","duration":20}]});
+        let rolled = apply(&d, &json!([{"op":"roll","ids":["a"],"seconds":0.2}])).unwrap();
+        assert_eq!(rolled["project"]["duration"], 10.0);
+        assert_eq!(rolled["project"]["video"]["clips"][1]["startTime"], 5.2);
+        assert_eq!(
+            rolled["project"]["tracks"][0]["segments"][1]["sourceOffset"],
+            7.2
+        );
+        let extended = apply(
+            &d,
+            &json!([{"op":"ripple-trim","ids":["a"],"side":"right","seconds":1}]),
+        )
+        .unwrap();
+        assert_eq!(extended["project"]["duration"], 11.0);
+        assert_eq!(extended["project"]["video"]["clips"][1]["startTime"], 6.0);
+        let prepend = apply(
+            &d,
+            &json!([{"op":"ripple-trim","ids":["a"],"side":"left","seconds":-1}]),
+        )
+        .unwrap();
+        assert_eq!(
+            prepend["project"]["tracks"][0]["segments"][0]["sourceOffset"],
+            1.0
+        );
+        let shorten = apply(
+            &d,
+            &json!([{"op":"ripple-trim","ids":["a"],"side":"right","seconds":-1}]),
+        )
+        .unwrap();
+        assert_eq!(shorten["project"]["duration"], 9.0);
+        let trim = apply(
+            &d,
+            &json!([{"op":"trim-to-playhead","ids":["a"],"side":"right","at":4}]),
+        )
+        .unwrap();
+        assert_eq!(trim["project"]["video"]["clips"][1]["startTime"], 5);
+        assert!(apply(&d, &json!([{"op":"roll","ids":["a"],"seconds":-10}])).is_err());
+        let mut locked = d.clone();
+        locked["project"]["video"]["locked"] = json!(true);
+        assert!(apply(&locked, &json!([{"op":"roll","ids":["a"],"seconds":0.2}])).is_err());
     }
     #[test]
     fn track_lock_blocks_linked_recipe_edits() {
