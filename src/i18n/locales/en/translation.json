@@ -1054,5 +1054,31 @@
     "title": "Find command",
     "search": "Search commands…",
     "empty": "No matching commands."
+  },
+  "spoken": {
+    "title": "Speech editor",
+    "help": "Select a timed word, then Delete to cut its sound and picture across every track. Undo restores the complete edit. Caption corrections below only change text and clear word alignment.",
+    "settings": "ASR setup",
+    "executable": "CrispASR executable",
+    "model": "ASR model (.gguf)",
+    "aligner": "Forced aligner (.gguf or auto)",
+    "language": "Language",
+    "setupHelp": "Choose local CrispASR and models. Auto downloads the aligner on first use. Transcription uses 15-second chunks with forced word alignment. Video cuts cover the word with whole frames.",
+    "input": "Speech source",
+    "mix": "Current audible mix",
+    "transcribe": "Transcribe with CrispASR",
+    "seek": "Seek to selected word",
+    "delete": "Delete word and matching audio/video",
+    "working": "Rendering audio, transcribing and aligning words…",
+    "desktop": "ASR needs desktop and linked 48 kHz audio. Saved timed words can also be edited in the browser.",
+    "editor": "Spoken words (Delete cuts audio and video)",
+    "untimed": "This word has no valid alignment. Transcribe or align first.",
+    "tooShort": "This word is shorter than one video frame.",
+    "neighbour": "The frame-aligned cut overlaps another word. Review word timing before deleting.",
+    "noTrack": "Choose an audio track.",
+    "cut": "Cut interval",
+    "start": "Word start",
+    "end": "Word end",
+    "stale": "Audio arrangement changed. Transcribe or align again before word cuts."
   }
 }

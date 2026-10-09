@@ -44,6 +44,8 @@ pub fn run() {
             native_files::read_opened_file,
             native_files::stage_share_file,
             media::desktop_media_available,
+            media::transcribe_project,
+            media::crispasr_defaults,
             media::probe_media,
             media::cancel_media_job,
             media::measure_loudness,

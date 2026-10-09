@@ -394,6 +394,12 @@ pub fn apply(p: &Value, op: &Value) -> Result<Value> {
                     let mut c = c.clone();
                     c["start"] = json!(retime(c["start"].as_f64().unwrap_or(0.0)));
                     c["end"] = json!(retime(c["end"].as_f64().unwrap_or(0.0)));
+                    if let Some(words) = c["words"].as_array_mut() {
+                        for w in words {
+                            w["start"] = json!(retime(w["start"].as_f64().unwrap_or(0.0)));
+                            w["end"] = json!(retime(w["end"].as_f64().unwrap_or(0.0)));
+                        }
+                    }
                     c
                 })
                 .collect::<Vec<_>>())
@@ -403,6 +409,12 @@ pub fn apply(p: &Value, op: &Value) -> Result<Value> {
         out["editRange"] = json!({"start":start,"end":end})
     } else {
         out.as_object_mut().unwrap().remove("editRange");
+    }
+    if global
+        && !p["transcriptLayout"].is_null()
+        && p["transcriptLayout"] == crate::spoken_edit::layout(p)
+    {
+        out["transcriptLayout"] = crate::spoken_edit::layout(&out);
     }
     let new_duration = out["tracks"]
         .as_array()

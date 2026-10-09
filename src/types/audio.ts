@@ -15,6 +15,7 @@ export interface TimelineProject {
   minimumDuration?: number; // explicit empty canvas/export tail, seconds
   markers?: TimelineMarker[];
   transcript?: TranscriptCue[];
+  transcriptLayout?: (string|number)[][]; // ASR arrangement guard; moving/slipping audio requires realignment
   syncHistory?: SyncDecision[];
   frameRate?: number;
   snapGrid?: number; // seconds, 0 disables the time grid
@@ -133,6 +134,7 @@ export interface VideoClip {
 
 export interface VideoSource { id: string; path: string; name: string; duration: number; frameRate?: number }
 export interface TimelineMarker { id: string; time: number; name: string }
-export interface TranscriptCue { id: string; start: number; end: number; text: string }
+export interface TranscriptWord { id: string; start: number; end: number; text: string }
+export interface TranscriptCue { id: string; start: number; end: number; text: string; words?: TranscriptWord[] }
 export interface GainPoint { time: number; value: number }
 export interface SyncDecision { at: string; reference: string; tracks: { id: string; alignment: import('../lib/media').Alignment }[] }

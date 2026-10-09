@@ -4,7 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.4]
+## [Unreleased — local version 0.8.5]
+
+- Integrate local CrispASR with timeline audio rendering, microphone/mix selection,
+  German forced alignment, cancellation and stale-result protection.
+- Add genuine word-timed speech editing: Delete closes the matching gap across all
+  audio and video lanes, retimes transcript/markers/automation, and supports undo.
+- Cover words with whole video frames, display/edit timing, enforce lane locks and
+  protect adjacent words, picture blends and changed audio arrangements.
+- Add CLI `transcribe-project` and `delete-word` recipes; retain word timing in
+  saved projects and full CrispASR JSON imports.
+- Keep ASR external on desktop; no bundled models or mobile ASR claim.
+
+## [Local version 0.8.4]
 
 - Add persisted named edit groups independent of AV source links, group recall,
   grouping toggle and clip labels; enforce linked/grouped scope and lane locks.

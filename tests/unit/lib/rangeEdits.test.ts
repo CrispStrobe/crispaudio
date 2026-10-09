@@ -48,3 +48,10 @@ it('permits untouched video transitions, rejects a boundary inside a blend',()=>
  const out=editTimeRange(p,1,2,'extract');expect(out.video?.clips?.at(-1)).toMatchObject({startTime:3,transition:'fade',transitionDuration:1});
  expect(()=>editTimeRange(p,4.5,6,'extract')).toThrow('transitionBoundary');
 });
+
+it('retimes nested words and retains a stale arrangement guard',()=>{
+ const p=project();p.transcript![0].words=[{id:'w',start:7,end:9,text:'answer'}];
+ const layout=p.tracks.flatMap(t=>t.segments.map(c=>[t.id,c.id,c.sourceId,c.startTime,c.sourceOffset,c.duration]));p.transcriptLayout=layout;
+ const out=editTimeRange(p,3,5,'extract');expect(out.transcript![0].words![0]).toMatchObject({start:5,end:7});expect(out.transcriptLayout).not.toEqual(layout);
+ p.transcriptLayout=[['stale']];expect(editTimeRange(p,3,5,'extract').transcriptLayout).toEqual([['stale']]);
+});

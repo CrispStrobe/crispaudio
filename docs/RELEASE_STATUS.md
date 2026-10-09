@@ -1171,3 +1171,20 @@ untouched; fixtures under `ux/edit-groups-084/`. Physical mobile validation is
 still pending. DSP/codec implementations/dependencies were unchanged, so ten
 opt-in platform integrations were not repeated. Slide/advanced blend trims and
 M2–M10 remain outstanding. Prior main iOS CI passed; desktop CI remained queued.
+
+## Local 0.8.5 — CrispASR and spoken-word cuts (2026-10-09)
+
+Desktop app/CLI built, installed and launched at local 0.8.5; ad hoc signatures
+verified and the existing autosave preserved. Frontend: 99 files / 1,339 tests;
+native: 48 media tests + 3 CLI tests (10 optional integrations ignored). Lint,
+typecheck, web build, release CLI and desktop bundle passed. External local CrispASR + Cohere Q8 + Apache-2.0
+German wav2vec2 forced alignment; models and ASR executable are not bundled.
+Real MVI_8251 browser word deletion verified all three microphones/picture,
+undo/redo/reopen and CLI parity. The final 44.96–45.48 s cut removes 0.52 s;
+2-second rendered WAV is byte-identical to the corresponding original PCM with
+that interval removed. Exported MP4 audio and video both measure 2 seconds at
+25 fps. See SPEECH_EDITING.md. Final GUI harness used installed headless Chrome;
+WebKit initially exercised deletion, but its externally stored runtime later
+stalled during page startup. No OS capture/TCC reset was performed.
+
+No release tag or Apple submission for this increment. Mobile ASR remains pending.

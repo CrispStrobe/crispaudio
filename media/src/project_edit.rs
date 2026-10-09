@@ -380,6 +380,12 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             "roll" | "ripple-trim" | "trim-to-playhead" => {
                 out = advanced_trim(&out, op, &selected)?;
             }
+            "delete-word" => {
+                out["project"] = crate::spoken_edit::delete_word(
+                    &out["project"],
+                    op["wordId"].as_str().ok_or("Missing wordId")?,
+                )?;
+            }
             "range-edit" => {
                 out["project"] = crate::range_edit::apply(&out["project"], op)?;
             }

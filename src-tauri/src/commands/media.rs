@@ -326,3 +326,66 @@ pub async fn export_linked_project_aac(
     .await
     .map_err(|e| e.to_string())?
 }
+
+#[tauri::command]
+pub async fn transcribe_project(
+    document: serde_json::Value,
+    options: media::asr::AsrOptions,
+    job_id: Option<String>,
+) -> Result<serde_json::Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        media::jobs::run(job_id, || media::asr::transcribe(&document, &options))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub fn crispasr_defaults() -> media::asr::AsrOptions {
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_default();
+    let choose = |key: &str, candidates: Vec<std::path::PathBuf>| -> String {
+        std::env::var(key)
+            .ok()
+            .filter(|p| std::path::Path::new(p).is_file())
+            .or_else(|| {
+                candidates
+                    .into_iter()
+                    .find(|p| p.is_file())
+                    .map(|p| p.to_string_lossy().into_owned())
+            })
+            .unwrap_or_default()
+    };
+    let mut bins = std::env::var_os("PATH")
+        .map(|p| {
+            std::env::split_paths(&p)
+                .map(|p| {
+                    p.join(if cfg!(windows) {
+                        "crispasr.exe"
+                    } else {
+                        "crispasr"
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    bins.extend(
+        [
+            format!("{home}/code/CrispASR-streaming-local/build/bin/crispasr"),
+            format!("{home}/code/CrispASR/build/bin/crispasr"),
+        ]
+        .map(std::path::PathBuf::from),
+    );
+    media::asr::AsrOptions {
+        executable: choose("CRISPAUDIO_ASR_EXECUTABLE", bins),
+        model: choose(
+            "CRISPAUDIO_ASR_MODEL",
+            vec![std::path::PathBuf::from(format!(
+                "{home}/code/.crisperweaver-deps/german-asr-comparison/cohere-transcribe-q8_0.gguf"
+            ))],
+        ),
+        aligner: "auto".into(),
+        language: "de".into(),
+    }
+}

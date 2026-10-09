@@ -65,7 +65,8 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
   if(retimeGlobal){
     if(project.minimumDuration!==undefined)next.minimumDuration=retime(project.minimumDuration);
     next.markers=project.markers?.filter(m=>operation==='insert'||operation==='lift'||m.time<start||m.time>=end).map(m=>({...m,time:retime(m.time)}));
-    next.transcript=project.transcript?.filter(c=>operation==='insert'||c.end<=start||c.start>=end).map(c=>({...c,start:retime(c.start),end:retime(c.end)}));
+    next.transcript=project.transcript?.filter(c=>operation==='insert'||c.end<=start||c.start>=end).map(c=>({...c,start:retime(c.start),end:retime(c.end),words:c.words?.map(w=>({...w,start:retime(w.start),end:retime(w.end)}))}));
   }
+  if(retimeGlobal&&project.transcriptLayout&&JSON.stringify(project.transcriptLayout)===JSON.stringify(project.tracks.flatMap(t=>t.segments.map(c=>[t.id,c.id,c.sourceId,c.startTime,c.sourceOffset,c.duration]))))next.transcriptLayout=next.tracks.flatMap(t=>t.segments.map(c=>[t.id,c.id,c.sourceId,c.startTime,c.sourceOffset,c.duration]));
   return {...next,duration:timelineDuration(next)};
 }

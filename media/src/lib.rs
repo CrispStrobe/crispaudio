@@ -1,5 +1,6 @@
 //! Internal CrispAudio desktop media operations. No GUI or ASR dependency.
 pub mod apple;
+pub mod asr;
 pub mod audio_encode;
 pub mod audio_mix;
 mod compressor;
@@ -7,6 +8,7 @@ mod distortion;
 pub mod jobs;
 pub mod project_edit;
 mod reverb;
+pub mod spoken_edit;
 pub mod video_edit;
 use rustfft::{num_complex::Complex, FftPlanner};
 use serde::{Deserialize, Serialize};
@@ -1011,7 +1013,7 @@ fn run_command(command: &mut Command) -> Result<std::process::Output> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("Cannot start media tool: {e}. Install FFmpeg and FFprobe."))?;
+        .map_err(|e| format!("Cannot start requested media tool: {e}"))?;
     let mut stdout = child.stdout.take().unwrap();
     let mut stderr = child.stderr.take().unwrap();
     let out = std::thread::spawn(move || {

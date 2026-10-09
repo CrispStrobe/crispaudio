@@ -1054,5 +1054,31 @@
     "title": "Befehl suchen",
     "search": "Befehle suchen…",
     "empty": "Keine passenden Befehle."
+  },
+  "spoken": {
+    "title": "Spracheditor",
+    "help": "Ein Wort auswählen und mit Entf löschen: Ton und Bild werden auf allen Spuren geschnitten. Rückgängig stellt alles wieder her. Untertitelkorrekturen unten ändern nur Text und entfernen die Wortausrichtung.",
+    "settings": "ASR einrichten",
+    "executable": "CrispASR-Programm",
+    "model": "ASR-Modell (.gguf)",
+    "aligner": "Aligner (.gguf oder auto)",
+    "language": "Sprache",
+    "setupHelp": "Lokales CrispASR und Modelle wählen. Auto lädt den Aligner beim ersten Mal. Transkription nutzt 15-Sekunden-Abschnitte mit Wortausrichtung. Videoschnitte umfassen das Wort mit ganzen Bildern.",
+    "input": "Sprachquelle",
+    "mix": "Aktuell hörbare Mischung",
+    "transcribe": "Mit CrispASR transkribieren",
+    "seek": "Zum gewählten Wort springen",
+    "delete": "Wort mit Ton und Bild löschen",
+    "working": "Audio rendern, transkribieren und Wörter ausrichten…",
+    "desktop": "ASR benötigt Desktop und verknüpftes 48-kHz-Audio. Gespeicherte Wortzeiten lassen sich auch im Browser schneiden.",
+    "editor": "Gesprochene Wörter (Entf schneidet Ton und Bild)",
+    "untimed": "Dieses Wort hat keine gültige Ausrichtung. Aufnahme zuerst transkribieren oder ausrichten.",
+    "tooShort": "Dieses Wort ist kürzer als ein Videobild.",
+    "neighbour": "Der bildgenaue Schnitt überschneidet ein anderes Wort. Wortzeiten vor dem Löschen prüfen.",
+    "noTrack": "Eine Audiospur auswählen.",
+    "cut": "Schnittbereich",
+    "start": "Wortbeginn",
+    "end": "Wortende",
+    "stale": "Audioanordnung geändert. Vor Wortschnitten erneut transkribieren oder ausrichten."
   }
 }

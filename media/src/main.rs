@@ -19,6 +19,21 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Transcribe linked arrangement audio with CrispASR; outputs aligned-word JSON.
+    TranscribeProject {
+        #[arg(long)]
+        input: String,
+        #[arg(long)]
+        output: String,
+        #[arg(long)]
+        executable: String,
+        #[arg(long)]
+        model: String,
+        #[arg(long, default_value = "auto")]
+        aligner: String,
+        #[arg(long, default_value = "de")]
+        language: String,
+    },
     /// Conservative rumble and FFT noise reduction, preserving the original recording.
     CleanAudio {
         #[arg(long)]
@@ -135,6 +150,42 @@ fn execute(cli: Cli) -> media::Result<()> {
     }
 
     match cli.command {
+        Commands::TranscribeProject {
+            input,
+            output,
+            executable,
+            model,
+            aligner,
+            language,
+        } => {
+            let document =
+                serde_json::from_slice(&std::fs::read(input).map_err(|e| e.to_string())?)
+                    .map_err(|e| e.to_string())?;
+            if std::path::Path::new(&output).exists() {
+                return Err("Output already exists".into());
+            }
+            let transcript = media::asr::transcribe(
+                &document,
+                &media::asr::AsrOptions {
+                    executable,
+                    model,
+                    aligner,
+                    language,
+                },
+            )?;
+            use std::io::Write;
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(output)
+                .map_err(|e| e.to_string())?;
+            file.write_all(
+                serde_json::to_string_pretty(&transcript)
+                    .unwrap()
+                    .as_bytes(),
+            )
+            .map_err(|e| e.to_string())?;
+        }
         Commands::CleanAudio {
             input,
             output,

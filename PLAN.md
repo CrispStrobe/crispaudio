@@ -1,8 +1,19 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-09, during local 0.8.4 implementation. This section is the current plan.
+Updated 2026-10-09, during local 0.8.5 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
+
+## Current requested milestone: ASR and spoken-word editing
+
+Implemented local 0.8.5: desktop CrispASR adapter, mix/microphone choice, German
+forced word alignment, spoken-word deletion across all sound/picture, frame
+coverage, undo/save/load, CLI transcription and word recipes. See
+[Speech editing](docs/SPEECH_EDITING.md) for scope and real interview checks.
+This fulfills the newly requested speech-editing increment; it does not complete
+the remaining DAW/video roadmap. Embedded/mobile ASR, multiword text selection,
+inline re-alignment after text correction and speaker-aware editing remain future
+extensions. Existing priority/deferred paging decisions below remain in force.
 
 ## Product direction and priority decision
 

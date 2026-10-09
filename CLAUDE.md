@@ -420,3 +420,15 @@ the modal guard rejects its own command. Cmd/Ctrl+K is native-owned on macOS.
 EditGroups and command search use the existing Modal/ToolButton patterns, EN/DE
 labels and phone wrapping. Optional test-edit-groups.mjs checks actual UI and
 four native semantic cases. This metadata changes neither DSP nor codec licensing.
+
+## CrispASR / speech editing 0.8.5
+
+Read docs/SPEECH_EDITING.md. media::asr calls a selected external CrispASR CLI on
+native rendered timeline audio (15 s chunks, strict forced alignment, full JSON).
+No shell or bundled model. German auto uses wav2vec2-aligner-de. Do not invent
+word times from tokens/subtitles. transcriptLayout guards moved/slipped sound;
+only valid globally retimed range edits refresh it. Caption corrections clear
+word alignment. Spoken deletion explicitly includes all lanes, covers whole video
+frames outward, rejects adjacent speech/blends/locks and commits once. Rust
+spoken_edit mirrors GUI spokenEdits; compare doubles with sub-sample tolerance.
+Optional real browser harness supports WebKit or installed Chrome headlessly.

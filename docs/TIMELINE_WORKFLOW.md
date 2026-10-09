@@ -392,3 +392,11 @@ CLI recipes expose the same grouping behavior:
 `ungroup` removes named membership; `unlink` only removes source links.
 The optional `scripts/test-edit-groups.mjs` checks actual WebKit controls,
 command dispatch, German phone-sized layout and native recipe parity.
+
+## Transcription and word cuts (0.8.5)
+
+Use Workspace → Transcript → Transcribe with CrispASR. Select a timed word and
+press Delete, or use its trash button, to extract matching sound and picture
+across all lanes. Undo restores the whole operation. Review/edit word times and
+the displayed frame-covering cut first. See [Speech editing](SPEECH_EDITING.md)
+for installation, model choices, CLI and current desktop/mobile limitations.
