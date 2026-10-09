@@ -476,3 +476,16 @@ the overlap on each clip. Slide/ripple/range blend semantics remain unfinished.
 `test-roll-blend.py` checks actual native dissolve colours and output duration.
 Keep README about current capabilities; version narratives belong in history.md,
 CHANGELOG.md and implementation records, not append-only README sections.
+
+
+## Transition slide 0.8.9
+
+Slide matches logical start (`picture.startTime + incoming overlap`) and outer end
+across linked clips, rather than requiring equal raw AV spans. Find left by logical
+start and right by its logical start at middle end. Preserve middle offsets/lengths
+and both transition properties; shift all middle starts and right starts/offsets,
+trim left/right neighbours. Limits retain one frame outside overlaps. Original/final
+picture validation, source limits, locks/group closure and ambiguous-lane rejection
+remain enforced. Markers/automation stay fixed; old acoustic alignment is stale.
+Optional `test-slide-blend.py` verifies both native Apple transition windows;
+`test-trim-edits.mjs` covers dialog/undo and GUI/CLI recipe parity.

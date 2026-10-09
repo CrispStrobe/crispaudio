@@ -1251,3 +1251,33 @@ were untouched; private artifacts are in `ux/roll-blend-088/` outside the repo.
 Slide/ripple/range blend semantics remain unfinished. No new iOS device
 validation, release tag or Apple submission for this increment. README describes
 current support; chronological notes stay in history.md and these records.
+
+## Local 0.8.9 — slides through picture transitions (2026-10-09)
+
+Built, installed and launched 0.8.9; app/CLI ad hoc signatures verified and one
+existing autosave preserved. Frontend: 101 files / 1,363 tests passed. Native:
+53 media tests + 3 CLI tests passed, 10 optional integrations ignored. Lint,
+TypeScript production web build, release CLI and desktop bundle passed.
+
+Slide preserves incoming/outgoing picture overlap lengths and transition types,
+fixed middle source content and relative linked audio offsets. Logical edit
+boundaries include incoming picture handles. Source limits, frame boundaries,
+locks/groups, middle/neighbor body lengths and ambiguous extra clips are checked.
+The dialog keeps source limits visible for out-of-range movement amounts.
+
+Headless Chrome exercised the slide dialog and undo, with fourteen GUI/CLI recipe
+comparisons. The synthetic native Apple check moves both 0.4-second dissolve
+windows +0.2 seconds, retains 5.6-second picture duration and verifies red/blue/green
+blend colours. Reproduce with `scripts/test-slide-blend.py /path/to/crispaudio`;
+installed FFmpeg creates/inspects fixtures, Apple performs the project export.
+
+A private Canon/H6 derivative slid its middle passage +0.08 seconds through two
+0.4-second picture overlaps. All three microphones and picture remain linked;
+middle picture content/15.4-second duration and the 253.72-second canvas stay
+fixed. Rendered 48.08–50.08 s PCM matches original 48–50 s byte for byte (96,000
+stereo frames). Original media/project are untouched; private artifacts remain
+under `ux/slide-blend-089/`, outside this repository.
+
+Ripple/range edits through blends remain unfinished. No new iOS device validation,
+release tag or Apple submission. README remains a current capability overview;
+version notes stay in history.md and these records.

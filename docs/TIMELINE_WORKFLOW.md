@@ -412,7 +412,8 @@ only those passages across all sound and picture. Undo restores everything.
 
 ## Slide editing (local 0.8.7)
 
-Split linked footage into three abutting clips. Select the middle clip, open
+Arrange linked footage into three neighbouring clips (cuts or valid picture
+transitions). Select the middle clip, open
 **Trim tools**, choose **Slide selected clip between neighbours**, then enter a
 positive/negative displacement in seconds. Review the displayed source handles
 and Apply. Picture-linked edits snap to frames. The selected clip keeps its source
@@ -421,8 +422,8 @@ endpoints, project length, markers and timeline automation stay fixed. Undo rest
 all lanes together. Existing word alignment must be regenerated after this edit.
 
 One unambiguous neighbour is required on each side in every selected lane. Locks,
-source limits and enabled named groups apply to neighbours too. Incoming picture
-blends are rejected pending transition-aware trim support. Use slip to change a
+source limits and enabled named groups apply to neighbours too. Existing picture
+transition types and overlap lengths stay fixed. Use slip to change a
 clip's source content without moving it; slide moves its fixed content instead.
 
 CLI recipe: `[{"op":"slide","ids":["middle-clip-id"],"seconds":0.08}]`.
@@ -443,9 +444,28 @@ The transition must already have a valid two-clip overlap matching its duration.
 Both overlap edges must lie on project frame boundaries. Each neighbouring clip
 must retain at least one frame outside the overlap. Source limits, locked/grouped
 lanes, ambiguous neighbours and conflicts with another transition block the edit.
-Slide and ripple operations through picture blends remain restricted. CLI uses
+Ripple/range operations through picture blends remain restricted. CLI uses
 `[{"op":"roll","ids":["left-clip-id"],"seconds":0.08}]` for cuts and transitions.
 
 The optional macOS `scripts/test-roll-blend.py /path/to/crispaudio` verifies the
 moved dissolve in native Apple exports using generated colour clips. It uses
 installed FFmpeg/FFprobe for fixture creation/inspection; no user media is needed.
+
+
+## Sliding across picture transitions
+
+Slide in **Trim tools** accepts incoming, outgoing or two-sided picture transitions.
+Picture may start before its linked audio cut; the editor compares the underlying
+edit boundaries, including the incoming overlap. All middle clips retain their own
+source offsets and durations while moving by the same frame displacement. Both
+transition windows move, retaining their type and overlap length. Neighbours fill
+the move through source trims; outer endpoints stay fixed.
+
+Review the displayed source limits (also shown for an out-of-range amount). Each
+neighbour must keep at least one frame outside its transition, and the middle clip
+must keep at least one frame outside both overlaps. Ambiguous extra clips across
+the three-clip span are rejected. Existing ASR alignment becomes stale; regenerate
+it before speech cuts. CLI uses the same `slide` ids/seconds recipe.
+
+Optional macOS verification: `python3 scripts/test-slide-blend.py /path/to/crispaudio`
+checks both moved dissolve windows in Apple exports using synthetic colour sources.

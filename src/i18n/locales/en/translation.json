@@ -1039,11 +1039,11 @@
     "previous": "Previous edit point",
     "next": "Next edit point",
     "slide": "Slide selected clip between neighbours",
-    "slideHelp": "Select one middle clip between two abutting cuts. Its source content and duration stay fixed; neighbours are trimmed to fill the move. Linked audio/video follows. Timeline length, markers and automation stay fixed. Re-align any existing ASR transcript afterward.",
-    "slideSpan": "Selected linked clips must share the same start and end.",
-    "slideAdjacent": "Each selected lane needs one middle clip and two unambiguous abutting neighbours.",
-    "slideLimits": "Middle: {{start}}–{{end}} s. Source handles allow {{min}} to +{{max}} s.",
-    "blendTopology": "Roll needs a valid, frame-aligned two-clip picture overlap matching its transition. Fix ambiguous overlaps first."
+    "slideHelp": "Select a middle clip between two neighbouring cuts or transitions. Its source content and duration stay fixed; neighbours are trimmed to fill the move. Existing transition types and overlap lengths stay fixed. Linked audio/video follows. Timeline length, markers and automation stay fixed; re-align any ASR transcript afterward.",
+    "slideSpan": "Selected linked clips must share their edit boundaries, accounting for incoming picture overlaps.",
+    "slideAdjacent": "Each selected lane needs one middle clip and two unambiguous neighbouring cuts or transitions.",
+    "slideLimits": "Edit boundaries: {{start}}–{{end}} s. Source handles allow {{min}} to +{{max}} s.",
+    "blendTopology": "The edit needs valid, frame-aligned picture overlaps matching their transitions. Fix ambiguous overlaps first."
   },
   "editGroups": {
     "title": "Named edit groups",

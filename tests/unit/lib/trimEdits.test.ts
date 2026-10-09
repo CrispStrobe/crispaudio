@@ -54,11 +54,11 @@ it('reviews slide source handles and snaps linked picture motion to frames',()=>
  const p=slideFixture();expect(slideLimits(p,['b'],sources)).toEqual({start:5,end:10,min:-4.96,max:4.96});
  expect(slideClips(p,['b'],.07,sources).tracks[0].segments[1].startTime).toBe(5.08);
  for(const amount of [5,-5,NaN,0])expect(()=>slideClips(p,['b'],amount,sources)).toThrow();
- p.video!.clips![1].startTime=5.001;expect(()=>slideClips(p,['b'],.2,sources)).toThrow('slideSpan');
+ p.video!.clips![1].startTime=5.001;p.video!.clips![1].duration=4.999;expect(()=>slideClips(p,['b'],.2,sources)).toThrow('slideSpan');
 });
 it('rejects locked neighbours, overlapping lanes, external links and incoming blends',()=>{
  const p=slideFixture();p.tracks[0].locked=true;expect(()=>slideClips(p,['w'],.2,sources)).toThrow('locked');p.tracks[0].locked=false;
- p.video!.clips![1].transition='fade';expect(()=>slideClips(p,['b'],.2,sources)).toThrow('blend');p.video!.clips![1].transition='cut';
+ p.video!.clips![1].transition='fade';p.video!.clips![1].transitionDuration=.4;expect(()=>slideClips(p,['b'],.2,sources)).toThrow();p.video!.clips![1].transition='cut';p.video!.clips![1].transitionDuration=0;
  p.tracks[0].segments.push({...p.tracks[0].segments[0],id:'overlap',linkGroup:undefined,startTime:1,duration:1});expect(()=>slideClips(p,['b'],.2,sources)).toThrow('slideAdjacent');p.tracks[0].segments.pop();
  p.tracks.push({...p.tracks[0],id:'other',segments:[{...p.tracks[0].segments[0],id:'external',trackId:'other'}]});expect(()=>slideClips(p,['b'],.2,sources)).toThrow('linkedCut');
 });
@@ -90,4 +90,24 @@ it('blocks consumed transition handles, off-frame overlaps and invalid or triple
 it('blocks moving a valid transition into its next transition and preserves the original',()=>{
  const p=blendFixture();p.duration=12;p.video!.clips!.push({...p.video!.clips![1],id:'third',linkGroup:undefined,startTime:9.6,sourceOffset:0,duration:2.4});
  const before=JSON.stringify(p);expect(()=>rollCut(p,['a'],4.68,sources)).toThrow();expect(JSON.stringify(p)).toBe(before);
+});
+
+function slideBlendFixture(head=.4,tail=.4){
+ const p=slideFixture();Object.assign(p.video!.clips![1],{startTime:5-head,sourceOffset:7-head,duration:5+head,transition:head?'fade':'cut',transitionDuration:head});
+ Object.assign(p.video!.clips![2],{startTime:10-tail,sourceOffset:12-tail,duration:5+tail,transition:tail?'wipeleft':'cut',transitionDuration:tail});return p;
+}
+it('slides linked clips through incoming, outgoing or both transitions with fixed content',()=>{
+ for(const [head,tail] of [[.4,0],[0,.4],[.4,.4]])for(const delta of [.2,-.2]){
+  const p=slideBlendFixture(head,tail),out=slideClips(p,['b'],delta,sources),[l,m,r]=out.video!.clips!;
+  expect(out.duration).toBe(15);expect(m.sourceOffset).toBe(7-head);expect(m.duration).toBe(5+head);expect(m.startTime).toBe(5-head+delta);
+  expect(l.startTime+l.duration-m.startTime).toBeCloseTo(head,12);expect(m.startTime+m.duration-r.startTime).toBeCloseTo(tail,12);
+  expect(m.transitionDuration).toBe(head);expect(r.transitionDuration).toBe(tail);expect(r.startTime+r.duration).toBe(15);
+  expect(out.tracks[0].segments[1].startTime-m.startTime).toBeCloseTo(head,12);expect(p.tracks[0].segments[1].startTime).toBe(5);
+ }
+});
+it('reviews transition slide limits and rejects consumed handles, locks and stale words',()=>{
+ const p=slideBlendFixture();expect(slideLimits(p,['b'],sources)).toEqual({start:5,end:10,min:-4.56,max:4.96});
+ expect(()=>slideClips(p,['b'],-4.6,sources)).toThrow('handles');p.video!.locked=true;expect(()=>slideClips(p,['b'],.2,sources)).toThrow('locked');p.video!.locked=false;
+ p.transcriptLayout=speechLayout(p);expect(()=>deleteSpokenWord(slideClips(p,['b'],.2,sources),'word')).toThrow('spoken.stale');
+ const bad=slideBlendFixture();bad.video!.clips![2].transitionDuration=.3;expect(()=>slideClips(bad,['b'],.2,sources)).toThrow('blendTopology');
 });

@@ -43,26 +43,34 @@ export function rollCut(p:TimelineProject,ids:string[],delta:number,sources:Sour
 
 interface SlideContext {middle:Clip[];left:Clip[];right:Clip[];start:number;end:number;min:number;max:number;picture:boolean}
 function slideContext(p:TimelineProject,ids:string[],sources:Sources):SlideContext {
- const middle=chosen(p,ids),start=middle[0].startTime,end=start+middle[0].duration,left:Clip[]=[],right:Clip[]=[];
- if(middle.some(c=>!same(c.startTime,start)||!same(c.startTime+c.duration,end)))fail('slideSpan');
+ const middle=chosen(p,ids),picture=middle.some(c=>!('trackId' in c)),fps=p.frameRate??25;
+ const incoming=(c:Clip)=>'trackId' in c||c.transition==='cut'?0:c.transitionDuration;
+ const start=middle[0].startTime+incoming(middle[0]),end=middle[0].startTime+middle[0].duration,left:Clip[]=[],right:Clip[]=[];
+ if(picture){
+  if(!Number.isFinite(fps)||fps<=0||!same(start,frameTime(start,fps))||!same(end,frameTime(end,fps)))fail('frameEdge');
+  if(validateVideoClips(videoClips(p.video),p.video!.duration,p.video!.sources))fail('blendTopology');
+ }
+ if(middle.some(c=>!same(c.startTime+incoming(c),start)||!same(c.startTime+c.duration,end)))fail('slideSpan');
+ const width=picture?1/fps:.01;
+ let min=-Infinity,max=Infinity;
  for(const clip of middle){
   const lane='trackId' in clip?p.tracks.find(t=>t.id===clip.trackId)?.segments??[]:videoClips(p.video);
   if(middle.filter(c=>'trackId' in clip?'trackId' in c&&c.trackId===clip.trackId:!('trackId' in c)).length!==1)fail('slideAdjacent');
-  const before=lane.filter(c=>c.id!==clip.id&&same(c.startTime+c.duration,start)),after=lane.filter(c=>c.id!==clip.id&&same(c.startTime,end));
+  const before=lane.filter(c=>c.id!==clip.id&&same(c.startTime+c.duration,start)),after=lane.filter(c=>c.id!==clip.id&&same(c.startTime+incoming(c),end));
   if(before.length!==1||after.length!==1)fail('slideAdjacent');
-  if(lane.some(c=>![clip.id,before[0].id,after[0].id].includes(c.id)&&c.startTime<after[0].startTime+after[0].duration-1e-6&&c.startTime+c.duration>before[0].startTime+1e-6))fail('slideAdjacent');
-  left.push(before[0]);right.push(after[0]);
+  const l=before[0],r=after[0],head=incoming(clip),tail=incoming(r);
+  if(lane.some(c=>![clip.id,l.id,r.id].includes(c.id)&&c.startTime<r.startTime+r.duration-1e-6&&c.startTime+c.duration>l.startTime+1e-6))fail('slideAdjacent');
+  if(picture&&[clip.startTime,r.startTime].some(t=>!same(t,frameTime(t,fps))))fail('frameEdge');
+  if(!('trackId' in clip)&&(head>0&&!(clip.startTime<l.startTime+l.duration-1e-6)||tail>0&&!(r.startTime<clip.startTime+clip.duration-1e-6)))fail('blendTopology');
+  for(const c of [clip,l,r]){const n=sourceLength(p,c,sources);if(n===undefined||!Number.isFinite(n)||!Number.isFinite(c.startTime)||c.startTime<0||!Number.isFinite(c.sourceOffset)||c.sourceOffset<0||!Number.isFinite(c.duration)||c.duration<width-1e-6||c.sourceOffset+c.duration>n+1e-6)fail('handles');}
+  if(clip.duration<head+tail+width-1e-6)fail('handles');
+  min=Math.max(min,head+width-l.duration,-r.sourceOffset);
+  max=Math.min(max,sourceLength(p,l,sources)!-l.sourceOffset-l.duration,r.duration-tail-width);
+  left.push(l);right.push(r);
  }
  const affected=new Set([...middle,...left,...right].map(c=>c.id));
  if(affected.size!==middle.length*3||linkedIds(p,[...affected]).some(id=>!affected.has(id)))fail('linkedCut');
  unlocked(p,affected);
- const picture=middle.some(c=>!('trackId' in c)),fps=p.frameRate??25;
- if(picture&&(!Number.isFinite(fps)||fps<=0||!same(start,frameTime(start,fps))||!same(end,frameTime(end,fps))))fail('frameEdge');
- if([...middle,...right].some(c=>!('trackId' in c)&&c.transition!=='cut'))fail('blend');
- const width=picture?1/fps:.01;
- for(const c of [...middle,...left,...right]){const n=sourceLength(p,c,sources);if(n===undefined||!Number.isFinite(n)||!Number.isFinite(c.startTime)||c.startTime<0||!Number.isFinite(c.sourceOffset)||c.sourceOffset<0||!Number.isFinite(c.duration)||c.duration<width-1e-6||c.sourceOffset+c.duration>n+1e-6)fail('handles');}
- const min=Math.max(...left.map(c=>width-c.duration),...right.map(c=>-c.sourceOffset));
- const max=Math.min(...left.map(c=>sourceLength(p,c,sources)!-c.sourceOffset-c.duration),...right.map(c=>c.duration-width));
  return {middle,left,right,start,end,min,max,picture};
 }
 /** Source-handle limits for a reviewed slide; all linked lanes participate. */

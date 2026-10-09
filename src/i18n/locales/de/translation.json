@@ -1039,11 +1039,11 @@
     "previous": "Vorherige Schnittkante",
     "next": "Nächste Schnittkante",
     "slide": "Gewählten Clip zwischen Nachbarn verschieben",
-    "slideHelp": "Einen mittleren Clip zwischen zwei angrenzenden Schnitten wählen. Quellinhalt und Dauer bleiben gleich; Nachbarn werden passend getrimmt. Verknüpfter Ton und Video folgen. Timeline-Länge, Marker und Automation bleiben fest. ASR-Transkript anschließend neu ausrichten.",
-    "slideSpan": "Gewählte verknüpfte Clips müssen denselben Anfang und dasselbe Ende haben.",
-    "slideAdjacent": "Jede gewählte Spur benötigt einen mittleren Clip und zwei eindeutige angrenzende Nachbarn.",
-    "slideLimits": "Mitte: {{start}}–{{end}} s. Quellreserven erlauben {{min}} bis +{{max}} s.",
-    "blendTopology": "Rollen benötigt eine gültige Überlappung zweier Videoclips auf Bildgrenzen mit passender Übergangslänge. Mehrdeutige Überlappungen zuerst korrigieren."
+    "slideHelp": "Einen mittleren Clip zwischen zwei benachbarten Schnitten oder Übergängen wählen. Quellinhalt und Dauer bleiben gleich; Nachbarn werden passend getrimmt. Art und Länge vorhandener Übergänge bleiben fest. Verbundener Ton und Bild folgen. Timeline-Länge, Marker und Automation bleiben fest; ASR-Transkript anschließend neu ausrichten.",
+    "slideSpan": "Gewählte verbundene Clips müssen dieselben Schnittgrenzen haben, unter Berücksichtigung eingehender Videoüberlappungen.",
+    "slideAdjacent": "Jede gewählte Spur benötigt einen mittleren Clip und zwei eindeutige benachbarte Schnitte oder Übergänge.",
+    "slideLimits": "Schnittgrenzen: {{start}}–{{end}} s. Quellreserven erlauben {{min}} bis +{{max}} s.",
+    "blendTopology": "Der Schnitt benötigt gültige Videoüberlappungen auf Bildgrenzen mit passenden Übergangslängen. Mehrdeutige Überlappungen zuerst korrigieren."
   },
   "editGroups": {
     "title": "Benannte Schnittgruppen",

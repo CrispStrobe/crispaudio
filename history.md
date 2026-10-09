@@ -122,3 +122,11 @@ Rolling trims preserve an existing two-clip picture transition's type and overla
 length while moving its window, with linked audio following the same displacement.
 Source handles, frame boundaries, locks and neighbouring transition topology are
 validated. Slide/ripple/range operations through blends remain future work.
+
+
+## Local 0.8.9 — sliding across transitions
+
+Fixed-content slides retain incoming/outgoing picture overlap windows, transition
+types and linked audio offsets. Linked edit boundaries account for picture handles,
+while the middle source content and outer timeline endpoints stay fixed.
+Ripple/range edits through picture blends remain unfinished.

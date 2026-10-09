@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.8]
+## [Unreleased — local version 0.8.9]
+
+- Slide a fixed middle clip through incoming/outgoing picture transitions while
+  retaining both overlap windows, transition types and linked audio offsets.
+- Compare linked edit boundaries including incoming picture handles; preserve
+  source content, outer endpoints and one-step undo. Keep source limits visible
+  for rejected move amounts. Ripple/range operations through blends remain limited.
+
+## [Local version 0.8.8]
 
 - Roll existing two-clip picture transitions while preserving their type, overlap
   duration and outer endpoints; linked audio follows the same frame displacement.

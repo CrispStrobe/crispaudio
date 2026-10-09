@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-09, during local 0.8.8 implementation. This section is the current plan.
+Updated 2026-10-09, during local 0.8.9 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -102,7 +102,7 @@ participation, linked scope checks, automation boundary values and explicit
 canvas/marker/transcript retiming, with GUI/CLI parity and undo validation.
 Unaffected picture transitions remain; boundaries through blends or transcript
 cues require review rather than silently damaging them. M1 is not complete:
-slide/ripple/range edits through transitions remain.
+ripple/range edits through transitions remain.
 Local 0.8.2 adds explicit selected audio-range export with full DSP preroll,
 native bounded output, CLI audio/video export bounds and a reviewed action to
 reuse the selected range for picture export. Real interview WAV samples match
@@ -122,7 +122,9 @@ and one undo. Incoming picture blends and ambiguous overlapping lanes are reject
 Local 0.8.8 allows rolling existing two-clip picture transitions while preserving
 their type and overlap length; linked audio moves by the same frame displacement.
 Source handles, frame edges, locks and surrounding transition topology are checked.
-Slide/ripple/range operations through blends still need their own reviewed semantics.
+Local 0.8.9 extends slide to incoming/outgoing picture overlaps, preserving both
+windows and fixed middle source content while linked sound moves with it.
+Ripple/range operations through blends still need their own reviewed semantics.
 Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
 seamless musical looping. Paging and new codec work remain deferred.
 
