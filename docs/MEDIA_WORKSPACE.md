@@ -306,3 +306,27 @@ Use the optimised CLI build for timing measurements and long reverb exports.
 The local installed CLI uses that build; the debug CLI can be much slower for
 FFT processing even though its results match. The GUI renders audio through
 Web Audio and is unaffected by the CLI's Rust debug optimisation setting.
+
+## Desktop GUI video export (local 0.7.8)
+
+1. Import the camera and microphone recordings, then align/review the tracks.
+2. Edit cuts, fades and rack effects on the timeline. Set video IN/OUT for a section
+   or leave the whole arrangement selected. Extend DUR for effect tails as needed.
+3. Click the video export icon, choose the picture format/backend and save to a new
+   filename. On Mac, 48 kHz projects whose audible sources have mono/stereo disk
+   paths automatically stream the mix through the native CLI DSP engine.
+4. Cancel from the export panel to cancel both mixing and picture export. Temporary
+   mixes are owned by the job and removed on success, failure or cancellation.
+
+The native path keeps the complete project clock so effects started earlier still
+contribute to a later section. It sends no decoded PCM across IPC and creates no
+extra full-length Web Audio render. Muted/unreferenced in-memory sounds do not
+block it; a soloed track remains audible even with its mute button stored on.
+If an audible source is generated in memory, the project rate differs from 48 kHz,
+or the platform is not Mac, the existing Web Audio export path remains available.
+Native mixing errors remain visible; they never silently select another mixer.
+The picture backend selector still applies to MP4/MOV/WebM composition.
+
+This improves export memory, not import/playback: source buffers already loaded
+in Web Audio remain in the editor. Audio-only GUI exports still use the encoder
+worker and Web Audio rendering. CLI usage and supported audio formats are unchanged.

@@ -213,7 +213,7 @@ absolute render-context time even for later clips. BitCrush uses symmetric
 quantisation so its even-length interpolated curve maps zero to zero. Native
 waveshaping interpolates the same 65536-entry Float32 curve, not a direct step.
 The old GUI DC bias and mix bug are intentionally corrected for saved settings.
-Delay/chorus were added in 0.7.4; reverb was added in 0.7.5; distortion was added in 0.7.6; compressor remains an explicit native error.
+Delay/chorus were added in 0.7.4; reverb was added in 0.7.5; distortion was added in 0.7.6; compressor was added in 0.7.7.
 
 ## Native delay/chorus 0.7.4
 
@@ -254,7 +254,7 @@ and two 2x downsamplers retain a 192-frame wet delay at 48 kHz. Dry stays immedi
 do not shift clips/automation to compensate. Quantise intermediate samples to
 float, retain the odd decimation phase and account for fixed filter state before
 allocation. Timeline's existing drive/mix controls still select tanh; other curve
-algorithms are not configurable timeline effects yet. Compressor stays explicit.
+algorithms are not configurable timeline effects yet. Compressor was added in 0.7.7.
 WebKit tests include unfiltered impulses and 18/19.5 kHz tones to verify aliasing
 and timing beyond ordinary low-pass-filtered fixtures.
 
@@ -271,3 +271,17 @@ Reserve fixed state in the common DSP budget before construction. Every current
 rack type is supported; unknown types must still fail. Float output can exceed
 unity at extreme cascaded makeup settings. Reference tests use absolute error
 below full scale and peak-normalised error above it, preserving the PCM unchanged.
+
+## Native GUI video mix 0.7.8
+
+linkedRenderDocument inspects only audible referenced sources, honoring solo's
+stored-mute override. Never base64-encode PCM to prepare the native request.
+Choose native on Mac only for 48 kHz projects with linked mono/stereo sources;
+keep Web Audio for audible in-memory/multichannel sources and other rates.
+export_linked_project_video runs jobs::run off the UI thread, calls the native
+mixer directly (no compatibility audio fallback), then exports the picture with
+its selected backend. Its owned full-clock mix uses mix_is_trimmed=false so a
+section is sought once and retains prior effect history. Native failures must
+stay visible. mediaJob owns cancellation registration/retry for both paths;
+the Web Audio path removes its staged mix even if cancellation arrives after
+staging. This avoids a second render/IPC buffer; import/playback are still decoded.

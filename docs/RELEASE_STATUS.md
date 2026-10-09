@@ -758,3 +758,52 @@ are in `ux/real-compressor-077-oh72nntf/`; originals were not rewritten.
 GUI disk-paged rendering, permissive-only WebM and iOS picture export remain
 unfinished. The CLI audio endpoint still writes float WAV; GUI encoder workers
 provide the separate compressed-audio formats.
+
+## Local 0.7.8 — native mixing in GUI video export
+
+Installed and launched `~/Applications/CrispAudio-local.app` version 0.7.8;
+updated the optimised standalone CLI. Both ad-hoc signatures verified. The one
+saved autosave remains unchanged; WebKit data and its JSON are backed up under
+`ux/recovery-before-078/`. No release tag or Apple upload was triggered.
+
+Mac GUI video export now streams the audio of linked 48 kHz mono/stereo projects
+with the same bounded native DSP mixer used by the CLI. The IPC request carries
+paths and project settings, never decoded PCM. Native mixing feeds the selected
+picture backend: Apple MP4/MOV or optional FFmpeg compatibility/WebM. Native
+mix errors remain visible without an automatic audio-mixer fallback. The owned
+full-clock mix retains prior effect history for a later selected section and
+is sought exactly once during composition. Temporary media is removed on all
+exits. Cancellation uses the same registered/retried media-job mechanism for
+both native and Web Audio paths.
+
+Only audible referenced sources determine eligibility. Solo overrides stored
+mute state; muted/unreferenced generated sounds do not block native rendering.
+Audible in-memory sounds, multichannel sources, non-48-kHz projects and other
+platforms retain Web Audio. Import and playback still hold decoded source buffers;
+this removes the extra full render/PCM transfer during eligible video export.
+Audio-only GUI export remains on Web Audio and the encoder worker. No new codec
+or dependency was added; the 26-entry licence manifest remains unchanged.
+
+Validation: 16 targeted frontend tests passed, including seven new eligibility,
+error, fallback, cleanup and cancellation checks. ESLint, TypeScript/production
+build, optimised CLI and debug macOS bundle passed. All 35 ordinary media Rust
+tests and the CLI parser test passed; seven native video integrations are opt-in.
+The new native section integration was explicitly run and passed: source audio
+is silent outside seconds 1–2, and both ends of that selected export contain the
+expected tone. It also checks section length, invalid range and output protection.
+The six older picture integrations were not repeated; DSP waveforms were unchanged
+and the previous version's 56 WebKit/native comparisons were not repeated here.
+Both desktop and iOS CI passed 0.7.7; this push starts new CI.
+
+A private derivative of the real interview project exported seconds 30–38 with
+default master compression in 5.37 seconds (2.85 user / 0.62 system). This includes
+mixing the original full 253.72-second audio clock and composing the eight-second
+picture section. Apple probing reports exactly 8.0 seconds, stereo 48 kHz and video;
+independent decoding produced 384,000 frames with RMS 0.0833. macOS time reported
+peak RSS 68,386,816 bytes (65.2 MiB); this is not a complete memory measurement of
+the editor, OS cache or concurrent processes. No universal speedup is inferred
+from this single run. The project, output and measurements live outside git in
+`ux/real-video-export-078-vnnokm9p/`; original recordings/projects were untouched.
+
+Remaining work includes disk-paged import/playback and audio-only GUI export,
+permissive-only WebM and iOS picture composition.

@@ -5,6 +5,7 @@ import { validVideoColor } from './videoColor';
 // 32-bit PCM WAV. Linked interviews retain their original video and aligned WAVs.
 // ---------------------------------------------------------------------------
 
+import { audibleTracks, timelineDuration } from './timelineView';
 import type { AudioSource, TimelineProject } from '../types/audio';
 import {
   encodeAudioBufferToWav,
@@ -76,6 +77,24 @@ export function serializeProject(
     sources: serializedSources,
   };
   return JSON.stringify(doc);
+}
+
+/** Disk-only snapshot for the native 48 kHz mixer. Never encodes an AudioBuffer.
+ * In-memory audible sources and other render rates keep the Web Audio path.
+ * Muted/unreferenced sources need no files; solo overrides stored mute state.
+ */
+export function linkedRenderDocument(project: TimelineProject, sources: Map<string, AudioSource>): SerializedProject | null {
+  if (project.sampleRate !== 48000) return null;
+  const ids = new Set(audibleTracks(project.tracks).flatMap(track => track.segments.map(clip => clip.sourceId)));
+  const linked: SerializedSource[] = [];
+  for (const id of ids) {
+    const source = sources.get(id);
+    if (!source?.filePath || source.channels < 1 || source.channels > 2) return null;
+    linked.push({ id, name: source.name, path: source.filePath, duration: source.duration,
+      channels: source.channels, sampleRate: source.sampleRate, provenance: source.provenance });
+  }
+  return { format: FORMAT, version: VERSION,
+    project: { ...project, duration: Math.max(project.duration, timelineDuration(project)) }, sources: linked };
 }
 
 /**

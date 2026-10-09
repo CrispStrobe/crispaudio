@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.7]
+## [Unreleased — local version 0.7.8]
+
+- Stream linked 48 kHz mono/stereo project audio from disk during macOS GUI video
+  export, sharing the native CLI mixer and all current timeline rack effects.
+- Keep the full project clock for video section exports; seek the mix once.
+- Retain Web Audio for audible in-memory sources, other render rates/platforms.
+- Share cancellable media jobs across both paths; always clean temporary mixes.
+- Test source selection, failures, cancellation and actual native section audio.
+
+## [Local version 0.7.7]
 
 - Complete native CLI timeline racks with stereo-linked compression at clip,
   track and master level: soft knee, adaptive release, makeup and 6 ms lookahead.

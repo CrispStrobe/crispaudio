@@ -298,3 +298,11 @@ including stereo-linked compression with WebKit soft knee, adaptive release,
 automatic makeup and 6 ms lookahead. The GUI already had these controls; the CLI
 now matches its timing and mono/stereo behavior. The BSD-3-Clause kernel notice
 is included in source and About. See `docs/MEDIA_WORKSPACE.md` for CLI usage.
+
+### Local 0.7.8 — disk-backed desktop video export
+
+Mac GUI video export now reuses the native streaming mixer for linked 48 kHz
+mono/stereo projects. Full-clock DSP preserves effect history in section exports,
+without a second full Web Audio mix or PCM transfer through IPC. In-memory sounds
+and other project rates retain Web Audio. Import/playback buffers remain loaded;
+this is an export improvement. See `docs/MEDIA_WORKSPACE.md` for the workflow.

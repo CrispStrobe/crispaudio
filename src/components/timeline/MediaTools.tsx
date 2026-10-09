@@ -8,14 +8,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { readFile, remove } from '@tauri-apps/plugin-fs';
+import { readFile } from '@tauri-apps/plugin-fs';
 import { VideoViewer } from './VideoViewer';
 import { Modal } from '../common/Modal';
 import { useProjectStore } from '../../stores/projectStore';
 import { canAlign, projectFromSession } from '../../lib/media';
 import type { SyncSession } from '../../lib/media';
 import type { TimelineEngine } from '../../audio/engine/TimelineEngine';
-import { encodeAudioBufferWav } from '../../lib/wavExport';
+import { exportVideoProject } from '../../lib/videoProjectExport';
 import { hasRecoverableAutosave, restoreAutosaveAudio } from '../../hooks/useAutosave';
 
 interface Props { engine: React.RefObject<TimelineEngine | null>; panelTarget: HTMLElement | null }
@@ -40,8 +40,7 @@ export function MediaTools({ engine, panelTarget }: Props) {
   const playing = useProjectStore((s) => s.isPlaying);
   const actionRef = useRef(false);
   const exportAbort=useRef<AbortController|null>(null);
-  const exportJob=useRef<string|null>(null);
-  useEffect(()=>()=>{exportAbort.current?.abort();if(exportJob.current)void invoke('cancel_media_job',{jobId:exportJob.current});},[]);
+  useEffect(()=>()=>{exportAbort.current?.abort();},[]);
 
   useEffect(() => {
     if (!('__TAURI_INTERNALS__' in window)) return;
@@ -54,7 +53,7 @@ export function MediaTools({ engine, panelTarget }: Props) {
     useProjectStore.getState().setIsPlaying(false);
     setError(''); setNotice(''); setBusy(stage);
     try { await task(); } catch (err) { setError(String(err)); }
-    finally { actionRef.current = false;exportJob.current=null;exportAbort.current=null;setBusy(''); }
+    finally { actionRef.current = false;exportAbort.current=null;setBusy(''); }
   }
 
   const chooseVideo = () => perform(t('interview.loading'), async () => {
@@ -110,27 +109,17 @@ export function MediaTools({ engine, panelTarget }: Props) {
 
   const exportVideo = () => perform(t('interview.exporting'), async () => {
     const state = useProjectStore.getState();
-    if (!state.project.video || !engine.current) return;
+    if (!state.project.video) return;
     const ext=['vp9','av1'].includes(videoFormat)?'webm':videoFormat;
     const output = await save({ defaultPath: `${state.project.name}.edited.${ext}`, filters: [{ name: ext.toUpperCase(), extensions: [ext] }] });
     if (!output) return;
-    const start = state.project.video.inPoint ?? 0;
-    const end = state.project.video.outPoint ?? timelineDuration(state.project);
     if(state.project.video.clips){const error=validateVideoClips(videoClips(state.project.video),state.project.video.duration,state.project.video.sources);if(error)throw new Error(error);}
     const controller=new AbortController();exportAbort.current=controller;
-    const jobId=crypto.randomUUID();exportJob.current=jobId;
-    const rendered = await engine.current.renderToBuffer(state.project, start, end,controller.signal);
-    const wav = await encodeAudioBufferWav(rendered, 24,controller.signal);
-    controller.signal.throwIfAborted();
-    const mix = await invoke<string>('stage_share_file', new Uint8Array(await wav.arrayBuffer()), {
-      headers: { 'x-file-name': `video-mix-${crypto.randomUUID()}.wav` },
-    });
-    try {
-      controller.signal.throwIfAborted();
-      await invoke('export_video_edit', {edit:{path:state.project.video.path,sources:state.project.video.sources,frameRate:state.project.frameRate,duration:timelineDuration(state.project),clips:videoClips(state.project.video),backend:mediaBackend,outputFormat:videoFormat},output,mix,start,end,jobId});
-      setExportOptions(false);
-      setNotice(t('interview.exported', { path: output }));
-    } finally { exportJob.current=null;exportAbort.current=null;await remove(mix).catch(() => {}); }
+    await exportVideoProject({ project: state.project, sources: state.sources,
+      engine: engine.current, output, backend: mediaBackend, format: videoFormat,
+      nativeMac: navigator.userAgent.includes('Mac') }, controller.signal);
+    setExportOptions(false);
+    setNotice(t('interview.exported', { path: output }));
   });
 
   const button = 'min-h-11 px-4 py-2 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-40';
@@ -150,7 +139,7 @@ export function MediaTools({ engine, panelTarget }: Props) {
   return <>
     {controls}
     {panelTarget && (video || busy || error || notice) && createPortal(<section className="relative z-30 shrink-0 border-b border-gray-800 bg-gray-900/70 px-3 py-1" aria-label={t('interview.title')}>
-      {busy && <p role="status" className="text-sm text-indigo-300 mt-2">{busy}{busy===t('interview.exporting')&&<button className="timeline-tool" onClick={()=>{exportAbort.current?.abort();if(exportJob.current)void invoke('cancel_media_job',{jobId:exportJob.current});}}>{t('common.cancel')}</button>}</p>}
+      {busy && <p role="status" className="text-sm text-indigo-300 mt-2">{busy}{busy===t('interview.exporting')&&<button className="timeline-tool" onClick={()=>{exportAbort.current?.abort();}}>{t('common.cancel')}</button>}</p>}
       {error && !exportOptions && <p role="alert" className="text-sm text-red-300 break-words mt-2">{error}</p>}
       {notice && <p role="status" className="text-sm text-green-300 break-words mt-2">{notice}</p>}
       {video && <VideoViewer/>}
@@ -166,7 +155,7 @@ export function MediaTools({ engine, panelTarget }: Props) {
         <p className="text-sm text-gray-400">{t(mediaBackend==='apple'?'mediaFormats.appleHelp':'mediaFormats.ffmpegHelp')}</p>
         {error && <p role="alert" className="text-sm text-red-300 break-words">{error}</p>}
         <button className={button} disabled={!!busy||playing} onClick={exportVideo}>{t('mediaFormats.export')}</button>
-        {busy && <div role="status" className="text-sm text-indigo-300">{busy}<button className="timeline-tool ml-2" onClick={()=>{exportAbort.current?.abort();if(exportJob.current)void invoke('cancel_media_job',{jobId:exportJob.current});}}>{t('common.cancel')}</button></div>}
+        {busy && <div role="status" className="text-sm text-indigo-300">{busy}<button className="timeline-tool ml-2" onClick={()=>{exportAbort.current?.abort();}}>{t('common.cancel')}</button></div>}
       </div>
     </Modal>
     <Modal isOpen={setup} onClose={() => { if (!busy) setSetup(false); }} title={t('interview.sync')} widthClass="max-w-2xl">

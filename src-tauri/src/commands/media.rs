@@ -235,3 +235,25 @@ pub async fn measure_loudness(
 pub fn cancel_media_job(job_id: String) -> bool {
     media::jobs::cancel(&job_id)
 }
+
+/// Native disk-backed audio mix and desktop picture export, without GUI PCM IPC.
+#[tauri::command]
+pub async fn export_linked_project_video(
+    document: serde_json::Value,
+    edit: media::video_edit::VideoEdit,
+    output: String,
+    start: f64,
+    end: f64,
+    job_id: Option<String>,
+) -> Result<(), String> {
+    if !cfg!(target_os = "macos") {
+        return Err("Native linked-project video export requires macOS".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        media::jobs::run(job_id, || {
+            media::video_edit::export_linked_project(&document, &edit, &output, start, end)
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

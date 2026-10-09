@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.7
+# Formats and licensing — local 0.7.8
 
 ## Current GUI
 
@@ -35,8 +35,13 @@ probing, first thumbnail, proxy, stereo 48 kHz/16-bit WAV extraction, multi-sour
 cuts, cross dissolves, dips to black/white, all directional wipes and pushes,
 blur, zoom, pixelation, whip, glitch and page peel, plus black gaps/tails,
 per-clip colour, orientation and fades.
-The GUI supplies its already edited/range-trimmed Web Audio mix; the native
-composition inserts it on the correct timeline clock before exporting the range.
+For linked 48 kHz projects with mono/stereo audible sources, macOS GUI video
+export now streams its audio mix directly from disk through the native mixer.
+Only paths and edit settings cross IPC. The full-clock mix preserves effect
+history before the selected section; composition seeks it once. In-memory sounds,
+other project rates and other desktop platforms retain the range-trimmed Web
+Audio mix. The selected backend controls picture export; eligible native audio
+mixing does not silently fall back on errors.
 Whip, glitch and page peel use cached native Metal kernels and require a GPU
 with dynamic library support. They passed on this Apple Silicon Mac; older Intel
 GPU support is not established. Unsupported hardware fails in strict Apple mode;
@@ -113,9 +118,9 @@ without FFmpeg. Automatic mode prefers native mixing, then reports any optional
 FFmpeg fallback; explicit FFmpeg mode keeps the older compatibility mix. That
 older mixer has narrower pan/master-effect support and different filter behaviour.
 
-Long-file alignment, denoising and EBU loudness still use FFmpeg. The GUI still
-uses Web Audio and duration-sized decoded buffers; its render path is not yet
-disk-paged. CLI WAV rendering remains separate from the GUI's FLAC/MP3/AAC/Opus
+Long-file alignment, denoising and EBU loudness still use FFmpeg. GUI import and playback still use Web Audio and duration-sized decoded buffers.
+Eligible macOS video exports avoid a second duration-sized render buffer;
+GUI audio-only export and other video projects still render with Web Audio. CLI WAV rendering remains separate from the GUI's FLAC/MP3/AAC/Opus
 encoder worker. No permissive-only bundled WebM implementation is claimed.
 
 ```sh

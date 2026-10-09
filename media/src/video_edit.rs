@@ -191,8 +191,39 @@ pub fn validate(edit: &VideoEdit, source_duration: f64) -> Result<Vec<VideoClip>
     Ok(clips)
 }
 
-/// Mix is already cropped to [start,end] by the GUI. CLI explicitly selects
-/// whether its mix is range-trimmed; source camera audio is never silently reused.
+/// Desktop linked-project export: native bounded audio mixing, then the selected
+/// picture backend. The full-clock mix is sought exactly once for section exports.
+/// No GUI PCM crosses IPC, and the owned mix folder is removed on every exit.
+pub fn export_linked_project(
+    doc: &serde_json::Value,
+    edit: &VideoEdit,
+    output: &str,
+    start: f64,
+    end: f64,
+) -> Result<()> {
+    if Path::new(output).exists() {
+        return Err("Output already exists; choose a new filename".into());
+    }
+    if doc["format"] != "crispaudio-project"
+        || doc["version"] != 3
+        || doc["project"]["sampleRate"] != 48000
+    {
+        return Err("Native project export requires a linked version 3 project at 48 kHz".into());
+    }
+    let duration = doc["project"]["duration"]
+        .as_f64()
+        .ok_or("Missing project duration")?;
+    if !start.is_finite() || !end.is_finite() || start < 0.0 || end <= start || end > duration {
+        return Err("Export range must be within the project duration".into());
+    }
+    let folder = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let mix = folder.path().join("mix.wav").to_string_lossy().into_owned();
+    crate::audio_mix::render(doc, &mix)?;
+    export_edit(edit, output, Some(&mix), start, end, false)
+}
+
+/// Mix clock is explicit: full-project or already cropped to [start,end].
+/// Source camera audio is never silently reused.
 pub fn export_edit(
     edit: &VideoEdit,
     output: &str,
@@ -614,6 +645,90 @@ fn transition_filter(kind: &str, duration: f64, offset: f64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[ignore = "Requires native Apple export and FFmpeg reference decoding"]
+    #[cfg(target_os = "macos")]
+    fn linked_project_section_keeps_full_clock_audio() {
+        use serde_json::json;
+        use std::process::Command;
+        let folder = tempfile::tempdir().unwrap();
+        let source = folder.path().join("picture.mp4");
+        assert!(Command::new("ffmpeg")
+            .args([
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "color=c=red:s=128x72:r=25:d=3",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p"
+            ])
+            .arg(&source)
+            .status()
+            .unwrap()
+            .success());
+        let audio = folder.path().join("mic.wav");
+        let mut wav = hound::WavWriter::create(
+            &audio,
+            hound::WavSpec {
+                channels: 1,
+                sample_rate: 48000,
+                bits_per_sample: 32,
+                sample_format: hound::SampleFormat::Float,
+            },
+        )
+        .unwrap();
+        // Silence before the chosen section, a tone throughout it, then silence.
+        for i in 0..144000 {
+            wav.write_sample(if (48000..96000).contains(&i) {
+                (i as f32 * std::f32::consts::TAU * 440.0 / 48000.0).sin() * 0.2
+            } else {
+                0.0
+            })
+            .unwrap();
+        }
+        wav.finalize().unwrap();
+        let doc = json!({"format":"crispaudio-project","version":3,"sources":[{"id":"s","path":audio}],"project":{"sampleRate":48000,"duration":3,"masterEffects":[],"tracks":[{"id":"t","volume":1,"pan":0,"muted":false,"solo":false,"effects":[],"segments":[{"sourceId":"s","startTime":0,"sourceOffset":0,"duration":3,"gain":1,"effects":[]}]}]}});
+        let edit = VideoEdit {
+            backend: Some("apple".into()),
+            output_format: Some("mp4".into()),
+            path: source.to_string_lossy().into_owned(),
+            sources: vec![],
+            frame_rate: Some(25.0),
+            duration: Some(3.0),
+            clips: vec![clip(0.0, 3.0)],
+        };
+        let output = folder.path().join("section.mp4");
+        export_linked_project(&doc, &edit, output.to_str().unwrap(), 1.0, 2.0).unwrap();
+        let decoded = Command::new("ffmpeg")
+            .args(["-v", "error", "-i"])
+            .arg(&output)
+            .args(["-vn", "-ac", "2", "-ar", "48000", "-f", "f32le", "pipe:1"])
+            .output()
+            .unwrap();
+        assert!(decoded.status.success());
+        let samples: Vec<f32> = decoded
+            .stdout
+            .chunks_exact(8)
+            .map(|b| f32::from_le_bytes(b[..4].try_into().unwrap()))
+            .collect();
+        assert!(
+            (47000..50000).contains(&samples.len()),
+            "section length {}",
+            samples.len()
+        );
+        for range in [4000..8000, 39000..43000] {
+            let rms = (samples[range].iter().map(|x| x * x).sum::<f32>() / 4000.0).sqrt();
+            assert!(rms > 0.12 && rms < 0.16, "wrong section audio {rms}");
+        }
+        assert!(export_linked_project(&doc, &edit, output.to_str().unwrap(), 1.0, 2.0).is_err());
+        let missing = folder.path().join("invalid.mp4");
+        assert!(export_linked_project(&doc, &edit, missing.to_str().unwrap(), 2.0, 4.0).is_err());
+        assert!(!missing.exists());
+    }
     fn clip(start: f64, duration: f64) -> VideoClip {
         VideoClip {
             color_correction: None,
