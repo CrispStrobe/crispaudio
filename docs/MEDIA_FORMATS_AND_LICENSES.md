@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.0
+# Formats and licensing — local 0.7.1
 
 ## Current GUI
 
@@ -32,10 +32,17 @@ change to another running job. Output extensions must match the selected contain
 
 The bundled MIT Swift helper uses macOS 13+ AVFoundation/CoreImage. It supports
 probing, first thumbnail, proxy, stereo 48 kHz/16-bit WAV extraction, multi-source
-cuts, cross dissolves, black gaps/tails, per-clip colour, orientation and fades.
+cuts, cross dissolves, dips to black/white, all directional wipes and pushes,
+blur, zoom, pixelation, whip, glitch and page peel, plus black gaps/tails,
+per-clip colour, orientation and fades.
 The GUI supplies its already edited/range-trimmed Web Audio mix; the native
 composition inserts it on the correct timeline clock before exporting the range.
-Other transitions fail explicitly in Apple mode; select FFmpeg to export them.
+Whip, glitch and page peel use cached native Metal kernels and require a GPU
+with dynamic library support. They passed on this Apple Silicon Mac; older Intel
+GPU support is not established. Unsupported hardware fails in strict Apple mode;
+optional FFmpeg remains available. Complex effects and browser previews are
+visually approximate across renderers, not pixel-identical FFmpeg replacements.
+Page peel is a shaded 2D fold, not a physically simulated 3D page.
 Source thumbnails are not previews of edits. Desktop subprocesses are not an
 implementation of video composition on iOS.
 
@@ -89,8 +96,7 @@ VP9 or AV1 does not turn a GPL FFmpeg binary into BSD software.
 
 libvpx (VP9) and SVT-AV1 have permissive source licences, but WebM currently still
 runs through optional FFmpeg. A bundled permissive-only WebM decoder/muxer/encoder
-path is **not completed**. Likewise, the complete advanced-transition renderer,
-long-file DSP and iOS video composition remain separate work. No GPL binary has
+path is **not completed**. Long-file DSP and iOS video composition also remain separate work. No GPL binary has
 been added to the application bundle for this milestone.
 
 Sources: [FFmpeg licensing](https://ffmpeg.org/legal.html),

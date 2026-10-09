@@ -955,7 +955,7 @@
     "apple": "Apple native (macOS 13+)",
     "ffmpeg": "FFmpeg compatibility (optional)",
     "auto": "Automatic (may use FFmpeg)",
-    "appleHelp": "Uses Apple system codecs. Supports cuts, cross dissolves, fades, colour and orientation. Other transitions require FFmpeg; this choice never falls back.",
+    "appleHelp": "Uses Apple system codecs and native picture transitions, fades, colour and orientation. Whip, glitch and page peel need a supported Metal GPU. This choice never falls back.",
     "ffmpegHelp": "Requires a separately installed FFmpeg with the chosen encoder. Its licence depends on that build; the Homebrew build may include GPL components. AV1 can be slow.",
     "export": "Export",
     "notices": "Bundled codec copyright and licence notices"

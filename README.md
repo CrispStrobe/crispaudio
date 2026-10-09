@@ -261,3 +261,8 @@ export offers a native Apple backend for MP4/MOV cuts, dissolves, fades, colour 
 orientation, plus explicitly optional FFmpeg compatibility for other transitions
 and VP9/AV1 WebM. See [formats, CLI and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md)
 for the exact support matrix and remaining platform limitations.
+
+Local 0.7.1 also renders every listed picture transition through Apple frameworks.
+Whip, glitch and page peel require a compatible Metal GPU; the export selector
+retains optional FFmpeg compatibility. Complex preview/native/FFmpeg renderers
+are approximate equivalents, with a shaded 2D page fold rather than 3D geometry.

@@ -180,8 +180,10 @@ Full codec notices are bundled through AboutModal raw imports.
 Apple media uses a build-time Swift helper embedded in the Rust crate, extracted
 into an owned private temp directory per cancellable job. Apple-only mode must
 never silently use FFmpeg. Export backend/format are explicit per edit; WebM VP9
-and AV1 still require optional FFmpeg. Strict Apple supports cuts/dissolves,
-colour/orientation/fades, gaps/tails and supplied mixed audio. Advanced transitions
-and CLI project audio mixing still need FFmpeg. Never claim a permissive-only
+and AV1 still require optional FFmpeg. Strict Apple supports every listed picture transition,
+colour/orientation/fades, gaps/tails and supplied mixed audio. Whip/glitch/page peel
+use a cached Metal kernel and require dynamic-library GPU support; fail explicitly
+on unsupported hardware. Native and FFmpeg complex effects are not pixel-identical.
+CLI project audio mixing still needs FFmpeg. Never claim a permissive-only
 WebM backend or iOS video implementation exists. GUI mixed audio is range-trimmed;
 CLI mix-is-trimmed remains explicit. Preserve atomic no-overwrite publication.

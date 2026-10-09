@@ -1,5 +1,5 @@
 import type {VideoClip} from '../types/audio';
-/** Interactive preview. FFmpeg is authoritative for blur/zoom/pixelize exports. */
+/** Interactive preview. The selected native/FFmpeg export renderer is authoritative; complex previews are approximate. */
 export function clipOpacity(clip:VideoClip,time:number):number {
   const local=time-clip.startTime;
   if(local<0||local>=clip.duration)return 0;

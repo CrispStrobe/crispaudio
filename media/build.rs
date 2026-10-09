@@ -1,5 +1,6 @@
 fn main() {
     println!("cargo:rerun-if-changed=apple/MediaHelper.swift");
+    println!("cargo:rerun-if-changed=apple/Transitions.swift");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("macos") {
         return;
     }
@@ -21,6 +22,7 @@ fn main() {
             "-target",
             &format!("{arch}-apple-macosx13.0"),
             "apple/MediaHelper.swift",
+            "apple/Transitions.swift",
             "-o",
         ])
         .arg(output)

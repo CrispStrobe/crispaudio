@@ -1046,7 +1046,7 @@ mod tests {
             "dissolve pixel {rgb:?}"
         );
         // Strict Apple rejects an unsupported effect, without producing a file.
-        edit.clips[1].transition = "glitch".into();
+        edit.clips[1].transition = "unknown-effect".into();
         edit.clips[1].start_time = 0.6;
         edit.clips[1].transition_duration = 0.2;
         let rejected = folder.path().join("rejected.mov");
@@ -1077,6 +1077,135 @@ mod tests {
             let streams = value["streams"].as_array().unwrap();
             assert!(streams.iter().any(|s| s["codec_name"] == format));
             assert!(streams.iter().any(|s| s["codec_name"] == "opus"));
+        }
+    }
+    #[test]
+    #[cfg(target_os = "macos")]
+    #[ignore = "Requires Apple media and FFmpeg reference decoding"]
+    fn apple_all_transitions_preserve_endpoints_and_render_overlap() {
+        use std::process::Command;
+        let folder = tempfile::tempdir().unwrap();
+        let a = folder.path().join("a.mp4");
+        let b = folder.path().join("b.mp4");
+        for (path, colour, box_colour) in [(&a, "red", "green"), (&b, "blue", "white")] {
+            assert!(Command::new("ffmpeg")
+                .args([
+                    "-v",
+                    "error",
+                    "-f",
+                    "lavfi",
+                    "-i",
+                    &format!("color=c={colour}:s=128x72:r=25:d=2"),
+                    "-vf",
+                    &format!("drawbox=x=0:y=0:w=64:h=36:color={box_colour}:t=fill"),
+                    "-c:v",
+                    "libx264",
+                    "-pix_fmt",
+                    "yuv420p"
+                ])
+                .arg(path)
+                .status()
+                .unwrap()
+                .success());
+        }
+        let frame = |path: &Path, time: &str| {
+            let output = Command::new("ffmpeg")
+                .args(["-v", "error", "-ss", time, "-i"])
+                .arg(path)
+                .args([
+                    "-frames:v",
+                    "1",
+                    "-pix_fmt",
+                    "rgb24",
+                    "-f",
+                    "rawvideo",
+                    "pipe:1",
+                ])
+                .output()
+                .unwrap();
+            assert!(output.status.success());
+            assert_eq!(output.stdout.len(), 128 * 72 * 3);
+            output.stdout
+        };
+        let reference_a = frame(&a, "0.2");
+        let reference_b = frame(&b, "0.2");
+        let error = |a: &[u8], b: &[u8]| {
+            a.iter()
+                .zip(b)
+                .map(|(a, b)| (*a as f64 - *b as f64).abs())
+                .sum::<f64>()
+                / a.len() as f64
+        };
+        for kind in TRANSITIONS.iter().copied().filter(|kind| *kind != "cut") {
+            let mut first = clip(0.0, 1.6);
+            first.id = "a".into();
+            let mut second = clip(0.8, 1.6);
+            second.id = "b".into();
+            second.source_id = Some("b".into());
+            second.transition = kind.into();
+            second.transition_duration = 0.8;
+            let edit = VideoEdit {
+                backend: Some("apple".into()),
+                output_format: Some("mp4".into()),
+                path: a.to_string_lossy().into_owned(),
+                sources: vec![VideoSource {
+                    id: "b".into(),
+                    path: b.to_string_lossy().into_owned(),
+                }],
+                frame_rate: Some(25.0),
+                duration: Some(2.4),
+                clips: vec![first, second],
+            };
+            let output = folder.path().join(format!("{kind}.mp4"));
+            export_edit(&edit, output.to_str().unwrap(), None, 0.0, 2.4, false)
+                .unwrap_or_else(|e| panic!("{kind}: {e}"));
+            assert!(
+                error(&frame(&output, "0.4"), &reference_a) < 4.0,
+                "{kind}: outgoing endpoint"
+            );
+            assert!(
+                error(&frame(&output, "2.0"), &reference_b) < 4.0,
+                "{kind}: incoming endpoint"
+            );
+            let middle = frame(&output, "1.2");
+            assert!(
+                error(&middle, &reference_a) > 10.0,
+                "{kind}: effect missing"
+            );
+            assert!(error(&middle, &reference_b) > 5.0, "{kind}: effect missing");
+            if kind == "fadeblack" {
+                assert!(middle.iter().all(|v| *v < 8), "dip must reach black");
+            }
+            if kind == "fadewhite" {
+                assert!(middle.iter().all(|v| *v > 245), "dip must reach white");
+            }
+            // Direction checks use a source-independent lower half of the picture.
+            let pixel = |x: usize| &middle[(54 * 128 + x) * 3..(54 * 128 + x) * 3 + 3];
+            if kind == "wipeleft" || kind == "slideleft" {
+                assert!(
+                    pixel(16)[0] > 200 && pixel(112)[2] > 200,
+                    "{kind}: wrong direction"
+                );
+            }
+            if kind == "wiperight" || kind == "slideright" {
+                assert!(
+                    pixel(16)[2] > 200 && pixel(112)[0] > 200,
+                    "{kind}: wrong direction"
+                );
+            }
+            let vertical_pixel = |y: usize| &middle[(y * 128 + 112) * 3..(y * 128 + 112) * 3 + 3];
+            if kind == "wipeup" || kind == "slideup" {
+                assert!(
+                    vertical_pixel(18)[0] > 200 && vertical_pixel(54)[2] > 200,
+                    "{kind}: wrong direction"
+                );
+            }
+            if kind == "wipedown" || kind == "slidedown" {
+                assert!(
+                    vertical_pixel(18)[2] > 200 && vertical_pixel(54)[0] > 200,
+                    "{kind}: wrong direction"
+                );
+            }
         }
     }
 }

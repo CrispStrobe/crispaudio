@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.0]
+## [Unreleased — local version 0.7.1]
+
+- Add native Apple rendering for every listed picture transition: directional
+  wipes/pushes, dips to black/white, blur, zoom, pixelation, whip, glitch and a
+  shaded 2D page peel. Whip/glitch/page peel use cached Metal kernels and explicitly
+  reject unsupported GPUs. Native complex effects are not pixel-identical to FFmpeg.
+- Test all 17 transitions on real encoded frames with FFmpeg unavailable to the
+  application, checking unchanged endpoints, overlap effects, dip midpoints and
+  wipe/push direction. Picture changes retain the existing audio mix and timing.
+
+## [Local version 0.7.0]
 
 - Add worker-based 24-bit FLAC export in SFX, Voice and Timeline with lossless
   compression, final stream checksum, cancellation and MIT/BSD codec notices.

@@ -216,3 +216,18 @@ paged disk streaming engine; very long multi-hour sessions need segmented input
 or CLI rendering. No new iOS video backend is claimed: mobile native composition,
 multicam lanes, and physical-device validation remain separate work. Advanced
 transition previews retain the documented approximations.
+
+
+## Native Mac transition export (local 0.7.1)
+
+Use the existing picture clip inspector to choose a transition and its duration;
+its overlap and linked timing rules remain unchanged. In **Export video**, choose
+MP4 or MOV and the **Apple** media backend. Every listed picture transition can
+now render through Apple frameworks, alongside colour, orientation and clip
+fades. The edited Web Audio mix stays on the existing export clock.
+
+Whip, glitch and page peel require a supported Metal GPU; this Apple Silicon Mac
+was validated. For unsupported GPUs, choose **FFmpeg compatibility** explicitly
+(or Automatic, which may fall back). WebM still uses optional FFmpeg. Complex
+preview/native/FFmpeg effects are approximate equivalents; page peel is a shaded
+2D fold. These desktop changes do not implement video composition on iOS.

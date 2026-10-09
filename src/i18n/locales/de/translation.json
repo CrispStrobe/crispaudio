@@ -955,7 +955,7 @@
     "apple": "Apple nativ (macOS 13+)",
     "ffmpeg": "FFmpeg-Kompatibilität (optional)",
     "auto": "Automatisch (ggf. FFmpeg)",
-    "appleHelp": "Verwendet Apple-Systemcodecs. Unterstützt Schnitte, weiche Blenden, Ein-/Ausblenden, Farbe und Ausrichtung. Andere Übergänge benötigen FFmpeg; diese Auswahl wechselt nie automatisch.",
+    "appleHelp": "Verwendet Apple-Systemcodecs und native Bildübergänge, Ein-/Ausblenden, Farbe und Ausrichtung. Whip, Glitch und Page Peel benötigen eine unterstützte Metal-GPU. Diese Auswahl wechselt nie automatisch.",
     "ffmpegHelp": "Benötigt separat installiertes FFmpeg mit passendem Encoder. Die Lizenz hängt vom Build ab; Homebrew kann GPL-Komponenten enthalten. AV1 kann langsam sein.",
     "export": "Exportieren",
     "notices": "Urheberrechts- und Lizenzhinweise der mitgelieferten Codecs"

@@ -32,6 +32,7 @@ final class Compositor:NSObject,AVVideoCompositing {
         let size=request.renderContext.size,rect=CGRect(origin:.zero,size:size),time=request.compositionTime.seconds
         let black=CIImage(color:.black).cropped(to:rect)
         var result=black
+        var hasOutgoing=false
         for item in instruction.pictures.sorted(by:{$0.clip.startTime<$1.clip.startTime}) {
             let clip=item.clip,local=time-clip.startTime
             if local<0 || local>=clip.duration {continue}
@@ -59,10 +60,11 @@ final class Compositor:NSObject,AVVideoCompositing {
             let opacity=min(1,fadeIn>0 ? local/fadeIn:1)*min(1,fadeOut>0 ? (clip.duration-local)/fadeOut:1)
             image=image.applyingFilter("CIColorMatrix",parameters:["inputAVector":CIVector(x:0,y:0,z:0,w:opacity)]).composited(over:black)
             let transition=clip.transitionDuration ?? 0
-            if clip.transition=="fade" && transition>0 && local<transition {
-                image=image.applyingFilter("CIColorMatrix",parameters:["inputAVector":CIVector(x:0,y:0,z:0,w:local/transition)])
-            }
-            result=image.composited(over:result).cropped(to:rect)
+            if hasOutgoing && transition>0 && local<transition {
+                do {result=try PictureTransitions.render(result,image,kind:clip.transition,progress:local/transition,rect:rect).cropped(to:rect)}
+                catch {request.finish(with:error);return}
+            } else {result=image.cropped(to:rect)}
+            hasOutgoing=true
         }
         self.context.render(result,to:output,bounds:rect,colorSpace:nil)
         request.finish(withComposedVideoFrame:output)
@@ -124,7 +126,7 @@ func export(_ session:AVAssetExportSession,to output:String,type:AVFileType) asy
   }
   if operation=="edit" {
     let edit=try JSONDecoder().decode(Edit.self,from:Data(contentsOf:URL(fileURLWithPath:args[2])))
-    guard edit.clips.allSatisfy({["cut","fade"].contains($0.transition)}) else {try fail("Apple backend currently supports cuts and cross dissolves; choose FFmpeg for other transitions")}
+    guard edit.clips.allSatisfy({PictureTransitions.names.contains($0.transition)}) else {try fail("Unsupported native picture transition")}
     let composition=AVMutableComposition();var pictures:[RenderPicture]=[]
     let duration=edit.duration ?? edit.clips.map{$0.startTime+$0.duration}.max() ?? 0
     composition.insertEmptyTimeRange(CMTimeRange(start:.zero,duration:CMTime(seconds:duration,preferredTimescale:60000)))

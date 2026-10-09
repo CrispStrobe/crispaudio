@@ -465,3 +465,29 @@ one CLI parser test, 18 Tauri tests, four explicit media integration tests,
 including a two-source native dissolve and native reference renders with the
 application's FFmpeg/FFprobe paths set to nonexistent files. Desktop signature
 verification passed. No release tag, TestFlight or App Store submission was made.
+
+
+## Local native transitions build 0.7.1
+
+Installed and launched `~/Applications/CrispAudio-local.app` 0.7.1 with its ad-hoc
+signature verified and the existing autosave/WebKit state backed up and retained.
+Every listed transition now has an Apple renderer, including directional
+wipes/pushes, black/white dips, blur, zoom, pixelation, whip, glitch and shaded 2D
+page peel. Whip/glitch/page peel require a Metal GPU with dynamic library support;
+older Intel GPUs have not been established as compatible. Strict Apple mode fails
+explicitly instead of switching backends. Complex renderers/previews are approximate
+equivalents, not pixel-identical FFmpeg replacements.
+
+All 21 media tests (including five explicit integration tests) and the CLI parser
+test passed. The 17-transition frame test also passed with the application's
+FFmpeg/FFprobe paths unavailable. It verifies intact endpoints, overlap effects,
+dip midpoints and all four wipe/push directions. Existing orientation, colour,
+multiplicative fades, section audio and black gap/tail tests passed. Frontend lint,
+typecheck and production desktop bundle passed.
+
+Actual 640×360 interview footage was rendered with native whip, glitch and page
+peel, then decoded and visually inspected. The 2.4-second excerpts took 1.609,
+0.385 and 0.381 seconds respectively in one run; these small excerpts are not a
+full-resolution benchmark. Validation artifacts remain outside git. The previous
+0.7.0 commit passed GitHub CI and the unsigned iOS simulator build; that does not
+establish native video support on iOS. No release tag or Apple submission was made.
