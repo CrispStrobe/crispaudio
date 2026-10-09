@@ -1188,3 +1188,18 @@ WebKit initially exercised deletion, but its externally stored runtime later
 stalled during page startup. No OS capture/TCC reset was performed.
 
 No release tag or Apple submission for this increment. Mobile ASR remains pending.
+
+## Local 0.8.6 — keep pasted transcript passages (2026-10-09)
+
+Built, installed and launched local 0.8.6; ad hoc app/CLI signatures verified and
+existing autosave preserved. Frontend: 101 files / 1,353 tests; native: 50 media
++ 3 CLI tests, 10 optional integrations ignored. Lint, TypeScript production web
+build, release CLI and desktop bundle passed. Actual headless Chrome interview
+paste workflow, repeat-resolution component tests, undo/redo/reopen, German phone
+controls and native recipe parity passed. Retaining two MVI_8251 passages yields
+13 timed words / 4.88 s; rendered WAV is exactly the two original PCM intervals
+joined, and MP4 audio/picture duration stays within one 48 kHz sample. See
+KEEP_TEXT_EDITING.md. No new dependencies or crisp-docx AGPL code introduced.
+
+No release tag/Apple submission. Free-text comparison is GUI; CLI consumes its
+reviewed `keep-words` recipe. Embedded/mobile ASR is still not implemented.

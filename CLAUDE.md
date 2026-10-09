@@ -432,3 +432,17 @@ word alignment. Spoken deletion explicitly includes all lanes, covers whole vide
 frames outward, rejects adjacent speech/blends/locks and commits once. Rust
 spoken_edit mirrors GUI spokenEdits; compare doubles with sub-sample tolerance.
 Optional real browser harness supports WebKit or installed Chrome headlessly.
+
+## Pasted text retention 0.8.6
+
+Read docs/KEEP_TEXT_EDITING.md. keepSpeech.ts independently tokenizes normalized
+Unicode and computes earliest/latest ordered subsequences: never replace speech
+using semantic similarity or infer timestamps from text. Ambiguous mapping needs
+occurrence pins or explicit earliest/latest review. Keep contiguous word runs with
+natural pauses; remove the complement, including untranscribed intro/outro, across
+all lanes in descending time order. Commit once, preserve locked/linked/grouped
+range rules and retime transcript/markers/automation. Rust keep_words consumes
+reviewed IDs, not free text; GUI exports its recipe. Native/GUI range helpers keep
+an exact terminal canvas end rather than leaving a sub-frame tail. Do not import
+AGPL crisp-docx code under the existing permissive dependency policy. Optional
+headless script test-keep-speech.mjs uses private interview media and actual GUI.

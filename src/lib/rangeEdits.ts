@@ -16,7 +16,7 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
   if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||(!['lift','extract','insert'].includes(operation))||start>timelineDuration(project)||(operation!=='insert'&&end>timelineDuration(project)))fail('invalid');
   if(includeVideo&&!project.video)fail('scope');
   if([...ids].some(id=>!project.tracks.some(t=>t.id===id))||(!ids.size&&!includeVideo))fail('scope');
-  if(includeVideo){start=frameTime(start,project.frameRate??25);end=frameTime(end,project.frameRate??25);if(end<=start)fail('invalid');}
+  if(includeVideo){start=frameTime(start,project.frameRate??25);end=Math.abs(end-timelineDuration(project))<1e-7?end:frameTime(end,project.frameRate??25);if(end<=start)fail('invalid');}
   const retimeGlobal=options.retimeGlobal??(includeVideo||(!project.video&&ids.size===project.tracks.length));
   const all:Clip[]=[...project.tracks.flatMap(t=>t.segments),...videoClips(project.video)];
   const included=(clip:Clip)=>'trackId' in clip?ids.has(clip.trackId):includeVideo;

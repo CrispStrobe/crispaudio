@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.5]
+## [Unreleased — local version 0.8.6]
+
+- Add a pasted shortened-transcript editor with ordered word matching, timestamp
+  review, explicit repeated-phrase resolution and draft/project invalidation.
+- Keep only reviewed speech passages across all audio and picture lanes with one
+  undo step; preserve natural pauses within contiguous passages and remove others.
+- Add reviewed `keep-words` CLI recipes with GUI/native parity; remove non-frame
+  trailing canvas ends exactly without residual clips.
+- Accept punctuation/case/spacing differences; reject rewritten/reordered speech,
+  partial acoustic words, stale alignment, locked lanes and conflicting frames.
+
+## [Local version 0.8.5]
 
 - Integrate local CrispASR with timeline audio rendering, microphone/mix selection,
   German forced alignment, cancellation and stale-result protection.

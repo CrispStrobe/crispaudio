@@ -380,6 +380,15 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             "roll" | "ripple-trim" | "trim-to-playhead" => {
                 out = advanced_trim(&out, op, &selected)?;
             }
+            "keep-words" => {
+                let ids = op["wordIds"]
+                    .as_array()
+                    .ok_or("Missing wordIds")?
+                    .iter()
+                    .map(|id| id.as_str().map(str::to_owned).ok_or("Invalid wordId"))
+                    .collect::<std::result::Result<Vec<_>, _>>()?;
+                out["project"] = crate::spoken_edit::keep_words(&out["project"], &ids)?;
+            }
             "delete-word" => {
                 out["project"] = crate::spoken_edit::delete_word(
                     &out["project"],

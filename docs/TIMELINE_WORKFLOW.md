@@ -400,3 +400,10 @@ press Delete, or use its trash button, to extract matching sound and picture
 across all lanes. Undo restores the whole operation. Review/edit word times and
 the displayed frame-covering cut first. See [Speech editing](SPEECH_EDITING.md)
 for installation, model choices, CLI and current desktop/mobile limitations.
+
+### Keep only text pasted into the editor (0.8.6)
+
+Transcript → Keep pasted text accepts an edited copy of the timed transcript.
+Compare first, review source ranges and resolve repeated phrases; Apply retains
+only those passages across all sound and picture. Undo restores everything.
+[Workflow and real interview test](KEEP_TEXT_EDITING.md).

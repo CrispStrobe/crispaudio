@@ -1,3 +1,4 @@
+import {KeepSpeechEditor} from './KeepSpeechEditor';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -52,6 +53,7 @@ export function SpokenEditor(){
       {(['start','end'] as const).map(key=><label key={key} className="flex justify-between items-center">{t(`spoken.${key}`)}<input className="bg-gray-800 rounded p-2 w-28" type="number" step={.01} min={0} aria-label={t(`spoken.${key}`)} value={current[key]} onChange={e=>{const value=Number(e.target.value);if(!Number.isFinite(value)||value<0||(key==='start'?value>=current.end:value<=current.start))return;useProjectStore.setState({project:{...project,transcript:project.transcript?.map(c=>{if(!c.words?.some(w=>w.id===selected))return c;const words=c.words.map(w=>w.id===selected?{...w,[key]:value}:w);return {...c,words,start:Math.min(...words.map(w=>w.start)),end:Math.max(...words.map(w=>w.end))};})}});}}/></label>)}
     </div>}
     {busy&&<p role="status">{t('spoken.working')}</p>}{!native&&<p className="text-xs">{t('spoken.desktop')}</p>}{error&&<p role="alert" className="text-amber-300 break-words">{error}</p>}
+    <KeepSpeechEditor disabled={busy}/>
     {!!words.length&&<div tabIndex={0} role="group" aria-label={t('spoken.editor')} className="rounded bg-gray-950 p-2 leading-loose" onKeyDown={e=>{if((e.key==='Delete'||e.key==='Backspace')&&current){e.preventDefault();e.stopPropagation();remove();}}}>
       {words.map(w=><button key={w.id} className={`rounded px-1 min-h-11 ${selected===w.id?'bg-purple-600':'hover:bg-gray-700'}`} aria-pressed={selected===w.id} title={`${w.start.toFixed(3)}–${w.end.toFixed(3)} s`} onClick={()=>setSelected(w.id)}>{w.text.trim()}</button>)}
     </div>}

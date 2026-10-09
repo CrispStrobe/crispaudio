@@ -85,3 +85,10 @@ WebKit runtime stalled on startup after its initial word-deletion checks.
 Unit tests cover imported timestamp units, missing/invalid timestamps, locked
 lanes, adjacent words, stale arrangement guards, ASR invocation and changes during
 ASR. Fixtures, recordings and derived projects stay outside git.
+
+## Keep a pasted shortened transcript (0.8.6)
+
+The same Transcript panel now accepts a draft where words or whole passages have
+been deleted. Compare the text, resolve ambiguous repeated phrases, and keep only
+the matched audio/video in one undoable edit. See
+[Keep text editing](KEEP_TEXT_EDITING.md) for exact boundaries, workflow and CLI.

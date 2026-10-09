@@ -1080,5 +1080,31 @@
     "start": "Word start",
     "end": "Word end",
     "stale": "Audio arrangement changed. Transcribe or align again before word cuts."
+  },
+  "keepSpeech": {
+    "title": "Keep pasted text",
+    "help": "Paste a shortened transcript, or load the original and delete words here. Compare, review the matching passages, then keep only their audio and video. Order stays unchanged; punctuation and case may differ.",
+    "text": "Text to keep",
+    "placeholder": "Paste the passages you want to keep…",
+    "load": "Load transcript into field",
+    "compare": "Compare text",
+    "summary": "Keep {{kept}} words; remove {{deleted}}. {{passages}} passages, {{duration}} s total.",
+    "changed": "Project changed. Compare again before applying.",
+    "ambiguous": "“{{word}}” has several matching occurrences. Choose a passage or explicitly use the earliest/latest complete match.",
+    "occurrence": "Matching occurrence",
+    "choose": "Choose the occurrence…",
+    "many": "More than 200 occurrences. Add context, or choose earliest/latest.",
+    "earliest": "Use earliest matches",
+    "latest": "Use latest matches",
+    "passages": "Passages to keep",
+    "apply": "Keep these audio/video passages",
+    "untimed": "A complete word-timed transcript is required. Transcribe/align first.",
+    "empty": "Keep at least one matching word.",
+    "mismatch": "The pasted words do not occur in that order. Use deletion-only edits of this transcript; new wording and reordered passages cannot be matched automatically.",
+    "partialWord": "This edit removes part of one aligned word (for example a hyphenated word). Keep or delete the complete timed word.",
+    "neighbour": "A retained video frame contains speech marked for removal. Review the boundary word timing first.",
+    "tooLarge": "This text exceeds the current 100,000-token / 1 MB comparison limit.",
+    "recipe": "Export reviewed CLI recipe",
+    "tooManyCuts": "This edit exceeds the current 2,000-cut limit. Edit a shorter section."
   }
 }

@@ -111,7 +111,9 @@ pub fn apply(p: &Value, op: &Value) -> Result<Value> {
             return Err("Invalid frame rate".into());
         }
         start = (start * rate).round() / rate;
-        end = (end * rate).round() / rate;
+        if (end - number(p, "duration")?).abs() > 1e-7 {
+            end = (end * rate).round() / rate;
+        }
         if end <= start {
             return Err("Invalid range".into());
         }

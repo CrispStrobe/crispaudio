@@ -1080,5 +1080,31 @@
     "start": "Wortbeginn",
     "end": "Wortende",
     "stale": "Audioanordnung geändert. Vor Wortschnitten erneut transkribieren oder ausrichten."
+  },
+  "keepSpeech": {
+    "title": "Eingefügten Text behalten",
+    "help": "Gekürztes Transkript einfügen oder den Originaltext laden und hier Wörter löschen. Vergleichen, passende Stellen prüfen und nur deren Ton und Bild behalten. Reihenfolge bleibt erhalten; Satzzeichen und Großschreibung dürfen abweichen.",
+    "text": "Zu behaltender Text",
+    "placeholder": "Gewünschte Textstellen hier einfügen…",
+    "load": "Transkript ins Textfeld laden",
+    "compare": "Text vergleichen",
+    "summary": "{{kept}} Wörter behalten; {{deleted}} entfernen. {{passages}} Stellen, insgesamt {{duration}} s.",
+    "changed": "Projekt geändert. Vor dem Anwenden erneut vergleichen.",
+    "ambiguous": "„{{word}}“ kommt an mehreren passenden Stellen vor. Stelle auswählen oder ausdrücklich die früheste/späteste vollständige Zuordnung verwenden.",
+    "occurrence": "Passende Fundstelle",
+    "choose": "Fundstelle auswählen…",
+    "many": "Mehr als 200 Fundstellen. Kontext ergänzen oder früheste/späteste wählen.",
+    "earliest": "Früheste Stellen verwenden",
+    "latest": "Späteste Stellen verwenden",
+    "passages": "Zu behaltende Stellen",
+    "apply": "Diese Ton-/Bildstellen behalten",
+    "untimed": "Ein vollständig wortgenau ausgerichtetes Transkript wird benötigt. Zuerst transkribieren/ausrichten.",
+    "empty": "Mindestens ein passendes Wort behalten.",
+    "mismatch": "Die eingefügten Wörter kommen nicht in dieser Reihenfolge vor. Nur Text aus diesem Transkript löschen; neue Formulierungen und umgestellte Stellen lassen sich nicht automatisch zuordnen.",
+    "partialWord": "Diese Änderung entfernt einen Teil eines ausgerichteten Wortes (z. B. mit Bindestrich). Das gesamte Wort behalten oder löschen.",
+    "neighbour": "Ein beibehaltenes Videobild enthält zu entfernende Sprache. Wortzeiten an der Schnittgrenze zuerst prüfen.",
+    "tooLarge": "Dieser Text überschreitet das Vergleichslimit von 100.000 Tokens / 1 MB.",
+    "recipe": "Geprüften CLI-Schnittplan exportieren",
+    "tooManyCuts": "Diese Änderung überschreitet das Limit von 2.000 Schnitten. Kürzeren Abschnitt bearbeiten."
   }
 }
