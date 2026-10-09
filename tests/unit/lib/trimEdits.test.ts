@@ -1,5 +1,6 @@
 import {expect,it} from 'vitest';
-import {rollCut,rippleTrim,trimToPlayhead,adjacentEdit} from '../../../src/lib/trimEdits';
+import {rollCut,rippleTrim,trimToPlayhead,adjacentEdit,slideClips,slideLimits} from '../../../src/lib/trimEdits';
+import {speechLayout,deleteSpokenWord} from '../../../src/lib/spokenEdits';
 import type {TimelineProject} from '../../../src/types/audio';
 const sources=new Map([['s',{duration:20}]]);
 function fixture():TimelineProject{
@@ -37,4 +38,34 @@ it('keeps a long right clip endpoint stable under rolling frame nudges',()=>{
  p.tracks[0].segments[0].duration=45;p.tracks[0].segments[1].startTime=45;p.tracks[0].segments[1].duration=208.72;p.duration=253.72;
  const before=p.tracks[0].segments[1].startTime+p.tracks[0].segments[1].duration;
  const out=rollCut(p,['a'],.08,new Map([['s',{duration:400}]]));expect(out.duration).toBeCloseTo(before,12);expect(Math.round(out.duration*48000)).toBe(Math.round(p.duration*48000));
+});
+function slideFixture(){
+ const p=fixture();p.duration=15;p.frameRate=25;
+ p.tracks[0].segments.push({...p.tracks[0].segments[1],id:'c',linkGroup:'last',startTime:10,sourceOffset:12});
+ p.video!.clips!.push({...p.video!.clips![1],id:'x',linkGroup:'last',startTime:10,sourceOffset:12});return p;
+}
+it('slides fixed linked content both directions and preserves outer endpoints',()=>{
+ for(const delta of [.2,-.2]){const p=slideFixture(),out=slideClips(p,['b'],delta,sources);
+ expect(out.duration).toBe(15);expect(out.tracks[0].segments.map(c=>[c.startTime,c.duration,c.sourceOffset])).toEqual([[0,5+delta,2],[5+delta,5,7],[10+delta,15-(10+delta),12+delta]]);
+ expect(out.video!.clips!.map(c=>[c.startTime,c.duration,c.sourceOffset])).toEqual(out.tracks[0].segments.map(c=>[c.startTime,c.duration,c.sourceOffset]));expect(p.tracks[0].segments[1].startTime).toBe(5);}
+});
+it('reviews slide source handles and snaps linked picture motion to frames',()=>{
+ const p=slideFixture();expect(slideLimits(p,['b'],sources)).toEqual({start:5,end:10,min:-4.96,max:4.96});
+ expect(slideClips(p,['b'],.07,sources).tracks[0].segments[1].startTime).toBe(5.08);
+ for(const amount of [5,-5,NaN,0])expect(()=>slideClips(p,['b'],amount,sources)).toThrow();
+ p.video!.clips![1].startTime=5.001;expect(()=>slideClips(p,['b'],.2,sources)).toThrow('slideSpan');
+});
+it('rejects locked neighbours, overlapping lanes, external links and incoming blends',()=>{
+ const p=slideFixture();p.tracks[0].locked=true;expect(()=>slideClips(p,['w'],.2,sources)).toThrow('locked');p.tracks[0].locked=false;
+ p.video!.clips![1].transition='fade';expect(()=>slideClips(p,['b'],.2,sources)).toThrow('blend');p.video!.clips![1].transition='cut';
+ p.tracks[0].segments.push({...p.tracks[0].segments[0],id:'overlap',linkGroup:undefined,startTime:1,duration:1});expect(()=>slideClips(p,['b'],.2,sources)).toThrow('slideAdjacent');p.tracks[0].segments.pop();
+ p.tracks.push({...p.tracks[0],id:'other',segments:[{...p.tracks[0].segments[0],id:'external',trackId:'other'}]});expect(()=>slideClips(p,['b'],.2,sources)).toThrow('linkedCut');
+});
+it('keeps markers and automation at timeline positions and clamps only neighbour fades',()=>{
+ const p=slideFixture();p.markers=[{id:'m',time:8,name:'m'}];p.tracks[0].segments[0].fadeOutDuration=5;p.tracks[0].segments[1].fadeInDuration=2;
+ const out=slideClips(p,['b'],-.2,sources);expect(out.markers).toBe(p.markers);expect(out.tracks[0].segments[0].fadeOutDuration).toBe(4.8);expect(out.tracks[0].segments[1].fadeInDuration).toBe(2);
+});
+it('invalidates old acoustic timestamps after sliding audio',()=>{
+ const p=slideFixture();p.transcript=[{id:'cue',start:6,end:7,text:'Hallo',words:[{id:'word',start:6,end:7,text:'Hallo'}]}];p.transcriptLayout=speechLayout(p);
+ const out=slideClips(p,['b'],.2,sources);expect(()=>deleteSpokenWord(out,'word')).toThrow('spoken.stale');
 });

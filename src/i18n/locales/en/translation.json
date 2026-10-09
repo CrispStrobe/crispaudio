@@ -1037,7 +1037,12 @@
     "scope": "Selected lanes must participate in ripple edits. Review their saved scope first.",
     "frameEdge": "A ripple edit with picture needs a frame-aligned cut.",
     "previous": "Previous edit point",
-    "next": "Next edit point"
+    "next": "Next edit point",
+    "slide": "Slide selected clip between neighbours",
+    "slideHelp": "Select one middle clip between two abutting cuts. Its source content and duration stay fixed; neighbours are trimmed to fill the move. Linked audio/video follows. Timeline length, markers and automation stay fixed. Re-align any existing ASR transcript afterward.",
+    "slideSpan": "Selected linked clips must share the same start and end.",
+    "slideAdjacent": "Each selected lane needs one middle clip and two unambiguous abutting neighbours.",
+    "slideLimits": "Middle: {{start}}–{{end}} s. Source handles allow {{min}} to +{{max}} s."
   },
   "editGroups": {
     "title": "Named edit groups",

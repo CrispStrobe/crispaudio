@@ -31,6 +31,43 @@ export function rollCut(p:TimelineProject,ids:string[],delta:number,sources:Sour
  return mapClips(p,c=>leftIds.has(c.id)?fitFade({...c,duration:c.duration+delta}):rightIds.has(c.id)?fitFade({...c,startTime:c.startTime+delta,sourceOffset:c.sourceOffset+delta,duration:(c.startTime+c.duration)-(c.startTime+delta)}):c);
 }
 
+interface SlideContext {middle:Clip[];left:Clip[];right:Clip[];start:number;end:number;min:number;max:number;picture:boolean}
+function slideContext(p:TimelineProject,ids:string[],sources:Sources):SlideContext {
+ const middle=chosen(p,ids),start=middle[0].startTime,end=start+middle[0].duration,left:Clip[]=[],right:Clip[]=[];
+ if(middle.some(c=>!same(c.startTime,start)||!same(c.startTime+c.duration,end)))fail('slideSpan');
+ for(const clip of middle){
+  const lane='trackId' in clip?p.tracks.find(t=>t.id===clip.trackId)?.segments??[]:videoClips(p.video);
+  if(middle.filter(c=>'trackId' in clip?'trackId' in c&&c.trackId===clip.trackId:!('trackId' in c)).length!==1)fail('slideAdjacent');
+  const before=lane.filter(c=>c.id!==clip.id&&same(c.startTime+c.duration,start)),after=lane.filter(c=>c.id!==clip.id&&same(c.startTime,end));
+  if(before.length!==1||after.length!==1)fail('slideAdjacent');
+  if(lane.some(c=>![clip.id,before[0].id,after[0].id].includes(c.id)&&c.startTime<after[0].startTime+after[0].duration-1e-6&&c.startTime+c.duration>before[0].startTime+1e-6))fail('slideAdjacent');
+  left.push(before[0]);right.push(after[0]);
+ }
+ const affected=new Set([...middle,...left,...right].map(c=>c.id));
+ if(affected.size!==middle.length*3||linkedIds(p,[...affected]).some(id=>!affected.has(id)))fail('linkedCut');
+ unlocked(p,affected);
+ const picture=middle.some(c=>!('trackId' in c)),fps=p.frameRate??25;
+ if(picture&&(!Number.isFinite(fps)||fps<=0||!same(start,frameTime(start,fps))||!same(end,frameTime(end,fps))))fail('frameEdge');
+ if([...middle,...right].some(c=>!('trackId' in c)&&c.transition!=='cut'))fail('blend');
+ const width=picture?1/fps:.01;
+ for(const c of [...middle,...left,...right]){const n=sourceLength(p,c,sources);if(n===undefined||!Number.isFinite(n)||!Number.isFinite(c.startTime)||c.startTime<0||!Number.isFinite(c.sourceOffset)||c.sourceOffset<0||!Number.isFinite(c.duration)||c.duration<width-1e-6||c.sourceOffset+c.duration>n+1e-6)fail('handles');}
+ const min=Math.max(...left.map(c=>width-c.duration),...right.map(c=>-c.sourceOffset));
+ const max=Math.min(...left.map(c=>sourceLength(p,c,sources)!-c.sourceOffset-c.duration),...right.map(c=>c.duration-width));
+ return {middle,left,right,start,end,min,max,picture};
+}
+/** Source-handle limits for a reviewed slide; all linked lanes participate. */
+export function slideLimits(p:TimelineProject,ids:string[],sources:Sources){const {min,max,start,end}=slideContext(p,ids,sources);return {min,max,start,end};}
+/** Move middle content unchanged and trim both neighbours; outer endpoints stay fixed. */
+export function slideClips(p:TimelineProject,ids:string[],delta:number,sources:Sources):TimelineProject {
+ const context=slideContext(p,ids,sources);
+ if(!Number.isFinite(delta))fail('amount');
+ if(context.picture)delta=frameTime(context.start+delta,p.frameRate??25)-context.start;
+ if(delta===0)fail('amount');
+ if(delta<context.min-1e-6||delta>context.max+1e-6)fail('handles');
+ const middle=new Set(context.middle.map(c=>c.id)),left=new Set(context.left.map(c=>c.id)),right=new Set(context.right.map(c=>c.id));
+ return mapClips(p,c=>middle.has(c.id)?{...c,startTime:c.startTime+delta}:left.has(c.id)?fitFade({...c,duration:c.duration+delta}):right.has(c.id)?fitFade({...c,startTime:c.startTime+delta,sourceOffset:c.sourceOffset+delta,duration:(c.startTime+c.duration)-(c.startTime+delta)}):c);
+}
+
 /** Shared-edge trim to a playhead; source bounds are explicit, never silent clamps. */
 export function trimToPlayhead(p:TimelineProject,ids:string[],side:'left'|'right',time:number,sources:Sources):TimelineProject{
  const selected=chosen(p,ids),edge=side==='left'?selected[0].startTime:selected[0].startTime+selected[0].duration;

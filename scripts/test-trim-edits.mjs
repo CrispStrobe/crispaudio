@@ -5,8 +5,8 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import assert from 'node:assert/strict';
-const {webkit}=await import(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE?pathToFileURL(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE).href:'playwright');
-const browser=await webkit.launch({headless:true,...(process.env.CRISPAUDIO_WEBKIT_EXECUTABLE?{executablePath:process.env.CRISPAUDIO_WEBKIT_EXECUTABLE}:{})});
+const {webkit,chromium}=await import(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE?pathToFileURL(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE).href:'playwright');
+const browser=process.env.CRISPAUDIO_CHROME_EXECUTABLE?await chromium.launch({headless:true,executablePath:process.env.CRISPAUDIO_CHROME_EXECUTABLE}):await webkit.launch({headless:true,...(process.env.CRISPAUDIO_WEBKIT_EXECUTABLE?{executablePath:process.env.CRISPAUDIO_WEBKIT_EXECUTABLE}:{})});
 const temp=await mkdtemp(join(tmpdir(),'crispaudio-trim-'));
 const clip={id:'a',trackId:'mic',sourceId:'s',linkGroup:'left',startTime:0,sourceOffset:2,duration:5,gain:1,name:'a',color:'#fff',effects:[],fadeInDuration:0,fadeOutDuration:0,fadeInCurve:'linear',fadeOutCurve:'linear'};
 const picture={id:'v',linkGroup:'left',startTime:0,sourceOffset:2,duration:5,fadeIn:0,fadeOut:0,transition:'cut',transitionDuration:0};
@@ -41,5 +41,26 @@ try{
    assert.deepEqual(semantic(native),semantic(frontend));parity.push(op);
   }
  }
- console.log(JSON.stringify({dialog:'passed',handles:'blocked',undo:'passed',navigation:'passed',cliParity:parity.length}));
+ const slideProject=structuredClone(project);slideProject.duration=15;
+ slideProject.tracks[0].segments.push({...clip,id:'c',linkGroup:'last',startTime:10,sourceOffset:12});
+ slideProject.video.clips.push({...picture,id:'x',linkGroup:'last',startTime:10,sourceOffset:12});
+ await page.evaluate(async p=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.setState({project:p,selection:{segmentIds:['b'],startTime:5,endTime:10}});useProjectStore.temporal.getState().clear();},slideProject);
+ await page.getByRole('button',{name:'Trim tools',exact:true}).click();
+ await dialog.locator('select').selectOption('slide');
+ await dialog.getByLabel('Move edge by (seconds)').fill('0.08');await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
+ const slid=await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;});
+ assert.equal(slid.tracks[0].segments[1].startTime,5.08);assert.equal(slid.tracks[0].segments[1].sourceOffset,7);assert.equal(slid.duration,15);
+ await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.temporal.getState().undo();});
+ assert.deepEqual(semantic(await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;})),semantic(slideProject));
+ if(process.env.CRISPAUDIO_CLI){
+  const input=join(temp,'slide.crispaudio');await writeFile(input,JSON.stringify({format:'crispaudio-project',version:3,project:slideProject,sources:[{id:'s',duration:20}]}));
+  for(const seconds of [.08,-.08]){
+   const recipe=join(temp,'slide.json'),output=join(temp,'slid.crispaudio');await rm(output,{force:true});await writeFile(recipe,JSON.stringify([{op:'slide',ids:['b'],seconds}]));
+   execFileSync(process.env.CRISPAUDIO_CLI,['edit-project','--input',input,'--recipe',recipe,'--output',output]);
+   const native=JSON.parse(await readFile(output,'utf8')).project;
+   const frontend=await page.evaluate(async({p,seconds})=>{const {slideClips}=await import('/src/lib/trimEdits.ts');return slideClips(p,['b'],seconds,new Map([['s',{duration:20}]]));},{p:slideProject,seconds});
+   assert.deepEqual(semantic(native),semantic(frontend));parity.push({op:'slide',seconds});
+  }
+ }
+ console.log(JSON.stringify({slide:'passed',dialog:'passed',handles:'blocked',undo:'passed',navigation:'passed',cliParity:parity.length}));
 }finally{await browser.close();await rm(temp,{recursive:true,force:true});}

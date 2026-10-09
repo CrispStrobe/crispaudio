@@ -92,6 +92,187 @@ fn trim_fades(c: &mut Value) {
         }
     }
 }
+/// Slide fixed source content between two abutting neighbours on every linked lane.
+fn slide_edit(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<Value> {
+    let all = clips(&doc["project"]);
+    let middle: Vec<_> = all
+        .iter()
+        .filter(|c| selected.contains(c["id"].as_str().unwrap_or("")))
+        .collect();
+    if middle.is_empty() {
+        return Err("Select a middle clip".into());
+    }
+    let equal = |a: f64, b: f64| (a - b).abs() < 1e-6;
+    let start = number(middle[0], "startTime")?;
+    let end = start + number(middle[0], "duration")?;
+    let picture = middle.iter().any(|c| c.get("trackId").is_none());
+    let fps = doc["project"]["frameRate"].as_f64().unwrap_or(25.0);
+    if picture
+        && (!fps.is_finite()
+            || fps <= 0.0
+            || !equal(start, (start * fps).round() / fps)
+            || !equal(end, (end * fps).round() / fps))
+    {
+        return Err("Slide picture edits require frame-aligned edges".into());
+    }
+    let width = if picture { 1.0 / fps } else { 0.01 };
+    let mut left_ids = HashSet::new();
+    let mut right_ids = HashSet::new();
+    let mut minimum = f64::NEG_INFINITY;
+    let mut maximum = f64::INFINITY;
+    for c in &middle {
+        if !equal(number(c, "startTime")?, start)
+            || !equal(number(c, "startTime")? + number(c, "duration")?, end)
+        {
+            return Err("Selected slide clips must share start and end".into());
+        }
+        let lane: Vec<_> = all
+            .iter()
+            .filter(|n| n.get("trackId") == c.get("trackId"))
+            .collect();
+        if middle
+            .iter()
+            .filter(|n| n.get("trackId") == c.get("trackId"))
+            .count()
+            != 1
+        {
+            return Err("Slide needs one middle clip per lane".into());
+        }
+        let left: Vec<_> = lane
+            .iter()
+            .filter(|n| {
+                n["id"] != c["id"]
+                    && equal(
+                        n["startTime"].as_f64().unwrap_or(f64::NAN)
+                            + n["duration"].as_f64().unwrap_or(f64::NAN),
+                        start,
+                    )
+            })
+            .collect();
+        let right: Vec<_> = lane
+            .iter()
+            .filter(|n| {
+                n["id"] != c["id"] && equal(n["startTime"].as_f64().unwrap_or(f64::NAN), end)
+            })
+            .collect();
+        if left.len() != 1 || right.len() != 1 {
+            return Err("Slide needs two unambiguous adjacent neighbours".into());
+        }
+        let l = *left[0];
+        let r = *right[0];
+        for n in [*c, l, r] {
+            let offset = number(n, "sourceOffset")?;
+            let length = number(n, "duration")?;
+            if offset < 0.0 || length < width - 1e-6 || offset + length > bounds(doc, n)? + 1e-6 {
+                return Err("Slide exceeds source handles".into());
+            }
+        }
+        if lane.iter().any(|n| {
+            n["id"] != c["id"]
+                && n["id"] != l["id"]
+                && n["id"] != r["id"]
+                && n["startTime"].as_f64().unwrap_or(f64::NAN)
+                    < r["startTime"].as_f64().unwrap() + r["duration"].as_f64().unwrap() - 1e-6
+                && n["startTime"].as_f64().unwrap_or(f64::NAN)
+                    + n["duration"].as_f64().unwrap_or(f64::NAN)
+                    > l["startTime"].as_f64().unwrap() + 1e-6
+        }) {
+            return Err("Slide neighbours overlap other clips".into());
+        }
+        if picture
+            && c.get("trackId").is_none()
+            && (c["transition"] != "cut" || r["transition"] != "cut")
+        {
+            return Err("Sliding a blend is not supported; choose cuts".into());
+        }
+        minimum = minimum
+            .max(width - number(l, "duration")?)
+            .max(-number(r, "sourceOffset")?);
+        maximum = maximum
+            .min(bounds(doc, l)? - number(l, "sourceOffset")? - number(l, "duration")?)
+            .min(number(r, "duration")? - width);
+        left_ids.insert(l["id"].as_str().ok_or("Missing clip id")?.to_owned());
+        right_ids.insert(r["id"].as_str().ok_or("Missing clip id")?.to_owned());
+    }
+    let affected: HashSet<_> = selected
+        .iter()
+        .chain(left_ids.iter())
+        .chain(right_ids.iter())
+        .cloned()
+        .collect();
+    if affected.len() != middle.len() * 3 {
+        return Err("Slide selections overlap".into());
+    }
+    let links: HashSet<_> = all
+        .iter()
+        .filter(|c| affected.contains(c["id"].as_str().unwrap_or("")))
+        .filter_map(|c| c["linkGroup"].as_str())
+        .collect();
+    let groups: HashSet<_> = all
+        .iter()
+        .filter(|c| affected.contains(c["id"].as_str().unwrap_or("")))
+        .filter_map(|c| c["editGroup"]["id"].as_str())
+        .collect();
+    if all.iter().any(|c| {
+        !affected.contains(c["id"].as_str().unwrap_or(""))
+            && (c["linkGroup"].as_str().is_some_and(|g| links.contains(g))
+                || (doc["project"]["groupEditingEnabled"] != false
+                    && c["editGroup"]["id"]
+                        .as_str()
+                        .is_some_and(|g| groups.contains(g))))
+    }) {
+        return Err("Include every linked neighbour".into());
+    }
+    let raw = number(op, "seconds")?;
+    let delta = if picture {
+        ((start + raw) * fps).round() / fps - start
+    } else {
+        raw
+    };
+    if delta == 0.0 || delta < minimum - 1e-6 || delta > maximum + 1e-6 {
+        return Err("Slide exceeds source handles or has zero movement".into());
+    }
+    let mut out = doc.clone();
+    mutate(&mut out["project"], |c| {
+        let mut n = c.clone();
+        let key = c["id"].as_str().unwrap_or("");
+        if selected.contains(key) {
+            n["startTime"] = json!(number(c, "startTime")? + delta);
+        } else if left_ids.contains(key) {
+            n["duration"] = json!(number(c, "duration")? + delta);
+        } else if right_ids.contains(key) {
+            let start = number(c, "startTime")?;
+            let duration = number(c, "duration")?;
+            n["startTime"] = json!(start + delta);
+            n["sourceOffset"] = json!(number(c, "sourceOffset")? + delta);
+            n["duration"] = json!((start + duration) - (start + delta));
+        }
+        if left_ids.contains(key) || right_ids.contains(key) {
+            let audio = c.get("trackId").is_some();
+            let duration = number(&n, "duration")?;
+            for key in if audio {
+                ["fadeInDuration", "fadeOutDuration"]
+            } else {
+                ["fadeIn", "fadeOut"]
+            } {
+                if let Some(v) = n[key].as_f64() {
+                    n[key] = json!(v.min(if audio { duration } else { duration / 2.0 }));
+                }
+            }
+        }
+        Ok(vec![n])
+    })?;
+    if picture {
+        let p = &out["project"]["video"];
+        let pictures: Vec<_> = clips(&out["project"])
+            .into_iter()
+            .filter(|c| c.get("trackId").is_none())
+            .collect();
+        let edit=serde_json::from_value(json!({"path":p["path"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
+        crate::video_edit::validate(&edit, number(p, "duration")?)?;
+    }
+    Ok(out)
+}
 fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<Value> {
     let mut out = doc.clone();
     let operation = op["op"].as_str().unwrap();
@@ -377,6 +558,9 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                     json!(op["enabled"].as_bool().ok_or("Missing grouping state")?);
             }
 
+            "slide" => {
+                out = slide_edit(&out, op, &selected)?;
+            }
             "roll" | "ripple-trim" | "trim-to-playhead" => {
                 out = advanced_trim(&out, op, &selected)?;
             }
@@ -1051,6 +1235,46 @@ mod tests {
         assert_eq!(audio[1]["linkGroup"], picture[1]["linkGroup"]);
         assert_ne!(audio[0]["linkGroup"], audio[1]["linkGroup"]);
         assert_eq!(audio[1]["sourceOffset"], 4.0);
+    }
+    #[test]
+    fn slide_preserves_content_and_linked_outer_endpoints() {
+        let original = doc();
+        let mut d = apply(&original, &json!([{"op":"split","ids":["a"],"at":2}])).unwrap();
+        // Locate the independently linked middle halves after splitting.
+        let middle = clips(&d["project"])
+            .into_iter()
+            .find(|c| c.get("trackId").is_some() && c["startTime"] == 2.0)
+            .unwrap();
+        d = apply(&d, &json!([{"op":"split","ids":[middle["id"]],"at":4}])).unwrap();
+        let recipe = json!([{"op":"slide","ids":[middle["id"]],"seconds":0.08}]);
+        let edited = apply(&d, &recipe).unwrap();
+        let c = clips(&edited["project"]);
+        for lane in [true, false] {
+            let lane: Vec<_> = c
+                .iter()
+                .filter(|c| c.get("trackId").is_some() == lane)
+                .collect();
+            assert!((lane[0]["duration"].as_f64().unwrap() - 1.08).abs() < 1e-9);
+            assert_eq!(lane[1]["startTime"], 2.08);
+            assert_eq!(lane[1]["duration"], 2.0);
+            assert_eq!(lane[1]["sourceOffset"], 3.0);
+            assert_eq!(lane[2]["startTime"], 4.08);
+            assert_eq!(lane[2]["sourceOffset"], 5.08);
+            assert!(
+                (lane[2]["startTime"].as_f64().unwrap() + lane[2]["duration"].as_f64().unwrap()
+                    - 6.0)
+                    .abs()
+                    < 1e-9
+            );
+        }
+        assert_eq!(edited["project"]["duration"], 6.0);
+        assert!(apply(
+            &d,
+            &json!([{"op":"slide","ids":[middle["id"]],"seconds":10}])
+        )
+        .is_err());
+        d["project"]["tracks"][0]["locked"] = json!(true);
+        assert!(apply(&d, &recipe).is_err());
     }
     #[test]
     fn unknown_operations_do_not_modify_original() {

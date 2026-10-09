@@ -407,3 +407,23 @@ Transcript → Keep pasted text accepts an edited copy of the timed transcript.
 Compare first, review source ranges and resolve repeated phrases; Apply retains
 only those passages across all sound and picture. Undo restores everything.
 [Workflow and real interview test](KEEP_TEXT_EDITING.md).
+
+
+## Slide editing (local 0.8.7)
+
+Split linked footage into three abutting clips. Select the middle clip, open
+**Trim tools**, choose **Slide selected clip between neighbours**, then enter a
+positive/negative displacement in seconds. Review the displayed source handles
+and Apply. Picture-linked edits snap to frames. The selected clip keeps its source
+in/out and length; the left clip's end and right clip's start change. The outer
+endpoints, project length, markers and timeline automation stay fixed. Undo restores
+all lanes together. Existing word alignment must be regenerated after this edit.
+
+One unambiguous neighbour is required on each side in every selected lane. Locks,
+source limits and enabled named groups apply to neighbours too. Incoming picture
+blends are rejected pending transition-aware trim support. Use slip to change a
+clip's source content without moving it; slide moves its fixed content instead.
+
+CLI recipe: `[{"op":"slide","ids":["middle-clip-id"],"seconds":0.08}]`.
+Use `crispaudio edit-project --input project.crispaudio --recipe slide.json
+--output slid.crispaudio`; the input project and source media remain unchanged.

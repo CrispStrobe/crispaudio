@@ -1203,3 +1203,25 @@ KEEP_TEXT_EDITING.md. No new dependencies or crisp-docx AGPL code introduced.
 
 No release tag/Apple submission. Free-text comparison is GUI; CLI consumes its
 reviewed `keep-words` recipe. Embedded/mobile ASR is still not implemented.
+
+## Local 0.8.7 — fixed-content slide editing (2026-10-09)
+
+Built, installed and launched local 0.8.7; app/CLI ad hoc signatures verified and
+one existing autosave preserved. Full frontend run: 101 files / 1,357 tests, plus
+the added acoustic-alignment invalidation test (12 trim tests passed). Native:
+51 media tests + 3 CLI tests passed, 10 optional integrations ignored. Lint,
+TypeScript production web build, release CLI and desktop bundle passed. Headless
+Chrome exercised the actual Trim tools slide dialog, source-limit blocking and
+undo; ten GUI/native recipe comparisons include positive/negative slides.
+
+On a private MVI_8251 derivative, link three microphone clips and picture, split
+at 45/60 seconds, then slide the middle passage +0.08 seconds at 25 fps. Source
+content/duration and approximately 253.72-second canvas stay unchanged. Native
+48.08–50.08-second WAV matches original 48–50-second PCM byte for byte (96,000
+stereo frames). Original project/media remain unchanged; private artifacts are
+under `CrispAudio-validation/ux/slide-087/` outside the repository.
+
+Incoming picture blends and ambiguous overlapping lanes are rejected. Timeline
+markers/automation stay fixed; existing acoustic alignment becomes stale and must
+be regenerated before speech cuts. Shared frontend supports touch controls, but
+this increment has no new iOS device validation. No release tag/Apple submission.

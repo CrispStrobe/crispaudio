@@ -99,3 +99,12 @@ Exported MP4 audio/picture measure 4.879979/4.879983 s (within one audio sample 
 4.88 s), picture rate 25 fps. Private recordings and derived files remain outside
 Git. `scripts/test-keep-speech.mjs` reruns with the same explicit fixture/browser/CLI
 environment variables as `scripts/test-spoken-editor.mjs`.
+
+## Why no CrispEmbed aligner is required
+
+Deletion-only paste editing matches the edited text to words that already have
+acoustic timestamps from CrispASR. Ordered exact lexical matching, with explicit
+review of repeated occurrences, is enough for this operation. Contextual embeddings
+could help match translated or rewritten text, but cannot supply reliable acoustic
+word boundaries or prove that changed wording was spoken. Those workflows remain
+future work. No crisp-docx AGPL source or dependency was incorporated into CrispAudio.

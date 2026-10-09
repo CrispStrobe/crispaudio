@@ -446,3 +446,19 @@ reviewed IDs, not free text; GUI exports its recipe. Native/GUI range helpers ke
 an exact terminal canvas end rather than leaving a sub-frame tail. Do not import
 AGPL crisp-docx code under the existing permissive dependency policy. Optional
 headless script test-keep-speech.mjs uses private interview media and actual GUI.
+
+
+## Slide editing 0.8.7
+
+`trimEdits.slideClips` and `slideLimits` implement reviewed fixed-content slides;
+`media/src/project_edit.rs` accepts `slide` with ids/seconds. Require matching
+middle spans, abutting unique neighbours, complete link/group closure, unlocked
+lanes and source handles. Picture edges/movement use project frame rate; incoming
+blends are rejected. Preserve middle source offsets/durations and outer endpoints;
+clamp only neighbour fades. Markers/automation remain on the timeline; existing
+transcriptLayout signatures become stale and block speech cuts until re-ASR.
+Optional `scripts/test-trim-edits.mjs` supports headless Chrome or WebKit, actual
+dialog/undo and GUI/CLI recipe parity. M1 still requires advanced transition trims.
+CrispEmbed/crisp-docx contextual word alignment is unnecessary for deletion-only
+transcript matching; acoustic timestamps still come from CrispASR forced alignment.
+No AGPL crisp-docx source/dependencies were copied into this MIT application.

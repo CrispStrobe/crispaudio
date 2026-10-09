@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.6]
+## [Unreleased — local version 0.8.7]
+
+- Add reviewed slide editing in Trim tools and CLI recipes: keep selected source
+  content/duration fixed while trimming neighbours across linked sound/picture.
+- Show source-handle limits; enforce locks, named groups, unambiguous neighbours
+  and picture frame edges. Preserve outer endpoints and support one-step undo.
+- Keep timeline markers/automation fixed; changed audio invalidates existing word
+  alignment. Incoming picture blends remain unsupported for advanced trims.
+
+## [Local version 0.8.6]
 
 - Add a pasted shortened-transcript editor with ordered word matching, timestamp
   review, explicit repeated-phrase resolution and draft/project invalidation.

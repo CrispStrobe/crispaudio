@@ -1037,7 +1037,12 @@
     "scope": "Ausgewählte Spuren müssen am Nachrücken teilnehmen. Gespeicherten Umfang zuerst prüfen.",
     "frameEdge": "Nachrücken mit Bild benötigt eine Schnittkante auf einer Bildgrenze.",
     "previous": "Vorherige Schnittkante",
-    "next": "Nächste Schnittkante"
+    "next": "Nächste Schnittkante",
+    "slide": "Gewählten Clip zwischen Nachbarn verschieben",
+    "slideHelp": "Einen mittleren Clip zwischen zwei angrenzenden Schnitten wählen. Quellinhalt und Dauer bleiben gleich; Nachbarn werden passend getrimmt. Verknüpfter Ton und Video folgen. Timeline-Länge, Marker und Automation bleiben fest. ASR-Transkript anschließend neu ausrichten.",
+    "slideSpan": "Gewählte verknüpfte Clips müssen denselben Anfang und dasselbe Ende haben.",
+    "slideAdjacent": "Jede gewählte Spur benötigt einen mittleren Clip und zwei eindeutige angrenzende Nachbarn.",
+    "slideLimits": "Mitte: {{start}}–{{end}} s. Quellreserven erlauben {{min}} bis +{{max}} s."
   },
   "editGroups": {
     "title": "Benannte Schnittgruppen",
