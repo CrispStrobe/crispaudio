@@ -13,8 +13,8 @@ const segment: AudioSegment = {
 
 function Timeline() {
   const timeline = useTimeline();
-  return <canvas aria-label="Timeline" onMouseDown={timeline.onMouseDown}
-    onMouseMove={timeline.onMouseMove} onMouseUp={timeline.onMouseUp} />;
+  return <><canvas aria-label="Timeline" onMouseDown={timeline.onMouseDown}
+    onMouseMove={timeline.onMouseMove} onMouseUp={timeline.onMouseUp} /><output data-testid="feedback">{timeline.trimFeedback?.side??''}</output></>;
 }
 
 const currentSegment = () => useProjectStore.getState().project.tracks[0].segments[0];
@@ -26,7 +26,7 @@ beforeEach(() => {
   useProjectStore.setState({ project: {
     ...useProjectStore.getState().project, duration: 5,
     tracks: [{ id: 'track', name: 'Track', muted: false, solo: false, volume: 1, pan: 0, segments: [segment] }],
-  } });
+  },sources:new Map([['source',{id:'source',name:'Source',duration:10,sampleRate:48000,channels:1,buffer:{} as AudioBuffer,peaks:[]}]]) });
   history().resume();
   history().clear();
 });
@@ -89,6 +89,22 @@ describe('useTimeline gestures', () => {
     expect(currentSegment().startTime).toBe(1);
     act(() => history().redo());
     expect(currentSegment().startTime).toBe(2);
+  });
+
+  it('Escape cancels a live trim and restores the original without adding an undo entry',()=>{render(<Timeline/>);const canvas=screen.getByLabelText('Timeline');fireEvent.mouseDown(canvas,{clientX:500,clientY:40});fireEvent.mouseMove(canvas,{clientX:400,clientY:40});expect(currentSegment().duration).toBe(3);fireEvent.keyDown(window,{key:'Escape',code:'Escape'});fireEvent.mouseUp(canvas);expect(currentSegment()).toEqual(segment);expect(history().pastStates).toHaveLength(0);});
+
+  it('an interrupted trim clears feedback when the next press is on empty space',()=>{
+    render(<Timeline/>);const canvas=screen.getByLabelText('Timeline');
+    fireEvent.mouseDown(canvas,{clientX:500,clientY:40});fireEvent.mouseMove(canvas,{clientX:400,clientY:40});expect(screen.getByTestId('feedback').textContent).toBe('right');
+    fireEvent.mouseDown(canvas,{clientX:900,clientY:40});fireEvent.mouseUp(canvas);expect(screen.getByTestId('feedback').textContent).toBe('');expect(history().pastStates).toHaveLength(1);
+  });
+
+  it('a cancelled trim retains the redo that existed before the press',()=>{
+    act(()=>useProjectStore.getState().setSegmentGain('clip',.5));act(()=>history().undo());
+    const redo=[...history().futureStates];render(<Timeline/>);const canvas=screen.getByLabelText('Timeline');
+    fireEvent.mouseDown(canvas,{clientX:500,clientY:40});fireEvent.mouseMove(canvas,{clientX:400,clientY:40});
+    expect(history().futureStates).toHaveLength(0);fireEvent.keyDown(window,{code:'Escape'});fireEvent.mouseUp(canvas);
+    expect(history().futureStates).toEqual(redo);act(()=>history().redo());expect(currentSegment().gain).toBe(.5);expect(currentSegment().duration).toBe(4);
   });
 
   it('does not rerender on playhead updates', () => {

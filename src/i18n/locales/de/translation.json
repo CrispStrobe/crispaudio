@@ -1118,5 +1118,13 @@
     "tooLarge": "Dieser Text überschreitet das Vergleichslimit von 100.000 Tokens / 1 MB.",
     "recipe": "Geprüften CLI-Schnittplan exportieren",
     "tooManyCuts": "Diese Änderung überschreitet das Limit von 2.000 Schnitten. Kürzeren Abschnitt bearbeiten."
+  },
+  "trimFeedback": {
+    "title": "Quellreserven",
+    "before": "Davor: {{seconds}} s",
+    "after": "Danach: {{seconds}} s",
+    "limit": "Quell- oder Zeitgrenze erreicht. Die Kante bleibt im verfügbaren Material.",
+    "missingSource": "Quelle fehlt; Aufnahme vor dem Trimmen laden.",
+    "invalidSource": "Ungültige Quellgrenzen; Trimmen wurde nicht angewendet."
   }
 }

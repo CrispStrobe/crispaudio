@@ -4,7 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.11]
+## [Unreleased — local version 0.8.12]
+
+- Show source spans and before/after reserves while dragging audio/video edges,
+  including linked partners, with visible source/timeline limits.
+- Compute trims from the press snapshot, bounding unlinked audio too. Keep
+  timeline/source clocks together, clamp linked picture inward to project frames
+  and retain at least one picture frame. Pause audio playback before trimming.
+- Cancel pointer gestures with Escape/cancel/lost capture; restore the original
+  arrangement and pre-drag undo/redo. Keep idle waveform rendering unchanged.
+- Validate the desktop M1 workflow through actual range/trim dialogs, range
+  playback, save/open/export, linked sound/picture, fixed music and native renders.
+
+## [Local version 0.8.11]
 
 - Review crossed picture blends in range edits and explicitly replace them with
   hard cuts at their original ends. Preview the resulting cut times; preserve

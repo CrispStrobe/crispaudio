@@ -1,3 +1,6 @@
+import {capturePointerHistory,restorePointerHistory} from '../stores/pointerHistory';
+import {pointerTrim,type TrimFeedback} from '../lib/trimFeedback';
+import type {TimelineProject} from '../types/audio';
 import {adjacentEdit} from '../lib/trimEdits';
 // ---------------------------------------------------------------------------
 // CrispAudio — useTimeline
@@ -9,7 +12,7 @@ import { isNativeMac } from '../lib/nativeMenuPlatform';
 import { projectClips,linkedIds } from '../lib/projectEdits';
 import { snapClipStart } from '../lib/timelineSnap';
 import { deleteSelection, nudgeSelection } from '../lib/timelineEditing';
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import type { AudioSegment, TimelineTrack } from '../types/audio';
 import { projectHistoryGesture, useProjectStore } from '../stores/projectStore';
 
@@ -79,6 +82,9 @@ export function useTimeline() {
   const scrollOffset = useProjectStore((state) => state.scrollOffset);
   const snapEnabled = useProjectStore((state) => state.snapEnabled);
   const dragState = useRef<DragState>({ kind: 'none' });
+  const trimOrigin=useRef<TimelineProject|null>(null);
+  const historyOrigin=useRef<ReturnType<typeof capturePointerHistory>|null>(null);
+  const [trimFeedback,setTrimFeedback]=useState<TrimFeedback|null>(null);
 
   // ── Coordinate conversion ─────────────────────────────────────────────────
 
@@ -195,11 +201,15 @@ export function useTimeline() {
         // Click on empty space → move playhead (no drag)
         store.setPlayheadPosition(snapTime(canvasXToTime(canvasX)));
         store.setSelection(null);
-        dragState.current = { kind: 'none' };
+        dragState.current = { kind: 'none' };trimOrigin.current=null;historyOrigin.current=null;setTrimFeedback(null);
         return;
       }
 
+      historyOrigin.current=capturePointerHistory();
       projectHistoryGesture.begin();
+      if(hit.type==='trim-left'||hit.type==='trim-right')store.setIsPlaying(false);
+      trimOrigin.current=store.project;
+      setTrimFeedback('segment' in hit&&(hit.type==='trim-left'||hit.type==='trim-right')?{ids:linkedIds(store.project,[hit.segment.id]),side:hit.type==='trim-left'?'left':'right',requested:0,applied:0,limited:false}:null);
       const { segment, trackIndex } = hit as { segment: AudioSegment; trackIndex: number };
 
       if (hit.type === 'segment') {
@@ -277,15 +287,12 @@ export function useTimeline() {
         );
         const newTrackId = store.project.tracks[newTrackIndex]?.id;
         try{store.moveSegment(ds.segmentId, newStart, newTrackId);}catch{/* Retain the last valid linked placement. */}
-      } else if (ds.kind === 'trim-left') {
-        const dtTime = dx / zoomLevel;
-        const newDuration = Math.max(0.01, ds.originalDuration - dtTime);
-        const newOffset = Math.max(0, ds.originalOffset + dtTime);
-        try{store.trimSegment(ds.segmentId, 'left', newDuration, newOffset);}catch{/* Retain valid linked trim. */}
-      } else if (ds.kind === 'trim-right') {
-        const dtTime = dx / zoomLevel;
-        const newDuration = Math.max(0.01, ds.originalDuration + dtTime);
-        try{store.trimSegment(ds.segmentId, 'right', newDuration);}catch{/* Retain valid linked trim. */}
+      } else if (ds.kind === 'trim-left'||ds.kind === 'trim-right') {
+        const side=ds.kind==='trim-left'?'left':'right',requested=dx/zoomLevel;
+        try{
+          const result=pointerTrim(trimOrigin.current!,ds.segmentId,side,requested,store.sources);
+          useProjectStore.setState({project:result.project});setTrimFeedback(result.feedback);
+        }catch(error){setTrimFeedback(previous=>({ids:linkedIds(trimOrigin.current!,[ds.segmentId]),side,requested,applied:previous?.applied??0,limited:false,error:error instanceof Error?error.message:String(error)}));}
       } else if (ds.kind === 'fade-in') {
         const dtTime = dx / zoomLevel;
         const newFade = Math.max(0, ds.originalFadeDuration + dtTime);
@@ -302,8 +309,11 @@ export function useTimeline() {
   const onMouseUp = useCallback(() => {
     if (dragState.current.kind === 'none') return;
     dragState.current = { kind: 'none' };
+    trimOrigin.current=null;historyOrigin.current=null;setTrimFeedback(null);
     projectHistoryGesture.end();
   }, []);
+
+  const cancelDrag=useCallback(()=>{if(dragState.current.kind==='none')return;if(trimOrigin.current)useProjectStore.setState({project:trimOrigin.current});if(historyOrigin.current)restorePointerHistory(historyOrigin.current);onMouseUp();},[onMouseUp]);
 
   useEffect(() => {
     const endings = ['mouseup', 'pointerup', 'pointercancel', 'blur'] as const;
@@ -339,6 +349,7 @@ export function useTimeline() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if((e.key==='Escape'||e.code==='Escape')&&dragState.current.kind!=='none'){e.preventDefault();cancelDrag();return;}
       // Don't steal shortcuts when focused on input elements
       const target = e.target as HTMLElement;
       if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable=true], [role=dialog]')) return;
@@ -416,7 +427,7 @@ export function useTimeline() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [cancelDrag]);
 
   return {
     pixelsToTime,
@@ -430,5 +441,7 @@ export function useTimeline() {
     onMouseUp,
     getCursor,
     dragState,
+    trimFeedback,
+    cancelDrag,
   };
 }

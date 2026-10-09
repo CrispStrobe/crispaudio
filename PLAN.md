@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-09, during local 0.8.11 implementation. This section is the current plan.
+Updated 2026-10-09, during local 0.8.12 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -86,12 +86,12 @@ those sources or an instruction to reproduce their entire UI.
 
 ## Implementation roadmap
 
-M1 is in progress; M2–M10 remain planned. Deliver small slices in the listed
+The desktop M1 editing milestone is complete; M2–M10 remain planned. Deliver small slices in the listed
 order; update this plan with actual completion and validation evidence. Do not
 assign release numbers or dates before the work is scoped. Desktop implementation,
 web fallback and iOS support/device validation must be recorded separately.
 
-### M1 — Make everyday timeline editing complete (in progress)
+### M1 — Make everyday timeline editing complete (desktop milestone complete)
 
 Local 0.8.0 implements the first slice: saved independent time ranges, ruler
 selection/handles/numeric bounds, selected-range playback and loop boundaries,
@@ -102,8 +102,9 @@ participation, linked scope checks, automation boundary values and explicit
 canvas/marker/transcript retiming, with GUI/CLI parity and undo validation.
 Unaffected picture transitions remain; boundaries through blends or transcript
 cues require review rather than silently damaging them. Generic range blend
-handling is now explicit (see 0.8.11 below). M1 remains in progress pending the
-end-to-end completion example and interactive source-handle/limit feedback.
+handling is explicit (see 0.8.11 below). Local 0.8.12 completes the desktop
+workflow audit and interactive source-handle/limit feedback. Mobile device
+validation remains a separate release gate; musical sample-accurate looping is deferred.
 Local 0.8.2 adds explicit selected audio-range export with full DSP preroll,
 native bounded output, CLI audio/video export bounds and a reviewed action to
 reuse the selected range for picture export. Real interview WAV samples match
@@ -134,9 +135,19 @@ The preview includes resulting cut times; unaffected transitions/source clocks a
 linked sound remain consistent. The CLI defaults to preserving blends and accepts
 `transitionPolicy: "cut"` explicitly. Lift retains the canvas even after removing
 its entire contents. Transcript boundaries still need review/adjustment; speech
-edits keep their conservative default. Next: audit the M1 completion workflow
-across preview, range export, save/reopen, undo/redo, then improve visible source
-handle/limit feedback before starting the M2 mixer slice.
+edits keep their conservative default.
+Local 0.8.12 completes the desktop M1 audit: actual extract/roll dialogs, linked
+picture/two microphones, excluded fixed music, selected-range playback, actual
+save/reopen and byte-identical range exports, undo/redo and native audio/video
+render checks. A real Canon/H6 extract-plus-roll also matches the expected PCM
+exactly. Direct audio/video edge dragging now shares bounded source/timeline
+clocks, inward frame limits and a source-reserve display for linked partners.
+Escape/cancel restores the original arrangement and pre-drag history/redo.
+Next implementation: M2.1, a dockable mixer with track/master strips, peak/RMS
+meters and peak hold, dB controls, pan, mute/solo and existing inserts. Use a
+horizontal/focused strip layout on touch. Keep routing/buses and new EQ/limiter
+work for subsequent M2 slices. Desktop M1 completion does not imply iOS device
+validation or sample-accurate musical loop restarts.
 Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
 seamless musical looping. Paging and new codec work remain deferred.
 
@@ -336,11 +347,11 @@ consume the interview/video editor's near-term milestones.
 
 ## First concrete implementation slice
 
-Start M1 with visible time-range selection, range playback/looping and track lock
-semantics. Follow with scoped lift/extract and transition-aware ripple edits.
-Use the interview plus two microphones and a background-music track to verify the
-behaviour. This brings immediate editing capability without waiting for new codecs
-or a disk-paged playback architecture.
+Start M2 with a dockable mixer using existing track/master gain, pan, mute/solo
+and insert state. Add live peak/RMS, peak hold and clipping indication, with a
+focused or horizontal strip layout on touch. Use the interview microphones and
+fixed background music for live/offline parity checks. New EQ/limiter and buses
+follow after the mixer works; codecs and disk paging remain deferred.
 
 ---
 

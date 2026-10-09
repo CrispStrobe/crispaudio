@@ -505,3 +505,30 @@ CLI uses `ripple-trim` with `ids`, `side` and `seconds`. The transition policy i
 internal to reviewed trims: generic lift/extract/insert boundaries through blends
 remain blocked. Optional native check:
 `python3 scripts/test-ripple-blend.py /path/to/crispaudio`.
+
+
+## Source handles while dragging
+
+Drag a clip edge in **Move & trim** mode. **Source handles** shows its used source
+span and the available seconds before/after, with bars for every linked partner.
+The partner with the smallest remaining reserve is shown first. The panel sits
+outside the track rows, so reducing track height does not clip the information.
+Unlinked audio obeys the same source/timeline bounds. Reaching a limit holds the
+edge within the recording; moving back continues from the original press position.
+Linked picture trims snap to project frames, round source clamps inward and leave
+at least one frame. Other picture topology checks can still reject an edit.
+
+Release commits one undo step. Escape or pointer cancellation restores the original
+arrangement and its previous undo/redo history; losing capture cancels as well.
+Blur or unmount finishes the last valid gesture. Playback pauses before audio
+trimming. Numerical **Trim tools** remain available for reviewed roll, ripple,
+slide and trim-to-playhead operations.
+
+The optional browser `scripts/test-source-handles.mjs` exercises actual pointer
+trims, limits, cancellation and German small-row layouts. `test-timeline-workflow.mjs`
+checks the completion example: extract a range with camera/two microphones linked,
+leave excluded music fixed, roll the cut, undo/redo, play a selected range, save/open
+through browser file actions and compare exported PCM. Set CRISPAUDIO_CLI to also
+check native linked audio and macOS Apple picture export; installed FFmpeg/FFprobe
+create/inspect synthetic fixtures. Neither script touches installed-app state or
+private recordings. These browser checks are not iOS device validation.

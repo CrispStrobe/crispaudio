@@ -1358,3 +1358,53 @@ No release tag, Apple submission or new iOS device validation. M1 remains in
 progress pending its end-to-end completion audit and interactive source-handle
 feedback; the M2 mixer follows that milestone. README covers current capabilities;
 chronological notes remain in history.md and these implementation records.
+
+
+## Local 0.8.12 — source handles and desktop M1 workflow (2026-10-09)
+
+Built, installed and launched 0.8.12; app/CLI ad hoc signatures verified and one
+existing autosave preserved. Full frontend suite: 102 files / 1,383 tests passed;
+final gesture/rendering/handle suites: 3 files / 38 tests passed after adding the
+interrupted-trim cleanup regression. Lint and the final TypeScript/web/desktop
+bundle passed. Native media code is unchanged; its previously tested release CLI
+was used for the new actual edit/export integrations below.
+
+Audio/video pointer trims now compute geometry from the press snapshot, use one
+bounded displacement for source/timeline clocks and show source spans/reserves
+for linked partners. The shortest partner handle can limit all clips. Picture
+limits round inward to frame edges and retain a frame. Playback pauses before
+audio trims; invalid source/topology/locks retain the last valid position with
+feedback. Release commits one undo step. Escape/cancel/lost capture restores the
+original project and the pre-press temporal history, including discarded redo.
+Idle source-feedback views do not subscribe to project metadata; the waveform
+render-invalidation tests still pass.
+
+Headless Chrome exercised actual audio/video pointer drags, source/timeline
+limits, returning from a limit, linked frame clamps, undo/redo and cancellation.
+German feedback fits at 390 px with 24-pixel rows. Reproduce with
+`scripts/test-source-handles.mjs`; these are browser checks, not iOS device tests.
+
+The full synthetic interview audit used actual range and trim dialogs, two linked
+microphones/picture and excluded fixed music. Extract then roll preserved links,
+marker/cue retiming and outer endpoints; two-step undo/redo restored each state.
+Selected-range transport advanced. Actual Save/Open file actions preserved the
+arrangement and decoded sources. Five-second exported PCM is byte-identical before
+and after reopen. The native two-operation edit recipe matches GUI geometry and
+link membership. Native 48 kHz stereo 16-bit export has 240,000 frames and differs
+from browser PCM by at most one integer step; Apple MP4 audio/picture both measure
+5 seconds. Reproduce with `scripts/test-timeline-workflow.mjs`; CRISPAUDIO_CLI
+adds native edit/render checks, with installed FFmpeg/FFprobe creating/inspecting
+synthetic video. Neither browser script touches installed-app storage/user media.
+
+A private Canon/H6 derivative extracts 45–47 s then rolls the resulting first cut
++0.08 s. Picture and all three microphones stay aligned, with a 251.72-second
+canvas. Rendered 44–61 s PCM matches original 44–63 s with 45.08–47.08 s removed
+byte for byte (816,000 stereo frames). The native 44–48 s MP4 audio/picture both
+measure 4 seconds. Original media/projects are untouched; private artifacts and
+validation logs stay outside git in `ux/workflow-0812/`.
+
+Desktop M1's completion example and source-handle feedback are complete. The next
+implementation is M2.1's dockable mixer; new EQ/limiter/routing follow later slices.
+No new iOS device validation, release tag or Apple submission. Musical loop timing
+and platform gaps remain explicit. README stays a current capability overview;
+chronological details stay in history.md and these implementation records.

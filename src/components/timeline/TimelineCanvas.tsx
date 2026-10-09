@@ -20,6 +20,7 @@ import { useTimeline } from '../../hooks/useTimeline';
 import { sourceDisplayGain, waveformBounds } from '../../lib/waveformView';
 import { haptic } from '../../lib/native';
 import { useTimelineCanvasInvalidation } from './useTimelineCanvasInvalidation';
+import {TrimSourceFeedback} from './TrimSourceFeedback';
 import { PlayheadHandle } from './PlayheadHandle';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -104,6 +105,8 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     selectSegment: s.selectSegment, copy: s.copy, cut: s.cut, paste: s.paste,
   })));
   const {
+    trimFeedback,
+    cancelDrag,
     hitTest,
     onMouseDown,
     onMouseMove,
@@ -729,16 +732,19 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
   return (
     <div ref={containerRef} className="relative" style={{ height: totalHeight }}>
       <canvas
+        data-audio-timeline
         ref={canvasRef}
         className="block"
         style={{ cursor, width, height: totalHeight, touchAction: touchArrange ? 'none' : 'pan-y' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handleMouseMoveWithCursor}
         onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerCancel={cancelDrag}
+        onLostPointerCapture={cancelDrag}
         onContextMenu={handleContextMenu}
       />
 
+      <TrimSourceFeedback feedback={trimFeedback}/>
       <PlayheadHandle width={width} />
 
       {/* Context menu */}

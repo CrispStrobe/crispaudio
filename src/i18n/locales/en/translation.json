@@ -1118,5 +1118,13 @@
     "tooLarge": "This text exceeds the current 100,000-token / 1 MB comparison limit.",
     "recipe": "Export reviewed CLI recipe",
     "tooManyCuts": "This edit exceeds the current 2,000-cut limit. Edit a shorter section."
+  },
+  "trimFeedback": {
+    "title": "Source handles",
+    "before": "Before: {{seconds}} s",
+    "after": "After: {{seconds}} s",
+    "limit": "Source or timeline limit reached. The edge stays within available media.",
+    "missingSource": "Source unavailable; load the recording before trimming.",
+    "invalidSource": "Invalid source bounds; this trim was not applied."
   }
 }

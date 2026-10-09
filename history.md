@@ -153,3 +153,18 @@ Validation includes dialog/undo/CLI comparisons, German phone-sized layout,
 Apple-rendered colour clips and a private linked Canon/H6 extraction. Original
 recordings and project files remain unchanged. Details belong in
 [release status](docs/RELEASE_STATUS.md), not the capability overview in README.
+
+
+## Source-handle feedback and desktop M1 audit — local 0.8.12
+
+Direct clip-edge dragging now displays source-clock spans and available material
+on either side for linked partners. Audio uses the same bounded trim geometry as
+picture, computed from a stable press snapshot. Linked picture clamps inward to
+project frames and retains a frame. Escape/cancel restores arrangement/history,
+including redo. Idle waveform rendering still avoids transport/metadata rerenders.
+
+The desktop M1 completion workflow was checked with actual dialogs, playback,
+save/open and range export, fixed music, two linked microphones and picture,
+undo/redo and native audio/video export. A real Canon/H6 extract-plus-roll matched
+expected PCM byte for byte. M2's dockable mixer is next; iOS device validation
+and musical loop precision remain separate work. See PLAN.md and release status.

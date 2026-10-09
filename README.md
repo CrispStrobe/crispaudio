@@ -87,6 +87,9 @@ in-memory buffers; eligible macOS linked-project exports use native disk streami
 Rolling, slide and linked ripple trims preserve existing picture transitions.
 Range edits can explicitly replace crossed picture blends with reviewed hard cuts;
 other transitions stay intact. Transcript cue boundaries still require adjustment.
+Dragging audio/video clip edges shows source spans and the available material on
+both sides, including linked partners. Trims stop at source/timeline limits;
+linked picture trims use project frames. Escape cancels the drag and retains redo.
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)

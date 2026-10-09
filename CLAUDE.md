@@ -517,3 +517,18 @@ cut times before commit. Internal ripple shapes still bypass only their reviewed
 blend boundaries. Speech edits must not silently opt into cut conversion. Lift
 retains the original canvas even without a previous minimumDuration. Optional
 browser and native Apple harnesses: test-range-edits.mjs / test-range-blend.py.
+
+
+## Pointer trim source feedback 0.8.12
+
+`trimFeedback.pointerTrim` uses the press snapshot for audio and picture; never
+independently clamp audio duration/offset. Bound the same displacement across all
+linked/named-group partners, timeline zero and source ends. Linked picture clamps
+inward to frame edges and retains one frame. Existing topology guards still apply.
+`TrimSourceFeedback` portals outside clipped rows; mount its project subscription
+only while active so idle metadata/transport does not commit canvas React work.
+Capture pre-gesture temporal history using pointerHistory; Escape/cancel restores
+project and history (including redo), while release commits one step. Idle views
+must not end another view's gesture. Trim stops audio playback; blur/unmount finish
+the last valid edit. Optional source-pointer/workflow browser harnesses validate
+these controls plus real file actions and native range renders. M2 mixer is next.
