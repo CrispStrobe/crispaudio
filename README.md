@@ -1,337 +1,155 @@
 # CrispAudio
 
-Desktop interview synchronization, external microphone alignment, video preview
-and edited-audio video export are available in the Timeline and standalone CLI.
-Local version 0.6.4 aligns video and audio under one ruler, zoom and scroll, with a
-separate project overview for navigation. The optional viewer keeps its picture
-fitted. Linked clips, transitions, magnetic edges, fades and track auto-sync work
-in the generic timeline. See [the timeline workflow](docs/TIMELINE_WORKFLOW.md)
-and [Media workspace](docs/MEDIA_WORKSPACE.md). Use **?** for control help. POS and
-DUR accept typed timecodes; row height includes video. Import audio chooses an
-existing or new track. Partial picture overlaps dissolve; selected audio overlaps
-can crossfade. Expanded video opens a separate fullscreen viewer.
-See [Interview editing and CLI](docs/INTERVIEW_EDITING.md) for setup, the
-[Canon/H6 walkthrough](docs/INTERVIEW_WALKTHROUGH.md) for concrete steps, and
-[iOS/macOS release status](docs/RELEASE_STATUS.md) for platform limits. The audio
-editor has touch controls; automatic video sync and MP4 export remain desktop-only.
-
-`React` | `TypeScript` | `Tauri 2` | `Vite` | `Zustand` | `Vitest`
+CrispAudio combines a multitrack audio and video timeline, voice processing and
+sound-effect synthesis. It supports arranging recordings, synchronizing camera
+and microphone sources, mixing sound and editing footage through its transcript.
+The desktop app uses Tauri, React and TypeScript; the audio tools also run in a
+browser.
 
 [![CI](https://github.com/CrispStrobe/crispaudio/actions/workflows/ci.yml/badge.svg)](https://github.com/CrispStrobe/crispaudio/actions/workflows/ci.yml)
 [![Release](https://github.com/CrispStrobe/crispaudio/actions/workflows/release.yml/badge.svg)](https://github.com/CrispStrobe/crispaudio/actions/workflows/release.yml)
 
-Cross-platform audio workstation combining sound synthesis, voice effects processing, and a timeline waveform editor.
+[Web demo](https://crispaudio-psi.vercel.app) ·
+[Releases](https://github.com/CrispStrobe/crispaudio/releases) ·
+[Roadmap](PLAN.md)
 
-Built with Tauri 2.x (Rust + React + TypeScript). Also runs as a web app.
+## Timeline and media editing
 
-**Live demo:** [crispaudio-psi.vercel.app](https://crispaudio-psi.vercel.app)
+- Multitrack audio waveforms and a picture composition lane share the timeline
+  ruler, playhead, zoom and scrolling. Video preview can open in a fullscreen viewer.
+- Move, split, trim, slip, copy/cut/paste and reorder clips; use magnetic/grid
+  snapping, frame/sample nudges and editable timecodes.
+- Link sound and picture, create named edit groups, lock lanes and choose which
+  lanes participate in ripple edits.
+- Select and play/loop/export time ranges; lift, extract or insert gaps. Rolling
+  trims, ripple trims, trim-to-playhead and slide edits have reviewed source limits.
+- Apply clip/track fades, audio crossfades, picture transitions, colour correction
+  and orientation changes.
+- Mix with gain, pan, mute/solo, gain automation and clip/track/master effect racks.
+  Current timeline effects include filters, bit crushing, ring modulation, delay,
+  chorus, reverb, distortion and compression.
+- Import camera and microphone recordings, review offset/drift synchronization,
+  switch microphones and manage sources in the optional media workspace.
+- Save/load projects with embedded or linked audio, recover autosaves and relink
+  missing files. SFX and processed voice audio can be sent into the timeline.
 
-## Features
+See [Timeline workflow](docs/TIMELINE_WORKFLOW.md),
+[Media workspace](docs/MEDIA_WORKSPACE.md) and the
+[Canon/H6 interview walkthrough](docs/INTERVIEW_WALKTHROUGH.md).
 
-### SFX Synthesizer
-- 4 waveform types: Square, Sawtooth, Sine, Noise (white/pink/brown)
-- 16 preset generators (Pickup, Laser, Explosion, PowerUp, etc.) with keyboard shortcuts
-- ADSR envelope, FM synthesis, vibrato, arpeggiator
-- Effects: distortion, bit crush, chorus, delay, flanger, ring modulation, reverb
-- A/B comparison with morph slider
-- Undo/redo (Ctrl+Z / Ctrl+Shift+Z, 50-step history)
-- Mutate: randomly tweak 2-4 params for subtle variations
-- Parameter locking (preserve values during randomise/preset load)
-- Slider / numeric input toggle for precise value entry
-- Context-aware parameter suggestions based on waveform type
-- Waveform playhead animation during playback
-- 4-panel visualization: Waveform A/B, Frequency Spectrum, Signal Level (RMS + Peak dB)
-- Volume Envelope display (ADSR contour) + parametric ADSR shape visualization
-- Waveform zoom/scroll with minimap (Ctrl+wheel, drag pan, up to 16x)
-- WAV export via native Rust encoder (8/16/24/32-bit, configurable sample rate; JS fallback for web)
-- JSON preset import/export
-- Shareable URL links (base64-encoded params)
+## Transcription and spoken-text editing
 
-### Voice Processor
-- 9 voice transformation presets (Robot, Alien, Demon, Chipmunk, etc.)
-- Granular pitch shifting (preserves duration)
-- PSOLA time stretching
-- Formant manipulation
-- Full effects chain: vocoder, ring mod, tremolo, delay, chorus, reverb, filters, compressor, distortion, bit crush, noise gate
-- A/B comparison with morph interpolation
-- Separate Play Source / Play Processed for A/B comparison
-- Throttled auto-processing on parameter changes (300ms)
-- Waveform playhead animation during playback
-- Undo/redo (Ctrl+Z / Ctrl+Shift+Z, 50-step history)
-- Microphone recording (MediaRecorder capture)
-- Parameter info tooltips on every slider
-- Drag-and-drop audio file loading
+Desktop transcription uses an external local **CrispASR** executable and model.
+Select the timeline mix or a microphone, transcribe and obtain genuine word
+timestamps through forced alignment. Deleting a timed word removes its matching
+interval across audio and video. Alternatively, paste a shortened transcript,
+review its matching words and retain only those passages, with one-step undo.
+Repeated phrases require explicit occurrence review; rewritten/reordered wording
+is rejected. Changed audio arrangements invalidate old alignment.
 
-### Timeline Editor
-- Canvas-based waveform editor
-- Cut, copy, paste, split, reorder segments
-- Drag-and-drop audio files onto the canvas
-- Fade in/out with configurable curves (linear, exponential, s-curve)
-- Automatic crossfade on segment overlap
-- Per-segment effects chains
-- Zoom, scroll, snap-to-grid
-- Track reordering via drag handles
-- Full undo/redo history
-- Project save/load (audio embedded as base64)
-- Offline rendering for WAV export
+See [Speech editing](docs/SPEECH_EDITING.md) and
+[Keep text editing](docs/KEEP_TEXT_EDITING.md) for setup and limitations.
 
-### Cross-cutting
-- Lazy-loaded panels and modals (React.lazy/Suspense)
-- Vendor chunk splitting (React, i18n, state management)
-- Mobile-responsive layout with collapsible sidebar
-- Panel transition animations
-- WCAG accessibility: skip-to-content, aria labels, tab roles, keyboard nav, color contrast
-- Timeline autosave to localStorage (30s interval + on unload)
-- Content Security Policy enabled for Tauri builds
-- PWA offline support via service worker
-- Keyboard shortcuts help overlay (press `?`)
-- "Check for Updates" via GitHub releases API
-- Full i18n: EN + DE with 100% string coverage (including parameter tooltips)
-- Branded loading screen with CrispAudio logo
-- HiDPI-sharp canvas rendering via ResizeObserver + DPR scaling
-- Audio cleanup on panel switch (prevents orphaned playback)
-- Error feedback for failed file imports and JSON parsing
+## SFX and voice
 
-## Keyboard Shortcuts
+**SFX:** square/sawtooth/sine/noise synthesis, preset generators, ADSR, FM,
+vibrato, arpeggiation, effects, parameter locking and mutation. Compare A/B slots
+with morphing, parallel waveforms, spectrum/spectrogram and level displays.
+Export audio or JSON presets, share preset links and send sounds to the timeline.
 
-### Global
-| Key | Action |
-|-----|--------|
-| `Ctrl+1` / `2` / `3` | Switch to SFX / Voice / Timeline |
-| `Ctrl+,` | Open Settings |
-| `?` | Show shortcuts help |
+**Voice:** load or record audio, apply voice presets, pitch/time/formant processing
+and an effects chain. Compare source/processed sound and A/B slots, inspect audio
+visualizations, export or return processed sound to a timeline clip.
 
-### SFX Panel
-| Key | Action |
-|-----|--------|
-| `1`-`8`, `Q`, `W`, `E`, `R`, `T`, `Y`, `U` | Load preset |
-| `Space` | Play / Stop |
-| `L` | Toggle loop |
-| `M` | Mutate (subtle variation) |
-| `A` / `B` | Switch slot |
-| `Ctrl+Wheel` | Zoom waveform |
-| `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / Redo |
+Both views provide undo/redo, numeric controls and contextual parameter help.
+The interface supports English and German, keyboard commands and touch controls.
+macOS menus expose file, edit, playback and view actions.
 
-### Voice Panel
-| Key | Action |
-|-----|--------|
-| `1`-`9` | Load voice preset |
-| `Space` | Play / Stop |
-| `P` | Process |
-| `A` / `B` | Switch slot |
-| `Ctrl+Z` / `Ctrl+Shift+Z` | Undo / Redo |
+## Formats and platform limits
 
-## Development
+| Area | Current support |
+|---|---|
+| GUI audio import | WAV, MP3, M4A/AAC, FLAC, Ogg/Opus, AIFF/AIF and CAF; decoding depends on codec/profile and platform |
+| GUI audio export | WAV, FLAC, MP3, AAC and Ogg Opus; eligible macOS timeline exports also offer M4A |
+| Desktop video import | MP4, MOV, MKV, M4V, WebM, AVI, OGV and MPEG/MPG, subject to backend codec support |
+| Desktop video export | MP4/MOV H.264 + AAC through Apple frameworks or optional FFmpeg; VP9/AV1 WebM through optional FFmpeg |
+| Native CLI audio export | Linked projects to WAV; macOS also supports FLAC and AAC/M4A |
 
-### Prerequisites
-- Node.js 20+
-- Rust 1.77+
-- Platform-specific dependencies:
-  - **Linux**: `libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libasound2-dev`
-  - **macOS**: Xcode Command Line Tools
-  - **Windows**: Visual Studio Build Tools, WebView2
+macOS 13+ provides the native media backend. Whip, glitch and page-peel transitions
+require compatible Metal hardware. Automatic synchronization, denoising/loudness
+preparation and some format paths require separately installed FFmpeg/FFprobe.
 
-### Setup
-```bash
-npm install
+Video composition and local CrispASR integration are desktop features. The browser
+and mobile app provide audio tools; mobile ASR/video composition and iOS device
+validation for newer timeline controls remain incomplete. The timeline currently
+has **one picture composition lane**. GUI audio import/playback uses decoded
+in-memory buffers; eligible macOS linked-project exports use native disk streaming.
+Advanced trims through picture blends are still restricted.
+
+See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
+exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)
+for release availability. The web demo and published releases can differ from
+this source tree.
+
+## Build and run
+
+Use Node.js 22.12+ (or a newer supported LTS), npm and a current stable Rust
+toolchain. Desktop builds also require:
+
+- **macOS:** Xcode Command Line Tools.
+- **Linux:** WebKitGTK 4.1, Ayatana AppIndicator, librsvg, OpenSSL, ALSA development
+  packages and patchelf; see the CI workflow for package names.
+- **Windows:** Visual Studio C++ Build Tools and WebView2.
+
+```sh
+npm ci
+npm run dev          # Browser development
+npm run tauri dev    # Desktop development
+npm run build        # TypeScript check and production web build
+npm run tauri build  # Desktop bundle
 ```
 
-### Development
-```bash
-npm run tauri dev    # Desktop app
-npm run dev          # Web-only (no Tauri)
+Build the standalone media CLI:
+
+```sh
+cargo build --release --manifest-path media/Cargo.toml --bin crispaudio
+media/target/release/crispaudio --help
 ```
 
-### Build
-```bash
-npm run tauri build  # Desktop app
-npm run build        # Web-only
-```
+The CLI can probe/prepare recordings, synchronize sources, apply project edit
+recipes, transcribe and render linked arrangements. See
+[Interview editing and CLI](docs/INTERVIEW_EDITING.md) and the workflow guides
+above for complete examples.
 
-### Test
-```bash
-npm run test        # run once (845+ tests)
-npm run test:watch  # watch mode
-```
+## Development and checks
 
-### Lint & Typecheck
-```bash
+```sh
 npm run lint
-npm run typecheck
+npm run build
+npm test
+cargo test --manifest-path media/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-## Architecture
+React components live in `src/components/`, audio engines/DSP in `src/audio/`,
+editing helpers in `src/lib/` and Zustand/undo state in `src/stores/`. `src-tauri/`
+contains desktop commands; `media/` contains native media processing and the CLI.
+Vitest tests live in `tests/`; optional integration harnesses are in `scripts/`.
 
-### Data flow
+Contributions should use focused branches, include appropriate checks and open a
+pull request against `main`. CI checks the frontend, Rust and media CLI. Desktop
+release bundles and web deployments use version tags/manual workflows; Apple
+uploads have separate workflows. Pushing `main` does not submit an Apple release.
 
-```
-                         +------------------+
-                         |     React UI     |
-                         |  (Components /   |
-                         |   Hooks / i18n)  |
-                         +--------+---------+
-                                  |
-                    +-------------+-------------+
-                    |                           |
-           +-------v--------+         +--------v--------+
-           |  Zustand Store  |         |   Tauri IPC     |
-           |  (zundo undo)   |         |   (invoke)      |
-           +-------+--------+         +--------+--------+
-                    |                           |
-           +-------v--------+         +--------v--------+
-           |  Audio Engine   |         |  Rust Backend   |
-           |  SynthEngine    |         |  WAV encoder    |
-           |  VoiceEngine    |         |  Project I/O    |
-           |  TimelineEngine |         |  File dialogs   |
-           +-------+--------+         +-----------------+
-                    |
-           +-------v--------+
-           |  Web Audio API  |
-           |  DSP pipeline   |
-           |  Effects chain  |
-           +----------------+
-```
+## Documentation
 
-### Directory layout
-
-```
-src/                  React frontend (TypeScript)
-  audio/              Audio engines, effects, DSP, presets
-  components/         React components (layout, shared, sfx, voice, timeline)
-  stores/             Zustand state management (with zundo undo/redo)
-  hooks/              Custom React hooks
-  types/              TypeScript interfaces
-  i18n/               Internationalization (EN/DE)
-
-src-tauri/            Rust backend
-  src/commands/       Tauri commands (WAV export, project save/load)
-```
-
-## CI/CD
-
-- **CI** (`ci.yml`): Lint, typecheck, test on every push/PR; Rust check on Linux, macOS, Windows
-- **Release** (`release.yml`): Cross-platform builds on tag push (`v*`)
-  - Linux x86_64 (.deb, .AppImage)
-  - macOS ARM64 (.dmg)
-  - macOS x86_64 (.dmg) — optional, non-blocking
-  - Windows x86_64 (.msi)
-  - iOS arm64 (.app, unsigned)
-  - Android (.apk, unsigned)
-- **Vercel**: Auto-deploys web version on push to main
-- Branch protection requires all CI checks to pass before merging
-
-## Contributing
-
-1. **Fork** the repository and clone your fork locally.
-2. **Create a branch** for your feature or fix: `git checkout -b feat/my-feature`.
-3. **Install dependencies**: `npm install`.
-4. **Make your changes** -- keep commits focused and atomic.
-5. **Run the full check suite** before pushing:
-   ```bash
-   npm run lint && npm run typecheck && npm run test
-   ```
-6. **Open a Pull Request** against `main`. CI must pass before merge.
-
-### Code style notes
-
-- TypeScript strict mode is enabled -- avoid `any` where possible.
-- React components use functional style with hooks (no class components).
-- Audio DSP code lives in `src/audio/`; keep engine classes stateless where feasible.
-- State management goes through Zustand stores in `src/stores/`.
-- Tests use Vitest and live under `tests/`. Mirror the `src/` directory structure.
-- Commit messages should be concise and describe the *why*, not just the *what*.
+- [PLAN.md](PLAN.md): priorities and unfinished roadmap items.
+- [CHANGELOG.md](CHANGELOG.md): changes by version.
+- [history.md](history.md): historical implementation notes formerly in this README.
+- [CLAUDE.md](CLAUDE.md): repository architecture and contributor guidance.
 
 ## License
 
-MIT
-
-## Media workspace (local 0.6.0)
-
-Multiple camera files and linked audio/picture clips, frame trims/slip/ripple,
-markers, reviewed microphone switching, gain automation, transcript editing,
-lightweight proxies and recovery are described in [Media workspace](docs/MEDIA_WORKSPACE.md).
-The desktop CLI also edits project recipes and renders linked arrangements.
-Video remains desktop-only; GUI audio is decoded in memory. See the workflow for
-limits and supported CLI processing.
-
-### Media formats and native backend (local 0.7.0)
-
-Audio export now includes 24-bit FLAC alongside WAV, MP3, AAC and Opus. Mac video
-export offers a native Apple backend for MP4/MOV cuts, dissolves, fades, colour and
-orientation, plus explicitly optional FFmpeg compatibility for other transitions
-and VP9/AV1 WebM. See [formats, CLI and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md)
-for the exact support matrix and remaining platform limitations.
-
-Local 0.7.1 also renders every listed picture transition through Apple frameworks.
-Whip, glitch and page peel require a compatible Metal GPU; the export selector
-retains optional FFmpeg compatibility. Complex preview/native/FFmpeg renderers
-are approximate equivalents, with a shaded 2D page fold rather than 3D geometry.
-
-Local 0.7.2 adds streaming native CLI mixing of linked projects to float WAV,
-including pan, fades, automation and low/high-pass racks. On Mac, supported
-linked projects can render directly to MP4/MOV with `--video --backend apple`,
-without FFmpeg. Unsupported DSP fails explicitly; GUI rendering retains broader
-FX support and currently uses decoded audio buffers.
-
-Local 0.7.3 extends native CLI racks with bit crushing and ring modulation.
-It also fixes their GUI processing: bit crushing keeps silence at zero, and
-ring modulation now has a working wet/dry control. Delay, chorus, reverb,
-oversampled distortion and compression still require GUI rendering.
-
-Local 0.7.4 adds native CLI delay and chorus with stereo tails and bounded delay
-buffers, checked against actual macOS WebKit rendering. Reverb, oversampled
-distortion and compression still require GUI export. See the reusable DSP
-comparison instructions in `docs/MEDIA_WORKSPACE.md`.
-
-Local 0.7.5 adds native convolution reverb matching the GUI's seeded stereo
-response and macOS WebKit level calibration, with bounded FFT buffers and no
-added latency. Distortion and compression still require GUI export.
-
-Local 0.7.6 adds native timeline distortion with four-times oversampling and
-the GUI's wet-path filter delay. Its WebKit resampling adaptation carries
-BSD-3-Clause notices. Compression still requires GUI export.
-
-### Local 0.7.7 — native compressor
-
-Native linked-project export now supports every current timeline rack effect,
-including stereo-linked compression with WebKit soft knee, adaptive release,
-automatic makeup and 6 ms lookahead. The GUI already had these controls; the CLI
-now matches its timing and mono/stereo behavior. The BSD-3-Clause kernel notice
-is included in source and About. See `docs/MEDIA_WORKSPACE.md` for CLI usage.
-
-### Local 0.7.8 — disk-backed desktop video export
-
-Mac GUI video export now reuses the native streaming mixer for linked 48 kHz
-mono/stereo projects. Full-clock DSP preserves effect history in section exports,
-without a second full Web Audio mix or PCM transfer through IPC. In-memory sounds
-and other project rates retain Web Audio. Import/playback buffers remain loaded;
-this is an export improvement. See `docs/MEDIA_WORKSPACE.md` for the workflow.
-
-### Local 0.7.9 — direct timeline WAV export
-
-Eligible Mac timeline WAV exports now stream directly to disk with the chosen
-8/16/24/32-bit integer PCM setting. Cancellation and errors stay in the export
-UI; other formats keep the worker. CLI `--wav-bit-depth` selects the same integer
-writer while its omitted default remains float WAV. See `docs/MEDIA_WORKSPACE.md`.
-
-### Local 0.7.10 — native timeline FLAC
-
-Eligible Mac timeline FLAC exports now stream from disk using the system encoder,
-with signed 24-bit quantisation and final MD5 verification. CLI `render-project`
-accepts a `.flac` destination on Mac. Other projects keep the libFLAC worker;
-compressed bytes can differ by preset while decoded PCM is preserved. No new
-codec dependency is added. See `docs/MEDIA_WORKSPACE.md` for usage and disk space.
-
-### Local 0.7.11 — native timeline AAC
-
-Eligible Mac timeline AAC exports now stream from disk with the selected bitrate.
-CLI `.aac` output uses the same native AAC-LC/ADTS path; `--audio-bitrate-kbps`
-selects 96/128/192/256/320 kbps (default 192). Packet validation checks actual
-length and layout. ADTS has codec priming/padding; use WAV/FLAC for exact timing.
-No new codec dependency is added. See `docs/MEDIA_WORKSPACE.md` for details.
-
-Local 0.7.12 adds native M4A/AAC output: choose M4A in the Mac timeline's AAC
-save dialog or give CLI `render-project` a `.m4a` output. The file records
-priming/padding metadata for gapless-aware decoders, with its valid frame count
-checked against the source. ADTS `.aac` remains available; WAV/FLAC remain
-lossless options. No codec dependency is added.
+MIT. Third-party components retain their own notices; see the app's About view
+and [licensing details](docs/MEDIA_FORMATS_AND_LICENSES.md). External ASR models
+have separate licenses. Optional installed tools are not bundled with the app.
