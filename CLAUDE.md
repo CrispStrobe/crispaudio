@@ -299,3 +299,18 @@ maps unsigned JS bytes to signed Hound samples by subtracting 128. WAV32 here is
 integer PCM; default render()/video intermediates remain float32 and preserve
 headroom. CLI --wav-bit-depth explicitly selects native PCM and conflicts with
 video/explicit FFmpeg. Count output bytes at the selected depth for RIFF limits.
+
+## Native FLAC 0.7.10
+
+media/src/audio_encode.rs mixes to an owned float WAV, invokes the strict Apple
+encode-flac helper and validates final STREAMINFO before atomic hard-link
+publication. No codec dependency/FFmpeg fallback is added. Native FLAC is Mac
+only, stereo 48 kHz, signed 24-bit; WAV semantics stay unchanged. Quantise with
+floor(value*8388608+0.5), clamp [-8388608,8388607], then feed exactly representable
+float values to AVAudioFile. This matches flacRuntime, not WAV's 8388607 scale.
+Read only remaining frames: an extra read at EOF can throw on some AVAudioFile
+layouts. Keep 4096-frame buffers and a function scope that releases the output
+before checking STREAMINFO; ARC finalises the header/checksum. Cancel kills the
+owned helper process and removes staging. No populated metadata means failure.
+linkedAudioExport now handles WAV and FLAC with direct jobs; all other formats
+keep the worker. Numeric stable-version comparisons handle 0.7.9 → 0.7.10.

@@ -1,5 +1,6 @@
 //! Internal CrispAudio desktop media operations. No GUI or ASR dependency.
 pub mod apple;
+pub mod audio_encode;
 pub mod audio_mix;
 mod compressor;
 mod distortion;

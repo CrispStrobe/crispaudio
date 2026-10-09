@@ -858,3 +858,60 @@ are under `ux/real-pcm-079-8gwtf97h/`; originals were not rewritten.
 No codec or dependency was added; the 26-entry licence manifest is unchanged.
 Remaining work includes disk-paged import/playback, streaming compressed-audio
 export, permissive-only WebM and iOS picture composition.
+
+## Local 0.7.10 — native Mac FLAC
+
+Installed and launched `~/Applications/CrispAudio-local.app` version 0.7.10;
+updated the optimised standalone CLI. Both ad-hoc signatures verified. The one
+autosave JSON remains unchanged, with WebKit data and JSON backed up under
+`ux/recovery-before-0710/`. No release tag or Apple upload was triggered.
+
+Eligible Mac timeline FLAC now uses the native mixer and Apple system encoder.
+The CLI accepts a `.flac` output through the same route. An owned float WAV holds
+the full-clock mix; a 4096-frame AVAudioFile buffer feeds the encoder, then the
+finished FLAC is published atomically after checking rate, stereo channels,
+24-bit depth, frame count and populated STREAMINFO MD5. Cancellation kills the
+owned helper and removes temporary files. Native errors remain visible; explicit
+FFmpeg mixing is rejected for this FLAC endpoint. No new codec/dependency or
+redistributed binary was added; the 26-entry licence manifest remains unchanged.
+
+Signed 24-bit quantisation matches the existing GUI libFLAC worker, including
+negative ties and clipped headroom. It uses the 8388608 scale, distinct from
+integer WAV's 8388607 scale. Apple's compression preset differs from the worker's
+level 5, so compressed bytes and size need not match. Audible in-memory sounds,
+other rates/platforms and other formats keep the worker. Native export needs disk
+space for the full float WAV plus encoded output; import/playback buffers are
+still loaded. The GUI's direct-job helper now handles both WAV and FLAC.
+
+An early encoder prototype attempted an extra read after the input's final frame;
+AVAudioFile rejected it on the real WAV. The production loop reads only remaining
+frames and scopes the writer so finalisation completes before metadata inspection.
+The full-file and boundary checks below passed with that correction. About's
+update check also now compares stable version components numerically, so 0.7.10
+is correctly newer than 0.7.9 and does not advertise an older tag as an update.
+
+Validation: all 37 ordinary media Rust tests and both CLI parser tests passed;
+eight platform integration tests remain opt-in. The new FLAC integration was
+explicitly run and passed, with exact signed PCM, clipped/tie values and an
+independent MD5 comparison. Seven older picture integrations were not repeated.
+All 22 targeted export frontend tests plus two version-comparison tests passed.
+ESLint, TypeScript/production build, release CLI and debug macOS app bundle passed.
+Actual WebKit TimelineEngine + GUI FLAC worker and native FLAC decoded to exactly
+the same 28,800 PCM bytes; both stored the independent MD5 for 4,800 stereo frames.
+FFmpeg was disabled for native rendering and used only for reference decoding.
+Archived fixtures/results live outside git under `ux/native-flac-0710/`. Native
+DSP and WAV writing were unchanged; prior DSP/PCM suites were not repeated. Both
+desktop and iOS CI passed 0.7.9; this push starts new CI.
+
+The full 253.72-second interview with default master compression exported in
+5.69 seconds (4.51 user / 0.41 system), about 45 times faster than playback.
+macOS time reported peak RSS 15,925,248 bytes (15.2 MiB); this is a single
+warm-cache direct-PCM-source run, not total editor/OS-cache/process-tree memory.
+Output is 24,890,545 bytes, about 34% of the corresponding 24-bit WAV's size.
+Independent decoding confirmed 12,178,560 stereo 48 kHz frames and matched the
+stored MD5 `55c90365aa870825be259c39850c02ef`. The derived project, FLAC and
+measurement live under `ux/real-flac-0710-u_9ywxnh/`; originals were not rewritten.
+
+Remaining work includes disk-paged import/playback, streaming MP3/AAC/Opus
+export, permissive-only WebM and iOS picture composition. Native FLAC was tested
+on this Mac; unsupported system encoder configurations fail explicitly.

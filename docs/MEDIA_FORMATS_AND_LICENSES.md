@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.9
+# Formats and licensing — local 0.7.10
 
 ## Current GUI
 
@@ -8,12 +8,16 @@ extension does not guarantee every codec/profile variant is decodable.
 
 Audio export in SFX, Voice and Timeline supports WAV, MP3, ADTS AAC, Ogg Opus and
 **native FLAC, signed 24-bit PCM**. FLAC runs at the source sample rate, uses level
-5 compression and retains the final STREAMINFO MD5 checksum. It is lossless after
+5 compression in the worker and retains the final STREAMINFO MD5 checksum.
+Eligible Mac timeline FLAC exports now use the Apple system encoder in bounded
+chunks with the same signed 24-bit quantisation; its compression preset differs
+from the worker, so encoded file bytes/size can differ while decoded PCM matches. It is lossless after
 float-to-24-bit quantization; it does not preserve arbitrary 32-bit float values.
 Bitrate does not apply to WAV/FLAC. Mac timeline WAV export for linked 48 kHz
 mono/stereo projects streams directly to disk, honoring the 8/16/24/32-bit integer
 PCM preference. Integer export clips to full scale and matches the GUI worker's
-rounding without dither. Other audio exports use the cancellable encoder worker.
+rounding without dither. Linked Mac FLAC exports also write directly to disk; other audio exports use the
+cancellable encoder worker.
 
 Video import offers MP4, MOV, MKV, M4V, WebM, AVI, OGV and MPEG/MPG. Apple handles
 its supported containers/codecs first on macOS; optional installed FFmpeg handles
@@ -126,8 +130,10 @@ older mixer has narrower pan/master-effect support and different filter behaviou
 Long-file alignment, denoising and EBU loudness still use FFmpeg. GUI import and playback still use Web Audio and duration-sized decoded buffers.
 Eligible macOS video exports avoid a second duration-sized render buffer;
 Eligible timeline WAV exports also stream from disk; compressed-audio exports
-and other projects still render with Web Audio. CLI WAV rendering remains separate from the GUI's FLAC/MP3/AAC/Opus
-encoder worker. No permissive-only bundled WebM implementation is claimed.
+and other projects still render with Web Audio. CLI also exports native Mac FLAC when the output ends in `.flac`, preserving
+stereo 48 kHz and signed 24-bit PCM. It uses an owned float mix on disk and the
+Apple encoder; explicit FFmpeg mode fails rather than choosing another FLAC
+backend. MP3/AAC/Opus exports remain in the GUI codec worker. No permissive-only bundled WebM implementation is claimed.
 
 ```sh
 crispaudio render-project --input saved.crispaudio --output mix.wav --backend apple

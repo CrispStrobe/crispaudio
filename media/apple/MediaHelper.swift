@@ -1,6 +1,7 @@
 // MIT — CrispAudio native desktop media helper. Uses only Apple system frameworks.
 import Foundation
 import AVFoundation
+import AudioToolbox
 import CoreImage
 import ImageIO
 import UniformTypeIdentifiers
@@ -77,6 +78,26 @@ func export(_ session:AVAssetExportSession,to output:String,type:AVFileType) asy
     await withCheckedContinuation {(continuation:CheckedContinuation<Void,Never>) in session.exportAsynchronously{continuation.resume()}}
     guard session.status == .completed else {try fail(session.error?.localizedDescription ?? "Apple export failed")}
 }
+// Sequential, bounded-buffer FLAC encoding. Scope exit finalises STREAMINFO.
+func encodeFlac(_ path:String,_ destination:String) throws {
+    let input=try AVAudioFile(forReading:URL(fileURLWithPath:path),commonFormat:.pcmFormatFloat32,interleaved:false)
+    guard input.processingFormat.sampleRate==48000,input.processingFormat.channelCount==2,input.length>0 else {try fail("FLAC input must be stereo 48 kHz PCM")}
+    let settings:[String:Any]=[AVFormatIDKey:kAudioFormatFLAC,AVSampleRateKey:48000,AVNumberOfChannelsKey:2,AVEncoderBitDepthHintKey:24]
+    let output=try AVAudioFile(forWriting:URL(fileURLWithPath:destination),settings:settings,commonFormat:.pcmFormatFloat32,interleaved:false)
+    guard let buffer=AVAudioPCMBuffer(pcmFormat:input.processingFormat,frameCapacity:4096) else {try fail("FLAC buffer allocation failed")}
+    while input.framePosition<input.length {
+        try input.read(into:buffer,frameCount:AVAudioFrameCount(min(4096,input.length-input.framePosition)))
+        guard buffer.frameLength>0,let channels=buffer.floatChannelData else {try fail("Incomplete FLAC input")}
+        for ch in 0..<2 {for i in 0..<Int(buffer.frameLength) {
+            let value=Double(channels[ch][i])
+            guard value.isFinite else {try fail("Non-finite FLAC sample")}
+            // Match the existing GUI's 24-bit FLAC quantisation, including ties.
+            let quantised=max(-8388608,min(8388607,floor(value*8388608+0.5)))
+            channels[ch][i]=Float(quantised/8388608)
+        }}
+        try output.write(from:buffer)
+    }
+}
 @main struct Main {
  static func main() async {
   do {try await run()}catch {FileHandle.standardError.write(Data((error.localizedDescription+"\n").utf8));exit(1)}
@@ -94,6 +115,7 @@ func export(_ session:AVAssetExportSession,to output:String,type:AVFileType) asy
   }
   guard args.count>=4,!FileManager.default.fileExists(atPath:args[3]) else {try fail("Missing output or output exists")}
   let output=args[3]
+  if operation=="encode-flac" {try encodeFlac(args[2],output);return}
   if operation=="thumbnail" {
     let generator=AVAssetImageGenerator(asset:asset);generator.appliesPreferredTrackTransform=true;generator.maximumSize=CGSize(width:640,height:360)
     let (image,_)=try await generator.image(at:CMTime(seconds:min(0.12,(try await asset.load(.duration).seconds)/2),preferredTimescale:60000))

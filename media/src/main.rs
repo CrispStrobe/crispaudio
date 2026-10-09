@@ -37,7 +37,7 @@ enum Commands {
         #[arg(long)]
         output: String,
     },
-    /// Render linked project audio to WAV (unsupported effects fail explicitly).
+    /// Render linked project audio to WAV or native macOS FLAC.
     RenderProject {
         #[arg(long)]
         input: String,

@@ -313,3 +313,11 @@ Eligible Mac timeline WAV exports now stream directly to disk with the chosen
 8/16/24/32-bit integer PCM setting. Cancellation and errors stay in the export
 UI; other formats keep the worker. CLI `--wav-bit-depth` selects the same integer
 writer while its omitted default remains float WAV. See `docs/MEDIA_WORKSPACE.md`.
+
+### Local 0.7.10 — native timeline FLAC
+
+Eligible Mac timeline FLAC exports now stream from disk using the system encoder,
+with signed 24-bit quantisation and final MD5 verification. CLI `render-project`
+accepts a `.flac` destination on Mac. Other projects keep the libFLAC worker;
+compressed bytes can differ by preset while decoded PCM is preserved. No new
+codec dependency is added. See `docs/MEDIA_WORKSPACE.md` for usage and disk space.

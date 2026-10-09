@@ -368,3 +368,37 @@ This compares all PCM bytes with actual `TimelineEngine` rendering and the GUI
 WAV encoder at four depths, including random stereo samples, silence, rounding
 ties and values above full scale. WAV container headers may differ. Fixtures and
 results stay in a fresh temporary folder; FFmpeg is disabled for native mixing.
+
+## Native Mac timeline FLAC (local 0.7.10)
+
+Select FLAC in Settings, export the timeline and choose a new `.flac` destination.
+The same linked 48 kHz mono/stereo eligibility used for native WAV applies. FLAC
+always uses signed 24-bit PCM, independent of the WAV bit-depth preference. The
+native mixer writes an owned float WAV, then Apple's encoder reads 4096-frame
+chunks and writes FLAC. Cancelling either phase removes the temporary files.
+Publication waits for a valid STREAMINFO rate, stereo layout, 24-bit depth, frame
+count and populated MD5. Original recordings and project files stay unchanged.
+
+```sh
+~/Applications/crispaudio-cli-local render-project --input project.crispaudio --output mix.flac --backend apple
+```
+
+CLI `.flac` output is supported on Mac through the native mixer/system encoder;
+explicit FFmpeg mode is rejected. WAV defaults and `--wav-bit-depth` are unchanged.
+Generated/in-memory sounds, other project rates and other platforms keep the
+GUI's libFLAC worker, including its level-5 preset. Both paths use identical
+24-bit sample quantisation; encoder presets mean compressed file bytes may differ.
+The native path requires temporary disk space for its full float WAV and encoded
+output. RAM remains bounded, but import/playback buffers still live in Web Audio.
+
+The helper uses Apple's [sequential AVAudioFile API](https://developer.apple.com/documentation/avfaudio/avaudiofile)
+and [FLAC format](https://developer.apple.com/documentation/coreaudiotypes/kaudioformatflac).
+No extra codec library is bundled or dependency added. Existing MIT/BSD/Apache
+notices remain intact for the application and its worker codecs.
+
+For a real-WebKit FLAC parity check, use the optional Playwright/WebKit setup
+above and run `scripts/test-native-flac.mjs` with `CRISPAUDIO_TEST_CLI` pointing
+at the separate release CLI. The native render disables FFmpeg/FFprobe; reference
+decoding requires FFmpeg (`CRISPAUDIO_REFERENCE_FFMPEG` may specify its path).
+The test compares decoded PCM and both STREAMINFO MD5 values, not compressed
+bytes. Fixtures/results stay in a fresh temporary directory.

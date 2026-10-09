@@ -281,3 +281,25 @@ pub async fn export_linked_project_wav(
     .await
     .map_err(|e| e.to_string())?
 }
+
+#[tauri::command]
+pub async fn export_linked_project_flac(
+    document: serde_json::Value,
+    output: String,
+    job_id: Option<String>,
+) -> Result<(), String> {
+    if !cfg!(target_os = "macos")
+        || document["format"] != "crispaudio-project"
+        || document["version"] != 3
+        || document["project"]["sampleRate"] != 48000
+    {
+        return Err("Native FLAC export requires a linked 48 kHz project on macOS".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        media::jobs::run(job_id, || {
+            media::audio_encode::render_flac(&document, &output)
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

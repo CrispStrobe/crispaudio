@@ -490,11 +490,19 @@ fn automation(points: &Value, time: &str) -> Result<String> {
 /// Linked-media CLI mix. Unsupported DSP fails explicitly instead of producing
 /// a plausible export with effects silently omitted.
 pub fn render_audio(doc: &Value, output: &str) -> Result<()> {
+    if std::path::Path::new(output)
+        .extension()
+        .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("flac"))
+    {
+        return crate::audio_encode::render_flac(doc, output);
+    }
     if !std::path::Path::new(output)
         .extension()
         .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("wav"))
     {
-        return Err("CLI audio rendering currently exports WAV; choose a .wav output".into());
+        return Err(
+            "CLI audio rendering exports WAV or native Mac FLAC; choose .wav or .flac".into(),
+        );
     }
     let backend = crate::apple::Backend::configured()?;
     if backend != crate::apple::Backend::Ffmpeg {

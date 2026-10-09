@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.9]
+## [Unreleased — local version 0.7.10]
+
+- Add bounded native 24-bit FLAC export in the Mac timeline GUI and CLI using
+  Apple's system encoder, with the GUI's quantisation and final STREAMINFO MD5.
+- Mix to an owned float WAV, encode in 4096-frame chunks and publish atomically
+  only after validating duration, sample rate, channels, depth and checksum.
+- Retain the codec worker for in-memory/non-48-kHz projects and other platforms.
+- Compare update versions numerically so 0.7.10 orders correctly after 0.7.9.
+
+## [Local version 0.7.9]
 
 - Save eligible Mac timeline WAV mixes directly with the native streaming mixer,
   without a rendered AudioBuffer, encoded Blob or PCM IPC transfer.

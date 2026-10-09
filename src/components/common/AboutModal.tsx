@@ -14,6 +14,7 @@ import licensesData from '../../generated/licenses.json';
 import glintNotice from '../../lib/glint/LICENSE?raw';
 import houndNotice from '../../lib/licenses/hound.txt?raw';
 import rustfftNotice from '../../lib/licenses/rustfft.txt?raw';
+import { isNewerVersion } from '../../lib/versionComparison';
 import webkitCompressorNotice from '../../lib/licenses/webkit-compressor.txt?raw';
 import webkitOversamplingNotice from '../../lib/licenses/webkit-oversampling.txt?raw';
 import flacNotice from '../../lib/flac/LICENSE.libFLAC?raw';
@@ -22,7 +23,7 @@ import wrapperNotice from '../../lib/flac/LICENSE.wrapper?raw';
 const REPO_URL = 'https://github.com/CrispStrobe/crispaudio';
 const WEB_URL = 'https://crispaudio-psi.vercel.app';
 const RELEASES_API = 'https://api.github.com/repos/CrispStrobe/crispaudio/releases/latest';
-const CURRENT_VERSION = '0.7.9';
+const CURRENT_VERSION = '0.7.10';
 
 interface LicenseEntry {
   name: string;
@@ -48,7 +49,7 @@ async function checkForUpdates(): Promise<{ available: boolean; latest: string; 
     const data = await res.json();
     const latest = (data.tag_name as string).replace(/^v/, '');
     return {
-      available: latest !== CURRENT_VERSION && latest > CURRENT_VERSION,
+      available: isNewerVersion(latest, CURRENT_VERSION),
       latest,
       url: data.html_url as string,
     };

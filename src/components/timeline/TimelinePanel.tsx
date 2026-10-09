@@ -49,7 +49,7 @@ import { useProjectStore } from '../../stores/projectStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../stores/uiStore';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { exportLinkedWav } from '../../lib/linkedWavExport';
+import { exportLinkedAudio } from '../../lib/linkedAudioExport';
 import { serializeProject, deserializeProject, linkedRenderDocument } from '../../lib/projectFile';
 import { saveProjectFile, openProjectFile } from '../../lib/projectIO';
 import { TransportControls } from './TransportControls';
@@ -483,11 +483,12 @@ export const TimelinePanel: React.FC = () => {
     if (!engine || store.project.duration <= 0) return;
     const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } = useSettingsStore.getState();
     const name = store.project.name || 'crispaudio_mix';
-    const document = fmt === 'wav' && '__TAURI_INTERNALS__' in window && !isIOSApp()
+    const nativeFormat = fmt === 'wav' || fmt === 'flac' ? fmt : null;
+    const document = nativeFormat && '__TAURI_INTERNALS__' in window && !isIOSApp()
       && navigator.userAgent.includes('Mac') ? linkedRenderDocument(store.project, store.sources) : null;
-    if (document) {
+    if (document && nativeFormat) {
       await startExport({ stage: null, run: (signal, setStage) =>
-        exportLinkedWav(document, `${name}.wav`, defaultBitDepth, signal, setStage) });
+        exportLinkedAudio(document, `${name}.${nativeFormat}`, nativeFormat, defaultBitDepth, signal, setStage) });
       return;
     }
     await startExport({
