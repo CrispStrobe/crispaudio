@@ -199,6 +199,8 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
     }
     edit.append_items(&[
         &sep()?,
+        &item("edit-groups","Named Edit Groups…","Benannte Schnittgruppen…",timeline&&context.content,None)?,
+        &item("commands","Find Command…","Befehl suchen…",enabled,Some("CmdOrCtrl+K"))?,
         &item("trim-tools","Trim Tools…","Schnittwerkzeuge…",timeline&&context.selection,None)?,
         &item("previous-edit","Previous Edit Point","Vorherige Schnittkante",timeline&&context.content,Some("CmdOrCtrl+Alt+Left"))?,
         &item("next-edit","Next Edit Point","Nächste Schnittkante",timeline&&context.content,Some("CmdOrCtrl+Alt+Right"))?,

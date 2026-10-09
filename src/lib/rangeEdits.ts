@@ -23,6 +23,7 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
   const affected=(clip:Clip)=>operation==='insert'?clip.startTime+clip.duration>start:operation==='extract'?clip.startTime+clip.duration>start:clip.startTime<end&&clip.startTime+clip.duration>start;
   const groups=new Set(all.filter(c=>included(c)&&affected(c)&&c.linkGroup).map(c=>c.linkGroup));
   if(all.some(c=>c.linkGroup&&groups.has(c.linkGroup)&&!included(c)))fail('linkedScope');
+  if(project.groupEditingEnabled!==false){const editGroups=new Set(all.filter(c=>included(c)&&affected(c)&&c.editGroup).map(c=>c.editGroup!.id));if(all.some(c=>c.editGroup&&editGroups.has(c.editGroup.id)&&!included(c)))fail('groupScope');}
   if(project.tracks.some(t=>ids.has(t.id)&&t.locked&&t.segments.some(affected))||(includeVideo&&project.video?.locked&&videoClips(project.video).some(affected)))fail('locked');
   // Preserve untouched transitions; crossing a blend needs an explicit trim policy.
   if(includeVideo&&videoClips(project.video).some(c=>c.transition!=='cut'&&[start,...(operation==='insert'?[]:[end])].some(t=>t>c.startTime&&t<c.startTime+c.transitionDuration)))fail('transitionBoundary');

@@ -353,3 +353,42 @@ starts/ends and canvas boundaries. Playback stops; clip selection remains.
 `trim-to-playhead` uses `side` and `at` (seconds). The recipe includes linked clips
 automatically and applies the same limits. The optional WebKit/native parity
 harness is `scripts/test-trim-edits.mjs`, using the range harness environment vars.
+
+## Named edit groups and command search — local 0.8.4
+
+Select clips, open **Named edit groups** in the clip toolbar or Mac Edit menu,
+enter a name, then choose **Create / rename group from selection**. Existing
+groups and source-linked clips in that selection join the group. Names appear
+on clips and in the group list; click a name to recall its members. Use **Ungroup
+selection** to remove membership while retaining AV links.
+
+With **Enable group editing** on (default), selection, move/trim/split/delete and
+clipboard actions include the complete group and its AV links. Members retain
+relative timing during moves. Clip effects and mixing controls retain their
+existing scope. Locked members block the whole protected edit. Splits and range
+fragments retain membership. Pasted copies and loaded tracks get new group IDs,
+so editing them cannot move the original group by mistake.
+
+Disable group editing to work on individual members or roll one cut within a
+group spanning several cuts. AV links remain active. The toggle saves with the
+project and clears selection to avoid an accidental stale group edit. Range edits
+require all grouped lanes in scope while grouping is enabled; disabling grouping
+explicitly permits an independent lane scope. Source unlink is a separate action
+and does not remove named groups. Metadata changes on locked clips require unlock.
+
+Use **Find command** in the top bar, Cmd/Ctrl+K, or Mac Edit menu. Type part of
+an action name, click a result or press Enter for the first enabled result.
+Shortcut hints appear alongside actions; unavailable selection/range actions
+are disabled. Escape closes search. Search closes before invoking another dialog.
+
+CLI recipes expose the same grouping behavior:
+
+```json
+[{"op":"edit-group","ids":["mic-clip","picture-clip"],"name":"Interview"},
+ {"op":"move","ids":["mic-clip"],"seconds":1},
+ {"op":"group-editing","enabled":false}]
+```
+
+`ungroup` removes named membership; `unlink` only removes source links.
+The optional `scripts/test-edit-groups.mjs` checks actual WebKit controls,
+command dispatch, German phone-sized layout and native recipe parity.

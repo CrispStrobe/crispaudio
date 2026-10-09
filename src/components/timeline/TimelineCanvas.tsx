@@ -345,7 +345,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         ctx.clip();
         ctx.font = '10px Inter, sans-serif';
         ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.fillText(seg.name || 'Segment', segLeft + 6, segTop + 16);
+        ctx.fillText((seg.editGroup?`${seg.editGroup.name} · `:'')+(seg.name || 'Segment'), segLeft + 6, segTop + 16);
         ctx.restore();
       }
 

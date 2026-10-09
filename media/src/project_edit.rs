@@ -178,8 +178,17 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
             .filter(|c| right_ids.contains(c["id"].as_str().unwrap_or("")))
             .filter_map(|c| c["linkGroup"].as_str())
             .collect();
+        let edit_groups: HashSet<_> = all
+            .iter()
+            .filter(|c| right_ids.contains(c["id"].as_str().unwrap_or("")))
+            .filter_map(|c| c["editGroup"]["id"].as_str())
+            .collect();
         if all.iter().any(|c| {
-            c["linkGroup"].as_str().is_some_and(|g| groups.contains(g))
+            (c["linkGroup"].as_str().is_some_and(|g| groups.contains(g))
+                || (doc["project"]["groupEditingEnabled"] != false
+                    && c["editGroup"]["id"]
+                        .as_str()
+                        .is_some_and(|g| edit_groups.contains(g))))
                 && !right_ids.contains(c["id"].as_str().unwrap_or(""))
         }) {
             return Err("Include every linked right-hand clip".into());
@@ -306,25 +315,68 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             .flatten()
             .filter_map(Value::as_str)
             .collect();
-        let groups: HashSet<&str> = all
-            .iter()
-            .filter(|c| requested.contains(c["id"].as_str().unwrap_or("")))
-            .filter_map(|c| c["linkGroup"].as_str())
-            .collect();
-        let selected: HashSet<String> = all
-            .iter()
-            .filter(|c| {
-                requested.contains(c["id"].as_str().unwrap_or(""))
-                    || c["linkGroup"].as_str().is_some_and(|g| groups.contains(g))
-            })
-            .filter_map(|c| c["id"].as_str().map(str::to_owned))
-            .collect();
+        let mut selected: HashSet<String> = requested.iter().map(|v| v.to_string()).collect();
+        loop {
+            let old = selected.len();
+            let links: HashSet<_> = all
+                .iter()
+                .filter(|c| selected.contains(c["id"].as_str().unwrap_or("")))
+                .filter_map(|c| c["linkGroup"].as_str())
+                .collect();
+            let groups: HashSet<_> = all
+                .iter()
+                .filter(|c| selected.contains(c["id"].as_str().unwrap_or("")))
+                .filter_map(|c| c["editGroup"]["id"].as_str())
+                .collect();
+            for c in &all {
+                if c["linkGroup"].as_str().is_some_and(|g| links.contains(g))
+                    || (op["op"] != "unlink"
+                        && out["project"]["groupEditingEnabled"] != false
+                        && c["editGroup"]["id"]
+                            .as_str()
+                            .is_some_and(|g| groups.contains(g)))
+                {
+                    if let Some(id) = c["id"].as_str() {
+                        selected.insert(id.to_owned());
+                    }
+                }
+            }
+            if selected.len() == old {
+                break;
+            }
+        }
         let chosen: Vec<&Value> = all
             .iter()
             .filter(|c| selected.contains(c["id"].as_str().unwrap_or("")))
             .collect();
         let operation = op["op"].as_str().ok_or("Missing operation")?;
         match operation {
+            "edit-group" | "ungroup" => {
+                if chosen.is_empty() {
+                    return Err("Select clips for an edit group".into());
+                }
+                let name = op["name"].as_str().unwrap_or("").trim();
+                if operation == "edit-group" && (name.is_empty() || name.chars().count() > 120) {
+                    return Err("Group name needs 1–120 characters".into());
+                }
+                let group = json!({"id":id(),"name":name});
+                mutate(&mut out["project"], |c| {
+                    let mut c = c.clone();
+                    if selected.contains(c["id"].as_str().unwrap_or("")) {
+                        if operation == "ungroup" {
+                            c.as_object_mut().unwrap().remove("editGroup");
+                        } else {
+                            c["editGroup"] = group.clone();
+                        }
+                    }
+                    Ok(vec![c])
+                })?;
+            }
+            "group-editing" => {
+                out["project"]["groupEditingEnabled"] =
+                    json!(op["enabled"].as_bool().ok_or("Missing grouping state")?);
+            }
+
             "roll" | "ripple-trim" | "trim-to-playhead" => {
                 out = advanced_trim(&out, op, &selected)?;
             }
@@ -874,6 +926,45 @@ mod tests {
     use super::*;
     fn doc() -> Value {
         json!({"format":"crispaudio-project","version":2,"project":{"id":"p","duration":6,"tracks":[{"id":"t","segments":[{"id":"a","linkGroup":"g","trackId":"t","sourceId":"s","startTime":1,"sourceOffset":2,"duration":5}]}],"video":{"path":"unused","duration":10,"clips":[{"id":"v","linkGroup":"g","startTime":1,"sourceOffset":2,"duration":5,"transition":"cut"}]}},"sources":[{"id":"s","duration":10}]})
+    }
+    #[test]
+    fn named_groups_preserve_links_and_respect_independent_editing() {
+        let mut input = doc();
+        input["project"]["tracks"][0]["segments"].as_array_mut().unwrap().push(json!({"id":"b","trackId":"t","sourceId":"s","startTime":7,"sourceOffset":0,"duration":2,"linkGroup":"other"}));
+        let grouped = apply(
+            &input,
+            &json!([{"op":"edit-group","ids":["a","b"],"name":"Section"}]),
+        )
+        .unwrap();
+        assert_eq!(
+            grouped["project"]["tracks"][0]["segments"][0]["linkGroup"],
+            "g"
+        );
+        assert_eq!(
+            grouped["project"]["video"]["clips"][0]["editGroup"]["name"],
+            "Section"
+        );
+        let moved = apply(&grouped, &json!([{"op":"move","ids":["b"],"seconds":1}])).unwrap();
+        assert_eq!(moved["project"]["video"]["clips"][0]["startTime"], 2.0);
+        let single = apply(
+            &grouped,
+            &json!([{"op":"group-editing","enabled":false},{"op":"move","ids":["b"],"seconds":1}]),
+        )
+        .unwrap();
+        assert_eq!(single["project"]["video"]["clips"][0]["startTime"], 1);
+        let unlinked = apply(&grouped, &json!([{"op":"unlink","ids":["a"]}])).unwrap();
+        assert_eq!(
+            unlinked["project"]["tracks"][0]["segments"][1]["linkGroup"],
+            "other"
+        );
+        let split = apply(&grouped, &json!([{"op":"split","ids":["a"],"at":3}])).unwrap();
+        assert_eq!(
+            split["project"]["tracks"][0]["segments"][1]["editGroup"],
+            grouped["project"]["tracks"][0]["segments"][0]["editGroup"]
+        );
+        let mut locked = grouped.clone();
+        locked["project"]["video"]["locked"] = json!(true);
+        assert!(apply(&locked, &json!([{"op":"move","ids":["b"],"seconds":1}])).is_err());
     }
     #[test]
     fn advanced_trim_keeps_linked_cuts_and_ripple_clocks() {

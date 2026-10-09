@@ -43,7 +43,11 @@
     "Export Selected Audio Range…": "Export selected audio range…",
     "Trim Tools…": "Trim tools…",
     "Previous Edit Point": "Previous edit point",
-    "Next Edit Point": "Next edit point"
+    "Next Edit Point": "Next edit point",
+    "Named Edit Groups…": "Named edit groups…",
+    "Find Command…": "Find command…",
+    "Play Selected Range": "Play selected range",
+    "Clear Time Range": "Clear time range"
   },
   "app": {
     "name": "CrispAudio",
@@ -903,7 +907,9 @@
     "help_range": "Drag the ruler to select a time range. Drag its edges or enter exact start/end times. Play range uses this range; Loop repeats it. Clip selection stays separate.",
     "help_lock": "Protects this track’s clips from edits, including linked picture edits, paste and track deletion. Mute, solo, level and pan still work. Unlock before editing.",
     "help_trim_title": "Trim tools",
-    "help_trim": "For a roll, select the clips on the left of one shared cut. Linked sound and picture follow together. Positive values move the edge later; source handles are checked before applying."
+    "help_trim": "For a roll, select the clips on the left of one shared cut. Linked sound and picture follow together. Positive values move the edge later; source handles are checked before applying.",
+    "help_groups_title": "Named edit groups",
+    "help_groups": "Groups join clips for selection and editing without replacing their AV source links. Splits retain membership. Pasted copies get independent groups. Disable group editing to work on individual members; AV links remain active."
   },
   "analysis": {
     "outputSpectrogram": "Output spectrogram",
@@ -1006,7 +1012,8 @@
     "cueBoundary": "A range boundary crosses a transcript cue. Move it to a cue boundary or review/edit that cue first.",
     "pictureTopology": "This cut would create an unsupported picture overlap. Adjust its boundaries or the affected transition.",
     "changed": "The arrangement changed. Review the current range again.",
-    "duration": "Canvas: {{before}} s → {{after}} s"
+    "duration": "Canvas: {{before}} s → {{after}} s",
+    "groupScope": "Include every named group track, or disable group editing."
   },
   "trimEdits": {
     "title": "Trim tools",
@@ -1031,5 +1038,21 @@
     "frameEdge": "A ripple edit with picture needs a frame-aligned cut.",
     "previous": "Previous edit point",
     "next": "Next edit point"
+  },
+  "editGroups": {
+    "title": "Named edit groups",
+    "help": "Groups join clips for selection and editing without replacing their AV source links. Splits retain membership. Pasted copies get independent groups. Disable group editing to work on individual members; AV links remain active.",
+    "enabled": "Enable group editing",
+    "name": "Group name",
+    "create": "Create / rename group from selection",
+    "remove": "Ungroup selection",
+    "invalid": "Select clips and enter a group name (1–120 characters).",
+    "failed": "This group change could not be applied.",
+    "locked": "Unlock the affected lanes before changing their clip groups."
+  },
+  "commandSearch": {
+    "title": "Find command",
+    "search": "Search commands…",
+    "empty": "No matching commands."
   }
 }

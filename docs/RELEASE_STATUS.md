@@ -1145,3 +1145,29 @@ A precision regression compares outer endpoints within double precision and
 exact sample counts; decimal binary representation may differ by one floating
 unit. Ten opt-in platform/codec integrations were not repeated: their code was
 unchanged. No dependency, tag, Apple upload or physical mobile validation added.
+
+## Local 0.8.4 — named groups and command search (M1 in progress)
+
+Installed/launched the signed local app and optimised CLI. One autosaved project
+preserved exactly; WebKit/JSON backup under `ux/recovery-before-084/`. No tag or
+Apple upload. Named groups are separate from AV links; grouping is persisted and
+can be disabled for individual edits. Splits/range fragments retain membership;
+pastes and loaded tracks get independent group identities. Grouped scope and
+lane locks reject indirect edits. Group labels appear in audio/picture clips,
+and snapping excludes the whole moving group. Source unlink remains independent.
+
+Find command provides searchable timeline actions and shortcut hints, via toolbar,
+Cmd/Ctrl+K and Mac Edit menu. It closes before command dispatch to avoid its own
+modal guard blocking the action. Group controls and search are EN/DE localized.
+
+Validation: 97 frontend files / 1329 tests, lint, TypeScript/web build, native
+media/CLI tests, release CLI and debug Mac bundle passed. Actual WebKit checked
+group creation/selection, disabling groups while retaining AV links, command
+execution after closing search, and German controls at 390×844 without input/button
+overflow. Four native/GUI semantic cases matched. A private real Canon/H6 copy
+grouped all microphones/picture and moved them one second; the corresponding
+two-second passages before/after movement had byte-identical PCM. Originals
+untouched; fixtures under `ux/edit-groups-084/`. Physical mobile validation is
+still pending. DSP/codec implementations/dependencies were unchanged, so ten
+opt-in platform integrations were not repeated. Slide/advanced blend trims and
+M2–M10 remain outstanding. Prior main iOS CI passed; desktop CI remained queued.

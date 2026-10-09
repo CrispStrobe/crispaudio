@@ -401,3 +401,22 @@ and commits once; native recipes preserve unknown metadata and final lock checks
 Edit navigation skips equal boundaries and stops playback. Native accelerators
 own macOS navigation; browser handles Cmd/Ctrl+Alt+Left/Right. Optional actual
 WebKit script checks dialog/source limits/undo/navigation and eight recipe cases.
+
+## Named groups / command search 0.8.4
+
+Clip.editGroup {id,name} is separate from linkGroup and survives spread-based
+splits/range fragments. Optional project.groupEditingEnabled defaults true.
+linkedIds computes transitive closure across enabled named groups and AV links;
+sourceOnly is used by unlink so unrelated links in an edit group are not broken.
+Direct audio move/trim/split/delete paths and selection honor groups. Central lane
+locks still reject whole commits. Paste and Load tracks remap edit-group IDs
+independently from AV IDs; never reuse the original group's identity for copies.
+Range helpers reject excluded members of affected named groups unless grouping
+is explicitly disabled. Native recipe selection uses the same closure; advanced
+rolling checks right-hand group completeness. Snap targets exclude all movers.
+
+CommandSearch closes its portal synchronously before dispatchNativeMenu; otherwise
+the modal guard rejects its own command. Cmd/Ctrl+K is native-owned on macOS.
+EditGroups and command search use the existing Modal/ToolButton patterns, EN/DE
+labels and phone wrapping. Optional test-edit-groups.mjs checks actual UI and
+four native semantic cases. This metadata changes neither DSP nor codec licensing.

@@ -1,4 +1,5 @@
 import { registerTimelineMenu } from '../../lib/nativeMenu';
+import {CommandSearch} from './CommandSearch';
 import {adjacentEdit} from '../../lib/trimEdits';
 import { deleteSelection } from '../../lib/timelineEditing';
 import { projectClips, projectSelection, splitClips } from '../../lib/projectEdits';
@@ -528,6 +529,8 @@ export const TimelinePanel: React.FC = () => {
       case 'export':await handleExportMix();break;
       case 'export-range':await handleExportMix(true);break;
       case 'trim-tools':window.dispatchEvent(new Event('crispaudio-trim-tools'));break;
+      case 'edit-groups':window.dispatchEvent(new Event('crispaudio-edit-groups'));break;
+      case 'commands':window.dispatchEvent(new Event('crispaudio-commands'));break;
       case 'previous-edit':case 'next-edit':state.setIsPlaying(false);state.setPlayheadPosition(adjacentEdit(state.project,state.playheadPosition,action==='previous-edit'?-1:1));break;
       case 'undo':handleUndo();break;
       case 'redo':handleRedo();break;
@@ -568,6 +571,7 @@ export const TimelinePanel: React.FC = () => {
         <input ref={fileInputRef} type="file" accept="audio/*" multiple className="hidden"
           onChange={(e) => { void handleImportFiles(fileInputs(Array.from(e.target.files??[]))); e.target.value = ''; }} />
         <ToolButton data-help="files" icon={FilePlus2} label={t('editor.newProject')} onClick={() => setResetOpen(true)}/>
+        <CommandSearch/>
         <ToolButton data-help="files" icon={FolderOpen} label={t('timeline.openProject')} onClick={() => void handleOpenProject()}/>
         <ToolButton data-help="files" icon={Save} label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}/>
         <ToolButton data-help="import" icon={Upload} label={t('timeline.import')} onClick={() => askImport()}/>

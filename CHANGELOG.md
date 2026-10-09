@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.3]
+## [Unreleased — local version 0.8.4]
+
+- Add persisted named edit groups independent of AV source links, group recall,
+  grouping toggle and clip labels; enforce linked/grouped scope and lane locks.
+- Preserve group membership through splits and range edits; give pasted and
+  imported track copies independent group identities.
+- Add searchable timeline commands with shortcut hints, Cmd/Ctrl+K and macOS
+  Edit menu entries. Close command search before invoking dialogs/actions.
+- Exclude moving group members from snap targets.
+
+## [Local version 0.8.3]
 
 - Add reviewed rolling cuts, ripple trims and trim-to-playhead for linked AV,
   with source-handle limits, track protection and resulting-duration preview.

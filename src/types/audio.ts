@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 export interface TimelineProject {
+  groupEditingEnabled?: boolean;
   id: string;
   name: string;
   sampleRate: number;
@@ -49,6 +50,7 @@ export interface TimelineTrack {
 }
 
 export interface AudioSegment {
+  editGroup?: {id:string;name:string};
   linkGroup?: string;
   id: string;
   trackId: string;
@@ -114,6 +116,7 @@ export interface VideoTransform { rotation: 0 | 90 | 180 | 270; flipHorizontal: 
 export interface VideoColor { enabled: boolean; exposure: number; contrast: number; saturation: number }
 
 export interface VideoClip {
+  editGroup?: {id:string;name:string};
   colorCorrection?: VideoColor;
   transform?: VideoTransform;
   sourceId?: string;

@@ -43,7 +43,11 @@
     "Export Selected Audio Range…": "Ausgewählten Audiobereich exportieren…",
     "Trim Tools…": "Schnittwerkzeuge…",
     "Previous Edit Point": "Vorherige Schnittkante",
-    "Next Edit Point": "Nächste Schnittkante"
+    "Next Edit Point": "Nächste Schnittkante",
+    "Named Edit Groups…": "Benannte Schnittgruppen…",
+    "Find Command…": "Befehl suchen…",
+    "Play Selected Range": "Ausgewählten Bereich abspielen",
+    "Clear Time Range": "Zeitbereich löschen"
   },
   "app": {
     "name": "CrispAudio",
@@ -903,7 +907,9 @@
     "help_range": "Auf dem Zeitlineal ziehen, um einen Bereich auszuwählen. Die Ränder ziehen oder Anfang und Ende genau eingeben. Bereich abspielen nutzt diesen Bereich; Schleife wiederholt ihn. Die Clipauswahl bleibt erhalten.",
     "help_lock": "Schützt die Clips dieser Spur vor Änderungen, auch über verknüpftes Bild, Einfügen und Löschen der Spur. Stumm, Solo, Pegel und Panorama bleiben bedienbar. Vor der Bearbeitung entsperren.",
     "help_trim_title": "Schnittwerkzeuge",
-    "help_trim": "Für einen rollenden Schnitt die Clips links von einer gemeinsamen Schnittkante auswählen. Verbundener Ton und Bild folgen gemeinsam. Positive Werte verschieben die Kante nach hinten; verfügbare Quellreserven werden vor dem Anwenden geprüft."
+    "help_trim": "Für einen rollenden Schnitt die Clips links von einer gemeinsamen Schnittkante auswählen. Verbundener Ton und Bild folgen gemeinsam. Positive Werte verschieben die Kante nach hinten; verfügbare Quellreserven werden vor dem Anwenden geprüft.",
+    "help_groups_title": "Benannte Schnittgruppen",
+    "help_groups": "Gruppen verbinden Clips für Auswahl und Bearbeitung, ohne ihre Bild-Ton-Verbindungen zu ersetzen. Geteilte Clips bleiben Mitglieder. Eingefügte Kopien erhalten unabhängige Gruppen. Gruppenbearbeitung ausschalten, um einzelne Mitglieder zu bearbeiten; Bild-Ton-Verbindungen bleiben aktiv."
   },
   "analysis": {
     "outputSpectrogram": "Ausgabe-Spektrogramm",
@@ -1006,7 +1012,8 @@
     "cueBoundary": "Eine Bereichsgrenze liegt in einem Transkriptabschnitt. Sie an dessen Rand setzen oder den Abschnitt zuerst prüfen/bearbeiten.",
     "pictureTopology": "Dieser Schnitt würde eine nicht unterstützte Bildüberlappung erzeugen. Die Grenzen oder den betroffenen Übergang anpassen.",
     "changed": "Die Anordnung hat sich geändert. Den aktuellen Bereich erneut prüfen.",
-    "duration": "Canvas: {{before}} s → {{after}} s"
+    "duration": "Canvas: {{before}} s → {{after}} s",
+    "groupScope": "Alle Spuren der benannten Gruppe einbeziehen oder Gruppenbearbeitung ausschalten."
   },
   "trimEdits": {
     "title": "Schnittwerkzeuge",
@@ -1031,5 +1038,21 @@
     "frameEdge": "Nachrücken mit Bild benötigt eine Schnittkante auf einer Bildgrenze.",
     "previous": "Vorherige Schnittkante",
     "next": "Nächste Schnittkante"
+  },
+  "editGroups": {
+    "title": "Benannte Schnittgruppen",
+    "help": "Gruppen verbinden Clips für Auswahl und Bearbeitung, ohne ihre Bild-Ton-Verbindungen zu ersetzen. Geteilte Clips bleiben Mitglieder. Eingefügte Kopien erhalten unabhängige Gruppen. Gruppenbearbeitung ausschalten, um einzelne Mitglieder zu bearbeiten; Bild-Ton-Verbindungen bleiben aktiv.",
+    "enabled": "Gruppenbearbeitung aktivieren",
+    "name": "Gruppenname",
+    "create": "Gruppe aus Auswahl erstellen / umbenennen",
+    "remove": "Auswahl entgruppieren",
+    "invalid": "Clips auswählen und einen Gruppennamen eingeben (1–120 Zeichen).",
+    "failed": "Diese Gruppenänderung konnte nicht angewendet werden.",
+    "locked": "Die betroffenen Spuren vor dem Ändern ihrer Clipgruppen entsperren."
+  },
+  "commandSearch": {
+    "title": "Befehl suchen",
+    "search": "Befehle suchen…",
+    "empty": "Keine passenden Befehle."
   }
 }

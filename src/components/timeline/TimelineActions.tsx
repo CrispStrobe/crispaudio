@@ -1,4 +1,5 @@
 import { ClipFadeTools } from './ClipFadeTools';
+import {EditGroups} from './EditGroups';
 import {TrimEditDialog} from './TrimEditDialog';
 import {adjacentEdit} from '../../lib/trimEdits';
 import {MoveHorizontal,ChevronsLeft,ChevronsRight} from 'lucide-react';
@@ -40,6 +41,7 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
     <div className="timeline-clip-actions flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 shrink-0" aria-label={t('timeline.clipActions')}>
       <ToolButton data-help="move" icon={Hand} label={t(touchArrange?'timeline.touchArrangeOn':'timeline.touchArrangeOff')} className="touch-arrange-toggle" aria-pressed={touchArrange} onClick={onTouchArrange}/>
       <ToolButton data-help="mixer" icon={SlidersHorizontal} label={t('timeline.mixer')} disabled={!tracks.length} onClick={()=>setMixer(true)}/>
+      <EditGroups/>
       <ToolButton data-help="split" icon={Scissors} label={t('timeline.splitAtPlayhead')} className="clip-split-selected" disabled={!splittable.length} onClick={()=>{
         const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,selection?.segmentIds??[],position),selection:null});
       }}/>

@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-09, during local 0.8.3 implementation. This section is the current plan.
+Updated 2026-10-09, during local 0.8.4 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -87,7 +87,7 @@ participation, linked scope checks, automation boundary values and explicit
 canvas/marker/transcript retiming, with GUI/CLI parity and undo validation.
 Unaffected picture transitions remain; boundaries through blends or transcript
 cues require review rather than silently damaging them. M1 is not complete:
-advanced transition trims, slide editing, named groups and command search remain.
+advanced transition trims and slide editing remain.
 Local 0.8.2 adds explicit selected audio-range export with full DSP preroll,
 native bounded output, CLI audio/video export bounds and a reviewed action to
 reuse the selected range for picture export. Real interview WAV samples match
@@ -96,6 +96,11 @@ Local 0.8.3 adds reviewed rolling cuts, ripple trims and trim-to-playhead with
 source-handle/link/lock checks, edit-point navigation and macOS commands. GUI/CLI
 parity covers eight cases; real linked Canon/H6 trims were rendered. Rolling
 requires abutting cuts, not blends. These conservative limits remain explicit.
+Local 0.8.4 adds named edit groups distinct from AV links, a persisted grouping
+toggle, independent clipboard/track-import copies, and command search with
+shortcut hints. Grouped scopes/locks are enforced in GUI and CLI; WebKit covers
+group controls, command execution and German phone-sized layouts. Snap targets
+exclude moving group members. These additions do not add effects or mixing routes.
 Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
 seamless musical looping. Paging and new codec work remain deferred.
 

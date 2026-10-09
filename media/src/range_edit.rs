@@ -137,6 +137,21 @@ pub fn apply(p: &Value, op: &Value) -> Result<Value> {
     {
         return Err("Include all linked picture and sound tracks".into());
     }
+    if p["groupEditingEnabled"] != false {
+        let groups: HashSet<_> = all
+            .iter()
+            .filter(|c| included(c) && affected(c))
+            .filter_map(|c| c["editGroup"]["id"].as_str())
+            .collect();
+        if all.iter().any(|c| {
+            !included(c)
+                && c["editGroup"]["id"]
+                    .as_str()
+                    .is_some_and(|g| groups.contains(g))
+        }) {
+            return Err("Include all named edit-group tracks, or disable group editing".into());
+        }
+    }
     if tracks.iter().any(|t| {
         t["locked"] == true
             && t["id"].as_str().is_some_and(|id| ids.contains(id))
@@ -407,6 +422,16 @@ mod tests {
     use super::*;
     fn project() -> Value {
         json!({"sampleRate":48000,"duration":10,"tracks":[{"id":"mic","segments":[{"id":"a","trackId":"mic","linkGroup":"av","sourceId":"s","startTime":0,"duration":10,"sourceOffset":0}],"automation":[{"time":0,"value":0},{"time":10,"value":1}]},{"id":"music","rippleEnabled":false,"segments":[]}],"video":{"path":"a.mp4","duration":10,"clips":[{"id":"v","linkGroup":"av","startTime":0,"duration":10,"sourceOffset":0,"fadeIn":0,"fadeOut":0,"transition":"cut","transitionDuration":0}]},"markers":[{"id":"m","time":8}],"transcript":[{"id":"c","start":7,"end":9,"text":"answer"}]})
+    }
+    #[test]
+    fn named_scope_requires_all_members_until_grouping_is_disabled() {
+        let group = json!({"id":"group","name":"Section"});
+        let mut p = json!({"sampleRate":48000,"duration":10,"tracks":[{"id":"a","segments":[{"id":"one","trackId":"a","startTime":0,"duration":10,"sourceOffset":0,"editGroup":group}]},{"id":"b","segments":[{"id":"two","trackId":"b","startTime":0,"duration":10,"sourceOffset":0,"editGroup":group}]}]});
+        let operation = json!({"start":3,"end":5,"trackIds":["a"]});
+        assert!(apply(&p, &operation).is_err());
+        p["groupEditingEnabled"] = json!(false);
+        let out = apply(&p, &operation).unwrap();
+        assert_eq!(out["tracks"][1], p["tracks"][1]);
     }
     #[test]
     fn scoped_extract_preserves_links_and_global_clock() {

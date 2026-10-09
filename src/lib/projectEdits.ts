@@ -5,9 +5,12 @@ import { timelineDuration } from './timelineView';
 
 type Clip = AudioSegment | VideoClip;
 export const projectClips = (p: TimelineProject): Clip[] => [...p.tracks.flatMap(t=>t.segments), ...videoClips(p.video)];
-export function linkedIds(p: TimelineProject, ids: string[]): string[] {
-  const all=projectClips(p), groups=new Set(all.filter(c=>ids.includes(c.id)&&c.linkGroup).map(c=>c.linkGroup));
-  return all.filter(c=>ids.includes(c.id)||(c.linkGroup&&groups.has(c.linkGroup))).map(c=>c.id);
+export function linkedIds(p: TimelineProject, ids: string[],sourceOnly=false): string[] {
+  const all=projectClips(p),selected=new Set(ids);let changed=true;
+  while(changed){changed=false;const clips=all.filter(c=>selected.has(c.id)),links=new Set(clips.map(c=>c.linkGroup).filter(Boolean)),groups=new Set(sourceOnly||p.groupEditingEnabled===false?[]:clips.map(c=>c.editGroup?.id).filter(Boolean));
+    for(const c of all)if(!selected.has(c.id)&&((c.linkGroup&&links.has(c.linkGroup))||(c.editGroup&&groups.has(c.editGroup.id)))){selected.add(c.id);changed=true;}
+  }
+  return all.filter(c=>selected.has(c.id)).map(c=>c.id);
 }
 export function projectSelection(project:TimelineProject,ids:string[]):TimelineSelection|null {
   const selectedIds=new Set(linkedIds(project,ids)),selected=projectClips(project).filter(clip=>selectedIds.has(clip.id));
@@ -29,8 +32,14 @@ export function moveClips(p:TimelineProject,ids:string[],delta:number,blendVideo
   return mapClips(p,c=>selected.includes(c.id)?{...c,startTime:c.startTime+shift}:c,blendVideo);
 }
 export function linkClips(p:TimelineProject,ids:string[],unlink=false):TimelineProject {
-  const group=unlink?undefined:crypto.randomUUID(), selected=unlink?linkedIds(p,ids):ids;
+  const group=unlink?undefined:crypto.randomUUID(), selected=unlink?linkedIds(p,ids,true):ids;
   return mapClips(p,c=>selected.includes(c.id)?{...c,linkGroup:group}:c);
+}
+export function nameEditGroup(p:TimelineProject,ids:string[],name:string,remove=false):TimelineProject{
+ const selected=new Set(linkedIds(p,ids)),trimmed=name.trim();
+ if(!selected.size||(!remove&&(!trimmed||trimmed.length>120)))throw new Error('editGroups.invalid');
+ const group=remove?undefined:{id:crypto.randomUUID(),name:trimmed};
+ return mapClips(p,c=>selected.has(c.id)?{...c,editGroup:group}:c);
 }
 export function slipClips(p:TimelineProject,ids:string[],delta:number,sources:Map<string,{duration:number}>):TimelineProject {
   const selected=linkedIds(p,ids), clips=projectClips(p).filter(c=>selected.includes(c.id));

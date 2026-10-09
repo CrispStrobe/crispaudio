@@ -6,7 +6,7 @@ import {adjacentEdit} from '../lib/trimEdits';
 // ---------------------------------------------------------------------------
 
 import { isNativeMac } from '../lib/nativeMenuPlatform';
-import { projectClips } from '../lib/projectEdits';
+import { projectClips,linkedIds } from '../lib/projectEdits';
 import { snapClipStart } from '../lib/timelineSnap';
 import { deleteSelection, nudgeSelection } from '../lib/timelineEditing';
 import { useRef, useCallback, useEffect } from 'react';
@@ -265,7 +265,8 @@ export function useTimeline() {
       if (ds.kind === 'move') {
         const dtTime = dx / zoomLevel;
         const clip = store.project.tracks.flatMap(track => track.segments).find(clip => clip.id === ds.segmentId);
-        const edges = [0, store.playheadPosition, ...(store.project.markers??[]).map(m=>m.time), ...store.project.tracks.flatMap(track => track.segments.filter(clip => clip.id !== ds.segmentId).flatMap(clip => [clip.startTime, clip.startTime + clip.duration]))];
+        const movingIds=new Set(linkedIds(store.project,[ds.segmentId]));
+        const edges = [0, store.playheadPosition, ...(store.project.markers??[]).map(m=>m.time), ...projectClips(store.project).filter(clip=>!movingIds.has(clip.id)).flatMap(clip => [clip.startTime, clip.startTime + clip.duration])];
         const newStart = snapClipStart(ds.originalStartTime + dtTime, clip?.duration ?? 0, edges, zoomLevel, store.snapEnabled && !e.altKey);
         const newTrackIndex = Math.max(
           0,
