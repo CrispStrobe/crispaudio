@@ -1,3 +1,291 @@
+# CrispAudio — Active roadmap
+
+Updated 2026-10-09, after local 0.7.12. This section is the current plan.
+The implementation records below are historical; their old priorities, missing
+feature lists and test counts do not describe the current application.
+
+## Product direction and priority decision
+
+Build a useful general audio and video editor in complete, reviewable increments.
+The first target is recording, arranging, mixing and finishing interviews,
+voiceovers and short videos, with SFX/Voice integrated into the same project.
+Grow toward music-production DAW workflows afterward. This ordering reflects our
+current footage and feature base; it is not a claim of parity with an established
+DAW or NLE.
+
+**Long-recording import/playback optimisation is recorded but deferred.** The user
+does not currently regard it as urgent. Native exports already stream the mix;
+additional format/export milestones and a disk-paging rewrite must not displace
+core editing, mixing and picture tools. Fix reproducible crashes, data loss or
+incorrect results as part of the affected feature, even when performance work
+is deferred. Reconsider paging only if measured memory/latency blocks the actual
+projects needed for a milestone.
+
+## Evidence and existing baseline
+
+Verified by inspecting the current data model, editing helpers, timeline workspace,
+playback/render paths and native media backends. Existing capabilities include:
+
+- Audio tracks; multiple picture sources on **one** composition lane; linked AV
+  groups; move/split/trim/slip; copy/cut/paste; basic all-track range ripple deletion.
+- Clip/track fades, reviewed audio crossfades, picture transitions, source offsets,
+  magnetic/grid snapping, frame/sample nudges, markers, editable POS/canvas length.
+- Track gain/pan/mute/solo; gain automation points and waveform overlay; nine
+  built-in clip/track/master effects. Voice processing can return to a timeline clip.
+- Media bin/inspector, offset/drift analysis, reviewed microphone switching,
+  transcript import/edit/navigation/export, basic picture orientation and colour.
+- Save/load, linked/portable audio projects, recovery and relinking; native Mac
+  WAV/FLAC/AAC/M4A and MP4/MOV paths; optional installed FFmpeg compatibility.
+
+These are foundations to extend, not features to reinvent. In particular,
+`rippleRange` currently rejects picture transitions; gain automation has point
+entry rather than a full direct-edit lane; `project.video.clips` is a single
+composition lane; timeline effects lack parametric EQ, a dedicated limiter,
+sends/buses and general parameter automation. Timeline recording/takes are not
+implemented. SFX/Voice recording elsewhere does not fulfil that requirement.
+Several older workflow documents describe superseded layouts/limits; update the
+relevant document with each milestone rather than treating it as current evidence.
+
+Established-product references used to organise the gaps:
+[REAPER's recording, routing, automation and takes](https://www.reaper.fm/about.php),
+[REAPER User Guide](https://www.reaper.fm/userguide.php), and
+[Resolve's editing, trim, layered picture, titles and multicam workflows](https://www.blackmagicdesign.com/products/davinciresolve/edit/).
+This roadmap's priority ordering is our product judgement, not a ranking from
+those sources or an instruction to reproduce their entire UI.
+
+## Order of importance
+
+| Order | Feature gap | Why it matters |
+|---|---|---|
+| 1 | Complete range/trim/ripple editing and track protection | Cutting, rearranging and tightening material is the central editor workflow. |
+| 2 | Proper mixer, parametric EQ, limiter, metering and editable automation | We must be able to balance and finish the sound, not merely apply effects. |
+| 3 | Stacked video tracks and basic compositing | B-roll, overlays and picture-in-picture require more than one picture lane. |
+| 4 | Titles, lower thirds, still images and real caption tracks | These are essential deliverables for interviews and short videos. |
+| 5 | Timeline recording, monitoring, punch/loop and takes | Import-only editing is insufficient for a recording DAW and voiceover workflow. |
+| 6 | Non-destructive speed/time/pitch tools | Needed for timing corrections, slow motion and arranging recorded material. |
+| 7 | Multicam and deeper transcript-based editing | High value once the underlying timeline and picture stack are mature. |
+| 8 | Delivery presets, stems, queue and project interchange | Enables repeatable finishing and collaboration with other tools. |
+| 9 | Long-recording performance and additional streaming codecs | Important scaling work, deliberately deferred behind usable editing features. |
+| 10 | Music sequencing, MIDI/instruments and plugin hosting | Required for broad music DAW parity, but a separate substantial product expansion. |
+
+## Implementation roadmap
+
+Each milestone below is planned, not completed. Deliver small slices in the listed
+order; update this plan with actual completion and validation evidence. Do not
+assign release numbers or dates before the work is scoped. Desktop implementation,
+web fallback and iOS support/device validation must be recorded separately.
+
+### M1 — Make everyday timeline editing complete (next milestone)
+
+1. Add explicit **time-range selection**, with range handles and a visible choice
+   between clip selection and range selection. Reuse the existing selection model.
+   Play/loop/export a selected range; clear it without losing clip selection.
+2. Introduce track lock and explicit ripple participation/sync-lock. Locked tracks
+   cannot be moved, trimmed, split or deleted by indirect edits; explain any blocked
+   operation. Define how linked groups interact with locks before exposing controls.
+3. Extend existing ripple deletion to lift versus extract, close-gap and insert-gap
+   operations, with selected-track/all-participating-track scope. Handle transition
+   boundaries and retime automation, markers and transcript cues deliberately.
+   Do not silently discard those objects or require all transitions to be removed.
+4. Add rolling trim (adjust a shared cut while keeping total length), ripple trim,
+   trim-to-playhead and previous/next edit navigation. Keep slip editing visible;
+   add slide after rolling/ripple semantics are stable. Show source handles and
+   limits while dragging, with numeric/frame/sample control in the inspector.
+5. Add persistent named edit groups distinct from AV source links, and a simple
+   command search/shortcut reference for these actions. Keep common actions in the
+   timeline/context menus and macOS menus; use the existing inspector on touch.
+
+Completion example: remove an interview digression and tighten a cut with the
+camera and two microphones in sync; music may stay fixed or ripple by explicit
+choice. Preview, range export, save/reopen and undo/redo preserve the same result.
+CLI recipes expose deterministic range/trim/ripple operations where applicable.
+
+### M2 — Make sound mixing a first-class workflow
+
+1. Add a dockable mixer with track/master strips: peak/RMS meters, peak hold,
+   clipping indication, dB faders, pan, mute/solo and inserts. On phones/tablets,
+   show a focused strip or horizontal strip list rather than shrinking everything.
+2. Add graphical parametric EQ (high/low-pass, shelves and bell bands) and a
+   dedicated output limiter. Show compressor gain reduction. Keep current saved
+   effect presets compatible; define effect order and latency explicitly.
+3. Turn existing gain automation into directly editable lanes: add/move/delete
+   points, numeric edits, curves and safe copy/retime. Extend to pan and selected FX
+   parameters, then Read/Touch/Latch/Write modes with visible protection against
+   overwriting an envelope accidentally.
+4. Add buses and sends: start with track-to-bus routing and shared reverb/delay;
+   specify pre/post-fader sends and feedback-cycle rejection. Sidechain/ducking
+   follows the routing model; it should not be an unrelated special-case graph.
+5. Add master loudness/true-peak readout and a target-based finishing action with
+   a reviewable result. Keep existing microphone automation and loudness analysis
+   integrated rather than duplicating them.
+
+Completion example: balance question/answer microphones, EQ both, automate level,
+add shared room reverb and export a controlled mix. Playback and supported native
+renders use the same routing, automation and effects, with meaningful audio checks.
+
+### M3 — Allow layered video and basic compositing
+
+1. Migrate the single picture lane to ordered video tracks, reading all existing
+   projects unchanged. Persist order, visibility, lock, linked audio and clips;
+   update editing/selection/overview/serialization before adding compositor effects.
+2. Implement top-down picture composition with opacity and normal alpha blending,
+   gaps, independent lane overlaps and transitions. Preview and native exports must
+   interpret the same stack. Remove the current two-picture/single-lane assumptions
+   only when the new renderer supports those cases.
+3. Add position, scale, crop and rotation controls with handles in the viewer;
+   then keyframes for transform/opacity. Start with ordinary linear interpolation
+   and extend to easing. Retain source orientation and frame-accurate timing.
+4. Add source preview with source In/Out, insert/overwrite and append actions,
+   reusing the media bin. Support silent picture imports. Make project resolution,
+   frame rate and aspect ratio explicit, including portrait output.
+
+Completion example: add B-roll above the interview, a picture-in-picture shot and
+an opacity fade; reopen and export the same composition without moving its sound.
+
+### M4 — Finish videos with titles, graphics and captions
+
+1. Add still-image clips and a text/title track: editable text, font/size/alignment,
+   colour/background, safe-area guides and a small set of lower-third templates.
+2. Add a distinct caption track with timed cue editing and preview. Reuse existing
+   transcript exchange; transcript text and delivery captions are related objects,
+   not automatically the same artifact. Support SRT/VTT export and optional burn-in.
+3. Add simple keyframed title position/opacity and reusable title presets. Validate
+   wrapping, DE text, missing fonts and touch editing at the target output size.
+
+Completion example: deliver the interview with speaker names, opening/closing title
+and corrected German captions. Native picture export includes the selected text
+and graphics; sidecar captions remain separately available.
+
+### M5 — Record directly into the arrangement
+
+1. Add timeline track arming, input device/channel selection, input meters and
+   explicit monitoring state. Record at the playhead with a count-in, preserve
+   original captured media and allow immediate playback/undo. Begin with one input
+   track; simultaneous multi-input recording requires platform-specific validation.
+2. Add recording latency calibration/placement and dropped-frame/device-change
+   reporting. Ensure monitored sound is not recorded again as an unintended loop.
+3. Add punch In/Out and loop recording; store passes as takes, then take lanes and
+   comp regions with adjustable crossfades. Keep the source takes recoverable.
+4. Add appropriate macOS menu/keyboard/touch controls; document mobile permission,
+   interruption and background behaviour only after device testing.
+
+Completion example: record a voiceover with the attached USB microphone over an
+existing scene, replace a sentence by punch-in, choose the best take and export.
+
+### M6 — Change timing without destructive round trips
+
+1. Add explicit clip playback rate and reverse, with linked AV time mapping and
+   source bounds. Distinguish changing speed/pitch together from preserving pitch.
+2. Add pitch-preserving stretch for audio and explicit pitch transposition; use
+   cached derived media if needed, retaining the original and the editable settings.
+3. Add video speed changes and later speed ramps. Define frame duplication versus
+   interpolation clearly; optical-flow slow motion is a later quality extension.
+4. Keep automation/fades/source offsets and linked clips correct under rate changes;
+   expand precision/sync tests and CLI recipe/export support alongside the GUI.
+
+Completion example: retime a scene and its linked sound, adjust a voiceover to fit,
+then revert the processing without losing the original source.
+
+### M7 — Multicam and transcript-driven interview editing
+
+1. Build a multicam clip/group using saved sync results and the layered picture
+   model. Display angle previews and switch angle at the playhead while keeping
+   continuous independently mixed microphone sound.
+2. Separate source transcript timestamps from edited-timeline cues. Add word-level
+   selection/search and a reviewed proposal to lift/extract selected speech; reuse
+   M1 edits so picture, linked sound, markers and automation remain consistent.
+3. Add scene/section organisation, transcript correction and speaker labels;
+   retain human review for ambiguous microphone/speaker/angle decisions.
+4. Integrate CrispASR through an explicit CLI/backend contract when transcription
+   is added. Do not create a new shared cross-app engine just for this integration.
+
+Completion example: shorten a multi-angle interview by transcript selection and
+choose shots while preserving the reviewed Tr1/LR microphone mix.
+
+### M8 — Repeatable delivery and interchange
+
+1. Add per-export settings/presets for resolution/frame rate, range, audio layout,
+   codec/quality and caption delivery. Do not hide all delivery choices in global
+   defaults. Validate before rendering and explain unsupported platform choices.
+2. Add track/bus stems, selected-clip exports and a cancellable render queue with
+   clear progress, output paths and retry. Reuse current job ownership/publication.
+3. Add collect/copy project media and portable project packaging with missing-media
+   review. Extend current relinking/recovery rather than replacing it.
+4. Add interchange incrementally: first an honest cut-only EDL/OTIO-style subset,
+   then broader exchange if licenses and mappings allow. Report omitted FX/routing/
+   titles; never present a lossy interchange as a complete project round trip.
+
+Completion example: deliver a landscape/portrait version, caption sidecar and
+separate dialogue/music stems from one saved project, with reproducible settings.
+
+### M9 — Deferred scaling and codec work
+
+This records the previous performance proposal; it is not the next priority.
+
+1. Measure real Canon/H6 import time, peak memory, waveform readiness, seek latency
+   and playback stability, including reopen/recovery. Establish actual constraints.
+2. Add native chunked decoding, cached multiresolution waveform peaks and bounded
+   audio read-ahead around the playhead for linked desktop sources. Adapt import,
+   project loading and recovery together; retain browser/in-memory paths.
+3. Validate crossfades, FX history, seeking and AV synchronization with the paged
+   path. Share the source/routing contract with the existing native mixer; no need
+   for a separate shared cross-application engine.
+4. Extend MP3/Opus streaming only through a genuine incremental encoder/container
+   API; the existing whole-buffer Glint call is not streaming. A bundled permissive
+   WebM path is separate work, not implied by invoking optional installed FFmpeg.
+
+Move an individual item forward only when it blocks a higher-priority milestone
+or measured real-project use, and record why the priority changed.
+
+### M10 — Broader music DAW capabilities (later product expansion)
+
+- Add tempo/time-signature and bars/beats rulers, metronome, musical snapping and
+  loops before MIDI sequencing; preserve the existing absolute AV clock.
+- Add MIDI device input, piano roll, quantisation and basic instruments, then
+  instrument tracks and MIDI export. These are substantial new engine features.
+- Evaluate desktop plugin hosting after the bus/automation/latency model is solid;
+  check SDK/dependency licences and build/platform isolation before choosing a
+  format. Desktop plugins do not automatically work in web/iOS builds.
+- Add advanced musical stretch/warp, freeze/render-in-place, folders and larger
+  session organisation once the preceding workflows justify them.
+
+This milestone is necessary for broad music-production parity, but it should not
+consume the interview/video editor's near-term milestones.
+
+## Delivery rules and milestone acceptance
+
+- Prefer built-in MIT/BSD/Apache-compatible implementations and existing system
+  APIs; review each new dependency's actual license/notices before adding it.
+  Optional installed FFmpeg remains explicit; do not silently bundle GPL tools.
+- Implement project state, migration, undo/redo and saved representation with the
+  feature. CLI edit/render behaviour should match GUI semantics where meaningful;
+  GUI-only gestures and live device workflows do not need artificial CLI mirrors.
+- Desktop video preview and export must share composition/time semantics; label
+  approximations explicitly. Never ship a control whose renderer ignores it.
+- EN/DE, keyboard/macOS menus, mouse and touch, contextual help, accessibility and
+  compact layouts are part of each feature, not a final polishing phase.
+- Test relevant edit invariants and audio/picture results, then validate the actual
+  Canon/H6 interview or USB-mic voiceover workflow. Browser headless checks and
+  simulator CI do not establish physical iOS recording/video correctness.
+- Update the relevant workflow docs and RELEASE_STATUS with actual support/limits.
+  Build/install a reviewable local milestone; tags and Apple distribution remain
+  separate actions governed by the existing release workflow.
+
+## First concrete implementation slice
+
+Start M1 with visible time-range selection, range playback/looping and track lock
+semantics. Follow with scoped lift/extract and transition-aware ripple edits.
+Use the interview plus two microphones and a background-music track to verify the
+behaviour. This brings immediate editing capability without waiting for new codecs
+or a disk-paged playback architecture.
+
+---
+
+# Historical implementation records (archived)
+
+The following material is retained for provenance. Completed items and obsolete
+baselines below must not override the active roadmap above.
+
 # Interaction follow-up — local 0.6.4
 
 Implemented fullscreen focus/keyboard isolation, long-list track drag scrolling,
@@ -326,5 +614,3 @@ transformed; export writes the processed audio.
 - `npm run typecheck && npm run lint && npm run test` after each change.
 - Manual smoke test via `npm run tauri dev` for audio (unit tests can't hear sound).
 - Final `npm run tauri build` to confirm the bundle still builds.
-</content>
-</invoke>
