@@ -184,6 +184,22 @@ and AV1 still require optional FFmpeg. Strict Apple supports every listed pictur
 colour/orientation/fades, gaps/tails and supplied mixed audio. Whip/glitch/page peel
 use a cached Metal kernel and require dynamic-library GPU support; fail explicitly
 on unsupported hardware. Native and FFmpeg complex effects are not pixel-identical.
-CLI project audio mixing still needs FFmpeg. Never claim a permissive-only
+CLI project audio mixing now uses audio_mix.rs for supported DSP;
+see the 0.7.2 section below. Never claim a permissive-only
 WebM backend or iOS video implementation exists. GUI mixed audio is range-trimmed;
 CLI mix-is-trimmed remains explicit. Preserve atomic no-overwrite publication.
+
+
+## Native CLI mixing 0.7.2
+
+media/src/audio_mix.rs streams 1024-frame stereo float WAV blocks via Apache-2.0
+Hound. Never silently omit enabled DSP: support low/high-pass filters at all
+racks; other effects fail explicitly. Preserve Web Audio pan law, Q in dB,
+100 Hz sampled fade ramps, automation, mute/solo and source offsets. Direct
+48 kHz PCM WAV decoding works without Apple; other mono/stereo sources use
+Apple audio-f32 decoding. AVAssetWriter rejects float WAVE output, so that helper
+operation streams AVAssetReader blocks into a WAV header directly. Keep owned
+staging folders, finite PCM checks, clip/source bounds and job cancellation.
+Round timing to the 48 kHz grid; permit only one rounding sample or at most 1 ms
+of short native converter tail padding. CLI output is bounded by standard WAV
+limits and 256 audible clips. GUI Web Audio rendering is not disk-paged yet.

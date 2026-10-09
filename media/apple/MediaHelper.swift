@@ -100,11 +100,35 @@ func export(_ session:AVAssetExportSession,to output:String,type:AVFileType) asy
     guard let destination=CGImageDestinationCreateWithURL(URL(fileURLWithPath:output) as CFURL,UTType.jpeg.identifier as CFString,1,nil) else {try fail("Cannot create thumbnail")}
     CGImageDestinationAddImage(destination,image,nil);guard CGImageDestinationFinalize(destination) else {try fail("Thumbnail failed")};return
   }
-  if operation=="audio" {
+  if operation=="audio" || operation=="audio-f32" {
     guard let input=try await asset.loadTracks(withMediaType:.audio).first else {try fail("No audio track")}
     let reader=try AVAssetReader(asset:asset)
-    let settings:[String:Any]=[AVFormatIDKey:kAudioFormatLinearPCM,AVSampleRateKey:48000,AVNumberOfChannelsKey:2,AVLinearPCMBitDepthKey:16,AVLinearPCMIsFloatKey:false,AVLinearPCMIsBigEndianKey:false,AVLinearPCMIsNonInterleaved:false]
+    let settings:[String:Any]=[AVFormatIDKey:kAudioFormatLinearPCM,AVSampleRateKey:48000,AVNumberOfChannelsKey:2,AVLinearPCMBitDepthKey:operation=="audio-f32" ? 32:16,AVLinearPCMIsFloatKey:operation=="audio-f32",AVLinearPCMIsBigEndianKey:false,AVLinearPCMIsNonInterleaved:false]
     let read=AVAssetReaderAudioMixOutput(audioTracks:[input],audioSettings:settings);reader.add(read)
+    if operation=="audio-f32" {
+      // AVAssetWriter refuses IEEE-float WAVE output. Stream reader PCM directly
+      // into an owned WAV instead, without 16-bit intermediate quantization.
+      let fd=Darwin.open(output,O_WRONLY|O_CREAT|O_EXCL,0o600)
+      guard fd>=0 else {try fail("Cannot create float PCM staging file")}
+      let file=FileHandle(fileDescriptor:fd,closeOnDealloc:true);defer {try? file.close()}
+      try file.write(contentsOf:Data(count:44));var count:UInt32=0
+      guard reader.startReading() else {try fail(reader.error?.localizedDescription ?? "Cannot decode float audio")}
+      while let sample=read.copyNextSampleBuffer() {
+        guard let block=CMSampleBufferGetDataBuffer(sample) else {try fail("Missing decoded PCM block")}
+        let length=CMBlockBufferGetDataLength(block)
+        guard length>0,length%8==0,UInt64(count)+UInt64(length)<=UInt64(UInt32.max)-36 else {try fail("Decoded audio exceeds float WAV limits")}
+        var bytes=Data(count:length)
+        let status=bytes.withUnsafeMutableBytes {raw in CMBlockBufferCopyDataBytes(block,atOffset:0,dataLength:length,destination:raw.baseAddress!)}
+        guard status==kCMBlockBufferNoErr else {try fail("Cannot copy decoded float PCM")}
+        try file.write(contentsOf:bytes);count+=UInt32(length)
+      }
+      guard reader.status == .completed else {try fail(reader.error?.localizedDescription ?? "Float PCM decoding failed")}
+      var header=Data()
+      func u32(_ value:UInt32) {var value=value.littleEndian;withUnsafeBytes(of:&value){header.append(contentsOf:$0)}}
+      func u16(_ value:UInt16) {var value=value.littleEndian;withUnsafeBytes(of:&value){header.append(contentsOf:$0)}}
+      header.append(contentsOf:"RIFF".utf8);u32(count+36);header.append(contentsOf:"WAVEfmt ".utf8);u32(16);u16(3);u16(2);u32(48000);u32(384000);u16(8);u16(32);header.append(contentsOf:"data".utf8);u32(count)
+      try file.seek(toOffset:0);try file.write(contentsOf:header);return
+    }
     let writer=try AVAssetWriter(outputURL:URL(fileURLWithPath:output),fileType:.wav)
     let write=AVAssetWriterInput(mediaType:.audio,outputSettings:settings);writer.add(write)
     guard writer.startWriting(),reader.startReading() else {try fail(writer.error?.localizedDescription ?? reader.error?.localizedDescription ?? "Cannot extract audio")}

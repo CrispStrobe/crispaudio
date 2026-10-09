@@ -95,6 +95,12 @@
     "homepage": "https://github.com/pmndrs/zustand"
   },
   {
+    "name": "hound (Rust WAV I/O)",
+    "version": "3.5.1",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/ruuda/hound"
+  },
+  {
     "name": "glint (vendored codec WASM)",
     "version": "vendored",
     "license": "MIT",

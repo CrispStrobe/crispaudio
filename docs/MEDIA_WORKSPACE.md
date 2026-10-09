@@ -231,3 +231,23 @@ was validated. For unsupported GPUs, choose **FFmpeg compatibility** explicitly
 (or Automatic, which may fall back). WebM still uses optional FFmpeg. Complex
 preview/native/FFmpeg effects are approximate equivalents; page peel is a shaded
 2D fold. These desktop changes do not implement video composition on iOS.
+
+
+## Native linked-project CLI export (local 0.7.2)
+
+The installed local command is `~/Applications/crispaudio-cli-local`. Save a linked
+project from the desktop app so its source paths remain accessible, then run:
+
+```sh
+~/Applications/crispaudio-cli-local render-project --input project.crispaudio --output mix.wav --backend apple
+~/Applications/crispaudio-cli-local render-project --input project.crispaudio --output edited.mp4 --video --backend apple
+```
+
+The first command streams the full-clock 48 kHz float WAV mix. The second creates
+that mix in an owned temporary folder and exports the saved video in/out range.
+Solo, mute, pan, gains, automation, overlaps and fade ramps retain their project
+meaning. Low/high-pass filters work at clip, track and master level. Other enabled
+FX require GUI rendering and fail explicitly in the CLI. Native mode never
+switches to FFmpeg. Select compatibility explicitly for an unsupported native
+input/video codec; its audio mixer has narrower support. Audio output currently
+requires a `.wav` filename. Source media and the project file are never rewritten.

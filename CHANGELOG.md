@@ -4,7 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.1]
+## [Unreleased — local version 0.7.2]
+
+- Add bounded-memory native CLI project mixing: 48 kHz float WAV, mono/stereo pan,
+  mute/solo, overlapping clips, gains, sampled fade curves, gain automation and
+  low/high-pass filters at clip, track and master level. Reject unsupported effects.
+- Decode/resample other audio layouts through Apple into streamed float PCM;
+  preserve source offsets, finite output, cancellation and atomic no-overwrite
+  publication. Keep optional FFmpeg compatibility and reject multichannel sources.
+- Enable full linked-project MP4/MOV export with native audio plus Apple picture
+  rendering, including trimmed sections. Keep temporary mixes in owned folders.
+- Bundle Apache-2.0 Hound notices. GUI disk-paged rendering, advanced CLI DSP and
+  permissive-only WebM remain unfinished.
+
+## [Local version 0.7.1]
 
 - Add native Apple rendering for every listed picture transition: directional
   wipes/pushes, dips to black/white, blur, zoom, pixelation, whip, glitch and a

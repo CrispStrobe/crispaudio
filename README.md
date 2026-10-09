@@ -266,3 +266,9 @@ Local 0.7.1 also renders every listed picture transition through Apple framework
 Whip, glitch and page peel require a compatible Metal GPU; the export selector
 retains optional FFmpeg compatibility. Complex preview/native/FFmpeg renderers
 are approximate equivalents, with a shaded 2D page fold rather than 3D geometry.
+
+Local 0.7.2 adds streaming native CLI mixing of linked projects to float WAV,
+including pan, fades, automation and low/high-pass racks. On Mac, supported
+linked projects can render directly to MP4/MOV with `--video --backend apple`,
+without FFmpeg. Unsupported DSP fails explicitly; GUI rendering retains broader
+FX support and currently uses decoded audio buffers.

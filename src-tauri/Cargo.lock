@@ -760,7 +760,7 @@ dependencies = [
 
 [[package]]
 name = "crispaudio"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "crispaudio-media",
  "hound",
@@ -782,6 +782,7 @@ name = "crispaudio-media"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "hound",
  "rustfft",
  "serde",
  "serde_json",

@@ -490,6 +490,25 @@ fn automation(points: &Value, time: &str) -> Result<String> {
 /// Linked-media CLI mix. Unsupported DSP fails explicitly instead of producing
 /// a plausible export with effects silently omitted.
 pub fn render_audio(doc: &Value, output: &str) -> Result<()> {
+    if !std::path::Path::new(output)
+        .extension()
+        .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("wav"))
+    {
+        return Err("CLI audio rendering currently exports WAV; choose a .wav output".into());
+    }
+    let backend = crate::apple::Backend::configured()?;
+    if backend != crate::apple::Backend::Ffmpeg {
+        match crate::audio_mix::render(doc, output) {
+            Ok(()) => return Ok(()),
+            Err(error) if backend == crate::apple::Backend::Auto && !crate::jobs::cancelled() => {
+                eprintln!("Native audio mix: {error}; using optional FFmpeg compatibility backend")
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    render_audio_ffmpeg(doc, output)
+}
+fn render_audio_ffmpeg(doc: &Value, output: &str) -> Result<()> {
     let project = &doc["project"];
     let duration = number(project, "duration")?;
     if duration <= 0.0 {
@@ -660,8 +679,12 @@ pub fn render_project(doc: &Value, output: &str, video: bool) -> Result<()> {
     if picture.is_null() {
         return Err("Project has no picture".into());
     }
-    let mix = std::env::temp_dir().join(format!("crispaudio-{}.wav", id()));
-    let mix = mix.to_string_lossy().into_owned();
+    let mix_folder = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let mix = mix_folder
+        .path()
+        .join("mix.wav")
+        .to_string_lossy()
+        .into_owned();
     let result = (|| {
         render_audio(doc, &mix)?;
         let picture_clips: Vec<Value> = clips(&doc["project"])
@@ -682,7 +705,6 @@ pub fn render_project(doc: &Value, output: &str, video: bool) -> Result<()> {
             false,
         )
     })();
-    let _ = std::fs::remove_file(mix);
     result
 }
 #[cfg(test)]

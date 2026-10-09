@@ -491,3 +491,34 @@ peel, then decoded and visually inspected. The 2.4-second excerpts took 1.609,
 full-resolution benchmark. Validation artifacts remain outside git. The previous
 0.7.0 commit passed GitHub CI and the unsigned iOS simulator build; that does not
 establish native video support on iOS. No release tag or Apple submission was made.
+
+
+## Local native CLI mixer build 0.7.2
+
+Installed and launched `~/Applications/CrispAudio-local.app` 0.7.2 and installed
+`~/Applications/crispaudio-cli-local`. Both local ad-hoc signatures verify.
+The existing native autosave and WebKit state were backed up and retained.
+
+The CLI streams linked projects to 48 kHz stereo float WAV. It supports mono and
+stereo pan, stored mute overridden by solo, source trims/offsets, overlaps, gains,
+clip/track fade curves, automation and low/high-pass clip/track/master racks.
+Unsupported enabled DSP fails explicitly. PCM WAV inputs are read directly;
+other mono/stereo layouts use Apple float decoding/resampling on Mac. Standard
+WAV size and 256 audible clip limits apply. The GUI still renders through Web Audio
+with duration-sized buffers; this is not a GUI disk-paging change.
+
+Validation: six actual WebKit TimelineEngine vs native CLI renders (mono/stereo,
+left/centre/right pan, overlapping clips, sampled fades, automation and all three
+filter racks) agreed within maximum 1.42e-7 / RMS 1.15e-8. Native decoding/resampling
+from 44.1 kHz/24-bit mono and full project-to-section-video export passed with the
+application's FFmpeg/FFprobe paths unavailable. Integer PCM depths, gain headroom,
+source offsets, cancellation/cleanup, bounds and no-overwrite have unit coverage.
+All 27 media tests, including six integration tests, and the CLI parser test
+passed; frontend lint/typecheck and the production desktop bundle passed. See MEDIA_FORMATS_AND_LICENSES.md for scope.
+
+The real 253.72-second MVI_8251 linked project produced a stereo 48 kHz float mix
+in 10.53 seconds with 4,259,840 bytes peak CLI resident memory in one debug run.
+That excludes OS cache/other processes and is not whole-GUI memory use. Its 30–38 s
+section also rendered natively to 1920×1080 H.264/AAC MP4 (8.0 s output) in 15.1 s,
+including the full audio mix. Validation files remain private outside git.
+No release tag, TestFlight or App Store submission was made.

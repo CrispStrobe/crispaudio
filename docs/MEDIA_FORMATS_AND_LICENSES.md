@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.1
+# Formats and licensing — local 0.7.2
 
 ## Current GUI
 
@@ -70,15 +70,44 @@ including ones that do not yet have an Apple implementation. `edit-video` JSON
 may set `backend` and `outputFormat`. CLI flags override those fields. Saved-project
 rendering uses the global backend policy; picture JSON export options are retained.
 
-CLI project audio mixing, long-file alignment/rendering, denoising and EBU loudness
-still use FFmpeg. Thus strict Apple mode can prepare/extract/probe and render a
-picture edit with a supplied mix, but does not yet render arbitrary project audio.
-The GUI mix/export path uses Web Audio and has broader effects support. CLI WAV
-rendering remains separate from the GUI's FLAC/MP3/AAC/Opus encoder worker.
+CLI project mixing now streams to **48 kHz, stereo, 32-bit float WAV** using
+Apache-2.0 Hound and MIT DSP. It supports linked mono/stereo sources, source
+trims/offsets, overlaps, mute/solo, gains, pan, track/clip fade curves, gain
+automation and enabled low/high-pass filters at clip, track and master level.
+Filter resonance and pan follow Web Audio definitions; fades match the GUI's
+sampled ramp schedule. Other enabled effects fail explicitly; use GUI export.
+
+Native 48 kHz PCM WAVs (8/16/24/32-bit integer or 32-bit float) are read directly.
+On Mac, Apple decodes/resamples other inputs into an owned float WAV without an
+intermediate 16-bit conversion. Temporary decoded media needs disk space, while
+the mix uses 1024-frame blocks rather than duration-sized audio buffers. At most
+256 audible clips are supported per render. Output stays within standard WAV's
+4 GiB size limit. Positions round to the 48 kHz grid; one final sample may be
+padded for rounding. A short Apple converter tail can be zero-padded by up to
+one millisecond, within the measured source extent. Longer missing audio fails.
+
+`render-project --video --backend apple` now creates the native full-clock mix
+and exports the selected picture range, so a linked project can become MP4/MOV
+without FFmpeg. Automatic mode prefers native mixing, then reports any optional
+FFmpeg fallback; explicit FFmpeg mode keeps the older compatibility mix. That
+older mixer has narrower pan/master-effect support and different filter behaviour.
+
+Long-file alignment, denoising and EBU loudness still use FFmpeg. The GUI still
+uses Web Audio and duration-sized decoded buffers; its render path is not yet
+disk-paged. CLI WAV rendering remains separate from the GUI's FLAC/MP3/AAC/Opus
+encoder worker. No permissive-only bundled WebM implementation is claimed.
+
+```sh
+crispaudio render-project --input saved.crispaudio --output mix.wav --backend apple
+crispaudio render-project --input saved.crispaudio --output edited.mp4 --video --backend apple
+```
+
+The native mixer uses the [Web Audio filter and pan definitions](https://www.w3.org/TR/webaudio-1.0/).
 
 ## Licence boundary
 
-CrispAudio and its native helper are MIT. Glint is MIT. The FLAC wrapper is MIT;
+CrispAudio and its native helper are MIT. Hound 3.5.1 is Apache-2.0; its copyright
+and full notice are bundled in About. Glint is MIT. The FLAC wrapper is MIT;
 its bundled libFLAC 1.3.4 encoder is BSD-3-Clause. Notices are in `src/lib/glint/`
 and `src/lib/flac/` and listed in About. The vendoring adapter is reproducible with
 `node scripts/vendor-flac.mjs` against pinned libflacjs 5.6.0. It isolates upstream
