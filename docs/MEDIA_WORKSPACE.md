@@ -435,3 +435,40 @@ not a change to import/playback buffers. MP3/Opus still use the worker.
 Apple documents the [ADTS file type](https://developer.apple.com/documentation/audiotoolbox/kaudiofileaac_adtstype)
 and [encoder bitrate setting](https://developer.apple.com/documentation/avfaudio/avencoderbitratekey).
 Only system frameworks are used; no new codec dependency is redistributed.
+
+## Native Mac M4A/AAC (local 0.7.12)
+
+For eligible linked Mac timelines, choose AAC in Settings, then select M4A in
+its save dialog (or save with a `.m4a` filename). Existing ADTS `.aac` remains
+available. This saves AAC-LC in MPEG-4 audio, with the same bitrate selection
+and bounded native mix/encode pipeline. Other platforms and non-linked projects
+retain their existing ADTS worker export; M4A is not added as a global SFX/Voice
+format.
+
+```sh
+~/Applications/crispaudio-cli-local render-project --input project.crispaudio --output mix.m4a --audio-bitrate-kbps 192 --backend apple
+```
+
+A `.m4a` output defaults to 192 kbps without the bitrate flag. After closing the
+writer, the helper reads the final Core Audio packet table: valid frames must
+exactly match the source, and packet count must equal valid + priming + remainder
+frames divided by 1024. AAC-LC, stereo 48 kHz, bounded priming and padding are
+checked before atomic publication. Cancellation still removes owned temporary
+files. A filename change does not merely relabel ADTS: it selects the real M4A
+container in the system writer.
+
+Gapless-aware decoders can trim the recorded priming and padding. This is still
+lossy AAC; WAV/FLAC remain appropriate for lossless editing intermediates. Media
+players may report different encoded timestamp/duration fields, so do not equate
+those fields with the valid PCM frame count. Imported M4A is decoded normally;
+video replacement continues to use the existing PCM mix.
+
+Apple documents [valid, priming and remainder frames](https://developer.apple.com/documentation/audiotoolbox/audiofilepackettableinfo)
+and the [AAC-LC format identifier](https://developer.apple.com/documentation/coreaudiotypes/kaudioformatmpeg4aac).
+
+Optional actual-WebKit import check: `scripts/test-native-m4a.mjs` writes
+24001-frame stereo burst fixtures, exports each bitrate with the independent
+CLI, then decodes in headless WebKit. It checks frame count and unshifted signal
+error. Set `CRISPAUDIO_TEST_CLI`, optionally `CRISPAUDIO_PLAYWRIGHT_MODULE` and
+`CRISPAUDIO_WEBKIT_EXECUTABLE`. No Vite server is needed. Native rendering disables
+FFmpeg/FFprobe; the harness writes fixtures/results into a fresh temporary folder.

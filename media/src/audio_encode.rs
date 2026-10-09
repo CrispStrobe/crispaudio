@@ -22,6 +22,13 @@ pub fn render_aac(doc: &Value, output: &str, bitrate_kbps: u32) -> Result<()> {
 fn render_encoded(doc: &Value, output: &str, codec: Codec) -> Result<()> {
     let extension = match codec {
         Codec::Flac => "flac",
+        Codec::Aac(_)
+            if Path::new(output)
+                .extension()
+                .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("m4a")) =>
+        {
+            "m4a"
+        }
         Codec::Aac(_) => "aac",
     };
     if Path::new(output).exists() {
@@ -74,6 +81,21 @@ fn render_encoded(doc: &Value, output: &str, codec: Codec) -> Result<()> {
                 .map_err(|e| e.to_string())?;
             validate_streaminfo(&header, frames)?;
         }
+        Codec::Aac(_) if extension == "m4a" => {
+            let bytes = attempt(
+                Backend::Apple,
+                &[
+                    "validate-m4a".into(),
+                    staging.to_string_lossy().into_owned(),
+                ],
+                None,
+            )?
+            .ok_or("Native M4A validation unavailable")?;
+            validate_m4a_metadata(
+                &serde_json::from_slice(&bytes).map_err(|e| e.to_string())?,
+                frames,
+            )?;
+        }
         Codec::Aac(_) => {
             validate_adts(File::open(&staging).map_err(|e| e.to_string())?, frames)?;
         }
@@ -83,6 +105,36 @@ fn render_encoded(doc: &Value, output: &str, codec: Codec) -> Result<()> {
     }
     std::fs::hard_link(staging, output)
         .map_err(|e| format!("Cannot publish compressed audio: {e}"))?;
+    Ok(())
+}
+fn validate_m4a_metadata(info: &Value, frames: u64) -> Result<()> {
+    let valid = info["validFrames"]
+        .as_u64()
+        .ok_or("Missing M4A frame count")?;
+    let priming = info["primingFrames"]
+        .as_u64()
+        .ok_or("Missing M4A priming")?;
+    let remainder = info["remainderFrames"]
+        .as_u64()
+        .ok_or("Missing M4A padding")?;
+    let packets = info["packets"].as_u64().ok_or("Missing M4A packet count")?;
+    if info["sampleRate"].as_f64() != Some(48000.0)
+        || info["channels"] != 2
+        || info["framesPerPacket"] != 1024
+        || info["codec"] != "aac-lc"
+        || valid != frames
+        || frames == 0
+        || priming > 4096
+        || remainder > 1023
+        || packets.checked_mul(1024)
+            != valid
+                .checked_add(priming)
+                .and_then(|n| n.checked_add(remainder))
+    {
+        return Err(
+            "M4A packet table must preserve stereo 48 kHz AAC-LC and the source frame count".into(),
+        );
+    }
     Ok(())
 }
 // ADTS has no gapless metadata. Validate real packet duration instead of a
@@ -254,6 +306,98 @@ mod tests {
         let bad = folder.path().join("invalid.aac");
         assert!(render_aac(&doc, bad.to_str().unwrap(), 12).is_err());
         assert!(!bad.exists());
+    }
+    #[test]
+    fn m4a_metadata_requires_exact_clock_and_consistent_packet_table() {
+        let mut info = serde_json::json!({"codec":"aac-lc","sampleRate":48000.0,"channels":2,"framesPerPacket":1024,"validFrames":24000,"primingFrames":2112,"remainderFrames":512,"packets":26});
+        assert!(validate_m4a_metadata(&info, 24000).is_ok());
+        assert!(validate_m4a_metadata(&info, 23999).is_err());
+        info["primingFrames"] = serde_json::json!(-1);
+        assert!(validate_m4a_metadata(&info, 24000).is_err());
+        info["primingFrames"] = serde_json::json!(2112);
+        info["packets"] = serde_json::json!(27);
+        assert!(validate_m4a_metadata(&info, 24000).is_err());
+    }
+    #[test]
+    #[ignore = "Requires macOS M4A encoding and FFmpeg reference decoding"]
+    #[cfg(target_os = "macos")]
+    fn native_m4a_preserves_gapless_signal_and_boundary_frame_counts() {
+        use hound::{SampleFormat, WavSpec, WavWriter};
+        use serde_json::json;
+        let folder = tempfile::tempdir().unwrap();
+        for (frames, bitrate) in [
+            (24000, 96),
+            (24000, 128),
+            (24000, 192),
+            (24000, 256),
+            (24000, 320),
+            (1, 192),
+            (1023, 192),
+            (1024, 192),
+            (24001, 192),
+        ] {
+            let source = folder.path().join(format!("source-{frames}-{bitrate}.wav"));
+            let mut writer = WavWriter::create(
+                &source,
+                WavSpec {
+                    channels: 2,
+                    sample_rate: 48000,
+                    bits_per_sample: 32,
+                    sample_format: SampleFormat::Float,
+                },
+            )
+            .unwrap();
+            let mut reference = Vec::new();
+            for i in 0..frames {
+                let t = i as f32 / 48000.0;
+                let amplitude = if (0.07..0.14).contains(&t) || (0.2..0.38).contains(&t) {
+                    0.2
+                } else {
+                    0.0
+                };
+                for hz in [500.0, 2200.0] {
+                    let sample = amplitude * (std::f32::consts::TAU * hz * t).sin();
+                    writer.write_sample(sample).unwrap();
+                    reference.push(sample);
+                }
+            }
+            writer.finalize().unwrap();
+            let doc = json!({"project":{"duration":frames as f64 / 48000.0,"tracks":[{"volume":1,"pan":0,"segments":[{"sourceId":"s","startTime":0,"sourceOffset":0,"duration":frames as f64 / 48000.0,"gain":1}]}]},"sources":[{"id":"s","path":source}]});
+            let target = folder.path().join(format!("mix-{frames}-{bitrate}.m4a"));
+            render_aac(&doc, target.to_str().unwrap(), bitrate).unwrap();
+            let decoded = std::process::Command::new("ffmpeg")
+                .args(["-v", "error", "-i"])
+                .arg(&target)
+                .args(["-f", "f32le", "pipe:1"])
+                .output()
+                .unwrap();
+            assert!(decoded.status.success());
+            assert_eq!(
+                decoded.stdout.len(),
+                frames * 8,
+                "{frames} frames at {bitrate} kbps"
+            );
+            let error: f64 = decoded
+                .stdout
+                .chunks_exact(4)
+                .zip(&reference)
+                .map(|(b, source)| {
+                    let sample = f32::from_le_bytes(b.try_into().unwrap());
+                    let diff = sample as f64 - *source as f64;
+                    diff * diff
+                })
+                .sum::<f64>()
+                / reference.len() as f64;
+            assert!(
+                error < 0.0002,
+                "{frames} frames at {bitrate} kbps, unshifted error {error}"
+            );
+            println!(
+                "M4A {frames} frames at {bitrate} kbps: exact decoded length, unshifted RMS {}",
+                error.sqrt()
+            );
+            assert!(render_aac(&doc, target.to_str().unwrap(), bitrate).is_err());
+        }
     }
     #[test]
     fn streaminfo_rejects_unfinalised_or_wrong_layout() {

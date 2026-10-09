@@ -8,7 +8,9 @@ export async function exportLinkedAudio(document: NonNullable<ReturnType<typeof 
   filename: string, format: 'wav' | 'flac' | 'aac', bitDepth: number, signal: AbortSignal,
   setStage: (stage: AudioExportStage | null) => void, bitrateKbps = 192): Promise<boolean> {
   signal.throwIfAborted();
-  const output = await save({ defaultPath: filename, filters: [{ name: `${format.toUpperCase()} Audio`, extensions: [format] }] });
+  const output = await save({ defaultPath: filename, filters: format === 'aac'
+    ? [{ name: 'AAC Audio', extensions: ['aac'] }, { name: 'M4A Audio', extensions: ['m4a'] }]
+    : [{ name: `${format.toUpperCase()} Audio`, extensions: [format] }] });
   signal.throwIfAborted();
   if (!output) return false;
   setStage('rendering');

@@ -45,5 +45,12 @@ it('AAC preserves its ADTS extension and forwards the selected bitrate', async (
   await exportLinkedAudio(document, 'mix.aac', 'aac', 24, new AbortController().signal, vi.fn(), 256);
   expect(invoke).toHaveBeenCalledExactlyOnceWith('export_linked_project_aac',
     { document, output: '/mix.aac', bitrateKbps: 256, jobId: expect.any(String) });
-  expect(save).toHaveBeenCalledWith({ defaultPath: 'mix.aac', filters: [{ name: 'AAC Audio', extensions: ['aac'] }] });
+  expect(save).toHaveBeenCalledWith({ defaultPath: 'mix.aac', filters: [{ name: 'AAC Audio', extensions: ['aac'] }, { name: 'M4A Audio', extensions: ['m4a'] }] });
+});
+
+it('M4A selection retains the native AAC job and selected bitrate', async () => {
+  vi.mocked(save).mockResolvedValue('/mix.m4a');
+  await exportLinkedAudio(document, 'mix.aac', 'aac', 24, new AbortController().signal, vi.fn(), 128);
+  expect(invoke).toHaveBeenCalledExactlyOnceWith('export_linked_project_aac',
+    { document, output: '/mix.m4a', bitrateKbps: 128, jobId: expect.any(String) });
 });

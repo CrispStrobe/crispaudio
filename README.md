@@ -329,3 +329,9 @@ CLI `.aac` output uses the same native AAC-LC/ADTS path; `--audio-bitrate-kbps`
 selects 96/128/192/256/320 kbps (default 192). Packet validation checks actual
 length and layout. ADTS has codec priming/padding; use WAV/FLAC for exact timing.
 No new codec dependency is added. See `docs/MEDIA_WORKSPACE.md` for details.
+
+Local 0.7.12 adds native M4A/AAC output: choose M4A in the Mac timeline's AAC
+save dialog or give CLI `render-project` a `.m4a` output. The file records
+priming/padding metadata for gapless-aware decoders, with its valid frame count
+checked against the source. ADTS `.aac` remains available; WAV/FLAC remain
+lossless options. No codec dependency is added.

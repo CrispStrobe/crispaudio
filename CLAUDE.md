@@ -329,3 +329,16 @@ or use it for the video's already-trimmed PCM mix. GUI forwards bitrateKbps;
 CLI --audio-bitrate-kbps requires AAC and conflicts with video/WAV depth.
 Other platforms, rates and in-memory sources keep the Glint worker. Rerun the
 native FLAC integration after shared pipeline changes. No dependency added.
+
+## Native M4A 0.7.12
+
+render_aac accepts .aac ADTS or real .m4a based on the output suffix. M4A uses
+AVAudioFile's system container, then a strict validate-m4a helper reads the final
+Core Audio packet table. kAudioFormatMPEG4AAC identifies LC with flags=0 here;
+CAF object-type flags are not appropriate for this M4A ASBD. Verify valid frames
+against the source and packets*1024 == valid+priming+remainder with checked
+arithmetic, positive source, bounded priming/remainder and stereo 48 kHz.
+Do not validate gapless duration using bitrate or encoded timestamps. The AAC
+save dialog offers both containers; other platform/worker and SFX/Voice paths
+remain ADTS. No global format option or codec dependency is added. Re-run both
+AAC and FLAC integrations after changes to the shared orchestration/helper.

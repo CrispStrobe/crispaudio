@@ -116,6 +116,20 @@ func encodeAac(_ path:String,_ destination:String,_ bitrate:Int) throws {
         try output.write(from:buffer)
     }
 }
+// Read the final system-written packet table; do not infer gapless timing from bitrate.
+func validateM4a(_ path:String) throws {
+    var handle:AudioFileID?
+    guard AudioFileOpenURL(URL(fileURLWithPath:path) as CFURL,.readPermission,0,&handle)==noErr,let file=handle else {try fail("Cannot open M4A packet table")}
+    defer {AudioFileClose(file)}
+    var format=AudioStreamBasicDescription(),table=AudioFilePacketTableInfo(),packets:UInt64=0
+    var formatSize=UInt32(MemoryLayout<AudioStreamBasicDescription>.size),tableSize=UInt32(MemoryLayout<AudioFilePacketTableInfo>.size),packetsSize=UInt32(MemoryLayout<UInt64>.size)
+    guard AudioFileGetProperty(file,kAudioFilePropertyDataFormat,&formatSize,&format)==noErr,
+        AudioFileGetProperty(file,kAudioFilePropertyPacketTableInfo,&tableSize,&table)==noErr,
+        AudioFileGetProperty(file,kAudioFilePropertyAudioDataPacketCount,&packetsSize,&packets)==noErr,
+        format.mFormatID==kAudioFormatMPEG4AAC,format.mFormatFlags==0 else {try fail("M4A must contain AAC-LC with a final packet table")}
+    let result:[String:Any]=["codec":"aac-lc","sampleRate":format.mSampleRate,"channels":format.mChannelsPerFrame,"framesPerPacket":format.mFramesPerPacket,"validFrames":table.mNumberValidFrames,"primingFrames":table.mPrimingFrames,"remainderFrames":table.mRemainderFrames,"packets":packets]
+    FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject:result))
+}
 @main struct Main {
  static func main() async {
   do {try await run()}catch {FileHandle.standardError.write(Data((error.localizedDescription+"\n").utf8));exit(1)}
@@ -131,6 +145,7 @@ func encodeAac(_ path:String,_ destination:String,_ bitrate:Int) throws {
     guard duration.isFinite && duration>0 else {try fail("Unknown media duration")}
     let data=try JSONSerialization.data(withJSONObject:["path":args[2],"duration":duration,"channels":channels,"sample_rate":Int(rate),"has_video":tracks.contains{$0.mediaType == .video}]);FileHandle.standardOutput.write(data);return
   }
+  if operation=="validate-m4a" {try validateM4a(args[2]);return}
   guard args.count>=4,!FileManager.default.fileExists(atPath:args[3]) else {try fail("Missing output or output exists")}
   let output=args[3]
   if operation=="encode-flac" {try encodeFlac(args[2],output);return}

@@ -490,10 +490,11 @@ fn automation(points: &Value, time: &str) -> Result<String> {
 /// Linked-media CLI mix. Unsupported DSP fails explicitly instead of producing
 /// a plausible export with effects silently omitted.
 pub fn render_audio(doc: &Value, output: &str) -> Result<()> {
-    if std::path::Path::new(output)
-        .extension()
-        .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("aac"))
-    {
+    if std::path::Path::new(output).extension().is_some_and(|e| {
+        ["aac", "m4a"]
+            .iter()
+            .any(|ext| e.to_string_lossy().eq_ignore_ascii_case(ext))
+    }) {
         return crate::audio_encode::render_aac(doc, output, 192);
     }
     if std::path::Path::new(output)
@@ -507,7 +508,7 @@ pub fn render_audio(doc: &Value, output: &str) -> Result<()> {
         .is_some_and(|e| e.to_string_lossy().eq_ignore_ascii_case("wav"))
     {
         return Err(
-            "CLI audio rendering exports WAV or native Mac FLAC/AAC; choose .wav, .flac or .aac"
+            "CLI audio rendering exports WAV or native Mac FLAC/AAC; choose .wav, .flac, .aac or .m4a"
                 .into(),
         );
     }

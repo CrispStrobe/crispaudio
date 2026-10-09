@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.11
+# Formats and licensing — local 0.7.12
 
 ## Current GUI
 
@@ -13,7 +13,10 @@ Eligible Mac timeline FLAC exports now use the Apple system encoder in bounded
 chunks with the same signed 24-bit quantisation; its compression preset differs
 from the worker, so encoded file bytes/size can differ while decoded PCM matches. It is lossless after
 float-to-24-bit quantization; it does not preserve arbitrary 32-bit float values.
-Bitrate does not apply to WAV/FLAC. Mac timeline WAV export for linked 48 kHz
+Bitrate does not apply to WAV/FLAC. Mac timeline AAC save dialogs additionally offer M4A (`.m4a`), retaining
+priming/padding metadata for gapless-aware decoders. Final packet tables
+must match the source frame count. This is the same lossy AAC-LC codec, not ALAC.
+Mac timeline WAV export for linked 48 kHz
 mono/stereo projects streams directly to disk, honoring the 8/16/24/32-bit integer
 PCM preference. Integer export clips to full scale and matches the GUI worker's
 rounding without dither. Linked Mac FLAC and AAC exports also write directly to disk; other audio exports
@@ -134,13 +137,13 @@ older mixer has narrower pan/master-effect support and different filter behaviou
 
 Long-file alignment, denoising and EBU loudness still use FFmpeg. GUI import and playback still use Web Audio and duration-sized decoded buffers.
 Eligible macOS video exports avoid a second duration-sized render buffer;
-Eligible timeline WAV exports also stream from disk; compressed-audio exports
+Eligible timeline WAV exports also stream from disk; MP3/Opus exports
 and other projects still render with Web Audio. CLI also exports native Mac FLAC when the output ends in `.flac`, preserving
 stereo 48 kHz and signed 24-bit PCM. It uses an owned float mix on disk and the
 Apple encoder; explicit FFmpeg mode fails rather than choosing another FLAC
 backend. CLI native Mac `.aac` output is also supported: AAC-LC, ADTS, stereo 48 kHz.
 `--audio-bitrate-kbps` selects the same five bitrates, default 192. It requires
-`.aac` output and conflicts with `--video`/`--wav-bit-depth`; native audio never
+`.aac` or `.m4a` output and conflicts with `--video`/`--wav-bit-depth`; native audio never
 falls back to FFmpeg. MP3/Opus remain in the GUI codec worker. No permissive-only bundled WebM implementation is claimed.
 
 ```sh

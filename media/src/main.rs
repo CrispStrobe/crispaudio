@@ -48,7 +48,7 @@ enum Commands {
         /// Native integer PCM WAV depth; omitted keeps 32-bit float WAV.
         #[arg(long, conflicts_with="video", value_parser=["8","16","24","32"])]
         wav_bit_depth: Option<String>,
-        /// Native AAC bitrate; AAC output defaults to 192 kbps.
+        /// Native AAC bitrate for .aac/.m4a; AAC output defaults to 192 kbps.
         #[arg(long, conflicts_with_all=["video","wav_bit_depth"],value_parser=["96","128","192","256","320"])]
         audio_bitrate_kbps: Option<String>,
     },

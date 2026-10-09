@@ -970,3 +970,60 @@ are under `ux/real-aac-0711-hqkpne2a/`; originals were not rewritten.
 Remaining work includes disk-paged import/playback, streaming MP3/Opus export,
 permissive-only WebM and iOS picture composition. Native AAC was tested on
 this Mac; unsupported system encoder configurations fail explicitly.
+
+## Local 0.7.12 — native Mac M4A/AAC
+
+Installed and launched `~/Applications/CrispAudio-local.app` version 0.7.12 and
+updated the optimised standalone CLI. Both ad-hoc signatures verified. The one
+autosave JSON remains unchanged, with WebKit data and JSON backed up under
+`ux/recovery-before-0712/`. No release tag or Apple upload was triggered.
+
+The eligible Mac timeline's AAC save dialog now offers ADTS `.aac` and real
+MPEG-4 audio `.m4a`. CLI `.m4a` output follows the same native AAC-LC route at
+96/128/192/256/320 kbps (default 192). This does not add M4A to the global
+SFX/Voice/worker formats; other platforms/non-linked projects keep ADTS export.
+No codec dependency or redistributed codec binary was added; the 26-entry
+licence manifest remains unchanged.
+
+The system writer records priming/padding metadata. A second strict helper
+operation checks its final Core Audio packet table and AAC-LC format before
+publication: valid frames exactly match the source, and packets * 1024 equal
+valid + priming + remainder, with bounded priming/padding and stereo 48 kHz.
+The reader reports M4A AAC-LC ASBD flags=0; flags=2 belong to the CAF object-type
+convention and incorrectly reject this valid M4A layout. Gapless-aware readers
+can trim the metadata; encoded timestamps/duration fields need not equal the
+valid PCM frame count. AAC remains lossy. Video rendering continues to use PCM;
+WAV/FLAC remain lossless intermediates. Temporary float WAV disk-space and
+loaded import/playback buffer limits are unchanged.
+
+Validation: all 39 ordinary media Rust tests and three CLI parser tests passed;
+ten platform integrations are opt-in. The new M4A integration passed all five
+bitrates, plus 1/1023/1024/24001-frame boundaries, checking independent FFmpeg
+decoded length, unshifted stereo signal error and no-overwrite behavior. The
+ADTS AAC and FLAC PCM/checksum integrations were repeated and passed because
+orchestration and the Swift helper are shared. Seven picture integrations were
+not repeated. All 26 targeted frontend tests, ESLint, TypeScript/production
+build, release CLI and debug macOS app bundle passed.
+
+The new optional `scripts/test-native-m4a.mjs` also passed in real headless
+WebKit at all five bitrates: each decoded exactly 24,001 stereo 48 kHz frames,
+with unshifted RMS error below 0.004. Native rendering disabled FFmpeg/FFprobe.
+The default Playwright browser revision was not installed, so the harness used
+its explicit executable override with the existing WebKit 2336 installation.
+No browser download, OS screenshot or permission reset was performed. Fixtures
+and results are archived outside git under `ux/native-m4a-0712/`. Prior DSP/PCM
+suites were not repeated because those implementations are unchanged.
+
+The full 253.72-second interview with default master compression exported to
+192 kbps M4A, producing 6,152,129 bytes. Independent full decoding confirmed
+exactly 12,178,560 stereo 48 kHz frames. Export took 11.91 seconds (8.12 user /
+1.52 system), with macOS time peak RSS 16,171,008 bytes (15.4 MiB). WebKit/native
+bitrate tests ran concurrently: this is not an isolated speed benchmark and
+should not be compared directly with the previous AAC/FLAC timings. Memory
+excludes editor buffers, OS cache and other processes. The derived project,
+M4A and validation JSON are under `ux/real-m4a-0712-mnv2wqgx/`; originals were
+not rewritten.
+
+At validation time, 0.7.11 desktop CI remained queued and its iOS CI was running;
+this push starts new CI. Remaining work includes disk-paged import/playback,
+streaming MP3/Opus export, permissive-only WebM and iOS picture composition.

@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.11]
+## [Unreleased — local version 0.7.12]
+
+- Add native Mac M4A/AAC export in the timeline AAC save dialog and CLI.
+- Validate final AAC-LC packet tables against the exact source frame count,
+  retaining priming and remainder metadata for gapless decoding.
+- Keep ADTS AAC available and preserve the existing bitrate controls.
+
+## [Local version 0.7.11]
 
 - Stream eligible Mac timeline AAC exports through the native mixer and system
   encoder, preserving AAC-LC in ADTS `.aac` and the existing bitrate choices.
