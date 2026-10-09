@@ -138,3 +138,18 @@ Linked ripple trims retain incoming/outgoing picture transition windows and type
 preserve clip/source-link identities and retime following scoped material. Locks,
 groups, markers, automation and transcript checks share the range-edit contract.
 Generic range boundaries through blends remain a separate unfinished increment.
+
+
+## Reviewed range edits through picture blends — local 0.8.11
+
+Range dialogs now list crossed blends and their resulting cut positions. Explicit
+hard-cut replacement trims incoming picture handles at the original blend end;
+linked source clocks and unaffected transitions remain intact for lift, extract
+and insert. The native CLI accepts the same `transitionPolicy` choice. Preserve
+is the default; spoken-word/pasted-text edits keep that conservative policy.
+Lifting the tail or the whole arrangement preserves its original canvas.
+
+Validation includes dialog/undo/CLI comparisons, German phone-sized layout,
+Apple-rendered colour clips and a private linked Canon/H6 extraction. Original
+recordings and project files remain unchanged. Details belong in
+[release status](docs/RELEASE_STATUS.md), not the capability overview in README.

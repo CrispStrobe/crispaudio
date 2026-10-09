@@ -1,19 +1,19 @@
-// Optional real-WebKit dialog/undo and native CLI semantic parity check.
+// Optional real-browser dialog/undo and native CLI semantic parity check.
 import {pathToFileURL} from 'node:url';
 import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import assert from 'node:assert/strict';
-const {webkit}=await import(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE?pathToFileURL(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE).href:'playwright');
-const browser=await webkit.launch({headless:true,...(process.env.CRISPAUDIO_WEBKIT_EXECUTABLE?{executablePath:process.env.CRISPAUDIO_WEBKIT_EXECUTABLE}:{})});
+const {webkit,chromium}=await import(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE?pathToFileURL(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE).href:'playwright');
+const browser=process.env.CRISPAUDIO_CHROME_EXECUTABLE?await chromium.launch({headless:true,executablePath:process.env.CRISPAUDIO_CHROME_EXECUTABLE}):await webkit.launch({headless:true,...(process.env.CRISPAUDIO_WEBKIT_EXECUTABLE?{executablePath:process.env.CRISPAUDIO_WEBKIT_EXECUTABLE}:{})});
 const temp=await mkdtemp(join(tmpdir(),'crispaudio-range-'));
 const clip={id:'a',trackId:'mic',sourceId:'s',linkGroup:'av',startTime:0,duration:10,sourceOffset:0,gain:1,name:'sound',color:'#fff',effects:[],fadeInDuration:0,fadeOutDuration:0,fadeInCurve:'linear',fadeOutCurve:'linear'};
 const project={id:'p',name:'Range fixture',sampleRate:48000,duration:15,minimumDuration:15,masterEffects:[],editRange:{start:3,end:5},markers:[{id:'m',time:8,name:'end'}],transcript:[{id:'cue',start:7,end:9,text:'answer'}],tracks:[
  {id:'mic',name:'Mic',volume:1,pan:0,muted:false,solo:false,automation:[{time:0,value:0},{time:10,value:1}],segments:[clip]},
  {id:'music',name:'Music',rippleEnabled:false,volume:1,pan:0,muted:false,solo:false,segments:[{...clip,id:'music-clip',trackId:'music',linkGroup:undefined}]}],video:{path:'video.mp4',duration:10,session:{},clips:[{id:'v',linkGroup:'av',startTime:0,duration:10,sourceOffset:0,fadeIn:0,fadeOut:0,transition:'cut',transitionDuration:0}]}};
 // IDs are intentionally generated independently; compare positions and link membership.
-function semantic(p){return {duration:p.duration,minimumDuration:p.minimumDuration,markers:p.markers,transcript:p.transcript,editRange:p.editRange??null,tracks:p.tracks.map(t=>({id:t.id,automation:t.automation??null,segments:t.segments.map(c=>({start:c.startTime,duration:c.duration,offset:c.sourceOffset,linked:!!c.linkGroup}))})),video:p.video.clips.map(c=>({start:c.startTime,duration:c.duration,offset:c.sourceOffset,linked:!!c.linkGroup}))};}
+function semantic(p){return {duration:p.duration,minimumDuration:p.minimumDuration,markers:p.markers,transcript:p.transcript?.map(({words,...cue})=>({...cue,words:words??null})),editRange:p.editRange??null,tracks:p.tracks.map(t=>({id:t.id,automation:t.automation??null,segments:t.segments.map(c=>({start:c.startTime,duration:c.duration,offset:c.sourceOffset,linked:!!c.linkGroup}))})),video:p.video.clips.map(c=>({start:c.startTime,duration:c.duration,offset:c.sourceOffset,linked:!!c.linkGroup,transition:c.transition,transitionDuration:c.transitionDuration}))};}
 try{
  const page=await browser.newPage({viewport:{width:1280,height:900}});
  await page.goto(process.env.CRISPAUDIO_TEST_URL||'http://127.0.0.1:5190');await page.waitForLoadState('networkidle');
@@ -47,6 +47,33 @@ try{
    assert.deepEqual(semantic(native),semantic(frontend));results.push({operation,duration:native.duration});
   }
  }
+ const blend=structuredClone(project);blend.minimumDuration=undefined;blend.duration=10;blend.transcript=[];blend.markers=[];blend.frameRate=25;blend.editRange={start:4.4,end:4.6};blend.tracks[1].segments=[];
+ blend.tracks[0].segments=[{...clip,duration:5,linkGroup:'left'},{...clip,id:'b-audio',startTime:5,sourceOffset:5,duration:5,linkGroup:'right'}];
+ blend.video.clips=[{...project.video.clips[0],duration:5,linkGroup:'left'},{...project.video.clips[0],id:'b',startTime:4,sourceOffset:4,duration:6,transition:'fade',transitionDuration:1,linkGroup:'right'}];
+ const blendResults=[];
+ for(const operation of ['lift','extract','insert']){
+  await page.evaluate(async p=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.getState().loadProjectState(p,new Map());useProjectStore.temporal.getState().clear();},blend);
+  await page.getByRole('button',{name:'Edit time range',exact:true}).click();
+  const dialog=page.getByRole('dialog');await dialog.getByLabel('Operation',{exact:true}).selectOption(operation);
+  assert.equal(await dialog.getByRole('button',{name:'Apply edit'}).isEnabled(),false);
+  const policy=dialog.getByLabel('Crossed video blends',{exact:true});assert.equal(await policy.inputValue(),'preserve');
+  await policy.selectOption('cut');
+  await dialog.getByText(/Cross dissolve.*4.000–5.000 s → cut at/).waitFor();
+  await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
+  const frontend=await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;});
+  const picture=frontend.video.clips.find(c=>c.id==='b'),sound=frontend.tracks[0].segments.find(c=>c.id==='b-audio');
+  assert.equal(picture.startTime,sound.startTime);assert.equal(picture.sourceOffset,sound.sourceOffset);assert.equal(picture.transition,'cut');
+  if(process.env.CRISPAUDIO_CLI){
+   const input=join(temp,'blend.crispaudio'),recipe=join(temp,`blend-${operation}.json`),output=join(temp,`blend-${operation}.crispaudio`);
+   await writeFile(input,JSON.stringify({format:'crispaudio-project',version:3,project:blend,sources:[]}));
+   await writeFile(recipe,JSON.stringify([{op:'range-edit',operation,start:4.4,end:4.6,transitionPolicy:'cut'}]));
+   execFileSync(process.env.CRISPAUDIO_CLI,['edit-project','--input',input,'--recipe',recipe,'--output',output]);
+   const native=JSON.parse(await readFile(output,'utf8')).project;assert.deepEqual(semantic(native),semantic(frontend));
+  }
+  await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.temporal.getState().undo();});
+  const undo=await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;});assert.deepEqual(semantic(undo),semantic(blend));
+  blendResults.push({operation,duration:frontend.duration,cutTime:picture.startTime,undo:'passed'});
+ }
  let realProject;
  if(process.env.CRISPAUDIO_CLI&&process.env.CRISPAUDIO_PROJECT){
   const document=JSON.parse(await readFile(process.env.CRISPAUDIO_PROJECT,'utf8'));
@@ -57,5 +84,14 @@ try{
   const frontend=await page.evaluate(async p=>{const {editTimeRange}=await import('/src/lib/rangeEdits.ts');return editTimeRange(p,45,47,'extract');},document.project);
   assert.deepEqual(semantic(native),semantic(frontend));realProject={name:native.name,before:document.project.duration,after:native.duration};
  }
- console.log(JSON.stringify({dialog:'passed',partialLinks:'blocked',undo:'passed',cliParity:results,realProject}));
+ await page.evaluate(async p=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.getState().loadProjectState(p,new Map());},blend);
+ await page.getByRole('button',{name:'Edit time range',exact:true}).click();
+ await page.setViewportSize({width:390,height:844});
+ await page.evaluate(async()=>{const {default:i18n}=await import('/src/i18n/index.ts');await i18n.changeLanguage('de');});
+ const mobileDialog=page.getByRole('dialog');
+ await mobileDialog.getByLabel('Durchquerte Videoblenden',{exact:true}).selectOption('cut');
+ assert.equal(await mobileDialog.getByRole('button',{name:'Bearbeitung anwenden'}).isEnabled(),true);
+ const bounds=await mobileDialog.boundingBox();assert.ok(bounds.x>=0&&bounds.x+bounds.width<=391);
+ assert.equal(await mobileDialog.evaluate(el=>el.scrollWidth<=el.clientWidth),true);
+ console.log(JSON.stringify({dialog:'passed',partialLinks:'blocked',undo:'passed',cliParity:results,blendCuts:blendResults,germanPhoneLayout:'passed',realProject}));
 }finally{await browser.close();await rm(temp,{recursive:true,force:true});}

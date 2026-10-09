@@ -503,3 +503,17 @@ boundary guard. Initial/final picture topology and source/body/frame limits appl
 Shortening retimes surviving alignment; extending source speech keeps its old layout
 signature stale. Optional `test-ripple-blend.py` checks all four native edge/direction
 cases; trim browser harness verifies GUI/CLI parity and one-step undo.
+
+
+## Reviewed range blend policy 0.8.11
+
+`rangeEdits` / native `range_edit` default to preserve; public range recipes may
+explicitly set `transitionPolicy: "cut"`. Convert only actual overlaps crossed by
+normalized boundaries, at the outgoing clip end: advance incoming start/source
+by its overlap, shorten duration and set transition cut/0. Preserve original scope
+and lock checks before conversion. Validate initial/final topology, frame edges
+and surviving body; fit shortened picture fades. RangeEditDialog lists resulting
+cut times before commit. Internal ripple shapes still bypass only their reviewed
+blend boundaries. Speech edits must not silently opt into cut conversion. Lift
+retains the original canvas even without a previous minimumDuration. Optional
+browser and native Apple harnesses: test-range-edits.mjs / test-range-blend.py.

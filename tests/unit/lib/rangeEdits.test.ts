@@ -55,3 +55,53 @@ it('retimes nested words and retains a stale arrangement guard',()=>{
  const out=editTimeRange(p,3,5,'extract');expect(out.transcript![0].words![0]).toMatchObject({start:5,end:7});expect(out.transcriptLayout).not.toEqual(layout);
  p.transcriptLayout=[['stale']];expect(editTimeRange(p,3,5,'extract').transcriptLayout).toEqual([['stale']]);
 });
+
+function blendedProject():TimelineProject {
+ const p=project();p.frameRate=25;p.transcript=[];p.markers=[];
+ const a=p.tracks[0].segments[0];
+ p.tracks[0].segments=[{...a,duration:5,linkGroup:'left'},{...a,id:'b-audio',startTime:5,sourceOffset:5,duration:5,linkGroup:'right'}];
+ p.video!.clips=[{id:'v',linkGroup:'left',startTime:0,duration:5,sourceOffset:0,fadeIn:0,fadeOut:0,transition:'cut',transitionDuration:0},{id:'b',linkGroup:'right',startTime:4,duration:6,sourceOffset:4,fadeIn:0,fadeOut:0,transition:'fade',transitionDuration:1}];
+ return p;
+}
+it.each(['lift','extract','insert'] as const)('explicit %s policy replaces only crossed blends and preserves the linked source clock',operation=>{
+ const p=blendedProject(),original=structuredClone(p),out=editTimeRange(p,4.4,4.6,operation,{transitionPolicy:'cut'});
+ const picture=out.video!.clips!.find(c=>c.id==='b')!,sound=out.tracks[0].segments.find(c=>c.id==='b-audio')!;
+ expect(p).toEqual(original);expect(picture).toMatchObject({sourceOffset:5,duration:5,linkGroup:'right',transition:'cut',transitionDuration:0});
+ expect(picture.startTime).toBeCloseTo(operation==='lift'?5:operation==='extract'?4.8:5.2);
+ expect(picture.startTime).toBeCloseTo(sound.startTime);expect(picture.sourceOffset).toBe(sound.sourceOffset);
+ expect(out.duration).toBeCloseTo(operation==='lift'?10:operation==='extract'?9.8:10.2);
+});
+it('preserves uncrossed blends even with the explicit hard-cut policy',()=>{
+ const p=blendedProject(),out=editTimeRange(p,1,2,'extract',{transitionPolicy:'cut'});
+ expect(out.video!.clips!.at(-1)).toMatchObject({sourceOffset:4,startTime:3,duration:6,transition:'fade',transitionDuration:1});
+});
+it('requires complete original scope and unlocked tracks before converting blends',()=>{
+ const p=blendedProject();
+ expect(()=>editTimeRange(p,4.4,4.6,'lift',{transitionPolicy:'cut',trackIds:[]})).toThrow('linkedScope');
+ p.video!.locked=true;expect(()=>editTimeRange(p,4.4,4.6,'lift',{transitionPolicy:'cut'})).toThrow('locked');
+});
+it('blocks malformed overlap and off-frame blend edges instead of repairing them',()=>{
+ const p=blendedProject();p.video!.clips![1].transitionDuration=.5;
+ expect(()=>editTimeRange(p,4.4,4.6,'extract',{transitionPolicy:'cut'})).toThrow('pictureTopology');
+ p.video!.clips![1].transitionDuration=.99;p.video!.clips![1].startTime=4.01;p.video!.clips![1].sourceOffset=4.01;p.video!.clips![1].duration=5.99;
+ expect(()=>editTimeRange(p,4.4,4.6,'extract',{transitionPolicy:'cut'})).toThrow('pictureTopology');
+});
+it('lifting the tail or whole arrangement keeps the original canvas without a preexisting floor',()=>{
+ const p=project();p.transcript=[];
+ for(const start of [8,0]){const out=editTimeRange(p,start,10,'lift',{retimeGlobal:false});expect(out.duration).toBe(10);expect(out.minimumDuration).toBe(10);}
+});
+it('reviews the resulting cut position and normalizes range boundaries to frames',async()=>{
+ const {planRangeTransitionCuts}=await import('../../../src/lib/rangeEdits');
+ const review=planRangeTransitionCuts(blendedProject(),4.401,4.599,'extract');
+ expect(review).toHaveLength(1);expect(review[0]).toMatchObject({clipId:'b',transition:'fade',start:4,end:5,cutTime:5});expect(review[0].resultingCutTime).toBeCloseTo(4.8);
+});
+
+it('reviews a surviving incoming clip at its trimmed start and reports a removed clip honestly',async()=>{
+ const {planRangeTransitionCuts}=await import('../../../src/lib/rangeEdits');
+ const p=blendedProject();
+ expect(planRangeTransitionCuts(p,4.4,6,'lift')[0].resultingCutTime).toBe(6);
+ const lift=editTimeRange(p,4.4,6,'lift',{transitionPolicy:'cut'});expect(lift.video!.clips!.at(-1)).toMatchObject({startTime:6,sourceOffset:6,transition:'cut'});
+ expect(planRangeTransitionCuts(p,4.4,6,'extract')[0].resultingCutTime).toBe(4.4);
+ expect(planRangeTransitionCuts(p,4.4,10,'extract')[0].resultingCutTime).toBeNull();
+ const extract=editTimeRange(p,4.4,10,'extract',{transitionPolicy:'cut'});expect(extract.video!.clips).toHaveLength(1);expect(extract.duration).toBeCloseTo(4.4);
+});

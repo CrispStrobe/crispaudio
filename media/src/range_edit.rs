@@ -57,11 +57,94 @@ fn gain_at(points: &[Value], t: f64) -> Result<f64> {
     }
     number(sorted.last().unwrap(), "value")
 }
+fn validate_pictures(p: &Value, cs: &[Value]) -> Result<()> {
+    for (i, c) in cs.iter().enumerate() {
+        let duration = number(c, "duration")?;
+        if ![
+            "cut",
+            "fade",
+            "fadeblack",
+            "fadewhite",
+            "wipeleft",
+            "wiperight",
+            "wipeup",
+            "wipedown",
+            "slideleft",
+            "slideright",
+            "slideup",
+            "slidedown",
+            "hblur",
+            "zoomin",
+            "pixelize",
+            "whip",
+            "glitch",
+            "pagepeel",
+        ]
+        .contains(&c["transition"].as_str().unwrap_or(""))
+            || c.get("transitionDuration")
+                .is_some_and(|v| v.as_f64().is_none_or(|n| !n.is_finite() || n < 0.0))
+        {
+            return Err("Invalid picture transition".into());
+        }
+        let offset = number(c, "sourceOffset")?;
+        let bound = if let Some(id) = c["sourceId"].as_str() {
+            p["video"]["sources"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .find(|s| s["id"] == id)
+                .and_then(|s| s["duration"].as_f64())
+                .unwrap_or(-1.0)
+        } else {
+            number(&p["video"], "duration")?
+        };
+        for key in ["fadeIn", "fadeOut"] {
+            if let Some(v) = c.get(key) {
+                let fade = v
+                    .as_f64()
+                    .filter(|n| n.is_finite())
+                    .ok_or("Invalid picture fade")?;
+                if fade < 0.0 || fade > duration {
+                    return Err("Invalid picture fade after range edit".into());
+                }
+            }
+        }
+        if number(c, "startTime")? < 0.0 || offset < 0.0 || offset + duration > bound + 1e-6 {
+            return Err("Invalid picture source bounds".into());
+        }
+        if number(c, "duration")? < 1.0 / 120.0 {
+            return Err("Unsupported picture topology".into());
+        }
+        if i > 0 {
+            let prev = &cs[i - 1];
+            let overlap =
+                number(prev, "startTime")? + number(prev, "duration")? - number(c, "startTime")?;
+            if overlap > 1e-6
+                && (c["transition"] == "cut"
+                    || (overlap - number(c, "transitionDuration")?).abs() > 1e-6
+                    || overlap >= number(prev, "duration")?.min(number(c, "duration")?)
+                    || (i > 1
+                        && number(&cs[i - 2], "startTime")? + number(&cs[i - 2], "duration")?
+                            > number(c, "startTime")? + 1e-6))
+            {
+                return Err("Unsupported picture overlap after range edit".into());
+            }
+        }
+    }
+    Ok(())
+}
 pub fn apply(p: &Value, op: &Value) -> Result<Value> {
     apply_trim(p, op, &HashMap::new())
 }
 /// Internal clip shapes reviewed by advanced ripple trims; not a JSON recipe option.
 pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) -> Result<Value> {
+    let policy = match op.get("transitionPolicy") {
+        None => "preserve",
+        Some(value) => value
+            .as_str()
+            .filter(|v| ["preserve", "cut"].contains(v))
+            .ok_or("Invalid transition policy")?,
+    };
     let operation = op["operation"].as_str().unwrap_or("extract");
     let mut start = number(op, "start")?;
     let mut end = number(op, "end")?;
@@ -177,19 +260,53 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
     } else {
         vec![start, end]
     };
-    if video
-        && picture.iter().any(|c| {
-            !trims.contains_key(c["id"].as_str().unwrap_or(""))
-                && c["transition"] != "cut"
-                && boundaries.iter().any(|t| {
-                    *t > c["startTime"].as_f64().unwrap_or(0.0)
-                        && *t
-                            < c["startTime"].as_f64().unwrap_or(0.0)
-                                + c["transitionDuration"].as_f64().unwrap_or(0.0)
-                })
-        })
-    {
-        return Err("Range boundary crosses a video transition".into());
+    let mut cuts: HashMap<String, Value> = HashMap::new();
+    if video {
+        let mut sorted = picture.clone();
+        sorted.sort_by(|a, b| {
+            a["startTime"]
+                .as_f64()
+                .unwrap_or(0.0)
+                .total_cmp(&b["startTime"].as_f64().unwrap_or(0.0))
+        });
+        validate_pictures(p, &sorted)?;
+        let rate = p["frameRate"].as_f64().unwrap_or(25.0);
+        for pair in sorted.windows(2) {
+            let c = &pair[1];
+            let a = number(c, "startTime")?;
+            let b = number(&pair[0], "startTime")? + number(&pair[0], "duration")?;
+            if b - a <= 1e-6
+                || !boundaries.iter().any(|t| *t > a && *t < b)
+                || trims.contains_key(c["id"].as_str().unwrap_or(""))
+            {
+                continue;
+            }
+            if policy != "cut" {
+                return Err("Range boundary crosses a video transition".into());
+            }
+            let duration = number(c, "duration")? - (b - a);
+            if ((a * rate).round() / rate - a).abs() > 1e-7
+                || ((b * rate).round() / rate - b).abs() > 1e-7
+                || duration < 1.0 / rate - 1e-7
+            {
+                return Err("Unsupported picture transition boundary".into());
+            }
+            let mut cut = c.clone();
+            cut["startTime"] = json!(b);
+            cut["sourceOffset"] = json!(number(c, "sourceOffset")? + b - a);
+            cut["duration"] = json!(duration);
+            cut["transition"] = json!("cut");
+            cut["transitionDuration"] = json!(0);
+            for key in ["fadeIn", "fadeOut"] {
+                if c.get(key).is_some() {
+                    cut[key] = json!(number(c, key)?.min(duration / 2.0));
+                }
+            }
+            cuts.insert(
+                c["id"].as_str().ok_or("Missing picture id")?.to_owned(),
+                cut,
+            );
+        }
     }
     if global
         && p["transcript"].as_array().is_some_and(|cs| {
@@ -211,8 +328,12 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
         if let Some(trim) = trims.get(c["id"].as_str().unwrap_or("")) {
             return Ok(vec![trim.clone()]);
         }
+        let c = cuts.get(c["id"].as_str().unwrap_or("")).unwrap_or(c);
         let a = number(c, "startTime")?;
         let b = a + number(c, "duration")?;
+        if b <= start {
+            return Ok(vec![c.clone()]);
+        }
         let audio = c.get("trackId").is_some();
         let mut left = c.clone();
         let mut right = c.clone();
@@ -329,53 +450,7 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
                 .unwrap()
                 .total_cmp(&b["startTime"].as_f64().unwrap())
         });
-        for (i, c) in cs.iter().enumerate() {
-            let duration = number(c, "duration")?;
-            let offset = number(c, "sourceOffset")?;
-            let bound = if let Some(id) = c["sourceId"].as_str() {
-                p["video"]["sources"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .find(|s| s["id"] == id)
-                    .and_then(|s| s["duration"].as_f64())
-                    .unwrap_or(-1.0)
-            } else {
-                number(&p["video"], "duration")?
-            };
-            for key in ["fadeIn", "fadeOut"] {
-                if let Some(v) = c.get(key) {
-                    let fade = v
-                        .as_f64()
-                        .filter(|n| n.is_finite())
-                        .ok_or("Invalid picture fade")?;
-                    if fade < 0.0 || fade > duration {
-                        return Err("Invalid picture fade after range edit".into());
-                    }
-                }
-            }
-            if number(c, "startTime")? < 0.0 || offset < 0.0 || offset + duration > bound + 1e-6 {
-                return Err("Invalid picture source bounds".into());
-            }
-            if number(c, "duration")? < 1.0 / 120.0 {
-                return Err("Unsupported picture topology".into());
-            }
-            if i > 0 {
-                let prev = &cs[i - 1];
-                let overlap = number(prev, "startTime")? + number(prev, "duration")?
-                    - number(c, "startTime")?;
-                if overlap > 1e-6
-                    && (c["transition"] == "cut"
-                        || (overlap - number(c, "transitionDuration")?).abs() > 1e-6
-                        || overlap >= number(prev, "duration")?.min(number(c, "duration")?)
-                        || (i > 1
-                            && number(&cs[i - 2], "startTime")? + number(&cs[i - 2], "duration")?
-                                > number(c, "startTime")? + 1e-6))
-                {
-                    return Err("Unsupported picture overlap after range edit".into());
-                }
-            }
-        }
+        validate_pictures(p, &cs)?;
         out["video"]["clips"] = json!(cs);
         let v = out["video"].as_object_mut().unwrap();
         v.remove("inPoint");
@@ -420,6 +495,7 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
         }
     }
     if operation == "lift" {
+        out["minimumDuration"] = json!(duration);
         out["editRange"] = json!({"start":start,"end":end})
     } else {
         out.as_object_mut().unwrap().remove("editRange");
@@ -448,6 +524,100 @@ mod tests {
     use super::*;
     fn project() -> Value {
         json!({"sampleRate":48000,"duration":10,"tracks":[{"id":"mic","segments":[{"id":"a","trackId":"mic","linkGroup":"av","sourceId":"s","startTime":0,"duration":10,"sourceOffset":0}],"automation":[{"time":0,"value":0},{"time":10,"value":1}]},{"id":"music","rippleEnabled":false,"segments":[]}],"video":{"path":"a.mp4","duration":10,"clips":[{"id":"v","linkGroup":"av","startTime":0,"duration":10,"sourceOffset":0,"fadeIn":0,"fadeOut":0,"transition":"cut","transitionDuration":0}]},"markers":[{"id":"m","time":8}],"transcript":[{"id":"c","start":7,"end":9,"text":"answer"}]})
+    }
+    fn blended() -> Value {
+        let mut p = project();
+        p["frameRate"] = json!(25);
+        p["transcript"] = json!([]);
+        p["tracks"][0]["segments"] = json!([
+          {"id":"a","trackId":"mic","linkGroup":"left","sourceId":"s","startTime":0,"duration":5,"sourceOffset":0},
+          {"id":"b-audio","trackId":"mic","linkGroup":"right","sourceId":"s","startTime":5,"duration":5,"sourceOffset":5}
+        ]);
+        p["video"]["clips"] = json!([
+          {"id":"v","linkGroup":"left","startTime":0,"duration":5,"sourceOffset":0,"fadeIn":0,"fadeOut":0,"transition":"cut","transitionDuration":0},
+          {"id":"b","linkGroup":"right","startTime":4,"duration":6,"sourceOffset":4,"fadeIn":0,"fadeOut":0,"transition":"fade","transitionDuration":1}
+        ]);
+        p
+    }
+    #[test]
+    fn reviewed_blend_cuts_preserve_linked_clock_for_all_range_operations() {
+        let p = blended();
+        for (operation, cut, duration) in [
+            ("lift", 5.0, 10.0),
+            ("extract", 4.8, 9.8),
+            ("insert", 5.2, 10.2),
+        ] {
+            let op = json!({"operation":operation,"start":4.4,"end":4.6,"transitionPolicy":"cut"});
+            let out = apply(&p, &op).unwrap();
+            let picture = out["video"]["clips"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|c| c["id"] == "b")
+                .unwrap();
+            let sound = out["tracks"][0]["segments"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|c| c["id"] == "b-audio")
+                .unwrap();
+            assert!((number(picture, "startTime").unwrap() - cut).abs() < 1e-7);
+            assert!(
+                (number(picture, "startTime").unwrap() - number(sound, "startTime").unwrap()).abs()
+                    < 1e-7
+            );
+            assert_eq!(picture["sourceOffset"], 5.0);
+            assert_eq!(picture["duration"], 5.0);
+            assert_eq!(picture["transition"], "cut");
+            assert_eq!(picture["linkGroup"], "right");
+            assert!((number(&out, "duration").unwrap() - duration).abs() < 1e-7);
+            assert!(apply(&p, &json!({"operation":operation,"start":4.4,"end":4.6})).is_err());
+        }
+    }
+    #[test]
+    fn conversion_obeys_original_scope_locks_and_rejects_malformed_policy_and_blends() {
+        let mut p = blended();
+        let op = json!({"start":4.4,"end":4.6,"operation":"lift","transitionPolicy":"cut"});
+        assert!(apply(
+            &p,
+            &json!({"start":4.4,"end":4.6,"transitionPolicy":"cut","trackIds":[]})
+        )
+        .is_err());
+        p["video"]["locked"] = json!(true);
+        assert!(apply(&p, &op).is_err());
+        p["video"]["locked"] = json!(false);
+        for policy in [json!("guess"), json!(null), json!(42)] {
+            let mut bad = op.clone();
+            bad["transitionPolicy"] = policy;
+            assert!(apply(&p, &bad).is_err());
+        }
+        p["video"]["clips"][1]["transitionDuration"] = json!(0.5);
+        assert!(apply(&p, &op).is_err());
+        p["video"]["clips"][1]["startTime"] = json!(4.01);
+        p["video"]["clips"][1]["sourceOffset"] = json!(4.01);
+        p["video"]["clips"][1]["duration"] = json!(5.99);
+        p["video"]["clips"][1]["transitionDuration"] = json!(0.99);
+        assert!(apply(&p, &op).is_err());
+    }
+    #[test]
+    fn cut_policy_preserves_unaffected_blends_and_lift_preserves_empty_canvas() {
+        let p = blended();
+        let out = apply(&p, &json!({"start":1,"end":2,"transitionPolicy":"cut"})).unwrap();
+        assert_eq!(
+            out["video"]["clips"].as_array().unwrap().last().unwrap()["transition"],
+            "fade"
+        );
+        for start in [0, 8] {
+            let mut p = project();
+            p["transcript"] = json!([]);
+            let out = apply(
+                &p,
+                &json!({"operation":"lift","start":start,"end":10,"retimeGlobal":false}),
+            )
+            .unwrap();
+            assert_eq!(out["duration"], 10.0);
+            assert_eq!(out["minimumDuration"], 10.0);
+        }
     }
     #[test]
     fn named_scope_requires_all_members_until_grouping_is_disabled() {

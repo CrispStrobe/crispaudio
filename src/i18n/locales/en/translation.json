@@ -1013,7 +1013,13 @@
     "pictureTopology": "This cut would create an unsupported picture overlap. Adjust its boundaries or the affected transition.",
     "changed": "The arrangement changed. Review the current range again.",
     "duration": "Canvas: {{before}} s → {{after}} s",
-    "groupScope": "Include every named group track, or disable group editing."
+    "groupScope": "Include every named group track, or disable group editing.",
+    "transitionPolicy": "Crossed video blends",
+    "preserveTransitions": "Preserve blends",
+    "cutTransitions": "Replace crossed blends with cuts",
+    "cutExplanation": "Only crossed blends change. The cut uses the original blend end and keeps source timing; the times below include this range edit.",
+    "cutReview": "{{kind}} · {{start}}–{{end}} s → cut at {{cut}} s",
+    "cutReviewRemoved": "{{kind}} · {{start}}–{{end}} s → incoming clip removed"
   },
   "trimEdits": {
     "title": "Trim tools",

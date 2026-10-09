@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.10]
+## [Unreleased — local version 0.8.11]
+
+- Review crossed picture blends in range edits and explicitly replace them with
+  hard cuts at their original ends. Preview the resulting cut times; preserve
+  linked source timing, unaffected transitions, scope/locks and one-step undo.
+- Add CLI `transitionPolicy: "cut"`; the default preserves blends and rejects
+  boundaries inside them. Validate original and edited picture topology.
+- Keep the original canvas when lifting the tail or the entire arrangement.
+
+## [Local version 0.8.10]
 
 - Ripple-trim linked clips through incoming/outgoing picture transitions in both
   directions, preserving blend windows/types and clip/source-link identities.

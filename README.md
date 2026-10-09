@@ -85,7 +85,8 @@ validation for newer timeline controls remain incomplete. The timeline currently
 has **one picture composition lane**. GUI audio import/playback uses decoded
 in-memory buffers; eligible macOS linked-project exports use native disk streaming.
 Rolling, slide and linked ripple trims preserve existing picture transitions.
-Generic range boundaries through picture blends are still restricted.
+Range edits can explicitly replace crossed picture blends with reviewed hard cuts;
+other transitions stay intact. Transcript cue boundaries still require adjustment.
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)

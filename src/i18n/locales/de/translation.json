@@ -1013,7 +1013,13 @@
     "pictureTopology": "Dieser Schnitt würde eine nicht unterstützte Bildüberlappung erzeugen. Die Grenzen oder den betroffenen Übergang anpassen.",
     "changed": "Die Anordnung hat sich geändert. Den aktuellen Bereich erneut prüfen.",
     "duration": "Canvas: {{before}} s → {{after}} s",
-    "groupScope": "Alle Spuren der benannten Gruppe einbeziehen oder Gruppenbearbeitung ausschalten."
+    "groupScope": "Alle Spuren der benannten Gruppe einbeziehen oder Gruppenbearbeitung ausschalten.",
+    "transitionPolicy": "Durchquerte Videoblenden",
+    "preserveTransitions": "Blenden erhalten",
+    "cutTransitions": "Blenden durch Schnitte ersetzen",
+    "cutExplanation": "Nur durchquerte Blenden ändern sich. Der Schnitt liegt am ursprünglichen Blendenende und erhält die Quellzeit; die angezeigten Zeiten berücksichtigen die Bereichsbearbeitung.",
+    "cutReview": "{{kind}} · {{start}}–{{end}} s → Schnitt bei {{cut}} s",
+    "cutReviewRemoved": "{{kind}} · {{start}}–{{end}} s → eingehender Clip entfernt"
   },
   "trimEdits": {
     "title": "Schnittwerkzeuge",

@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-09, during local 0.8.10 implementation. This section is the current plan.
+Updated 2026-10-09, during local 0.8.11 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -101,8 +101,9 @@ and picture. Local 0.8.1 adds reviewed scoped lift/extract/insert-gap, saved rip
 participation, linked scope checks, automation boundary values and explicit
 canvas/marker/transcript retiming, with GUI/CLI parity and undo validation.
 Unaffected picture transitions remain; boundaries through blends or transcript
-cues require review rather than silently damaging them. M1 is not complete:
-generic range boundaries through transitions remain.
+cues require review rather than silently damaging them. Generic range blend
+handling is now explicit (see 0.8.11 below). M1 remains in progress pending the
+end-to-end completion example and interactive source-handle/limit feedback.
 Local 0.8.2 adds explicit selected audio-range export with full DSP preroll,
 native bounded output, CLI audio/video export bounds and a reviewed action to
 reuse the selected range for picture export. Real interview WAV samples match
@@ -127,7 +128,15 @@ windows and fixed middle source content while linked sound moves with it.
 Local 0.8.10 adds linked ripple trims through picture overlaps: trim selected
 source content, retain both transition windows and shift following participating
 lanes. Clip IDs/links survive, with common scope/lock/global retiming checks.
-Generic range boundaries through blends still need their own reviewed semantics.
+Local 0.8.11 adds an explicit range policy: review each crossed picture overlap
+and replace it with a hard cut at the original blend end before lift/extract/insert.
+The preview includes resulting cut times; unaffected transitions/source clocks and
+linked sound remain consistent. The CLI defaults to preserving blends and accepts
+`transitionPolicy: "cut"` explicitly. Lift retains the canvas even after removing
+its entire contents. Transcript boundaries still need review/adjustment; speech
+edits keep their conservative default. Next: audit the M1 completion workflow
+across preview, range export, save/reopen, undo/redo, then improve visible source
+handle/limit feedback before starting the M2 mixer slice.
 Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
 seamless musical looping. Paging and new codec work remain deferred.
 

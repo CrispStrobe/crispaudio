@@ -272,8 +272,11 @@ CRISPAUDIO_PLAYWRIGHT_MODULE and CRISPAUDIO_WEBKIT_EXECUTABLE as needed.
 
 Linked picture and sound must both participate. Locked affected lanes block the
 edit; explicitly exclude an independent locked lane or unlock it. Range boundaries
-inside a video blend or transcript cue require adjustment/review first. Other
-transitions remain. Existing outer fades are preserved; a cut that would leave
+inside a video blend expose **Crossed video blends**: keep the default and move
+the boundaries, or explicitly choose **Replace crossed blends with cuts**. The
+list shows each original overlap and resulting cut time. Cuts use the original
+blend end, trim its incoming picture handle and preserve linked source timing.
+Uncrossed transitions remain. Transcript cue boundaries still require adjustment. Existing outer fades are preserved; a cut that would leave
 invalid picture fades/overlaps is blocked rather than silently changing them.
 Audio automation retains values at the edit boundary and shifts with included
 tracks. Picture participation quantizes boundaries to project frames.
@@ -287,9 +290,15 @@ CLI recipes use the same contract:
 
 Omit trackIds/includeVideo to use saved participation (older projects default to
 all lanes). Legacy `ripple` uses extract with that scope. `edit-project` writes a
-new file and refuses to overwrite one. The optional WebKit dialog/undo/parity
+new file and refuses to overwrite one. `transitionPolicy` defaults to `"preserve"`;
+set `"cut"` explicitly to convert only blends crossed by the normalized range
+boundaries. Lift always retains the original canvas, including an empty tail.
+The optional browser dialog/undo/parity
 check is `scripts/test-range-edits.mjs`; set CRISPAUDIO_CLI for native parity and
-CRISPAUDIO_PROJECT to check an existing interview without modifying it.
+CRISPAUDIO_PROJECT to check an existing interview without modifying it. Set
+CRISPAUDIO_CHROME_EXECUTABLE for Chrome instead of WebKit. The optional macOS
+`scripts/test-range-blend.py /path/to/crispaudio` checks actual Apple-rendered
+cuts, gaps and unaffected dissolves; FFmpeg creates/inspects synthetic inputs.
 
 ## Export a selected range — local 0.8.2
 
@@ -444,7 +453,7 @@ The transition must already have a valid two-clip overlap matching its duration.
 Both overlap edges must lie on project frame boundaries. Each neighbouring clip
 must retain at least one frame outside the overlap. Source limits, locked/grouped
 lanes, ambiguous neighbours and conflicts with another transition block the edit.
-Generic range boundaries through picture blends remain restricted. CLI uses
+Generic range edits offer a separate explicit hard-cut policy (above). CLI uses
 `[{"op":"roll","ids":["left-clip-id"],"seconds":0.08}]` for cuts and transitions.
 
 The optional macOS `scripts/test-roll-blend.py /path/to/crispaudio` verifies the

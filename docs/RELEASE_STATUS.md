@@ -1313,3 +1313,48 @@ private artifacts remain in `ux/ripple-blend-0810/`, outside the repository.
 No new iOS device validation, release tag or Apple submission. Generic range blend
 policies remain unfinished. README describes current support; version narratives
 stay in history.md and implementation records.
+
+
+## Local 0.8.11 — reviewed range cuts through blends (2026-10-09)
+
+Built, installed and launched 0.8.11; app/CLI ad hoc signatures verified and one
+existing autosave preserved. Full frontend suite passed 101 files / 1,374 tests;
+final affected range/trim/project/speech suites passed 5 files / 66 tests after
+adding the removed-clip review case. Native: 57 media + 3 CLI tests passed,
+10 optional integrations ignored. Lint, production TypeScript/web build, release
+CLI and final desktop bundle passed.
+
+Range editing defaults to preserving picture blends. An explicit cut policy
+lists crossed overlaps and resulting cut positions; a removed incoming clip is
+reported as removed. Conversion uses the original outgoing clip endpoint,
+advances incoming source/start by its overlap and fits shortened picture fades.
+Original scope/link/group/lock guards run before conversion; initial/final picture
+topology, frame edges and surviving body are checked. Uncrossed transitions stay
+intact. Transcript boundaries and speech deletion/pasted keep retain their current
+conservative checks. Lift keeps the entire canvas even when no clips remain.
+
+Headless Chrome exercised the actual dialog, default rejection, explicit policy,
+one-step undo and six GUI/CLI comparisons: lift/extract/insert with and without
+crossed blends. The German 390-pixel dialog fits without horizontal overflow;
+this is browser layout evidence, not iOS device validation. Reproduce with
+`scripts/test-range-edits.mjs` and CRISPAUDIO_CHROME_EXECUTABLE / CRISPAUDIO_CLI.
+
+The synthetic native Apple check confirms hard cuts at 2.00 / 1.84 / 2.16 seconds
+for lift/extract/insert, black gaps for lift/insert, preserved outgoing dissolve
+colours and expected 5.60 / 5.44 / 5.76-second durations. Reproduce with
+`scripts/test-range-blend.py /path/to/crispaudio`; FFmpeg creates/inspects the
+synthetic inputs while Apple performs the actual exports.
+
+A private Canon/H6 derivative extracts 59.72–59.92 seconds through the outgoing
+blend, leaves its incoming 0.4-second dissolve intact and replaces the crossed
+blend with a cut at 59.80 seconds. Picture and all three microphones remain
+aligned; the canvas ends at approximately 253.52 seconds. Rendered 44–61.80 s
+24-bit PCM matches original 44–62 s with precisely that interval removed byte
+for byte (854,400 stereo frames). The native 59–61 s MP4 has 2-second audio and
+picture streams. Original media/project are untouched. Private artifacts remain
+under `ux/range-blend-0811/`, outside this repository.
+
+No release tag, Apple submission or new iOS device validation. M1 remains in
+progress pending its end-to-end completion audit and interactive source-handle
+feedback; the M2 mixer follows that milestone. README covers current capabilities;
+chronological notes remain in history.md and these implementation records.
