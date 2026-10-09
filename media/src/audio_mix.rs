@@ -257,6 +257,7 @@ impl Chorus {
 }
 enum Effect {
     Filter(Biquad),
+    Compressor(Box<crate::compressor::Compressor>),
     Delay(Box<Delay>),
     Distortion(Box<crate::distortion::Distortion>),
     Reverb(Box<crate::reverb::Reverb>),
@@ -268,6 +269,7 @@ impl Effect {
     fn at(&mut self, input: [f64; 2], frame: u32) -> [f64; 2] {
         match self {
             Self::Filter(filter) => filter.at(input),
+            Self::Compressor(comp) => comp.at(input, frame),
             Self::Delay(delay) => delay.at(input),
             Self::Distortion(distortion) => distortion.at(input),
             Self::Reverb(reverb) => reverb.at(input),
@@ -301,6 +303,19 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
     for effect in effects.iter().filter(|e| e["enabled"] == true) {
         let params = &effect["params"];
         let kind = effect["type"].as_str().ok_or("Missing effect type")?;
+        if kind == "compressor" {
+            budget.reserve(std::mem::size_of::<crate::compressor::Compressor>())?;
+            out.push(Effect::Compressor(Box::new(
+                crate::compressor::Compressor::new(
+                    finite(params, "threshold", Some(-24.0))?,
+                    finite(params, "knee", Some(5.0))?,
+                    finite(params, "ratio", Some(4.0))?,
+                    finite(params, "attack", Some(0.003))?,
+                    finite(params, "release", Some(0.25))?,
+                ),
+            )));
+            continue;
+        }
         if kind == "distortion" {
             let drive = finite(params, "drive", Some(0.5))?.clamp(0.0, 1.0);
             let mix = finite(params, "mix", Some(0.5))?.clamp(0.0, 1.0);
@@ -529,7 +544,10 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
         let mut stop = 0.0f64;
         let mut mono = true;
         let track_filters = filters(&track["effects"], &mut effect_budget)?;
-        if track_filters.iter().any(|e| matches!(e, Effect::Reverb(_))) {
+        if track_filters
+            .iter()
+            .any(|e| matches!(e, Effect::Reverb(_) | Effect::Compressor(_)))
+        {
             mono = false;
         }
         let automation = Automation::parse(&track["automation"])?;
@@ -556,7 +574,10 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
             }
             let envelope = Envelope::parse(c, length)?;
             let clip_filters = filters(&c["effects"], &mut effect_budget)?;
-            if clip_filters.iter().any(|e| matches!(e, Effect::Reverb(_))) {
+            if clip_filters
+                .iter()
+                .any(|e| matches!(e, Effect::Reverb(_) | Effect::Compressor(_)))
+            {
                 mono = false;
             }
             let clip_gain = positive(c, "gain", Some(1.0))?;
@@ -668,16 +689,24 @@ pub fn render(doc: &Value, output: &str) -> Result<()> {
                 let time = frame as f64 / RATE;
                 let mut value = [0.0; 2];
                 for clip in &mut bus.clips {
-                    if frame < clip.start || (frame >= clip.end && clip.filters.is_empty()) {
+                    if (frame < clip.start
+                        && !clip
+                            .filters
+                            .iter()
+                            .any(|e| matches!(e, Effect::Compressor(_))))
+                        || (frame >= clip.end && clip.filters.is_empty())
+                    {
                         continue;
                     }
-                    let raw = if frame < clip.end && clip.remaining > 0 {
+                    let raw = if frame >= clip.start && frame < clip.end && clip.remaining > 0 {
                         clip.remaining -= 1;
                         sample(&mut clip.reader)?.map(|v| v * clip.gain)
                     } else {
                         [0.0; 2]
                     };
-                    let gain = clip.envelope.at((frame - clip.start) as f64 / RATE);
+                    let gain = clip
+                        .envelope
+                        .at(frame.saturating_sub(clip.start) as f64 / RATE);
                     let raw = process(&mut clip.filters, raw, frame);
                     for ch in 0..2 {
                         value[ch] += raw[ch] * gain;
@@ -1013,7 +1042,8 @@ mod tests {
         let input = source(folder.path(), 1, &[0.25]);
         let mut doc = project(&input);
         let target = folder.path().join("mix.wav");
-        doc["project"]["masterEffects"] = json!([{"type":"compressor","enabled":true,"params":{}}]);
+        doc["project"]["masterEffects"] =
+            json!([{"type":"unsupported-test-effect","enabled":true,"params":{}}]);
         assert!(render(&doc, target.to_str().unwrap())
             .unwrap_err()
             .contains("GUI"));

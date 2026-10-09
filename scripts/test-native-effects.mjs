@@ -83,6 +83,15 @@ for (const type of ['delay', 'chorus']) {
     ? { time: 0.01337, feedback: 0.65, mix: 1 }
     : { rate: 1.5, depth: 1, mix: 1 } });
 }
+for (const params of [
+  {}, { ratio: 1 }, { threshold: -40, knee: 0, ratio: 20, attack: 0, release: 0 },
+  { threshold: -30, knee: 40, ratio: 12, attack: 0.1, release: 1 },
+  { threshold: 0, knee: 0, ratio: 4, attack: 0.003, release: 0.25 },
+]) cases.push({ type: 'compressor', params });
+cases.push({ type: 'compressor', mono: true, params: {} });
+cases.push({ type: 'compressor', rack: 'master', unfiltered: true, burst: true, params: { threshold: -30, ratio: 8, knee: 10, attack: 0.01, release: 0.3 } });
+cases.push({ type: 'compressor', unfiltered: true, burst: true, params: { threshold: -18, ratio: 4, knee: 5, attack: 0.1, release: 0.01 } });
+cases.push({ type: 'compressor', rack: 'master', unfiltered: true, impulse: true, params: {} });
 const browser = await webkit.launch({ headless: true,
   ...(process.env.CRISPAUDIO_WEBKIT_EXECUTABLE ? { executablePath: process.env.CRISPAUDIO_WEBKIT_EXECUTABLE } : {}) });
 const results = [];
@@ -96,7 +105,14 @@ try {
     const base = test.highFrequency
       ? Float32Array.from({ length: sampleRate * channels }, (_, i) => 0.4 * Math.sin(2 * Math.PI * (i % channels ? 19500 : 18000) * Math.floor(i / channels) / sampleRate))
       : test.mono ? Float32Array.from({ length: sampleRate }, (_, i) => stereo[i * 2]) : stereo;
-    const data = test.impulse ? base.slice() : base;
+    const data = test.impulse || test.burst ? base.slice() : base;
+    if (test.burst) {
+      for (let i = 0; i < sampleRate; i++) {
+        const amplitude = i % 12000 < 6000 ? 0.8 : 0.01;
+        data[i * channels] = amplitude * Math.sin(2 * Math.PI * 500 * i / sampleRate);
+        if (channels === 2) data[i * channels + 1] = 0.02 * Math.sin(2 * Math.PI * 2200 * i / sampleRate);
+      }
+    }
     if (test.impulse) {
       data.fill(0);
       for (const i of [7200, 31200]) { data[i * channels] = 0.8; if (channels === 2) data[i * channels + 1] = -0.4; }
@@ -149,13 +165,19 @@ try {
     assert.equal(actual.length, reference.length);
     let max = 0;
     let sum = 0;
+    let peak = 0;
     for (let i = 0; i < actual.length; i++) {
       const error = Math.abs(actual[i] - reference[i]);
       max = Math.max(max, error); sum += error * error;
+      peak = Math.max(peak, Math.abs(reference[i]));
     }
-    const result = { ...test, max, rms: Math.sqrt(sum / actual.length) };
+    const result = { ...test, peak, max, rms: Math.sqrt(sum / actual.length) };
     results.push(result);
-    assert.ok(result.max < 0.0001 && result.rms < 0.00001, JSON.stringify(result));
+    // Float WAV preserves headroom: extreme cascaded compressor makeup can
+    // exceed unity. Keep absolute tolerances for ordinary levels and scale
+    // by measured reference peak only above full scale.
+    const headroom = Math.max(1, peak);
+    assert.ok(result.max < 0.0001 * headroom && result.rms < 0.00001 * headroom, JSON.stringify(result));
   }
 } finally {
   await browser.close();

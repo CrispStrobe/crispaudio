@@ -233,7 +233,7 @@ preview/native/FFmpeg effects are approximate equivalents; page peel is a shaded
 2D fold. These desktop changes do not implement video composition on iOS.
 
 
-## Native linked-project CLI export (local 0.7.6)
+## Native linked-project CLI export (local 0.7.7)
 
 The installed local command is `~/Applications/crispaudio-cli-local`. Save a linked
 project from the desktop app so its source paths remain accessible, then run:
@@ -246,10 +246,10 @@ project from the desktop app so its source paths remain accessible, then run:
 The first command streams the full-clock 48 kHz float WAV mix. The second creates
 that mix in an owned temporary folder and exports the saved video in/out range.
 Solo, mute, pan, gains, automation, overlaps and fade ramps retain their project
-meaning. Low/high-pass, bit-crusher, ring-modulator, delay, chorus, reverb and distortion effects work
+meaning. Low/high-pass, bit-crusher, ring-modulator, delay, chorus, reverb, distortion and compressor effects work
 at clip, track and master level. Ring modulation now correctly blends dry/carrier signals; the
-bit crusher keeps silence at zero rather than introducing DC bias. Other enabled
-FX require GUI rendering and fail explicitly in the CLI. Native mode never
+bit crusher keeps silence at zero rather than introducing DC bias. All nine current
+rack types work natively; unknown enabled FX fail explicitly in the CLI. Native mode never
 switches to FFmpeg. Select compatibility explicitly for an unsupported native
 input/video codec; its audio mixer has narrower support. Audio output currently
 requires a `.wav` filename. Source media and the project file are never rewritten.
@@ -261,7 +261,13 @@ after the track envelope. Delay feedback matches measured macOS WebKit timing,
 including its 128-frame feedback step; timing on other browser engines can differ.
 Chorus sums its two wet delay lines, as the GUI does. Native racks use at most
 64 MiB of DSP-buffer state and 1024 enabled effects across the audible project.
-Compression still requires GUI export.
+Compression links the two channels and preserves the GUI's automatic makeup,
+soft knee, adaptive release and 6 ms lookahead. Its control envelope updates every
+32 frames on the project clock. Mono through a compressor becomes stereo before
+pan. Clip compressor racks process pre-start silence without reading source audio;
+this keeps their envelope clock aligned with the GUI. No latency compensation
+moves clips or automation. Float WAV preserves headroom, including peaks above
+unity from makeup gain; lower rack/track gain when appropriate.
 Timeline distortion uses the same tanh curve and four-times oversampling as the
 GUI. Its wet path arrives 192 frames (4 ms at 48 kHz) after the dry path. That
 filter delay is retained intentionally, including in fades and short clip tails.

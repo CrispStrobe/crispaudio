@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.6
+# Formats and licensing — local 0.7.7
 
 ## Current GUI
 
@@ -71,10 +71,10 @@ may set `backend` and `outputFormat`. CLI flags override those fields. Saved-pro
 rendering uses the global backend policy; picture JSON export options are retained.
 
 CLI project mixing now streams to **48 kHz, stereo, 32-bit float WAV** using
-Apache-2.0 Hound and MIT DSP. It supports linked mono/stereo sources, source
+Apache-2.0 Hound, MIT DSP and BSD-3-Clause WebKit adaptations. It supports linked mono/stereo sources, source
 trims/offsets, overlaps, mute/solo, gains, pan, track/clip fade curves, gain
 automation and enabled low/high-pass, bit-crusher, ring-modulator, delay and
-chorus, convolution reverb and oversampled distortion at clip, track and master
+chorus, convolution reverb, oversampled distortion and compressor at clip, track and master
 level.
 Filter resonance and pan follow Web Audio definitions; fades match the GUI's
 sampled ramp schedule. Ring modulation uses the project clock and a true wet/dry
@@ -91,7 +91,12 @@ WebKit calibration/timing is the reference; other browser engines can differ.
 Timeline distortion uses the GUI's tanh curve, interpolated from 256 Float32
 entries with four-times oversampling. Its wet path includes the same filter
 delay (192 frames at 48 kHz); dry sound stays immediate. Filter tails fit within
-the chosen canvas. Compressor still fails explicitly; use GUI export.
+the chosen canvas. Stereo-linked compression matches WebKit's soft knee,
+adaptive release, automatic makeup gain and 288-frame (6 ms) lookahead at 48 kHz.
+Its detector follows the louder channel; mono becomes stereo before track pan.
+Compression keeps its GUI latency rather than shifting clips or automation.
+All nine current timeline rack types work natively; unknown enabled types fail
+explicitly. WebKit DSP adaptations retain their BSD-3-Clause notices in About.
 
 Native 48 kHz PCM WAVs (8/16/24/32-bit integer or 32-bit float) are read directly.
 On Mac, Apple decodes/resamples other inputs into an owned float WAV without an

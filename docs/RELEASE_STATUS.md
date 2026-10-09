@@ -710,3 +710,51 @@ validation folder. Original sources/projects were unchanged.
 
 Compression still requires GUI export. GUI disk-paged rendering, permissive-only
 WebM and iOS picture export also remain unfinished.
+
+## Local 0.7.7 — native stereo-linked compression
+
+Installed and launched `~/Applications/CrispAudio-local.app` version 0.7.7 and
+replaced `~/Applications/crispaudio-cli-local` with the optimised standalone CLI.
+Both ad-hoc signatures verified. WebKit state and the one saved autosave were
+backed up under `ux/recovery-before-077/`; the autosave JSON remains unchanged.
+No release tag or Apple upload was requested for this local increment.
+
+Every current timeline rack type now works in native linked-project CLI export.
+Compression reproduces the Mac GUI's soft knee, maximum-of-stereo detector,
+automatic makeup, adaptive release and 288-frame lookahead at 48 kHz. Its control
+envelope uses 32-frame project-clock divisions. Clip racks with a compressor
+process pre-start silence without consuming source samples. Mono becomes stereo
+before pan. Fixed state counts toward the shared 64 MiB DSP budget. Unknown
+enabled types still fail; source files and saved projects remain untouched.
+
+The implementation adapts WebKit DynamicsCompressorKernel at revision
+`ae88abe108bcccf28bd309adeed1d0522595e901` under BSD-3-Clause. The Google 2011
+copyright and full notice are retained in the Rust source and bundled in About;
+the generated manifest now contains 26 entries. No new dependency was added.
+
+Validation: 35 media Rust tests and one CLI parser test passed, including linked
+stereo impulse delay and finite zero-release/silence output. Six existing native
+video integrations remain opt-in and were not repeated for this audio change.
+ESLint, TypeScript/production build, optimised CLI and debug macOS app bundle
+passed. The complete actual-WebKit/native comparison passed 56 cases, nine for
+compression including defaults, 1:1 ratio, mono, parameter endpoints, unequal
+stereo bursts, impulses, overlapping clips and all three rack levels. Compressor
+cases below full scale had maximum sample error 1.17e-6 and RMS error 5.41e-8.
+Extreme cascaded makeup exceeds unity in float output; above full scale the
+comparison scales tolerances by the reference peak and does not alter PCM.
+The largest compressor peak-normalised sample error was 1.17e-6. An initial full
+run exceeded tolerance on an existing chorus case; the unchanged repeat passed.
+No chorus change is included, and browser-run variability remains a validation
+limitation. Fixtures/results are archived outside git in `ux/native-compressor-077/`.
+Both desktop and iOS CI passed the previous 0.7.6 commit; this push starts new CI.
+
+The interview's 30–38 second section with default master compression rendered
+in 0.20 seconds (0.10 user / 0.02 system), 40 times faster than playback, using
+the optimised CLI. Peak CLI RSS was 2,703,360 bytes (2.58 MiB). This single
+warm-cache measurement uses direct 48 kHz PCM and excludes OS cache and other
+processes; it is not a general codec/rack benchmark. The derived project and WAV
+are in `ux/real-compressor-077-oh72nntf/`; originals were not rewritten.
+
+GUI disk-paged rendering, permissive-only WebM and iOS picture export remain
+unfinished. The CLI audio endpoint still writes float WAV; GUI encoder workers
+provide the separate compressed-audio formats.

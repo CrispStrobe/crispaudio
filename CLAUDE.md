@@ -257,3 +257,17 @@ allocation. Timeline's existing drive/mix controls still select tanh; other curv
 algorithms are not configurable timeline effects yet. Compressor stays explicit.
 WebKit tests include unfiltered impulses and 18/19.5 kHz tones to verify aliasing
 and timing beyond ordinary low-pass-filtered fixtures.
+
+## Native compressor 0.7.7
+
+media/src/compressor.rs adapts the pinned WebKit DynamicsCompressorKernel under
+BSD-3-Clause (Google 2011): retain the full source/About notice. Use Float32
+arithmetic, 288-frame predelay, stereo maximum detector, automatic makeup,
+32-frame absolute envelope divisions and the adaptive fourth-order release.
+Clip racks containing compressors process zeros from the project start without
+consuming source data, matching GUI graph timing. Clamp negative clip-envelope
+relative time to zero. Compressor mono inputs become stereo before pan.
+Reserve fixed state in the common DSP budget before construction. Every current
+rack type is supported; unknown types must still fail. Float output can exceed
+unity at extreme cascaded makeup settings. Reference tests use absolute error
+below full scale and peak-normalised error above it, preserving the PCM unchanged.

@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.6]
+## [Unreleased — local version 0.7.7]
+
+- Complete native CLI timeline racks with stereo-linked compression at clip,
+  track and master level: soft knee, adaptive release, makeup and 6 ms lookahead.
+- Match WebKit's 32-frame envelope clock, pre-start silence and stereo pan law.
+- Retain the adapted kernel's BSD-3-Clause copyright and licence in source/About.
+- Add compressor comparisons for mono, bursts, impulses and parameter extremes.
+
+## [Local version 0.7.6]
 
 - Add native CLI timeline distortion with the GUI's 256-entry tanh curve,
   four-times oversampling, wet/dry mix and bounded stereo filter state.

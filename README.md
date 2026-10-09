@@ -290,3 +290,11 @@ added latency. Distortion and compression still require GUI export.
 Local 0.7.6 adds native timeline distortion with four-times oversampling and
 the GUI's wet-path filter delay. Its WebKit resampling adaptation carries
 BSD-3-Clause notices. Compression still requires GUI export.
+
+### Local 0.7.7 — native compressor
+
+Native linked-project export now supports every current timeline rack effect,
+including stereo-linked compression with WebKit soft knee, adaptive release,
+automatic makeup and 6 ms lookahead. The GUI already had these controls; the CLI
+now matches its timing and mono/stereo behavior. The BSD-3-Clause kernel notice
+is included in source and About. See `docs/MEDIA_WORKSPACE.md` for CLI usage.
