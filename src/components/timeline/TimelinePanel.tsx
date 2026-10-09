@@ -28,6 +28,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  Lock, Unlock,
   Plus,
   Trash2,
   ZoomIn,
@@ -123,6 +124,9 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
           className="flex-shrink-0 cursor-grab active:cursor-grabbing p-0.5 text-gray-500" style={{touchAction:'none'}} aria-label={t('timeline.reorderTrack')} title={t('timeline.reorderTrack')}>
           <GripVertical className="w-3 h-3" />
         </button>
+        <button type="button" aria-label={t(track.locked?'ranges.unlock':'ranges.lock')} title={t(track.locked?'ranges.unlock':'ranges.lock')}
+          data-help="lock" aria-pressed={!!track.locked} className={`shrink-0 p-0.5 ${track.locked?'text-amber-300':'text-gray-500'}`}
+          onClick={()=>updateTrack(track.id,{locked:!track.locked})}>{track.locked?<Lock className="w-3 h-3"/>:<Unlock className="w-3 h-3"/>}</button>
         {/* Up/down reorder — works with touch and keyboard everywhere */}
         <div className={`track-reorder flex-shrink-0 flex flex-col -my-0.5 ${trackHeight<56?'hidden':''}`}>
           <button
@@ -158,7 +162,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
         />
         <button
           type="button"
-          onClick={() => removeTrack(track.id)}
+          disabled={!!track.locked} onClick={() => removeTrack(track.id)}
           className="track-remove p-0.5 text-gray-600 hover:text-red-400 transition-colors"
           data-help="remove" aria-label={t('timeline.removeTrack')}
           title={t('timeline.removeTrack')}
@@ -356,11 +360,14 @@ export const TimelinePanel: React.FC = () => {
     importAbort.current?.abort();const abort=new AbortController();importAbort.current=abort;
     const initial=useProjectStore.getState(),projectId=initial.project.id,at=initial.playheadPosition;
     setProjectError('');let offset=at;
+    if(initial.project.tracks.find(track=>track.id===target)?.locked){setProjectError(t('ranges.lockedNotice',{name:initial.project.tracks.find(track=>track.id===target)?.name}));return;}
     try{
       for(const [index,file] of files.entries()){
         const source=await prepareAudioImport(audioEngine.getContext(),file,abort.signal,phase=>setImportProgress({name:file.name,phase,index:index+1,total:files.length}));
         abort.signal.throwIfAborted();const state=useProjectStore.getState();
         if(state.project.id!==projectId)throw new Error(t('usability.importProjectChanged'));
+        const destination=state.project.tracks.find(track=>track.id===target);
+        if(destination?.locked)throw new Error(t('ranges.lockedNotice',{name:destination.name}));
         let trackId=target;
         if(target==='new'){state.addTrack(file.name);trackId=useProjectStore.getState().project.tracks.at(-1)!.id;}
         else if(!state.project.tracks.some(track=>track.id===target))throw new Error(t('usability.importTrackMissing'));
@@ -537,6 +544,9 @@ export const TimelinePanel: React.FC = () => {
       case 'stop':state.setIsPlaying(false);state.setPlayheadPosition(0);break;
       case 'start':state.setPlayheadPosition(0);break;
       case 'end':state.setPlayheadPosition(timelineDuration(state.project));break;
+      case 'range-mode':state.setSelectionMode(state.selectionMode==='range'?'clips':'range');break;
+      case 'play-range':state.playEditRange();break;
+      case 'clear-range':state.clearEditRange();break;
       case 'loop':state.setLoopEnabled(!state.loopEnabled);break;
       case 'help':setHelpOpen(true);break;
     }
@@ -621,7 +631,7 @@ export const TimelinePanel: React.FC = () => {
         onTouchStart={e => { const p = e.touches[0]; if (!touchArrange && p && !(e.target as HTMLElement).closest('[data-timeline-playhead], [data-track-reorder]')) touchPan.current = {x:p.clientX,y:p.clientY,scroll:useProjectStore.getState().scrollOffset}; }}
         onTouchEnd={() => {touchPan.current=null;}}
         onTouchMove={e => { const start=touchPan.current, p=e.touches[0]; if (!start || !p || touchArrange) return; const dx=start.x-p.clientX; if (Math.abs(dx) > Math.abs(start.y-p.clientY)+8) { const state=useProjectStore.getState(); state.setScrollOffset(Math.min(Math.max(0,timelineDuration(state.project)-canvasWidth/state.zoomLevel),Math.max(0,start.scroll+dx/state.zoomLevel))); } }} >
-        {!store.project.tracks.length && !store.project.video && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-5 bg-gray-950 text-center">
+        {!store.project.tracks.length && !store.project.video && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-5 bg-gray-950 text-center" style={{top:RULER_HEIGHT}}>
           <Upload className="w-10 h-10 text-indigo-400" />
           <h2 className="text-lg font-semibold text-gray-100">{t('timeline.startTitle')}</h2>
           <p className="text-sm text-gray-400 max-w-md">{t('timeline.startHelp')}</p>
@@ -644,7 +654,12 @@ export const TimelinePanel: React.FC = () => {
 
           {store.project.video && <div data-track-header data-compact={store.trackHeight<56} data-touch-compact={store.trackHeight<96} className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
             <div className="track-heading flex items-center justify-between gap-2"><span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
-              <button type="button" className="p-1 text-gray-400 hover:text-red-400" data-help="remove" aria-label={t('usability.removeVideo')} title={t('usability.removeVideo')} onClick={()=>{
+              <button type="button" data-help="lock" aria-pressed={!!store.project.video.locked}
+                aria-label={t(store.project.video.locked?'ranges.unlock':'ranges.lock')} title={t(store.project.video.locked?'ranges.unlock':'ranges.lock')}
+                className={`shrink-0 p-1 ${store.project.video.locked?'text-amber-300':'text-gray-500'}`}
+                onClick={()=>useProjectStore.setState(state=>({project:{...state.project,video:{...state.project.video!,locked:!state.project.video?.locked}}}))}>
+                {store.project.video.locked?<Lock size={14}/>:<Unlock size={14}/>}</button>
+              <button type="button" disabled={!!store.project.video.locked} className="p-1 text-gray-400 hover:text-red-400 disabled:opacity-30" data-help="remove" aria-label={t('usability.removeVideo')} title={t('usability.removeVideo')} onClick={()=>{
                 const state=useProjectStore.getState();const groups=new Set(state.project.video?.clips?.map(clip=>clip.linkGroup).filter(Boolean));
                 const project={...state.project,video:undefined,tracks:state.project.tracks.map(track=>({...track,segments:track.segments.map(clip=>clip.linkGroup&&groups.has(clip.linkGroup)?{...clip,linkGroup:undefined}:clip)}))};
                 useProjectStore.setState({project:{...project,duration:timelineDuration(project)},selection:null,isPlaying:false});

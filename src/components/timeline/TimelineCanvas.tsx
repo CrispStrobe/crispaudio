@@ -366,6 +366,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     [timeToPixels, store.sources, drawWaveform, drawFadeOverlay, waveformMode, trackHeight],
   );
 
+  const editRange=useProjectStore(s=>s.project.editRange);
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -454,6 +455,12 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       }
     }
 
+    if(editRange){
+      const left=timeToPixels(editRange.start),right=timeToPixels(editRange.end);
+      ctx.fillStyle='rgba(99,102,241,0.12)';ctx.fillRect(left,0,right-left,cssHeight);
+      ctx.strokeStyle='#818cf8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,0);ctx.lineTo(left,cssHeight);ctx.moveTo(right,0);ctx.lineTo(right,cssHeight);ctx.stroke();
+    }
+
   }, [
     width,
     totalHeight,
@@ -461,7 +468,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     store.snapEnabled,
     store.zoomLevel,
     store.scrollOffset,
-    store.selection,
+    store.selection, editRange,
     timeToPixels,
     drawSegment, trackHeight,
   ]);

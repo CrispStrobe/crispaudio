@@ -16,8 +16,8 @@ beforeEach(() => {
   vi.clearAllMocks(); currentTime = 100; nextId = 0; callbacks = new Map();
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { callbacks.set(++nextId, cb); return nextId; });
   vi.stubGlobal('cancelAnimationFrame', (id: number) => callbacks.delete(id));
-  const project = { ...useProjectStore.getState().project, duration: 20, tracks: [] };
-  useProjectStore.setState({ project, sources: new Map(), isPlaying: false, loopEnabled: false, playheadPosition: 2 });
+  const project = { ...useProjectStore.getState().project, duration: 20, minimumDuration:20, editRange:undefined, tracks: [] };
+  useProjectStore.setState({ project, sources: new Map(), isPlaying: false, rangePlayback:false, loopEnabled: false, playheadPosition: 2 });
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -66,4 +66,21 @@ describe('audio-clock timeline transport', () => {
     expect(engine.play).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Edited' }), 4);
     hook.unmount();
   });
+});
+
+it('plays and stops a selected range without consuming clip selection', async()=>{
+ const state=useProjectStore.getState();state.setEditRange(3,5);
+ const hook=renderHook(()=>useTimelineTransport(engineRef,audio));
+ await act(async()=>state.playEditRange());
+ expect(engine.play).toHaveBeenLastCalledWith(expect.anything(),3,5);
+ currentTime=103;tick();
+ expect(useProjectStore.getState()).toMatchObject({playheadPosition:5,isPlaying:false,rangePlayback:false});
+ hook.unmount();
+});
+it('range looping preserves overshoot and resumes inside the selected range',async()=>{
+ const state=useProjectStore.getState();state.setEditRange(3,5);state.setLoopEnabled(true);
+ const hook=renderHook(()=>useTimelineTransport(engineRef,audio));await act(async()=>state.playEditRange());
+ currentTime=105.25;tick();
+ expect(engine.play).toHaveBeenLastCalledWith(expect.anything(),4.25,5);
+ expect(useProjectStore.getState().playheadPosition).toBe(4.25);hook.unmount();
 });

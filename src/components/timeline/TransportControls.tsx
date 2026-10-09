@@ -1,3 +1,4 @@
+import { RangeControls } from './RangeControls';
 import { TimeField } from './TimeField';
 import { timelineDuration } from '../../lib/timelineView';
 // ---------------------------------------------------------------------------
@@ -142,6 +143,7 @@ export const TransportControls = React.memo(function TransportControls({viewport
         <Repeat className="w-4 h-4" />
       </button>
 
+      <RangeControls/>
       {/* Divider */}
       <div className="transport-divider w-px h-6 bg-gray-700 mx-1" />
 

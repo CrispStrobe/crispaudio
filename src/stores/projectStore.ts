@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { moveClips, trimClips, linkedIds, splitClips, removeClips } from '../lib/projectEdits';
 // ---------------------------------------------------------------------------
 // CrispAudio — projectStore
@@ -62,12 +63,18 @@ interface ProjectState {
   scrollOffset: number; // horizontal scroll in seconds
   snapEnabled: boolean;
   loopEnabled: boolean;
+  selectionMode: 'clips' | 'range';
+  rangePlayback: boolean;
+  setSelectionMode: (mode: 'clips' | 'range') => void;
+  setEditRange: (start: number, end: number) => void;
+  clearEditRange: () => void;
+  playEditRange: () => void;
 
   // Track actions
   addTrack: (name?: string) => void;
   removeTrack: (trackId: string) => void;
   reorderTrack: (trackId: string, newIndex: number) => void;
-  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'effects'>>) => void;
+  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'effects'>>) => void;
 
   // Segment actions
   addSegment: (trackId: string, segment: AudioSegment) => void;
@@ -152,7 +159,35 @@ export const projectHistoryGesture = createHistoryGesture();
 
 export const useProjectStore = create<ProjectState>()(
   temporal(
-    (set, get) => ({
+    (rawSet, get, api) => {
+      // Protect every commit, including inspector/direct-set and linked AV edits.
+      // Temporal undo/redo intentionally restores complete historical snapshots.
+      const protect = (target: typeof rawSet): typeof rawSet => ((partial, replace) => {
+        const before = get();
+        const next = typeof partial === 'function' ? partial(before) : partial;
+        if (before && (!next.project || next.project.id === before.project.id)) {
+          const blocked = before.project.tracks.find(track => {
+            if (!track.locked) return false;
+            const after = next.project?.tracks.find(t => t.id === track.id) ?? (!next.project ? track : undefined);
+            if (!after) return true;
+            if (JSON.stringify(track.segments) !== JSON.stringify(after.segments)) return true;
+            return !!next.sources && track.segments.some(clip => before.sources.get(clip.sourceId) !== next.sources?.get(clip.sourceId));
+          });
+          const picture = before.project.video;
+          const changedPicture = picture?.locked && next.project && (
+            !next.project.video || picture.path !== next.project.video.path ||
+            JSON.stringify(picture.clips) !== JSON.stringify(next.project.video.clips) ||
+            JSON.stringify(picture.sources) !== JSON.stringify(next.project.video.sources));
+          if (blocked || changedPicture) {
+            if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('crispaudio-edit-error', {detail:i18n.t('ranges.lockedNotice',{name:blocked?.name ?? i18n.t('video.track')})}));
+            return;
+          }
+        }
+        if (replace) target(next as ProjectState, true); else target(next, false);
+      }) as typeof rawSet;
+      const set = protect(rawSet);
+      api.setState = protect(api.setState);
+      return ({
       project: defaultProject(),
       sources: new Map(),
       selection: null,
@@ -164,6 +199,19 @@ export const useProjectStore = create<ProjectState>()(
       scrollOffset: 0,
       snapEnabled: true,
       loopEnabled: false,
+      selectionMode: 'clips',
+      rangePlayback: false,
+      setSelectionMode: mode => set({selectionMode:mode}),
+      setEditRange: (start,end) => set(state => {
+        const duration = timelineDuration(state.project);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || end > duration) return state;
+        return {project:{...state.project,editRange:{start,end}}};
+      }),
+      clearEditRange: () => set(state => ({project:{...state.project,editRange:undefined},rangePlayback:false})),
+      playEditRange: () => {
+        const state=get(),range=state.project.editRange;
+        if(range && range.end>range.start && range.end<=timelineDuration(state.project))set({playheadPosition:range.start,rangePlayback:true,isPlaying:true});
+      },
 
       // ── Tracks ──────────────────────────────────────────────────────────────
 
@@ -479,7 +527,7 @@ export const useProjectStore = create<ProjectState>()(
       },
 
       loadProjectState: (project, sources) => {
-        set({
+        rawSet({
           project: {
             ...project,
             duration: Math.max(project.minimumDuration ?? 0, videoTimelineDuration(project.video), computeProjectDuration(project.tracks)),
@@ -487,6 +535,8 @@ export const useProjectStore = create<ProjectState>()(
           sources,
           selection: null,
           clipboard: { operation: null, segments: [], sourceIds: [] },
+          rangePlayback: false,
+          selectionMode: 'clips',
           playheadPosition: 0,
           isPlaying: false,
         });
@@ -753,7 +803,7 @@ export const useProjectStore = create<ProjectState>()(
       setPlayheadPosition: (time) =>
         set({ playheadPosition: Math.max(0, time) }),
 
-      setIsPlaying: (playing) => set({ isPlaying: playing }),
+      setIsPlaying: (playing) => set({ isPlaying: playing, ...(!playing ? {rangePlayback:false}: {}) }),
 
       setLoopEnabled: (enabled) => set({ loopEnabled: enabled }),
 
@@ -773,7 +823,7 @@ export const useProjectStore = create<ProjectState>()(
         set({ scrollOffset: Math.max(0, offset) }),
 
       setSnapEnabled: (enabled) => set({ snapEnabled: enabled }),
-    }),
+    });},
     // Temporal options: only track project mutations (not playhead/view state)
     {
       partialize: (state) => ({

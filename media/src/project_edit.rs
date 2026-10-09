@@ -420,6 +420,30 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                 f64::max
             ));
     }
+    for track in doc["project"]["tracks"].as_array().unwrap() {
+        if track["locked"].as_bool() != Some(true) {
+            continue;
+        }
+        let after = out["project"]["tracks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["id"] == track["id"]);
+        if after.is_none_or(|t| t["segments"] != track["segments"]) {
+            return Err(format!(
+                "Unlock track {} before editing its clips",
+                track["name"].as_str().unwrap_or("")
+            ));
+        }
+    }
+    let picture = &doc["project"]["video"];
+    if picture["locked"].as_bool() == Some(true)
+        && (picture["clips"] != out["project"]["video"]["clips"]
+            || picture["sources"] != out["project"]["video"]["sources"]
+            || picture["path"] != out["project"]["video"]["path"])
+    {
+        return Err("Unlock the video track before editing its clips".into());
+    }
     Ok(out)
 }
 fn curve(progress: &str, kind: &str) -> String {
@@ -728,6 +752,17 @@ mod tests {
     use super::*;
     fn doc() -> Value {
         json!({"format":"crispaudio-project","version":2,"project":{"id":"p","duration":6,"tracks":[{"id":"t","segments":[{"id":"a","linkGroup":"g","trackId":"t","sourceId":"s","startTime":1,"sourceOffset":2,"duration":5}]}],"video":{"path":"unused","duration":10,"clips":[{"id":"v","linkGroup":"g","startTime":1,"sourceOffset":2,"duration":5,"transition":"cut"}]}},"sources":[{"id":"s","duration":10}]})
+    }
+    #[test]
+    fn track_lock_blocks_linked_recipe_edits() {
+        let mut locked = doc();
+        locked["project"]["tracks"][0]["locked"] = json!(true);
+        assert!(apply(&locked, &json!([{"op":"move","ids":["v"],"seconds":1}])).is_err());
+        assert!(apply(&locked, &json!([{"op":"split","ids":["a"],"at":3}])).is_err());
+        assert_eq!(
+            locked["project"]["tracks"][0]["segments"][0]["startTime"],
+            1
+        );
     }
     #[test]
     fn linked_move_and_slip_are_clamped_together() {

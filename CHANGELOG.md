@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.7.12]
+## [Unreleased — local version 0.8.0]
+
+- Add saved time ranges independent of selected clips, with ruler dragging,
+  keyboard-adjustable handles, exact bounds and audio/picture highlights.
+- Add range playback/loop boundaries and an audio-clock gate for the end,
+  including effect tails. Add macOS Playback actions and contextual EN/DE help.
+- Add audio/picture lane locks that protect direct, inspector, linked, clipboard
+  and CLI recipe clip edits while leaving mixing controls available.
+- Keep the empty-project welcome panel below the ruler.
+
+## [Local version 0.7.12]
 
 - Add native Mac M4A/AAC export in the timeline AAC save dialog and CLI.
 - Validate final AAC-LC packet tables against the exact source frame count,

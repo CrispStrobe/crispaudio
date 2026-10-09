@@ -3,11 +3,12 @@
 // Time ruler drawn on a canvas. Scrolls in sync with TimelineCanvas.
 // ---------------------------------------------------------------------------
 
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTimelineCanvasInvalidation } from './useTimelineCanvasInvalidation';
 import { PlayheadHandle } from './PlayheadHandle';
 import { projectHistoryGesture, useProjectStore } from '../../stores/projectStore';
+import { timelineDuration } from '../../lib/timelineView';
 import { RULER_HEIGHT } from '../../hooks/useTimeline';
 
 interface TimelineRulerProps {
@@ -46,6 +47,36 @@ function formatRulerTime(seconds: number, interval: number): string {
 export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { t } = useTranslation();
+  const range = useProjectStore(s=>s.project.editRange);
+  const mode = useProjectStore(s=>s.selectionMode);
+  const rangeDrag = useRef<{kind:'new'|'start'|'end';anchor:number;original:typeof range}|null>(null);
+  useEffect(()=>()=>{if(rangeDrag.current)projectHistoryGesture.end();},[]);
+  const rangeTime = (clientX:number, element:HTMLElement) => {
+    const state=useProjectStore.getState();
+    return Math.max(0,Math.min(timelineDuration(state.project),state.scrollOffset+(clientX-element.getBoundingClientRect().left)/state.zoomLevel));
+  };
+  const beginRange = (e:React.PointerEvent<HTMLElement>,kind:'new'|'start'|'end') => {
+    e.preventDefault();e.stopPropagation();
+    const element=e.currentTarget instanceof HTMLCanvasElement?e.currentTarget:e.currentTarget.parentElement!;
+    rangeDrag.current={kind,anchor:rangeTime(e.clientX,element),original:useProjectStore.getState().project.editRange};
+    e.currentTarget.setPointerCapture(e.pointerId);projectHistoryGesture.begin();
+  };
+  const moveRange = (e:React.PointerEvent<HTMLElement>) => {
+    const drag=rangeDrag.current;if(!drag)return;
+    const state=useProjectStore.getState();
+    const element=e.currentTarget instanceof HTMLCanvasElement?e.currentTarget:e.currentTarget.parentElement!;
+    const time=rangeTime(e.clientX,element),epsilon=1/state.project.sampleRate;
+    if(drag.kind==='new')state.setEditRange(Math.min(drag.anchor,time),Math.max(drag.anchor,time));
+    else if(drag.original){
+      if(drag.kind==='start')state.setEditRange(Math.min(time,drag.original.end-epsilon),drag.original.end);
+      else state.setEditRange(drag.original.start,Math.max(time,drag.original.start+epsilon));
+    }
+  };
+  const endRange = useCallback((cancel=false) => {
+    if(!rangeDrag.current)return;
+    if(cancel){const original=rangeDrag.current.original;const state=useProjectStore.getState();useProjectStore.setState({project:{...state.project,editRange:original}});}
+    rangeDrag.current=null;projectHistoryGesture.end();
+  }, []);
   const markers=useProjectStore(s=>s.project.markers);
   const zoomLevel = useProjectStore((s) => s.zoomLevel);
   const scrollOffset = useProjectStore((s) => s.scrollOffset);
@@ -78,6 +109,10 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
     ctx.fillStyle = isLight ? '#e2e8f0' : '#1e293b';
     ctx.fillRect(0, 0, cssWidth, cssHeight);
 
+    if(range){
+      ctx.fillStyle='rgba(99,102,241,0.28)';
+      ctx.fillRect((range.start-scrollOffset)*zoomLevel,0,(range.end-range.start)*zoomLevel,cssHeight);
+    }
     // Bottom border
     ctx.strokeStyle = isLight ? '#94a3b8' : '#334155';
     ctx.lineWidth = 1;
@@ -133,18 +168,19 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
       }
     }
 
-  }, [zoomLevel, scrollOffset, width]);
+  }, [zoomLevel, scrollOffset, width, range]);
 
   useTimelineCanvasInvalidation(draw);
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if(mode==='range')return;
       const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
       const x = e.clientX - rect.left;
       const time = scrollOffset + x / zoomLevel;
       setPlayheadPosition(Math.max(0, time));
     },
-    [scrollOffset, zoomLevel, setPlayheadPosition],
+    [scrollOffset, zoomLevel, setPlayheadPosition, mode],
   );
 
   return (
@@ -152,14 +188,45 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
     <canvas
       ref={canvasRef}
       className="block cursor-pointer"
-      style={{ width, height: RULER_HEIGHT }}
       onClick={handleClick}
+      style={{ width, height: RULER_HEIGHT, touchAction:mode==='range'?'none':undefined }}
+      data-help={mode==='range'?'range':'play'}
+      tabIndex={0}
+      onPointerDown={e=>{if(mode==='range')beginRange(e,'new');}}
+      onPointerMove={moveRange}
+      onPointerUp={()=>endRange()}
+      onPointerCancel={()=>endRange(true)}
+      onLostPointerCapture={()=>endRange(true)}
+      onKeyDown={e=>{if(e.key==='Escape'&&rangeDrag.current){e.preventDefault();e.stopPropagation();endRange(true);}}}
       aria-label={t('timeline.ruler')}
     />
     {markers?.map(marker=><button key={marker.id} title={marker.name} aria-label={marker.name} className="absolute top-0 w-6 h-5 text-amber-300 bg-amber-950/70 rounded touch-none" style={{left:(marker.time-scrollOffset)*zoomLevel-12}} onClick={()=>setPlayheadPosition(marker.time)} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);projectHistoryGesture.begin();}} onPointerMove={e=>{if(!e.currentTarget.hasPointerCapture(e.pointerId))return;const rect=e.currentTarget.parentElement!.getBoundingClientRect();const time=Math.max(0,scrollOffset+(e.clientX-rect.left)/zoomLevel);const state=useProjectStore.getState();useProjectStore.setState({project:{...state.project,markers:state.project.markers?.map(m=>m.id===marker.id?{...m,time}:m)}});}} onPointerUp={e=>{e.currentTarget.releasePointerCapture(e.pointerId);projectHistoryGesture.end();}} onPointerCancel={()=>projectHistoryGesture.end()}>◆</button>)}
+    {range && (['start','end'] as const).map(side=><RangeEdge key={side} side={side} range={range}
+      zoomLevel={zoomLevel} scrollOffset={scrollOffset} onBegin={beginRange} onMove={moveRange} onEnd={endRange}/>)}
     <PlayheadHandle width={width}/>
     </div>
   );
 };
 
 export default TimelineRuler;
+
+function RangeEdge({side,range,zoomLevel,scrollOffset,onBegin,onMove,onEnd}:{
+  side:'start'|'end';range:{start:number;end:number};zoomLevel:number;scrollOffset:number;
+  onBegin:(event:React.PointerEvent<HTMLElement>,kind:'start'|'end')=>void;
+  onMove:(event:React.PointerEvent<HTMLElement>)=>void;onEnd:(cancel?:boolean)=>void;
+}) {
+  const {t}=useTranslation();
+  return <button type="button" role="slider"
+      data-help="range" aria-label={t(side==='start'?'ranges.start':'ranges.end')} aria-valuemin={0} aria-valuemax={timelineDuration(useProjectStore.getState().project)} aria-valuenow={range[side]}
+      className="absolute bottom-0 h-3 w-5 bg-indigo-500/80 rounded touch-none cursor-ew-resize z-10"
+      style={{left:(range[side]-scrollOffset)*zoomLevel-10}}
+      onPointerDown={e=>onBegin(e,side)} onPointerMove={onMove} onPointerUp={()=>onEnd()}
+      onPointerCancel={()=>onEnd(true)} onLostPointerCapture={()=>onEnd(true)}
+      onKeyDown={e=>{
+        e.stopPropagation();if(e.key==='Escape'){onEnd(true);return;}
+        if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();
+        const state=useProjectStore.getState(),amount=(e.shiftKey ? .1 : .001)*(e.key==='ArrowLeft'?-1:1),epsilon=1/state.project.sampleRate;
+        if(side==='start')state.setEditRange(Math.max(0,Math.min(range.end-epsilon,range.start+amount)),range.end);
+        else state.setEditRange(range.start,Math.min(timelineDuration(state.project),Math.max(range.start+epsilon,range.end+amount)));
+      }}/>;
+}

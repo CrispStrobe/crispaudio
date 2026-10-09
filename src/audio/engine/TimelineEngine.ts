@@ -52,7 +52,7 @@ export class TimelineEngine {
    * Start real-time playback from `startTime` (seconds in the project timeline).
    * Schedules all segments that overlap [startTime, project.duration].
    */
-  play(project: TimelineProject, startTime: number): void {
+  play(project: TimelineProject, startTime: number, endTime = project.duration): void {
     this.stop();
 
     // Capture all nodes created by this graph, including effect oscillators and
@@ -70,8 +70,12 @@ export class TimelineEngine {
       },
     });
     const masterInput = ctx.createGain();
-    this.applyEffects(ctx, masterInput, project.masterEffects).connect(this.masterGain);
     const now = ctx.currentTime;
+    const rangeGate = ctx.createGain();
+    rangeGate.connect(this.masterGain);
+    rangeGate.gain.setValueAtTime(1, now);
+    rangeGate.gain.setValueAtTime(0, now + Math.max(0, endTime - startTime));
+    this.applyEffects(ctx, masterInput, project.masterEffects).connect(rangeGate);
     const tracksToPlay = audibleTracks(project.tracks);
 
     for (const track of tracksToPlay) {
@@ -105,7 +109,7 @@ export class TimelineEngine {
         // How far into the segment do we start?
         const segPlayStart = Math.max(0, startTime - segment.startTime);
         const bufferOffset = segment.sourceOffset + segPlayStart;
-        const playDuration = segment.duration - segPlayStart;
+        const playDuration = Math.min(segment.duration - segPlayStart, endTime - Math.max(startTime, segment.startTime));
 
         if (playDuration <= 0) continue;
 

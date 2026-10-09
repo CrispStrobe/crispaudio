@@ -10,6 +10,7 @@ export interface TimelineProject {
   tracks: TimelineTrack[];
   masterEffects: EffectConfig[];
   duration: number; // computed from content and minimumDuration
+  editRange?: { start: number; end: number };
   minimumDuration?: number; // explicit empty canvas/export tail, seconds
   markers?: TimelineMarker[];
   transcript?: TranscriptCue[];
@@ -17,6 +18,7 @@ export interface TimelineProject {
   frameRate?: number;
   snapGrid?: number; // seconds, 0 disables the time grid
   video?: {
+    locked?: boolean;
     sources?: VideoSource[];
     clips?: VideoClip[];
     path: string;
@@ -28,6 +30,7 @@ export interface TimelineProject {
 }
 
 export interface TimelineTrack {
+  locked?: boolean;
   id: string;
   name: string;
   segments: AudioSegment[];

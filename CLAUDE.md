@@ -342,3 +342,20 @@ Do not validate gapless duration using bitrate or encoded timestamps. The AAC
 save dialog offers both containers; other platform/worker and SFX/Voice paths
 remain ADTS. No global format option or codec dependency is added. Re-run both
 AAC and FLAC integrations after changes to the shared orchestration/helper.
+
+## Range/lock foundation 0.8.0
+
+Optional project.editRange is independent of clip selection and video export In/Out.
+Selection mode and rangePlayback are transport/view state. Play range snapshots its
+bounds; the live engine takes optional endTime and gates its master output on the
+audio clock. Offline/native exports remain unchanged. Existing loop restart is RAF
+based, not seamless sample-accurate looping. Range pointer gestures coalesce history.
+
+projectStore wraps action and public setState commits to reject changed segments or
+removed/replaced sources on locked audio tracks, and changed clip/source/path data
+on the locked picture lane. Reject the whole linked/clipboard operation. Mixing,
+copy and lane order remain available. Temporal undo/redo restores full historical
+snapshots; explicit loadProjectState bypasses protection and clears rangePlayback.
+Use i18next's existing singleton for notices, not the UI-initialising i18n module.
+CLI recipes compare protected clip data before publishing an edited document.
+No API control is a substitute for this central commit guard.

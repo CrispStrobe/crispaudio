@@ -226,3 +226,35 @@ Shift+Cmd+A clears selection. Backspace deletes selected clips. Cmd+B splits at
 the playhead; Shift+Cmd+N adds an audio track. Cmd+1/2/3 opens SFX/Voice/Timeline,
 matching existing panel shortcuts. Editing menus disable unavailable actions;
 modal dialogs and help mode protect the underlying arrangement.
+
+## Time ranges and track locks — local 0.8.0
+
+The selection-mode icon beside transport switches between clips and time ranges.
+In range mode, drag the ruler to mark a range. Drag its lower edge handles or edit
+the two exact time fields beside transport. Arrow keys on a focused range handle
+adjust by 1 ms; Shift adjusts by 100 ms. Clip selection is retained separately.
+The range highlights the ruler, audio tracks and picture lane and saves with the
+project. Clear range removes only this interval, not selected clips or media.
+
+**Play selected range** starts at its beginning and stops at its end. Enable Loop
+then Play range to repeat that interval. Normal Play continues to use the whole
+project; the range does not silently change normal mix/video exports. On Mac,
+Playback provides Select Time Range, Play Selected Range and Clear Time Range;
+Cmd/Ctrl+Shift+Space plays the range. The audio graph schedules a boundary gate,
+so delayed animation cannot leak sound or FX tails beyond the range. Loop restart
+still uses animation-frame rescheduling, not a seamless musical loop engine.
+
+Use the lock icon in an audio/picture header to protect its clips. Moves, source
+replacement, trims, fades, split/delete/paste and linked AV edits that would change
+a locked lane are blocked as a whole, with an unlock notice. Copying remains
+available. Track mute/solo/gain/pan and mix automation/track inserts remain usable;
+this is an arrangement/clip lock rather than a prohibition on mixing. Lane reorder
+also remains available. Source removal/replacement cannot invalidate locked audio.
+Lock status persists and Undo/Redo restores complete historical snapshots.
+Explicitly loading/resetting a project remains available.
+
+CLI `edit-project` recipes also reject edits that change locked audio/picture
+clips. Rendering is unaffected by locks. Range export, ripple participation and
+scoped range edits follow in the next M1 slices; see PLAN.md. The optional actual
+WebKit check is `scripts/test-timeline-range.mjs`, using CRISPAUDIO_TEST_URL,
+CRISPAUDIO_PLAYWRIGHT_MODULE and CRISPAUDIO_WEBKIT_EXECUTABLE as needed.

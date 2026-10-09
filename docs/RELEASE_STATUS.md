@@ -1027,3 +1027,53 @@ not rewritten.
 At validation time, 0.7.11 desktop CI remained queued and its iOS CI was running;
 this push starts new CI. Remaining work includes disk-paged import/playback,
 streaming MP3/Opus export, permissive-only WebM and iOS picture composition.
+
+## Local 0.8.0 — range and lock foundation (M1 in progress)
+
+Installed and launched the ad-hoc-signed local app and updated the optimised
+standalone CLI; both signatures verified. The one autosaved project JSON remains
+unchanged, with WebKit/JSON backed up under `ux/recovery-before-080/`. The first
+LaunchServices open immediately after quit returned -609; a fresh `open -n`
+succeeded after the previous process had exited. No release tag/Apple upload.
+
+Added independent saved editRange, ruler range mode/handles, exact bounds,
+keyboard adjustment and audio/picture highlighting. Play range uses its bounds;
+Loop repeats the selected playback interval. Normal play/export remain full
+project operations. A gain gate scheduled on the audio clock blocks source and
+FX-tail output at the range end, independent of delayed UI frames. Loop restart
+still uses the existing RAF scheduler; seamless musical looping is not claimed.
+macOS Playback commands and Cmd/Ctrl+Shift+Space share the same range actions.
+Contextual help and EN/DE labels are included. The empty-project welcome overlay
+now begins below the ruler rather than covering its input surface.
+
+Persisted audio/picture locks protect clip changes, deletion, source replacement
+and linked/clipboard edits, enforced on both action and direct setState commits.
+Blocked edits leave the entire commit and clipboard/history unchanged. Mute,
+solo, track level/pan/automation/inserts, copy and lane order remain available.
+Undo/redo restores whole historical snapshots; explicit project load/reset is
+allowed. CLI recipes reject changed protected audio/picture clip data. No effect,
+codec or third-party dependency was added.
+
+Validation: all 94 frontend test files / 1309 tests passed, including central
+lock rejection, linked edits, mixing/copy access, unlock/undo, serialization,
+range validation and transport stop/loop overshoot. ESLint and TypeScript/web
+build passed. All 40 ordinary media Rust tests and three CLI parser tests passed;
+ten platform integrations remain opt-in. This milestone changes editing/live
+playback rather than native DSP/codec implementations, so older codec/picture
+integrations were not repeated. Release CLI and debug macOS app bundle passed.
+
+Actual headless WebKit tested ruler drag 2–4 seconds and keyboard end adjustment
+to 4.001. An OfflineAudioContext exercised the live TimelineEngine graph with
+a delay effect: audible samples inside the range, exactly zero after its boundary.
+The optional reproducible harness is `scripts/test-timeline-range.mjs`. Its first
+run found the empty-overlay problem; subsequent development-server HMR produced
+separate dynamic-import store instances, so the final passing check used a fresh
+owned server. This is WebKit validation, not a physical iOS claim. No OS screenshot
+or permission reset was used. Full interview export was not repeated because
+export/mixing semantics were unchanged. Shared optional metadata reads remain
+compatible with project v3.
+
+M1 remains in progress: range export, scoped lift/extract/insert, ripple
+participation, transition-aware ripple, advanced trims and named groups follow.
+M2–M10 are still planned. Long-recording paging and additional codecs remain
+lower priority as requested; see the active roadmap in PLAN.md.

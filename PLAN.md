@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-09, after local 0.7.12. This section is the current plan.
+Updated 2026-10-09, during local 0.8.0 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -70,12 +70,21 @@ those sources or an instruction to reproduce their entire UI.
 
 ## Implementation roadmap
 
-Each milestone below is planned, not completed. Deliver small slices in the listed
+M1 is in progress; M2–M10 remain planned. Deliver small slices in the listed
 order; update this plan with actual completion and validation evidence. Do not
 assign release numbers or dates before the work is scoped. Desktop implementation,
 web fallback and iOS support/device validation must be recorded separately.
 
-### M1 — Make everyday timeline editing complete (next milestone)
+### M1 — Make everyday timeline editing complete (in progress)
+
+Local 0.8.0 implements the first slice: saved independent time ranges, ruler
+selection/handles/numeric bounds, selected-range playback and loop boundaries,
+contextual help/EN–DE/macOS playback commands, and persisted audio/picture clip
+locks enforced on direct/linked edits and CLI recipes. Range shading covers audio
+and picture. M1 is not complete: range export, scoped lift/extract/insert, ripple
+participation, transition-aware ripple, advanced trims and named groups remain.
+Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
+seamless musical looping. Paging and new codec work remain deferred.
 
 1. Add explicit **time-range selection**, with range handles and a visible choice
    between clip selection and range selection. Reuse the existing selection model.

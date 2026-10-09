@@ -19,6 +19,8 @@ pub struct MenuContext {
     content: bool,
     loop_enabled: bool,
     snap_enabled: bool,
+    edit_range: bool,
+    range_mode: bool,
 }
 
 #[tauri::command]
@@ -289,6 +291,28 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
                 "Play / Pause",
                 "Wiedergabe / Pause",
                 timeline && context.content,
+                None,
+            )?,
+            &item(
+                "play-range",
+                "Play Selected Range",
+                "Ausgewählten Bereich abspielen",
+                timeline && context.edit_range,
+                Some("CmdOrCtrl+Shift+Space"),
+            )?,
+            &CheckMenuItem::with_id(
+                app,
+                "ca-range-mode",
+                label("Select Time Range", "Zeitbereich auswählen"),
+                timeline && context.content,
+                context.range_mode,
+                None::<&str>,
+            )?,
+            &item(
+                "clear-range",
+                "Clear Time Range",
+                "Zeitbereich löschen",
+                timeline && context.edit_range,
                 None,
             )?,
             &item("stop", "Stop", "Stopp", timeline && context.content, None)?,

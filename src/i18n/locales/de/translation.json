@@ -893,7 +893,11 @@
     "help_fullscreen_title": "Video im Vollbild",
     "help_fullscreen": "Video vergrößern öffnet eine fensterfüllende Vorschau und fordert nach Möglichkeit nativen Vollbildmodus an. Wiedergabe und Einzelbildschritte bleiben sichtbar. Escape oder Verkleinern schließt die Ansicht. Im erweiterten Viewer schalten Links/Rechts Einzelbilder und die Leertaste die Wiedergabe. Tab bleibt bei den Viewer-Steuerelementen; Timeline-Bearbeitungstasten sind getrennt.",
     "help_fades_title": "Ausgewählte Clips blenden",
-    "help_fades": "Audio nutzt die gewählte Kurve; Video blendet linear von/zu Schwarz. Die Dauer wird auf die jeweilige Cliplänge begrenzt."
+    "help_fades": "Audio nutzt die gewählte Kurve; Video blendet linear von/zu Schwarz. Die Dauer wird auf die jeweilige Cliplänge begrenzt.",
+    "help_range_title": "Zeitbereich",
+    "help_lock_title": "Spursperre",
+    "help_range": "Auf dem Zeitlineal ziehen, um einen Bereich auszuwählen. Die Ränder ziehen oder Anfang und Ende genau eingeben. Bereich abspielen nutzt diesen Bereich; Schleife wiederholt ihn. Die Clipauswahl bleibt erhalten.",
+    "help_lock": "Schützt die Clips dieser Spur vor Änderungen, auch über verknüpftes Bild, Einfügen und Löschen der Spur. Stumm, Solo, Pegel und Panorama bleiben bedienbar. Vor der Bearbeitung entsperren."
   },
   "analysis": {
     "outputSpectrogram": "Ausgabe-Spektrogramm",
@@ -959,5 +963,17 @@
     "ffmpegHelp": "Benötigt separat installiertes FFmpeg mit passendem Encoder. Die Lizenz hängt vom Build ab; Homebrew kann GPL-Komponenten enthalten. AV1 kann langsam sein.",
     "export": "Exportieren",
     "notices": "Urheberrechts- und Lizenzhinweise der mitgelieferten Codecs"
+  },
+  "ranges": {
+    "mode": "Zeitbereich auswählen",
+    "clips": "Clips auswählen",
+    "start": "Bereichsanfang",
+    "end": "Bereichsende",
+    "play": "Ausgewählten Bereich abspielen",
+    "clear": "Zeitbereich löschen",
+    "lock": "Spurbearbeitung sperren",
+    "unlock": "Spurbearbeitung entsperren",
+    "lockedNotice": "„{{name}}“ entsperren, bevor die Clips geändert werden.",
+    "rangeHelp": "Auf dem Zeitlineal ziehen, um einen Bereich auszuwählen. Die Ränder ziehen oder Anfang und Ende genau eingeben. Bereich abspielen nutzt diesen Bereich; Schleife wiederholt ihn. Die Clipauswahl bleibt erhalten."
   }
 }

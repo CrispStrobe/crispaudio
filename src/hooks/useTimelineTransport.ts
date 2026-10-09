@@ -10,6 +10,7 @@ import { useProjectStore } from '../stores/projectStore';
 export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>, audio: AudioEngineHandle) {
   const playing = useProjectStore((s) => s.isPlaying);
   const project = useProjectStore((s) => s.project);
+  const rangePlayback = useProjectStore(s=>s.rangePlayback);
   const sources = useProjectStore((s) => s.sources);
   useEffect(() => {
     const engine = engineRef.current;
@@ -22,11 +23,15 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
     let clockStart = 0;
     let timelineStart = 0;
     const ctx = audio.getContext();
+    const selected = rangePlayback ? project.editRange : undefined;
+    const start = selected?.start ?? 0, end = Math.min(selected?.end ?? project.duration,project.duration);
+    if(selected && end<=start){useProjectStore.getState().setIsPlaying(false);return;}
     const reschedule = (time: number) => {
+      time = Math.max(start,Math.min(end,time));
       clockStart = ctx.currentTime;
       timelineStart = time;
       engine.setSources(sources);
-      engine.play(project, time);
+      if(selected)engine.play(project, time, end);else engine.play(project,time);
     };
     const unsubscribe = useProjectStore.subscribe((next, previous) => {
       if (ready && next.isPlaying && !internalPosition && next.playheadPosition !== previous.playheadPosition) {
@@ -37,13 +42,13 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
       if (cancelled || !ready || document.visibilityState === 'hidden') return;
       const state = useProjectStore.getState();
       let position = timelineStart + ctx.currentTime - clockStart;
-      if (project.duration > 0 && position >= project.duration) {
+      if (end > start && position >= end) {
         if (state.loopEnabled) {
-          position %= project.duration;
+          position = start + (position-start) % (end-start);
           reschedule(position);
         } else {
           internalPosition = true;
-          state.setPlayheadPosition(project.duration);
+          state.setPlayheadPosition(end);
           internalPosition = false;
           state.setIsPlaying(false);
           return;
@@ -75,5 +80,5 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
       document.removeEventListener('visibilitychange', onVisibility);
       engine.stop();
     };
-  }, [audio, engineRef, playing, project, sources]);
+  }, [audio, engineRef, playing, project, sources, rangePlayback]);
 }

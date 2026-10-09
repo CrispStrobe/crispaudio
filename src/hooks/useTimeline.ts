@@ -352,6 +352,7 @@ export function useTimeline() {
         return;
       }
 
+      if(e.code==='Space'&&ctrl&&e.shiftKey){if(isNativeMac())return;e.preventDefault();store.playEditRange();return;}
       if (e.code === 'Space') {
         e.preventDefault();
         store.setIsPlaying(!store.isPlaying);

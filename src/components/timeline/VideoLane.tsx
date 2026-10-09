@@ -14,6 +14,7 @@ export const VIDEO_LANE_HEIGHT = 76;
 export function VideoLane({ width, touchArrange = false }: { width: number; touchArrange?: boolean }) {
   const { t } = useTranslation();
   const video = useProjectStore((s) => s.project.video);
+  const editRange=useProjectStore(s=>s.project.editRange);
   const height = useProjectStore(s => s.trackHeight);
   const zoom = useProjectStore((s) => s.zoomLevel);
   const scroll = useProjectStore((s) => s.scrollOffset);
@@ -83,6 +84,7 @@ export function VideoLane({ width, touchArrange = false }: { width: number; touc
         style={{left:Math.max(0,Math.min(clip.duration*scale-20,(side==='in'?clip.fadeIn:clip.duration-clip.fadeOut)*scale-10))}}/>)}
     </button>)}
     {[start,end].map((time,i)=><div key={i} className="absolute inset-y-0 border-l border-emerald-400 pointer-events-none" style={{left:(time-scroll)*scale}}><span className="absolute bottom-4 text-[9px] bg-emerald-950 text-emerald-200">{i?'OUT':'IN'}</span></div>)}
+    {editRange&&<div className="absolute inset-y-0 pointer-events-none z-10 border-x border-indigo-400 bg-indigo-500/10" style={{left:(editRange.start-scroll)*zoom,width:(editRange.end-editRange.start)*zoom}}/>}
     <PlayheadHandle width={width}/>
   </div>;
 }
