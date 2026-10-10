@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.13]
+## [Unreleased — local version 0.8.14]
+
+- Add bell, low-shelf and high-shelf EQ to clip, track and master racks with
+  matching native mixer DSP. Preserve saved low/high-pass parameter conventions.
+- Show a collapsible combined EQ response graph with draggable bands, keyboard
+  fine/coarse edits and numeric frequency/gain/Q; exclude bypassed bands.
+- Smooth live EQ parameter changes without rebuilding playback; coalesce graph
+  and numeric gestures into one undo step.
+- Wait for asynchronous waveform import in its regression test.
+
+## [Local version 0.8.13]
 
 - Add a bottom mixer dock with horizontally scrollable track/master strips,
   dB faders, pan, mute/solo and access to existing effects racks.

@@ -1,3 +1,4 @@
+import {eqParameters, type EQType} from '../../lib/equalizer';
 /**
  * Creates a lowpass BiquadFilterNode and connects `source` to it.
  * Returns the filter node as the output.
@@ -63,4 +64,10 @@ export function createBandpass(
   filter.Q.value = Math.max(0.0001, Math.min(1000, q));
   source.connect(filter);
   return filter;
+}
+
+export function createEQ(ctx: BaseAudioContext, source: AudioNode, type: EQType, params: Record<string,number>): BiquadFilterNode {
+  const node=ctx.createBiquadFilter(),p=eqParameters(type,params,ctx.sampleRate);
+  node.type=type;node.frequency.value=p.freq;node.Q.value=p.q;node.gain.value=p.gain;
+  source.connect(node);return node;
 }

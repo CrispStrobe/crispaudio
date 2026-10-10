@@ -87,6 +87,9 @@ export type EffectType =
   | 'bitcrush'
   | 'lowpass'
   | 'highpass'
+  | 'peaking'
+  | 'lowshelf'
+  | 'highshelf'
   | 'compressor';
 
 export interface AudioSource {

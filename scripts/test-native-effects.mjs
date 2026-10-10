@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 
 const cli = process.env.CRISPAUDIO_TEST_CLI;
 assert.ok(cli, 'Set CRISPAUDIO_TEST_CLI to the independently built media CLI');
-const { webkit } = await import(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE
+const { webkit,chromium } = await import(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE
   ? pathToFileURL(path.resolve(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE)).href : 'playwright');
 const output = fs.mkdtempSync(path.join(os.tmpdir(), 'crispaudio-native-effects-'));
 const sampleRate = 48000;
@@ -55,6 +55,7 @@ function readFloatWav(file) {
   assert.ok(pcm && pcm.length % 4 === 0, 'Missing float PCM');
   return Float32Array.from({ length: pcm.length / 4 }, (_, i) => pcm.readFloatLE(i * 4));
 }
+if(process.env.CRISPAUDIO_TEST_SOURCE)stereo.set(readFloatWav(process.env.CRISPAUDIO_TEST_SOURCE).subarray(0,stereo.length));
 const cases = [];
 for (const time of [0, 0.0001, 0.01337, 0.3, 2]) {
   for (const feedback of [0, 0.65]) cases.push({ type: 'delay', params: { time, feedback, mix: 0.4 } });
@@ -92,7 +93,13 @@ cases.push({ type: 'compressor', mono: true, params: {} });
 cases.push({ type: 'compressor', rack: 'master', unfiltered: true, burst: true, params: { threshold: -30, ratio: 8, knee: 10, attack: 0.01, release: 0.3 } });
 cases.push({ type: 'compressor', unfiltered: true, burst: true, params: { threshold: -18, ratio: 4, knee: 5, attack: 0.1, release: 0.01 } });
 cases.push({ type: 'compressor', rack: 'master', unfiltered: true, impulse: true, params: {} });
-const browser = await webkit.launch({ headless: true,
+for (const type of ['peaking','lowshelf','highshelf']) {
+  for (const freq of [20,1000,22000]) for (const gain of [-24,0,24]) {
+    cases.push({type,unfiltered:true,impulse:true,params:{freq,gain,q:freq===20?.1:20}});
+  }
+  for(const rack of ['master','track'])cases.push({type,rack,mono:true,unfiltered:true,params:{freq:1000,gain:6,q:1}});
+}
+const browser = process.env.CRISPAUDIO_CHROME_EXECUTABLE ? await chromium.launch({headless:true,executablePath:process.env.CRISPAUDIO_CHROME_EXECUTABLE}) : await webkit.launch({ headless: true,
   ...(process.env.CRISPAUDIO_WEBKIT_EXECUTABLE ? { executablePath: process.env.CRISPAUDIO_WEBKIT_EXECUTABLE } : {}) });
 const results = [];
 try {
@@ -100,7 +107,7 @@ try {
   await page.goto(process.env.CRISPAUDIO_TEST_URL || 'http://127.0.0.1:5190');
   await page.waitForLoadState('networkidle');
   for (const [index, test] of cases.entries()) {
-    if (process.env.CRISPAUDIO_TEST_EFFECT && test.type !== process.env.CRISPAUDIO_TEST_EFFECT) continue;
+    if (process.env.CRISPAUDIO_TEST_EFFECT && (process.env.CRISPAUDIO_TEST_EFFECT==='eq'?!['peaking','lowshelf','highshelf'].includes(test.type):test.type !== process.env.CRISPAUDIO_TEST_EFFECT)) continue;
     const channels = test.mono ? 1 : 2;
     const base = test.highFrequency
       ? Float32Array.from({ length: sampleRate * channels }, (_, i) => 0.4 * Math.sin(2 * Math.PI * (i % channels ? 19500 : 18000) * Math.floor(i / channels) / sampleRate))
@@ -164,20 +171,26 @@ try {
     const actual = readFloatWav(target);
     assert.equal(actual.length, reference.length);
     let max = 0;
+    let activeMax = 0;
     let sum = 0;
     let peak = 0;
     for (let i = 0; i < actual.length; i++) {
       const error = Math.abs(actual[i] - reference[i]);
-      max = Math.max(max, error); sum += error * error;
+      max = Math.max(max, error); if(i<48000)activeMax=Math.max(activeMax,error); sum += error * error;
       peak = Math.max(peak, Math.abs(reference[i]));
     }
-    const result = { ...test, peak, max, rms: Math.sqrt(sum / actual.length) };
+    const result = { ...test, peak, max, activeMax, rms: Math.sqrt(sum / actual.length) };
     results.push(result);
     // Float WAV preserves headroom: extreme cascaded compressor makeup can
     // exceed unity. Keep absolute tolerances for ordinary levels and scale
     // by measured reference peak only above full scale.
     const headroom = Math.max(1, peak);
-    assert.ok(result.max < 0.0001 * headroom && result.rms < 0.00001 * headroom, JSON.stringify(result));
+    // Native biquads retain the complete IIR tail. Browser graph silence/tail
+    // handling can diverge after the last clip ends (.5 s), notably for three
+    // cascaded +24 dB/Q20 bells. Keep the original bound over active clips and
+    // an explicit 2e-4 peak/2e-5 RMS tail budget for the EQ-only comparison.
+    const eq=['peaking','lowshelf','highshelf'].includes(test.type);
+    assert.ok(activeMax < .0001*headroom && result.max < (eq?.0002:.0001)*headroom && result.rms < (eq?.00002:.00001)*headroom,JSON.stringify(result));
   }
 } finally {
   await browser.close();

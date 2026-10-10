@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TimelinePanel } from '../../../src/components/timeline/TimelinePanel';
 import { TransportControls } from '../../../src/components/timeline/TransportControls';
@@ -104,9 +104,9 @@ describe('timeline subscription isolation', () => {
     });
     const { container } = render(<TimelinePanel />);
     await act(async () => fireEvent.change(container.querySelector('input[type="file"]')!, { target: { files } }));
-    expect(useProjectStore.getState().project.tracks.map((track) => [track.name, track.muted, track.segments[0]?.startTime])).toEqual([
+    await waitFor(()=>expect(useProjectStore.getState().project.tracks.map((track) => [track.name, track.muted, track.segments[0]?.startTime])).toEqual([
       ['Jacket.wav', false, 0], ['Room.wav', false, 0],
-    ]);
+    ]));
     expect(engine.resume).not.toHaveBeenCalled();
     engine.resume.mockReset();
   });

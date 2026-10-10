@@ -1,3 +1,4 @@
+import {isEQ} from '../lib/equalizer';
 import { waitForPreviewFrame } from '../lib/videoTransport';
 import { useEffect, useMemo } from 'react';
 import type { RefObject } from 'react';
@@ -11,7 +12,7 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
   const playing = useProjectStore((s) => s.isPlaying);
   const project = useProjectStore((s) => s.project);
   const playbackKey = useMemo(() => JSON.stringify({...project, masterVolume: undefined,
-    tracks: project.tracks.map(track => ({...track, volume: undefined, pan: undefined, muted: undefined, solo: undefined}))}), [project]);
+    tracks: project.tracks.map(track => ({...track, volume: undefined, pan: undefined, muted: undefined, solo: undefined}))}, function(key,value) {return key==='params'&&isEQ(this.type)?undefined:value;}), [project]);
   useEffect(() => useProjectStore.subscribe((next, previous) => {
     if (next.project !== previous.project && next.isPlaying) engineRef.current?.updateMix(next.project);
   }), [engineRef]);

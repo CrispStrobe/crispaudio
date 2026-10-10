@@ -488,7 +488,10 @@
       "bitcrush": "Bit Crush",
       "lowpass": "Tiefpass",
       "highpass": "Hochpass",
-      "compressor": "Kompressor"
+      "compressor": "Kompressor",
+      "peaking": "Glocken-EQ",
+      "lowshelf": "Tiefen-Shelf",
+      "highshelf": "Höhen-Shelf"
     },
     "effectParams": {
       "size": "Größe",
@@ -1136,5 +1139,13 @@
     "unity": "Pegel auf 0 dB zurücksetzen",
     "resetPeak": "Spitzenwert und Übersteuerung zurücksetzen",
     "meterHelp": "Spitze (grün), RMS (blau), Spitzenwert gehalten. Klicken zum Zurücksetzen."
+  },
+  "eq": {
+    "title": "Equalizer",
+    "graph": "EQ-Frequenzgang",
+    "help": "Punkte ziehen: Frequenz/Pegel. Pfeiltasten: fein; Umschalt: gröber. Kurve zeigt nur aktivierte EQ-Bänder.",
+    "freq": "Frequenz (Hz)",
+    "gain": "Pegel (dB)",
+    "q": "Q"
   }
 }

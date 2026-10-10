@@ -551,3 +551,16 @@ so anti-phase material does not disappear from the meter. Meter values are sampl
 peak/RMS, not true-peak or LUFS. Close the mixer to regain timeline space;
 horizontally scroll strips on narrow screens. Project master gain survives
 save/open and applies to exports; application monitor volume remains independent.
+
+### Edit EQ visually
+
+In a clip, track or master **Inserts** rack, add Bell EQ, Low Shelf or High Shelf
+(or a pass filter). Expand **Equalizer** for the combined enabled-band response.
+Select a numbered band below the graph, then drag its point: horizontally for
+frequency and vertically for bell/shelf gain. Pass-filter points change frequency
+only. Arrow keys make fine changes; Shift makes larger steps. Numeric fields
+set exact frequency/gain and bell Q. Disabled bands remain visible for reference
+and cannot be dragged; their response is excluded. Use the rack's power button
+to bypass a band and collapse the graph when space is limited. The curve is an
+EQ response, not a live spectrogram or the response of the complete effects rack.
+Graph and numeric EQ edits preserve playback and use one undo checkpoint per gesture.

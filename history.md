@@ -175,3 +175,10 @@ Added the bottom mixer dock, horizontally scrollable strips, existing inserts,
 post-pan stereo meters and persisted master output gain. Faders/audition switches
 update the existing graph rather than rescheduling playback. Buses, sends,
 graphical EQ and advanced dynamics remain subsequent roadmap work.
+
+## Graphical EQ — local 0.8.14
+
+Added bell/shelf bands alongside existing pass filters, a combined response graph,
+point/keyboard/numeric editing and native DSP. Filter parameter changes update
+live nodes without rescheduling audio. Shelf Q remains unused; pass Q retains
+Web Audio's dB convention. Limiter and compressor gain-reduction remain next.

@@ -1437,3 +1437,41 @@ Evidence logs: `/tmp/mixer-tests-final.log`, `/tmp/mixer-native-final.log`,
 Prior 0.8.12 desktop and iOS simulator CI runs both completed successfully:
 [desktop](https://github.com/CrispStrobe/crispaudio/actions/runs/37990218860),
 [iOS simulator](https://github.com/CrispStrobe/crispaudio/actions/runs/37990218850).
+
+## Local 0.8.14 — graphical EQ
+
+Clip, track and master racks add bell (`peaking`), low/high shelving bands and
+an expandable combined EQ response graph. Point drag, keyboard fine/coarse and
+numeric frequency/gain/bell-Q editing are available. Live EQ moves update running
+nodes with 10 ms smoothing; bypass/type/rack topology changes rebuild the graph.
+Stored pass-filter Q conventions remain compatible. New bands are supported by
+the native 48 kHz mixer; the optional FFmpeg compatibility mixer rejects them.
+Limiter, compressor gain reduction, buses and automation lanes remain planned.
+
+Validation: 104 frontend files / 1,392 tests passed; native media 59 passed,
+10 existing ignored platform checks, and 3 CLI tests passed. Production build,
+lint and local Tauri app build passed. Browser response checks cover 225 points
+at 32/44.1/48 kHz with maximum error 0.00000432 dB against Web Audio. Real browser
+pointer/keyboard/numeric edits verify uninterrupted playback, coalesced undo,
+restore, locked-rack protection and a German 390 px layout. Thirty-three native
+EQ comparisons cover extreme frequency/gain/Q impulses, stereo pan, overlapping
+clips, fades/automation and a one-second excerpt of the real Canon/H6 arrangement.
+
+DSP exports are not claimed bit-identical for EQ. One three-stage +24 dB/Q20 bell
+case differs after the last clip ends at a browser render-block boundary: worst
+sample error 0.000138247 and RMS 0.0000136771. The native mixer retains IIR tails;
+browser tail/silence handling is a suspected cause, not an independently proven
+root cause. Tests retain the original 0.0001 active-audio bound and explicitly
+budget 0.0002 maximum/0.00002 RMS for new EQ tails. All 33 cases pass these bounds.
+Real excerpt cases are substantially closer. No physical iOS/touch or installed
+WebKit audio validation is claimed from headless Chrome.
+
+Evidence: `/tmp/eq-tests-final.log`, `/tmp/eq-native-final.log`,
+`/tmp/eq-browser-final.log`, `/tmp/eq-parity-verified.log`, `/tmp/eq-lint-final.log`,
+`/tmp/eq-app-final.log`. Private excerpt outputs are in
+`transcripts/2026-Studienwoche/CrispAudio-validation/ux/eq-0814/`; source recordings
+and original projects were not modified. No release tag or Apple upload.
+
+Installed/launched local 0.8.14 and updated the standalone CLI. Ad-hoc signatures
+verified; one existing autosave preserved. Installation evidence:
+`/tmp/eq-install.log`.

@@ -488,7 +488,10 @@
       "bitcrush": "Bit Crush",
       "lowpass": "Low Pass",
       "highpass": "High Pass",
-      "compressor": "Compressor"
+      "compressor": "Compressor",
+      "peaking": "Bell EQ",
+      "lowshelf": "Low Shelf",
+      "highshelf": "High Shelf"
     },
     "effectParams": {
       "size": "Size",
@@ -1136,5 +1139,13 @@
     "unity": "Reset level to 0 dB",
     "resetPeak": "Reset peak hold and clipping",
     "meterHelp": "Peak (green), RMS (blue), held peak. Click to reset."
+  },
+  "eq": {
+    "title": "Equalizer",
+    "graph": "EQ frequency response",
+    "help": "Drag points: frequency/gain. Arrow keys: fine; Shift: coarse. Curve shows enabled EQ bands only.",
+    "freq": "Frequency (Hz)",
+    "gain": "Gain (dB)",
+    "q": "Q"
   }
 }

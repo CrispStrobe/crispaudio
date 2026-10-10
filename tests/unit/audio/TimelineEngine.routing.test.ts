@@ -10,7 +10,7 @@ function audioContext() {
     return {kind:type, connect:vi.fn(),disconnect:vi.fn(),stop:vi.fn(),start:vi.fn(),gain:param(),pan:param(),frequency:param(),Q:param(),delayTime:param()};
   }
   const make=(type:string)=>{const n=node(type);nodes.push(n);return n;};
-  const ctx={currentTime:0,destination:{},createGain:()=>make('gain'),createChannelSplitter:()=>make('splitter'),createAnalyser:()=>make('meter'),createStereoPanner:()=>make('pan'),createBufferSource:()=>make('source'),createBiquadFilter:()=>make('filter'),createOscillator:()=>make('osc'),createDelay:()=>make('delay')};
+  const ctx={sampleRate:48000,currentTime:0,destination:{},createGain:()=>make('gain'),createChannelSplitter:()=>make('splitter'),createAnalyser:()=>make('meter'),createStereoPanner:()=>make('pan'),createBufferSource:()=>make('source'),createBiquadFilter:()=>make('filter'),createOscillator:()=>make('osc'),createDelay:()=>make('delay')};
   return {ctx:ctx as unknown as AudioContext,nodes};
 }
 describe('timeline master routing and graph disposal',()=>{

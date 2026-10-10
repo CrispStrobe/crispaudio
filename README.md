@@ -97,6 +97,10 @@ audition changes keep playback running. Meters show stereo peak/RMS with held
 peak and clipping indicators; click a meter to reset. The project master level
 is saved and applies to both GUI and native CLI exports, independently of monitor
 volume. New projects and older files default to unity output gain.
+EQ racks include high/low-pass, bell and shelving bands, with a collapsible
+frequency-response graph. Drag band points or use keyboard/numeric controls;
+EQ parameter changes update playback smoothly. The curve combines enabled EQ
+bands only. Bell/shelf DSP also works in the native linked-project mixer.
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)

@@ -1,3 +1,4 @@
+import {eqParameters,isEQ} from '../../lib/equalizer';
 import { scheduleGain } from '../../lib/mixAutomation';
 import { scheduleEnvelope } from '../../lib/audioEnvelope';
 import { audibleTracks } from '../../lib/timelineView';
@@ -18,7 +19,7 @@ import { createChorus } from '../effects/Chorus';
 import { createRingModulator } from '../effects/RingModulator';
 import { applyDistortion } from '../effects/Distortion';
 import { createBitCrush } from '../effects/BitCrush';
-import { createLowpass, createHighpass } from '../effects/Filter';
+import { createEQ } from '../effects/Filter';
 
 // ── TimelineEngine ────────────────────────────────────────────────────────────
 
@@ -27,6 +28,7 @@ export class TimelineEngine {
   private sources: Map<string, AudioSource>;
   private activeSources: AudioBufferSourceNode[] = [];
   private masterGain: GainNode;
+  private eqNodes = new Map<string, BiquadFilterNode>();
   private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]}>();
   private outputGain?: GainNode;
   private outputMeter?: AnalyserNode[];
@@ -53,6 +55,17 @@ export class TimelineEngine {
       nodes.pan.pan.setTargetAtTime(Math.max(-1, Math.min(1, track.pan)), now, .005);
     }
     this.outputGain?.gain.setTargetAtTime(project.masterVolume ?? 1, now, .005);
+    const racks: [string, EffectConfig[]][] = [['master',project.masterEffects]];
+    for (const track of project.tracks) {
+      racks.push([`track:${track.id}`,track.effects??[]]);
+      for (const clip of track.segments) racks.push([`clip:${clip.id}`,clip.effects]);
+    }
+    for (const [scope,effects] of racks) effects.forEach((effect,index)=>{
+      const node=this.eqNodes.get(`${scope}:${index}`);
+      if(!node||!isEQ(effect.type))return;
+      const p=eqParameters(effect.type,effect.params,this.ctx.sampleRate);
+      node.frequency.setTargetAtTime(p.freq,now,.01);node.Q.setTargetAtTime(p.q,now,.01);node.gain.setTargetAtTime(p.gain,now,.01);
+    });
   }
 
   private playbackNodes = new Set<AudioNode>();
@@ -108,7 +121,7 @@ export class TimelineEngine {
     outputGain.connect(this.masterGain);
     rangeGate.gain.setValueAtTime(1, now);
     rangeGate.gain.setValueAtTime(0, now + Math.max(0, endTime - startTime));
-    this.applyEffects(ctx, masterInput, project.masterEffects).connect(rangeGate);
+    this.applyEffects(ctx, masterInput, project.masterEffects, 'master').connect(rangeGate);
     const audible = new Set(audibleTracks(project.tracks).map(track => track.id));
     const tracksToPlay = project.tracks;
 
@@ -120,7 +133,7 @@ export class TimelineEngine {
       const trackFade=ctx.createGain();
       scheduleEnvelope(trackFade.gain,now+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
       const automated=ctx.createGain();scheduleGain(automated.gain,track.automation,now,startTime);
-      trackFade.connect(automated);this.applyEffects(ctx,automated,track.effects??[]).connect(trackGain);
+      trackFade.connect(automated);this.applyEffects(ctx,automated,track.effects??[],`track:${track.id}`).connect(trackGain);
       trackGain.gain.value = audible.has(track.id) ? track.volume : 0;
 
       const panner = ctx.createStereoPanner();
@@ -157,7 +170,7 @@ export class TimelineEngine {
 
         // Apply effects chain
         let currentNode: AudioNode = segGain;
-        currentNode = this.applyEffects(ctx, currentNode, segment.effects);
+        currentNode = this.applyEffects(ctx, currentNode, segment.effects, `clip:${segment.id}`);
 
         // Apply fades via gain automation
         const fadeGain = ctx.createGain();
@@ -192,6 +205,7 @@ export class TimelineEngine {
     }
     this.playbackNodes.clear();
     this.mixerNodes.clear();
+    this.eqNodes.clear();
     this.outputGain = undefined;
     this.outputMeter = undefined;
   }
@@ -343,10 +357,11 @@ export class TimelineEngine {
     ctx: BaseAudioContext,
     input: AudioNode,
     effects: EffectConfig[],
+    scope?: string,
   ): AudioNode {
     let node: AudioNode = input;
 
-    for (const fx of effects) {
+    for (const [index,fx] of effects.entries()) {
       if (!fx.enabled) continue;
       const p = fx.params;
 
@@ -397,11 +412,14 @@ export class TimelineEngine {
           );
           break;
         case 'lowpass':
-          node = createLowpass(ctx, node, p.freq ?? 8000, p.q ?? 1);
-          break;
         case 'highpass':
-          node = createHighpass(ctx, node, p.freq ?? 200, p.q ?? 1);
-          break;
+        case 'peaking':
+        case 'lowshelf':
+        case 'highshelf': {
+          const filter=createEQ(ctx,node,fx.type,p);
+          if(scope)this.eqNodes.set(`${scope}:${index}`,filter);
+          node=filter;break;
+        }
         case 'compressor': {
           const comp = ctx.createDynamicsCompressor();
           comp.threshold.value = p.threshold ?? -24;

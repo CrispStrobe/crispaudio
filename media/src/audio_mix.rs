@@ -168,13 +168,15 @@ struct Biquad {
 }
 impl Biquad {
     fn at(&mut self, input: [f64; 2]) -> [f64; 2] {
+        let input = input.map(|v| v as f32 as f64);
         let mut out = [0.0; 2];
         for ch in 0..2 {
             out[ch] = self.b[0] * input[ch] + self.state[ch][0];
             self.state[ch][0] = self.b[1] * input[ch] - self.a[0] * out[ch] + self.state[ch][1];
             self.state[ch][1] = self.b[2] * input[ch] - self.a[1] * out[ch];
         }
-        out
+        // Web Audio carries float32 buffers between biquad nodes; internal state is double.
+        out.map(|v| v as f32 as f64)
     }
 }
 // State allocation is independent of project duration and capped across all racks.
@@ -386,6 +388,62 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
                     mix,
                 }
             });
+            continue;
+        }
+        if matches!(kind, "peaking" | "lowshelf" | "highshelf") {
+            let default_freq = match kind {
+                "lowshelf" => 200.0,
+                "highshelf" => 4000.0,
+                _ => 1000.0,
+            };
+            let freq = finite(params, "freq", Some(default_freq))?.clamp(20.0, 22000.0);
+            let gain = finite(params, "gain", Some(0.0))?.clamp(-24.0, 24.0);
+            let q = finite(params, "q", Some(1.0))?.clamp(0.1, 20.0);
+            let w = std::f64::consts::TAU * freq / RATE;
+            let (s, c) = w.sin_cos();
+            let amp = 10.0f64.powf(gain / 40.0);
+            let (b, a) = if kind == "peaking" {
+                let alpha = s / (2.0 * q);
+                (
+                    [1.0 + alpha * amp, -2.0 * c, 1.0 - alpha * amp],
+                    [1.0 + alpha / amp, -2.0 * c, 1.0 - alpha / amp],
+                )
+            } else {
+                // Web Audio shelves use slope S=1 and ignore Q.
+                let beta = (2.0 * amp).sqrt() * s;
+                if kind == "lowshelf" {
+                    (
+                        [
+                            amp * ((amp + 1.0) - (amp - 1.0) * c + beta),
+                            2.0 * amp * ((amp - 1.0) - (amp + 1.0) * c),
+                            amp * ((amp + 1.0) - (amp - 1.0) * c - beta),
+                        ],
+                        [
+                            (amp + 1.0) + (amp - 1.0) * c + beta,
+                            -2.0 * ((amp - 1.0) + (amp + 1.0) * c),
+                            (amp + 1.0) + (amp - 1.0) * c - beta,
+                        ],
+                    )
+                } else {
+                    (
+                        [
+                            amp * ((amp + 1.0) + (amp - 1.0) * c + beta),
+                            -2.0 * amp * ((amp - 1.0) + (amp + 1.0) * c),
+                            amp * ((amp + 1.0) + (amp - 1.0) * c - beta),
+                        ],
+                        [
+                            (amp + 1.0) - (amp - 1.0) * c + beta,
+                            2.0 * ((amp - 1.0) - (amp + 1.0) * c),
+                            (amp + 1.0) - (amp - 1.0) * c - beta,
+                        ],
+                    )
+                }
+            };
+            out.push(Effect::Filter(Biquad {
+                b: b.map(|v| v / a[0]),
+                a: [a[1] / a[0], a[2] / a[0]],
+                state: [[0.0; 2]; 2],
+            }));
             continue;
         }
         let low = match kind {
@@ -824,6 +882,30 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+    #[test]
+    fn equalizer_unity_and_reciprocal_bells_preserve_audio() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = source(folder.path(), 1, &[0.2]);
+        let mut doc = project(&input);
+        let unity = folder.path().join("unity.wav");
+        render(&doc, unity.to_str().unwrap()).unwrap();
+        let expected = output(&unity);
+        for kind in ["peaking", "lowshelf", "highshelf"] {
+            doc["project"]["masterEffects"] =
+                json!([{"type":kind,"enabled":true,"params":{"freq":1000,"gain":0,"q":1}}]);
+            let filtered = folder.path().join(format!("{kind}.wav"));
+            render(&doc, filtered.to_str().unwrap()).unwrap();
+            for (a, b) in output(&filtered).iter().zip(&expected) {
+                assert!((a - b).abs() < 0.000001);
+            }
+        }
+        doc["project"]["masterEffects"] = json!([{"type":"peaking","enabled":true,"params":{"freq":1000,"gain":12,"q":2}},{"type":"peaking","enabled":true,"params":{"freq":1000,"gain":-12,"q":2}}]);
+        let cancel = folder.path().join("cancel.wav");
+        render(&doc, cancel.to_str().unwrap()).unwrap();
+        for (a, b) in output(&cancel).iter().zip(&expected) {
+            assert!((a - b).abs() < 0.000001);
+        }
     }
     #[test]
     fn project_master_gain_scales_final_output_and_rejects_negative() {

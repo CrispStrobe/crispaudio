@@ -166,9 +166,12 @@ Also supported: `unlink`, `move`/`slip` with `ids` and `seconds`, `trim` with
 shared source bounds. The recipe preserves unknown metadata and writes v3 files.
 
 `render-project` requires linked audio. It renders source offsets, fades/curves,
-track envelopes, mute/solo, volume and automation. High/low-pass filters are
-supported. Other effects, nonzero pan and master processing fail explicitly;
-use GUI export to retain their Web Audio behavior. Portable embedded audio
+track envelopes, mute/solo, volume and automation. The native 48 kHz mixer
+supports stereo pan, master volume and clip/track/master racks, including
+high/low-pass, bell/shelf EQ and the existing compressor, delay, reverb, chorus,
+distortion, bitcrush and ring modulation. Unsupported enabled effects fail
+explicitly. The optional FFmpeg compatibility mixer has narrower effect/pan
+support and rejects new bell/shelf EQ; use the native mixer or GUI export. Portable embedded audio
 projects must be opened/resaved with linked sources before CLI rendering.
 
 `edit-video` still accepts standalone picture JSON. Add `sources` and per-clip
@@ -472,3 +475,22 @@ CLI, then decodes in headless WebKit. It checks frame count and unshifted signal
 error. Set `CRISPAUDIO_TEST_CLI`, optionally `CRISPAUDIO_PLAYWRIGHT_MODULE` and
 `CRISPAUDIO_WEBKIT_EXECUTABLE`. No Vite server is needed. Native rendering disables
 FFmpeg/FFprobe; the harness writes fixtures/results into a fresh temporary folder.
+
+### Equalizer parameters
+
+EQ entries use the same `{type, enabled, params}` rack format at clip, track and
+master scope. Bell uses `type: "peaking"`, `params: {freq: 1000, gain: -6, q: 1}`;
+shelves use `"lowshelf"` or `"highshelf"` with frequency and gain in dB. New EQ
+frequency spans 20–22000 Hz (bounded by Nyquist in the GUI), gain −24…+24 dB,
+and bell Q 0.1–20. Shelves use a fixed slope and ignore Q. Existing low/high-pass
+presets retain their Web Audio dB Q convention. Native linked mixing uses 48 kHz.
+The response graph shows enabled EQ only, not dynamics or time-based effects.
+
+The coefficient implementation follows the
+[Web Audio filter characteristics](https://www.w3.org/TR/webaudio-1.0/#filters-characteristics)
+and adds no dependency or new codec/license requirement.
+
+EQ GUI/native waveform comparison has a documented tail tolerance rather than
+bit-identical output: an extreme cascade of three +24 dB/Q20 bells differs after
+clip end by up to 0.000138247 full scale in the current browser comparison.
+See [validation details](RELEASE_STATUS.md#local-0814--graphical-eq).

@@ -1,3 +1,4 @@
+import {EqualizerGraph} from './EqualizerGraph';
 import React, { useState } from 'react';
 import { create } from 'zustand';
 import { ChevronDown, ChevronRight, Power, Trash2, Copy, ClipboardPaste, ArrowUp, ArrowDown } from 'lucide-react';
@@ -17,6 +18,7 @@ const EFFECT_LABELS: Record<EffectType, string> = {
   bitcrush: 'Bit Crush',
   lowpass: 'Low Pass',
   highpass: 'High Pass',
+  peaking: 'Bell EQ', lowshelf: 'Low Shelf', highshelf: 'High Shelf',
   compressor: 'Compressor',
 };
 
@@ -29,6 +31,7 @@ const ALL_EFFECT_TYPES: EffectType[] = [
   'bitcrush',
   'lowpass',
   'highpass',
+  'peaking', 'lowshelf', 'highshelf',
   'compressor',
 ];
 
@@ -42,6 +45,7 @@ function defaultEffect(type: EffectType): EffectConfig {
     bitcrush: { bits: 8, mix: 0.5 },
     lowpass: { freq: 8000, q: 1 },
     highpass: { freq: 200, q: 1 },
+    peaking: {freq:1000,q:1,gain:0}, lowshelf:{freq:200,gain:0}, highshelf:{freq:4000,gain:0},
     compressor: { threshold: -24, ratio: 4, attack: 0.003, release: 0.25, knee: 5 },
   };
   return { type, enabled: true, params: { ...defaults[type] } };
@@ -94,6 +98,9 @@ const EFFECT_PARAMS: Record<EffectType, ParamSpec[]> = {
     { key: 'freq', label: 'Cutoff', min: 10, max: 20000, step: 10, unit: 'Hz' },
     { key: 'q', label: 'Q', min: 0.1, max: 20, step: 0.1 },
   ],
+  peaking: [{key:'freq',label:'Freq',min:20,max:22000,step:1,unit:'Hz'},{key:'gain',label:'Gain',min:-24,max:24,step:.1,unit:'dB'},{key:'q',label:'Q',min:.1,max:20,step:.1}],
+  lowshelf: [{key:'freq',label:'Freq',min:20,max:22000,step:1,unit:'Hz'},{key:'gain',label:'Gain',min:-24,max:24,step:.1,unit:'dB'}],
+  highshelf: [{key:'freq',label:'Freq',min:20,max:22000,step:1,unit:'Hz'},{key:'gain',label:'Gain',min:-24,max:24,step:.1,unit:'dB'}],
   compressor: [
     { key: 'threshold', label: 'Threshold', min: -100, max: 0, step: 1, unit: 'dB' },
     { key: 'ratio', label: 'Ratio', min: 1, max: 20, step: 0.5 },
@@ -217,6 +224,7 @@ export function EffectChainEditor({effects, onChange, label}: {
       <ToolButton icon={Power} label={t(effects.some(e => e.enabled) ? 'rack.bypass' : 'rack.enable')} disabled={!effects.length}
         onClick={() => {const enabled = !effects.some(e => e.enabled); onChange(effects.map(e => ({...e, enabled})));}}/>
     </div>
+    <EqualizerGraph effects={effects} onChange={onChange}/>
     <p className="text-xs text-gray-400">{t('rack.orderHelp')}</p>
     {!effects.length && <p className="text-xs text-gray-500 py-2">{t('timeline.noEffects')}</p>}
     {effects.map((effect, i) => <EffectRow key={`${i}-${effect.type}`} effect={effect} index={i} count={effects.length} onUpdate={update}

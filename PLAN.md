@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-10, during local 0.8.13 implementation. This section is the current plan.
+Updated 2026-10-10, during local 0.8.14 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -147,8 +147,10 @@ Local 0.8.13 adds the M2.1 mixer foundation: bottom dock, horizontal track/maste
 strips, stereo peak/RMS and held peak/clipping reset, dB faders, pan, mute/solo
 and existing inserts. Mixer changes update the running graph without rebuilding
 playback; persisted master gain applies to GUI/native exports. Browser narrow
-layout checks do not substitute for physical iOS validation. Next: M2.2 graphical
-EQ/dynamics, followed by automation lanes and routing/buses. Desktop M1 completion does not imply iOS device
+layout checks do not substitute for physical iOS validation. Local 0.8.14 adds the graphical EQ portion of M2.2: pass, bell and shelving
+bands with response/drag/keyboard/numeric controls and native DSP parity. Next:
+output limiter and compressor gain-reduction display, then automation lanes and
+routing/buses. Desktop M1 completion does not imply iOS device
 validation or sample-accurate musical loop restarts.
 Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
 seamless musical looping. Paging and new codec work remain deferred.
@@ -349,11 +351,11 @@ consume the interview/video editor's near-term milestones.
 
 ## Next concrete implementation slice
 
-M2.1 is available in local 0.8.13. Continue with graphical EQ/dynamics: define
-compatible high/low-pass, shelf and bell parameters, show the response curve,
-and implement matching realtime/offline/native DSP before exposing new effects.
-Then add an output limiter and compressor gain-reduction display. Validate with
-microphone/music mixes; codecs and disk paging remain deferred.
+M2.1 and the graphical EQ portion of M2.2 are available in local 0.8.14.
+Continue with an output limiter and compressor gain-reduction display. Specify
+attack/release, lookahead/latency and matching realtime/offline/native processing
+before exposing new controls. Validate transient handling, stereo linking and
+export parity with microphone/music mixes; codecs and disk paging remain deferred.
 
 ---
 
