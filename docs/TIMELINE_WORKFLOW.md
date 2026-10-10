@@ -564,3 +564,21 @@ and cannot be dragged; their response is excluded. Use the rack's power button
 to bypass a band and collapse the graph when space is limited. The curve is an
 EQ response, not a live spectrogram or the response of the complete effects rack.
 Graph and numeric EQ edits preserve playback and use one undo checkpoint per gesture.
+
+### Control output peaks and inspect dynamics
+
+In **Mixer**, enable **Limiter** below the Master strip. Set ceiling (−24..0 dBFS)
+and release (10..2000 ms); defaults when enabled are −1 dBFS and 100 ms. Numeric
+fields commit on Enter or blur and cancel with Escape. Ceiling/release changes
+update playback without restarting it; enabling/disabling changes graph routing.
+
+The limiter follows the master effects/fader, links stereo gain and adds no delay.
+It controls sample peaks with instant attack and exponential release; it does not
+measure reconstructed true peaks or normalize loudness. Monitor volume remains
+independent and does not alter exports. Export range limiting includes prior DSP
+history, and saved projects retain settings. Old files remain limiter-disabled.
+
+**GR** shows compressor attenuation per insert and the greatest insert reduction
+on a track/master strip. It is not the sum of cascaded compressors. The limiter
+has its own GR display. Stop clears both displays. See [Effects](DAW_EFFECTS.md)
+and [CLI recipe](MEDIA_WORKSPACE.md#output-limiter-and-gain-reduction).

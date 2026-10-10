@@ -106,7 +106,6 @@ master fader, with ceiling and release controls. It adds no delay. Compressor
 inserts and mixer strips show gain reduction; the limiter shows its own reduction.
 These are sample-peak controls; true-peak and LUFS tools remain future work.
 
-
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)
 for release availability. The web demo and published releases can differ from

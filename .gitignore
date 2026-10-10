@@ -41,3 +41,6 @@ media/target/
 
 # Standalone CLI comparison build (keep separate from the Tauri target)
 media/target-cli/
+
+# Local agent handover: machine paths, recovery details and private fixture locations
+/HANDOVER.local.md

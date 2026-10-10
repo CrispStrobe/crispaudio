@@ -45,16 +45,16 @@ playback/render paths and native media backends. Existing capabilities include:
   groups; move/split/trim/slip; copy/cut/paste; basic all-track range ripple deletion.
 - Clip/track fades, reviewed audio crossfades, picture transitions, source offsets,
   magnetic/grid snapping, frame/sample nudges, markers, editable POS/canvas length.
-- Track gain/pan/mute/solo; gain automation points and waveform overlay; nine
-  built-in clip/track/master effects. Voice processing can return to a timeline clip.
+- Track gain/pan/mute/solo; gain automation points and waveform overlay; built-in
+  clip/track/master effects. Voice processing can return to a timeline clip.
 - Media bin/inspector, offset/drift analysis, reviewed microphone switching,
   transcript import/edit/navigation/export, basic picture orientation and colour.
 - Save/load, linked/portable audio projects, recovery and relinking; native Mac
   WAV/FLAC/AAC/M4A and MP4/MOV paths; optional installed FFmpeg compatibility.
 
 These are foundations to extend, not features to reinvent. In particular,
-Range edits preserve unaffected picture transitions and reject boundaries through
-a blend pending advanced trim semantics; gain automation has point
+Range edits preserve unaffected picture transitions and offer reviewed hard-cut
+replacement for crossed blends; the default preserve policy rejects such boundaries; gain automation has point
 entry rather than a full direct-edit lane; `project.video.clips` is a single
 composition lane; timeline effects now include parametric EQ and a sample-peak
 limiter, but still lack sends/buses and general parameter automation. Timeline recording/takes are not
@@ -184,9 +184,10 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
 1. **Foundation complete in local 0.8.13.** Dockable track/master strips: peak/RMS meters, peak hold,
    clipping indication, dB faders, pan, mute/solo and inserts. On phones/tablets,
    show a focused strip or horizontal strip list rather than shrinking everything.
-2. Add graphical parametric EQ (high/low-pass, shelves and bell bands) and a
-   dedicated output limiter. Show compressor gain reduction. Keep current saved
-   effect presets compatible; define effect order and latency explicitly.
+2. **Complete in local 0.8.14–0.8.15.** Graphical parametric EQ (high/low-pass,
+   shelves and bell bands), sample-peak output limiter and compressor gain reduction.
+   Existing effect presets remain compatible. Limiter follows master gain, has
+   instant attack/adjustable release and adds no latency. True-peak is M2.5.
 3. Turn existing gain automation into directly editable lanes: add/move/delete
    points, numeric edits, curves and safe copy/retime. Extend to pan and selected FX
    parameters, then Read/Touch/Latch/Write modes with visible protection against

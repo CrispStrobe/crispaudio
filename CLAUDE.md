@@ -7,7 +7,7 @@ npm run dev          # Web dev server (Vite, port 5173)
 npm run tauri dev    # Desktop app (Tauri + Vite)
 npm run build        # Production web build
 npm run tauri build  # Desktop app bundle
-npm test             # Vitest (1147+ tests)
+npm test             # Vitest; see RELEASE_STATUS.md for measured counts
 npm run test:watch   # Vitest watch mode
 npm run lint         # ESLint
 npm run typecheck    # tsc --noEmit
@@ -39,7 +39,8 @@ tests/unit/         Unit tests (stores/, audio/, components/, hooks/, lib/)
 
 - Panels are lazy-loaded via React.lazy in App.tsx
 - Visualization components (WaveformDisplay, SpectrumDisplay, etc.) are in shared/ with ResizeObserver for HiDPI
-- Audio processing runs in the browser (Web Audio API) — Tauri is used for file I/O and WAV encoding
+- Realtime/GUI offline audio uses Web Audio; native linked-project exports use
+  media/src/audio_mix.rs. Keep supported DSP/routing consistent across paths.
 - Panels must clean up AudioContext and stop playback on unmount
 - CSS uses Tailwind utilities + CSS custom properties for theming (--bg-primary, --text-muted, etc.)
 - All interactive elements need aria-labels (WCAG compliance)
@@ -54,7 +55,8 @@ tests/unit/         Unit tests (stores/, audio/, components/, hooks/, lib/)
 - Release: triggered by `v*` tags, builds Linux/macOS/Windows/iOS/Android
 - macOS App Store: separate `mac-v*` tag/manual workflow (last signing run failed).
 - Main pushes do not submit to Apple. See docs/RELEASE_STATUS.md before tagging.
-- Vercel: auto-deploys web version on push to main
+- Repository Vercel/Pages workflows run on version tags or manual dispatch.
+  An external Vercel integration may differ; inspect actual deployment status.
 
 ## Interview UX
 
@@ -532,3 +534,34 @@ project and history (including redo), while release commits one step. Idle views
 must not end another view's gesture. Trim stops audio playback; blur/unmount finish
 the last valid edit. Optional source-pointer/workflow browser harnesses validate
 these controls plus real file actions and native range renders. M2 mixer is next.
+
+
+## Current mixer/DSP contract (0.8.15)
+
+M2.1 mixer and M2.2 EQ/limiter/GR are implemented. M2.3 automation lanes are next;
+read PLAN.md's active section before older implementation notes. Mixer gain/pan,
+audition switches, EQ parameters and limiter ceiling/release update the live
+graph; topology changes rebuild it. Route clip gain/FX/fade → track envelope and
+linear gain automation → track FX/level/pan → master FX/gain → optional limiter →
+meter → monitor volume. Monitor volume never changes exports.
+
+Project format 3 still reads 1/2. masterVolume defaults to 1; outputLimiter is
+optional and disabled for old projects. samplePeakLimiter.ts and media/src/limiter.rs
+implement instant attack, stereo linkage and exponential release without added
+latency. AudioWorklet code is bundled via worker URL; verify production assets,
+not only Vite modules. Offline range export must process from zero then crop.
+Native AudioParam equivalents use float32 parameter/input values where needed.
+Limiter is sample-peak only: no true-peak/LUFS/lookahead claims.
+
+GainReduction reads engine telemetry on RAF without React/store transport churn.
+A strip displays maximum own-insert compressor reduction, not a cascaded sum.
+Graph/numeric gestures preserve one undo step; cancellation must preserve redo.
+Do not weaken audio checks to conceal backend differences. Existing extreme EQ
+end-tail tolerances and parity limits are documented in RELEASE_STATUS.md.
+
+Optional synthetic browser checks: scripts/test-dynamics.mjs,
+scripts/test-limiter-production.mjs and scripts/test-native-pcm.mjs. They need
+Playwright/browsers and served Vite/dist respectively; no user media is committed.
+Use npm run build (tsc -b) for the full frontend check. Local machine setup and
+private fixture/recovery paths are in HANDOVER.local.md when present; that file
+is deliberately gitignored. Never force-add it or copy secrets into tracked docs.

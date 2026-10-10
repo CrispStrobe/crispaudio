@@ -1512,3 +1512,10 @@ Installed and launched local 0.8.15 plus the standalone CLI; ad-hoc signatures
 verified and the saved workspace preserved. Installed WKWebView interaction and
 physical iOS playback are not covered by the headless browser checks. No new
 Apple release is implied.
+
+
+0.8.15 source commit `16982269024cccdaf4d800caad518155fb160099` passed both remote
+[CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38026090375) and
+[iOS simulator CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38026090382).
+Simulator success does not establish physical iOS feature validation or App Store
+submission. No release tag/upload was created for this local milestone.

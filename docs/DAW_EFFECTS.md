@@ -1,4 +1,4 @@
-# Fades and effects — local 0.6.12
+# Fades and effects
 
 ## Fade selected audio or video
 
@@ -26,29 +26,52 @@ transitions between pictures are separate controls.
 ## Clip, track and master effects
 
 1. Select an audio clip and open **Clip settings** for its rack.
-2. Open **Tracks & microphones** (mixer icon) and expand **Track effects** for a
-   track-wide rack. **Master effects** sits below the tracks and affects the sum.
+2. Open **Mixer** in the Timeline toolbar, then **Inserts** on a track or the
+   Master strip. Track racks process that lane; Master processes their sum.
+   **Tracks & microphones** also provides track effects and fade settings.
 3. Add reverb, delay, chorus, ring modulation, distortion, bit crushing,
-   low/high-pass filtering or compression. Expand an effect to edit parameters.
+   low/high-pass filtering, bell/shelf EQ or compression. Expand an effect to edit parameters.
 4. Effects run top to bottom. Arrow controls reorder them; power bypasses one
    effect, trash removes it. The rack power control disables/enables all effects.
 5. Copy a rack and replace another rack with the copied chain. The internal FX
    clipboard is separate from clip Copy/Paste and works across all three scopes.
    Pasted settings are independent; subsequent edits do not change the original.
-6. Rack edits stop playback. Play again to audition. Undo restores the previous
-   chain and parameter state. Save project retains clip, track and master racks.
+6. EQ parameter edits update the running graph. Changing rack topology or other
+   effect parameters reschedules playback; do not assume every parameter is live.
+   Undo restores the chain/settings. Save retains clip, track and master racks.
 
 GUI audio routing is clip gain → clip FX → clip fade → track fade/automation →
-track FX → track volume/pan → master FX → output. Realtime and offline GUI export
+track FX → track volume/pan → master FX → master gain → optional output limiter
+→ output meter → monitor volume. Realtime and offline GUI export
 now use the master rack consistently. Stopping playback disconnects its graph
-and stops effect modulation oscillators. Playback edits currently rebuild the
-routing on restart; this is not live plugin parameter automation.
+and stops effect modulation oscillators. Topology and most non-EQ effect edits rebuild the graph; the live controls above
+do not constitute general plugin-parameter automation.
 
 Use **DUR** to leave an explicit export tail for delay/reverb. Effects do not
 silently extend the project. GUI WAV/MP4 mix export retains Web Audio effects.
-Native CLI `render-project` still supports only its documented filters and rejects
-unsupported processing; it must not silently drop a rack. `edit-video` uses the
+Native CLI `render-project` supports the documented native rack DSP and output
+limiter, and rejects unsupported processing; it must not silently drop a rack. `edit-video` uses the
 same native picture fade validation/export as the GUI.
+
+## EQ, limiter and gain reduction
+
+Expand **Equalizer** in an Inserts rack for the enabled EQ-band response. Drag
+bands, use arrow keys (Shift for coarse changes), or enter frequency/gain/Q.
+The response is analytical, not a spectrogram or the complete rack's response.
+
+On the Mixer Master strip, enable **Limiter** and set ceiling/release. Numeric
+edits commit on Enter or blur; Escape cancels. It limits linked stereo sample
+peaks after master gain, with instant attack and exponential release; it adds no
+lookahead or delay. It is not true-peak limiting or LUFS normalization.
+
+**GR** reports attenuation on compressor inserts and the limiter. A track/master
+strip shows the greatest reduction among its own compressor inserts, not their
+sum or clip-level compression. Stop clears readings. Live ceiling/release edits
+keep playback running; enabling/disabling limiting rebuilds the graph.
+
+GUI offline and native exports include limiting. Range exports process prior
+sound before cropping. See [Timeline workflow](TIMELINE_WORKFLOW.md) and
+[CLI settings and routing](MEDIA_WORKSPACE.md#output-limiter-and-gain-reduction).
 
 ## Picture colour correction
 

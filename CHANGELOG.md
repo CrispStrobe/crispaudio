@@ -4,7 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.14]
+## [Unreleased — local version 0.8.15]
+
+- Add an optional stereo-linked sample-peak output limiter after master gain,
+  with adjustable ceiling/release, instant attack and no added latency.
+- Apply the same limiter algorithm to realtime, offline GUI and native CLI
+  exports; preserve DSP history before cropping selected export ranges.
+- Show live compressor gain reduction per insert and maximum insert attenuation
+  per mixer strip; show limiter reduction separately and clear readings on Stop.
+- Persist limiter settings, keep old projects disabled, support deliberate
+  numeric editing/undo and CLI `output-limiter` edit recipes.
+- Reject enabled limiting in the narrower FFmpeg compatibility mixer. True-peak,
+  LUFS and lookahead are not implemented by this sample-peak limiter.
+
+## [Local version 0.8.14]
 
 - Add bell, low-shelf and high-shelf EQ to clip, track and master racks with
   matching native mixer DSP. Preserve saved low/high-pass parameter conventions.
