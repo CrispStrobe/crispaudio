@@ -1147,6 +1147,10 @@ fn render_audio_ffmpeg(doc: &Value, output: &str) -> Result<()> {
     {
         return Err("CLI cannot render master effects; render this project in the GUI".into());
     }
+    let master_gain = project["masterVolume"].as_f64().unwrap_or(1.0);
+    if !master_gain.is_finite() || master_gain < 0.0 {
+        return Err("Invalid master volume".into());
+    }
     let has_solo = tracks.iter().any(|t| t["solo"] == true);
     let mut nodes = Vec::new();
     let mut args = strings(&[
@@ -1249,9 +1253,10 @@ fn render_audio_ffmpeg(doc: &Value, output: &str) -> Result<()> {
         nodes.push("[0:a]anull[out]".into());
     } else {
         nodes.push(format!(
-            "{}amix=inputs={}:normalize=0,apad,atrim=duration={duration}[out]",
+            "{}amix=inputs={}:normalize=0,apad,atrim=duration={duration},volume={}[out]",
             buses.join(""),
-            buses.len()
+            buses.len(),
+            master_gain
         ));
     }
     args.extend(strings(&[

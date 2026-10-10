@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-09, during local 0.8.12 implementation. This section is the current plan.
+Updated 2026-10-10, during local 0.8.13 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -143,10 +143,12 @@ render checks. A real Canon/H6 extract-plus-roll also matches the expected PCM
 exactly. Direct audio/video edge dragging now shares bounded source/timeline
 clocks, inward frame limits and a source-reserve display for linked partners.
 Escape/cancel restores the original arrangement and pre-drag history/redo.
-Next implementation: M2.1, a dockable mixer with track/master strips, peak/RMS
-meters and peak hold, dB controls, pan, mute/solo and existing inserts. Use a
-horizontal/focused strip layout on touch. Keep routing/buses and new EQ/limiter
-work for subsequent M2 slices. Desktop M1 completion does not imply iOS device
+Local 0.8.13 adds the M2.1 mixer foundation: bottom dock, horizontal track/master
+strips, stereo peak/RMS and held peak/clipping reset, dB faders, pan, mute/solo
+and existing inserts. Mixer changes update the running graph without rebuilding
+playback; persisted master gain applies to GUI/native exports. Browser narrow
+layout checks do not substitute for physical iOS validation. Next: M2.2 graphical
+EQ/dynamics, followed by automation lanes and routing/buses. Desktop M1 completion does not imply iOS device
 validation or sample-accurate musical loop restarts.
 Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
 seamless musical looping. Paging and new codec work remain deferred.
@@ -176,7 +178,7 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
 
 ### M2 — Make sound mixing a first-class workflow
 
-1. Add a dockable mixer with track/master strips: peak/RMS meters, peak hold,
+1. **Foundation complete in local 0.8.13.** Dockable track/master strips: peak/RMS meters, peak hold,
    clipping indication, dB faders, pan, mute/solo and inserts. On phones/tablets,
    show a focused strip or horizontal strip list rather than shrinking everything.
 2. Add graphical parametric EQ (high/low-pass, shelves and bell bands) and a
@@ -345,13 +347,13 @@ consume the interview/video editor's near-term milestones.
   Build/install a reviewable local milestone; tags and Apple distribution remain
   separate actions governed by the existing release workflow.
 
-## First concrete implementation slice
+## Next concrete implementation slice
 
-Start M2 with a dockable mixer using existing track/master gain, pan, mute/solo
-and insert state. Add live peak/RMS, peak hold and clipping indication, with a
-focused or horizontal strip layout on touch. Use the interview microphones and
-fixed background music for live/offline parity checks. New EQ/limiter and buses
-follow after the mixer works; codecs and disk paging remain deferred.
+M2.1 is available in local 0.8.13. Continue with graphical EQ/dynamics: define
+compatible high/low-pass, shelf and bell parameters, show the response curve,
+and implement matching realtime/offline/native DSP before exposing new effects.
+Then add an output limiter and compressor gain-reduction display. Validate with
+microphone/music mixes; codecs and disk paging remain deferred.
 
 ---
 

@@ -1126,5 +1126,15 @@
     "limit": "Source or timeline limit reached. The edge stays within available media.",
     "missingSource": "Source unavailable; load the recording before trimming.",
     "invalidSource": "Invalid source bounds; this trim was not applied."
+  },
+  "mixer": {
+    "title": "Mixer",
+    "master": "Master",
+    "level": "Level",
+    "pan": "Pan",
+    "inserts": "Inserts",
+    "unity": "Reset level to 0 dB",
+    "resetPeak": "Reset peak hold and clipping",
+    "meterHelp": "Peak (green), RMS (blue), held peak. Click to reset."
   }
 }

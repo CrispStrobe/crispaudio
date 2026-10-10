@@ -168,3 +168,10 @@ save/open and range export, fixed music, two linked microphones and picture,
 undo/redo and native audio/video export. A real Canon/H6 extract-plus-roll matched
 expected PCM byte for byte. M2's dockable mixer is next; iOS device validation
 and musical loop precision remain separate work. See PLAN.md and release status.
+
+## Mixer foundation — local 0.8.13
+
+Added the bottom mixer dock, horizontally scrollable strips, existing inserts,
+post-pan stereo meters and persisted master output gain. Faders/audition switches
+update the existing graph rather than rescheduling playback. Buses, sends,
+graphical EQ and advanced dynamics remain subsequent roadmap work.

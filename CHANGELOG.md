@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased — local version 0.8.12]
+## [Unreleased — local version 0.8.13]
+
+- Add a bottom mixer dock with horizontally scrollable track/master strips,
+  dB faders, pan, mute/solo and access to existing effects racks.
+- Show post-fader/post-pan stereo peak/RMS, held peak and clipping, with reset.
+  Keep mixer updates on the running audio graph and coalesce pointer undo.
+- Persist project master gain independently of monitor volume; apply it after
+  master effects in realtime, offline GUI and native CLI audio/video exports.
+
+## [Local version 0.8.12]
 
 - Show source spans and before/after reserves while dragging audio/video edges,
   including linked partners, with visible source/timeline limits.

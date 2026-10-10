@@ -1,3 +1,5 @@
+import { TrackMixer } from './TrackMixer';
+import { SlidersHorizontal } from 'lucide-react';
 import { registerTimelineMenu } from '../../lib/nativeMenu';
 import {CommandSearch} from './CommandSearch';
 import {adjacentEdit} from '../../lib/trimEdits';
@@ -231,6 +233,7 @@ export const TimelinePanel: React.FC = () => {
   const tracksAreaRef = useRef<HTMLDivElement>(null);
   const touchPan = useRef<{x: number; y: number; scroll: number} | null>(null);
   const [mediaPanel, setMediaPanel] = useState<HTMLDivElement | null>(null);
+  const [mixer,setMixer]=useState(false);
   const [workspace,setWorkspace]=useState<WorkspaceTab|null>(null);
   const [resetOpen, setResetOpen] = useState(false);
   const [canvasWidth, setCanvasWidth] = useState(800);
@@ -584,6 +587,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Redo2} label={t('timeline.redo')} onClick={handleRedo}/>
         <ToolButton icon={Plus} label={t('timeline.addTrack')} onClick={handleAddTrack}/>
         <ToolButton icon={MessageSquare} label={t('tts.title')} onClick={()=>useUIStore.getState().openModal('tts')}/>
+        <ToolButton icon={SlidersHorizontal} label={t('mixer.title')} aria-pressed={mixer} onClick={()=>setMixer(value=>!value)}/>
         <MediaTools engine={engineRef} panelTarget={mediaPanel} />
         <ToolButton data-help-toggle icon={CircleHelp} label={t('usability.help')} aria-pressed={helpOpen} onClick={()=>setHelpOpen(value=>!value)}/>
         {exportStage && <div className="flex flex-wrap gap-2 items-center">
@@ -762,6 +766,7 @@ export const TimelinePanel: React.FC = () => {
 
       {workspace&&<TimelineWorkspace tab={workspace} onTab={setWorkspace} onClose={()=>setWorkspace(null)}/>}
       </div>
+      {mixer&&<TrackMixer engine={engineRef} onClose={()=>setMixer(false)}/>}
       <TimelineNavigation width={canvasWidth} />
       {/* Status bar */}
       <div className="flex items-center gap-4 px-4 py-1 bg-gray-900 border-t border-gray-800 text-xs text-gray-500 flex-shrink-0 select-none">

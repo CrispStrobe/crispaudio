@@ -117,6 +117,8 @@ export async function deserializeProject(
   if (doc.project.video?.clips?.some(clip => !validVideoTransform(clip.transform))) throw new Error('Invalid picture orientation');
   if (doc.project.video?.clips?.some(clip => !validVideoColor(clip.colorCorrection))) throw new Error('Invalid video colour settings');
 
+  if (doc.project.masterVolume !== undefined && (!Number.isFinite(doc.project.masterVolume) || doc.project.masterVolume < 0)) throw new Error('Invalid master volume');
+
   const replacements=new Map<string,string>();
   if(locateMissing && doc.project.video && '__TAURI_INTERNALS__' in window){
     const {invoke}=await import('@tauri-apps/api/core');

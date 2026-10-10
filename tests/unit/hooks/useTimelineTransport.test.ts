@@ -8,7 +8,7 @@ import type { TimelineEngine } from '../../../src/audio/engine/TimelineEngine';
 let currentTime = 100;
 let callbacks: Map<number, FrameRequestCallback>;
 let nextId = 0;
-const engine = { play: vi.fn(), stop: vi.fn(), setSources: vi.fn() };
+const engine = { play: vi.fn(), stop: vi.fn(), setSources: vi.fn(), updateMix: vi.fn() };
 const engineRef = { current: engine as unknown as TimelineEngine };
 const audio = { getContext: () => ({ get currentTime() { return currentTime; } }), resume: async () => {} } as unknown as AudioEngineHandle;
 
@@ -83,4 +83,14 @@ it('range looping preserves overshoot and resumes inside the selected range',asy
  currentTime=105.25;tick();
  expect(engine.play).toHaveBeenLastCalledWith(expect.anything(),4.25,5);
  expect(useProjectStore.getState().playheadPosition).toBe(4.25);hook.unmount();
+});
+
+it('updates master level without restarting or moving the audio clock',async()=>{
+ const hook=await start();
+ currentTime=101;tick();
+ await act(async()=>useProjectStore.setState({project:{...useProjectStore.getState().project,masterVolume:.5}}));
+ expect(engine.play).toHaveBeenCalledTimes(1);
+ expect(engine.updateMix).toHaveBeenLastCalledWith(expect.objectContaining({masterVolume:.5}));
+ currentTime=102;tick();expect(useProjectStore.getState().playheadPosition).toBe(4);
+ hook.unmount();
 });

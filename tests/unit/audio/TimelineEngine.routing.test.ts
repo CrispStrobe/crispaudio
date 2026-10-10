@@ -6,11 +6,11 @@ import type { AudioSegment, AudioSource } from '../../../src/types/audio';
 function audioContext() {
   const nodes: ReturnType<typeof node>[] = [];
   function node(type:string) {
-    const param=()=>({value:1,setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn()});
-    return {kind:type, connect:vi.fn(),disconnect:vi.fn(),stop:vi.fn(),start:vi.fn(),gain:param(),frequency:param(),Q:param(),delayTime:param()};
+    const param=()=>({value:1,setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn(),setTargetAtTime:vi.fn()});
+    return {kind:type, connect:vi.fn(),disconnect:vi.fn(),stop:vi.fn(),start:vi.fn(),gain:param(),pan:param(),frequency:param(),Q:param(),delayTime:param()};
   }
   const make=(type:string)=>{const n=node(type);nodes.push(n);return n;};
-  const ctx={currentTime:0,destination:{},createGain:()=>make('gain'),createBufferSource:()=>make('source'),createBiquadFilter:()=>make('filter'),createOscillator:()=>make('osc'),createDelay:()=>make('delay')};
+  const ctx={currentTime:0,destination:{},createGain:()=>make('gain'),createChannelSplitter:()=>make('splitter'),createAnalyser:()=>make('meter'),createStereoPanner:()=>make('pan'),createBufferSource:()=>make('source'),createBiquadFilter:()=>make('filter'),createOscillator:()=>make('osc'),createDelay:()=>make('delay')};
   return {ctx:ctx as unknown as AudioContext,nodes};
 }
 describe('timeline master routing and graph disposal',()=>{
@@ -26,7 +26,17 @@ describe('timeline master routing and graph disposal',()=>{
   expect(masterInput.connect).toHaveBeenCalledWith(filter);
   expect(nodes.filter(n=>n.kind==='osc')).toHaveLength(2);
   expect(nodes.filter(n=>n.kind==='osc').every(n=>n.start.mock.calls.length===1)).toBe(true);
+  const source = nodes.find(n=>n.kind==='source')!;
+  const before = nodes.length;
+  engine.updateMix({...p,masterVolume:.5,tracks:p.tracks.map(t=>({...t,muted:true,pan:.8}))});
+  expect(nodes.length).toBe(before);
+  expect(source.stop).not.toHaveBeenCalled();
+  expect(nodes.find(n=>n.kind==='pan')!.pan.setTargetAtTime).toHaveBeenCalledWith(.8,0,.005);
+  expect(engine.getMeter('t')).toHaveLength(2);
+  engine.updateMix({...p,tracks:p.tracks.map(t=>({...t,muted:true,solo:true}))});
+  expect(source.start).toHaveBeenCalledTimes(1);
   engine.stop();
+  expect(engine.getMeter('t')).toBeUndefined();
   expect(nodes.slice(1).every(n=>n.disconnect.mock.calls.length>0)).toBe(true);
   expect(nodes.filter(n=>n.kind==='osc').every(n=>n.stop.mock.calls.length===1)).toBe(true);
   expect(nodes[0].disconnect).not.toHaveBeenCalled(); // caller's output stays connected

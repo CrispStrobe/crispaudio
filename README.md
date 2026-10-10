@@ -91,6 +91,13 @@ Dragging audio/video clip edges shows source spans and the available material on
 both sides, including linked partners. Trims stop at source/timeline limits;
 linked picture trims use project frames. Escape cancels the drag and retains redo.
 
+The Timeline mixer opens as a bottom dock with horizontally scrollable track
+and master strips. Adjust dB level, pan, mute/solo and existing effects; fader and
+audition changes keep playback running. Meters show stereo peak/RMS with held
+peak and clipping indicators; click a meter to reset. The project master level
+is saved and applies to both GUI and native CLI exports, independently of monitor
+volume. New projects and older files default to unity output gain.
+
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)
 for release availability. The web demo and published releases can differ from

@@ -1,4 +1,4 @@
-# Distribution and platform status — 2026-10-09
+# Distribution and platform status — 2026-10-10
 
 Pushing `main` runs CI/web deployment workflows and the unsigned iOS simulator
 check. It does **not** automatically
@@ -1408,3 +1408,32 @@ implementation is M2.1's dockable mixer; new EQ/limiter/routing follow later sli
 No new iOS device validation, release tag or Apple submission. Musical loop timing
 and platform gaps remain explicit. README stays a current capability overview;
 chronological details stay in history.md and these implementation records.
+
+## Local 0.8.13 — mixer foundation
+
+Installed and launched `~/Applications/CrispAudio-local.app` and updated
+`~/Applications/crispaudio-cli-local`; ad-hoc signatures verified and one existing
+autosave preserved. No Apple upload or release tag was triggered.
+
+The Timeline bottom dock exposes track/master dB faders, pan, mute/solo, existing
+inserts, stereo peak/RMS, peak hold and clipping reset. Fader/audition moves update
+the running graph with 5 ms smoothing. Master gain is persisted independently of
+monitor gain and applied after master effects in realtime/offline/native exports.
+Meter values are sample peak/RMS, not true-peak/LUFS; advanced EQ, limiter,
+automation lanes and buses remain planned. Narrow headless Chrome checks are not
+physical touch-device or installed WebKit audio validation.
+
+Validation: 103 frontend files / 1,387 tests passed; native media library 58 tests
+passed with 10 existing ignored platform checks, and 3 CLI tests passed. Lint,
+TypeScript/production build and local Tauri bundle passed. `test-mixer.mjs`
+checks actual pointer faders, one-step undo, uninterrupted audio-clock playback,
+solo/mute, nonzero anti-phase stereo meters, offline master scaling, save/load
+and German 390 px layout. `test-native-pcm.mjs` with masterVolume=0.5 matches
+browser offline output byte-for-byte at 8/16/24/32-bit PCM.
+
+Evidence logs: `/tmp/mixer-tests-final.log`, `/tmp/mixer-native-final.log`,
+`/tmp/mixer-browser-final.log`, `/tmp/mixer-pcm-parity.log`,
+`/tmp/mixer-lint-final.log`, `/tmp/mixer-app-build.log`, `/tmp/mixer-install.log`.
+Prior 0.8.12 desktop and iOS simulator CI runs both completed successfully:
+[desktop](https://github.com/CrispStrobe/crispaudio/actions/runs/37990218860),
+[iOS simulator](https://github.com/CrispStrobe/crispaudio/actions/runs/37990218850).

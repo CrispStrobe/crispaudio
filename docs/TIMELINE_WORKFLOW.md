@@ -532,3 +532,22 @@ through browser file actions and compare exported PCM. Set CRISPAUDIO_CLI to als
 check native linked audio and macOS Apple picture export; installed FFmpeg/FFprobe
 create/inspect synthetic fixtures. Neither script touches installed-app state or
 private recordings. These browser checks are not iOS device validation.
+
+## Mix the arrangement
+
+Open **Mixer** in the Timeline toolbar. Each strip controls a track; **Master**
+controls the project output after the master effects rack. Drag the dB fader,
+use arrow keys for fine changes, or press **0 dB** to reset. The bottom fader
+position is silence. Pan moves left/right; double-click resets to centre.
+Mute/solo follows the track-header rules: solo overrides mute while solo is
+active and preserves the saved mute state. Locked tracks disable their controls.
+Open **Inserts** to edit the existing ordered effects rack at that scope.
+
+Green meters show peak, blue shows RMS; a held line/text retains the highest
+peak. Red clipping means the signal reached digital full scale before final
+output conversion; lowering the master level can avoid output clipping. Click
+a meter to reset its hold/clip indicator. Stereo channels are measured separately,
+so anti-phase material does not disappear from the meter. Meter values are sample
+peak/RMS, not true-peak or LUFS. Close the mixer to regain timeline space;
+horizontally scroll strips on narrow screens. Project master gain survives
+save/open and applies to exports; application monitor volume remains independent.

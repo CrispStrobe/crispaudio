@@ -27,6 +27,34 @@ export class TimelineEngine {
   private sources: Map<string, AudioSource>;
   private activeSources: AudioBufferSourceNode[] = [];
   private masterGain: GainNode;
+  private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]}>();
+  private outputGain?: GainNode;
+  private outputMeter?: AnalyserNode[];
+
+  getMeter(id: string): AnalyserNode[] | undefined { return id === 'master' ? this.outputMeter : this.mixerNodes.get(id)?.meter; }
+
+  private meterTap(ctx: AudioContext, input: AudioNode): AnalyserNode[] {
+    const splitter = ctx.createChannelSplitter(2);
+    input.connect(splitter);
+    return [0, 1].map(channel => {
+      const analyser = ctx.createAnalyser(); analyser.fftSize = 2048;
+      splitter.connect(analyser, channel); return analyser;
+    });
+  }
+
+  /** Faders and audition switches update the running graph without rescheduling clips. */
+  updateMix(project: TimelineProject): void {
+    const audible = new Set(audibleTracks(project.tracks).map(track => track.id));
+    const now = this.ctx.currentTime;
+    for (const track of project.tracks) {
+      const nodes = this.mixerNodes.get(track.id);
+      if (!nodes) continue;
+      nodes.gain.gain.setTargetAtTime(audible.has(track.id) ? track.volume : 0, now, .005);
+      nodes.pan.pan.setTargetAtTime(Math.max(-1, Math.min(1, track.pan)), now, .005);
+    }
+    this.outputGain?.gain.setTargetAtTime(project.masterVolume ?? 1, now, .005);
+  }
+
   private playbackNodes = new Set<AudioNode>();
 
   constructor(ctx: AudioContext, masterGain?: GainNode) {
@@ -72,11 +100,17 @@ export class TimelineEngine {
     const masterInput = ctx.createGain();
     const now = ctx.currentTime;
     const rangeGate = ctx.createGain();
-    rangeGate.connect(this.masterGain);
+    const outputGain = ctx.createGain();
+    outputGain.gain.value = project.masterVolume ?? 1;
+    this.outputGain = outputGain;
+    this.outputMeter = this.meterTap(ctx, outputGain);
+    rangeGate.connect(outputGain);
+    outputGain.connect(this.masterGain);
     rangeGate.gain.setValueAtTime(1, now);
     rangeGate.gain.setValueAtTime(0, now + Math.max(0, endTime - startTime));
     this.applyEffects(ctx, masterInput, project.masterEffects).connect(rangeGate);
-    const tracksToPlay = audibleTracks(project.tracks);
+    const audible = new Set(audibleTracks(project.tracks).map(track => track.id));
+    const tracksToPlay = project.tracks;
 
     for (const track of tracksToPlay) {
       if (!track.segments.length) continue;
@@ -87,17 +121,14 @@ export class TimelineEngine {
       scheduleEnvelope(trackFade.gain,now+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
       const automated=ctx.createGain();scheduleGain(automated.gain,track.automation,now,startTime);
       trackFade.connect(automated);this.applyEffects(ctx,automated,track.effects??[]).connect(trackGain);
-      trackGain.gain.value = track.volume;
+      trackGain.gain.value = audible.has(track.id) ? track.volume : 0;
 
-      // Pan
-      if (track.pan !== 0) {
-        const panner = ctx.createStereoPanner();
-        panner.pan.value = Math.max(-1, Math.min(1, track.pan));
-        trackGain.connect(panner);
-        panner.connect(masterInput);
-      } else {
-        trackGain.connect(masterInput);
-      }
+      const panner = ctx.createStereoPanner();
+      panner.pan.value = Math.max(-1, Math.min(1, track.pan));
+      const meter = this.meterTap(ctx, panner);
+      trackGain.connect(panner);
+      panner.connect(masterInput);
+      this.mixerNodes.set(track.id, {gain: trackGain, pan: panner, meter});
 
       for (const segment of track.segments) {
         const segEnd = segment.startTime + segment.duration;
@@ -160,6 +191,9 @@ export class TimelineEngine {
       try { node.disconnect(); } catch { /* already disconnected */ }
     }
     this.playbackNodes.clear();
+    this.mixerNodes.clear();
+    this.outputGain = undefined;
+    this.outputMeter = undefined;
   }
 
   // ── Offline render ─────────────────────────────────────────────────────────
@@ -199,7 +233,7 @@ export class TimelineEngine {
     const offCtx = new OfflineAudioContext(2, frames, sampleRate);
 
     const masterGain = offCtx.createGain();
-    masterGain.gain.value = 1;
+    masterGain.gain.value = project.masterVolume ?? 1;
     masterGain.connect(offCtx.destination);
 
     // Same track → master-rack → output routing as realtime playback.

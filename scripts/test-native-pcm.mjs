@@ -1,4 +1,4 @@
-// Optional real-WebKit/native integer PCM parity check; see MEDIA_WORKSPACE.md.
+// Optional real-browser/native integer PCM parity check; see MEDIA_WORKSPACE.md.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 const cli = process.env.CRISPAUDIO_TEST_CLI;
 assert.ok(cli, 'Set CRISPAUDIO_TEST_CLI to an independently built media CLI');
-const { webkit } = await import(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE
+const { webkit, chromium } = await import(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE
   ? pathToFileURL(path.resolve(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE)).href : 'playwright');
 const output = fs.mkdtempSync(path.join(os.tmpdir(), 'crispaudio-native-pcm-'));
 const frames = 4800;
@@ -27,7 +27,9 @@ header.writeUInt16LE(8, 32); header.writeUInt16LE(32, 34);
 header.write('data', 36); header.writeUInt32LE(data.byteLength, 40);
 const source = path.join(output, 'source.wav');
 fs.writeFileSync(source, Buffer.concat([header, Buffer.from(data.buffer)]));
-const project = { id: 'p', name: 'pcm-reference', sampleRate: 48000, duration: 0.1, masterEffects: [],
+const masterVolume = Number(process.env.CRISPAUDIO_TEST_MASTER_VOLUME ?? 1);
+assert.ok(Number.isFinite(masterVolume) && masterVolume >= 0);
+const project = { masterVolume, id: 'p', name: 'pcm-reference', sampleRate: 48000, duration: 0.1, masterEffects: [],
   tracks: [{ id: 't', volume: 1, pan: 0, muted: false, solo: false, effects: [],
     segments: [{ id: 'c', sourceId: 's', trackId: 't', startTime: 0, sourceOffset: 0,
       duration: 0.1, gain: 1, effects: [], fadeInDuration: 0, fadeOutDuration: 0 }] }] };
@@ -43,7 +45,7 @@ function pcm(bytes) {
   }
   throw new Error('Missing PCM chunk');
 }
-const browser = await webkit.launch({ headless: true,
+const browser = process.env.CRISPAUDIO_CHROME_EXECUTABLE ? await chromium.launch({headless:true,executablePath:process.env.CRISPAUDIO_CHROME_EXECUTABLE}) : await webkit.launch({ headless: true,
   ...(process.env.CRISPAUDIO_WEBKIT_EXECUTABLE ? { executablePath: process.env.CRISPAUDIO_WEBKIT_EXECUTABLE } : {}) });
 const results = [];
 try {

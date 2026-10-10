@@ -10,6 +10,7 @@ export interface TimelineProject {
   bitDepth?: number;
   tracks: TimelineTrack[];
   masterEffects: EffectConfig[];
+  masterVolume?: number; // project output gain; independent of monitor volume
   duration: number; // computed from content and minimumDuration
   editRange?: { start: number; end: number };
   minimumDuration?: number; // explicit empty canvas/export tail, seconds

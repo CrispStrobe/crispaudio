@@ -558,6 +558,7 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
         .unwrap_or(Path::new("."));
     let directory = tempfile::tempdir_in(parent).map_err(|e| e.to_string())?;
     let mut effect_budget = EffectBudget { bytes: 0, count: 0 };
+    let master_gain = positive(project, "masterVolume", Some(1.0))?;
     let mut master_filters = filters(&project["masterEffects"], &mut effect_budget)?;
     let solo = tracks.iter().any(|t| t["solo"] == true);
     let mut buses = Vec::new();
@@ -764,7 +765,7 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
         }
         for (i, sample) in master.into_iter().enumerate() {
             for value in process(&mut master_filters, sample, block + i as u32) {
-                let value = value as f32;
+                let value = (value * master_gain) as f32;
                 if !value.is_finite() {
                     return Err("Audio mix exceeded finite float range".into());
                 }
@@ -823,6 +824,23 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+    #[test]
+    fn project_master_gain_scales_final_output_and_rejects_negative() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = source(folder.path(), 1, &[0.2]);
+        let mut doc = project(&input);
+        let full = folder.path().join("unity.wav");
+        render(&doc, full.to_str().unwrap()).unwrap();
+        doc["project"]["masterVolume"] = json!(0.5);
+        let half = folder.path().join("half.wav");
+        render(&doc, half.to_str().unwrap()).unwrap();
+        assert_eq!(
+            output(&half),
+            output(&full).iter().map(|v| v * 0.5).collect::<Vec<_>>()
+        );
+        doc["project"]["masterVolume"] = json!(-1);
+        assert!(render(&doc, half.to_str().unwrap()).is_err());
     }
     #[test]
     fn range_matches_full_mix_slice_including_effect_history() {

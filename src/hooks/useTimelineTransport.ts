@@ -1,5 +1,5 @@
 import { waitForPreviewFrame } from '../lib/videoTransport';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { RefObject } from 'react';
 import type { TimelineEngine } from '../audio/engine/TimelineEngine';
 import type { AudioEngineHandle } from './useAudioEngine';
@@ -10,9 +10,15 @@ import { useProjectStore } from '../stores/projectStore';
 export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>, audio: AudioEngineHandle) {
   const playing = useProjectStore((s) => s.isPlaying);
   const project = useProjectStore((s) => s.project);
+  const playbackKey = useMemo(() => JSON.stringify({...project, masterVolume: undefined,
+    tracks: project.tracks.map(track => ({...track, volume: undefined, pan: undefined, muted: undefined, solo: undefined}))}), [project]);
+  useEffect(() => useProjectStore.subscribe((next, previous) => {
+    if (next.project !== previous.project && next.isPlaying) engineRef.current?.updateMix(next.project);
+  }), [engineRef]);
   const rangePlayback = useProjectStore(s=>s.rangePlayback);
   const sources = useProjectStore((s) => s.sources);
   useEffect(() => {
+    const project = useProjectStore.getState().project;
     const engine = engineRef.current;
     if (!engine || !playing) return;
     let cancelled = false;
@@ -31,7 +37,7 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
       clockStart = ctx.currentTime;
       timelineStart = time;
       engine.setSources(sources);
-      if(selected)engine.play(project, time, end);else engine.play(project,time);
+      if(selected)engine.play(useProjectStore.getState().project, time, end);else engine.play(useProjectStore.getState().project,time);
     };
     const unsubscribe = useProjectStore.subscribe((next, previous) => {
       if (ready && next.isPlaying && !internalPosition && next.playheadPosition !== previous.playheadPosition) {
@@ -80,5 +86,5 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
       document.removeEventListener('visibilitychange', onVisibility);
       engine.stop();
     };
-  }, [audio, engineRef, playing, project, sources, rangePlayback]);
+  }, [audio, engineRef, playing, playbackKey, sources, rangePlayback]);
 }

@@ -1126,5 +1126,15 @@
     "limit": "Quell- oder Zeitgrenze erreicht. Die Kante bleibt im verfügbaren Material.",
     "missingSource": "Quelle fehlt; Aufnahme vor dem Trimmen laden.",
     "invalidSource": "Ungültige Quellgrenzen; Trimmen wurde nicht angewendet."
+  },
+  "mixer": {
+    "title": "Mixer",
+    "master": "Master",
+    "level": "Pegel",
+    "pan": "Panorama",
+    "inserts": "Effekte",
+    "unity": "Pegel auf 0 dB zurücksetzen",
+    "resetPeak": "Spitzenwert und Übersteuerung zurücksetzen",
+    "meterHelp": "Spitze (grün), RMS (blau), Spitzenwert gehalten. Klicken zum Zurücksetzen."
   }
 }
