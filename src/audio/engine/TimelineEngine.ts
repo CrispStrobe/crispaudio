@@ -1,3 +1,5 @@
+import {prepareOutputLimiter,createOutputLimiter} from '../effects/OutputLimiter';
+import {limiterParameters} from '../dsp/samplePeakLimiter';
 import {eqParameters,isEQ} from '../../lib/equalizer';
 import { scheduleGain } from '../../lib/mixAutomation';
 import { scheduleEnvelope } from '../../lib/audioEnvelope';
@@ -28,6 +30,15 @@ export class TimelineEngine {
   private sources: Map<string, AudioSource>;
   private activeSources: AudioBufferSourceNode[] = [];
   private masterGain: GainNode;
+  private limiterNode?: AudioWorkletNode;
+  private limiterReduction=0;
+  private compressorNodes = new Map<string,DynamicsCompressorNode>();
+  async prepare(project:TimelineProject):Promise<void> {if(project.outputLimiter?.enabled)await prepareOutputLimiter(this.ctx);}
+  getReduction(scope:string,index?:number):number {
+    if(scope==='limiter')return this.limiterReduction;
+    if(index!==undefined)return Math.max(0,-(this.compressorNodes.get(`${scope}:${index}`)?.reduction??0));
+    return Math.max(0,...[...this.compressorNodes].filter(([key])=>key.startsWith(`${scope}:`)).map(([,node])=>-node.reduction));
+  }
   private eqNodes = new Map<string, BiquadFilterNode>();
   private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]}>();
   private outputGain?: GainNode;
@@ -55,6 +66,7 @@ export class TimelineEngine {
       nodes.pan.pan.setTargetAtTime(Math.max(-1, Math.min(1, track.pan)), now, .005);
     }
     this.outputGain?.gain.setTargetAtTime(project.masterVolume ?? 1, now, .005);
+    if(this.limiterNode){const p=limiterParameters(project.outputLimiter);this.limiterNode.parameters.get('ceiling')!.setValueAtTime(p.ceiling,now);this.limiterNode.parameters.get('release')!.setValueAtTime(p.release,now);}
     const racks: [string, EffectConfig[]][] = [['master',project.masterEffects]];
     for (const track of project.tracks) {
       racks.push([`track:${track.id}`,track.effects??[]]);
@@ -116,9 +128,15 @@ export class TimelineEngine {
     const outputGain = ctx.createGain();
     outputGain.gain.value = project.masterVolume ?? 1;
     this.outputGain = outputGain;
-    this.outputMeter = this.meterTap(ctx, outputGain);
+    let output:AudioNode=outputGain;
+    if(project.outputLimiter?.enabled){
+      const limiter=createOutputLimiter(this.ctx,project.outputLimiter);this.playbackNodes.add(limiter);this.limiterNode=limiter;
+      limiter.port.onmessage=e=>{this.limiterReduction=Number(e.data.reduction)||0;};
+      outputGain.connect(limiter);output=limiter;
+    }
+    this.outputMeter = this.meterTap(ctx, output);
     rangeGate.connect(outputGain);
-    outputGain.connect(this.masterGain);
+    output.connect(this.masterGain);
     rangeGate.gain.setValueAtTime(1, now);
     rangeGate.gain.setValueAtTime(0, now + Math.max(0, endTime - startTime));
     this.applyEffects(ctx, masterInput, project.masterEffects, 'master').connect(rangeGate);
@@ -205,7 +223,9 @@ export class TimelineEngine {
     }
     this.playbackNodes.clear();
     this.mixerNodes.clear();
-    this.eqNodes.clear();
+    this.eqNodes.clear();this.compressorNodes.clear();
+    if(this.limiterNode){this.limiterNode.port.postMessage({type:'dispose'});this.limiterNode.port.close();}
+    this.limiterNode=undefined;this.limiterReduction=0;
     this.outputGain = undefined;
     this.outputMeter = undefined;
   }
@@ -248,7 +268,10 @@ export class TimelineEngine {
 
     const masterGain = offCtx.createGain();
     masterGain.gain.value = project.masterVolume ?? 1;
-    masterGain.connect(offCtx.destination);
+    if(project.outputLimiter?.enabled){
+      await prepareOutputLimiter(offCtx);signal?.throwIfAborted();
+      masterGain.connect(createOutputLimiter(offCtx,project.outputLimiter)).connect(offCtx.destination);
+    }else masterGain.connect(offCtx.destination);
 
     // Same track → master-rack → output routing as realtime playback.
     const masterOut = offCtx.createGain();
@@ -422,6 +445,7 @@ export class TimelineEngine {
         }
         case 'compressor': {
           const comp = ctx.createDynamicsCompressor();
+          if(scope)this.compressorNodes.set(`${scope}:${index}`,comp);
           comp.threshold.value = p.threshold ?? -24;
           comp.ratio.value = p.ratio ?? 4;
           comp.attack.value = p.attack ?? 0.003;

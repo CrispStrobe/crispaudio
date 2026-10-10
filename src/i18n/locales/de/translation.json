@@ -1147,5 +1147,14 @@
     "freq": "Frequenz (Hz)",
     "gain": "Pegel (dB)",
     "q": "Q"
+  },
+  "dynamics": {
+    "limiter": "Ausgangslimiter",
+    "ceiling": "Obergrenze (dBFS)",
+    "release": "Release (ms)",
+    "reduction": "Pegelreduktion",
+    "reductionHelp": "Live-DSP-Anzeige. Bei mehreren Kompressoren: stärkste Einzelreduktion, nicht die Summe.",
+    "zeroLatency": "Sample-Peak · keine Latenz",
+    "limiterHelp": "Nach Master-Pegel/Effekten. Stereo gekoppelt, sofortiger Attack, einstellbarer Release. Keine True-Peak- oder LUFS-Messung."
   }
 }

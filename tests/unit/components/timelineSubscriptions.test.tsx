@@ -5,13 +5,13 @@ import { TransportControls } from '../../../src/components/timeline/TransportCon
 import { useProjectStore } from '../../../src/stores/projectStore';
 
 const { translate, engine, playback } = vi.hoisted(() => ({
-  playback: { stop: vi.fn(), play: vi.fn(), setSources: vi.fn() },
+  playback: { prepare:vi.fn().mockResolvedValue(undefined), stop: vi.fn(), play: vi.fn(), setSources: vi.fn() },
   translate: vi.fn((key: string) => key),
   engine: { getContext: vi.fn(() => ({ currentTime: 0 })), masterGain: {}, resume: vi.fn() },
 }));
 vi.mock('react-i18next', async (importOriginal) => ({ ...await importOriginal<typeof import('react-i18next')>(), useTranslation: () => ({ t: translate }) }));
 vi.mock('../../../src/hooks/useAudioEngine', () => ({ useAudioEngine: () => engine }));
-vi.mock('../../../src/audio/engine/TimelineEngine', () => ({ TimelineEngine: class { setSources = playback.setSources; play = playback.play; stop = playback.stop; } }));
+vi.mock('../../../src/audio/engine/TimelineEngine', () => ({ TimelineEngine: class { prepare=playback.prepare; setSources = playback.setSources; play = playback.play; stop = playback.stop; } }));
 vi.mock('../../../src/components/timeline/TimelineCanvas', () => ({ TimelineCanvas: () => null }));
 vi.mock('../../../src/components/timeline/TimelineRuler', () => ({ TimelineRuler: () => null }));
 vi.mock('../../../src/components/timeline/SegmentEffectsPanel', () => ({ SegmentEffectsPanel: () => null }));

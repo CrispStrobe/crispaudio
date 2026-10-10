@@ -617,6 +617,20 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
     let directory = tempfile::tempdir_in(parent).map_err(|e| e.to_string())?;
     let mut effect_budget = EffectBudget { bytes: 0, count: 0 };
     let master_gain = positive(project, "masterVolume", Some(1.0))?;
+    let mut limiter = if let Some(config) = project.get("outputLimiter") {
+        if !config.is_object() || !config["enabled"].is_boolean() {
+            return Err("Invalid output limiter".into());
+        }
+        let ceiling = finite(config, "ceiling", Some(-1.0))?;
+        let release = finite(config, "release", Some(0.1))?;
+        if config["enabled"] == true {
+            Some(crate::limiter::Limiter::new(RATE, ceiling, release))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
     let mut master_filters = filters(&project["masterEffects"], &mut effect_budget)?;
     let solo = tracks.iter().any(|t| t["solo"] == true);
     let mut buses = Vec::new();
@@ -822,8 +836,15 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
             }
         }
         for (i, sample) in master.into_iter().enumerate() {
-            for value in process(&mut master_filters, sample, block + i as u32) {
-                let value = (value * master_gain) as f32;
+            let value =
+                process(&mut master_filters, sample, block + i as u32).map(|v| v * master_gain);
+            let value = if let Some(limiter) = &mut limiter {
+                limiter.at(value)
+            } else {
+                value
+            };
+            for value in value {
+                let value = value as f32;
                 if !value.is_finite() {
                     return Err("Audio mix exceeded finite float range".into());
                 }
@@ -882,6 +903,27 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+    #[test]
+    fn output_limiter_follows_master_gain_and_preserves_range_history() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = source(folder.path(), 2, &[0.8, -0.4]);
+        let mut doc = project(&input);
+        doc["project"]["masterVolume"] = json!(8);
+        doc["project"]["outputLimiter"] = json!({"enabled":true,"ceiling":-1,"release":0.1});
+        let full = folder.path().join("limited.wav");
+        render(&doc, full.to_str().unwrap()).unwrap();
+        let samples = output(&full);
+        let ceiling = 10.0f64.powf(-1.0 / 20.0) as f32;
+        assert!(samples.iter().all(|v| v.abs() <= ceiling + 1e-7));
+        assert!(samples[0] > 0.8);
+        for pair in samples.chunks(2) {
+            assert!((pair[0] + 2.0 * pair[1]).abs() < 1e-6);
+        }
+        doc["renderRange"] = json!({"start":0.03,"end":0.06});
+        let range = folder.path().join("range.wav");
+        render(&doc, range.to_str().unwrap()).unwrap();
+        assert_eq!(output(&range), samples[2880..5760]);
     }
     #[test]
     fn equalizer_unity_and_reciprocal_bells_preserve_audio() {

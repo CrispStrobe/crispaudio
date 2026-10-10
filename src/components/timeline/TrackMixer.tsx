@@ -1,3 +1,5 @@
+import {OutputLimiterControls} from './OutputLimiterControls';
+import {GainReduction} from './GainReduction';
 import { signalLevels } from '../../lib/mixer';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -68,6 +70,7 @@ function Strip({track, engine, onInserts}: {track?: TimelineTrack; engine: RefOb
   return <section className="w-36 shrink-0 rounded border border-gray-700 bg-gray-900 p-2 space-y-1" aria-label={track?.name ?? t('mixer.master')}>
     <p className="truncate text-sm font-medium" title={track?.name}>{track?.name ?? t('mixer.master')}</p>
     <Meter engine={engine} id={id}/>
+    <GainReduction scope={track?`track:${track.id}`:'master'}/>
     <label className="block text-xs">{t('mixer.level')} <span className="float-right">{textDb(gain)}</span>
       <input type="range" aria-label={`${track?.name ?? t('mixer.master')}: ${t('mixer.level')}`} className="w-full min-h-11" min={-61} max={12} step={.1} value={Math.max(-61, db(gain))} disabled={track?.locked}
         onPointerDown={begin} onPointerUp={end} onPointerCancel={end} onBlur={end} onKeyDown={begin} onKeyUp={end}
@@ -88,9 +91,9 @@ export function TrackMixer({engine,onClose}: {engine: RefObject<TimelineEngine |
   return <aside className="shrink-0 border-t border-gray-700 bg-gray-950 text-gray-200 min-w-0" aria-label={t('mixer.title')}>
     <div className="flex items-center justify-between px-3"><span className="text-sm flex gap-2 items-center"><SlidersHorizontal size={16}/>{t('mixer.title')}</span><ToolButton icon={X} label={t('common.close')} onClick={onClose}/></div>
     <div className="flex gap-2 p-2 overflow-x-auto max-h-80 overflow-y-auto">
-      <Strip engine={engine} onInserts={setInsertId}/>
+      <div className="w-36 shrink-0 space-y-2"><Strip engine={engine} onInserts={setInsertId}/><OutputLimiterControls/></div>
       {project.tracks.map(track=><Strip key={track.id} track={track} engine={engine} onInserts={setInsertId}/>)}
-      {insertId&&(insertId==='master'||track)&&<div className="w-80 shrink-0 p-2 space-y-2"><button className="min-h-11 text-sm" onClick={()=>setInsertId(null)}>{t('common.close')} · {track?.name??t('mixer.master')}</button><fieldset disabled={track?.locked}><EffectChainEditor label={t('mixer.inserts')} effects={track ? track.effects??[] : project.masterEffects} onChange={effects=>{const state=useProjectStore.getState();if(track)state.updateTrack(track.id,{effects});else useProjectStore.setState({project:{...state.project,masterEffects:effects}});}}/></fieldset></div>}
+      {insertId&&(insertId==='master'||track)&&<div className="w-80 shrink-0 p-2 space-y-2"><button className="min-h-11 text-sm" onClick={()=>setInsertId(null)}>{t('common.close')} · {track?.name??t('mixer.master')}</button><fieldset disabled={track?.locked}><EffectChainEditor scope={track?`track:${track.id}`:'master'} label={t('mixer.inserts')} effects={track ? track.effects??[] : project.masterEffects} onChange={effects=>{const state=useProjectStore.getState();if(track)state.updateTrack(track.id,{effects});else useProjectStore.setState({project:{...state.project,masterEffects:effects}});}}/></fieldset></div>}
     </div>
   </aside>;
 }

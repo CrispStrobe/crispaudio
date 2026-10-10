@@ -171,7 +171,7 @@ supports stereo pan, master volume and clip/track/master racks, including
 high/low-pass, bell/shelf EQ and the existing compressor, delay, reverb, chorus,
 distortion, bitcrush and ring modulation. Unsupported enabled effects fail
 explicitly. The optional FFmpeg compatibility mixer has narrower effect/pan
-support and rejects new bell/shelf EQ; use the native mixer or GUI export. Portable embedded audio
+support and rejects new bell/shelf EQ and enabled output limiting; use the native mixer or GUI export. Portable embedded audio
 projects must be opened/resaved with linked sources before CLI rendering.
 
 `edit-video` still accepts standalone picture JSON. Add `sources` and per-clip
@@ -494,3 +494,32 @@ EQ GUI/native waveform comparison has a documented tail tolerance rather than
 bit-identical output: an extreme cascade of three +24 dB/Q20 bells differs after
 clip end by up to 0.000138247 full scale in the current browser comparison.
 See [validation details](RELEASE_STATUS.md#local-0814--graphical-eq).
+
+### Output limiter and gain reduction
+
+Open **Mixer**, enable **Limiter** on the master strip, and set ceiling (−24 to
+0 dBFS) and release (10–2000 ms). Numeric edits commit on Enter or blur; Escape
+cancels. The limiter follows master effects and master gain, precedes metering,
+and leaves monitor volume outside the export chain. It links both channels and
+adds no delay: instant attack, exponential release, no lookahead. It limits
+sample peaks, not reconstructed true peaks; it is not a loudness normalizer.
+
+**GR** displays positive attenuation as a negative dB value. A strip shows the
+largest reduction of its compressor inserts, not their sum; individual inserts
+show their own reduction. The limiter has separate GR. Stop clears the readings.
+
+Saved projects store optional `outputLimiter: {enabled, ceiling, release}`;
+ceiling is dBFS and release is seconds. Older projects default to disabled.
+GUI offline exports and native linked-project audio/video exports apply the
+limiter. Range export processes prior audio before cropping, preserving its
+release history. The FFmpeg compatibility mixer rejects enabled limiting.
+
+CLI edit recipes accept:
+
+```json
+[{"op":"output-limiter","enabled":true,"ceiling":-1,"release":0.1}]
+```
+
+Use the existing `edit-project` recipe workflow, then `render-project`. Omitting
+ceiling/release keeps saved settings (or defaults −1 dBFS / 0.1 s); values clamp
+to the GUI ranges. This changes sound processing without moving linked clips.

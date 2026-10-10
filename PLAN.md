@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-10, during local 0.8.14 implementation. This section is the current plan.
+Updated 2026-10-10, during local 0.8.15 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -56,8 +56,8 @@ These are foundations to extend, not features to reinvent. In particular,
 Range edits preserve unaffected picture transitions and reject boundaries through
 a blend pending advanced trim semantics; gain automation has point
 entry rather than a full direct-edit lane; `project.video.clips` is a single
-composition lane; timeline effects lack parametric EQ, a dedicated limiter,
-sends/buses and general parameter automation. Timeline recording/takes are not
+composition lane; timeline effects now include parametric EQ and a sample-peak
+limiter, but still lack sends/buses and general parameter automation. Timeline recording/takes are not
 implemented. SFX/Voice recording elsewhere does not fulfil that requirement.
 Several older workflow documents describe superseded layouts/limits; update the
 relevant document with each milestone rather than treating it as current evidence.
@@ -148,9 +148,10 @@ strips, stereo peak/RMS and held peak/clipping reset, dB faders, pan, mute/solo
 and existing inserts. Mixer changes update the running graph without rebuilding
 playback; persisted master gain applies to GUI/native exports. Browser narrow
 layout checks do not substitute for physical iOS validation. Local 0.8.14 adds the graphical EQ portion of M2.2: pass, bell and shelving
-bands with response/drag/keyboard/numeric controls and native DSP parity. Next:
-output limiter and compressor gain-reduction display, then automation lanes and
-routing/buses. Desktop M1 completion does not imply iOS device
+bands with response/drag/keyboard/numeric controls and native DSP parity. Local
+0.8.15 completes the limiter/gain-reduction portion: stereo-linked sample peaks,
+instant attack, adjustable release, no lookahead or added latency, and GUI/native
+export support. Next: editable automation lanes, then routing/buses. Desktop M1 completion does not imply iOS device
 validation or sample-accurate musical loop restarts.
 Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
 seamless musical looping. Paging and new codec work remain deferred.
@@ -351,11 +352,12 @@ consume the interview/video editor's near-term milestones.
 
 ## Next concrete implementation slice
 
-M2.1 and the graphical EQ portion of M2.2 are available in local 0.8.14.
-Continue with an output limiter and compressor gain-reduction display. Specify
-attack/release, lookahead/latency and matching realtime/offline/native processing
-before exposing new controls. Validate transient handling, stereo linking and
-export parity with microphone/music mixes; codecs and disk paging remain deferred.
+M2.1 and M2.2's EQ/limiter/gain-reduction controls are available in local 0.8.15.
+Next implement M2.3's editable automation lanes: display existing track gain
+points on the timeline, add/move/remove points with mouse/touch/keyboard, preserve
+undo and save/load, and validate matching live/offline/native envelopes. Keep
+buses/sends as M2.4 and loudness/true-peak finishing as M2.5. Codecs and disk paging
+remain deferred; physical iOS validation remains outstanding.
 
 ---
 

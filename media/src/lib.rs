@@ -6,6 +6,7 @@ pub mod audio_mix;
 mod compressor;
 mod distortion;
 pub mod jobs;
+mod limiter;
 pub mod project_edit;
 mod reverb;
 pub mod spoken_edit;

@@ -182,3 +182,12 @@ Added bell/shelf bands alongside existing pass filters, a combined response grap
 point/keyboard/numeric editing and native DSP. Filter parameter changes update
 live nodes without rescheduling audio. Shelf Q remains unused; pass Q retains
 Web Audio's dB convention. Limiter and compressor gain-reduction remain next.
+
+## Output limiter and gain reduction — local 0.8.15
+
+Added a stereo-linked sample-peak limiter after master gain, with instant attack,
+adjustable release and no lookahead or added latency. Realtime playback uses an
+AudioWorklet; browser offline export and native CLI apply the same algorithm.
+Compressor inserts/strips and the limiter show live attenuation without updating
+project state. Limiter settings persist, support undo and have a CLI recipe
+operation. Older projects remain limiter-disabled. Automation lanes are next.

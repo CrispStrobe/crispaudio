@@ -1,3 +1,4 @@
+import {TimelineEngineContext} from './timelineEngineContext';
 import { TrackMixer } from './TrackMixer';
 import { SlidersHorizontal } from 'lucide-react';
 import { registerTimelineMenu } from '../../lib/nativeMenu';
@@ -566,7 +567,7 @@ export const TimelinePanel: React.FC = () => {
 
 
   return (
-    <div className="timeline-editor flex flex-col h-full bg-gray-950 overflow-hidden panel-enter">
+    <TimelineEngineContext.Provider value={engineRef}><div className="timeline-editor flex flex-col h-full bg-gray-950 overflow-hidden panel-enter">
 
       {projectError && <p role="alert" className="text-xs text-red-300 px-3 py-2">{projectError}</p>}
 
@@ -783,7 +784,7 @@ export const TimelinePanel: React.FC = () => {
         )}
         <span className="ml-auto">{store.project.name}</span>
       </div>
-    </div>
+    </div></TimelineEngineContext.Provider>
   );
 };
 

@@ -745,6 +745,25 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             .collect();
         let operation = op["op"].as_str().ok_or("Missing operation")?;
         match operation {
+            "output-limiter" => {
+                let enabled = op["enabled"]
+                    .as_bool()
+                    .ok_or("Invalid limiter enabled flag")?;
+                let previous = &out["project"]["outputLimiter"];
+                let read = |key: &str, default: f64| -> Result<f64> {
+                    if op.get(key).is_some() {
+                        number(op, key)
+                    } else if previous.get(key).is_some() {
+                        number(previous, key)
+                    } else {
+                        Ok(default)
+                    }
+                };
+                let ceiling = read("ceiling", -1.0)?.clamp(-24.0, 0.0);
+                let release = read("release", 0.1)?.clamp(0.01, 2.0);
+                out["project"]["outputLimiter"] =
+                    json!({"enabled":enabled,"ceiling":ceiling,"release":release});
+            }
             "edit-group" | "ungroup" => {
                 if chosen.is_empty() {
                     return Err("Select clips for an edit group".into());
@@ -1129,6 +1148,9 @@ pub fn render_audio(doc: &Value, output: &str) -> Result<()> {
     render_audio_ffmpeg(doc, output)
 }
 fn render_audio_ffmpeg(doc: &Value, output: &str) -> Result<()> {
+    if doc["project"]["outputLimiter"]["enabled"] == true {
+        return Err("Output limiter requires native or GUI mixing".into());
+    }
     if doc.get("renderRange").is_some() {
         return Err(
             "Sample-bounded range mixing requires the native mixer; select --backend apple or auto"
@@ -1343,6 +1365,36 @@ mod tests {
     use super::*;
     fn doc() -> Value {
         json!({"format":"crispaudio-project","version":2,"project":{"id":"p","duration":6,"tracks":[{"id":"t","segments":[{"id":"a","linkGroup":"g","trackId":"t","sourceId":"s","startTime":1,"sourceOffset":2,"duration":5}]}],"video":{"path":"unused","duration":10,"clips":[{"id":"v","linkGroup":"g","startTime":1,"sourceOffset":2,"duration":5,"transition":"cut"}]}},"sources":[{"id":"s","duration":10}]})
+    }
+    #[test]
+    fn output_limiter_recipe_preserves_geometry_and_validates_settings() {
+        let original = doc();
+        let configured = apply(
+            &original,
+            &json!([{"op":"output-limiter","enabled":true,"ceiling":-6,"release":0.2}]),
+        )
+        .unwrap();
+        assert_eq!(
+            configured["project"]["outputLimiter"],
+            json!({"enabled":true,"ceiling":-6.0,"release":0.2})
+        );
+        assert_eq!(
+            configured["project"]["tracks"],
+            original["project"]["tracks"]
+        );
+        assert_eq!(configured["project"]["video"], original["project"]["video"]);
+        let disabled = apply(
+            &configured,
+            &json!([{"op":"output-limiter","enabled":false}]),
+        )
+        .unwrap();
+        assert_eq!(disabled["project"]["outputLimiter"]["ceiling"], -6.0);
+        assert!(apply(&original, &json!([{"op":"output-limiter","enabled":"yes"}])).is_err());
+        assert!(apply(
+            &original,
+            &json!([{"op":"output-limiter","enabled":true,"release":"bad"}])
+        )
+        .is_err());
     }
     #[test]
     fn named_groups_preserve_links_and_respect_independent_editing() {

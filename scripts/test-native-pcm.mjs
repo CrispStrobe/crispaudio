@@ -33,6 +33,7 @@ const project = { masterVolume, id: 'p', name: 'pcm-reference', sampleRate: 4800
   tracks: [{ id: 't', volume: 1, pan: 0, muted: false, solo: false, effects: [],
     segments: [{ id: 'c', sourceId: 's', trackId: 't', startTime: 0, sourceOffset: 0,
       duration: 0.1, gain: 1, effects: [], fadeInDuration: 0, fadeOutDuration: 0 }] }] };
+if(process.env.CRISPAUDIO_TEST_LIMITER) project.outputLimiter=JSON.parse(process.env.CRISPAUDIO_TEST_LIMITER);
 const request = path.join(output, 'project.crispaudio');
 fs.writeFileSync(request, JSON.stringify({ format: 'crispaudio-project', version: 3, project,
   sources: [{ id: 's', path: source, duration: 0.1 }] }));

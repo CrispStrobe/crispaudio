@@ -8,7 +8,7 @@ import type { TimelineEngine } from '../../../src/audio/engine/TimelineEngine';
 let currentTime = 100;
 let callbacks: Map<number, FrameRequestCallback>;
 let nextId = 0;
-const engine = { play: vi.fn(), stop: vi.fn(), setSources: vi.fn(), updateMix: vi.fn() };
+const engine = { prepare:vi.fn().mockResolvedValue(undefined), play: vi.fn(), stop: vi.fn(), setSources: vi.fn(), updateMix: vi.fn() };
 const engineRef = { current: engine as unknown as TimelineEngine };
 const audio = { getContext: () => ({ get currentTime() { return currentTime; } }), resume: async () => {} } as unknown as AudioEngineHandle;
 

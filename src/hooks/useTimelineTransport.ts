@@ -11,7 +11,7 @@ import { useProjectStore } from '../stores/projectStore';
 export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>, audio: AudioEngineHandle) {
   const playing = useProjectStore((s) => s.isPlaying);
   const project = useProjectStore((s) => s.project);
-  const playbackKey = useMemo(() => JSON.stringify({...project, masterVolume: undefined,
+  const playbackKey = useMemo(() => JSON.stringify({...project, masterVolume: undefined, outputLimiter:project.outputLimiter?.enabled?{enabled:true}:undefined,
     tracks: project.tracks.map(track => ({...track, volume: undefined, pan: undefined, muted: undefined, solo: undefined}))}, function(key,value) {return key==='params'&&isEQ(this.type)?undefined:value;}), [project]);
   useEffect(() => useProjectStore.subscribe((next, previous) => {
     if (next.project !== previous.project && next.isPlaying) engineRef.current?.updateMix(next.project);
@@ -71,7 +71,7 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
       if (document.visibilityState !== 'hidden' && ready) frame = requestAnimationFrame(tick);
     };
     document.addEventListener('visibilitychange', onVisibility);
-    void Promise.resolve(audio.resume()).then(()=>waitForPreviewFrame(previewAbort.signal)).then(() => {
+    void Promise.resolve(audio.resume()).then(()=>engine.prepare(project)).then(()=>waitForPreviewFrame(previewAbort.signal)).then(() => {
       if (cancelled) return;
       reschedule(useProjectStore.getState().playheadPosition);
       ready = true;

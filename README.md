@@ -101,6 +101,11 @@ EQ racks include high/low-pass, bell and shelving bands, with a collapsible
 frequency-response graph. Drag band points or use keyboard/numeric controls;
 EQ parameter changes update playback smoothly. The curve combines enabled EQ
 bands only. Bell/shelf DSP also works in the native linked-project mixer.
+The master strip offers an optional stereo-linked sample-peak limiter after the
+master fader, with ceiling and release controls. It adds no delay. Compressor
+inserts and mixer strips show gain reduction; the limiter shows its own reduction.
+These are sample-peak controls; true-peak and LUFS tools remain future work.
+
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)

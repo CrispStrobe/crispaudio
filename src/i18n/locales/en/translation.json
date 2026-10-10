@@ -1147,5 +1147,14 @@
     "freq": "Frequency (Hz)",
     "gain": "Gain (dB)",
     "q": "Q"
+  },
+  "dynamics": {
+    "limiter": "Output limiter",
+    "ceiling": "Ceiling (dBFS)",
+    "release": "Release (ms)",
+    "reduction": "Gain reduction",
+    "reductionHelp": "Live DSP readout. With several compressors: greatest individual reduction, not their sum.",
+    "zeroLatency": "Sample peak · zero latency",
+    "limiterHelp": "After master level/effects. Stereo-linked, instant attack, adjustable release. No true-peak or LUFS measurement."
   }
 }

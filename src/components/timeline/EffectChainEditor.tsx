@@ -1,3 +1,4 @@
+import {GainReduction} from './GainReduction';
 import {EqualizerGraph} from './EqualizerGraph';
 import React, { useState } from 'react';
 import { create } from 'zustand';
@@ -117,9 +118,10 @@ interface EffectRowProps {
   onRemove: (index: number) => void;
   onMove: (index: number, direction: number) => void;
   count: number;
+  scope?: string;
 }
 
-const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove, onMove, count }) => {
+const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove, onMove, count, scope }) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const specs = EFFECT_PARAMS[effect.type] ?? [];
@@ -171,6 +173,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
         </button>
       </div>
 
+      {effect.type==='compressor'&&scope&&<div className="p-2"><GainReduction scope={scope} index={index}/></div>}
       {/* Params */}
       {expanded && (
         <div className={`px-3 py-2 space-y-2 ${!effect.enabled ? 'opacity-50' : ''}`}>
@@ -201,8 +204,8 @@ const useEffectClipboard = create<{effects: EffectConfig[] | null}>(() => ({effe
 const clone = (effects: EffectConfig[]) => effects.map(effect => ({...effect, params: {...effect.params}}));
 
 /** Same ordered processing rack at clip, track and master scope. */
-export function EffectChainEditor({effects, onChange, label}: {
-  effects: EffectConfig[]; onChange: (effects: EffectConfig[]) => void; label: string;
+export function EffectChainEditor({effects, onChange, label, scope}: {
+  effects: EffectConfig[]; onChange: (effects: EffectConfig[]) => void; label: string; scope?: string;
 }) {
   const {t} = useTranslation();
   const clipboard = useEffectClipboard(s => s.effects);
@@ -227,7 +230,7 @@ export function EffectChainEditor({effects, onChange, label}: {
     <EqualizerGraph effects={effects} onChange={onChange}/>
     <p className="text-xs text-gray-400">{t('rack.orderHelp')}</p>
     {!effects.length && <p className="text-xs text-gray-500 py-2">{t('timeline.noEffects')}</p>}
-    {effects.map((effect, i) => <EffectRow key={`${i}-${effect.type}`} effect={effect} index={i} count={effects.length} onUpdate={update}
+    {effects.map((effect, i) => <EffectRow scope={scope} key={`${i}-${effect.type}`} effect={effect} index={i} count={effects.length} onUpdate={update}
       onRemove={index => onChange(effects.filter((_, j) => j !== index))} onMove={move}/>)}
   </section>;
 }

@@ -199,7 +199,7 @@ export const SegmentEffectsPanel: React.FC<{ onClose?: () => void }> = ({ onClos
           </div>
         </div>
 
-        <EffectChainEditor effects={seg.effects} label={t('timeline.effects')} onChange={effects => {
+        <EffectChainEditor scope={`clip:${seg.id}`} effects={seg.effects} label={t('timeline.effects')} onChange={effects => {
           store.setIsPlaying(false); store.setSegmentEffects(seg.id, effects);
         }}/>
 

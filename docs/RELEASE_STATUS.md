@@ -1475,3 +1475,40 @@ and original projects were not modified. No release tag or Apple upload.
 Installed/launched local 0.8.14 and updated the standalone CLI. Ad-hoc signatures
 verified; one existing autosave preserved. Installation evidence:
 `/tmp/eq-install.log`.
+
+## Local 0.8.15 — output limiter and gain reduction
+
+Adds optional stereo-linked sample-peak limiting after master gain, with instant
+attack, exponential release, no lookahead and no added latency. Ceiling is
+−24..0 dBFS and release 10..2000 ms; default disabled, enabled defaults −1 dBFS /
+100 ms. Compressor inserts/strips and limiter display live gain reduction without
+writing meter data to project state. A strip reports the greatest insert
+attenuation, not the sum. Numeric edits commit deliberately and remain undoable.
+
+Realtime uses a bundled AudioWorklet; browser offline and native linked-project
+exports use the same limiter algorithm. Saved project format remains 3; older
+files remain disabled. CLI `output-limiter` recipes preserve arrangement geometry;
+FFmpeg compatibility export rejects enabled limiting. True-peak/LUFS, lookahead,
+automation lanes and buses/sends remain separate roadmap work.
+
+Validation on this Mac:
+
+- Frontend: 105 files / 1,396 tests passed; production build and lint passed.
+- Native: 63 library and 3 CLI tests passed; 10 existing platform/integration tests
+  remain ignored. Includes immediate transient ceiling, stereo linking, release,
+  range history, master-gain order and CLI recipe validation.
+- Headless Chrome and WebKit: isolated first-sample peak limited without a shift,
+  stereo ratio preserved, range export exactly matches the full-render section,
+  compressor/limiter telemetry, stop reset, live ceiling change without playback
+  restart, one undo and German 390 px layout. Narrow inputs fit their section.
+- Independently rebuilt native CLI and Chrome offline output: randomized stereo
+  fixture with master gain 4 and limiter −1 dBFS / 100 ms produces byte-identical
+  integer PCM at 8, 16, 24 and 32 bits. This does not establish bit-exact parity
+  for arbitrary compressor/effect chains.
+- Served production bundle: WebKit loads the emitted worklet asset and limits
+  the first sample at −6 dBFS with correct stereo linkage.
+
+Installed and launched local 0.8.15 plus the standalone CLI; ad-hoc signatures
+verified and the saved workspace preserved. Installed WKWebView interaction and
+physical iOS playback are not covered by the headless browser checks. No new
+Apple release is implied.
