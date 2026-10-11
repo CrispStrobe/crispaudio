@@ -1002,6 +1002,12 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                         .unwrap()
                         .total_cmp(&b["time"].as_f64().unwrap())
                 });
+                if track["locked"].as_bool().unwrap_or(false) {
+                    return Err("Track is locked".into());
+                }
+                points.reverse();
+                points.dedup_by(|a, b| a["time"].as_f64() == b["time"].as_f64());
+                points.reverse();
                 track["automation"] = json!(points);
             }
             _ => return Err(format!("Unknown recipe operation: {operation}")),
@@ -1091,6 +1097,9 @@ fn automation(points: &Value, time: &str) -> Result<String> {
             return Err("Invalid automation".into());
         }
     }
+    points.reverse();
+    points.dedup_by(|a, b| a["time"].as_f64() == b["time"].as_f64());
+    points.reverse();
     let mut expr = number(points.last().unwrap(), "value")?.to_string();
     for i in (1..points.len()).rev() {
         let a = &points[i - 1];
@@ -1365,6 +1374,20 @@ mod tests {
     use super::*;
     fn doc() -> Value {
         json!({"format":"crispaudio-project","version":2,"project":{"id":"p","duration":6,"tracks":[{"id":"t","segments":[{"id":"a","linkGroup":"g","trackId":"t","sourceId":"s","startTime":1,"sourceOffset":2,"duration":5}]}],"video":{"path":"unused","duration":10,"clips":[{"id":"v","linkGroup":"g","startTime":1,"sourceOffset":2,"duration":5,"transition":"cut"}]}},"sources":[{"id":"s","duration":10}]})
+    }
+    #[test]
+    fn automation_recipe_last_duplicate_wins_and_locked_track_rejects() {
+        let mut doc = doc();
+        doc["project"]["tracks"][0]["id"] = json!("t");
+        let recipe = json!([{"op":"automation","trackId":"t","points":[{"time":0,"value":1},{"time":0,"value":0},{"time":2,"value":2}]}]);
+        let edited = apply(&doc, &recipe).unwrap();
+        assert_eq!(
+            edited["project"]["tracks"][0]["automation"],
+            json!([{"time":0,"value":0},{"time":2,"value":2}])
+        );
+        let mut locked = doc.clone();
+        locked["project"]["tracks"][0]["locked"] = json!(true);
+        assert!(apply(&locked, &recipe).is_err());
     }
     #[test]
     fn output_limiter_recipe_preserves_geometry_and_validates_settings() {

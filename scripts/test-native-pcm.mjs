@@ -33,6 +33,7 @@ const project = { masterVolume, id: 'p', name: 'pcm-reference', sampleRate: 4800
   tracks: [{ id: 't', volume: 1, pan: 0, muted: false, solo: false, effects: [],
     segments: [{ id: 'c', sourceId: 's', trackId: 't', startTime: 0, sourceOffset: 0,
       duration: 0.1, gain: 1, effects: [], fadeInDuration: 0, fadeOutDuration: 0 }] }] };
+if(process.env.CRISPAUDIO_TEST_AUTOMATION) project.tracks[0].automation=JSON.parse(process.env.CRISPAUDIO_TEST_AUTOMATION);
 if(process.env.CRISPAUDIO_TEST_LIMITER) project.outputLimiter=JSON.parse(process.env.CRISPAUDIO_TEST_LIMITER);
 const request = path.join(output, 'project.crispaudio');
 fs.writeFileSync(request, JSON.stringify({ format: 'crispaudio-project', version: 3, project,
@@ -76,8 +77,16 @@ try {
     fs.writeFileSync(path.join(output, `webkit-${depth}.wav`), referenceBytes);
     const actualPcm = pcm(fs.readFileSync(target));
     assert.equal(actualPcm.length, frames * 2 * depth / 8);
-    assert.ok(actualPcm.equals(pcm(referenceBytes)), `PCM mismatch at ${depth} bits`);
-    results.push({ depth, frames, bytes: actualPcm.length, exact: true });
+    const expectedPcm=pcm(referenceBytes),exact=actualPcm.equals(expectedPcm);
+    let maxSteps=0;
+    const integer=(bytes,offset)=>depth===8?bytes.readUInt8(offset)-128:depth===16?bytes.readInt16LE(offset):depth===24?bytes.readIntLE(offset,3):bytes.readInt32LE(offset);
+    for(let offset=0;offset<actualPcm.length;offset+=depth/8)maxSteps=Math.max(maxSteps,Math.abs(integer(actualPcm,offset)-integer(expectedPcm,offset)));
+    // Web Audio computes ramps in float; the native linear envelope uses double.
+    // Keep the original bit-exact contract unless explicitly testing automation.
+    const scale=depth===8?128:2**(depth-1)-1;
+    if(process.env.CRISPAUDIO_TEST_AUTOMATION)assert.ok(maxSteps<=1+scale*2e-7, `Automation PCM differs by ${maxSteps} steps at ${depth} bits`);
+    else assert.ok(exact, `PCM mismatch at ${depth} bits`);
+    results.push({ depth, frames, bytes: actualPcm.length, exact, maxSteps, normalizedError:maxSteps/scale });
   }
 } finally {
   await browser.close();

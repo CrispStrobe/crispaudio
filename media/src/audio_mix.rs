@@ -141,6 +141,9 @@ impl Automation {
             return Err("Invalid automation".into());
         }
         points.sort_by(|a, b| a.0.total_cmp(&b.0));
+        points.reverse();
+        points.dedup_by(|a, b| a.0 == b.0);
+        points.reverse();
         Ok(Self { points, cursor: 0 })
     }
     fn at(&mut self, t: f64) -> f64 {
@@ -948,6 +951,18 @@ mod tests {
         for (a, b) in output(&cancel).iter().zip(&expected) {
             assert!((a - b).abs() < 0.000001);
         }
+    }
+    #[test]
+    fn automation_duplicate_times_hold_last_and_interpolate_linear_gain() {
+        let mut envelope = Automation::parse(&json!([
+            {"time":2,"value":4},{"time":0,"value":1},
+            {"time":0,"value":0},{"time":2,"value":2}
+        ]))
+        .unwrap();
+        assert_eq!(envelope.at(0.0), 0.0);
+        assert_eq!(envelope.at(1.0), 1.0);
+        assert_eq!(envelope.at(2.0), 2.0);
+        assert_eq!(envelope.at(3.0), 2.0);
     }
     #[test]
     fn project_master_gain_scales_final_output_and_rejects_negative() {

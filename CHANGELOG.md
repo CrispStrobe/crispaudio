@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.16 — 2026-10-11
+
+- Add a focused directly editable track-gain lane on the shared timeline scale:
+  mouse/touch points, keyboard and exact numeric edits, snapping and locks.
+- Commit gestures as one undo step; cancellation preserves redo. Gain changes
+  update the playing envelope without rescheduling clips.
+- Define held endpoints, unity for empty envelopes and last-supplied duplicate
+  timestamp semantics consistently in GUI/native rendering and CLI recipes.
+- Preserve microphone automation, format-3 save/open and existing range retiming.
+  Pan/FX automation and recording modes remain planned.
+
 ## [Unreleased — local version 0.8.15]
 
 - Add an optional stereo-linked sample-peak output limiter after master gain,

@@ -1,6 +1,7 @@
+import {GainAutomationLane} from './GainAutomationLane';
 import {TimelineEngineContext} from './timelineEngineContext';
 import { TrackMixer } from './TrackMixer';
-import { SlidersHorizontal } from 'lucide-react';
+import { Activity, SlidersHorizontal } from 'lucide-react';
 import { registerTimelineMenu } from '../../lib/nativeMenu';
 import {CommandSearch} from './CommandSearch';
 import {adjacentEdit} from '../../lib/trimEdits';
@@ -235,6 +236,7 @@ export const TimelinePanel: React.FC = () => {
   const touchPan = useRef<{x: number; y: number; scroll: number} | null>(null);
   const [mediaPanel, setMediaPanel] = useState<HTMLDivElement | null>(null);
   const [mixer,setMixer]=useState(false);
+  const [automation,setAutomation]=useState(false);
   const [workspace,setWorkspace]=useState<WorkspaceTab|null>(null);
   const [resetOpen, setResetOpen] = useState(false);
   const [canvasWidth, setCanvasWidth] = useState(800);
@@ -588,6 +590,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Redo2} label={t('timeline.redo')} onClick={handleRedo}/>
         <ToolButton icon={Plus} label={t('timeline.addTrack')} onClick={handleAddTrack}/>
         <ToolButton icon={MessageSquare} label={t('tts.title')} onClick={()=>useUIStore.getState().openModal('tts')}/>
+        <ToolButton icon={Activity} label={t('automation.title')} aria-pressed={automation} onClick={()=>setAutomation(value=>!value)}/>
         <ToolButton icon={SlidersHorizontal} label={t('mixer.title')} aria-pressed={mixer} onClick={()=>setMixer(value=>!value)}/>
         <MediaTools engine={engineRef} panelTarget={mediaPanel} />
         <ToolButton data-help-toggle icon={CircleHelp} label={t('usability.help')} aria-pressed={helpOpen} onClick={()=>setHelpOpen(value=>!value)}/>
@@ -767,6 +770,7 @@ export const TimelinePanel: React.FC = () => {
 
       {workspace&&<TimelineWorkspace tab={workspace} onTab={setWorkspace} onClose={()=>setWorkspace(null)}/>}
       </div>
+      {automation&&<GainAutomationLane key={store.project.id} width={canvasWidth} onClose={()=>setAutomation(false)}/>}
       {mixer&&<TrackMixer engine={engineRef} onClose={()=>setMixer(false)}/>}
       <TimelineNavigation width={canvasWidth} />
       {/* Status bar */}

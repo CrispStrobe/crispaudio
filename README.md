@@ -106,6 +106,14 @@ master fader, with ceiling and release controls. It adds no delay. Compressor
 inserts and mixer strips show gain reduction; the limiter shows its own reduction.
 These are sample-peak controls; true-peak and LUFS tools remain future work.
 
+The gain automation button opens a focused track lane beneath the timeline.
+Choose a track, click/tap to add points, drag to move, or use numeric time/dB
+fields and keyboard arrows. Point edits commit on release; Escape cancels without
+losing redo. Track locks protect envelopes. Gain remains linear between points,
+with held endpoints; an empty envelope is unity. Edits update running playback,
+save/open and GUI/native exports. Pan/FX automation and recording modes remain
+planned.
+
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)
 for release availability. The web demo and published releases can differ from

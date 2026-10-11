@@ -191,3 +191,18 @@ AudioWorklet; browser offline export and native CLI apply the same algorithm.
 Compressor inserts/strips and the limiter show live attenuation without updating
 project state. Limiter settings persist, support undo and have a CLI recipe
 operation. Older projects remain limiter-disabled. Automation lanes are next.
+
+
+### 2026-10-11 — local 0.8.16: direct track-gain editing
+
+Continued M2.3 with a focused lane sharing timeline zoom/scroll: pointer/touch,
+keyboard and numeric point editing, snapping, locks, one-step release and local
+preview cancellation that preserves redo. Committed edits reschedule only the
+running gain envelope. GUI/native duplicate clocks now keep the last supplied
+point; linear interpolation, held endpoints, microphone envelopes and format-3
+save/open remain compatible. Chrome/WebKit exercise actual Save/Open, touch,
+keyboard focus, undo/cancel and narrow German layout. Frontend 1,401 and native
+65+3 tests pass; automation PCM parity is bounded rather than claimed exact.
+See RELEASE_STATUS.md for measured errors and evidence. Installed app/CLI with
+recovery preserved; no release tag or Apple upload. M2.3 still needs envelope
+copy, pan/FX lanes and recording modes before M2.4 routing.

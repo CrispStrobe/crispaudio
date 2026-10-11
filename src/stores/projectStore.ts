@@ -170,6 +170,7 @@ export const useProjectStore = create<ProjectState>()(
             if (!track.locked) return false;
             const after = next.project?.tracks.find(t => t.id === track.id) ?? (!next.project ? track : undefined);
             if (!after) return true;
+            if (JSON.stringify(track.automation) !== JSON.stringify(after.automation)) return true;
             if (JSON.stringify(track.segments) !== JSON.stringify(after.segments)) return true;
             return !!next.sources && track.segments.some(clip => before.sources.get(clip.sourceId) !== next.sources?.get(clip.sourceId));
           });

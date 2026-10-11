@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
 
 /** Commit deliberate edits; focus/blur and Escape must not change media timing. */
-export function NumberField({value,label,step,min=0,disabled=false,onCommit,onCancel}: {
+export function NumberField({value,label,step,min=0,disabled=false,onCommit,onCancel,width='w-32'}: {
   value:number; label:string; step:number; min?:number; disabled?:boolean;
   onCommit:(value:number)=>boolean;
-  onCancel?:()=>void;
+  onCancel?:()=>void; width?:string;
 }) {
   const cancelled=useRef(false);
   const [draft,setDraft]=useState(''),[editing,setEditing]=useState(false),[invalid,setInvalid]=useState(false);
@@ -16,7 +16,7 @@ export function NumberField({value,label,step,min=0,disabled=false,onCommit,onCa
     setEditing(false);setInvalid(false);
   };
   return <input type="number" min={min} step={step} disabled={disabled} aria-label={label} aria-invalid={invalid}
-    className={`bg-gray-800 rounded p-2 w-32 border ${invalid?'border-red-400':'border-transparent'}`}
+    className={`bg-gray-800 rounded p-2 ${width} border ${invalid?'border-red-400':'border-transparent'}`}
     value={editing?draft:value} onFocus={()=>{if(!invalid)setDraft(String(value));setEditing(true);}}
     onChange={event=>{setDraft(event.target.value);setInvalid(false);}} onBlur={commit}
     onKeyDown={event=>{

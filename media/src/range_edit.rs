@@ -44,6 +44,9 @@ fn gain_at(points: &[Value], t: f64) -> Result<f64> {
             .unwrap()
             .total_cmp(&b["time"].as_f64().unwrap())
     });
+    sorted.reverse();
+    sorted.dedup_by(|a, b| a["time"].as_f64() == b["time"].as_f64());
+    sorted.reverse();
     if t <= number(&sorted[0], "time")? {
         return number(&sorted[0], "value");
     }

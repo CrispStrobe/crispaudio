@@ -1156,5 +1156,15 @@
     "reductionHelp": "Live DSP readout. With several compressors: greatest individual reduction, not their sum.",
     "zeroLatency": "Sample peak · zero latency",
     "limiterHelp": "After master level/effects. Stereo-linked, instant attack, adjustable release. No true-peak or LUFS measurement."
+  },
+  "automation": {
+    "title": "Gain automation",
+    "track": "Automation track",
+    "graph": "Track gain envelope",
+    "point": "Gain point",
+    "add": "Add point at playhead",
+    "time": "Point time (s)",
+    "gain": "Point gain (dB)",
+    "help": "Click to add · drag to move · Delete to remove · arrows: sample / 0.1 dB, Shift ×10 · Alt bypasses snap · Escape cancels · −60 dB = silence"
   }
 }

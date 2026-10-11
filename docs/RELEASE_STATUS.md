@@ -1519,3 +1519,53 @@ Apple release is implied.
 [iOS simulator CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38026090382).
 Simulator success does not establish physical iOS feature validation or App Store
 submission. No release tag/upload was created for this local milestone.
+
+
+## Local 0.8.16 — directly editable gain automation
+
+Built, installed and launched the local app; updated the independent standalone
+CLI. Ad-hoc signatures verified and one existing autosave preserved, with the full
+WebKit recovery tree backed up privately before installation. No release tag or
+Apple upload. Headless browser checks do not validate installed WKWebView
+interaction or physical iOS hardware.
+
+The Timeline gain dock shows one selected track on the shared zoom/scroll clock.
+Mouse/touch add and move, Delete/undo, keyboard sample/0.1 dB nudges, numeric
+seconds/dB, snapping, locks and preview cancellation are supported. Release
+commits one undo step; cancellation and no-op gestures retain redo/history.
+Repeated keyboard edits retain point focus. Committed gain updates the running
+envelope without restarting clips. Microphone-generated points remain editable
+when unlocked. The project stays format 3; existing range edits retain their
+boundary-value/retiming contract. Linear gain, held endpoints, unity when empty
+and last-supplied duplicate timestamp semantics agree in GUI/native paths.
+
+Validation:
+
+- Frontend: 106 files / 1,401 tests passed with two workers; lint and production
+  TypeScript/web build passed. An earlier fully concurrent run timed out in the
+  existing limiter stress test during release Rust compilation; the bounded rerun
+  passed without changing that test or its timeout.
+- Native: 65 media library and 3 CLI tests passed; 10 existing ignored tests.
+  Optimised standalone CLI and final local Tauri bundle built successfully.
+- Chrome and explicit WebKit: actual Save/Open picker actions preserve envelopes;
+  pointer commit, Escape with redo, pointer cancellation, no-op release,
+  repeated keyboard edits, numeric edits, Delete/undo, touch tap, track locks,
+  uninterrupted live gain/audio clock and German 390 px layout passed.
+- Browser range envelope output differs from its full-render slice by at most
+  1.49e-8 in this fixture. Randomized stereo GUI/native automation at 48 kHz,
+  including duplicate time zero, matches 8-bit PCM exactly; maximum error is
+  one integer step at 16/24 bits and 256 steps at 32 bits (1.19e-7 full scale).
+  The native envelope uses double interpolation and Web Audio float ramps;
+  arbitrary automation is not claimed bit-exact. The PCM harness keeps its
+  original exact check when CRISPAUDIO_TEST_AUTOMATION is absent; automation
+  explicitly permits one quantization step plus 2e-7 full-scale error.
+
+Reproduce with `scripts/test-gain-automation.mjs` and `test-native-pcm.mjs` using
+the documented Playwright/CLI environment variables; `CRISPAUDIO_TEST_AUTOMATION`
+accepts a JSON GainPoint array. Pan/FX automation, envelope copy and
+Read/Touch/Latch/Write remain future M2.3 work.
+
+Evidence logs: `/tmp/automation-tests-final.log`, `/tmp/automation-native.log`,
+`/tmp/automation-lint-final.log`, `/tmp/automation-browser-final.log`,
+`/tmp/automation-webkit-final.log`, `/tmp/automation-pcm.log`,
+`/tmp/automation-app-build-final.log` and `/tmp/automation-install.log`.

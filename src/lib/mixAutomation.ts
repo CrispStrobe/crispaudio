@@ -1,6 +1,14 @@
 import type { GainPoint, TimelineTrack, AudioSource } from '../types/audio';
+/** Stable, last-supplied point wins at an identical clock; endpoints hold. */
+export function normalizeGainPoints(points:GainPoint[]|undefined):GainPoint[] {
+  return [...new Map((points??[]).filter(p=>Number.isFinite(p.time)&&Number.isFinite(p.value)&&p.time>=0&&p.value>=0).map(p=>[p.time,p])).values()].sort((a,b)=>a.time-b.time);
+}
+/** Moving onto a point replaces it; no implicit endpoints or new curve types. */
+export function editGainPoint(points:GainPoint[]|undefined,originalTime:number|null,point:GainPoint):GainPoint[] {
+  return normalizeGainPoints([...(points??[]).filter(p=>p.time!==originalTime&&p.time!==point.time),point]);
+}
 export function gainAt(points:GainPoint[]|undefined,time:number):number {
-  const sorted=[...(points??[])].filter(p=>Number.isFinite(p.time)&&Number.isFinite(p.value)&&p.time>=0&&p.value>=0).sort((a,b)=>a.time-b.time);
+  const sorted=normalizeGainPoints(points);
   if(!sorted.length)return 1;
   if(time<=sorted[0].time)return sorted[0].value;
   for(let i=1;i<sorted.length;i++)if(time<sorted[i].time){const a=sorted[i-1],b=sorted[i];return a.value+(b.value-a.value)*(time-a.time)/(b.time-a.time);}
@@ -8,7 +16,7 @@ export function gainAt(points:GainPoint[]|undefined,time:number):number {
 }
 export function scheduleGain(param:AudioParam,points:GainPoint[]|undefined,contextStart:number,timelineStart:number){
   param.setValueAtTime(gainAt(points,timelineStart),contextStart);
-  for(const point of [...(points??[])].sort((a,b)=>a.time-b.time))if(point.time>timelineStart)param.linearRampToValueAtTime(point.value,contextStart+point.time-timelineStart);
+  for(const point of normalizeGainPoints(points))if(point.time>timelineStart)param.linearRampToValueAtTime(point.value,contextStart+point.time-timelineStart);
 }
 export interface MicSection { start:number; end:number; trackId:string; confidence:number }
 /** Measured suggestions, not speaker recognition. Normalize each mic's active level first. */

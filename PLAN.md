@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-10, during local 0.8.15 implementation. This section is the current plan.
+Updated 2026-10-11, during local 0.8.16 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -54,8 +54,7 @@ playback/render paths and native media backends. Existing capabilities include:
 
 These are foundations to extend, not features to reinvent. In particular,
 Range edits preserve unaffected picture transitions and offer reviewed hard-cut
-replacement for crossed blends; the default preserve policy rejects such boundaries; gain automation has point
-entry rather than a full direct-edit lane; `project.video.clips` is a single
+replacement for crossed blends; the default preserve policy rejects such boundaries; gain automation has a focused direct-edit lane; `project.video.clips` is a single
 composition lane; timeline effects now include parametric EQ and a sample-peak
 limiter, but still lack sends/buses and general parameter automation. Timeline recording/takes are not
 implemented. SFX/Voice recording elsewhere does not fulfil that requirement.
@@ -151,7 +150,7 @@ layout checks do not substitute for physical iOS validation. Local 0.8.14 adds t
 bands with response/drag/keyboard/numeric controls and native DSP parity. Local
 0.8.15 completes the limiter/gain-reduction portion: stereo-linked sample peaks,
 instant attack, adjustable release, no lookahead or added latency, and GUI/native
-export support. Next: editable automation lanes, then routing/buses. Desktop M1 completion does not imply iOS device
+export support. Local 0.8.16 adds the focused direct-edit gain lane; further M2.3 automation work precedes routing/buses. Desktop M1 completion does not imply iOS device
 validation or sample-accurate musical loop restarts.
 Loop restarts use the existing frame-driven scheduler; this is not sample-accurate
 seamless musical looping. Paging and new codec work remain deferred.
@@ -188,8 +187,12 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
    shelves and bell bands), sample-peak output limiter and compressor gain reduction.
    Existing effect presets remain compatible. Limiter follows master gain, has
    instant attack/adjustable release and adds no latency. True-peak is M2.5.
-3. Turn existing gain automation into directly editable lanes: add/move/delete
-   points, numeric edits, curves and safe copy/retime. Extend to pan and selected FX
+3. **Gain-lane slice implemented in local 0.8.16.** Focused lane shares timeline
+   zoom/scroll; mouse/touch add/move/delete, keyboard/numeric edits, snapping,
+   locks, one-step commit/cancel, save/open and existing range retiming. Linear
+   gain with held endpoints; last supplied duplicate timestamp wins. Playback
+   updates without restarting. Remaining: envelope copy, additional supported
+   curves, pan and selected FX
    parameters, then Read/Touch/Latch/Write modes with visible protection against
    overwriting an envelope accidentally.
 4. Add buses and sends: start with track-to-bus routing and shared reverb/delay;

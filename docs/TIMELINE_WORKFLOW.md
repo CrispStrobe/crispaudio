@@ -582,3 +582,35 @@ history, and saved projects retain settings. Old files remain limiter-disabled.
 on a track/master strip. It is not the sum of cascaded compressors. The limiter
 has its own GR display. Stop clears both displays. See [Effects](DAW_EFFECTS.md)
 and [CLI recipe](MEDIA_WORKSPACE.md#output-limiter-and-gain-reduction).
+
+
+## Direct gain automation
+
+Open **Gain automation** in the Timeline toolbar, then choose the track in the
+focused lane. It shares the timeline's horizontal zoom and scroll. Click/tap
+blank space to add a point; drag a point and release to commit. The plus button
+adds a point at the playhead using the current envelope value. Select a point
+for exact time (seconds) and gain (dB) entry; Enter/blur commits and Escape
+cancels a numeric draft. Delete/Backspace or the trash button removes it.
+
+Left/right arrows move one project sample; up/down change 0.1 dB. Shift multiplies
+these increments by ten. Pointer snapping uses the existing project grid and
+nearby playhead, marker and clip boundaries; Alt bypasses it. Time is bounded by
+the project canvas. Numeric time edits bypass snapping. Drag/held-arrow edits
+commit once on release. Escape, pointer cancellation, lost capture, window blur
+or closing the lane cancels the preview and retains redo. Audio changes on commit,
+without restarting playback; the drag preview itself does not change the mix.
+
+The envelope interpolates **linear gain**, even though its vertical display uses
+dB. Before the first/after the last point it holds that value; no points means
+unity. −60 dB in this lane means exact silence; +12 dB is the editable upper bound.
+Existing higher/very quiet values are preserved until edited. Moving onto an
+identical timestamp replaces that point; returning before release restores it.
+For legacy duplicate timestamps, the last supplied point wins in GUI/native
+rendering. Track locks also protect microphone-generated envelopes. Existing
+extract/insert range edits retime gain points and preserve boundary values.
+Saving/opening retains the same GainPoint data and project format 3.
+
+One focused gain lane is shown at a time. Pan/FX lanes, envelope copy and
+Read/Touch/Latch/Write recording modes are future M2.3 work. Browser touch checks
+do not constitute physical iOS validation.

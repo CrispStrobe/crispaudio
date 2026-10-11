@@ -10,7 +10,7 @@ import { audibleTracks } from '../../lib/timelineView';
 // ---------------------------------------------------------------------------
 
 import type {
-  TimelineProject,
+  TimelineProject, TimelineTrack,
   AudioSegment,
   AudioSource,
   EffectConfig,
@@ -41,6 +41,9 @@ export class TimelineEngine {
   }
   private eqNodes = new Map<string, BiquadFilterNode>();
   private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]}>();
+  private automationNodes = new Map<string, {node:GainNode; points:TimelineTrack['automation']}>();
+  private playbackClock=0;
+  private playbackStart=0;
   private outputGain?: GainNode;
   private outputMeter?: AnalyserNode[];
 
@@ -63,6 +66,12 @@ export class TimelineEngine {
       const nodes = this.mixerNodes.get(track.id);
       if (!nodes) continue;
       nodes.gain.gain.setTargetAtTime(audible.has(track.id) ? track.volume : 0, now, .005);
+      const automation=this.automationNodes.get(track.id);
+      if(automation&&automation.points!==track.automation){
+        automation.node.gain.cancelScheduledValues(now);
+        scheduleGain(automation.node.gain,track.automation,now,this.playbackStart+now-this.playbackClock);
+        automation.points=track.automation;
+      }
       nodes.pan.pan.setTargetAtTime(Math.max(-1, Math.min(1, track.pan)), now, .005);
     }
     this.outputGain?.gain.setTargetAtTime(project.masterVolume ?? 1, now, .005);
@@ -151,6 +160,8 @@ export class TimelineEngine {
       const trackFade=ctx.createGain();
       scheduleEnvelope(trackFade.gain,now+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
       const automated=ctx.createGain();scheduleGain(automated.gain,track.automation,now,startTime);
+      this.playbackClock=now;this.playbackStart=startTime;
+      this.automationNodes.set(track.id,{node:automated,points:track.automation});
       trackFade.connect(automated);this.applyEffects(ctx,automated,track.effects??[],`track:${track.id}`).connect(trackGain);
       trackGain.gain.value = audible.has(track.id) ? track.volume : 0;
 
@@ -222,7 +233,7 @@ export class TimelineEngine {
       try { node.disconnect(); } catch { /* already disconnected */ }
     }
     this.playbackNodes.clear();
-    this.mixerNodes.clear();
+    this.mixerNodes.clear();this.automationNodes.clear();
     this.eqNodes.clear();this.compressorNodes.clear();
     if(this.limiterNode){this.limiterNode.port.postMessage({type:'dispose'});this.limiterNode.port.close();}
     this.limiterNode=undefined;this.limiterReduction=0;

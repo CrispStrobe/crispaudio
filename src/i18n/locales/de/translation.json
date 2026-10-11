@@ -1156,5 +1156,15 @@
     "reductionHelp": "Live-DSP-Anzeige. Bei mehreren Kompressoren: stärkste Einzelreduktion, nicht die Summe.",
     "zeroLatency": "Sample-Peak · keine Latenz",
     "limiterHelp": "Nach Master-Pegel/Effekten. Stereo gekoppelt, sofortiger Attack, einstellbarer Release. Keine True-Peak- oder LUFS-Messung."
+  },
+  "automation": {
+    "title": "Pegelautomation",
+    "track": "Automationsspur",
+    "graph": "Pegelkurve der Spur",
+    "point": "Pegelpunkt",
+    "add": "Punkt am Abspielkopf",
+    "time": "Punktzeit (s)",
+    "gain": "Punktpegel (dB)",
+    "help": "Klicken: hinzufügen · Ziehen: bewegen · Entf: löschen · Pfeile: Sample / 0,1 dB, Umschalt ×10 · Alt ohne Raster · Esc: abbrechen · −60 dB = Stille"
   }
 }
