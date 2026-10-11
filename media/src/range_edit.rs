@@ -20,13 +20,16 @@ fn retime_effects(
     }
     if let Some(effects) = rack.as_array_mut() {
         for effect in effects {
-            for parameter in ["mix", "feedback"] {
+            for parameter in ["mix", "feedback", "time"] {
                 if let Some(points) = effect["automation"][parameter]
                     .as_array()
                     .filter(|p| !p.is_empty())
                 {
                     let mut result = vec![];
                     for p in points {
+                        if parameter == "time" && !(0.0..=2.0).contains(&number(p, "value")?) {
+                            return Err("Invalid delay time automation".into());
+                        }
                         let time = number(p, "time")?;
                         if operation == "insert" || time < start || time >= end {
                             let mut q = p.clone();
@@ -40,7 +43,14 @@ fn retime_effects(
                             result.push(q);
                         }
                     }
-                    result.extend(boundary(points, start, end, operation, rate, true)?);
+                    result.extend(boundary(
+                        points,
+                        start,
+                        end,
+                        operation,
+                        rate,
+                        parameter != "time",
+                    )?);
                     result.sort_by(|a, b| {
                         a["time"]
                             .as_f64()
@@ -85,7 +95,7 @@ fn boundary(
 fn has_effect_automation(rack: &Value) -> bool {
     rack.as_array().is_some_and(|r| {
         r.iter().any(|e| {
-            ["mix", "feedback"].iter().any(|parameter| {
+            ["mix", "feedback", "time"].iter().any(|parameter| {
                 e["automation"][*parameter]
                     .as_array()
                     .is_some_and(|p| !p.is_empty())

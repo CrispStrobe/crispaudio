@@ -1919,3 +1919,58 @@ Local 0.8.24 app and independent optimized CLI are rebuilt/installed, both signa
 verified and app launched. One autosave is unchanged with a full recovery backup.
 No release tag or Apple upload. Physical iOS and installed WKWebView interaction
 remain unvalidated; main is a development checkpoint.
+
+
+## Local 0.8.25 — delay-time automation
+
+Track delay-time lanes expose 0–2000 ms controls; metadata uses seconds, bounded
+0–2. Point clocks remain absolute timeline seconds. Linear/Step curves and held
+endpoints apply; empty lanes use static time. Static/envelope changes schedule the
+existing DelayNode without restarting playback or clearing echo history. Moving
+the read head can shift pitch, and jumps can click. Clip/master metadata renders
+in GUI/native DSP; direct lane controls target track inserts.
+
+Protected Read/Touch/Latch/Write capture and review, independent time clipboard,
+source-range/portable paste, static snapshots, outside guards, locks, save/open
+and scoped range editing extend to time. Mix/feedback remain independent. Native
+point edits/paste/pass recipes accept parameter `time` with seconds. Automated
+native delays reserve full two-second history under the shared 64 MiB DSP budget.
+Range interpolation uses the positive-value evaluator for time, retaining values
+above one second; pan's −1…1 bound is kept on actual pan. Older builds reject time
+metadata on project open/native DSP. Further curves/FX parameters remain M2.3.
+
+Validation on 2026-10-11:
+
+- **113 files / 1,431 frontend tests** pass with two workers/local 15-second timeout;
+  repository deadlines are unchanged. Native **82 library + 3 CLI tests** pass,
+  with 10 existing platform tests ignored. Lint, tsc/Vite production build, local
+  Tauri app bundle and optimized CLI build pass. Dependency versions are unchanged.
+- `scripts/test-delay-time.mjs` passes Chrome and headless WebKit: real millisecond
+  controls/caps/static capture, recorder maximum, live static changes without
+  restart, reviewed copy/paste, undo/cancel retaining redo, German 390 px layout.
+  Native point and both paste forms exactly match GUI project JSON. Native
+  insert/extract preserve GUI envelope/geometry across track/clip/master racks.
+- Each moving-delay rack fixture compares every sample of **384,000 stereo
+  frames**. Maximum absolute GUI/native difference: Chrome **6.08×10⁻⁵**,
+  WebKit **6.02×10⁻⁵** full scale; new moving-delay budget 10⁻⁴. Range exports
+  exactly match full-render crops. This covers the synthetic ramps/jumps and is
+  not arbitrary-signal bit identity. Existing four lanes retain their 2×10⁻⁶ budget.
+- Extended Step harness passes all five targets in Chrome/WebKit: curve editing,
+  pointer/numeric retention, live no-restart, locks, partial copy/stretch, range
+  and recorded outside guards, actual Save/Open and German compact controls.
+  Every **192,000-frame stereo** fixture is compared. Moving-time maxima are
+  **3.42×10⁻⁵ Chrome / 7.70×10⁻⁵ WebKit**; original four targets keep their budget.
+- Protected recording harness passes both browsers with time added: reviewed
+  Latch capture, original modes, draft/undo/redo/cancellation/stale/lock protections,
+  Save/Open, native exact pass JSON. Each target compares **384,000 stereo frames**;
+  maximum **3.95×10⁻⁷ Chrome / 2.02×10⁻⁷ WebKit**.
+- Existing mix/feedback copy browser/native regression passes after the source
+  server restart: 480,000 stereo frames per parameter, maximum **1.61×10⁻⁷**.
+  Final English/German dictionaries preserve every old key/value and add six
+  time-lane strings each; final app is rebuilt after restoring unrelated German strings.
+
+Local app/CLI 0.8.25 installed and signatures verified; one autosave preserved
+with a full recovery backup. Launch retry succeeded after macOS initially returned
+−600 during the old app's quit transition. German delay-time screenshot inspected.
+No release tag or Apple upload; physical iOS and installed WKWebView UI interactions
+remain unvalidated. Main remains a development checkpoint.

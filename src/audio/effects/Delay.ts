@@ -8,7 +8,7 @@ export function createDelay(
   time: number,
   feedback: number,
   mix: number,
-  onMix?: (wet:AudioParam,dry:AudioParam,feedback:AudioParam)=>void,
+  onMix?: (wet:AudioParam,dry:AudioParam,feedback:AudioParam,time:AudioParam)=>void,
 ): AudioNode {
   // Allow up to 2s max delay time
   const delay = ctx.createDelay(2.0);
@@ -36,6 +36,6 @@ export function createDelay(
   dryGain.connect(output);
   wetGain.connect(output);
 
-  onMix?.(wetGain.gain,dryGain.gain,feedbackGain.gain);
+  onMix?.(wetGain.gain,dryGain.gain,feedbackGain.gain,delay.delayTime);
   return output;
 }

@@ -9,7 +9,7 @@ import type {TimelineProject} from '../../types/audio';
 /** Review a bounded replacement without touching project state until Apply. */
 export function GainEnvelopePaste({project,trackId,envelope,effectIndex,onClose}:{project:TimelineProject;trackId:string;envelope:GainEnvelope|EffectEnvelope;effectIndex?:number;onClose:()=>void}) {
   const {t}=useTranslation(),isPan=envelope.parameter==='pan',isFx='effectType' in envelope;
-  const title=isFx?(envelope.parameter==='feedback'?'automation.feedbackPaste':'automation.mixPaste'):isPan?'automation.panPaste':'automation.paste';
+  const title=isFx?(`automation.${envelope.parameter}Paste`):isPan?'automation.panPaste':'automation.paste';
   const [time,setTime]=useState(String(project.editRange?.start??useProjectStore.getState().playheadPosition));
   const [duration,setDuration]=useState(String(project.editRange?project.editRange.end-project.editRange.start:envelope.duration));
   const current=useProjectStore(s=>s.project);
@@ -27,7 +27,7 @@ export function GainEnvelopePaste({project,trackId,envelope,effectIndex,onClose}
       if(preview!==project)useProjectStore.setState({project:preview});onClose();
     }}>
       <p className="text-gray-300 break-words">{envelope.sourceName??t('automation.title')} → {track?.name}</p>
-      {isFx&&<p className="text-xs text-gray-400">{(effectIndex??-1)+1} · {t(envelope.parameter==='feedback'?'automation.delayFeedback':'automation.delayMix')}</p>}
+      {isFx&&<p className="text-xs text-gray-400">{(effectIndex??-1)+1} · {t(`automation.delay${envelope.parameter![0].toUpperCase()+envelope.parameter!.slice(1)}`)}</p>}
       <p className="text-xs text-gray-400">{t('automation.copiedRange',{start:(envelope.sourceStart??0).toFixed(3),end:((envelope.sourceStart??0)+envelope.duration).toFixed(3)})}</p>
       <div className="flex flex-wrap gap-3">
         <label className="flex-1 min-w-28">{t('automation.destination')}<input autoFocus aria-label={t('automation.destination')} type="number" min={0} step="any" value={time} onChange={e=>setTime(e.target.value)} className="block w-full min-h-11 bg-gray-800 rounded p-2"/></label>

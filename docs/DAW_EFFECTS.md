@@ -101,3 +101,14 @@ video milestones include audio sends/returns, live effect automation, recording
 onto timeline lanes, stacked video compositing and multicam switching. Existing
 single-picture-lane multi-source editing is not a stacked compositor or multicam
 switcher. The interface and tests should not imply those features already exist.
+
+
+### Delay-time envelopes (local 0.8.25)
+
+The track automation lane also exposes Delay time in milliseconds (0–2000).
+Values are saved in seconds. Linear/Step curves, independent copy/retime,
+protected pass recording and range editing use the same rules as mix/feedback.
+An empty lane follows static time; live static/envelope edits keep the delay
+buffer and playback clock. A moving read head can change pitch; jumps can click.
+Clip and master delay-time metadata renders in GUI/native export too. Native
+state reserves two seconds when time is automated, within the shared DSP budget.

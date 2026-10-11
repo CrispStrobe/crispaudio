@@ -39,6 +39,7 @@ pub(crate) fn paste(project: &Value, op: &Value) -> Result<Value> {
     let (maximum, fallback) = match parameter {
         "mix" => (1.0, 0.3),
         "feedback" => (0.95, 0.4),
+        "time" => (2.0, 0.3),
         _ => return Err("Unknown delay parameter".into()),
     };
     effect(project, &op["trackId"], &op["effectIndex"])?;

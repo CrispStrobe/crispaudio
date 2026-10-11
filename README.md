@@ -25,7 +25,7 @@ browser.
   trims, ripple trims, trim-to-playhead and slide edits have reviewed source limits.
 - Apply clip/track fades, audio crossfades, picture transitions, colour correction
   and orientation changes.
-- Mix with gain, pan, mute/solo, gain/pan and delay mix/feedback automation and clip/track/master effect racks.
+- Mix with gain, pan, mute/solo, gain/pan and delay mix/feedback/time automation and clip/track/master effect racks.
   Current timeline effects include filters, bit crushing, ring modulation, delay,
   chorus, reverb, distortion and compression.
 - Import camera and microphone recordings, review offset/drift synchronization,
@@ -107,7 +107,7 @@ inserts and mixer strips show gain reduction; the limiter shows its own reductio
 These are sample-peak controls; true-peak and LUFS tools remain future work.
 
 The automation button opens a focused track lane beneath the timeline.
-Choose a track and gain, panorama or a delay insert’s mix or feedback, click/tap to add points, drag to move, or use numeric time/dB/pan
+Choose a track and gain, panorama or a delay insert’s mix, feedback or time, click/tap to add points, drag to move, or use numeric time/dB/pan
 fields and keyboard arrows. Point edits commit on release; Escape cancels without
 losing redo. Track locks protect envelopes. Select a point to choose its outgoing Linear or
 Step curve. Linear ramps to the next point; Step holds the value and jumps at the
@@ -123,12 +123,15 @@ its static pan value. Delay mix uses 0–100% values with the same curve choices
 uses the insert’s static mix. The envelope follows its insert when the rack is reordered.
 Delay feedback automation uses 0–95% values with the same curve choices and held endpoints; an empty
 lane uses static feedback. Editing either parameter preserves the other envelope.
-Mix and feedback also have separate session clipboards: copy a selected range or
+Delay time uses 0–2000 ms controls (stored in seconds), with Linear/Step curves,
+held endpoints and the static insert time when empty. Live edits retain the echo
+history. Linear time changes can shift pitch; Step changes can jump the read head.
+Mix, feedback and time have separate session clipboards: copy a selected range or
 whole canvas, including the static value of an empty lane, and review a stretched
-paste into the same parameter of another delay insert. The other envelope and
+paste into the same parameter of another delay insert. The other envelopes and
 insert settings stay fixed. Clipboards survive project loads within the session;
 copy is not undoable or saved. Locks and an open recording pass protect paste.
-Delay keeps its history during live mix/feedback edits; GUI/native range exports
+Delay keeps its history during live mix/feedback/time edits; GUI/native range exports
 process the preceding audio before cropping. Range insert/extract retimes FX envelopes
 with the selected scope; lift retains their clocks. The direct lane edits track inserts.
 Automation modes are available on these lanes. Read follows the existing envelope.

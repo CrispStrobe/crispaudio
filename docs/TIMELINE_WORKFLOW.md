@@ -887,3 +887,38 @@ Only missing, `"linear"` and `"step"` curves are supported. Unknown/null curve
 values reject on GUI open/native point edits and enabled native DSP. GUI and native output support Step;
 older builds that only render Linear do not interpret this new metadata. Further
 curve shapes and selected FX parameters remain planned.
+
+
+## Delay-time automation (local 0.8.25)
+
+Choose a numbered **Delay time** lane. Its values and recorder slider use
+milliseconds (0–2000); point clocks remain absolute timeline seconds. Empty points
+use the insert's static time. Linear ramps and Step holds use the same outgoing
+curve rules as the other lanes. Changing time moves the delay read head: ramps
+can shift pitch and jumps can be audible. Existing echoes stay in the buffer.
+
+Point editing, locks, Save/Open, protected Read/Touch/Latch/Write review and scoped
+insert/extract/lift apply to time too. Copy snapshots the selected range or canvas,
+including the actual static value of an empty lane. Time has a separate session
+clipboard. Paste reviews time/length, preserves mix/feedback and restores the
+original outside envelope with one-sample guards. Stretch changes point clocks,
+while the delay-time values stay fixed. An equivalent paste retains redo.
+
+Native clip/track/master racks render optional `automation.time` metadata. Direct
+lane controls target track inserts. All delay recipe forms accept `parameter:"time"`
+with values in **seconds**, bounded 0–2; effect indices are zero-based:
+
+```json
+[{"op":"effect-automation","trackId":"room","effectIndex":0,"parameter":"time",
+  "points":[{"time":0,"value":0.3,"curve":"step"},{"time":4,"value":1.5}]},
+ {"op":"paste-effect-automation","trackId":"room","effectIndex":0,"parameter":"time",
+  "time":6,"duration":2,"envelope":{"effectType":"delay","parameter":"time",
+  "duration":4,"points":[{"time":0,"value":0.3},{"time":4,"value":1.5}]}}]
+```
+
+Source-range paste and `automation-pass` use the same parameter tag and seconds.
+Empty portable time envelopes mean the default 0.3 seconds; GUI Copy captures
+actual static time. Unknown parameters/curves, out-of-range values and locked
+writes reject. Older builds reject delay-time automation on open/native DSP.
+Native automated delays reserve full two-second state within the shared 64 MiB
+DSP budget. Additional FX parameters and curve shapes remain M2.3 work.

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.25 — 2026-10-11
+
+- Add track delay-time automation with 0–2000 ms controls, Linear/Step curves and
+  live edits that retain echo history. Empty lanes use the static insert time.
+- Extend protected recording, independent envelope copy/retime, save/open, scoped
+  range edits and native point/paste/pass recipes to delay time (stored in seconds).
+- Render moving delay read heads in native clip/track/master racks with bounded
+  two-second history. Linear time changes can alter pitch; jumps may be audible.
+
 ## 0.8.24 — 2026-10-11
 
 - Add outgoing Linear/Step point curves to gain, pan and delay mix/feedback lanes.

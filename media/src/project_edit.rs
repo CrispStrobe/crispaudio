@@ -999,9 +999,14 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                 let parameter = match op["parameter"].as_str() {
                     Some("mix") => "mix",
                     Some("feedback") => "feedback",
+                    Some("time") => "time",
                     _ => return Err("Unsupported effect parameter".into()),
                 };
-                let maximum = if parameter == "feedback" { 0.95 } else { 1.0 };
+                let maximum = match parameter {
+                    "time" => 2.0,
+                    "feedback" => 0.95,
+                    _ => 1.0,
+                };
                 let track = out["project"]["tracks"]
                     .as_array_mut()
                     .unwrap()
@@ -1017,7 +1022,7 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                     .and_then(|v| v.get_mut(index))
                     .ok_or("Missing effect")?;
                 if effect["type"] != "delay" {
-                    return Err("Only delay mix/feedback automation is supported".into());
+                    return Err("Only delay mix/feedback/time automation is supported".into());
                 }
                 let mut points = op["points"].as_array().ok_or("Missing points")?.clone();
                 for p in &points {

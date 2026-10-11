@@ -7,7 +7,7 @@ const project=():TimelineProject=>({...useProjectStore.getInitialState().project
  {id:'a',name:'Source',locked:true,volume:1,pan:0,muted:true,solo:false,segments:[],effects:[{type:'delay',enabled:true,params:{mix:.3,feedback:.4},automation:{mix:[{time:0,value:0},{time:4,value:1},{time:8,value:0}],feedback:[{time:0,value:.1},{time:4,value:.9},{time:8,value:.1}]}}]},
  {id:'b',name:'Target',volume:1,pan:.2,muted:false,solo:false,segments:[],automation:[{time:0,value:.8}],effects:[{type:'delay',enabled:true,params:{mix:.2,feedback:.6},automation:{mix:[{time:0,value:.2},{time:10,value:.4}],feedback:[{time:0,value:.6},{time:10,value:.4}]}}]},
 ]});
-beforeEach(()=>{useProjectStore.getState().loadProjectState(project(),new Map());useProjectStore.setState({effectClipboards:{mix:null,feedback:null}});useProjectStore.temporal.getState().clear();});
+beforeEach(()=>{useProjectStore.getState().loadProjectState(project(),new Map());useProjectStore.setState({effectClipboards:{mix:null,feedback:null,time:null}});useProjectStore.temporal.getState().clear();});
 it('snapshots interpolated edges, duplicate clocks and empty static delay parameters independently',()=>{
  const p=project();p.tracks[0].effects![0].automation!.mix!.push({time:4,value:.8});
  const copied=copyEffectEnvelope(p,'a',0,'mix',1,7).points;expect(copied.map(p=>p.time)).toEqual([0,3,6]);expect(copied[0].value).toBeCloseTo(.2,15);expect(copied[1].value).toBe(.8);expect(copied[2].value).toBeCloseTo(.2,15);

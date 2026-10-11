@@ -1,9 +1,9 @@
 import type {GainPoint,TimelineProject} from '../types/audio';
 import {gainAt,normalizeGainPoints,normalizePanPoints,panAt,curveFields,validAutomationCurve,automationCheckTimes} from './mixAutomation';
-import {mixAt} from './effectAutomation';
+import {effectParameterAt,delayParameterMaximum,delayParameterDefault} from './effectAutomation';
 import {timelineDuration} from './timelineView';
 export type AutomationMode='read'|'touch'|'latch'|'write';
-export interface AutomationTarget {trackId:string;parameter:'gain'|'pan'|'mix'|'feedback';effectIndex?:number}
+export interface AutomationTarget {trackId:string;parameter:'gain'|'pan'|'mix'|'feedback'|'time';effectIndex?:number}
 export interface AutomationSpan {points:GainPoint[]}
 const fail=(key:string):never=>{throw new Error(`automation.${key}`);};
 export function targetPoints(project:TimelineProject,target:AutomationTarget):GainPoint[]|undefined {
@@ -17,8 +17,8 @@ export function automationValue(project:TimelineProject,target:AutomationTarget,
  const points=targetPoints(project,target),track=project.tracks.find(t=>t.id===target.trackId)!;
  if(target.parameter==='gain')return gainAt(points,time);
  if(target.parameter==='pan')return panAt(points,time,track.pan);
- const fallback=track.effects![target.effectIndex!].params[target.parameter]??(target.parameter==='mix'?.3:.4);
- return mixAt(points,time,Math.min(target.parameter==='feedback'?.95:1,fallback));
+ const fallback=track.effects![target.effectIndex!].params[target.parameter]??delayParameterDefault(target.parameter);
+ return effectParameterAt(points,time,fallback,target.parameter);
 }
 function interpolator(points:GainPoint[],fallback:number){return (time:number)=>{
  if(!points.length)return fallback;if(time<=points[0].time)return points[0].value;if(time>=points.at(-1)!.time)return points.at(-1)!.value;
@@ -31,10 +31,10 @@ export function applyAutomationPass(project:TimelineProject,target:AutomationTar
  const track=project.tracks.find(t=>t.id===target.trackId)??fail('missingTrack');if(track.locked)fail('lockedEnvelope');
  const rate=project.sampleRate,canvas=timelineDuration(project),before=targetPoints(project,target)??[];
  if(!Number.isFinite(rate)||rate<=0||!Array.isArray(spans)||spans.length>1000)fail('invalidEnvelope');
- const maximum=target.parameter==='feedback'?.95:target.parameter==='mix'?1:Infinity,minimum=target.parameter==='pan'?-1:0;
+ const maximum=target.parameter==='gain'||target.parameter==='pan'?Infinity:delayParameterMaximum(target.parameter),minimum=target.parameter==='pan'?-1:0;
  if(!Array.isArray(before)||before.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value<minimum||p.value>(target.parameter==='pan'?1:maximum)))fail('invalidEnvelope');
  const normalize=target.parameter==='pan'?normalizePanPoints:normalizeGainPoints,original=normalize(before);
- const fallback=target.parameter==='gain'?1:target.parameter==='pan'?Math.max(-1,Math.min(1,track.pan)):Math.max(0,Math.min(maximum,track.effects![target.effectIndex!].params[target.parameter]??(target.parameter==='mix'?.3:.4)));
+ const fallback=target.parameter==='gain'?1:target.parameter==='pan'?Math.max(-1,Math.min(1,track.pan)):Math.max(0,Math.min(maximum,track.effects![target.effectIndex!].params[target.parameter]??delayParameterDefault(target.parameter)));
  const oldAt=interpolator(original,fallback);
  let last=-Infinity,count=0,points=[...original];
  for(const span of spans){

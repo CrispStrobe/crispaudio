@@ -229,6 +229,7 @@ struct Delay {
     mix: f64,
     automation: Automation,
     feedback_automation: Automation,
+    time_automation: Automation,
 }
 impl Delay {
     fn at(&mut self, input: [f64; 2], frame: u32) -> [f64; 2] {
@@ -237,8 +238,13 @@ impl Delay {
         } else {
             self.feedback_automation.at(frame as f64 / RATE) as f32 as f64
         };
-        let whole = self.frames.floor() as usize;
-        let fraction = self.frames - whole as f64;
+        let frames = if self.time_automation.points.is_empty() {
+            self.frames
+        } else {
+            self.time_automation.at(frame as f64 / RATE) as f32 as f64 * RATE
+        };
+        let whole = frames.floor() as usize;
+        let fraction = frames - whole as f64;
         let length = self.history.len();
         // WebKit feeds the cyclic branch from the preceding render quantum.
         // Its direct input still uses the requested delay, including zero.
@@ -353,7 +359,7 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
                 || a.as_object()
                     .unwrap()
                     .keys()
-                    .any(|k| k != "mix" && k != "feedback")
+                    .any(|k| k != "mix" && k != "feedback" && k != "time")
             {
                 return Err("Unsupported effect automation".into());
             }
@@ -413,7 +419,16 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
             // Match measured WebKit direct delay and cyclic feedback latency.
             let time = finite(params, "time", Some(0.3))?.clamp(0.0, 2.0) as f32 as f64;
             let frames = time * RATE;
-            let length = frames.ceil() as usize + 2;
+            let time_automation = Automation::parse(&effect["automation"]["time"])?;
+            if time_automation.points.iter().any(|p| p.1 > 2.0) {
+                return Err("Delay time automation outside 0..2".into());
+            }
+            // A moving read head needs the full delay capacity, even before later points.
+            let length = if time_automation.points.is_empty() {
+                frames.ceil() as usize + 2
+            } else {
+                (2.0 * RATE) as usize + 2
+            };
             budget.reserve((length + 128) * std::mem::size_of::<[f32; 2]>())?;
             let mut automation = Automation::parse(&effect["automation"]["mix"])?;
             automation.fallback = finite(params, "mix", Some(0.3))?.clamp(0.0, 1.0);
@@ -430,6 +445,7 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
                 frames,
                 automation,
                 feedback_automation,
+                time_automation,
                 feedback_history: [[0.0; 2]; 128],
                 feedback_cursor: 0,
                 feedback: finite(params, "feedback", Some(0.4))?.clamp(0.0, 0.95) as f32 as f64,
@@ -1600,5 +1616,23 @@ mod native_integration {
             .stdout
             .chunks_exact(4)
             .any(|v| f32::from_le_bytes(v.try_into().unwrap()).abs() > 0.03));
+    }
+    #[test]
+    fn automated_delay_reserves_long_history_and_moves_its_read_head() {
+        let mut effect = json!([{"type":"delay","enabled":true,"params":{"time":0.01,"feedback":0,"mix":1},"automation":{"time":[{"time":0,"value":1.5,"curve":"step"},{"time":1.6,"value":0}]}}]);
+        let mut rack = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        for frame in 0..=72000 {
+            let sample = rack[0].at(if frame == 0 { [1.0, 1.0] } else { [0.0, 0.0] }, frame);
+            assert_eq!(
+                sample,
+                if frame == 72000 {
+                    [1.0, 1.0]
+                } else {
+                    [0.0, 0.0]
+                }
+            );
+        }
+        effect[0]["automation"]["time"][0]["value"] = json!(2.001);
+        assert!(filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
     }
 }

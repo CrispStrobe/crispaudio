@@ -29,7 +29,7 @@ fn at(points: &[Value], time: f64, fallback: f64) -> Result<f64> {
 }
 pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     let parameter = op["parameter"].as_str().ok_or("Missing parameter")?;
-    if !["gain", "pan", "mix", "feedback"].contains(&parameter) {
+    if !["gain", "pan", "mix", "feedback", "time"].contains(&parameter) {
         return Err("Unsupported parameter".into());
     }
     let tracks = project["tracks"].as_array().ok_or("Missing tracks")?;
@@ -41,7 +41,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     if track["locked"] == true {
         return Err("Track is locked".into());
     }
-    let index = if ["mix", "feedback"].contains(&parameter) {
+    let index = if ["mix", "feedback", "time"].contains(&parameter) {
         Some(op["effectIndex"].as_u64().ok_or("Missing effect index")? as usize)
     } else {
         None
@@ -57,14 +57,21 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
             .and_then(|r| r.get(index))
             .ok_or("Missing effect")?;
         if e["type"] != "delay" {
-            return Err("Only delay mix/feedback supported".into());
+            return Err("Only delay mix/feedback/time supported".into());
         }
         (
             e["automation"][parameter].clone(),
             e["params"][parameter]
                 .as_f64()
-                .unwrap_or(if parameter == "mix" { 0.3 } else { 0.4 })
-                .clamp(0.0, if parameter == "mix" { 1.0 } else { 0.95 }),
+                .unwrap_or(if parameter == "feedback" { 0.4 } else { 0.3 })
+                .clamp(
+                    0.0,
+                    match parameter {
+                        "time" => 2.0,
+                        "feedback" => 0.95,
+                        _ => 1.0,
+                    },
+                ),
         )
     } else {
         (
@@ -85,6 +92,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     let maximum = match parameter {
         "pan" | "mix" => 1.0,
         "feedback" => 0.95,
+        "time" => 2.0,
         _ => f64::INFINITY,
     };
     for p in &before {
@@ -212,6 +220,23 @@ mod tests {
         assert!(apply(&locked, &op).is_err());
         let mut bad = op.clone();
         bad["spans"][0]["points"][0]["value"] = json!(2);
+        assert!(apply(&p, &bad).is_err());
+    }
+    #[test]
+    fn delay_time_pass_accepts_seconds_above_one_and_keeps_other_lanes() {
+        let p = json!({"duration":8,"minimumDuration":8,"sampleRate":48000,"tracks":[{"id":"t","segments":[],"effects":[{"type":"delay","params":{"time":1.5},"automation":{"mix":[{"time":0,"value":0.5}],"time":[{"time":0,"value":1.2,"curve":"step"},{"time":4,"value":2}]}}]}]});
+        let op = json!({"trackId":"t","effectIndex":0,"parameter":"time","spans":[{"points":[{"time":1,"value":1.8},{"time":2,"value":1.9}]}]});
+        let out = apply(&p, &op).unwrap();
+        assert_eq!(
+            out["tracks"][0]["effects"][0]["automation"]["mix"],
+            p["tracks"][0]["effects"][0]["automation"]["mix"]
+        );
+        assert_eq!(
+            out["tracks"][0]["effects"][0]["automation"]["time"][4]["curve"],
+            "step"
+        );
+        let mut bad = op;
+        bad["spans"][0]["points"][0]["value"] = json!(2.001);
         assert!(apply(&p, &bad).is_err());
     }
 }

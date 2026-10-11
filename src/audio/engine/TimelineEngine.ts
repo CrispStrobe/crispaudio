@@ -1,5 +1,5 @@
 import type {AutomationTarget} from '../../lib/automationRecording';
-import {scheduleMix,scheduleFeedback} from '../../lib/effectAutomation';
+import {scheduleMix,scheduleFeedback,scheduleDelayTime} from '../../lib/effectAutomation';
 import {prepareOutputLimiter,createOutputLimiter} from '../effects/OutputLimiter';
 import {limiterParameters} from '../dsp/samplePeakLimiter';
 import {eqParameters,isEQ} from '../../lib/equalizer';
@@ -44,7 +44,7 @@ export class TimelineEngine {
   private eqNodes = new Map<string, BiquadFilterNode>();
   private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]; points:TimelineTrack['panAutomation']; staticPan:number}>();
   private automationNodes = new Map<string, {node:GainNode; points:TimelineTrack['automation']}>();
-  private mixNodes=new Map<string,{wet:AudioParam;dry:AudioParam;feedback:AudioParam;points:EffectConfig['automation'];mix:number;staticFeedback:number}>();
+  private mixNodes=new Map<string,{wet:AudioParam;dry:AudioParam;feedback:AudioParam;time:AudioParam;points:EffectConfig['automation'];mix:number;staticFeedback:number;staticTime:number}>();
   private playbackGeneration=0;
   private playbackEnd=0;
   private playbackClock=0;
@@ -94,11 +94,12 @@ export class TimelineEngine {
     for (const [scope,effects] of racks) effects.forEach((effect,index)=>{
       const node=this.eqNodes.get(`${scope}:${index}`);
       const mix=this.mixNodes.get(`${scope}:${index}`);
-      if(mix&&(mix.points!==effect.automation||(!effect.automation?.mix?.length&&mix.mix!==(effect.params.mix??.3))||(!effect.automation?.feedback?.length&&mix.staticFeedback!==(effect.params.feedback??.4)))){
+      if(mix&&(mix.points!==effect.automation||(!effect.automation?.mix?.length&&mix.mix!==(effect.params.mix??.3))||(!effect.automation?.feedback?.length&&mix.staticFeedback!==(effect.params.feedback??.4))||(!effect.automation?.time?.length&&mix.staticTime!==(effect.params.time??.3)))){
         mix.wet.cancelScheduledValues(now);mix.dry.cancelScheduledValues(now);
         scheduleMix(mix.wet,mix.dry,effect.automation?.mix,now,this.playbackStart+now-this.playbackClock,effect.params.mix??.3);
         mix.feedback.cancelScheduledValues(now);scheduleFeedback(mix.feedback,effect.automation?.feedback,now,this.playbackStart+now-this.playbackClock,effect.params.feedback??.4);
-        mix.points=effect.automation;mix.mix=effect.params.mix??.3;mix.staticFeedback=effect.params.feedback??.4;
+        mix.time.cancelScheduledValues(now);scheduleDelayTime(mix.time,effect.automation?.time,now,this.playbackStart+now-this.playbackClock,effect.params.time??.3);
+        mix.staticTime=effect.params.time??.3;mix.points=effect.automation;mix.mix=effect.params.mix??.3;mix.staticFeedback=effect.params.feedback??.4;
       }
       if(!node||!isEQ(effect.type))return;
       const p=eqParameters(effect.type,effect.params,this.ctx.sampleRate);
@@ -127,6 +128,8 @@ export class TimelineEngine {
     if(target.parameter==='mix'){
       nodes.wet.cancelScheduledValues(now);nodes.dry.cancelScheduledValues(now);
       scheduleMix(nodes.wet,nodes.dry,value===undefined?effect.automation?.mix:[],now,time,value??effect.params.mix??.3);
+    }else if(target.parameter==='time'){
+      nodes.time.cancelScheduledValues(now);scheduleDelayTime(nodes.time,value===undefined?effect.automation?.time:[],now,time,value??effect.params.time??.3);
     }else{
       nodes.feedback.cancelScheduledValues(now);scheduleFeedback(nodes.feedback,value===undefined?effect.automation?.feedback:[],now,time,value??effect.params.feedback??.4);
     }
@@ -457,10 +460,11 @@ export class TimelineEngine {
             p.time ?? 0.3,
             p.feedback ?? 0.4,
             p.mix ?? 0.3,
-            (wet,dry,feedback)=>{
+            (wet,dry,feedback,time)=>{
               scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.3);
               scheduleFeedback(feedback,fx.automation?.feedback,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.feedback??.4);
-              if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,feedback,points:fx.automation,mix:p.mix??.3,staticFeedback:p.feedback??.4});
+              scheduleDelayTime(time,fx.automation?.time,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.time??.3);
+              if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,feedback,time,points:fx.automation,mix:p.mix??.3,staticFeedback:p.feedback??.4,staticTime:p.time??.3});
             },
           );
           break;
