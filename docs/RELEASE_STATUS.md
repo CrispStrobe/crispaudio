@@ -1,4 +1,4 @@
-# Distribution and platform status — 2026-10-10
+# Distribution and platform status — 2026-10-11
 
 Pushing `main` runs CI/web deployment workflows and the unsigned iOS simulator
 check. It does **not** automatically
@@ -1974,3 +1974,46 @@ with a full recovery backup. Launch retry succeeded after macOS initially return
 −600 during the old app's quit transition. German delay-time screenshot inspected.
 No release tag or Apple upload; physical iOS and installed WKWebView UI interactions
 remain unvalidated. Main remains a development checkpoint.
+
+## M2.3 reviewed automation shapes — 0.8.26
+
+Selected gain, pan and track delay mix/feedback/time points offer a reviewed
+Linear, Ease in, Ease out or S-curve for the segment to the immediate next point.
+Ease shapes bake up to 16 linear intervals into ordinary editable points. End
+values, the next point's outgoing curve and outside points are preserved. Gain
+shaping interpolates amplitude; time uses seconds internally and milliseconds in
+the review. Apply creates one undo step; preview/cancel preserve redo. Locks,
+armed recording, last points, short spans and stale reviews are protected.
+Native `shape-automation` recipes produce the same points without changing DSP
+or format 3. Further FX parameters and free curve handles remain open M2.3 work.
+
+Validation on 2026-10-11: **114 files / 1,435 frontend tests** and **84 library +
+3 CLI tests** pass (10 existing native platform tests ignored). Lint, production
+TypeScript/Vite, local Tauri app bundle and optimized CLI build pass. Dependencies
+are unchanged. The shape harness completes all 15 cases in Chrome and WebKit: review, single
+undo, immediate Escape/cancel retaining redo, locks/recording/stale/last-point
+protection, live no-restart, identity/redo, Save/Open and German 390 px layout.
+Native recipes match GUI JSON exactly; range renders match full-render crops.
+Every case compares 192,000 stereo frames. Original four targets peak at
+8.05×10⁻⁷ Chrome / 8.35×10⁻⁷ WebKit and pass their unchanged budget. Chrome time
+peaks at 6.95×10⁻⁵ and passes 10⁻⁴. **WebKit's three long-time shapes exceed
+10⁻⁴** (Ease in 1.31×10⁻³, Ease out 7.24×10⁻⁴, S-curve 1.45×10⁻⁴). Every
+failing native WAV is byte-identical to the installed 0.8.25 CLI output; these
+are recorded baseline failures, not audio parity passes. The harness rejects
+them normally; an explicit `CRISPAUDIO_BASELINE_CLI` allows only byte-identical
+baseline failures and reports their errors/budget in `knownDelayLimits`.
+The existing protected-recording Chrome regression passes all five targets,
+384,000 stereo frames each, maximum 3.95×10⁻⁷. German review screenshot inspected.
+The new harness supplies correctly typed waveform peaks.
+
+Known rendering limit: a long automated delay (1.2–1.8 seconds) on an abrupt DC
+input differs between native and Web Audio by about **3.91×10⁻⁴ Chrome /
+2.58×10⁻³ WebKit** full scale. The installed 0.8.25 CLI produces byte-identical
+native audio for that generated point project, so this predates curve shaping.
+The shape comparison uses a 43 Hz tone with a 50 ms onset fade for time; other
+four targets keep their constant-input fixtures and 2×10⁻⁶ budget. Passing those
+fixtures does not establish arbitrary-signal bit identity. DSP is unchanged.
+
+Local 0.8.26 app and optimized CLI installed, signatures verified and app launched;
+one autosave preserved with a full recovery backup. No release tag or Apple upload.
+Physical iOS and installed WKWebView interactions remain unvalidated.

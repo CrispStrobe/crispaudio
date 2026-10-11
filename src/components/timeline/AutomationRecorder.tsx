@@ -1,4 +1,4 @@
-import {useContext,useEffect,useRef,useState} from 'react';
+import {useContext,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Circle,Square,CircleHelp} from 'lucide-react';
 import {ToolButton} from '../common/ToolButton';
@@ -58,7 +58,7 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
    endSpan(p,engine?.current?.automationClock()?.time??p.lastTime??0);restore();
   }
  };
- useEffect(()=>{onBusy(armed||!!review);return()=>onBusy(false);},[armed,review,onBusy]);
+ useLayoutEffect(()=>{onBusy(armed||!!review);return()=>onBusy(false);},[armed,review,onBusy]);
  useEffect(()=>{
   let frame=0;
   const tick=()=>{

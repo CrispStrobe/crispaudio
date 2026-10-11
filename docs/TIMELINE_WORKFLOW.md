@@ -922,3 +922,39 @@ actual static time. Unknown parameters/curves, out-of-range values and locked
 writes reject. Older builds reject delay-time automation on open/native DSP.
 Native automated delays reserve full two-second state within the shared 64 MiB
 DSP budget. Additional FX parameters and curve shapes remain M2.3 work.
+
+
+## Reviewed segment shapes (local 0.8.26)
+
+Select a point and press **Shape outgoing segment**. Preview Linear, Ease in,
+Ease out or S-curve between that point and its immediate following point. The
+review shows the target lane/insert, clocks, endpoint values and generated points.
+Apply is one undo step. Escape/Cancel keeps project and redo intact. Changed
+projects/racks, locks and armed/reviewed recording passes protect the operation.
+The last point has no outgoing segment and cannot be shaped.
+
+Ease shapes use up to 16 linear intervals (15 added points). Short spans use fewer
+intervals, with at least two samples between endpoints. Values interpolate gain
+amplitude, absolute pan, delay wet/feedback ratio or delay time, without changing
+the endpoint values. The starting Step is replaced; the following point's outgoing
+curve and all outside segments stay fixed. Flat/equivalent segments are no-ops.
+
+Generated shapes are ordinary editable point series, rather than persistent curve
+handles. Editing a point changes that piece of the shape; reusing the tool shapes
+only that point to its next neighbour. Undo first to choose a different shape for
+an original whole segment. Existing format-3 Save/Open, copy/retime, range edits,
+recorded outside guards and GUI/native rendering preserve these linear points.
+The shapes approximate the mathematical curves with the displayed intervals.
+
+```json
+[{"op":"shape-automation","trackId":"voice","parameter":"gain",
+  "pointTime":1,"shape":"s-curve"},
+ {"op":"shape-automation","trackId":"room","parameter":"time","effectIndex":0,
+  "pointTime":4,"shape":"ease-in"}]
+```
+
+`parameter` is gain/pan/mix/feedback/time; delay parameters require a zero-based
+track insert index. `pointTime` is the exact existing point's absolute clock in
+seconds. Shapes are `linear`, `ease-in`, `ease-out` or `s-curve`. Parameter values
+and timeline geometry stay fixed outside the selected segment; the shared
+100,000-point limit applies. Invalid shapes, missing neighbours and bounds reject.

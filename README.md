@@ -112,7 +112,12 @@ fields and keyboard arrows. Point edits commit on release; Escape cancels withou
 losing redo. Track locks protect envelopes. Select a point to choose its outgoing Linear or
 Step curve. Linear ramps to the next point; Step holds the value and jumps at the
 next point's clock. Missing curve metadata keeps the existing Linear behavior.
-Endpoints hold; an empty gain envelope is unity. Edits update running playback,
+The shape tool previews Ease-in, Ease-out and S-curve transitions between the
+selected point and its next neighbour. Apply creates up to 15 editable linear
+points in one undo step, keeping endpoints and outside automation fixed. Gain
+shapes interpolate amplitude. Copy/retime, recording guards and exports retain
+the generated points. Undo the shape before choosing another shape for the original
+whole segment. Endpoints hold; an empty gain envelope is unity. Edits update running playback,
 save/open and GUI/native exports. Copy the selected time range (or whole envelope) and paste it onto another track
 or time with a reviewed destination length. Time stretching changes point clocks
 while retaining parameter values; outside automation is preserved with one-sample boundary

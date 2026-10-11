@@ -992,6 +992,9 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             "paste-automation" => {
                 out["project"] = crate::gain_envelope::paste(&out["project"], op)?;
             }
+            "shape-automation" => {
+                out["project"] = crate::automation_shape::apply(&out["project"], op)?;
+            }
             "automation-pass" => {
                 out["project"] = crate::automation_pass::apply(&out["project"], op)?;
             }

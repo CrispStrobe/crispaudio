@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.26 — 2026-10-11
+
+- Add reviewed Ease-in, Ease-out and S-curve shaping between adjacent automation
+  points on gain, pan and delay mix/feedback/time. Apply creates up to 15 editable
+  linear points in one undo step; endpoints and outside segments stay fixed.
+- Add matching native `shape-automation` recipes, short-interval limits, lock/stale
+  review protection and no-op preservation of redo. Existing point formats retain
+  the generated shapes through Save/Open, copy/retime, range edits and rendering.
+- Protect shape review Escape before delayed modal focus and synchronize recorder
+  protection before painting armed controls.
+
+
 ## 0.8.25 — 2026-10-11
 
 - Add track delay-time automation with 0–2000 ms controls, Linear/Step curves and

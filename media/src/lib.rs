@@ -1128,5 +1128,6 @@ pub mod range_edit;
 
 mod automation_curve;
 mod automation_pass;
+mod automation_shape;
 mod effect_envelope;
 mod gain_envelope;
