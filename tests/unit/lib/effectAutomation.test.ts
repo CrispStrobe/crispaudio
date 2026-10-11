@@ -1,5 +1,5 @@
 import {expect,it,vi} from 'vitest';
-import {scheduleMix,validEffectAutomation} from '../../../src/lib/effectAutomation';
+import {scheduleMix,scheduleFeedback,validEffectAutomation} from '../../../src/lib/effectAutomation';
 import {editTimeRange} from '../../../src/lib/rangeEdits';
 import {useProjectStore} from '../../../src/stores/projectStore';
 import type {EffectConfig} from '../../../src/types/audio';
@@ -27,4 +27,17 @@ it('retimes insert envelopes, preserves lift and blocks locked automation-only t
  expect(()=>editTimeRange({...p,tracks:[{...p.tracks[0],locked:true}]},1,2,'extract')).toThrow('locked');
  useProjectStore.getState().loadProjectState({...p,tracks:[{...p.tracks[0],locked:true}]},new Map());const before=useProjectStore.getState().project;
  useProjectStore.getState().updateTrack('t',{effects:[]});expect(useProjectStore.getState().project).toBe(before);
+});
+
+it('keeps mix and feedback independent, caps feedback and protects feedback-only locks',()=>{
+ const a={...effect,automation:{mix:effect.automation!.mix,feedback:[{time:0,value:0},{time:4,value:.95}]}};
+ const param={setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn()};
+ scheduleFeedback(param as unknown as AudioParam,a.automation.feedback,10,2,.4);
+ expect(param.setValueAtTime).toHaveBeenCalledWith(.475,10);expect(param.linearRampToValueAtTime).toHaveBeenCalledWith(.95,12);
+ scheduleFeedback(param as unknown as AudioParam,[],10,2,2);expect(param.setValueAtTime).toHaveBeenLastCalledWith(.95,10);
+ expect(validEffectAutomation(a)).toBe(true);expect(validEffectAutomation({...a,automation:{feedback:[{time:0,value:.96}]}})).toBe(false);
+ const p={...useProjectStore.getInitialState().project,minimumDuration:10,masterEffects:[a],tracks:[{id:'t',name:'Delay',pan:0,volume:1,muted:false,solo:false,segments:[],effects:[a]}]};
+ const out=editTimeRange(p,1,2,'extract');expect(out.tracks[0].effects?.[0].automation?.mix).toContainEqual({time:1,value:.5});expect(out.masterEffects[0].automation?.feedback).toContainEqual({time:1,value:.475});
+ const locked={...p,tracks:[{...p.tracks[0],locked:true,effects:[{...a,automation:{feedback:a.automation.feedback}}]}]};
+ expect(()=>editTimeRange(locked,1,2,'extract')).toThrow('locked');useProjectStore.getState().loadProjectState(locked,new Map());const before=useProjectStore.getState().project;useProjectStore.getState().updateTrack('t',{effects:[]});expect(useProjectStore.getState().project).toBe(before);
 });

@@ -20,39 +20,41 @@ fn retime_effects(
     }
     if let Some(effects) = rack.as_array_mut() {
         for effect in effects {
-            if let Some(points) = effect["automation"]["mix"]
-                .as_array()
-                .filter(|p| !p.is_empty())
-            {
-                let mut result = vec![];
-                for p in points {
-                    let time = number(p, "time")?;
-                    if operation == "insert" || time < start || time >= end {
-                        let mut q = p.clone();
-                        q["time"] = json!(if operation == "insert" && time >= start {
-                            time + end - start
-                        } else if operation == "extract" && time >= end {
-                            time - end + start
-                        } else {
-                            time
-                        });
-                        result.push(q);
+            for parameter in ["mix", "feedback"] {
+                if let Some(points) = effect["automation"][parameter]
+                    .as_array()
+                    .filter(|p| !p.is_empty())
+                {
+                    let mut result = vec![];
+                    for p in points {
+                        let time = number(p, "time")?;
+                        if operation == "insert" || time < start || time >= end {
+                            let mut q = p.clone();
+                            q["time"] = json!(if operation == "insert" && time >= start {
+                                time + end - start
+                            } else if operation == "extract" && time >= end {
+                                time - end + start
+                            } else {
+                                time
+                            });
+                            result.push(q);
+                        }
                     }
+                    if start > 0.0 {
+                        result.push(json!({"time":(start-1.0/rate).max(0.0),"value":value_at(points,start,true)?}));
+                    }
+                    result.push(json!({"time":if operation=="insert"{end}else{start},"value":value_at(points,if operation=="insert"{start}else{end},true)?}));
+                    result.sort_by(|a, b| {
+                        a["time"]
+                            .as_f64()
+                            .unwrap()
+                            .total_cmp(&b["time"].as_f64().unwrap())
+                    });
+                    result.reverse();
+                    result.dedup_by(|a, b| a["time"].as_f64() == b["time"].as_f64());
+                    result.reverse();
+                    effect["automation"][parameter] = json!(result);
                 }
-                if start > 0.0 {
-                    result.push(json!({"time":(start-1.0/rate).max(0.0),"value":value_at(points,start,true)?}));
-                }
-                result.push(json!({"time":if operation=="insert"{end}else{start},"value":value_at(points,if operation=="insert"{start}else{end},true)?}));
-                result.sort_by(|a, b| {
-                    a["time"]
-                        .as_f64()
-                        .unwrap()
-                        .total_cmp(&b["time"].as_f64().unwrap())
-                });
-                result.reverse();
-                result.dedup_by(|a, b| a["time"].as_f64() == b["time"].as_f64());
-                result.reverse();
-                effect["automation"]["mix"] = json!(result);
             }
         }
     }
@@ -61,9 +63,11 @@ fn retime_effects(
 fn has_effect_automation(rack: &Value) -> bool {
     rack.as_array().is_some_and(|r| {
         r.iter().any(|e| {
-            e["automation"]["mix"]
-                .as_array()
-                .is_some_and(|p| !p.is_empty())
+            ["mix", "feedback"].iter().any(|parameter| {
+                e["automation"][*parameter]
+                    .as_array()
+                    .is_some_and(|p| !p.is_empty())
+            })
         })
     })
 }

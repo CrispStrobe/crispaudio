@@ -1744,3 +1744,43 @@ installation and recovery evidence follow below.
 Local 0.8.20 app and independent optimized CLI are rebuilt and installed; both
 signatures verify, the app launches, and the existing autosave is unchanged with
 a full recovery backup. Main is the development checkpoint, not an Apple release.
+
+## Local 0.8.21 — independent delay feedback automation
+
+Track delay inserts now expose feedback alongside mix. Feedback uses absolute
+seconds, linear held endpoints and a 0–0.95 range; empty points restore static
+feedback. Live ramps preserve the delay buffer and the other parameter's
+points. Format-3 save/open, rack cloning/reordering, locks and scoped range
+retiming retain both envelopes. Native recipes accept
+`effect-automation parameter:"feedback"`, preserving mix and media geometry.
+Clip/master DSP supports both envelopes; direct lanes expose track inserts.
+
+Validation on 2026-10-11:
+
+- **109 files / 1,415 frontend tests** pass on the complete rerun; lint and
+  production tsc/Vite build pass. Native **75 media library + 3 CLI tests** pass; 10 existing platform tests ignored.
+  Tests cover feedback bounds, duplicate timestamps, mix preservation, locks,
+  delay history and exact native range cropping. Focused frontend scheduling,
+  serialization and retiming checks pass; lint and production tsc/Vite build pass.
+- `scripts/test-delay-feedback.mjs` passes in Chrome and headless WebKit: actual
+  pointer/keyboard/numeric edits, 95% keyboard clamp, rejection of 96%, Escape,
+  live updates without restart, empty-lane fallback, actual Save/Open, rack
+  reorder, locks, editing mix while preserving feedback, and German 390 px touch.
+  Screenshot inspected. Existing mix lane browser/native regression also passes.
+- Every sample of each **192,000-frame stereo** native fixture is compared with
+  GUI rendering while both mix and feedback are automated. Maximum difference:
+  Chrome **9.69×10⁻⁸**, WebKit **2.46×10⁻⁷** full scale. GUI range output exactly
+  matches its full-file history crop. Native extract-retimed mix/feedback JSON
+  matches GUI in both browsers. These measurements do not claim bit identity.
+- The first broad frontend run passed 1,414 tests and timed out in the existing
+  limiter test at its 5-second deadline under concurrent compilation. That test
+  passes alone at the original deadline (2.95 seconds). A complete rerun uses a
+  15-second local deadline; audio assertions and repo test configuration are unchanged.
+
+Further FX parameters, FX envelope clipboard, additional curves and protected
+Read/Touch/Latch/Write modes remain M2.3 work. No release tag or Apple upload;
+physical iOS and installed WKWebView interaction remain unvalidated.
+
+Local 0.8.21 app and independent optimized CLI are rebuilt/installed, signatures
+verified, app launched and the existing autosave preserved with a full recovery
+backup. Main remains a development checkpoint, not an Apple-distributed release.

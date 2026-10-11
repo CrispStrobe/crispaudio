@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.21 — 2026-10-11
+
+- Add an independent track delay feedback lane (0–95%) with live ramps that
+  preserve echo history, point editing, locks, undo/cancel and format-3 save/open.
+- Preserve mix and feedback envelopes when editing, copying/reordering racks and
+  retiming scoped ranges; support native `effect-automation parameter:"feedback"`.
+- Reject feedback above 95%; empty lanes restore the static value. Further FX
+  parameters, FX envelope clipboard and recording modes remain planned.
+
 ## 0.8.20 — 2026-10-11
 
 - Add a track delay wet/dry mix automation lane with pointer/touch, keyboard and

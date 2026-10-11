@@ -1196,6 +1196,10 @@
     "mixGraph": "Delay-Mix-Automation",
     "mixPoint": "Punkt-Mix (%)",
     "missingEffect": "Verfügbare Spur wählen",
-    "mixHelp": "Delay-Mix: linear 0–100%, konstante Randwerte. Ohne Punkte gilt der feste Mix. Loslassen übernimmt; Escape verwirft. Die Kurve bleibt beim Effekt, wenn er verschoben wird."
+    "mixHelp": "Delay-Mix: linear 0–100%, konstante Randwerte. Ohne Punkte gilt der feste Mix. Loslassen übernimmt; Escape verwirft. Die Kurve bleibt beim Effekt, wenn er verschoben wird.",
+    "delayFeedback": "Delay-Feedback",
+    "feedbackGraph": "Delay-Feedback-Automation",
+    "feedbackPoint": "Punkt-Feedback (%)",
+    "feedbackHelp": "Delay-Feedback: linear 0–95%, gehaltene Endpunkte. Leere Spur nutzt statisches Feedback. Live-Änderungen erhalten den Echo-Verlauf. Loslassen übernimmt; Escape bricht ab."
   }
 }

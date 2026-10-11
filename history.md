@@ -256,3 +256,13 @@ range exports process preceding history before cropping. Chrome/WebKit checks
 cover actual lane controls, Save/Open, reorder, locks and German phone touch;
 complete four-second stereo native comparisons differ by at most 2.39e-7 full scale.
 Other FX parameters, FX clipboard and protected recording modes remain M2.3 work.
+
+### 2026-10-11 — local 0.8.21: delay feedback automation
+
+Added an independent delay feedback lane with 0–95% linear ramps, held endpoints
+and static fallback. Live edits preserve echo history and the wet/dry envelope.
+Track point editing, locks, undo/cancel, format-3 save/open, rack copying/reorder
+and scoped range retiming retain both parameters. Native effect-automation recipes
+accept feedback and preserve mix/media geometry. Chrome/WebKit real-control and
+full stereo PCM checks pass; further selected FX parameters, FX clipboard and
+protected recording modes remain M2.3 work.

@@ -749,3 +749,23 @@ Native track-insert editing uses zero-based `effectIndex` and mix values 0–1:
 
 An empty points array restores the static mix. The recipe rejects locked tracks,
 missing/non-delay inserts and unsupported parameters, preserving media geometry.
+
+## Delay feedback automation (local 0.8.21)
+
+Each track delay insert also offers **Delay feedback**. It uses the same time/
+percent point editing and linear held endpoints as mix, bounded to **0–95%**.
+Keyboard arrows move 1% (Shift 10%) and stop at the bounds; numeric values above
+95% reject. Empty points restore the static feedback control. An active envelope
+marks that control Auto. Feedback ramps change echo repeats without resetting the
+buffer; mix and feedback envelopes remain independent during edits, rack copy/
+reorder, Save/Open and scoped insert/extract. GUI/native range output keeps the
+preceding history. Clip/master DSP also supports the metadata; direct lanes edit
+track inserts. FX envelope copy/paste and recording modes remain planned.
+
+```json
+[{"op":"effect-automation","trackId":"room","effectIndex":0,"parameter":"feedback",
+  "points":[{"time":0,"value":0.2},{"time":2,"value":0.8},{"time":4,"value":0}]}]
+```
+
+The native recipe preserves the existing mix envelope and media geometry. Values
+are 0–0.95; unsupported parameters, non-delay inserts and locked tracks reject.

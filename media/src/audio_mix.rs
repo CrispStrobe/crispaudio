@@ -219,9 +219,15 @@ struct Delay {
     feedback: f64,
     mix: f64,
     automation: Automation,
+    feedback_automation: Automation,
 }
 impl Delay {
     fn at(&mut self, input: [f64; 2], frame: u32) -> [f64; 2] {
+        let feedback = if self.feedback_automation.points.is_empty() {
+            self.feedback
+        } else {
+            self.feedback_automation.at(frame as f64 / RATE) as f32 as f64
+        };
         let whole = self.frames.floor() as usize;
         let fraction = self.frames - whole as f64;
         let length = self.history.len();
@@ -229,7 +235,7 @@ impl Delay {
         // Its direct input still uses the requested delay, including zero.
         for ch in 0..2 {
             self.history[self.cursor][ch] = (input[ch]
-                + self.feedback_history[self.feedback_cursor][ch] as f64 * self.feedback)
+                + self.feedback_history[self.feedback_cursor][ch] as f64 * feedback)
                 as f32;
         }
         let near = self.history[(self.cursor + length - whole) % length];
@@ -335,7 +341,10 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
         if let Some(a) = effect.get("automation") {
             if effect["type"] != "delay"
                 || !a.is_object()
-                || a.as_object().unwrap().keys().any(|k| k != "mix")
+                || a.as_object()
+                    .unwrap()
+                    .keys()
+                    .any(|k| k != "mix" && k != "feedback")
             {
                 return Err("Unsupported effect automation".into());
             }
@@ -402,11 +411,16 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
             if automation.points.iter().any(|p| p.1 > 1.0) {
                 return Err("Delay mix automation outside 0..1".into());
             }
+            let feedback_automation = Automation::parse(&effect["automation"]["feedback"])?;
+            if feedback_automation.points.iter().any(|p| p.1 > 0.95) {
+                return Err("Delay feedback automation outside 0..0.95".into());
+            }
             out.push(Effect::Delay(Box::new(Delay {
                 history: vec![[0.0; 2]; length],
                 cursor: 0,
                 frames,
                 automation,
+                feedback_automation,
                 feedback_history: [[0.0; 2]; 128],
                 feedback_cursor: 0,
                 feedback: finite(params, "feedback", Some(0.4))?.clamp(0.0, 0.95) as f32 as f64,
@@ -966,6 +980,25 @@ mod tests {
         render(&doc, range.to_str().unwrap()).unwrap();
         assert_eq!(output(&range), pcm[1920..5760]);
         doc["project"]["tracks"][0]["effects"][0]["automation"]["mix"][0]["value"] = json!(2);
+        assert!(render(&doc, folder.path().join("bad.wav").to_str().unwrap()).is_err());
+    }
+    #[test]
+    fn delay_feedback_automation_preserves_history_and_rejects_bad_values() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = source(folder.path(), 2, &[0.25, -0.125]);
+        let mut doc = project(&input);
+        doc["project"]["tracks"][0]["effects"] = json!([{"type":"delay","enabled":true,"params":{"time":0.01,"feedback":0.5,"mix":1},"automation":{"feedback":[{"time":0,"value":0},{"time":0.04,"value":0.95},{"time":0.08,"value":0}]}}]);
+        let full = folder.path().join("full.wav");
+        render(&doc, full.to_str().unwrap()).unwrap();
+        let pcm = output(&full);
+        assert_eq!(&pcm[0..2], &[0.0, 0.0]);
+        assert!(pcm[3840] > 0.25);
+        doc["renderRange"] = json!({"start":0.02,"end":0.06});
+        let range = folder.path().join("range.wav");
+        render(&doc, range.to_str().unwrap()).unwrap();
+        assert_eq!(output(&range), pcm[1920..5760]);
+        doc["project"]["tracks"][0]["effects"][0]["automation"]["feedback"][0]["value"] =
+            json!(0.96);
         assert!(render(&doc, folder.path().join("bad.wav").to_str().unwrap()).is_err());
     }
     #[test]

@@ -25,7 +25,7 @@ browser.
   trims, ripple trims, trim-to-playhead and slide edits have reviewed source limits.
 - Apply clip/track fades, audio crossfades, picture transitions, colour correction
   and orientation changes.
-- Mix with gain, pan, mute/solo, gain/pan and delay mix automation and clip/track/master effect racks.
+- Mix with gain, pan, mute/solo, gain/pan and delay mix/feedback automation and clip/track/master effect racks.
   Current timeline effects include filters, bit crushing, ring modulation, delay,
   chorus, reverb, distortion and compression.
 - Import camera and microphone recordings, review offset/drift synchronization,
@@ -107,7 +107,7 @@ inserts and mixer strips show gain reduction; the limiter shows its own reductio
 These are sample-peak controls; true-peak and LUFS tools remain future work.
 
 The automation button opens a focused track lane beneath the timeline.
-Choose a track and gain, panorama or a delay insert’s mix, click/tap to add points, drag to move, or use numeric time/dB/pan
+Choose a track and gain, panorama or a delay insert’s mix or feedback, click/tap to add points, drag to move, or use numeric time/dB/pan
 fields and keyboard arrows. Point edits commit on release; Escape cancels without
 losing redo. Track locks protect envelopes. Gain remains linear between points,
 with held endpoints; an empty envelope is unity. Edits update running playback,
@@ -119,7 +119,9 @@ An empty pan lane uses the static track pan; an active lane marks the mixer pan
 as Auto. Gain and pan have separate session clipboards. Copying an empty pan lane captures
 its static pan value. Delay mix uses 0–100% linear ramps with held endpoints; an empty lane
 uses the insert’s static mix. The envelope follows its insert when the rack is reordered.
-Delay feedback keeps its history during live mix edits; GUI/native range exports
+Delay feedback automation uses 0–95% linear ramps with held endpoints; an empty
+lane uses static feedback. Editing either parameter preserves the other envelope.
+Delay keeps its history during live mix/feedback edits; GUI/native range exports
 process the preceding audio before cropping. Range insert/extract retimes FX envelopes
 with the selected scope; lift retains their clocks. The direct lane edits track inserts.
 Other FX parameters, FX envelope copy/paste and recording modes remain planned.
