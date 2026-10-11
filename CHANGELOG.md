@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.28 — 2026-10-11
+
+- Add ring-modulator mix automation (0–100%) with direct points, Linear/Step,
+  reviewed preset/custom curves and protected Read/Touch/Latch/Write capture.
+- Add a separate ring mix clipboard with tagged copy/stretch paste and matching
+  native point, shape, paste and recorded-pass recipes. Live edits retain carrier
+  phase; GUI/native track/clip/master rendering and scoped range edits support mix.
+- Match native carrier phase increment precision to Web Audio, reducing long
+  ring-modulator render drift while retaining the existing audio error budget.
+
 ## 0.8.27 — 2026-10-11
 
 - Add reviewed custom Bézier shaping on gain, pan and delay mix/feedback/time.

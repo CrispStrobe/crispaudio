@@ -80,8 +80,8 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
             .as_array()
             .and_then(|r| r.get(index))
             .ok_or("Missing effect")?;
-        if effect["type"] != "delay" {
-            return Err("Only delay parameters supported".into());
+        if !crate::effect_envelope::supports(effect, parameter) {
+            return Err("Unsupported effect parameter".into());
         }
         &effect["automation"][parameter]
     } else {

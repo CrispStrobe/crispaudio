@@ -1,4 +1,4 @@
-import {copyEffectEnvelope,pasteEffectEnvelope,type EffectEnvelope,type EffectParameter} from '../lib/effectEnvelope';
+import {copyEffectEnvelope,pasteEffectEnvelope,type EffectEnvelope,effectClipboardKey,type EffectClipboardKey,type EffectParameter} from '../lib/effectEnvelope';
 import {hasEffectAutomation} from '../lib/effectAutomation';
 import {copyGainEnvelope,pasteGainEnvelope,copyPanEnvelope,pastePanEnvelope,type GainEnvelope} from '../lib/gainEnvelope';
 import i18n from 'i18next';
@@ -59,7 +59,7 @@ interface ProjectState {
   sources: Map<string, AudioSource>;
   selection: TimelineSelection | null;
   clipboard: ClipboardState;
-  effectClipboards: Record<EffectParameter,EffectEnvelope|null>;
+  effectClipboards: Record<EffectClipboardKey,EffectEnvelope|null>;
   copyEffectAutomation: (trackId:string,index:number,parameter:EffectParameter) => boolean;
   pasteEffectAutomation: (trackId:string,index:number,parameter:EffectParameter,time:number,duration:number) => boolean;
   panClipboard: GainEnvelope | null;
@@ -206,14 +206,14 @@ export const useProjectStore = create<ProjectState>()(
       sources: new Map(),
       selection: null,
       clipboard: { operation: null, segments: [], sourceIds: [] },
-      effectClipboards: {mix:null,feedback:null,time:null},
+      effectClipboards: {mix:null,feedback:null,time:null,ringmodMix:null},
       copyEffectAutomation: (trackId,index,parameter) => {
         const state=get(),range=state.project.editRange;
-        try {const envelope=copyEffectEnvelope(state.project,trackId,index,parameter,range?.start,range?.end);set({effectClipboards:{...state.effectClipboards,[parameter]:envelope}});return true;}
+        try {const envelope=copyEffectEnvelope(state.project,trackId,index,parameter,range?.start,range?.end);set({effectClipboards:{...state.effectClipboards,[effectClipboardKey(envelope.effectType,parameter)]:envelope}});return true;}
         catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:i18n.t(String(error instanceof Error?error.message:error))}));return false;}
       },
       pasteEffectAutomation: (trackId,index,parameter,time,duration) => {
-        const state=get(),envelope=state.effectClipboards[parameter];if(!envelope)return false;
+        const state=get(),envelope=state.effectClipboards[effectClipboardKey(state.project.tracks.find(t=>t.id===trackId)?.effects?.[index]?.type,parameter)];if(!envelope)return false;
         try {const project=pasteEffectEnvelope(state.project,trackId,index,parameter,envelope,time,duration);if(project!==state.project)set({project});return true;}
         catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:i18n.t(String(error instanceof Error?error.message:error))}));return false;}
       },

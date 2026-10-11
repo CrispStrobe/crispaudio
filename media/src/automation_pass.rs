@@ -56,14 +56,20 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
             .as_array()
             .and_then(|r| r.get(index))
             .ok_or("Missing effect")?;
-        if e["type"] != "delay" {
-            return Err("Only delay mix/feedback/time supported".into());
+        if !crate::effect_envelope::supports(e, parameter) {
+            return Err("Unsupported effect parameter".into());
         }
         (
             e["automation"][parameter].clone(),
             e["params"][parameter]
                 .as_f64()
-                .unwrap_or(if parameter == "feedback" { 0.4 } else { 0.3 })
+                .unwrap_or(if e["type"] == "ringmod" {
+                    0.5
+                } else if parameter == "feedback" {
+                    0.4
+                } else {
+                    0.3
+                })
                 .clamp(
                     0.0,
                     match parameter {

@@ -984,3 +984,30 @@ Custom recipes require four finite normalized control values, each in 0–1,
 with `x1 <= x2`. Values represent endpoint progress, not dB or milliseconds.
 The existing target tags, delay insert index, locks and bounds apply. GUI/native
 use the same bounded time-axis inversion. DSP and project format remain unchanged.
+
+
+## Ring-modulator mix automation (local 0.8.28)
+
+Choose a track ring-modulator insert's **Ring modulation mix** lane. Values are
+0–100% dry to modulated (stored 0–1). Empty envelopes use the static insert mix,
+default 50%. Linear/Step points, reviewed preset/custom shaping, protected
+Read/Touch/Latch/Write recording and reviewed copy/stretch paste work as on the
+other lanes. Ring mix has a separate session clipboard from delay mix; portable
+envelopes require `effectType:"ringmod", parameter:"mix"`. Paste rejects other FX
+kinds and ring feedback/time. Live mix and envelope edits retain carrier phase;
+changing carrier frequency still rebuilds playback. Range exports process from
+zero before cropping; scoped range edits retime ring envelopes at every rack.
+
+Native `effect-automation`, `shape-automation`, `automation-pass` and
+`paste-effect-automation` use `parameter:"mix"` and a zero-based ring insert
+index. Source-range paste requires another ring insert; portable empty envelopes
+mean default 0.5, while GUI Copy snapshots actual static mix. Direct controls edit
+track inserts; optional clip/master mix metadata renders in GUI/native DSP.
+
+```json
+[{"op":"effect-automation","trackId":"voice","effectIndex":0,"parameter":"mix",
+  "points":[{"time":0,"value":0,"curve":"step"},{"time":2,"value":0.8},{"time":4,"value":0}]},
+ {"op":"paste-effect-automation","trackId":"voice","effectIndex":0,"parameter":"mix",
+  "time":6,"duration":2,"envelope":{"effectType":"ringmod","parameter":"mix",
+  "duration":4,"points":[{"time":0,"value":0},{"time":4,"value":1}]}}]
+```

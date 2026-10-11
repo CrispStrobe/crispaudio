@@ -1,6 +1,6 @@
 import type {GainPoint,TimelineProject} from '../types/audio';
 import {gainAt,normalizeGainPoints,normalizePanPoints,panAt,curveFields,validAutomationCurve,automationCheckTimes} from './mixAutomation';
-import {effectParameterAt,delayParameterMaximum,delayParameterDefault} from './effectAutomation';
+import {effectParameterAt,delayParameterMaximum,effectParameterDefault,supportsEffectParameter} from './effectAutomation';
 import {timelineDuration} from './timelineView';
 export type AutomationMode='read'|'touch'|'latch'|'write';
 export interface AutomationTarget {trackId:string;parameter:'gain'|'pan'|'mix'|'feedback'|'time';effectIndex?:number}
@@ -10,14 +10,14 @@ export function targetPoints(project:TimelineProject,target:AutomationTarget):Ga
  const track=project.tracks.find(t=>t.id===target.trackId)??fail('missingTrack');
  if(target.parameter==='gain')return track.automation;
  if(target.parameter==='pan')return track.panAutomation;
- const effect=track.effects?.[target.effectIndex??-1];if(effect?.type!=='delay')fail('invalidEnvelope');
+ const effect=track.effects?.[target.effectIndex??-1];if(!supportsEffectParameter(effect?.type,target.parameter))fail('invalidEnvelope');
  return effect!.automation?.[target.parameter];
 }
 export function automationValue(project:TimelineProject,target:AutomationTarget,time:number):number {
  const points=targetPoints(project,target),track=project.tracks.find(t=>t.id===target.trackId)!;
  if(target.parameter==='gain')return gainAt(points,time);
  if(target.parameter==='pan')return panAt(points,time,track.pan);
- const fallback=track.effects![target.effectIndex!].params[target.parameter]??delayParameterDefault(target.parameter);
+ const fallback=track.effects![target.effectIndex!].params[target.parameter]??effectParameterDefault(track.effects![target.effectIndex!].type,target.parameter);
  return effectParameterAt(points,time,fallback,target.parameter);
 }
 function interpolator(points:GainPoint[],fallback:number){return (time:number)=>{
@@ -34,7 +34,7 @@ export function applyAutomationPass(project:TimelineProject,target:AutomationTar
  const maximum=target.parameter==='gain'||target.parameter==='pan'?Infinity:delayParameterMaximum(target.parameter),minimum=target.parameter==='pan'?-1:0;
  if(!Array.isArray(before)||before.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value<minimum||p.value>(target.parameter==='pan'?1:maximum)))fail('invalidEnvelope');
  const normalize=target.parameter==='pan'?normalizePanPoints:normalizeGainPoints,original=normalize(before);
- const fallback=target.parameter==='gain'?1:target.parameter==='pan'?Math.max(-1,Math.min(1,track.pan)):Math.max(0,Math.min(maximum,track.effects![target.effectIndex!].params[target.parameter]??delayParameterDefault(target.parameter)));
+ const fallback=target.parameter==='gain'?1:target.parameter==='pan'?Math.max(-1,Math.min(1,track.pan)):Math.max(0,Math.min(maximum,track.effects![target.effectIndex!].params[target.parameter]??effectParameterDefault(track.effects![target.effectIndex!].type,target.parameter)));
  const oldAt=interpolator(original,fallback);
  let last=-Infinity,count=0,points=[...original];
  for(const span of spans){

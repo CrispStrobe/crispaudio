@@ -313,8 +313,15 @@ enum Effect {
     Distortion(Box<crate::distortion::Distortion>),
     Reverb(Box<crate::reverb::Reverb>),
     Chorus(Chorus),
-    BitCrush { levels: f64, mix: f64 },
-    RingMod { frequency: f64, mix: f64 },
+    BitCrush {
+        levels: f64,
+        mix: f64,
+    },
+    RingMod {
+        frequency: f64,
+        mix: f64,
+        automation: Automation,
+    },
 }
 impl Effect {
     fn at(&mut self, input: [f64; 2], frame: u32) -> [f64; 2] {
@@ -337,10 +344,25 @@ impl Effect {
                 let wet = table(left) + (table(right) - table(left)) * (index - left);
                 v * (1.0 - *mix) + wet * *mix
             }),
-            Self::RingMod { frequency, mix } => {
+            Self::RingMod {
+                frequency,
+                mix,
+                automation,
+            } => {
                 // Oscillators start at context time zero, even for a later clip.
-                let phase = std::f64::consts::TAU * *frequency * frame as f64 / RATE;
-                input.map(|v| v * (1.0 - *mix + *mix * phase.sin()))
+                // Web Audio rounds the wavetable increment to f32 before accumulating
+                // phase. Power-of-two table sizes share the same normalized step.
+                let cycles_per_frame =
+                    ((*frequency as f32) * (4096.0 / RATE) as f32) as f64 / 4096.0;
+                let phase = std::f64::consts::TAU * cycles_per_frame * frame as f64;
+                if automation.points.is_empty() {
+                    input.map(|v| v * (1.0 - *mix + *mix * phase.sin()))
+                } else {
+                    let value = automation.at(frame as f64 / RATE);
+                    let wet = value as f32 as f64;
+                    let dry = (1.0 - value) as f32 as f64;
+                    input.map(|v| v * (dry + wet * phase.sin()))
+                }
             }
         }
     }
@@ -354,12 +376,12 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
     for effect in effects.iter().filter(|e| e["enabled"] == true) {
         let params = &effect["params"];
         if let Some(a) = effect.get("automation") {
-            if effect["type"] != "delay"
+            if !crate::effect_envelope::supports(effect, "mix")
                 || !a.is_object()
                 || a.as_object()
                     .unwrap()
                     .keys()
-                    .any(|k| k != "mix" && k != "feedback" && k != "time")
+                    .any(|k| !crate::effect_envelope::supports(effect, k))
             {
                 return Err("Unsupported effect automation".into());
             }
@@ -463,10 +485,15 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
                     mix,
                 }
             } else {
+                let automation = Automation::parse(&effect["automation"]["mix"])?;
+                if automation.points.iter().any(|p| p.1 > 1.0) {
+                    return Err("Ring mix automation outside 0..1".into());
+                }
                 Effect::RingMod {
                     frequency: finite(params, "freq", Some(200.0))?.clamp(0.1, RATE / 2.0) as f32
                         as f64,
                     mix,
+                    automation,
                 }
             });
             continue;
@@ -988,6 +1015,32 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+
+    #[test]
+    fn ring_mix_dsp_follows_step_and_linear_points_and_rejects_caps() {
+        let effect = json!([{"type":"ringmod","enabled":true,"params":{"freq":37,"mix":0.5},"automation":{"mix":[{"time":0,"value":0,"curve":"step"},{"time":0.02,"value":1},{"time":0.04,"value":0}]}}]);
+        let mut rack = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        for frame in [0, 400, 960, 1440, 1920] {
+            let t = frame as f64 / RATE;
+            let mix = if t < 0.02 {
+                0.0
+            } else if t >= 0.04 {
+                0.0
+            } else {
+                1.0 - (t - 0.02) / 0.02
+            };
+            let expected = 0.25 * (1.0 - mix + mix * (std::f64::consts::TAU * 37.0 * t).sin());
+            let out = process(&mut rack, [0.25, -0.125], frame);
+            assert!((out[0] - expected).abs() < 1e-7);
+            assert!((out[1] + expected / 2.0).abs() < 1e-7);
+        }
+        let mut bad = effect.clone();
+        bad[0]["automation"]["mix"][0]["value"] = json!(1.01);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+        bad = effect.clone();
+        bad[0]["automation"]["feedback"] = json!([]);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
     }
     #[test]
     fn step_segments_jump_exactly_and_reject_unknown_curves() {

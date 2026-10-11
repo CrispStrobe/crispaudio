@@ -2055,3 +2055,61 @@ Focus restores on close.
 Local 0.8.27 app and optimized CLI installed, signatures verified and app launched.
 One autosave preserved with a full recovery backup. No tags or Apple uploads;
 physical iOS and installed WKWebView UI interactions remain unvalidated.
+
+
+## Local 0.8.28 — ring-modulator mix automation
+
+Track ring-modulator mix now has a 0–100% direct lane, Linear/Step points,
+reviewed preset/custom shapes and protected Read/Touch/Latch/Write capture.
+Empty automation uses the actual static mix (default 0.5). The ring mix session
+clipboard is independent of delay mix/feedback/time; portable envelopes carry
+`effectType:"ringmod"` and reject cross-effect paste. Point, shape, paste and pass
+CLI recipes use parameter `mix` with the existing zero-based effect index.
+Clip/track/master metadata renders in both engines; direct editing targets track
+inserts. Live mix/envelope edits reschedule gains without restarting the carrier.
+Carrier frequency automation is not implemented.
+
+The native carrier now uses a float-rounded phase increment before accumulating
+absolute project-clock phase. This follows the precision used by the browser
+oscillator; see the primary [WebKit oscillator implementation](https://raw.githubusercontent.com/WebKit/WebKit/main/Source/WebCore/Modules/webaudio/OscillatorNode.cpp).
+The initial ideal-phase comparison exceeded the unchanged 2e-6 budget (Chrome
+7.55e-6, WebKit 6.73e-6); the corrected implementation passes below that budget.
+It also applies to static ring modulation. Browser wavetable/float differences
+remain; these comparisons do not establish arbitrary bit parity.
+
+Validation: 116 frontend files / 1,443 tests pass with two workers and a local
+15-second timeout; 88 native library + 3 CLI tests pass, with 10 existing ignored
+platform tests. Chrome and WebKit actual-UI/native checks pass:
+
+- Four preset/custom ring-mix shape cases: exact recipe/project points, every
+  192,000 stereo frames/case, exact prefix/crop; maximum PCM error Chrome
+  8.6799264e-7 / WebKit 3.1292439e-7.
+- Copy/stretch paste: actual audition, guards, separate clipboards, static-value
+  capture, undo/cancel/redo, locks/reordered review and save/open. Source-range and
+  portable native recipes match GUI JSON; all 480,000 stereo frames compare,
+  maximum Chrome 4.5541674e-7 / WebKit 5.9604645e-8.
+- Recording: existing Read/Touch/Latch/Write protections plus ring-mix Latch
+  capture, audible wet preview and Read restoration; exact native pass JSON and
+  384,000 stereo frames/target (gain and ring mix). Maximum Chrome 2.1606684e-7 /
+  WebKit 2.2351742e-7. Seek/Escape/cancel/stale/locks/save-open checks pass.
+- Clip/track/master ring mix with later clip/source offset: all 384,000 stereo
+  frames/rack, exact range crops, native point/tagged paste and insert/extract
+  envelope/geometry matching. Maximum Chrome 8.7730587e-7 / WebKit 2.6822090e-7.
+
+Live tests verify both transport play count and carrier oscillator count remain
+unchanged. German 390-pixel shape/copy reviews and recording lane fit; shape screenshot
+inspected after adding ring-specific help. All previous EN/DE leaves are preserved,
+with eight new keys each. Owned synthetic media stays in OS temporary folders.
+
+Existing long-delay WebKit shape/custom PCM failures from 0.8.26–27 remain known
+baseline failures, not parity passes. Physical iOS and installed WKWebView UI
+interaction are not validated by these browser checks. M2.3 remains open for
+further selected FX parameters; buses/sends and LUFS/true-peak finishing follow.
+
+Three existing static ring-modulator regression cases (dry/partial/wet,
+137.25 Hz) also pass both browsers after the phase precision correction:
+maximum Chrome 5.7742000e-7 / WebKit 1.6391277e-7; original tolerances retained.
+Final lint, production TypeScript/Vite, Tauri app bundle and optimized standalone
+CLI build pass. Local app and CLI 0.8.28 are installed, signed, verified and
+launched, with the existing autosave preserved and a full recovery backup.
+No tag or Apple upload was created for this increment.

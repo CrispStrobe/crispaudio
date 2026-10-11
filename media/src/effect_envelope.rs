@@ -18,7 +18,7 @@ fn points(v: &Value, maximum: f64) -> Result<Vec<Value>> {
     }
     Ok(points)
 }
-fn effect<'a>(project: &'a Value, id: &Value, index: &Value) -> Result<&'a Value> {
+fn effect<'a>(project: &'a Value, id: &Value, index: &Value, parameter: &str) -> Result<&'a Value> {
     let track = project["tracks"]
         .as_array()
         .ok_or("Missing tracks")?
@@ -29,8 +29,8 @@ fn effect<'a>(project: &'a Value, id: &Value, index: &Value) -> Result<&'a Value
         .as_array()
         .and_then(|effects| index.as_u64().and_then(|index| effects.get(index as usize)))
         .ok_or("Missing effect")?;
-    if effect["type"] != "delay" {
-        return Err("Only delay envelopes supported".into());
+    if !supports(effect, parameter) {
+        return Err("Unsupported effect parameter".into());
     }
     Ok(effect)
 }
@@ -42,7 +42,12 @@ pub(crate) fn paste(project: &Value, op: &Value) -> Result<Value> {
         "time" => (2.0, 0.3),
         _ => return Err("Unknown delay parameter".into()),
     };
-    effect(project, &op["trackId"], &op["effectIndex"])?;
+    let destination = effect(project, &op["trackId"], &op["effectIndex"], parameter)?;
+    let fallback = if destination["type"] == "ringmod" {
+        0.5
+    } else {
+        fallback
+    };
     let canvas = crate::project_edit::timeline_duration(project);
     let envelope = if let Some(envelope) = op.get("envelope") {
         if !envelope.is_object()
@@ -52,12 +57,20 @@ pub(crate) fn paste(project: &Value, op: &Value) -> Result<Value> {
         {
             return Err("Expected one envelope source".into());
         }
-        if envelope["effectType"] != "delay" || envelope["parameter"] != parameter {
+        if envelope["effectType"] != destination["type"] || envelope["parameter"] != parameter {
             return Err("Envelope parameter mismatch".into());
         }
         envelope.clone()
     } else {
-        let source = effect(project, &op["sourceTrackId"], &op["sourceEffectIndex"])?;
+        let source = effect(
+            project,
+            &op["sourceTrackId"],
+            &op["sourceEffectIndex"],
+            parameter,
+        )?;
+        if source["type"] != destination["type"] {
+            return Err("Envelope parameter mismatch".into());
+        }
         let start = number(op, "sourceStart")?;
         let end = number(op, "sourceEnd")?;
         if start < 0.0 || end <= start || end > canvas {
@@ -121,6 +134,21 @@ pub(crate) fn paste(project: &Value, op: &Value) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ring_paste_tags_and_empty_defaults_match_gui() {
+        let p = json!({"sampleRate":48000,"minimumDuration":8,"tracks":[{"id":"t","segments":[],"effects":[{"type":"ringmod","params":{},"automation":{}},{"type":"delay","params":{},"automation":{}}]}]});
+        let op = json!({"trackId":"t","effectIndex":0,"parameter":"mix","time":2,"envelope":{"effectType":"ringmod","parameter":"mix","duration":2,"points":[]}});
+        assert_eq!(paste(&p, &op).unwrap(), p);
+        let mut bad = op.clone();
+        bad["effectIndex"] = json!(1);
+        assert!(paste(&p, &bad).is_err());
+        bad = op.clone();
+        bad["parameter"] = json!("feedback");
+        assert!(paste(&p, &bad).is_err());
+        let source = json!({"trackId":"t","effectIndex":0,"parameter":"mix","time":2,"sourceTrackId":"t","sourceEffectIndex":1,"sourceStart":0,"sourceEnd":2});
+        assert!(paste(&p, &source).is_err());
+    }
     #[test]
     fn retimes_tagged_delay_envelopes_and_preserves_other_parameters() {
         let project = json!({"duration":10,"minimumDuration":10,"sampleRate":48000,"tracks":[{"id":"a","locked":true,"segments":[],"effects":[{"type":"delay","params":{"mix":0.3,"feedback":0.4},"automation":{"mix":[{"time":0,"value":0},{"time":4,"value":1},{"time":8,"value":0}]}}]},{"id":"b","segments":[],"effects":[{"type":"delay","params":{"mix":0.2,"feedback":0.6},"automation":{"feedback":[{"time":0,"value":0.1}]}}]}]});
@@ -153,4 +181,9 @@ mod tests {
         let identity = json!({"parameter":"feedback","trackId":"b","effectIndex":0,"sourceTrackId":"b","sourceEffectIndex":0,"sourceStart":1,"sourceEnd":3,"time":4});
         assert_eq!(paste(&project, &identity).unwrap(), project);
     }
+}
+
+pub(crate) fn supports(effect: &Value, parameter: &str) -> bool {
+    effect["type"] == "delay" && ["mix", "feedback", "time"].contains(&parameter)
+        || effect["type"] == "ringmod" && parameter == "mix"
 }

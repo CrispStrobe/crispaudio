@@ -20,7 +20,8 @@ export function AutomationShapeReview({project,target,pointTime,onClose}:{projec
  try{if(current!==project)throw new Error('automation.changed');preview=shapeAutomationSegment(project,target,pointTime,shape,controls);}catch(reason){error=t(reason instanceof Error?reason.message:String(reason));}
  const before=(target.parameter==='pan'?normalizePanPoints:normalizeGainPoints)(targetPoints(project,target)),a=before.find(p=>p.time===pointTime),b=before.filter(p=>p.time>pointTime).sort((a,b)=>a.time-b.time)[0];
  const points=preview?(target.parameter==='pan'?normalizePanPoints:normalizeGainPoints)(targetPoints(preview,target)).filter(p=>p.time>=pointTime&&p.time<=(b?.time??pointTime)):[];
- const parameterLabel=target.parameter==='gain'?'automation.gainLane':target.parameter==='pan'?'automation.panLane':`automation.delay${target.parameter[0].toUpperCase()+target.parameter.slice(1)}`;
+ const ring=project.tracks.find(t=>t.id===target.trackId)?.effects?.[target.effectIndex??-1]?.type==='ringmod';
+ const parameterLabel=target.parameter==='gain'?'automation.gainLane':target.parameter==='pan'?'automation.panLane':ring?'automation.ringmodMix':`automation.delay${target.parameter[0].toUpperCase()+target.parameter.slice(1)}`;
  const format=(v:number)=>target.parameter==='gain'?`${v===0?'−∞':(20*Math.log10(v)).toFixed(1)} dB`:target.parameter==='pan'?v.toFixed(2):target.parameter==='time'?`${(v*1000).toFixed(1)} ms`:`${(v*100).toFixed(1)}%`;
  const range=Math.abs((b?.value??0)-(a?.value??0))||1,min=Math.min(a?.value??0,b?.value??0);
  const plotted=points.map(p=>({x:(p.time-pointTime)/((b?.time??pointTime+1)-pointTime),y:(p.value-min)/range}));
@@ -38,7 +39,7 @@ export function AutomationShapeReview({project,target,pointTime,onClose}:{projec
     <p className="text-xs text-gray-400">{t(a?.value===b?.value?'automation.flatShapeHelp':'automation.customShapeHelp')}</p>
    </div>}
 
-   <p className="text-xs text-gray-400">{t('automation.shapeHelp',{count:Math.max(0,points.length-2)})}</p>
+   <p className="text-xs text-gray-400">{t(ring?'automation.ringmodShapeHelp':'automation.shapeHelp',{count:Math.max(0,points.length-2)})}</p>
    {error&&<p role="alert" className="text-amber-300">{error}</p>}
    <div className="flex justify-end gap-2"><button className="timeline-tool" onClick={onClose}>{t('common.cancel')}</button><button className="timeline-tool bg-indigo-700" disabled={!preview} onClick={()=>{if(!preview||useProjectStore.getState().project!==project)return;if(preview!==project)useProjectStore.setState({project:preview});onClose();}}>{t('automation.applyShape')}</button></div>
   </div>

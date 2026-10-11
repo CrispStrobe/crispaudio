@@ -25,7 +25,8 @@ browser.
   trims, ripple trims, trim-to-playhead and slide edits have reviewed source limits.
 - Apply clip/track fades, audio crossfades, picture transitions, colour correction
   and orientation changes.
-- Mix with gain, pan, mute/solo, gain/pan and delay mix/feedback/time automation and clip/track/master effect racks.
+- Mix with gain, pan, mute/solo, gain/pan, delay mix/feedback/time and ring-modulator mix automation,
+  with clip/track/master effect racks.
   Current timeline effects include filters, bit crushing, ring modulation, delay,
   chorus, reverb, distortion and compression.
 - Import camera and microphone recordings, review offset/drift synchronization,
@@ -107,7 +108,7 @@ inserts and mixer strips show gain reduction; the limiter shows its own reductio
 These are sample-peak controls; true-peak and LUFS tools remain future work.
 
 The automation button opens a focused track lane beneath the timeline.
-Choose a track and gain, panorama or a delay insert’s mix, feedback or time, click/tap to add points, drag to move, or use numeric time/dB/pan
+Choose a track and gain, panorama, a delay insert’s mix, feedback or time, or ring modulation mix, click/tap to add points, drag to move, or use numeric time/dB/pan
 fields and keyboard arrows. Point edits commit on release; Escape cancels without
 losing redo. Track locks protect envelopes. Select a point to choose its outgoing Linear or
 Step curve. Linear ramps to the next point; Step holds the value and jumps at the
@@ -140,7 +141,12 @@ insert settings stay fixed. Clipboards survive project loads within the session;
 copy is not undoable or saved. Locks and an open recording pass protect paste.
 Delay keeps its history during live mix/feedback/time edits; GUI/native range exports
 process the preceding audio before cropping. Range insert/extract retimes FX envelopes
-with the selected scope; lift retains their clocks. The direct lane edits track inserts.
+with the selected scope; lift retains their clocks. The direct lane edits track inserts. Ring modulation mix uses 0–100% (dry to
+modulated), held endpoints and static mix when empty (default 50%). Its separate
+clipboard supports reviewed copy/stretch paste, and curves/recording use the same
+protections. Live mix edits keep the carrier phase running; frequency changes
+still rebuild the graph. Clip/master ring mix metadata also renders in GUI/native
+exports. Ring and delay envelopes cannot be pasted into each other's inserts.
 Automation modes are available on these lanes. Read follows the existing envelope.
 Choose Touch (write while holding), Latch (hold the last touched value until Stop),
 or Write (write continuously), then explicitly arm while stopped and press Play.

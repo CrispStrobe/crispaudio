@@ -15,7 +15,7 @@ export function scheduleFeedback(param:AudioParam,points:GainPoint[]|undefined,c
 }
 export function validEffectAutomation(effect:EffectConfig){
  const a=effect.automation;if(a===undefined)return true;
- return effect.type==='delay'&&!!a&&typeof a==='object'&&!Array.isArray(a)&&Object.keys(a).every(k=>k==='mix'||k==='feedback'||k==='time')&&(['mix','feedback','time'] as const).every(key=>a[key]===undefined||(Array.isArray(a[key])&&a[key]!.every(p=>p&&Number.isFinite(p.time)&&p.time>=0&&Number.isFinite(p.value)&&validAutomationCurve(p)&&p.value>=0&&p.value<=delayParameterMaximum(key))));
+ return supportsEffectParameter(effect.type,'mix')&&!!a&&typeof a==='object'&&!Array.isArray(a)&&Object.keys(a).every(k=>supportsEffectParameter(effect.type,k))&&(['mix','feedback','time'] as const).every(key=>a[key]===undefined||(Array.isArray(a[key])&&a[key]!.every(p=>p&&Number.isFinite(p.time)&&p.time>=0&&Number.isFinite(p.value)&&validAutomationCurve(p)&&p.value>=0&&p.value<=delayParameterMaximum(key))));
 }
 
 export type DelayParameter='mix'|'feedback'|'time';
@@ -29,3 +29,6 @@ export function scheduleDelayTime(param:AudioParam,points:GainPoint[]|undefined,
  param.setValueAtTime(effectParameterAt(sorted,timelineStart,fallback,'time'),contextStart);
  schedulePoints(param,sorted,contextStart,timelineStart);
 }
+
+export const supportsEffectParameter=(type:string|undefined,parameter:string)=>type==='delay'&&['mix','feedback','time'].includes(parameter)||type==='ringmod'&&parameter==='mix';
+export const effectParameterDefault=(type:string|undefined,parameter:DelayParameter)=>type==='ringmod'?.5:delayParameterDefault(parameter);
