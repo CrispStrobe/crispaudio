@@ -180,13 +180,13 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
           {specs.map((spec) => (
             <ParamSlider
               key={spec.key}
-              label={t(`timeline.effectParams.${spec.label.toLowerCase()}`, spec.label)}
+              label={t(`timeline.effectParams.${spec.label.toLowerCase()}`, spec.label)+(spec.key==='mix'&&effect.automation?.mix?.length?' · '+t('automation.automated'):'')}
               value={effect.params[spec.key] ?? 0}
               min={spec.min}
               max={spec.max}
               step={spec.step}
               unit={spec.unit}
-              disabled={!effect.enabled}
+              disabled={!effect.enabled||(spec.key==='mix'&&!!effect.automation?.mix?.length)}
               onChange={(val) =>
                 onUpdate(index, {
                   params: { ...effect.params, [spec.key]: val },
@@ -201,7 +201,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
 };
 
 const useEffectClipboard = create<{effects: EffectConfig[] | null}>(() => ({effects: null}));
-const clone = (effects: EffectConfig[]) => effects.map(effect => ({...effect, params: {...effect.params}}));
+const clone = (effects: EffectConfig[]) => effects.map(effect => ({...effect, params: {...effect.params},...(effect.automation?{automation:{mix:effect.automation.mix?.map(p=>({...p}))}}:{})}));
 
 /** Same ordered processing rack at clip, track and master scope. */
 export function EffectChainEditor({effects, onChange, label, scope}: {

@@ -718,3 +718,34 @@ sourceEnd or a portable envelope tagged `parameter: "pan"`:
 Untagged portable envelopes retain the legacy gain meaning; signed pan is bounded
 by −1…1. A tagged pan envelope with no points means center (0); GUI copies always
 include their actual edge values. Default recipes still edit gain.
+
+## Delay mix automation (local 0.8.20)
+
+Open Automation and select a track's numbered **Delay mix** lane. Points use
+absolute timeline seconds and mix values 0–100%; keyboard arrows move 1% (Shift
+10%), and time/percent fields allow precise edits. The direct lane supports the
+same snapping, locks, release-to-commit, Escape cancellation and undo as gain/pan.
+Linear ramps hold their endpoints; deleting all points restores the static mix.
+The rack's static mix control reads Auto while points exist. Reordering or copying
+a rack carries each envelope with its effect. Removing an insert lets you choose
+another available lane.
+
+Wet and dry gains are complementary; live edits preserve the feedback buffer.
+GUI and native DSP support delay mix envelopes at clip, track and master racks,
+while this direct UI lane edits track inserts. Range insert/extract retimes
+included FX envelopes, master envelopes only in global scope; lift keeps clocks.
+Range exports process preceding audio to preserve delay history. Format 3 saves
+`effects[i].automation.mix` as time/value points. Unsupported FX automation and
+out-of-range values reject on project open. FFmpeg compatibility rejects delay;
+use GUI or native DSP. Further FX parameters, an FX envelope clipboard and
+Read/Touch/Latch/Write recording modes remain planned.
+
+Native track-insert editing uses zero-based `effectIndex` and mix values 0–1:
+
+```json
+[{"op":"effect-automation","trackId":"room","effectIndex":0,"parameter":"mix",
+  "points":[{"time":0,"value":0},{"time":2,"value":0.6},{"time":4,"value":0}]}]
+```
+
+An empty points array restores the static mix. The recipe rejects locked tracks,
+missing/non-delay inserts and unsupported parameters, preserving media geometry.

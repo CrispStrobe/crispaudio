@@ -218,9 +218,10 @@ struct Delay {
     feedback_cursor: usize,
     feedback: f64,
     mix: f64,
+    automation: Automation,
 }
 impl Delay {
-    fn at(&mut self, input: [f64; 2]) -> [f64; 2] {
+    fn at(&mut self, input: [f64; 2], frame: u32) -> [f64; 2] {
         let whole = self.frames.floor() as usize;
         let fraction = self.frames - whole as f64;
         let length = self.history.len();
@@ -234,10 +235,22 @@ impl Delay {
         let near = self.history[(self.cursor + length - whole) % length];
         let far = self.history[(self.cursor + length - whole - 1) % length];
         let mut output = [0.0; 2];
+        let automated = !self.automation.points.is_empty();
+        let value = self.automation.at(frame as f64 / RATE);
+        let wet = if automated {
+            value as f32 as f64
+        } else {
+            self.mix
+        };
+        let dry = if automated {
+            (1.0 - value) as f32 as f64
+        } else {
+            1.0 - self.mix
+        };
         for ch in 0..2 {
             let delayed = (near[ch] as f64 + (far[ch] as f64 - near[ch] as f64) * fraction) as f32;
             self.feedback_history[self.feedback_cursor][ch] = delayed;
-            output[ch] = input[ch] * (1.0 - self.mix) + delayed as f64 * self.mix;
+            output[ch] = input[ch] * dry + delayed as f64 * wet;
         }
         self.feedback_cursor = (self.feedback_cursor + 1) % 128;
         self.cursor = (self.cursor + 1) % length;
@@ -287,7 +300,7 @@ impl Effect {
         match self {
             Self::Filter(filter) => filter.at(input),
             Self::Compressor(comp) => comp.at(input, frame),
-            Self::Delay(delay) => delay.at(input),
+            Self::Delay(delay) => delay.at(input, frame),
             Self::Distortion(distortion) => distortion.at(input),
             Self::Reverb(reverb) => reverb.at(input),
             Self::Chorus(chorus) => chorus.at(input, frame),
@@ -319,6 +332,14 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
     let effects = effects.as_array().ok_or("Invalid effect rack")?;
     for effect in effects.iter().filter(|e| e["enabled"] == true) {
         let params = &effect["params"];
+        if let Some(a) = effect.get("automation") {
+            if effect["type"] != "delay"
+                || !a.is_object()
+                || a.as_object().unwrap().keys().any(|k| k != "mix")
+            {
+                return Err("Unsupported effect automation".into());
+            }
+        }
         let kind = effect["type"].as_str().ok_or("Missing effect type")?;
         if kind == "compressor" {
             budget.reserve(std::mem::size_of::<crate::compressor::Compressor>())?;
@@ -376,10 +397,16 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
             let frames = time * RATE;
             let length = frames.ceil() as usize + 2;
             budget.reserve((length + 128) * std::mem::size_of::<[f32; 2]>())?;
+            let mut automation = Automation::parse(&effect["automation"]["mix"])?;
+            automation.fallback = finite(params, "mix", Some(0.3))?.clamp(0.0, 1.0);
+            if automation.points.iter().any(|p| p.1 > 1.0) {
+                return Err("Delay mix automation outside 0..1".into());
+            }
             out.push(Effect::Delay(Box::new(Delay {
                 history: vec![[0.0; 2]; length],
                 cursor: 0,
                 frames,
+                automation,
                 feedback_history: [[0.0; 2]; 128],
                 feedback_cursor: 0,
                 feedback: finite(params, "feedback", Some(0.4))?.clamp(0.0, 0.95) as f32 as f64,
@@ -922,6 +949,24 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+    #[test]
+    fn delay_mix_automation_preserves_history_and_rejects_bad_values() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = source(folder.path(), 2, &[0.25, -0.125]);
+        let mut doc = project(&input);
+        doc["project"]["tracks"][0]["effects"] = json!([{"type":"delay","enabled":true,"params":{"time":0.01,"feedback":0.5,"mix":0.3},"automation":{"mix":[{"time":0,"value":0},{"time":0.04,"value":1},{"time":0.08,"value":0}]}}]);
+        let full = folder.path().join("full.wav");
+        render(&doc, full.to_str().unwrap()).unwrap();
+        let pcm = output(&full);
+        assert_eq!(&pcm[0..2], &[0.25, -0.125]);
+        assert!(pcm[3840] > 0.25);
+        doc["renderRange"] = json!({"start":0.02,"end":0.06});
+        let range = folder.path().join("range.wav");
+        render(&doc, range.to_str().unwrap()).unwrap();
+        assert_eq!(output(&range), pcm[1920..5760]);
+        doc["project"]["tracks"][0]["effects"][0]["automation"]["mix"][0]["value"] = json!(2);
+        assert!(render(&doc, folder.path().join("bad.wav").to_str().unwrap()).is_err());
     }
     #[test]
     fn pan_automation_renders_mono_and_stereo_center_endpoints_and_range() {

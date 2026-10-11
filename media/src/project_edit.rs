@@ -989,6 +989,44 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             "paste-automation" => {
                 out["project"] = crate::gain_envelope::paste(&out["project"], op)?;
             }
+            "effect-automation" => {
+                if op["parameter"] != "mix" {
+                    return Err("Unsupported effect parameter".into());
+                }
+                let track = out["project"]["tracks"]
+                    .as_array_mut()
+                    .unwrap()
+                    .iter_mut()
+                    .find(|t| t["id"] == op["trackId"])
+                    .ok_or("Missing track")?;
+                if track["locked"] == true {
+                    return Err("Track is locked".into());
+                }
+                let index = op["effectIndex"].as_u64().ok_or("Missing effect index")? as usize;
+                let effect = track["effects"]
+                    .as_array_mut()
+                    .and_then(|v| v.get_mut(index))
+                    .ok_or("Missing effect")?;
+                if effect["type"] != "delay" {
+                    return Err("Only delay mix automation is supported".into());
+                }
+                let mut points = op["points"].as_array().ok_or("Missing points")?.clone();
+                for p in &points {
+                    if number(p, "time")? < 0.0 || !(0.0..=1.0).contains(&number(p, "value")?) {
+                        return Err("Invalid mix automation".into());
+                    }
+                }
+                points.sort_by(|a, b| {
+                    a["time"]
+                        .as_f64()
+                        .unwrap()
+                        .total_cmp(&b["time"].as_f64().unwrap())
+                });
+                points.reverse();
+                points.dedup_by(|a, b| a["time"].as_f64() == b["time"].as_f64());
+                points.reverse();
+                effect["automation"] = json!({"mix":points});
+            }
             "automation" => {
                 let pan = match op["parameter"].as_str() {
                     None | Some("gain") => false,
@@ -1036,7 +1074,7 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
     if operations.iter().any(|op| {
         !matches!(
             op["op"].as_str(),
-            Some("color" | "orientation" | "automation" | "paste-automation")
+            Some("color" | "orientation" | "automation" | "paste-automation" | "effect-automation")
         )
     }) {
         out["project"]["duration"] = json!(timeline_duration(&out["project"]));
@@ -1394,6 +1432,21 @@ mod tests {
     use super::*;
     fn doc() -> Value {
         json!({"format":"crispaudio-project","version":2,"project":{"id":"p","duration":6,"tracks":[{"id":"t","segments":[{"id":"a","linkGroup":"g","trackId":"t","sourceId":"s","startTime":1,"sourceOffset":2,"duration":5}]}],"video":{"path":"unused","duration":10,"clips":[{"id":"v","linkGroup":"g","startTime":1,"sourceOffset":2,"duration":5,"transition":"cut"}]}},"sources":[{"id":"s","duration":10}]})
+    }
+    #[test]
+    fn effect_automation_recipe_preserves_geometry_and_locks() {
+        let mut p = doc();
+        p["project"]["tracks"][0]["effects"] =
+            json!([{"type":"delay","enabled":true,"params":{"mix":0.3}}]);
+        let op = json!([{"op":"effect-automation","trackId":"t","effectIndex":0,"parameter":"mix","points":[{"time":0,"value":0},{"time":0.0,"value":1},{"time":2,"value":0}]}]);
+        let out = apply(&p, &op).unwrap();
+        assert_eq!(out["project"]["duration"], p["project"]["duration"]);
+        assert_eq!(
+            out["project"]["tracks"][0]["effects"][0]["automation"]["mix"],
+            json!([{"time":0.0,"value":1},{"time":2,"value":0}])
+        );
+        p["project"]["tracks"][0]["locked"] = json!(true);
+        assert!(apply(&p, &op).is_err());
     }
     #[test]
     fn pan_recipe_validates_bounds_locks_and_preserves_gain_and_geometry() {

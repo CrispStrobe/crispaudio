@@ -1191,6 +1191,11 @@
     "panPaste": "Paste pan envelope",
     "panPasteHelp": "Only pan points change. Surrounding pan is preserved with one-sample boundary guards. Static pan and gain stay unchanged.",
     "parameterMismatch": "The copied envelope belongs to a different parameter.",
-    "panPoint": "Pan point"
+    "panPoint": "Pan point",
+    "delayMix": "Delay mix",
+    "mixGraph": "Delay mix automation",
+    "mixPoint": "Point mix (%)",
+    "missingEffect": "Choose an available lane",
+    "mixHelp": "Delay wet/dry mix: linear 0–100%, held endpoints. Empty lane uses static mix. Commit on release; Escape cancels. The envelope stays with its insert when reordered."
   }
 }

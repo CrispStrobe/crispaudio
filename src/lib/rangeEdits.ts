@@ -1,4 +1,4 @@
-import type { TimelineProject, AudioSegment, VideoClip, GainPoint } from '../types/audio';
+import type { TimelineProject, AudioSegment, VideoClip, GainPoint, EffectConfig } from '../types/audio';
 import { videoClips, validateVideoClips, frameTime } from './videoEditing';
 import { timelineDuration } from './timelineView';
 import { gainAt, panAt } from './mixAutomation';
@@ -46,7 +46,7 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
   const groups=new Set(all.filter(c=>included(c)&&affected(c)&&c.linkGroup).map(c=>c.linkGroup));
   if(all.some(c=>c.linkGroup&&groups.has(c.linkGroup)&&!included(c)))fail('linkedScope');
   if(project.groupEditingEnabled!==false){const editGroups=new Set(all.filter(c=>included(c)&&affected(c)&&c.editGroup).map(c=>c.editGroup!.id));if(all.some(c=>c.editGroup&&editGroups.has(c.editGroup.id)&&!included(c)))fail('groupScope');}
-  if(project.tracks.some(t=>ids.has(t.id)&&t.locked&&(t.segments.some(affected)||(operation!=='lift'&&!!(t.automation?.length||t.panAutomation?.length))))||(includeVideo&&project.video?.locked&&videoClips(project.video).some(affected)))fail('locked');
+  if(project.tracks.some(t=>ids.has(t.id)&&t.locked&&(t.segments.some(affected)||(operation!=='lift'&&!!(t.automation?.length||t.panAutomation?.length||t.effects?.some(e=>e.automation?.mix?.length)||t.segments.some(c=>c.effects.some(e=>e.automation?.mix?.length))))))||(includeVideo&&project.video?.locked&&videoClips(project.video).some(affected)))fail('locked');
   const cuts=new Map<string,VideoClip>();
   if(includeVideo){
     const review=planRangeTransitionCuts(project,start,end,operation).filter(c=>!options.trimmedClips?.has(c.clipId));
@@ -88,14 +88,16 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
     result.push({time:operation==='insert'?end:start,value:(pan?panAt:gainAt)(points,operation==='insert'?start:end)});
     return [...new Map(result.sort((a,b)=>a.time-b.time).map(p=>[p.time,p])).values()];
   };
+  const effects=(rack:EffectConfig[]|undefined)=>rack?.map(e=>e.automation?.mix?.length?{...e,automation:{mix:automation(e.automation.mix,true)}}:e);
   const pictures=includeVideo?videoClips(project.video).flatMap(c=>edit(c) as VideoClip[]):undefined;
   // Validate the arrangement after the explicitly reviewed conversions.
   if(pictures&&project.video&&validateVideoClips(pictures,project.video.duration,project.video.sources))fail('pictureTopology');
   const next:TimelineProject={...project,editRange:operation==='lift'?{start,end}:undefined,
-    tracks:project.tracks.map(t=>ids.has(t.id)?{...t,segments:t.segments.flatMap(c=>edit(c) as AudioSegment[]),automation:automation(t.automation),panAutomation:automation(t.panAutomation,true)}:t),
+    tracks:project.tracks.map(t=>ids.has(t.id)?{...t,segments:t.segments.flatMap(c=>edit(c) as AudioSegment[]).map(c=>({...c,effects:effects(c.effects)!})),effects:effects(t.effects),automation:automation(t.automation),panAutomation:automation(t.panAutomation,true)}:t),
     video:project.video&&includeVideo?{...project.video,clips:pictures,inPoint:undefined,outPoint:undefined}:project.video};
   if(operation==='lift')next.minimumDuration=timelineDuration(project);
   if(retimeGlobal){
+    next.masterEffects=effects(project.masterEffects)!;
     if(operation!=='lift'&&project.minimumDuration!==undefined)next.minimumDuration=retime(project.minimumDuration);
     next.markers=project.markers?.filter(m=>operation==='insert'||operation==='lift'||m.time<start||m.time>=end).map(m=>({...m,time:retime(m.time)}));
     next.transcript=project.transcript?.filter(c=>operation==='insert'||c.end<=start||c.start>=end).map(c=>({...c,start:retime(c.start),end:retime(c.end),words:c.words?.map(w=>({...w,start:retime(w.start),end:retime(w.end)}))}));

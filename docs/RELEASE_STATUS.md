@@ -1704,3 +1704,43 @@ Local 0.8.19 app and optimized CLI are rebuilt/installed with signatures verifie
 and recovery preserved. No release tag or Apple upload; physical iOS and installed
 WKWebView interaction remain unvalidated. Next M2.3 work: selected FX parameter
 lanes and protected Read/Touch/Latch/Write modes.
+
+## Local 0.8.20 — delay wet/dry automation
+
+The first selected FX lane edits track delay mix on the absolute timeline.
+Envelopes stay attached to rack inserts; empty points use static mix. Wet/dry
+ramps update live without resetting feedback history. Format-3 save/open,
+scoped insert/extract retiming, locks and native `effect-automation` recipes
+preserve the same contract. Clip/master DSP accepts the same metadata; the direct
+lane currently exposes track inserts. Further FX parameters, FX envelope
+copy/paste and protected recording modes remain M2.3 work.
+
+Validation on 2026-10-11:
+
+- **109 files / 1,414 frontend tests** pass with two workers; lint and production
+  tsc/Vite build pass. **73 media library + 3 CLI tests** pass, 10 existing
+  platform-specific tests ignored.
+- Unit/native checks cover complementary seek ramps, static fallback, invalid
+  parameter/bounds rejection, locked automation-only tracks, scoped range
+  retiming, native delay history and range crop, duplicate timestamps and
+  metadata-only recipe duration preservation.
+- `scripts/test-delay-automation.mjs` passes in Chrome and headless WebKit with
+  actual pointer/keyboard/numeric controls, Escape/history preservation, live
+  updates without restart, static fallback, actual Save/Open, insert reorder,
+  locks and German 390 px touch editing without lane overflow. Screenshot checked.
+- Every sample of the **192,000-frame stereo** native render is compared with GUI
+  output: maximum absolute difference Chrome **8.94×10⁻⁸**, WebKit
+  **2.39×10⁻⁷** full scale. These are measured tolerances, not bit identity.
+  GUI range rendering exactly matches its full-file history crop in both browsers.
+  Chrome additionally compares native extract-retimed envelope JSON with GUI.
+- Existing Chrome pan lane regression passes, including live updates, Save/Open,
+  locks, cancellation and mono/stereo native comparisons (maximum 2.98×10⁻⁸).
+
+Existing gain lane Chrome regression also passes, including live playback,
+Save/Open and cancellation preserving redo. No release tag or Apple upload;
+physical iOS and installed WKWebView interaction remain unvalidated. Local app
+installation and recovery evidence follow below.
+
+Local 0.8.20 app and independent optimized CLI are rebuilt and installed; both
+signatures verify, the app launches, and the existing autosave is unchanged with
+a full recovery backup. Main is the development checkpoint, not an Apple release.

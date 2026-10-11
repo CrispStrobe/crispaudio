@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-11, during local 0.8.19 implementation. This section is the current plan.
+Updated 2026-10-11, during local 0.8.20 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -196,7 +196,8 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
    one-sample outside guards, locked destination protection, no-op/cancel history
    preservation and native recipes. Local 0.8.18 adds absolute pan points with the same direct editing, live updates,
    save/load and range retiming. Local 0.8.19 adds reviewed pan envelope copy/retime with an independent clipboard,
-   static-pan snapshots and native recipes. Remaining: additional supported curves and selected FX parameters, then Read/Touch/Latch/Write modes with visible protection against
+   static-pan snapshots and native recipes. Local 0.8.20 adds track delay wet/dry mix lanes,
+   live complementary ramps, rack-attached envelopes, scoped range retiming and native recipes. Remaining: additional supported curves and selected FX parameters, then Read/Touch/Latch/Write modes with visible protection against
    overwriting an envelope accidentally.
 4. Add buses and sends: start with track-to-bus routing and shared reverb/delay;
    specify pre/post-fader sends and feedback-cycle rejection. Sidechain/ducking
@@ -361,8 +362,8 @@ consume the interview/video editor's near-term milestones.
 
 M2.1 and M2.2's EQ/limiter/gain-reduction controls are available in local 0.8.15.
 M2.3's gain/pan direct lanes and gain envelope copy/retime are available in local
-0.8.19, including independent pan envelope copy/retime. Next add selected FX
-parameter lanes and protected Read/Touch/Latch/Write recording modes. Keep
+0.8.20, including independent pan envelope copy/retime and track delay mix lanes.
+Next add further selected FX parameters and protected Read/Touch/Latch/Write recording modes. Keep
 buses/sends as M2.4 and loudness/true-peak finishing as M2.5. Codecs and disk paging
 remain deferred; physical iOS validation remains outstanding.
 

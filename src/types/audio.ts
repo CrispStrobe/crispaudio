@@ -75,6 +75,7 @@ export interface AudioSegment {
 export type FadeCurve = 'linear' | 'exponential' | 'scurve';
 
 export interface EffectConfig {
+  automation?: {mix?: GainPoint[]}; // absolute timeline seconds; delay mix only
   type: EffectType;
   enabled: boolean;
   params: Record<string, number>;

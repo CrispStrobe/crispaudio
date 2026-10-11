@@ -8,6 +8,65 @@ fn number(v: &Value, key: &str) -> Result<f64> {
         .filter(|v| v.is_finite())
         .ok_or_else(|| format!("Missing finite {key}"))
 }
+fn retime_effects(
+    rack: &mut Value,
+    start: f64,
+    end: f64,
+    operation: &str,
+    rate: f64,
+) -> Result<()> {
+    if operation == "lift" {
+        return Ok(());
+    }
+    if let Some(effects) = rack.as_array_mut() {
+        for effect in effects {
+            if let Some(points) = effect["automation"]["mix"]
+                .as_array()
+                .filter(|p| !p.is_empty())
+            {
+                let mut result = vec![];
+                for p in points {
+                    let time = number(p, "time")?;
+                    if operation == "insert" || time < start || time >= end {
+                        let mut q = p.clone();
+                        q["time"] = json!(if operation == "insert" && time >= start {
+                            time + end - start
+                        } else if operation == "extract" && time >= end {
+                            time - end + start
+                        } else {
+                            time
+                        });
+                        result.push(q);
+                    }
+                }
+                if start > 0.0 {
+                    result.push(json!({"time":(start-1.0/rate).max(0.0),"value":value_at(points,start,true)?}));
+                }
+                result.push(json!({"time":if operation=="insert"{end}else{start},"value":value_at(points,if operation=="insert"{start}else{end},true)?}));
+                result.sort_by(|a, b| {
+                    a["time"]
+                        .as_f64()
+                        .unwrap()
+                        .total_cmp(&b["time"].as_f64().unwrap())
+                });
+                result.reverse();
+                result.dedup_by(|a, b| a["time"].as_f64() == b["time"].as_f64());
+                result.reverse();
+                effect["automation"]["mix"] = json!(result);
+            }
+        }
+    }
+    Ok(())
+}
+fn has_effect_automation(rack: &Value) -> bool {
+    rack.as_array().is_some_and(|r| {
+        r.iter().any(|e| {
+            e["automation"]["mix"]
+                .as_array()
+                .is_some_and(|p| !p.is_empty())
+        })
+    })
+}
 fn newid() -> String {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(0);
@@ -267,7 +326,12 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
                 || (operation != "lift"
                     && ["automation", "panAutomation"]
                         .iter()
-                        .any(|field| t[field].as_array().is_some_and(|points| !points.is_empty()))))
+                        .any(|field| t[field].as_array().is_some_and(|points| !points.is_empty()))
+                    || (operation != "lift"
+                        && (has_effect_automation(&t["effects"])
+                            || t["segments"].as_array().is_some_and(|cs| {
+                                cs.iter().any(|c| has_effect_automation(&c["effects"]))
+                            })))))
     }) || (video && p["video"]["locked"] == true && picture.iter().any(&affected))
     {
         return Err("Unlock affected tracks".into());
@@ -417,6 +481,18 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
         for c in track["segments"].as_array().ok_or("Missing segments")? {
             clips.extend(edit(c)?)
         }
+        let rate = p["sampleRate"].as_f64().unwrap_or(48000.0);
+        if !rate.is_finite() || rate <= 0.0 {
+            return Err("Invalid sample rate".into());
+        }
+        for clip in &mut clips {
+            if let Some(rack) = clip.get_mut("effects") {
+                retime_effects(rack, start, end, operation, rate)?;
+            }
+        }
+        if let Some(rack) = track.get_mut("effects") {
+            retime_effects(rack, start, end, operation, rate)?;
+        }
         track["segments"] = json!(clips);
         if operation != "lift" {
             for field in ["automation", "panAutomation"] {
@@ -476,6 +552,15 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
         v.remove("outPoint");
     }
     if global {
+        if let Some(rack) = out.get_mut("masterEffects") {
+            retime_effects(
+                rack,
+                start,
+                end,
+                operation,
+                p["sampleRate"].as_f64().unwrap_or(48000.0),
+            )?;
+        }
         if let Some(floor) = p["minimumDuration"].as_f64() {
             out["minimumDuration"] = json!(retime(floor));
         }

@@ -244,3 +244,15 @@ tests pass. Chrome/WebKit actual UI, live, Save/Open and compact German touch
 checks pass; measured native boundary-sample error stays below 5.96×10⁻⁸ full
 scale. Gain regression also passes. Local install preserves recovery; no Apple
 release. Continue M2.3 with selected FX lanes and protected recording modes.
+
+### 2026-10-11 — local 0.8.20: delay wet/dry automation
+
+Continued M2.3 with the first selected FX lane: track delay mix, using timeline
+point editing, percent fields, locks and one-step undo/cancel. Envelopes stay with
+rack inserts; complementary wet/dry ramps update live without rebuilding delay
+history. Scoped insert/extract retimes FX points and lift retains clocks. Format-3
+save/open and native effect-automation recipes preserve geometry. GUI/native
+range exports process preceding history before cropping. Chrome/WebKit checks
+cover actual lane controls, Save/Open, reorder, locks and German phone touch;
+complete four-second stereo native comparisons differ by at most 2.39e-7 full scale.
+Other FX parameters, FX clipboard and protected recording modes remain M2.3 work.

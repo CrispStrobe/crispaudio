@@ -178,6 +178,7 @@ export const useProjectStore = create<ProjectState>()(
             const after = next.project?.tracks.find(t => t.id === track.id) ?? (!next.project ? track : undefined);
             if (!after) return true;
             if (JSON.stringify(track.automation) !== JSON.stringify(after.automation) || JSON.stringify(track.panAutomation) !== JSON.stringify(after.panAutomation)) return true;
+            if ([...(track.effects??[]),...(after.effects??[])].some(e=>e.automation?.mix?.length)&&JSON.stringify(track.effects)!==JSON.stringify(after.effects))return true;
             if (JSON.stringify(track.segments) !== JSON.stringify(after.segments)) return true;
             return !!next.sources && track.segments.some(clip => before.sources.get(clip.sourceId) !== next.sources?.get(clip.sourceId));
           });

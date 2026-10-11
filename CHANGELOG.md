@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.20 — 2026-10-11
+
+- Add a track delay wet/dry mix automation lane with pointer/touch, keyboard and
+  percent/time edits, locks, undo/cancel and format-3 save/open.
+- Apply complementary wet/dry ramps live without resetting delay history; preserve
+  envelopes with rack reordering and scoped range insert/extract.
+- Match supported GUI/native DSP and add `effect-automation` delay mix recipes.
+  Other FX parameters, FX clipboard and recording modes remain planned.
+
 ## 0.8.19 — 2026-10-11
 
 - Copy and paste selected-range or whole-track pan envelopes with reviewed

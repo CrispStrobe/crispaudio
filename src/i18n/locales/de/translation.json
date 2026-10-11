@@ -1191,6 +1191,11 @@
     "panPaste": "Panoramakurve einfügen",
     "panPasteHelp": "Nur Panorama-Punkte ändern sich. Randpunkte im Abstand eines Samples erhalten die umgebende Kurve. Fester Panorama-Wert und Pegel bleiben unverändert.",
     "parameterMismatch": "Die kopierte Kurve gehört zu einem anderen Parameter.",
-    "panPoint": "Panorama-Punkt"
+    "panPoint": "Panorama-Punkt",
+    "delayMix": "Delay-Mix",
+    "mixGraph": "Delay-Mix-Automation",
+    "mixPoint": "Punkt-Mix (%)",
+    "missingEffect": "Verfügbare Spur wählen",
+    "mixHelp": "Delay-Mix: linear 0–100%, konstante Randwerte. Ohne Punkte gilt der feste Mix. Loslassen übernimmt; Escape verwirft. Die Kurve bleibt beim Effekt, wenn er verschoben wird."
   }
 }

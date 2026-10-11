@@ -536,12 +536,19 @@ the last valid edit. Optional source-pointer/workflow browser harnesses validate
 these controls plus real file actions and native range renders. M2 mixer is next.
 
 
-## Current mixer/DSP contract (0.8.15)
+## Current mixer/DSP contract (0.8.20)
 
-M2.1 mixer and M2.2 EQ/limiter/GR are implemented. M2.3 automation lanes are next;
+M2.1 mixer and M2.2 EQ/limiter/GR are implemented. M2.3 gain/pan lanes, their
+reviewed copy/retime, and track delay mix lanes are available; further FX and
+protected recording modes remain planned;
 read PLAN.md's active section before older implementation notes. Mixer gain/pan,
 audition switches, EQ parameters and limiter ceiling/release update the live
-graph; topology changes rebuild it. Route clip gain/FX/fade → track envelope and
+graph; delay mix automation uses complementary wet/dry ramps without resetting
+feedback history. EffectConfig.automation.mix uses absolute seconds and 0–1
+values, with static fallback when empty. It follows its insert on rack reorder.
+Scope-aware range edits retime clip/track/master FX envelopes; preserve locks and
+excluded racks. Other delay parameters and topology changes rebuild the graph.
+Route clip gain/FX/fade → track envelope and
 linear gain automation → track FX/level/pan → master FX/gain → optional limiter →
 meter → monitor volume. Monitor volume never changes exports.
 
