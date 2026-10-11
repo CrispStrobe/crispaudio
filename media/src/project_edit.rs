@@ -1021,6 +1021,7 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                 }
                 let mut points = op["points"].as_array().ok_or("Missing points")?.clone();
                 for p in &points {
+                    crate::automation_curve::validate(p)?;
                     if number(p, "time")? < 0.0 || !(0.0..=maximum).contains(&number(p, "value")?) {
                         return Err("Invalid effect automation".into());
                     }
@@ -1059,6 +1060,7 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                     .ok_or("Missing automation points")?
                     .clone();
                 for p in &points {
+                    crate::automation_curve::validate(p)?;
                     if number(p, "time")? < 0.0
                         || if pan {
                             !(-1.0..=1.0).contains(&number(p, "value")?)
@@ -1170,6 +1172,7 @@ fn automation(points: &Value, time: &str) -> Result<String> {
             .total_cmp(&b["time"].as_f64().unwrap_or(0.0))
     });
     for p in &points {
+        crate::automation_curve::validate(p)?;
         if number(p, "time")? < 0.0 || number(p, "value")? < 0.0 {
             return Err("Invalid automation".into());
         }
@@ -1186,8 +1189,11 @@ fn automation(points: &Value, time: &str) -> Result<String> {
         let av = number(a, "value")?;
         let bv = number(b, "value")?;
         if bt > at {
-            expr =
-                format!("if(lt({time},{bt}),{av}+({bv}-{av})*(({time})-{at})/({bt}-{at}),{expr})");
+            expr = if crate::automation_curve::step(a) {
+                format!("if(lt({time},{bt}),{av},{expr})")
+            } else {
+                format!("if(lt({time},{bt}),{av}+({bv}-{av})*(({time})-{at})/({bt}-{at}),{expr})")
+            };
         }
     }
     Ok(format!(

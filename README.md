@@ -109,17 +109,19 @@ These are sample-peak controls; true-peak and LUFS tools remain future work.
 The automation button opens a focused track lane beneath the timeline.
 Choose a track and gain, panorama or a delay insert’s mix or feedback, click/tap to add points, drag to move, or use numeric time/dB/pan
 fields and keyboard arrows. Point edits commit on release; Escape cancels without
-losing redo. Track locks protect envelopes. Gain remains linear between points,
-with held endpoints; an empty envelope is unity. Edits update running playback,
+losing redo. Track locks protect envelopes. Select a point to choose its outgoing Linear or
+Step curve. Linear ramps to the next point; Step holds the value and jumps at the
+next point's clock. Missing curve metadata keeps the existing Linear behavior.
+Endpoints hold; an empty gain envelope is unity. Edits update running playback,
 save/open and GUI/native exports. Copy the selected time range (or whole envelope) and paste it onto another track
 or time with a reviewed destination length. Time stretching changes point clocks
 while retaining parameter values; outside automation is preserved with one-sample boundary
-guards. Copy does not change the project, and paste is one undo step. Pan uses absolute −1 (left) to +1 (right), with linear ramps and held endpoints.
+guards. Copy does not change the project, and paste is one undo step. Pan uses absolute −1 (left) to +1 (right), with the selected curves and held endpoints.
 An empty pan lane uses the static track pan; an active lane marks the mixer pan
 as Auto. Gain and pan have separate session clipboards. Copying an empty pan lane captures
-its static pan value. Delay mix uses 0–100% linear ramps with held endpoints; an empty lane
+its static pan value. Delay mix uses 0–100% values with the same curve choices and held endpoints; an empty lane
 uses the insert’s static mix. The envelope follows its insert when the rack is reordered.
-Delay feedback automation uses 0–95% linear ramps with held endpoints; an empty
+Delay feedback automation uses 0–95% values with the same curve choices and held endpoints; an empty
 lane uses static feedback. Editing either parameter preserves the other envelope.
 Mix and feedback also have separate session clipboards: copy a selected range or
 whole canvas, including the static value of an empty lane, and review a stretched
@@ -137,7 +139,7 @@ only the recorded intervals in one undo step; Cancel keeps the original and redo
 Seeks, loops, Escape, interruptions and project changes discard the draft. Modes
 and arming are session-only and reset to Read; saved points work in GUI/native exports.
 Capture is driven by the audio clock and animation frames, not hardware automation
-recording. Other FX parameters and additional curves remain planned.
+recording. Other FX parameters and further curve shapes remain planned.
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)

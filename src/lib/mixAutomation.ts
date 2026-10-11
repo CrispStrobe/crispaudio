@@ -1,7 +1,25 @@
 import type { GainPoint, TimelineTrack, AudioSource } from '../types/audio';
+/** A point controls the segment to its right. Missing curve is Linear. */
+export const validAutomationCurve=(point:GainPoint)=>point.curve===undefined||point.curve==='linear'||point.curve==='step';
+export function curveFields(points:GainPoint[]|undefined,time:number):Pick<GainPoint,'curve'> {
+ let point:GainPoint|undefined;for(const p of points??[])if(p.time<=time&&(!point||p.time>=point.time))point=p;
+ return point?.curve==='step'?{curve:'step'}:{};
+}
+export function automationCheckTimes(a:GainPoint[],b:GainPoint[]):number[]{
+ const times=[...new Set([...a,...b].map(p=>p.time))].sort((a,b)=>a-b);
+ return [...times,...times.slice(1).map((time,i)=>times[i]+(time-times[i])/2)];
+}
+/** Schedule normalized points, including an exact jump at a Step segment end. */
+export function schedulePoints(param:AudioParam,sorted:GainPoint[],contextStart:number,timelineStart:number,transform=(v:number)=>v){
+ for(let i=0;i<sorted.length;i++){const point=sorted[i];if(point.time<=timelineStart)continue;
+  const clock=contextStart+point.time-timelineStart;
+  if(i>0&&sorted[i-1].curve==='step')param.setValueAtTime(transform(point.value),clock);
+  else param.linearRampToValueAtTime(transform(point.value),clock);
+ }
+}
 /** Stable, last-supplied point wins at an identical clock; endpoints hold. */
 export function normalizeGainPoints(points:GainPoint[]|undefined):GainPoint[] {
-  return [...new Map((points??[]).filter(p=>Number.isFinite(p.time)&&Number.isFinite(p.value)&&p.time>=0&&p.value>=0).map(p=>[p.time,p])).values()].sort((a,b)=>a.time-b.time);
+  return [...new Map((points??[]).filter(p=>Number.isFinite(p.time)&&Number.isFinite(p.value)&&p.time>=0&&p.value>=0&&validAutomationCurve(p)).map(p=>[p.time,p])).values()].sort((a,b)=>a.time-b.time);
 }
 /** Moving onto a point replaces it; no implicit endpoints or new curve types. */
 export function editGainPoint(points:GainPoint[]|undefined,originalTime:number|null,point:GainPoint):GainPoint[] {
@@ -11,16 +29,16 @@ export function gainAt(points:GainPoint[]|undefined,time:number):number {
   const sorted=normalizeGainPoints(points);
   if(!sorted.length)return 1;
   if(time<=sorted[0].time)return sorted[0].value;
-  for(let i=1;i<sorted.length;i++)if(time<sorted[i].time){const a=sorted[i-1],b=sorted[i];return a.value+(b.value-a.value)*(time-a.time)/(b.time-a.time);}
+  for(let i=1;i<sorted.length;i++)if(time<sorted[i].time){const a=sorted[i-1],b=sorted[i];return a.curve==='step'?a.value:a.value+(b.value-a.value)*(time-a.time)/(b.time-a.time);}
   return sorted.at(-1)!.value;
 }
 export function scheduleGain(param:AudioParam,points:GainPoint[]|undefined,contextStart:number,timelineStart:number){
   param.setValueAtTime(gainAt(points,timelineStart),contextStart);
-  for(const point of normalizeGainPoints(points))if(point.time>timelineStart)param.linearRampToValueAtTime(point.value,contextStart+point.time-timelineStart);
+  schedulePoints(param,normalizeGainPoints(points),contextStart,timelineStart);
 }
 /** Absolute pan, with the static position as the empty-lane fallback. */
 export function normalizePanPoints(points:GainPoint[]|undefined):GainPoint[] {
-  return [...new Map((points??[]).filter(p=>Number.isFinite(p.time)&&p.time>=0&&Number.isFinite(p.value)&&p.value>=-1&&p.value<=1).map(p=>[p.time,p])).values()].sort((a,b)=>a.time-b.time);
+  return [...new Map((points??[]).filter(p=>Number.isFinite(p.time)&&p.time>=0&&Number.isFinite(p.value)&&p.value>=-1&&p.value<=1&&validAutomationCurve(p)).map(p=>[p.time,p])).values()].sort((a,b)=>a.time-b.time);
 }
 export function editPanPoint(points:GainPoint[]|undefined,originalTime:number|null,point:GainPoint):GainPoint[] {
   return normalizePanPoints([...(points??[]).filter(p=>p.time!==originalTime&&p.time!==point.time),point]);
@@ -29,12 +47,12 @@ export function panAt(points:GainPoint[]|undefined,time:number,fallback=0):numbe
   const sorted=normalizePanPoints(points);
   if(!sorted.length)return Math.max(-1,Math.min(1,fallback));
   if(time<=sorted[0].time)return sorted[0].value;
-  for(let i=1;i<sorted.length;i++)if(time<sorted[i].time){const a=sorted[i-1],b=sorted[i];return a.value+(b.value-a.value)*(time-a.time)/(b.time-a.time);}
+  for(let i=1;i<sorted.length;i++)if(time<sorted[i].time){const a=sorted[i-1],b=sorted[i];return a.curve==='step'?a.value:a.value+(b.value-a.value)*(time-a.time)/(b.time-a.time);}
   return sorted.at(-1)!.value;
 }
 export function schedulePan(param:AudioParam,points:GainPoint[]|undefined,contextStart:number,timelineStart:number,fallback=0){
   param.setValueAtTime(panAt(points,timelineStart,fallback),contextStart);
-  for(const point of normalizePanPoints(points))if(point.time>timelineStart)param.linearRampToValueAtTime(point.value,contextStart+point.time-timelineStart);
+  schedulePoints(param,normalizePanPoints(points),contextStart,timelineStart);
 }
 export interface MicSection { start:number; end:number; trackId:string; confidence:number }
 /** Measured suggestions, not speaker recognition. Normalize each mic's active level first. */

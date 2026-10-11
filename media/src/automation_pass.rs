@@ -21,7 +21,11 @@ fn at(points: &[Value], time: f64, fallback: f64) -> Result<f64> {
     let a = num(&points[i - 1], "time")?;
     let b = num(&points[i], "time")?;
     let value = num(&points[i - 1], "value")?;
-    Ok(value + (num(&points[i], "value")? - value) * (time - a) / (b - a))
+    Ok(if crate::automation_curve::step(&points[i - 1]) {
+        value
+    } else {
+        value + (num(&points[i], "value")? - value) * (time - a) / (b - a)
+    })
 }
 pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     let parameter = op["parameter"].as_str().ok_or("Missing parameter")?;
@@ -84,6 +88,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
         _ => f64::INFINITY,
     };
     for p in &before {
+        crate::automation_curve::validate(p)?;
         if num(p, "time")? < 0.0 || num(p, "value")? < minimum || num(p, "value")? > maximum {
             return Err("Invalid envelope".into());
         }
@@ -117,6 +122,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
         }
         let mut prior = f64::NEG_INFINITY;
         for p in supplied {
+            crate::automation_curve::validate(p)?;
             let time = num(p, "time")?;
             let value = num(p, "value")?;
             if time <= prior || value < minimum || value > maximum {
@@ -137,9 +143,17 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
         if start > 0.0 {
             points.push(json!({"time":left,"value":at(&before,left,fallback)?}))
         }
-        points.extend(supplied.iter().cloned());
+        points.extend(supplied.iter().enumerate().map(|(i, p)| {
+            let mut p = p.clone();
+            if i == supplied.len() - 1 {
+                p.as_object_mut().unwrap().remove("curve");
+            }
+            p
+        }));
         if end < canvas {
-            points.push(json!({"time":right,"value":at(&before,right,fallback)?}))
+            let mut guard = json!({"time":right,"value":at(&before,right,fallback)?});
+            crate::automation_curve::decorate(&mut guard, &before, right);
+            points.push(guard)
         }
     }
     points.sort_by(|a, b| {
@@ -151,12 +165,14 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     points.reverse();
     points.dedup_by(|a, b| a["time"].as_f64() == b["time"].as_f64());
     points.reverse();
-    if before.iter().chain(points.iter()).all(|p| {
-        let time = p["time"].as_f64().unwrap();
-        let a = at(&before, time, fallback).unwrap();
-        let b = at(&points, time, fallback).unwrap();
-        (a - b).abs() <= 1e-12 * a.abs().max(1.0)
-    }) {
+    if crate::automation_curve::check_times(&before, &points)
+        .iter()
+        .all(|&time| {
+            let a = at(&before, time, fallback).unwrap();
+            let b = at(&points, time, fallback).unwrap();
+            (a - b).abs() <= 1e-12 * a.abs().max(1.0)
+        })
+    {
         return Ok(project.clone());
     }
     let mut out = project.clone();

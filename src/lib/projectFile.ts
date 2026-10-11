@@ -1,3 +1,4 @@
+import {validAutomationCurve} from './mixAutomation';
 import {validEffectAutomation} from './effectAutomation';
 import {validOutputLimiter} from '../audio/dsp/samplePeakLimiter';
 import { validVideoTransform } from './videoTransform';
@@ -121,7 +122,9 @@ export async function deserializeProject(
 
   if (doc.project.masterVolume !== undefined && (!Number.isFinite(doc.project.masterVolume) || doc.project.masterVolume < 0)) throw new Error('Invalid master volume');
 
-  if(doc.project.tracks.some(track=>track.panAutomation!==undefined&&(!Array.isArray(track.panAutomation)||track.panAutomation.some(p=>!p||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value< -1||p.value>1))))throw new Error('Invalid pan automation');
+  if(doc.project.tracks.some(track=>track.automation!==undefined&&(!Array.isArray(track.automation)||track.automation.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value<0))))throw new Error('Invalid gain automation');
+
+  if(doc.project.tracks.some(track=>track.panAutomation!==undefined&&(!Array.isArray(track.panAutomation)||track.panAutomation.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value< -1||p.value>1))))throw new Error('Invalid pan automation');
 
   if([...(doc.project.masterEffects??[]),...doc.project.tracks.flatMap(t=>[...(t.effects??[]),...t.segments.flatMap(c=>c.effects??[])])].some(e=>!validEffectAutomation(e)))throw new Error('Invalid effect automation');
 

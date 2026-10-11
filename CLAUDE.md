@@ -536,11 +536,11 @@ the last valid edit. Optional source-pointer/workflow browser harnesses validate
 these controls plus real file actions and native range renders. M2 mixer is next.
 
 
-## Current mixer/DSP contract (0.8.23)
+## Current mixer/DSP contract (0.8.24)
 
 M2.1 mixer and M2.2 EQ/limiter/GR are implemented. M2.3 gain/pan lanes, their
 reviewed copy/retime, and track delay mix/feedback lanes are available. Protected
-Read/Touch/Latch/Write passes and delay mix/feedback copy/retime are available; further FX parameters/curves remain planned. Read PLAN.md's
+Read/Touch/Latch/Write passes and delay mix/feedback copy/retime are available; Linear/Step point curves are available; further FX parameters/shapes remain planned. Read PLAN.md's
 active section before older implementation notes. Mixer gain/pan,
 audition switches, EQ parameters and limiter ceiling/release update the live
 graph; delay mix automation uses complementary wet/dry ramps; feedback has
@@ -549,7 +549,7 @@ uses mix/feedback point arrays on absolute seconds, with values 0–1/0–0.95, 
 Scope-aware range edits retime clip/track/master FX envelopes; preserve locks and
 excluded racks. Delay time and topology changes rebuild the graph.
 Route clip gain/FX/fade → track envelope and
-linear gain automation → track FX/level/pan → master FX/gain → optional limiter →
+gain automation → track FX/level/pan → master FX/gain → optional limiter →
 meter → monitor volume. Monitor volume never changes exports.
 
 Project format 3 still reads 1/2. masterVolume defaults to 1; outputLimiter is
@@ -610,3 +610,26 @@ An empty portable envelope uses delay defaults (.3 mix/.4 feedback), while GUI
 copy of an empty lane captures its actual static value. Delay history may affect
 audio after a replaced interval although the outside envelope is preserved.
 Optional actual-UI/native harness: scripts/test-effect-envelope-copy.mjs.
+
+
+## Outgoing automation curves (0.8.24)
+
+GainPoint.curve is optional "linear"|"step"; absent means Linear. Curve controls
+that point's segment to the next clock, not the incoming segment. Step holds then
+jumps exactly at the next point; endpoints hold. All gain/pan/delay mix/feedback
+lanes and clip/master delay metadata use these rules. schedulePoints implements
+Web Audio jumps/ramp scheduling; native Automation keeps the outgoing Step flag.
+Curve selector appears for a selected point and respects locks/recording. Pointer,
+keyboard and numeric edits must carry the point's metadata (including gain dB).
+Format3 save/open preserves curves; unknown/null curves reject before opening.
+Native point edits and enabled DSP accept the supported curves and reject unknown shapes.
+
+Partial copies inherit the original outgoing curve at their first boundary.
+Paste/pass outside right guards restore the original curve; final supplied points
+use Linear for the one-sample boundary bridge. Equivalent checks evaluate interval
+midpoints as well as point clocks so Step and Linear cannot be mistaken as equal.
+Range resume boundaries inherit their original curve; insertion into Step holds
+its preceding value through the gap. Capture drafts remain frame-sampled Linear
+points; committed passes restore the outside Step segments. GUI range exports use
+renderMixRange (prefix/crop), not renderToBuffer(start,end) which starts fresh DSP.
+Optional real UI/native PCM audit: scripts/test-step-automation.mjs.

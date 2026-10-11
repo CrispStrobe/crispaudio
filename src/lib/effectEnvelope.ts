@@ -1,5 +1,5 @@
 import type {GainPoint,TimelineProject} from '../types/audio';
-import {normalizeGainPoints} from './mixAutomation';
+import {normalizeGainPoints,curveFields,validAutomationCurve} from './mixAutomation';
 import {mixAt} from './effectAutomation';
 import {applyAutomationPass,type AutomationTarget} from './automationRecording';
 import {timelineDuration} from './timelineView';
@@ -8,7 +8,7 @@ export interface EffectEnvelope {effectType:'delay';parameter:EffectParameter;du
 const fail=(key:string):never=>{throw new Error(`automation.${key}`);};
 function points(input:GainPoint[]|undefined,parameter:EffectParameter){
  const maximum=parameter==='feedback'?.95:1;
- if(input!==undefined&&(!Array.isArray(input)||input.some(p=>!p||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value<0||p.value>maximum)))fail('invalidEnvelope');
+ if(input!==undefined&&(!Array.isArray(input)||input.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value<0||p.value>maximum)))fail('invalidEnvelope');
  return normalizeGainPoints(input);
 }
 function effect(project:TimelineProject,trackId:string,index:number){
@@ -23,7 +23,7 @@ export function copyEffectEnvelope(project:TimelineProject,trackId:string,index:
  if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>timelineDuration(project))fail('bounds');
  const source=points(insert.automation?.[parameter],parameter),fallback=Math.min(parameter==='feedback'?.95:1,insert.params[parameter]??(parameter==='mix'?.3:.4));
  return {effectType:'delay',parameter,sourceName:track.name,sourceStart:start,duration:end-start,points:[
-  {time:0,value:mixAt(source,start,fallback)},...source.filter(p=>p.time>start&&p.time<end).map(p=>({...p,time:p.time-start})),{time:end-start,value:mixAt(source,end,fallback)},
+  {time:0,value:mixAt(source,start,fallback),...curveFields(source,start)},...source.filter(p=>p.time>start&&p.time<end).map(p=>({...p,time:p.time-start})),{time:end-start,value:mixAt(source,end,fallback)},
  ]};
 }
 /** Reuse reviewed pass guards/locks/no-op rules after stretching a relative envelope. */
@@ -37,7 +37,7 @@ export function pasteEffectEnvelope(project:TimelineProject,trackId:string,index
  if(!Number.isFinite(time)||!Number.isFinite(duration)||!Number.isFinite(rate)||rate<=0||time<0||duration<1/rate||!Number.isFinite(end)||end>timelineDuration(project))fail('bounds');
  const fallback=parameter==='mix'?.3:.4;
  const target:AutomationTarget={trackId,effectIndex:index,parameter};
- return applyAutomationPass(project,target,[{points:[{time,value:mixAt(source,0,fallback)},
+ return applyAutomationPass(project,target,[{points:[{time,value:mixAt(source,0,fallback),...curveFields(source,0)},
   ...source.filter(p=>p.time>0&&p.time<envelope.duration).map(p=>({...p,time:time+p.time/envelope.duration*duration})),
   {time:end,value:mixAt(source,envelope.duration,fallback)},
  ]}]);

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.24 — 2026-10-11
+
+- Add outgoing Linear/Step point curves to gain, pan and delay mix/feedback lanes.
+  Step holds a value until the next point, then jumps at that point's clock.
+- Preserve curve metadata through pointer/numeric edits, save/open, clipboard
+  stretching, range insert/extract and reviewed recording passes. Outside guards
+  restore the original curve; equivalent pastes preserve redo.
+- Match GUI scheduling and native per-frame rendering, including seeks and existing
+  recipes. Missing curves retain Linear behavior; unsupported curves reject.
+  Further curve shapes and selected FX parameters remain M2.3 work.
+
 ## 0.8.23 — 2026-10-11
 
 - Add separate session clipboards for track delay mix and feedback envelopes,

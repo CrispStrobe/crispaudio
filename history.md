@@ -292,3 +292,15 @@ paste-effect-automation recipes match GUI. All 1,421 frontend and 77+3 native te
 pass; Chrome/WebKit actual UI and complete stereo PCM comparisons pass. App/CLI
 install preserves autosave; additional curves and selected FX parameters remain
 M2.3 work. No Apple release.
+
+
+### 2026-10-11 — local 0.8.24: outgoing Linear/Step automation
+
+Added per-point outgoing Linear/Step curves to gain, pan and delay mix/feedback.
+Step holds until the next point's clock. Pointer/numeric edits, save/open, clipboard
+stretching, range edits and recording guards retain curve semantics. Midpoint
+identity checks distinguish curve-only differences; unknown curves reject. Native
+per-frame output and Web Audio scheduling match the rules, including live seeks.
+All 1,427 frontend and 80+3 native tests pass; Chrome/WebKit actual controls and
+complete stereo PCM checks pass. Local app/CLI install preserves recovery. Further
+shapes and selected FX parameters remain M2.3 work; no Apple release.

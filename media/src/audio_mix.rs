@@ -127,7 +127,7 @@ impl Envelope {
     }
 }
 struct Automation {
-    points: Vec<(f64, f64)>,
+    points: Vec<(f64, f64, bool)>,
     cursor: usize,
     fallback: f64,
 }
@@ -143,7 +143,12 @@ impl Automation {
                 if (pan && !(-1.0..=1.0).contains(&value)) || (!pan && value < 0.0) {
                     return Err("Invalid automation value".into());
                 }
-                points.push((positive(p, "time", None)?, value));
+                crate::automation_curve::validate(p)?;
+                points.push((
+                    positive(p, "time", None)?,
+                    value,
+                    crate::automation_curve::step(p),
+                ));
             }
         } else if !v.is_null() {
             return Err("Invalid automation".into());
@@ -173,7 +178,11 @@ impl Automation {
             return a.1;
         }
         let b = self.points[self.cursor + 1];
-        a.1 + (b.1 - a.1) * (t - a.0) / (b.0 - a.0)
+        if a.2 {
+            a.1
+        } else {
+            a.1 + (b.1 - a.1) * (t - a.0) / (b.0 - a.0)
+        }
     }
 }
 struct Biquad {
@@ -963,6 +972,18 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+    #[test]
+    fn step_segments_jump_exactly_and_reject_unknown_curves() {
+        let mut a = Automation::parse(
+            &json!([{"time":0,"value":0,"curve":"step"},{"time":1,"value":1},{"time":2,"value":0}]),
+        )
+        .unwrap();
+        assert_eq!(a.at(0.5), 0.0);
+        assert_eq!(a.at(1.0 - 1.0 / 48000.0), 0.0);
+        assert_eq!(a.at(1.0), 1.0);
+        assert_eq!(a.at(1.5), 0.5);
+        assert!(Automation::parse(&json!([{"time":0,"value":1,"curve":"bezier"}])).is_err());
     }
     #[test]
     fn delay_mix_automation_preserves_history_and_rejects_bad_values() {

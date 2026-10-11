@@ -852,3 +852,38 @@ Portable tags must match the destination parameter/type. Mix values are 0–1;
 feedback values are 0–0.95. Empty portable points mean delay defaults (mix .3,
 feedback .4); GUI Copy always includes the actual static fallback. Missing/non-delay
 inserts, malformed points, ambiguous source forms and locked destinations reject.
+
+
+## Linear and Step point curves (local 0.8.24)
+
+Select a gain, pan, delay mix or feedback point. Its **Point curve** selector
+chooses the segment to the next point: **Linear** ramps between values; **Step**
+holds the current value and jumps at the next point's exact timeline clock.
+The first/last values hold outside the envelope. Existing projects with no curve
+field remain Linear. The final point's curve has no audible effect until another
+point follows it. Curve changes are one undo step and update running playback.
+Locked tracks and armed recording protect the selector. Pointer, keyboard and
+numeric edits retain the selected point's curve.
+
+Save/Open and source-range/portable clipboard recipes retain Step metadata.
+Copying a partial segment captures its value and outgoing curve; stretching changes
+clocks only. Outside paste/pass guards restore the original curve, with one-sample
+Linear bridges at replaced interval edges. Equivalent checks include interval
+midpoints, so a Step-to-Linear paste with the same point values still applies.
+Insert/extract retain the curve at their resumed boundary; lift retains clocks.
+Recording remains a Linear sampled draft and preserves surrounding Step segments
+when applied. Use the export range command to process preceding DSP history.
+
+Format-3 optional outgoing point metadata works with existing native recipes:
+
+```json
+[{"op":"automation","trackId":"voice","points":[
+  {"time":0,"value":0.5,"curve":"step"},{"time":2,"value":1}]},
+ {"op":"effect-automation","trackId":"voice","effectIndex":0,"parameter":"mix",
+  "points":[{"time":0,"value":0,"curve":"step"},{"time":2,"value":0.6}]}]
+```
+
+Only missing, `"linear"` and `"step"` curves are supported. Unknown/null curve
+values reject on GUI open/native point edits and enabled native DSP. GUI and native output support Step;
+older builds that only render Linear do not interpret this new metadata. Further
+curve shapes and selected FX parameters remain planned.

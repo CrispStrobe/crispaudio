@@ -1873,3 +1873,49 @@ verified and app launched. One existing autosave is unchanged with a full recove
 backup. Further FX parameters and additional curves remain M2.3 work. No release
 tag or Apple upload; physical iOS and installed WKWebView interaction remain
 unvalidated. Main remains a development checkpoint.
+
+
+## Local 0.8.24 — outgoing Linear and Step automation curves
+
+Selected gain, pan, delay mix and feedback points now expose an outgoing curve.
+Linear ramps to the next point; Step holds and jumps at the next point's clock.
+Missing metadata preserves Linear behavior. Pointer/keyboard/numeric edits retain
+curves; locks and recording protection apply. Format-3 save/open retains the
+optional field. Unsupported/null curves reject on GUI open/native point edits
+and enabled native DSP. Older Linear-only builds do not interpret Step metadata.
+
+Partial clipboard snapshots preserve the outgoing curve at their first edge.
+Paste/pass outside guards restore the original curve with one-sample Linear edge
+bridges. Identity checks include interval midpoints to distinguish Step from Linear
+with equal point values. Range insert/extract retain the resumed curve, while lift
+retains clocks. Recording remains a frame-sampled Linear draft and preserves
+outside Step segments. Native per-frame evaluation and GUI scheduling use the
+same outgoing rules; existing automation/effect/paste/pass/range recipes retain
+curves. Further shapes and selected FX parameters remain M2.3 work.
+
+Validation on 2026-10-11:
+
+- **112 files / 1,427 frontend tests** pass with two workers and a 15-second local
+  timeout; repository assertions/deadlines are unchanged. Native **80 media library
+  + 3 CLI tests** pass, with 10 existing platform tests ignored. Lint, production
+  tsc/Vite and the local app bundle pass.
+- `scripts/test-step-automation.mjs` passes in Chrome and headless WebKit for all
+  four targets: real curve controls/undo/redo, pointer and numeric curve retention,
+  Escape retaining redo, live changes without restart, actual audible seek holding
+  silence until its jump, locks, partial copy/stretch and recording outside guards,
+  actual Save/Open and German 390 px controls. Compact screenshot inspected.
+- Both native source-range/portable paste forms exactly match GUI project JSON;
+  native insert/extract match GUI envelope metadata and media clock geometry.
+  Every sample of each **192,000-frame stereo** fixture is compared: maximum
+  absolute difference Chrome **9.99×10⁻⁷**, WebKit **4.18×10⁻⁷** full scale.
+  GUI export range output exactly matches the full-render crop. These measurements
+  are tolerances, not arbitrary-DSP bit identity.
+- Existing delay copy/retime Chrome/native regression passes (480,000 stereo frames
+  per parameter, maximum 1.61×10⁻⁷). Existing protected recording Chrome/native
+  regression passes all modes/targets (384,000 stereo frames per target,
+  maximum 3.95×10⁻⁷). Curve-only differences cannot be discarded as identity.
+
+Local 0.8.24 app and independent optimized CLI are rebuilt/installed, both signatures
+verified and app launched. One autosave is unchanged with a full recovery backup.
+No release tag or Apple upload. Physical iOS and installed WKWebView interaction
+remain unvalidated; main is a development checkpoint.

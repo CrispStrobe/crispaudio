@@ -1,12 +1,12 @@
 import type {GainPoint,TimelineProject} from '../types/audio';
-import {gainAt,normalizeGainPoints,panAt,normalizePanPoints} from './mixAutomation';
+import {gainAt,normalizeGainPoints,panAt,normalizePanPoints,curveFields,validAutomationCurve,automationCheckTimes} from './mixAutomation';
 import {timelineDuration} from './timelineView';
 
 /** Portable, source-independent automation on a relative clock. */
 export interface GainEnvelope {parameter?:'gain'|'pan';duration:number;points:GainPoint[];sourceName?:string;sourceStart?:number}
 const fail=(key:string):never=>{throw new Error(`automation.${key}`);};
 function validPoints(points:GainPoint[],pan=false) {
-  if(!Array.isArray(points)||points.some(p=>!p||!Number.isFinite(p.time)||!Number.isFinite(p.value)||p.time<0||(pan?(p.value< -1||p.value>1):p.value<0)))fail('invalidEnvelope');
+  if(!Array.isArray(points)||points.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||!Number.isFinite(p.value)||p.time<0||(pan?(p.value< -1||p.value>1):p.value<0)))fail('invalidEnvelope');
 }
 function copyEnvelope(project:TimelineProject,trackId:string,start=0,end=timelineDuration(project),pan=false):GainEnvelope {
   const track=project.tracks.find(t=>t.id===trackId)??fail('missingTrack');
@@ -16,7 +16,7 @@ function copyEnvelope(project:TimelineProject,trackId:string,start=0,end=timelin
   validPoints(track[field]??[],pan);
   const points=normalize(track[field]);
   return {...(pan?{parameter:'pan' as const}:{}),sourceName:track.name,sourceStart:start,duration:end-start,points:[
-    {time:0,value:at(points,start)},
+    {time:0,value:at(points,start),...curveFields(points,start)},
     ...points.filter(p=>p.time>start&&p.time<end).map(p=>({...p,time:p.time-start})),
     {time:end-start,value:at(points,end)},
   ]};
@@ -39,14 +39,14 @@ function pasteEnvelope(project:TimelineProject,trackId:string,envelope:GainEnvel
   const points=normalize([
     ...before.filter(p=>p.time<left||p.time>right),
     ...(time>0?[{time:left,value:at(before,left)}]:[]),
-    {time,value:at(source,0,0)},
+    {time,value:at(source,0,0),...curveFields(source,0)},
     ...source.filter(p=>p.time>0&&p.time<envelope.duration).map(p=>({...p,time:time+p.time/envelope.duration*duration})),
     {time:end,value:at(source,envelope.duration,0)},
-    ...(end<canvas?[{time:right,value:at(before,right)}]:[]),
+    ...(end<canvas?[{time:right,value:at(before,right),...curveFields(before,right)}]:[]),
   ]);
   // Identity pastes and constant envelopes must not create undo or destroy redo.
-  if([...before,...points].every(p=>{
-    const a=at(before,p.time),b=at(points,p.time);
+  if(automationCheckTimes(before,points).every(time=>{
+    const a=at(before,time),b=at(points,time);
     return Math.abs(a-b)<=1e-12*Math.max(1,Math.abs(a),Math.abs(b));
   }))return project;
   return {...project,tracks:project.tracks.map(t=>t.id===trackId?{...t,[field]:points}:t)};

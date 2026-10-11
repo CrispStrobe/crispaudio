@@ -2,7 +2,7 @@ import {hasEffectAutomation} from './effectAutomation';
 import type { TimelineProject, AudioSegment, VideoClip, GainPoint, EffectConfig } from '../types/audio';
 import { videoClips, validateVideoClips, frameTime } from './videoEditing';
 import { timelineDuration } from './timelineView';
-import { gainAt, panAt } from './mixAutomation';
+import { gainAt, panAt,curveFields } from './mixAutomation';
 
 type Clip=AudioSegment|VideoClip;
 export type RangeOperation='lift'|'extract'|'insert';
@@ -85,8 +85,8 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
     if(!points?.length||operation==='lift')return points;
     const result=points.filter(p=>operation==='insert'||p.time<start||p.time>=end).map(p=>({...p,time:retime(p.time)}));
     const epsilon=1/project.sampleRate;
-    if(start>0)result.push({time:Math.max(0,start-epsilon),value:(pan?panAt:gainAt)(points,start)});
-    result.push({time:operation==='insert'?end:start,value:(pan?panAt:gainAt)(points,operation==='insert'?start:end)});
+    if(start>0){const left=Math.max(0,start-epsilon),curve=curveFields(points,left);result.push({time:left,value:(pan?panAt:gainAt)(points,curve.curve==='step'?left:start),...(operation==='insert'?curve:{})});}
+    result.push({time:operation==='insert'?end:start,value:(pan?panAt:gainAt)(points,operation==='insert'?start:end),...curveFields(points,operation==='insert'?start:end)});
     return [...new Map(result.sort((a,b)=>a.time-b.time).map(p=>[p.time,p])).values()];
   };
   const effects=(rack:EffectConfig[]|undefined)=>rack?.map(e=>hasEffectAutomation(e)?{...e,automation:{...e.automation,...(e.automation?.mix===undefined?{}:{mix:automation(e.automation.mix,true)}),...(e.automation?.feedback===undefined?{}:{feedback:automation(e.automation.feedback,true)})}}:e);

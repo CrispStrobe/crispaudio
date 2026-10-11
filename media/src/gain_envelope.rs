@@ -18,6 +18,7 @@ pub(crate) fn parameter_points(v: &Value, pan: bool) -> Result<Vec<Value>> {
         v.as_array().ok_or("Invalid gain envelope")?.clone()
     };
     for p in &out {
+        crate::automation_curve::validate(p)?;
         if number(p, "time")? < 0.0
             || if pan {
                 !(-1.0..=1.0).contains(&number(p, "value")?)
@@ -56,7 +57,11 @@ pub(crate) fn at_parameter(points: &[Value], t: f64, fallback: f64) -> f64 {
         let a = &pair[0];
         let b = &pair[1];
         if t < time(b) {
-            return value(a) + (value(b) - value(a)) * (t - time(a)) / (time(b) - time(a));
+            return if crate::automation_curve::step(a) {
+                value(a)
+            } else {
+                value(a) + (value(b) - value(a)) * (t - time(a)) / (time(b) - time(a))
+            };
         }
     }
     value(points.last().unwrap())
@@ -113,7 +118,9 @@ pub fn paste(project: &Value, op: &Value) -> Result<Value> {
             1.0
         };
         let source = parameter_points(&source[field], pan)?;
-        let mut copied = vec![json!({"time":0,"value":at_parameter(&source,start,fallback)})];
+        let mut first = json!({"time":0,"value":at_parameter(&source,start,fallback)});
+        crate::automation_curve::decorate(&mut first, &source, start);
+        let mut copied = vec![first];
         for point in source
             .iter()
             .filter(|p| p["time"].as_f64().unwrap() > start && p["time"].as_f64().unwrap() < end)
@@ -171,7 +178,9 @@ pub fn paste(project: &Value, op: &Value) -> Result<Value> {
     if time > 0.0 {
         result.push(json!({"time":left,"value":at_parameter(&before,left,fallback)}));
     }
-    result.push(json!({"time":time,"value":at_parameter(&source,0.0,source_fallback)}));
+    let mut first = json!({"time":time,"value":at_parameter(&source,0.0,source_fallback)});
+    crate::automation_curve::decorate(&mut first, &source, 0.0);
+    result.push(first);
     for point in source.iter().filter(|p| {
         let t = p["time"].as_f64().unwrap();
         t > 0.0 && t < source_duration
@@ -182,15 +191,19 @@ pub fn paste(project: &Value, op: &Value) -> Result<Value> {
     }
     result.push(json!({"time":end,"value":at_parameter(&source,source_duration,source_fallback)}));
     if end < canvas {
-        result.push(json!({"time":right,"value":at_parameter(&before,right,fallback)}));
+        let mut guard = json!({"time":right,"value":at_parameter(&before,right,fallback)});
+        crate::automation_curve::decorate(&mut guard, &before, right);
+        result.push(guard);
     }
     let result = parameter_points(&json!(result), pan)?;
-    if before.iter().chain(&result).all(|p| {
-        let t = p["time"].as_f64().unwrap();
-        let a = at_parameter(&before, t, fallback);
-        let b = at_parameter(&result, t, fallback);
-        (a - b).abs() <= 1e-12 * a.abs().max(b.abs()).max(1.0)
-    }) {
+    if crate::automation_curve::check_times(&before, &result)
+        .iter()
+        .all(|&t| {
+            let a = at_parameter(&before, t, fallback);
+            let b = at_parameter(&result, t, fallback);
+            (a - b).abs() <= 1e-12 * a.abs().max(b.abs()).max(1.0)
+        })
+    {
         return Ok(project.clone());
     }
     let mut out = project.clone();

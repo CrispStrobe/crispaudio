@@ -143,5 +143,5 @@ export interface VideoSource { id: string; path: string; name: string; duration:
 export interface TimelineMarker { id: string; time: number; name: string }
 export interface TranscriptWord { id: string; start: number; end: number; text: string }
 export interface TranscriptCue { id: string; start: number; end: number; text: string; words?: TranscriptWord[] }
-export interface GainPoint { time: number; value: number }
+export interface GainPoint { time: number; value: number; curve?: 'linear'|'step' }
 export interface SyncDecision { at: string; reference: string; tracks: { id: string; alignment: import('../lib/media').Alignment }[] }

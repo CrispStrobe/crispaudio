@@ -40,10 +40,7 @@ fn retime_effects(
                             result.push(q);
                         }
                     }
-                    if start > 0.0 {
-                        result.push(json!({"time":(start-1.0/rate).max(0.0),"value":value_at(points,start,true)?}));
-                    }
-                    result.push(json!({"time":if operation=="insert"{end}else{start},"value":value_at(points,if operation=="insert"{start}else{end},true)?}));
+                    result.extend(boundary(points, start, end, operation, rate, true)?);
                     result.sort_by(|a, b| {
                         a["time"]
                             .as_f64()
@@ -59,6 +56,31 @@ fn retime_effects(
         }
     }
     Ok(())
+}
+fn boundary(
+    points: &[Value],
+    start: f64,
+    end: f64,
+    operation: &str,
+    rate: f64,
+    pan: bool,
+) -> Result<Vec<Value>> {
+    let mut result = vec![];
+    if start > 0.0 {
+        let left = (start - 1.0 / rate).max(0.0);
+        let mut metadata = json!({});
+        crate::automation_curve::decorate(&mut metadata, points, left);
+        let mut guard = json!({"time":left,"value":value_at(points,if crate::automation_curve::step(&metadata){left}else{start},pan)?});
+        if operation == "insert" {
+            crate::automation_curve::decorate(&mut guard, points, left)
+        }
+        result.push(guard);
+    }
+    let original = if operation == "insert" { start } else { end };
+    let mut resumed = json!({"time":if operation=="insert"{end}else{start},"value":value_at(points,original,pan)?});
+    crate::automation_curve::decorate(&mut resumed, points, original);
+    result.push(resumed);
+    Ok(result)
 }
 fn has_effect_automation(rack: &Value) -> bool {
     rack.as_array().is_some_and(|r| {
@@ -101,6 +123,7 @@ fn value_at(points: &[Value], t: f64, pan: bool) -> Result<f64> {
     }
     let mut sorted = points.to_vec();
     for p in &sorted {
+        crate::automation_curve::validate(p)?;
         if number(p, "time")? < 0.0
             || if pan {
                 !(-1.0..=1.0).contains(&number(p, "value")?)
@@ -128,7 +151,11 @@ fn value_at(points: &[Value], t: f64, pan: bool) -> Result<f64> {
         let b = number(&pair[1], "time")?;
         if t < b {
             let x = number(&pair[0], "value")?;
-            return Ok(x + (number(&pair[1], "value")? - x) * (t - a) / (b - a));
+            return Ok(if crate::automation_curve::step(&pair[0]) {
+                x
+            } else {
+                x + (number(&pair[1], "value")? - x) * (t - a) / (b - a)
+            });
         }
     }
     number(sorted.last().unwrap(), "value")
@@ -510,16 +537,14 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
                             changed.push(p)
                         }
                     }
-                    if start > 0.0 {
-                        let rate = p["sampleRate"].as_f64().unwrap_or(48000.0);
-                        if !rate.is_finite() || rate <= 0.0 {
-                            return Err("Invalid sample rate".into());
-                        }
-                        changed.push(
-                        json!({"time":(start-1.0/rate).max(0.0),"value":value_at(points,start,field=="panAutomation")?}),
-                    )
-                    }
-                    changed.push(json!({"time":if operation=="insert"{end}else{start},"value":value_at(points,if operation=="insert"{start}else{end},field=="panAutomation")?}));
+                    changed.extend(boundary(
+                        points,
+                        start,
+                        end,
+                        operation,
+                        rate,
+                        field == "panAutomation",
+                    )?);
                     changed.sort_by(|a, b| {
                         a["time"]
                             .as_f64()
