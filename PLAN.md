@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-11, during local 0.8.21 implementation. This section is the current plan.
+Updated 2026-10-11, during local 0.8.22 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -198,9 +198,11 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
    save/load and range retiming. Local 0.8.19 adds reviewed pan envelope copy/retime with an independent clipboard,
    static-pan snapshots and native recipes. Local 0.8.20 adds track delay wet/dry mix lanes,
    live complementary ramps, rack-attached envelopes, scoped range retiming and native recipes. Local 0.8.21 adds independent delay feedback lanes (0–95%)
-   with live history preservation and native parity. Next: Read/Touch/Latch/Write modes
-   with visible protection against overwriting an envelope accidentally. Additional
-   curves, FX parameters and FX envelope copy/retime remain open.
+   with live history preservation and native parity. Local 0.8.22 adds protected
+   Read/Touch/Latch/Write pass capture on gain/pan/delay mix/feedback, explicit
+   session arming, live audition, bounded review/apply, cancel/redo and native recipes.
+   Capture uses audio-clock/frame samples; seeks, loops and interruptions discard
+   drafts. Additional curves, FX parameters and FX envelope copy/retime remain open.
 4. Add buses and sends: start with track-to-bus routing and shared reverb/delay;
    specify pre/post-fader sends and feedback-cycle rejection. Sidechain/ducking
    follows the routing model; it should not be an unrelated special-case graph.
@@ -364,9 +366,10 @@ consume the interview/video editor's near-term milestones.
 
 M2.1 and M2.2's EQ/limiter/gain-reduction controls are available in local 0.8.15.
 M2.3's gain/pan direct lanes and gain envelope copy/retime are available in local
-0.8.21, including independent pan envelope copy/retime and track delay mix/feedback lanes.
-Next add protected Read/Touch/Latch/Write recording modes on the available lanes.
-Further FX parameters, FX envelope copy/retime and additional curves remain open. Keep
+0.8.22, including independent pan envelope copy/retime, track delay mix/feedback
+lanes and protected Read/Touch/Latch/Write capture with explicit review.
+Next add FX envelope copy/retime and additional supported curves/parameters;
+M2.3 remains open. Keep
 buses/sends as M2.4 and loudness/true-peak finishing as M2.5. Codecs and disk paging
 remain deferred; physical iOS validation remains outstanding.
 

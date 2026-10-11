@@ -124,7 +124,15 @@ lane uses static feedback. Editing either parameter preserves the other envelope
 Delay keeps its history during live mix/feedback edits; GUI/native range exports
 process the preceding audio before cropping. Range insert/extract retimes FX envelopes
 with the selected scope; lift retains their clocks. The direct lane edits track inserts.
-Other FX parameters, FX envelope copy/paste and recording modes remain planned.
+Automation modes are available on these lanes. Read follows the existing envelope.
+Choose Touch (write while holding), Latch (hold the last touched value until Stop),
+or Write (write continuously), then explicitly arm while stopped and press Play.
+The recording control auditions a local draft; Stop opens a review. Apply changes
+only the recorded intervals in one undo step; Cancel keeps the original and redo.
+Seeks, loops, Escape, interruptions and project changes discard the draft. Modes
+and arming are session-only and reset to Read; saved points work in GUI/native exports.
+Capture is driven by the audio clock and animation frames, not hardware automation
+recording. Other FX parameters, additional curves and FX envelope copy/paste remain planned.
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)

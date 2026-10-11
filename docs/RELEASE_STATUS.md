@@ -1784,3 +1784,48 @@ physical iOS and installed WKWebView interaction remain unvalidated.
 Local 0.8.21 app and independent optimized CLI are rebuilt/installed, signatures
 verified, app launched and the existing autosave preserved with a full recovery
 backup. Main remains a development checkpoint, not an Apple-distributed release.
+
+
+## Local 0.8.22 — protected automation recording
+
+Read/Touch/Latch/Write capture is available on focused track gain, pan, delay mix
+and delay feedback lanes. Explicit session arming is required while stopped.
+Touch restores the original envelope on release; Latch holds until Stop; Write
+starts at the actual playback start. Live audition leaves project, undo and
+autosave untouched. Stop opens a bounded pass review; Apply creates one undo
+step and preserves the original curve outside one-sample interval guards.
+Cancel retains redo. Seeks, loops, interruptions and project/source changes
+cancel capture. Locked tracks and disabled delay inserts cannot arm. Arming and
+mode are session-only; committed points use the existing format-3 contract.
+
+Native `automation-pass` recipes accept the same bounded gain/pan/mix/feedback
+intervals, validate locks and values, and preserve media geometry and other
+parameters. JSON float round trips preserve captured clocks. Live delay scheduling
+also now uses the running AudioContext clock after later playback starts/seeks.
+Capture samples the engine audio clock on animation frames/control events and
+quantizes points to the project sample grid; this is not hardware sample-accurate
+control acquisition. Limits are 100,000 points and 1,000 intervals per pass.
+
+Validation on 2026-10-11:
+
+- **110 files / 1,417 frontend tests** pass with two workers and a 15-second local
+  timeout; repository deadlines/audio assertions are unchanged. Native **76 media
+  library + 3 CLI tests** pass, with 10 existing platform tests ignored. Lint,
+  production tsc/Vite and the local app build pass.
+- `scripts/test-automation-recording.mjs` passes in Chrome and headless WebKit:
+  all modes/targets, actual slider mute audition, Touch return, Latch hold,
+  Write's exact start, no restart, review/apply/undo/redo, cancellation and stale
+  review protection, locks, actual Save/Open and German 390 px controls.
+  The compact screenshot was inspected. A real seek test verifies delay scheduling
+  against an already running context.
+- Native recipe JSON exactly matches GUI output for all four targets. Every sample
+  of each **384,000-frame stereo** fixture is compared: maximum absolute difference
+  Chrome **3.95×10⁻⁷**, WebKit **2.02×10⁻⁷** full scale. These are measured
+  tolerances, not bit identity. Existing gain and delay feedback Chrome/native
+  regressions also pass.
+
+Local app 0.8.22 and the independent optimized CLI are installed, signatures
+verified and app launched. The existing autosave is unchanged with a full recovery
+backup. FX envelope clipboard, additional curves and selected parameters remain
+M2.3 work. No release tag or Apple upload; physical iOS and installed WKWebView
+interaction remain unvalidated. Main is a development checkpoint.

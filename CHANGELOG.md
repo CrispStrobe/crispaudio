@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.22 — 2026-10-11
+
+- Add protected Read/Touch/Latch/Write automation pass capture for gain, pan and
+  delay mix/feedback, with explicit session arming and live draft audition.
+- Stop to review bounded intervals; Apply creates one undo step with outside
+  boundary guards. Cancel preserves envelopes and redo; seeks, loops, interruptions,
+  lane/project/source changes and Escape discard drafts.
+- Add native `automation-pass` recipes and precise JSON float round-tripping.
+- Correct live FX envelope clock scheduling when the AudioContext has already run.
+  Capture is frame-sampled; further FX parameters, curves and FX clipboard remain planned.
+
 ## 0.8.21 — 2026-10-11
 
 - Add an independent track delay feedback lane (0–95%) with live ramps that

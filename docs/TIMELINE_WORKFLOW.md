@@ -769,3 +769,46 @@ track inserts. FX envelope copy/paste and recording modes remain planned.
 
 The native recipe preserves the existing mix envelope and media geometry. Values
 are 0–0.95; unsupported parameters, non-delay inserts and locked tracks reject.
+
+## Protected automation recording (local 0.8.22)
+
+The focused gain, pan and delay mix/feedback lanes offer **Read / Touch / Latch /
+Write**, a record control, current-value readout and an explicit arm button.
+Choose a mode while stopped, arm the pass, and press Play:
+
+- **Read** follows the existing envelope; it cannot record.
+- **Touch** records while holding or using the record control. Release returns
+  playback to the original envelope. Several touches form separate intervals.
+- **Latch** starts at the first touch and keeps writing its last value until Stop.
+- **Write** records continuously from playback start until Stop.
+
+The record control auditions a local draft. The envelope, project, autosave and
+undo/redo stay unchanged until Stop opens **Review automation pass**. Review lists
+the actual intervals and point counts. Apply replaces those intervals, with
+one-sample outside guards, in one undo step. Cancel (or Escape) leaves the old lane
+and redo history intact. Direct point edits/copy/paste are disabled during the
+armed pass and review. Track/lane switches discard the pass. Track locks and
+disabled delay inserts cannot arm. Applying a stale project/source snapshot rejects.
+
+Seeks, loop restarts, Escape, pointer cancellation, blur/hidden tabs, project/source
+changes and closing the lane discard drafts and restore Read playback. Modes and
+arming are session-only; completed and loaded passes return to Read. Samples come
+from the engine audio clock at animation-frame/control-event times, quantized to
+project samples. This is not hardware-sample-accurate automation acquisition; a
+hidden tab is deliberately interrupted. A pass is limited to 100,000 captured
+points and 1,000 intervals. Committed points use the existing linear GUI/native
+rendering, save/open and range-edit rules. This records automation, not audio takes.
+
+The CLI accepts explicit bounded intervals on absolute seconds:
+
+```json
+[{"op":"automation-pass","trackId":"room","parameter":"feedback","effectIndex":0,
+  "spans":[{"points":[{"time":1,"value":0.2},{"time":2,"value":0.7}]},
+           {"points":[{"time":4,"value":0.7},{"time":5,"value":0.1}]}]}]
+```
+
+Parameters are gain, pan, mix or feedback; delay parameters need a zero-based
+insert index. Bounds, chronological nonoverlapping intervals, finite values,
+parameter limits and locks are checked; other envelopes and media geometry stay
+unchanged. Empty or equivalent passes retain the original project. Further FX
+parameters, additional curves and FX envelope copy/paste remain planned.

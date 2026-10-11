@@ -989,6 +989,9 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             "paste-automation" => {
                 out["project"] = crate::gain_envelope::paste(&out["project"], op)?;
             }
+            "automation-pass" => {
+                out["project"] = crate::automation_pass::apply(&out["project"], op)?;
+            }
             "effect-automation" => {
                 let parameter = match op["parameter"].as_str() {
                     Some("mix") => "mix",
@@ -1083,7 +1086,14 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
     if operations.iter().any(|op| {
         !matches!(
             op["op"].as_str(),
-            Some("color" | "orientation" | "automation" | "paste-automation" | "effect-automation")
+            Some(
+                "color"
+                    | "orientation"
+                    | "automation"
+                    | "paste-automation"
+                    | "effect-automation"
+                    | "automation-pass"
+            )
         )
     }) {
         out["project"]["duration"] = json!(timeline_duration(&out["project"]));

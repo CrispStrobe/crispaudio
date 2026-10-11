@@ -1,3 +1,4 @@
+import type {AutomationTarget} from '../../lib/automationRecording';
 import {scheduleMix,scheduleFeedback} from '../../lib/effectAutomation';
 import {prepareOutputLimiter,createOutputLimiter} from '../effects/OutputLimiter';
 import {limiterParameters} from '../dsp/samplePeakLimiter';
@@ -44,6 +45,8 @@ export class TimelineEngine {
   private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]; points:TimelineTrack['panAutomation']; staticPan:number}>();
   private automationNodes = new Map<string, {node:GainNode; points:TimelineTrack['automation']}>();
   private mixNodes=new Map<string,{wet:AudioParam;dry:AudioParam;feedback:AudioParam;points:EffectConfig['automation'];mix:number;staticFeedback:number}>();
+  private playbackGeneration=0;
+  private playbackEnd=0;
   private playbackClock=0;
   private playbackStart=0;
   private outputGain?: GainNode;
@@ -103,6 +106,33 @@ export class TimelineEngine {
     });
   }
 
+  /** Audio-clock position and generation let a local pass reject seeks/loops/restarts. */
+  automationClock():{time:number;start:number;generation:number}|undefined {
+    if(!this.outputGain)return;
+    return {time:Math.min(this.playbackEnd,this.playbackStart+this.ctx.currentTime-this.playbackClock),start:this.playbackStart,generation:this.playbackGeneration};
+  }
+  /** Audition one lane without changing the project or rebuilding DSP. Undefined restores Read. */
+  previewAutomation(project:TimelineProject,target:AutomationTarget,value?:number):boolean {
+    const track=project.tracks.find(t=>t.id===target.trackId);if(!track)return false;
+    const now=this.ctx.currentTime,time=this.playbackStart+now-this.playbackClock;
+    if(target.parameter==='gain'){
+      const param=this.automationNodes.get(track.id)?.node.gain;if(!param)return false;
+      param.cancelScheduledValues(now);if(value===undefined)scheduleGain(param,track.automation,now,time);else param.setValueAtTime(value,now);return true;
+    }
+    if(target.parameter==='pan'){
+      const param=this.mixerNodes.get(track.id)?.pan.pan;if(!param)return false;
+      param.cancelScheduledValues(now);if(value===undefined)schedulePan(param,track.panAutomation,now,time,track.pan);else param.setValueAtTime(value,now);return true;
+    }
+    const nodes=this.mixNodes.get(`track:${track.id}:${target.effectIndex}`),effect=track.effects?.[target.effectIndex??-1];if(!nodes||effect?.type!=='delay')return false;
+    if(target.parameter==='mix'){
+      nodes.wet.cancelScheduledValues(now);nodes.dry.cancelScheduledValues(now);
+      scheduleMix(nodes.wet,nodes.dry,value===undefined?effect.automation?.mix:[],now,time,value??effect.params.mix??.3);
+    }else{
+      nodes.feedback.cancelScheduledValues(now);scheduleFeedback(nodes.feedback,value===undefined?effect.automation?.feedback:[],now,time,value??effect.params.feedback??.4);
+    }
+    return true;
+  }
+
   private playbackNodes = new Set<AudioNode>();
 
   constructor(ctx: AudioContext, masterGain?: GainNode) {
@@ -147,7 +177,7 @@ export class TimelineEngine {
     });
     const masterInput = ctx.createGain();
     const now = ctx.currentTime;
-    this.playbackClock=now;this.playbackStart=startTime;
+    this.playbackClock=now;this.playbackStart=startTime;this.playbackEnd=endTime;
     const rangeGate = ctx.createGain();
     const outputGain = ctx.createGain();
     outputGain.gain.value = project.masterVolume ?? 1;
@@ -175,7 +205,7 @@ export class TimelineEngine {
       const trackFade=ctx.createGain();
       scheduleEnvelope(trackFade.gain,now+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
       const automated=ctx.createGain();scheduleGain(automated.gain,track.automation,now,startTime);
-      this.playbackClock=now;this.playbackStart=startTime;
+      this.playbackClock=now;this.playbackStart=startTime;this.playbackEnd=endTime;
       this.automationNodes.set(track.id,{node:automated,points:track.automation});
       trackFade.connect(automated);this.applyEffects(ctx,automated,track.effects??[],`track:${track.id}`).connect(trackGain);
       trackGain.gain.value = audible.has(track.id) ? track.volume : 0;
@@ -231,6 +261,7 @@ export class TimelineEngine {
 
   /** Stop all active playback immediately. */
   stop(): void {
+    this.playbackGeneration++;
     for (const src of this.activeSources) {
       try {
         src.stop();
@@ -427,8 +458,8 @@ export class TimelineEngine {
             p.feedback ?? 0.4,
             p.mix ?? 0.3,
             (wet,dry,feedback)=>{
-              scheduleMix(wet,dry,fx.automation?.mix,ctx===this.ctx?this.playbackClock:0,ctx===this.ctx?this.playbackStart:timelineStart,p.mix??.3);
-              scheduleFeedback(feedback,fx.automation?.feedback,ctx===this.ctx?this.playbackClock:0,ctx===this.ctx?this.playbackStart:timelineStart,p.feedback??.4);
+              scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.3);
+              scheduleFeedback(feedback,fx.automation?.feedback,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.feedback??.4);
               if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,feedback,points:fx.automation,mix:p.mix??.3,staticFeedback:p.feedback??.4});
             },
           );

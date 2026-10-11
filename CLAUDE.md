@@ -536,11 +536,12 @@ the last valid edit. Optional source-pointer/workflow browser harnesses validate
 these controls plus real file actions and native range renders. M2 mixer is next.
 
 
-## Current mixer/DSP contract (0.8.21)
+## Current mixer/DSP contract (0.8.22)
 
 M2.1 mixer and M2.2 EQ/limiter/GR are implemented. M2.3 gain/pan lanes, their
 reviewed copy/retime, and track delay mix/feedback lanes are available. Protected
-recording modes are next; further FX parameters remain planned. Read PLAN.md's
+Read/Touch/Latch/Write passes are available; further FX parameters/curves and FX
+copy remain planned. Read PLAN.md's
 active section before older implementation notes. Mixer gain/pan,
 audition switches, EQ parameters and limiter ceiling/release update the live
 graph; delay mix automation uses complementary wet/dry ramps; feedback has
@@ -572,3 +573,22 @@ Playwright/browsers and served Vite/dist respectively; no user media is committe
 Use npm run build (tsc -b) for the full frontend check. Local machine setup and
 private fixture/recovery paths are in HANDOVER.local.md when present; that file
 is deliberately gitignored. Never force-add it or copy secrets into tracked docs.
+
+
+## Protected automation passes (0.8.22)
+
+AutomationRecorder uses TimelineEngine.automationClock and previewAutomation to
+capture/monitor gain, pan, delay mix/feedback without project/history mutations.
+Explicit stopped-session arm; Read is default. Touch releases to the old lane;
+Latch continues after first touch; Write starts at playback start. Capture is
+frame driven on the audio clock, with point clocks quantized to project samples.
+Stop reviews bounded spans. applyAutomationPass uses original one-sample guards,
+retains other parameters/geometry and returns identity for equivalent passes.
+Native automation-pass mirrors this; serde_json float_roundtrip preserves clocks.
+Seeks/loops/generation changes, blur/hidden tab, pointer cancellation, source/project
+changes and lane unmount discard drafts. Apply rechecks project/source identity
+and locks, and requires stopped playback. Modes/arming/drafts never serialize or
+autosave. Existing offline/native outputs render committed points as usual.
+Live FX scheduling must distinguish realtime via scope, not AudioContext identity:
+the realtime context is proxied for node cleanup. Never reset delay history to
+preview automation. Preserve source/project recovery during local installs.

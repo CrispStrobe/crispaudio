@@ -266,3 +266,16 @@ and scoped range retiming retain both parameters. Native effect-automation recip
 accept feedback and preserve mix/media geometry. Chrome/WebKit real-control and
 full stereo PCM checks pass; further selected FX parameters, FX clipboard and
 protected recording modes remain M2.3 work.
+
+
+### 2026-10-11 — local 0.8.22: protected automation recording
+
+Added explicitly armed Read/Touch/Latch/Write capture on gain, pan, delay mix and
+feedback. Live audition is a session draft; Stop presents bounded intervals for
+review and one-step Apply, with original outside guards and cancel/redo protection.
+Seeks, loops and interruptions discard capture. Native automation-pass recipes
+match GUI points; float-roundtrip JSON preserves clocks. Fixed live delay
+scheduling after seeks into a running AudioContext. All 1,417 frontend and 76+3
+native tests pass; Chrome/WebKit real-control and full stereo PCM comparisons
+pass. Local app/CLI install preserves recovery. FX envelope copy/retime and
+additional curves/parameters remain M2.3 work; no Apple release.
