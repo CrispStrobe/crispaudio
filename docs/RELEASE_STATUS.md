@@ -1569,3 +1569,52 @@ Evidence logs: `/tmp/automation-tests-final.log`, `/tmp/automation-native.log`,
 `/tmp/automation-lint-final.log`, `/tmp/automation-browser-final.log`,
 `/tmp/automation-webkit-final.log`, `/tmp/automation-pcm.log`,
 `/tmp/automation-app-build-final.log` and `/tmp/automation-install.log`.
+
+
+## Local 0.8.17 — gain envelope copy/paste and time stretching
+
+The gain lane copies a selected time range or the whole envelope into an
+independent session clipboard. Boundary gain values are interpolated; paste
+reviews destination seconds/length and supports time compression/stretching.
+One-sample guards preserve the original outside curve. Clip/source clocks,
+canvas, markers and transcript timing stay fixed. Locked sources can be copied;
+locked destinations reject paste. Stale dialogs reject changed projects.
+Equivalent pastes are no-ops within 1e-12 gain precision; Cancel/Escape retain redo,
+and committed pastes are one undo step. Clipboard data survives track/lane/project
+changes in the current session but is not serialized or tracked by undo.
+
+Native `paste-automation` accepts either a source-track range or portable relative
+GainPoint data. GUI/native project results agree; gain-only recipes no longer
+recompute unrelated canvas metadata. Sample guards use the project sample rate,
+with the same native/GUI canvas bounds. No new curves, pan/FX automation or
+Read/Touch/Latch/Write modes are added.
+
+Validation on this Mac:
+
+- Frontend: 107 files / 1,407 tests passed with two workers; lint and production
+  TypeScript/web build passed. Native: 67 library + 3 CLI tests passed, 10 ignored.
+- Chrome/WebKit actual copy, cross-track paste, numeric stretch, bounds rejection,
+  locked-source copy, stale/locked-target protection, cancel with redo, one-step
+  undo/redo, live playback without restart and actual Save/Open passed.
+  German 390 px dialog layout and touch opening passed; these are browser checks,
+  not physical iOS or installed WKWebView interaction evidence.
+- A six-second source selection pasted into three seconds preserves endpoints and
+  its midpoint peak. Scanning the rendered ten-second stereo fixture outside
+  the one-sample guards gives maximum browser error 7.45e-9 (Chrome) / 2.98e-8
+  (WebKit) against the original envelope render.
+- Both native recipe forms yield the GUI's project JSON. Native 20-second float
+  stereo WAV has 960,000 frames. Checked sample positions include both boundary
+  guards, the pasted peak and outside audio: maximum difference 0 (Chrome) /
+  2.98e-8 (WebKit). This is not a full-file bit-exact claim for arbitrary DSP.
+
+Final local app/CLI installation preserves the existing workspace, with private
+WebKit recovery backup and ad-hoc signature verification. No tag or Apple upload.
+The first app bundle attempt collided with a separate web build rewriting dist;
+the final app build ran on its own. Reproduce with `scripts/test-envelope-copy.mjs`
+and the existing Playwright/Chrome/WebKit environment variables. Set
+`CRISPAUDIO_TEST_CLI` to include native recipe/render comparisons.
+
+Evidence: `/tmp/envelope-tests-final.log`, `/tmp/envelope-native.log`,
+`/tmp/envelope-lint-final.log`, `/tmp/envelope-build-final.log`,
+`/tmp/envelope-browser-native.log`, `/tmp/envelope-webkit-native.log`,
+`/tmp/envelope-app-build-final.log`, `/tmp/envelope-install.log`.

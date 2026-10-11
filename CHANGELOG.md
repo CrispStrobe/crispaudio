@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.17 — 2026-10-11
+
+- Copy selected-range or whole-track gain envelopes on a relative clock; paste
+  across tracks/projects with reviewed destination time and time stretching.
+- Preserve surrounding gain with one-sample boundary guards, source/clip clocks,
+  locks, one-step undo and no-op/cancel redo. Session clipboard is independent
+  of project history. Stale paste dialogs reject changes.
+- Add native `paste-automation` recipes with track-range or portable envelope
+  sources; gain-only recipes preserve canvas metadata.
+
 ## 0.8.16 — 2026-10-11
 
 - Add a focused directly editable track-gain lane on the shared timeline scale:

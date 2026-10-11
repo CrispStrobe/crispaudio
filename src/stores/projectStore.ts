@@ -1,3 +1,4 @@
+import {copyGainEnvelope,pasteGainEnvelope,type GainEnvelope} from '../lib/gainEnvelope';
 import i18n from 'i18next';
 import { moveClips, trimClips, linkedIds, splitClips, removeClips,projectSelection } from '../lib/projectEdits';
 // ---------------------------------------------------------------------------
@@ -56,6 +57,9 @@ interface ProjectState {
   sources: Map<string, AudioSource>;
   selection: TimelineSelection | null;
   clipboard: ClipboardState;
+  gainClipboard: GainEnvelope | null;
+  copyGainAutomation: (trackId:string) => boolean;
+  pasteGainAutomation: (trackId:string,time:number,duration:number) => boolean;
   playheadPosition: number;
   isPlaying: boolean;
   trackHeight: number;
@@ -193,6 +197,17 @@ export const useProjectStore = create<ProjectState>()(
       sources: new Map(),
       selection: null,
       clipboard: { operation: null, segments: [], sourceIds: [] },
+      gainClipboard: null,
+      copyGainAutomation: (trackId) => {
+        const state=get(),range=state.project.editRange;
+        try {set({gainClipboard:copyGainEnvelope(state.project,trackId,range?.start,range?.end)});return true;}
+        catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:i18n.t(String(error instanceof Error?error.message:error))}));return false;}
+      },
+      pasteGainAutomation: (trackId,time,duration) => {
+        const state=get();if(!state.gainClipboard)return false;
+        try {const project=pasteGainEnvelope(state.project,trackId,state.gainClipboard,time,duration);if(project!==state.project)set({project});return true;}
+        catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:i18n.t(String(error instanceof Error?error.message:error))}));return false;}
+      },
       playheadPosition: 0,
       isPlaying: false,
       trackHeight: 80,

@@ -37,6 +37,12 @@ fn clips(project: &Value) -> Vec<Value> {
     }
     list
 }
+pub(crate) fn timeline_duration(project: &Value) -> f64 {
+    clips(project)
+        .iter()
+        .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
+        .fold(project["minimumDuration"].as_f64().unwrap_or(0.0), f64::max)
+}
 fn mutate(project: &mut Value, mut edit: impl FnMut(&Value) -> Result<Vec<Value>>) -> Result<()> {
     if let Some(tracks) = project["tracks"].as_array_mut() {
         for track in tracks {
@@ -980,6 +986,9 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                     json!({"id":id(),"time":time,"name":op["name"].as_str().unwrap_or("Marker")}),
                 );
             }
+            "paste-automation" => {
+                out["project"] = crate::gain_envelope::paste(&out["project"], op)?;
+            }
             "automation" => {
                 let track = out["project"]["tracks"]
                     .as_array_mut()
@@ -1013,17 +1022,13 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             _ => return Err(format!("Unknown recipe operation: {operation}")),
         }
     }
-    if operations
-        .iter()
-        .any(|op| op["op"] != "color" && op["op"] != "orientation")
-    {
-        out["project"]["duration"] = json!(clips(&out["project"])
-            .iter()
-            .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
-            .fold(
-                out["project"]["minimumDuration"].as_f64().unwrap_or(0.0),
-                f64::max
-            ));
+    if operations.iter().any(|op| {
+        !matches!(
+            op["op"].as_str(),
+            Some("color" | "orientation" | "automation" | "paste-automation")
+        )
+    }) {
+        out["project"]["duration"] = json!(timeline_duration(&out["project"]));
     }
     for track in doc["project"]["tracks"].as_array().unwrap() {
         if track["locked"].as_bool() != Some(true) {

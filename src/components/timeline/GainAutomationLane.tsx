@@ -1,6 +1,7 @@
+import {GainEnvelopePaste} from './GainEnvelopePaste';
 import {useEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Activity,CircleHelp,Lock,Plus,Trash2,X} from 'lucide-react';
+import {Activity,CircleHelp,ClipboardPaste,Copy,Lock,Plus,Trash2,X} from 'lucide-react';
 import {useProjectStore} from '../../stores/projectStore';
 import {editGainPoint,gainAt,normalizeGainPoints} from '../../lib/mixAutomation';
 import {snapClipStart} from '../../lib/timelineSnap';
@@ -23,6 +24,8 @@ export function GainAutomationLane({width,onClose}:{width:number;onClose:()=>voi
   const [trackId,setTrackId]=useState(''),[selected,setSelected]=useState<number|null>(null);
   const [draft,setDraft]=useState<{project:typeof project;trackId:string;points:GainPoint[];time:number;originalTime:number|null}|null>(null);
   const track=project.tracks.find(track=>track.id===trackId)??project.tracks[0];
+  const clipboard=useProjectStore(s=>s.gainClipboard);
+  const [paste,setPaste]=useState<{project:typeof project;trackId:string;envelope:NonNullable<typeof clipboard>}|null>(null);
   const svg=useRef<SVGSVGElement>(null);
   const gesture=useRef<{project:typeof project;trackId:string;time:number;originalTime:number|null;points:GainPoint[];pointer?:number}|null>(null);
   const displayed=draft?.project===project&&draft.trackId===track?.id?draft.points:normalizeGainPoints(track?.automation);
@@ -71,7 +74,7 @@ export function GainAutomationLane({width,onClose}:{width:number;onClose:()=>voi
   };
   const times=[scroll,...displayed.filter(p=>p.time>scroll&&x(p.time)<width).map(p=>p.time),...Array.from({length:Math.ceil(width/4)},(_,i)=>scroll+i*4/zoom),scroll+width/zoom].sort((a,b)=>a-b);
   const path=times.map((time,i)=>`${i?'L':'M'}${x(time)},${y(gainAt(displayed,time))}`).join(' ');
-  return <section data-gain-automation className="shrink-0 border-t border-gray-700 bg-gray-950 select-none" aria-label={t('automation.title')}>
+  return <><section data-gain-automation className="shrink-0 border-t border-gray-700 bg-gray-950 select-none" aria-label={t('automation.title')}>
     <div className="flex flex-wrap gap-1 items-center p-1 text-xs" onKeyDown={e=>e.stopPropagation()}>
       {track.locked&&<Lock size={16} className="text-amber-300" aria-label={t('ranges.lockedNotice',{name:track.name})}/>}
       <Activity size={16} className="text-amber-300"/>
@@ -82,6 +85,8 @@ export function GainAutomationLane({width,onClose}:{width:number;onClose:()=>voi
         <label className="flex items-center gap-1">s <NumberField key={`${track.id}:time:${selected}`} width="w-24" label={t('automation.time')} value={point.time} step={1/project.sampleRate} disabled={!!track.locked} onCommit={time=>write(point.time,{...point,time})}/></label>
         <label className="flex items-center gap-1">dB <NumberField key={`${track.id}:gain:${selected}`} width="w-24" label={t('automation.gain')} value={Number(db(point.value).toFixed(3))} min={-60} step={.1} disabled={!!track.locked} onCommit={gain=>gain<=12&&write(point.time,{time:point.time,value:gain===-60?0:10**(gain/20)})}/></label>
       </>}
+      <ToolButton icon={Copy} label={t('automation.copy')} disabled={duration<=0} onClick={()=>{cancel();useProjectStore.getState().copyGainAutomation(track.id);}}/>
+      <ToolButton icon={ClipboardPaste} label={t('automation.paste')} disabled={!!track.locked||!clipboard} onClick={()=>{cancel();if(clipboard)setPaste({project,trackId:track.id,envelope:clipboard});}}/>
       <ToolButton icon={CircleHelp} label={t('automation.help')}/>
       <ToolButton icon={X} label={t('common.close')} className="ml-auto" onClick={onClose}/>
     </div>
@@ -114,5 +119,5 @@ export function GainAutomationLane({width,onClose}:{width:number;onClose:()=>voi
         </g>) }
       </svg>
     </div>
-  </section>;
+  </section>{paste&&<GainEnvelopePaste {...paste} onClose={()=>setPaste(null)}/>}</>;
 }

@@ -1125,3 +1125,5 @@ pub fn first_thumbnail(path: &str, output: &str) -> Result<()> {
 }
 
 pub mod range_edit;
+
+mod gain_envelope;

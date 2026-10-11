@@ -611,6 +611,48 @@ rendering. Track locks also protect microphone-generated envelopes. Existing
 extract/insert range edits retime gain points and preserve boundary values.
 Saving/opening retains the same GainPoint data and project format 3.
 
-One focused gain lane is shown at a time. Pan/FX lanes, envelope copy and
+One focused gain lane is shown at a time. Pan/FX lanes and
 Read/Touch/Latch/Write recording modes are future M2.3 work. Browser touch checks
 do not constitute physical iOS validation.
+
+
+## Copy and retime a gain envelope
+
+In the gain lane, **Copy gain envelope / selected range** copies the current track
+for the selected time range. With no range selected, it copies the whole project
+canvas. Boundary values are interpolated, so a selection between existing points
+keeps the exact gain shape. Copying a locked source is allowed. The separate
+in-session envelope clipboard survives hiding the lane, track switches and
+opening another project; it contains gain values, not source-media references.
+It is neither saved in project files nor tracked by undo.
+
+Choose the destination track and open **Paste gain envelope**. The selected range
+supplies the default destination time/length; otherwise the dialog uses the
+playhead and copied length. Adjust the numeric seconds fields to move, stretch or
+compress the copied curve, review the overwritten point count, then Paste.
+Gain values and linear interpolation stay unchanged. The destination length must
+be at least one project sample and fit within the existing canvas; this action
+never moves media or extends the project. Locked destinations reject paste.
+
+Paste replaces the destination interval and adds old-envelope guard values one
+sample before/after it (clamped at the canvas edges). These short boundary
+transitions preserve the surrounding curve outside the guards. They are not
+arbitrary crossfades and can still be audible when gains differ sharply.
+A paste is one undo step. Escape/Cancel leaves the project and redo unchanged.
+An equivalent curve is a no-op (within 1e-12 relative/absolute gain precision).
+If the project changes while the dialog is open, reopen it to review the new
+state. Committed pastes update playback without restarting it.
+
+CLI recipes use the same operation; source and destination IDs are track IDs:
+
+```json
+[{"op":"paste-automation","sourceTrackId":"mic-a","sourceStart":1,"sourceEnd":7,
+  "trackId":"mic-b","time":4,"duration":3}]
+```
+
+For a portable copied shape, replace the three source fields with
+`"envelope":{"duration":6,"points":[{"time":0,"value":0.25},{"time":3,"value":1},{"time":6,"value":0.25}]}`.
+Envelope point times are relative seconds; values are linear gain. Omit destination
+`duration` to retain the copied length. Run this JSON with the existing CLI
+`edit-project --input ... --recipe ... --output ...` command. Unknown project
+metadata, source paths, clip geometry, markers and transcript clocks stay intact.

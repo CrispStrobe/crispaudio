@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-11, during local 0.8.16 implementation. This section is the current plan.
+Updated 2026-10-11, during local 0.8.17 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -191,8 +191,10 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
    zoom/scroll; mouse/touch add/move/delete, keyboard/numeric edits, snapping,
    locks, one-step commit/cancel, save/open and existing range retiming. Linear
    gain with held endpoints; last supplied duplicate timestamp wins. Playback
-   updates without restarting. Remaining: envelope copy, additional supported
-   curves, pan and selected FX
+   updates without restarting. **Local 0.8.17 adds envelope copy/paste and time
+   stretching**, with selected-range/whole-envelope snapshots, interpolated edges,
+   one-sample outside guards, locked destination protection, no-op/cancel history
+   preservation and native recipes. Remaining: additional supported curves, pan and selected FX
    parameters, then Read/Touch/Latch/Write modes with visible protection against
    overwriting an envelope accidentally.
 4. Add buses and sends: start with track-to-bus routing and shared reverb/delay;

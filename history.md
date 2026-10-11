@@ -206,3 +206,17 @@ keyboard focus, undo/cancel and narrow German layout. Frontend 1,401 and native
 See RELEASE_STATUS.md for measured errors and evidence. Installed app/CLI with
 recovery preserved; no release tag or Apple upload. M2.3 still needs envelope
 copy, pan/FX lanes and recording modes before M2.4 routing.
+
+
+### 2026-10-11 — local 0.8.17: copy and retime gain envelopes
+
+Continued M2.3 with an independent session gain clipboard and reviewed cross-track
+paste. Selections acquire interpolated edge values; destination length stretches
+point clocks while gain stays linear. One-sample guards preserve the surrounding
+curve, with locks, stale-dialog rejection, one-step undo and equivalent-paste
+no-ops. Both native source-range and portable-envelope recipe forms produce the
+GUI project. Chrome/WebKit actual Save/Open and live playback checks pass;
+1,407 frontend and 67+3 native tests pass. Native 20-second float output and
+boundary samples were checked with measured tolerances; see RELEASE_STATUS.md.
+Installed local app/CLI with recovery preserved; no release tag/Apple upload.
+M2.3 continues next with pan/selected FX lanes and recording modes.

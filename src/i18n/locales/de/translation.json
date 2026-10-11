@@ -1165,6 +1165,19 @@
     "add": "Punkt am Abspielkopf",
     "time": "Punktzeit (s)",
     "gain": "Punktpegel (dB)",
-    "help": "Klicken: hinzufügen · Ziehen: bewegen · Entf: löschen · Pfeile: Sample / 0,1 dB, Umschalt ×10 · Alt ohne Raster · Esc: abbrechen · −60 dB = Stille"
+    "help": "Klicken: hinzufügen · Ziehen: bewegen · Entf: löschen · Pfeile: Sample / 0,1 dB, Umschalt ×10 · Alt ohne Raster · Esc: abbrechen · −60 dB = Stille",
+    "copy": "Pegelkurve / Zeitbereich kopieren",
+    "paste": "Pegelkurve einfügen",
+    "destination": "Zielzeit (s)",
+    "length": "Ziellänge (s)",
+    "copiedRange": "{{start}}–{{end}} s kopiert",
+    "replaceReview": "{{count}} Punkte ersetzen · Ende {{end}} s · Streckung ×{{factor}}",
+    "pasteHelp": "Ersetzt nur diesen Bereich. Außen bleibt der Pegel erhalten; Grenzübergänge dauern ein Projektsample. Audioquellen und Clipzeiten bleiben gleich.",
+    "applyPaste": "Einfügen",
+    "bounds": "Einen gültigen Bereich innerhalb des Projekts wählen (mindestens ein Sample).",
+    "invalidEnvelope": "Die kopierte Pegelkurve ist ungültig.",
+    "missingTrack": "Die Automationsspur fehlt.",
+    "lockedEnvelope": "Die Zielspur vor dem Einfügen entsperren.",
+    "changed": "Das Projekt wurde geändert. Einfügen schließen und erneut öffnen, um die aktuelle Kurve zu prüfen."
   }
 }

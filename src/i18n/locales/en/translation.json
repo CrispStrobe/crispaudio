@@ -1165,6 +1165,19 @@
     "add": "Add point at playhead",
     "time": "Point time (s)",
     "gain": "Point gain (dB)",
-    "help": "Click to add · drag to move · Delete to remove · arrows: sample / 0.1 dB, Shift ×10 · Alt bypasses snap · Escape cancels · −60 dB = silence"
+    "help": "Click to add · drag to move · Delete to remove · arrows: sample / 0.1 dB, Shift ×10 · Alt bypasses snap · Escape cancels · −60 dB = silence",
+    "copy": "Copy gain envelope / selected range",
+    "paste": "Paste gain envelope",
+    "destination": "Destination time (s)",
+    "length": "Destination length (s)",
+    "copiedRange": "Copied {{start}}–{{end}} s",
+    "replaceReview": "Replace {{count}} points · end {{end}} s · stretch ×{{factor}}",
+    "pasteHelp": "Replaces this interval only. Outside gain is retained, with boundary transitions over one project sample. Source audio and clip timing stay fixed.",
+    "applyPaste": "Paste",
+    "bounds": "Choose a valid range within the project canvas (at least one sample).",
+    "invalidEnvelope": "The copied gain envelope is invalid.",
+    "missingTrack": "The automation track is missing.",
+    "lockedEnvelope": "Unlock the destination track before pasting automation.",
+    "changed": "The project changed. Close and reopen Paste to review the current envelope."
   }
 }

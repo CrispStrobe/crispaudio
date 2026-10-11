@@ -111,8 +111,11 @@ Choose a track, click/tap to add points, drag to move, or use numeric time/dB
 fields and keyboard arrows. Point edits commit on release; Escape cancels without
 losing redo. Track locks protect envelopes. Gain remains linear between points,
 with held endpoints; an empty envelope is unity. Edits update running playback,
-save/open and GUI/native exports. Pan/FX automation and recording modes remain
-planned.
+save/open and GUI/native exports. Copy the selected time range (or whole envelope) and paste it onto another track
+or time with a reviewed destination length. Time stretching changes point clocks
+while retaining gain values; outside gain is preserved with one-sample boundary
+guards. Copy does not change the project, and paste is one undo step. Pan/FX
+automation and recording modes remain planned.
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)
