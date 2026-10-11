@@ -121,6 +121,11 @@ its static pan value. Delay mix uses 0–100% linear ramps with held endpoints; 
 uses the insert’s static mix. The envelope follows its insert when the rack is reordered.
 Delay feedback automation uses 0–95% linear ramps with held endpoints; an empty
 lane uses static feedback. Editing either parameter preserves the other envelope.
+Mix and feedback also have separate session clipboards: copy a selected range or
+whole canvas, including the static value of an empty lane, and review a stretched
+paste into the same parameter of another delay insert. The other envelope and
+insert settings stay fixed. Clipboards survive project loads within the session;
+copy is not undoable or saved. Locks and an open recording pass protect paste.
 Delay keeps its history during live mix/feedback edits; GUI/native range exports
 process the preceding audio before cropping. Range insert/extract retimes FX envelopes
 with the selected scope; lift retains their clocks. The direct lane edits track inserts.
@@ -132,7 +137,7 @@ only the recorded intervals in one undo step; Cancel keeps the original and redo
 Seeks, loops, Escape, interruptions and project changes discard the draft. Modes
 and arming are session-only and reset to Read; saved points work in GUI/native exports.
 Capture is driven by the audio clock and animation frames, not hardware automation
-recording. Other FX parameters, additional curves and FX envelope copy/paste remain planned.
+recording. Other FX parameters and additional curves remain planned.
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)

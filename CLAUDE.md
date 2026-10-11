@@ -536,12 +536,11 @@ the last valid edit. Optional source-pointer/workflow browser harnesses validate
 these controls plus real file actions and native range renders. M2 mixer is next.
 
 
-## Current mixer/DSP contract (0.8.22)
+## Current mixer/DSP contract (0.8.23)
 
 M2.1 mixer and M2.2 EQ/limiter/GR are implemented. M2.3 gain/pan lanes, their
 reviewed copy/retime, and track delay mix/feedback lanes are available. Protected
-Read/Touch/Latch/Write passes are available; further FX parameters/curves and FX
-copy remain planned. Read PLAN.md's
+Read/Touch/Latch/Write passes and delay mix/feedback copy/retime are available; further FX parameters/curves remain planned. Read PLAN.md's
 active section before older implementation notes. Mixer gain/pan,
 audition switches, EQ parameters and limiter ceiling/release update the live
 graph; delay mix automation uses complementary wet/dry ramps; feedback has
@@ -592,3 +591,22 @@ autosave. Existing offline/native outputs render committed points as usual.
 Live FX scheduling must distinguish realtime via scope, not AudioContext identity:
 the realtime context is proxied for node cleanup. Never reset delay history to
 preview automation. Preserve source/project recovery during local installs.
+
+
+## Delay envelope copy/retime (0.8.23)
+
+effectEnvelope.ts snapshots a selected range/full canvas as a tagged relative-clock
+mix/feedback envelope, including static fallback for an empty lane. Independent
+session clipboards survive loads but are omitted from project serialization and
+undo. GainEnvelopePaste reviews the destination insert/clock/length against its
+project snapshot; locks and rack/project changes reject stale reviews. Playback
+can continue without resetting delay history. Paste uses applyAutomationPass's
+original outside guards/identity rules, preserving other parameters and geometry.
+Native paste-effect-automation accepts sourceTrackId/sourceEffectIndex plus
+sourceStart/sourceEnd, or envelope:{effectType:"delay",parameter,duration,points}.
+Destination trackId/effectIndex and parameter are explicit; indices are zero-based.
+Portable mix/feedback tags must match; untargeted effect settings never change.
+An empty portable envelope uses delay defaults (.3 mix/.4 feedback), while GUI
+copy of an empty lane captures its actual static value. Delay history may affect
+audio after a replaced interval although the outside envelope is preserved.
+Optional actual-UI/native harness: scripts/test-effect-envelope-copy.mjs.

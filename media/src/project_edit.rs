@@ -986,6 +986,9 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                     json!({"id":id(),"time":time,"name":op["name"].as_str().unwrap_or("Marker")}),
                 );
             }
+            "paste-effect-automation" => {
+                out["project"] = crate::effect_envelope::paste(&out["project"], op)?;
+            }
             "paste-automation" => {
                 out["project"] = crate::gain_envelope::paste(&out["project"], op)?;
             }
@@ -1093,6 +1096,7 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                     | "paste-automation"
                     | "effect-automation"
                     | "automation-pass"
+                    | "paste-effect-automation"
             )
         )
     }) {

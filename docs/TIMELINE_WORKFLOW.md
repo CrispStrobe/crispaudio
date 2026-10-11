@@ -737,8 +737,8 @@ included FX envelopes, master envelopes only in global scope; lift keeps clocks.
 Range exports process preceding audio to preserve delay history. Format 3 saves
 `effects[i].automation.mix` as time/value points. Unsupported FX automation and
 out-of-range values reject on project open. FFmpeg compatibility rejects delay;
-use GUI or native DSP. Further FX parameters, an FX envelope clipboard and
-Read/Touch/Latch/Write recording modes remain planned.
+use GUI or native DSP. Further FX parameters and curves remain planned; delay clipboard and recording
+workflows are described below.
 
 Native track-insert editing uses zero-based `effectIndex` and mix values 0–1:
 
@@ -760,7 +760,7 @@ marks that control Auto. Feedback ramps change echo repeats without resetting th
 buffer; mix and feedback envelopes remain independent during edits, rack copy/
 reorder, Save/Open and scoped insert/extract. GUI/native range output keeps the
 preceding history. Clip/master DSP also supports the metadata; direct lanes edit
-track inserts. FX envelope copy/paste and recording modes remain planned.
+track inserts. Delay envelope copy/paste and recording workflows follow below.
 
 ```json
 [{"op":"effect-automation","trackId":"room","effectIndex":0,"parameter":"feedback",
@@ -811,4 +811,44 @@ Parameters are gain, pan, mix or feedback; delay parameters need a zero-based
 insert index. Bounds, chronological nonoverlapping intervals, finite values,
 parameter limits and locks are checked; other envelopes and media geometry stay
 unchanged. Empty or equivalent passes retain the original project. Further FX
-parameters, additional curves and FX envelope copy/paste remain planned.
+parameters and additional curves remain planned.
+
+
+## Delay envelope copy and retime (local 0.8.23)
+
+Select a numbered track **Delay mix** or **Delay feedback** lane, choose a time
+range (or clear it for the full canvas), and press Copy. The clipboard snapshots
+interpolated range endpoints and relative point clocks. An empty lane snapshots
+its actual static mix/feedback value. Mix, feedback, gain and pan each retain an
+independent session clipboard across track/lane/project switches; they are not
+saved or undoable.
+
+Choose the destination delay insert's same parameter and press Paste. Review
+its time and length; length stretches point clocks while retaining values.
+Apply changes only that parameter and creates one undo step. Other settings,
+media clocks, markers and canvas duration stay fixed. One-sample outside guards
+preserve the old envelope. Delay history can affect later audio even when the
+later envelope is unchanged. Paste can update running playback without restarting
+the graph. Escape/Cancel retains project and redo. Locked destinations, changed
+projects/racks and out-of-canvas intervals reject; armed recording blocks Copy/Paste.
+
+Native source-range recipe (zero-based insert indices):
+
+```json
+[{"op":"paste-effect-automation","trackId":"target","effectIndex":0,"parameter":"mix",
+  "sourceTrackId":"source","sourceEffectIndex":1,"sourceStart":1,"sourceEnd":7,
+  "time":4,"duration":3}]
+```
+
+Portable recipe, independent of the source track:
+
+```json
+[{"op":"paste-effect-automation","trackId":"target","effectIndex":0,"parameter":"feedback",
+  "time":4,"duration":3,"envelope":{"effectType":"delay","parameter":"feedback",
+  "duration":6,"points":[{"time":0,"value":0.3},{"time":3,"value":0.9},{"time":6,"value":0.3}]}}]
+```
+
+Portable tags must match the destination parameter/type. Mix values are 0–1;
+feedback values are 0–0.95. Empty portable points mean delay defaults (mix .3,
+feedback .4); GUI Copy always includes the actual static fallback. Missing/non-delay
+inserts, malformed points, ambiguous source forms and locked destinations reject.

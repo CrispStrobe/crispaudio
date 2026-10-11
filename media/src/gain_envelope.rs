@@ -11,7 +11,7 @@ fn number(v: &Value, key: &str) -> Result<f64> {
 fn points(v: &Value) -> Result<Vec<Value>> {
     parameter_points(v, false)
 }
-fn parameter_points(v: &Value, pan: bool) -> Result<Vec<Value>> {
+pub(crate) fn parameter_points(v: &Value, pan: bool) -> Result<Vec<Value>> {
     let mut out = if v.is_null() {
         vec![]
     } else {
@@ -43,7 +43,7 @@ fn parameter_points(v: &Value, pan: bool) -> Result<Vec<Value>> {
 fn at(points: &[Value], t: f64) -> f64 {
     at_parameter(points, t, 1.0)
 }
-fn at_parameter(points: &[Value], t: f64, fallback: f64) -> f64 {
+pub(crate) fn at_parameter(points: &[Value], t: f64, fallback: f64) -> f64 {
     if points.is_empty() {
         return fallback;
     }

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.23 — 2026-10-11
+
+- Add separate session clipboards for track delay mix and feedback envelopes,
+  with interpolated range edges and static-value snapshots for empty lanes.
+- Review destination time/length before stretching a copied envelope into another
+  delay insert. Preserve the other parameter, media clocks and outside automation;
+  locks, stale reviews, capture protection and one-step undo/cancel apply.
+- Add `paste-effect-automation` native recipes with source-insert/range and tagged
+  portable envelope forms. Other FX parameters and additional curves remain planned.
+
 ## 0.8.22 — 2026-10-11
 
 - Add protected Read/Touch/Latch/Write automation pass capture for gain, pan and

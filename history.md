@@ -279,3 +279,16 @@ scheduling after seeks into a running AudioContext. All 1,417 frontend and 76+3
 native tests pass; Chrome/WebKit real-control and full stereo PCM comparisons
 pass. Local app/CLI install preserves recovery. FX envelope copy/retime and
 additional curves/parameters remain M2.3 work; no Apple release.
+
+
+### 2026-10-11 — local 0.8.23: delay envelope copy/retime
+
+Added independent mix/feedback session clipboards to track delay lanes, including
+interpolated range edges and static snapshots of empty lanes. Reviewed paste
+retimes a bounded interval on another delay insert while preserving other settings,
+outside envelopes, media geometry, cancel/redo and one-step undo. Locks, stale
+rack reviews and recording protection apply. Native source-range and tagged portable
+paste-effect-automation recipes match GUI. All 1,421 frontend and 77+3 native tests
+pass; Chrome/WebKit actual UI and complete stereo PCM comparisons pass. App/CLI
+install preserves autosave; additional curves and selected FX parameters remain
+M2.3 work. No Apple release.

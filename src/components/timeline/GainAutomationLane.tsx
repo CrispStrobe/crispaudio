@@ -39,8 +39,8 @@ function AutomationLane({width,onClose,parameter,onParameter,trackId,onTrack}:{w
   const [selected,setSelected]=useState<number|null>(null),[recording,setRecording]=useState(false);
   const [draft,setDraft]=useState<{project:typeof project;trackId:string;points:GainPoint[];time:number;originalTime:number|null}|null>(null);
   const track=project.tracks.find(track=>track.id===trackId)??project.tracks[0];
-  const clipboard=useProjectStore(s=>isPan?s.panClipboard:s.gainClipboard);
-  const [paste,setPaste]=useState<{project:typeof project;trackId:string;envelope:NonNullable<typeof clipboard>}|null>(null);
+  const clipboard=useProjectStore(s=>isFx?s.effectClipboards[fxParameter]:isPan?s.panClipboard:s.gainClipboard);
+  const [paste,setPaste]=useState<{project:typeof project;trackId:string;envelope:NonNullable<typeof clipboard>;effectIndex?:number}|null>(null);
   const svg=useRef<SVGSVGElement>(null);
   const gesture=useRef<{project:typeof project;trackId:string;time:number;originalTime:number|null;points:GainPoint[];pointer?:number}|null>(null);
   const onRecorderBusy=useCallback((busy:boolean)=>{if(busy){if(gesture.current)setSelected(gesture.current.originalTime);gesture.current=null;setDraft(null);}setRecording(busy);},[]);
@@ -103,9 +103,9 @@ function AutomationLane({width,onClose,parameter,onParameter,trackId,onTrack}:{w
         <label className="flex items-center gap-1">s <NumberField key={`${track.id}:time:${selected}`} width="w-24" label={t('automation.time')} value={point.time} step={1/project.sampleRate} disabled={recording||!!track.locked} onCommit={time=>write(point.time,{...point,time})}/></label>
         {isFx?<label className="flex items-center gap-1">% <NumberField key={`${track.id}:mix:${selected}`} width="w-24" label={t(fxParameter==='feedback'?'automation.feedbackPoint':'automation.mixPoint')} value={point.value*100} min={0} step={1} disabled={recording||!!track.locked} onCommit={value=>write(point.time,{...point,value:value/100})}/></label>:isPan?<label className="flex items-center gap-1">L/R <NumberField key={`${track.id}:pan:${selected}`} width="w-24" label={t('automation.pan')} value={point.value} min={-1} step={.01} disabled={recording||!!track.locked} onCommit={value=>write(point.time,{...point,value})}/></label>:<label className="flex items-center gap-1">dB <NumberField key={`${track.id}:gain:${selected}`} width="w-24" label={t('automation.gain')} value={Number(db(point.value).toFixed(3))} min={-60} step={.1} disabled={recording||!!track.locked} onCommit={gain=>gain<=12&&write(point.time,{time:point.time,value:gain===-60?0:10**(gain/20)})}/></label>}
       </>}
-      {!isFx&&<><ToolButton icon={Copy} label={t(isPan?'automation.panCopy':'automation.copy')} disabled={recording||duration<=0} onClick={()=>{cancel();(isPan?useProjectStore.getState().copyPanAutomation:useProjectStore.getState().copyGainAutomation)(track.id);}}/>
-      <ToolButton icon={ClipboardPaste} label={t(isPan?'automation.panPaste':'automation.paste')} disabled={recording||!!track.locked||!clipboard} onClick={()=>{cancel();if(clipboard)setPaste({project,trackId:track.id,envelope:clipboard});}}/>
-      </>}<ToolButton icon={CircleHelp} label={t(isFx?fxHelp:isPan?'automation.panHelp':'automation.help')}/>
+      <ToolButton icon={Copy} label={t(isFx?(fxParameter==='feedback'?'automation.feedbackCopy':'automation.mixCopy'):isPan?'automation.panCopy':'automation.copy')} disabled={recording||duration<=0} onClick={()=>{cancel();if(isFx)useProjectStore.getState().copyEffectAutomation(track.id,effectIndex,fxParameter);else (isPan?useProjectStore.getState().copyPanAutomation:useProjectStore.getState().copyGainAutomation)(track.id);}}/>
+      <ToolButton icon={ClipboardPaste} label={t(isFx?(fxParameter==='feedback'?'automation.feedbackPaste':'automation.mixPaste'):isPan?'automation.panPaste':'automation.paste')} disabled={recording||!!track.locked||!clipboard} onClick={()=>{cancel();if(clipboard)setPaste({project,trackId:track.id,envelope:clipboard,...(isFx?{effectIndex}:{})});}}/>
+      <ToolButton icon={CircleHelp} label={t(isFx?fxHelp:isPan?'automation.panHelp':'automation.help')}/>
       <ToolButton icon={X} label={t('common.close')} className="ml-auto" onClick={onClose}/>
     </div>
     <div className="flex min-w-0">

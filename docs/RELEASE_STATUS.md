@@ -1829,3 +1829,47 @@ verified and app launched. The existing autosave is unchanged with a full recove
 backup. FX envelope clipboard, additional curves and selected parameters remain
 M2.3 work. No release tag or Apple upload; physical iOS and installed WKWebView
 interaction remain unvalidated. Main is a development checkpoint.
+
+
+## Local 0.8.23 — delay envelope copy and retime
+
+Track delay mix/feedback lanes now have independent session clipboards. Copy
+snapshots the selected range/full canvas, interpolated edges and static fallback
+for empty lanes. Reviewed paste stretches relative point clocks into a selected
+destination insert's same parameter, retaining values, other settings and media
+geometry. Original outside automation survives one-sample guards. Apply creates
+one undo step; Cancel and equivalent pastes retain redo. Locks, stale project/rack
+reviews and armed recording protect edits. Clipboards survive project loads within
+the session but are omitted from project files/history. Native
+`paste-effect-automation` supports source-insert/range and tagged portable forms,
+with explicit zero-based source/destination indices and mix/feedback bounds.
+
+Validation on 2026-10-11:
+
+- **111 files / 1,421 frontend tests** pass with two workers and a 15-second local
+  timeout; repository deadlines/assertions are unchanged. Native **77 media library
+  + 3 CLI tests** pass; 10 existing platform tests remain ignored. Lint, production
+  tsc/Vite and the final local Tauri app bundle pass.
+- `scripts/test-effect-envelope-copy.mjs` passes in Chrome and headless WebKit:
+  actual locked-source copy, interpolated edges, cross-track/insert stretch,
+  bounds, cancel/redo, one-step undo/redo, live playback without restart, actual
+  Save/Open, locks, stale rack reviews, separate clipboards, recording protection
+  and German 390 px touch. The compact dialog screenshot is inspected. Both browsers
+  also check actual empty-lane static copy and equivalent paste retaining
+  an existing redo branch.
+- Both native recipe forms produce project JSON exactly matching GUI for each
+  parameter. Every sample of each **480,000-frame stereo** fixture is compared:
+  maximum absolute difference Chrome **1.61×10⁻⁷**, WebKit **8.39×10⁻⁸** full
+  scale. Original envelope values outside guards are preserved; browser audio
+  before the replaced interval differs by at most **1.50×10⁻⁸**. Delay history
+  can affect later audio despite unchanged later envelope values. These measured
+  tolerances do not claim arbitrary-DSP bit identity.
+- Existing pan copy/retime Chrome workflow passes. Protected recording Chrome
+  regression passes all modes/targets and native full PCM (384,000 stereo frames
+  per target, maximum difference **4.03×10⁻⁷** full scale).
+
+Local 0.8.23 app and independent optimized CLI are rebuilt/installed, signatures
+verified and app launched. One existing autosave is unchanged with a full recovery
+backup. Further FX parameters and additional curves remain M2.3 work. No release
+tag or Apple upload; physical iOS and installed WKWebView interaction remain
+unvalidated. Main remains a development checkpoint.
