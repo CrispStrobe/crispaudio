@@ -123,6 +123,12 @@ impl Distortion {
             dry: (1.0 - mix) as f32 as f64,
         }
     }
+    // Keep the oversampling history alive even at the dry endpoint.
+    pub(crate) fn set_mix(&mut self, mix: f64) {
+        let mix = mix.clamp(0.0, 1.0);
+        self.wet = mix as f32 as f64;
+        self.dry = (1.0 - mix) as f32 as f64;
+    }
     fn shape(&self, input: Stereo) -> Stereo {
         input.map(|v| {
             let index = (v.clamp(-1.0, 1.0) as f64 + 1.0) * 127.5;

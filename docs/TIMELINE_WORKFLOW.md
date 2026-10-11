@@ -1030,3 +1030,22 @@ recipes use parameter `mix` and a zero-based bit-crusher effect index; portable
 envelopes require `effectType:"bitcrush"`. Cross-effect paste is rejected.
 GUI/native clip/track/master metadata rendering and scoped range retiming support
 this mix envelope; direct lane editing targets track inserts.
+
+
+## Distortion mix automation (0.8.30)
+
+Select a track distortion insert's **Distortion mix** lane. Edit 0–100% dry/wet
+points, select outgoing Linear/Step, review preset/custom shapes or arm a protected
+Read/Touch/Latch/Write pass. Empty envelopes use static mix, default 50%. Live mix
+changes preserve the oversampled saturation graph and filter history, including
+when the current wet mix is zero. Drive remains a static insert setting.
+
+Copy a selected range or the whole envelope into the distortion mix clipboard.
+Review destination time/length before paste; stretching changes clocks, retaining
+values and curves. Each supported effect type has its own clipboard. Locks,
+outside one-sample guards, cancel/no-op history and save/open follow the existing
+rules. Native `effect-automation`, `shape-automation`, `automation-pass` and
+`paste-effect-automation` use `parameter:"mix"` and the zero-based distortion insert
+index; portable envelopes require `effectType:"distortion"`. Cross-effect paste is
+rejected. Direct controls edit track inserts; clip/master metadata also renders in
+GUI/native exports and follows scoped range insert/extract operations.

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.30 — 2026-10-11
+
+- Add distortion mix automation (0–100%) with point/Linear/Step editing, reviewed
+  preset/custom shapes, protected recording and a separate tagged copy/retime clipboard.
+- Add matching native point/shape/paste/pass recipes, clip/track/master rendering
+  and scoped range edits. Live mix edits preserve the waveshaper and oversampling
+  filters, including at the dry endpoint; drive remains static.
+- Keep source durations intact during offline range renders so Chrome oversampling
+  matches a full-render crop at the final processing block.
+
 ## 0.8.29 — 2026-10-11
 
 - Add bit-crusher mix automation (0–100%) with point/Linear/Step editing, reviewed

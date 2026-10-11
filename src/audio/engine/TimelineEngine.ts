@@ -365,10 +365,9 @@ export class TimelineEngine {
 
         const segPlayStart = Math.max(0, startTime - segment.startTime);
         const bufferOffset = segment.sourceOffset + segPlayStart;
-        const playDuration = Math.min(
-          segment.duration - segPlayStart,
-          renderEnd - Math.max(startTime, segment.startTime),
-        );
+        // The offline context crops at renderEnd. An artificial source stop at
+        // that boundary changes oversampling in the final processing block.
+        const playDuration = segment.duration - segPlayStart;
 
         if (playDuration <= 0) continue;
 
@@ -489,6 +488,8 @@ export class TimelineEngine {
             ctx, node,
             p.drive ?? 0.5,
             p.mix ?? 0.5,
+            'tanh',
+            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.5);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.5,staticFeedback:0,staticTime:0});},
           );
           break;
         case 'bitcrush':

@@ -63,13 +63,18 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
             e["automation"][parameter].clone(),
             e["params"][parameter]
                 .as_f64()
-                .unwrap_or(if e["type"] == "ringmod" || e["type"] == "bitcrush" {
-                    0.5
-                } else if parameter == "feedback" {
-                    0.4
-                } else {
-                    0.3
-                })
+                .unwrap_or(
+                    if e["type"] == "ringmod"
+                        || e["type"] == "bitcrush"
+                        || e["type"] == "distortion"
+                    {
+                        0.5
+                    } else if parameter == "feedback" {
+                        0.4
+                    } else {
+                        0.3
+                    },
+                )
                 .clamp(
                     0.0,
                     match parameter {

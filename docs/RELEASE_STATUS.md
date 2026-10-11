@@ -2188,3 +2188,72 @@ copy audit was repeated with the final optimized CLI in both browsers and passes
 at the reported errors. Earlier copy output changed by at most 1.49e-8 after
 float gain rounding; final GUI/native comparison was rerun rather than assuming
 byte identity.
+
+
+## Local 0.8.30 — distortion mix automation
+
+Distortion mix adds a 0–100% track lane, Linear/Step points, reviewed preset/custom
+shapes, protected Read/Touch/Latch/Write capture and a separate `distortionMix`
+clipboard. Portable envelopes require `effectType:"distortion"`; cross-effect
+paste rejects. Native point/shape/paste/pass recipes and scoped clip/track/master
+range edits support the same metadata. Empty automation uses static mix, default
+50%. Live mix changes retain the waveshaper and oversampling history; drive stays
+static. Existing translations are unchanged, with eight new automation keys in
+each language.
+
+Offline range rendering now lets the context crop at its end while sources keep
+their original clip duration. Previously, an artificial source stop at the crop
+boundary changed Chrome oversampling in the final 23 frames by up to 2.9802322e-8.
+The focused probe and full shape/rack audits now have exact range/full-crop equality.
+No native oversampling kernels or shared automation evaluators changed.
+
+Final lint, TypeScript/Vite build, macOS app bundle and optimized standalone CLI
+build pass. **118 frontend files / 1,453 tests** pass with two workers and the local
+15-second test timeout. **95 native library + 3 CLI tests** pass, with ten existing
+platform tests ignored. Actual Chrome and WebKit audits use the optimized CLI:
+
+| Audit | Stereo frames per case | Chrome maximum error | WebKit maximum error |
+|---|---:|---:|---:|
+| Four preset/custom shapes | 192,000 | 1.4901161e-7 | 4.4703484e-7 |
+| Reviewed copy/retime | 480,000 | 2.6822090e-7 | 2.3096800e-7 |
+| Gain and distortion mix recording | 384,000 | 8.9406967e-8 | 2.5331974e-7 |
+| Clip, track and master mix racks | 384,000 | 2.3841858e-7 | 5.9604645e-7 |
+
+All use the unchanged **2e-6** PCM budget. UI checks cover point bounds/keyboard,
+locks/stale reviews, undo/cancel/redo, independent clipboards, Save/Open and live
+mix edits without graph restart. Recording includes gain capture with distortion
+enabled, mix capture with steady upstream gain, actual wet audition and Read
+restoration, clock/seek/loop/interruption protections. Native source-range/portable
+paste, point and scoped range recipes match GUI envelopes/geometry. German 390px
+shape/copy layouts were inspected; these are browser checks, not physical iOS or
+installed WKWebView interaction tests.
+
+The rack fixture deliberately reaches dry mix at its abrupt 7.4s clip end. A
+separate `scripts/test-distortion-tail.mjs` audit retains the **2e-6** budget and
+exposes an inherited limitation at an abrupt end with nonzero wet mix. Static
+track/clip/master exports at mix 0.5 differ after frame 355,200: Chrome maximum
+error **0.2222395**, WebKit **0.2540395**. Active audio passes (Chrome 1.4901161e-7,
+WebKit 1.1920929e-7). All six native static WAVs are byte-identical to the explicitly
+supplied installed **0.8.29** CLI baseline. This proves an existing tail difference;
+**these full PCM cases fail and are not parity passes**. The audit fails by default;
+an explicit baseline permits reporting a known limit only after byte comparison.
+The earlier automated rack fixture also failed after that end (Chrome 0.1858515,
+WebKit 0.2132175). Reaching dry at the end isolates mix automation; it does not fix
+arbitrary wet distortion tails. Browser outputs end the tail sooner than native.
+
+All twelve existing static distortion cases pass their established **1e-4 peak /
+1e-5 RMS** budget in both browsers; maximum peak error 3.85799e-6, RMS 1.405995e-7.
+The fifteen old gain/pan/delay shape cases were rerun after the range change.
+Chrome passes all PCM (gain/pan/mix/feedback maximum 8.0466271e-7; time 6.9476664e-5).
+WebKit's first four targets pass at 8.3446503e-7; the three known long delay-time
+cases still fail 1e-4 at 0.0013022944 / 0.0007234961 / 0.0001447052, each native WAV
+byte-identical to 0.8.29. The upstream gain/static bit-crusher WebKit precision
+limit documented above also remains unresolved; this increment does not claim
+arbitrary DSP parity or widen any existing tolerance.
+
+The prior 0.8.29 [CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38170644765)
+and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38170644738) both
+completed successfully. The new main push requires its own CI check. Local 0.8.30
+app and optimized CLI are installed, ad-hoc signed, verified and launched with
+autosave recovery retained. No tags or Apple uploads. M2.3 remains open for further
+selected FX parameters; buses/sends and loudness finishing remain M2.4/M2.5.

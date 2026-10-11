@@ -633,3 +633,22 @@ its preceding value through the gap. Capture drafts remain frame-sampled Linear
 points; committed passes restore the outside Step segments. GUI range exports use
 renderMixRange (prefix/crop), not renderToBuffer(start,end) which starts fresh DSP.
 Optional real UI/native PCM audit: scripts/test-step-automation.mjs.
+
+
+## Selected mix automation (0.8.28–0.8.30)
+
+Ring-modulator, bit-crusher and distortion mix reuse the shared 0–1 lane,
+shape/pass guards and independent tagged clipboards. Empty static mix defaults to
+0.5. Native effect_envelope::supports and GUI supportsEffectParameter admit mix
+only for these types; drive/bits/carrier frequency remain static. Live mix edits
+retain each effect graph; other static settings still rebuild. Track controls are
+direct; clip/master envelopes also render and retime with range scope.
+
+Keep source clip durations intact in offline prefix renders. The context crops
+output; stopping a source at the range boundary changes the final oversampling
+block. Test-distortion-{automation,copy,recording,racks}.mjs audit actual UI/native
+PCM. The rack fixture reaches dry mix at the clip end; abrupt wet ends have a
+separate inherited tail limit, explicitly audited by test-distortion-tail.mjs.
+That audit fails unless an explicit baseline proves unchanged native static WAVs;
+known-limit reporting is not a parity pass. See RELEASE_STATUS.md for the measured
+limits, including long WebKit delay and upstream gain/bit-crushing precision.

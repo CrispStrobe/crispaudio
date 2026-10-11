@@ -310,7 +310,11 @@ enum Effect {
     Filter(Biquad),
     Compressor(Box<crate::compressor::Compressor>),
     Delay(Box<Delay>),
-    Distortion(Box<crate::distortion::Distortion>),
+    Distortion {
+        dsp: Box<crate::distortion::Distortion>,
+        mix: f64,
+        automation: Automation,
+    },
     Reverb(Box<crate::reverb::Reverb>),
     Chorus(Chorus),
     BitCrush {
@@ -330,7 +334,18 @@ impl Effect {
             Self::Filter(filter) => filter.at(input),
             Self::Compressor(comp) => comp.at(input, frame),
             Self::Delay(delay) => delay.at(input, frame),
-            Self::Distortion(distortion) => distortion.at(input),
+            Self::Distortion {
+                dsp,
+                mix,
+                automation,
+            } => {
+                dsp.set_mix(if automation.points.is_empty() {
+                    *mix
+                } else {
+                    automation.at(frame as f64 / RATE)
+                });
+                dsp.at(input)
+            }
             Self::Reverb(reverb) => reverb.at(input),
             Self::Chorus(chorus) => chorus.at(input, frame),
             Self::BitCrush {
@@ -415,10 +430,16 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
         if kind == "distortion" {
             let drive = finite(params, "drive", Some(0.5))?.clamp(0.0, 1.0);
             let mix = finite(params, "mix", Some(0.5))?.clamp(0.0, 1.0);
+            let automation = Automation::parse(&effect["automation"]["mix"])?;
+            if automation.points.iter().any(|p| p.1 > 1.0) {
+                return Err("Effect mix automation outside 0..1".into());
+            }
             budget.reserve(std::mem::size_of::<crate::distortion::Distortion>())?;
-            out.push(Effect::Distortion(Box::new(
-                crate::distortion::Distortion::new(drive, mix),
-            )));
+            out.push(Effect::Distortion {
+                dsp: Box::new(crate::distortion::Distortion::new(drive, mix)),
+                mix,
+                automation,
+            });
             continue;
         }
         if kind == "reverb" {
@@ -1062,6 +1083,45 @@ mod tests {
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
         bad = effect.clone();
         bad[0]["automation"]["feedback"] = json!([]);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+    }
+    #[test]
+    fn distortion_mix_automation_preserves_filter_history_and_validates_caps() {
+        let effect = json!([{"type":"distortion","enabled":true,"params":{"drive":0.5,"mix":0.7},"automation":{"mix":[{"time":0,"value":0,"curve":"step"},{"time":0.02,"value":1},{"time":0.04,"value":0}]}}]);
+        let mut rack = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        let mut wet = crate::distortion::Distortion::new(0.5, 1.0);
+        for frame in 0..2400 {
+            let input = [0.21, -0.105];
+            let shaped = wet.at(input);
+            let mix = if frame < 960 {
+                0.0
+            } else if frame >= 1920 {
+                0.0
+            } else {
+                1.0 - (frame - 960) as f64 / 960.0
+            };
+            let actual = process(&mut rack, input, frame);
+            for ch in 0..2 {
+                let expected =
+                    input[ch] * (1.0 - mix) as f32 as f64 + shaped[ch] * mix as f32 as f64;
+                assert!((actual[ch] - expected).abs() < 1e-7);
+            }
+        }
+        let mut empty = effect.clone();
+        empty[0]["automation"]["mix"] = json!([]);
+        let mut empty_rack = filters(&empty, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        let mut static_dsp = crate::distortion::Distortion::new(0.5, 0.7);
+        for frame in 0..600 {
+            assert_eq!(
+                process(&mut empty_rack, [0.21, -0.105], frame),
+                static_dsp.at([0.21, -0.105])
+            );
+        }
+        let mut bad = effect.clone();
+        bad[0]["automation"]["mix"][0]["value"] = json!(1.01);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+        bad = effect.clone();
+        bad[0]["automation"]["drive"] = json!([]);
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
     }
     #[test]

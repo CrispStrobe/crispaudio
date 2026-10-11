@@ -20,7 +20,7 @@ export function AutomationShapeReview({project,target,pointTime,onClose}:{projec
  try{if(current!==project)throw new Error('automation.changed');preview=shapeAutomationSegment(project,target,pointTime,shape,controls);}catch(reason){error=t(reason instanceof Error?reason.message:String(reason));}
  const before=(target.parameter==='pan'?normalizePanPoints:normalizeGainPoints)(targetPoints(project,target)),a=before.find(p=>p.time===pointTime),b=before.filter(p=>p.time>pointTime).sort((a,b)=>a.time-b.time)[0];
  const points=preview?(target.parameter==='pan'?normalizePanPoints:normalizeGainPoints)(targetPoints(preview,target)).filter(p=>p.time>=pointTime&&p.time<=(b?.time??pointTime)):[];
- const effectType=project.tracks.find(t=>t.id===target.trackId)?.effects?.[target.effectIndex??-1]?.type,mixOnly=effectType==='ringmod'||effectType==='bitcrush';
+ const effectType=project.tracks.find(t=>t.id===target.trackId)?.effects?.[target.effectIndex??-1]?.type,mixOnly=effectType==='ringmod'||effectType==='bitcrush'||effectType==='distortion';
  const parameterLabel=target.parameter==='gain'?'automation.gainLane':target.parameter==='pan'?'automation.panLane':mixOnly?`automation.${effectType}Mix`:`automation.delay${target.parameter[0].toUpperCase()+target.parameter.slice(1)}`;
  const format=(v:number)=>target.parameter==='gain'?`${v===0?'−∞':(20*Math.log10(v)).toFixed(1)} dB`:target.parameter==='pan'?v.toFixed(2):target.parameter==='time'?`${(v*1000).toFixed(1)} ms`:`${(v*100).toFixed(1)}%`;
  const range=Math.abs((b?.value??0)-(a?.value??0))||1,min=Math.min(a?.value??0,b?.value??0);

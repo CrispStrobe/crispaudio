@@ -68,6 +68,7 @@ export function applyDistortion(
   drive: number,
   mix: number,
   algorithm: DistortionAlgorithm = 'tanh',
+  mixNodes: ((wet: AudioParam, dry: AudioParam) => void) | undefined = undefined,
 ): AudioNode {
   const shaper = ctx.createWaveShaper();
   shaper.curve = createDistortionCurve(algorithm, drive);
@@ -87,5 +88,6 @@ export function applyDistortion(
   dryGain.connect(output);
   wetGain.connect(output);
 
+  mixNodes?.(wetGain.gain, dryGain.gain);
   return output;
 }
