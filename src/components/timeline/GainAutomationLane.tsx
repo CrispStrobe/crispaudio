@@ -33,7 +33,7 @@ function AutomationLane({width,onClose,parameter,onParameter,trackId,onTrack}:{w
   const [selected,setSelected]=useState<number|null>(null);
   const [draft,setDraft]=useState<{project:typeof project;trackId:string;points:GainPoint[];time:number;originalTime:number|null}|null>(null);
   const track=project.tracks.find(track=>track.id===trackId)??project.tracks[0];
-  const clipboard=useProjectStore(s=>s.gainClipboard);
+  const clipboard=useProjectStore(s=>isPan?s.panClipboard:s.gainClipboard);
   const [paste,setPaste]=useState<{project:typeof project;trackId:string;envelope:NonNullable<typeof clipboard>}|null>(null);
   const svg=useRef<SVGSVGElement>(null);
   const gesture=useRef<{project:typeof project;trackId:string;time:number;originalTime:number|null;points:GainPoint[];pointer?:number}|null>(null);
@@ -95,9 +95,9 @@ function AutomationLane({width,onClose,parameter,onParameter,trackId,onTrack}:{w
         <label className="flex items-center gap-1">s <NumberField key={`${track.id}:time:${selected}`} width="w-24" label={t('automation.time')} value={point.time} step={1/project.sampleRate} disabled={!!track.locked} onCommit={time=>write(point.time,{...point,time})}/></label>
         {isPan?<label className="flex items-center gap-1">L/R <NumberField key={`${track.id}:pan:${selected}`} width="w-24" label={t('automation.pan')} value={point.value} min={-1} step={.01} disabled={!!track.locked} onCommit={value=>write(point.time,{...point,value})}/></label>:<label className="flex items-center gap-1">dB <NumberField key={`${track.id}:gain:${selected}`} width="w-24" label={t('automation.gain')} value={Number(db(point.value).toFixed(3))} min={-60} step={.1} disabled={!!track.locked} onCommit={gain=>gain<=12&&write(point.time,{time:point.time,value:gain===-60?0:10**(gain/20)})}/></label>}
       </>}
-      {!isPan&&<><ToolButton icon={Copy} label={t('automation.copy')} disabled={duration<=0} onClick={()=>{cancel();useProjectStore.getState().copyGainAutomation(track.id);}}/>
-      <ToolButton icon={ClipboardPaste} label={t('automation.paste')} disabled={!!track.locked||!clipboard} onClick={()=>{cancel();if(clipboard)setPaste({project,trackId:track.id,envelope:clipboard});}}/>
-      </>}<ToolButton icon={CircleHelp} label={t(isPan?'automation.panHelp':'automation.help')}/>
+      <ToolButton icon={Copy} label={t(isPan?'automation.panCopy':'automation.copy')} disabled={duration<=0} onClick={()=>{cancel();(isPan?useProjectStore.getState().copyPanAutomation:useProjectStore.getState().copyGainAutomation)(track.id);}}/>
+      <ToolButton icon={ClipboardPaste} label={t(isPan?'automation.panPaste':'automation.paste')} disabled={!!track.locked||!clipboard} onClick={()=>{cancel();if(clipboard)setPaste({project,trackId:track.id,envelope:clipboard});}}/>
+      <ToolButton icon={CircleHelp} label={t(isPan?'automation.panHelp':'automation.help')}/>
       <ToolButton icon={X} label={t('common.close')} className="ml-auto" onClick={onClose}/>
     </div>
     <div className="flex min-w-0">
@@ -112,7 +112,7 @@ function AutomationLane({width,onClose,parameter,onParameter,trackId,onTrack}:{w
         onKeyDown={e=>e.stopPropagation()}>
         {(isPan?[-1,0,1]:[0,1,10**(.6)]).map(value=><line key={value} x1={0} x2={width} y1={y(value)} y2={y(value)} stroke="#334155" pointerEvents="none"/>)}
         <path d={path} fill="none" stroke="#fbbf24" strokeWidth={2} pointerEvents="none"/>
-        {displayed.filter(p=>x(p.time)>=0&&x(p.time)<=width).map(p=><g key={draft?.time===p.time?(draft.originalTime??'new'):p.time} data-gain-point data-time={p.time} tabIndex={0} role="button" aria-disabled={!!track.locked} aria-label={`${t('automation.point')}: ${p.time.toFixed(3)} s, ${isPan?p.value.toFixed(3):(p.value===0?'−∞':db(p.value).toFixed(1)+' dB')}`}
+        {displayed.filter(p=>x(p.time)>=0&&x(p.time)<=width).map(p=><g key={draft?.time===p.time?(draft.originalTime??'new'):p.time} data-gain-point data-time={p.time} tabIndex={0} role="button" aria-disabled={!!track.locked} aria-label={`${t(isPan?'automation.panPoint':'automation.point')}: ${p.time.toFixed(3)} s, ${isPan?p.value.toFixed(3):(p.value===0?'−∞':db(p.value).toFixed(1)+' dB')}`}
           onFocus={()=>setSelected(p.time)}
           onPointerDown={e=>{if(track.locked||e.button!==0)return;e.preventDefault();e.stopPropagation();e.currentTarget.ownerSVGElement!.setPointerCapture(e.pointerId);gesture.current={project,trackId:track.id,time:p.time,originalTime:p.time,points:displayed,pointer:e.pointerId};setSelected(p.time);}}
           onKeyDown={e=>{

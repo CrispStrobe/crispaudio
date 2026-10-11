@@ -50,3 +50,22 @@ it('session clipboard survives lane/project changes, with one-step paste undo/re
  expect(store.pasteGainAutomation('b',1,2)).toBe(true);expect(useProjectStore.getState().project).toBe(before);expect(useProjectStore.temporal.getState().futureStates).toHaveLength(1);
  store.loadProjectState({...project(),id:'new'},new Map());expect(useProjectStore.getState().gainClipboard).not.toBeNull();
 });
+
+it('copies signed pan and static fallback, stretches independently of gain and rejects cross-parameter paste',async()=>{
+ const {copyPanEnvelope,pastePanEnvelope}=await import('../../../src/lib/gainEnvelope');
+ const {panAt}=await import('../../../src/lib/mixAutomation');
+ const p=project();p.tracks[0].panAutomation=[{time:0,value:-1},{time:4,value:1},{time:8,value:-1}];p.tracks[1].pan=.6;
+ const copy=copyPanEnvelope(p,'a',1,7);expect(copy.parameter).toBe('pan');expect(copy.points).toEqual([{time:0,value:-.5},{time:3,value:1},{time:6,value:-.5}]);
+ const out=pastePanEnvelope(p,'b',copy,4,3);expect(panAt(out.tracks[1].panAutomation,5.5)).toBe(1);
+ for(const time of [0,3,4-1/48000,7+1/48000,9,10])expect(panAt(out.tracks[1].panAutomation,time)).toBeCloseTo(.6,12);
+ expect(out.tracks[1].automation).toBe(p.tracks[1].automation);expect(out.tracks[1].pan).toBe(.6);expect(out.markers).toBe(p.markers);
+ expect(()=>pasteGainEnvelope(p,'b',copy,0)).toThrow('parameterMismatch');expect(()=>pastePanEnvelope(p,'b',copyGainEnvelope(p,'a'),0)).toThrow('parameterMismatch');
+ const constant=copyPanEnvelope(p,'b',1,3);expect(constant.points).toEqual([{time:0,value:.6},{time:2,value:.6}]);expect(pastePanEnvelope(p,'b',constant,1)).toBe(p);
+});
+it('keeps separate pan/gain clipboards across project loads and preserves no-op redo',()=>{
+ const store=useProjectStore.getState();store.setEditRange(1,3);store.copyGainAutomation('a');store.copyPanAutomation('b');
+ const gain=useProjectStore.getState().gainClipboard,pan=useProjectStore.getState().panClipboard;
+ useProjectStore.temporal.getState().clear();store.updateTrack('b',{pan:.5});useProjectStore.temporal.getState().undo();
+ expect(store.pastePanAutomation('b',1,2)).toBe(true);expect(useProjectStore.temporal.getState().futureStates).toHaveLength(1);
+ store.loadProjectState({...project(),id:'pan-other'},new Map());expect(useProjectStore.getState().gainClipboard).toBe(gain);expect(useProjectStore.getState().panClipboard).toBe(pan);
+});

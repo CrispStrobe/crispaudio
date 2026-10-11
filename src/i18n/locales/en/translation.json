@@ -1175,7 +1175,7 @@
     "pasteHelp": "Replaces this interval only. Outside gain is retained, with boundary transitions over one project sample. Source audio and clip timing stay fixed.",
     "applyPaste": "Paste",
     "bounds": "Choose a valid range within the project canvas (at least one sample).",
-    "invalidEnvelope": "The copied gain envelope is invalid.",
+    "invalidEnvelope": "The copied envelope is invalid.",
     "missingTrack": "The automation track is missing.",
     "lockedEnvelope": "Unlock the destination track before pasting automation.",
     "changed": "The project changed. Close and reopen Paste to review the current envelope.",
@@ -1186,6 +1186,11 @@
     "panGraph": "Pan automation",
     "automated": "Auto",
     "panHelp": "Pan points override the static pan. Linear between points; endpoints hold. Delete all points to use static pan. Drag or use arrows; Shift increases the step. Alt bypasses snapping.",
-    "openTitle": "Automation"
+    "openTitle": "Automation",
+    "panCopy": "Copy pan envelope / selected range",
+    "panPaste": "Paste pan envelope",
+    "panPasteHelp": "Only pan points change. Surrounding pan is preserved with one-sample boundary guards. Static pan and gain stay unchanged.",
+    "parameterMismatch": "The copied envelope belongs to a different parameter.",
+    "panPoint": "Pan point"
   }
 }

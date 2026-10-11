@@ -1667,3 +1667,40 @@ Verified locally on 2026-10-11:
 No release tag or Apple upload. Headless WebKit is neither an installed WKWebView
 interaction test nor physical iOS validation. Next: pan envelope copy/retime,
 selected FX lanes, then protected automation recording modes.
+
+## Local 0.8.19 — pan envelope copy/paste and time stretching
+
+Pan now has the same reviewed range/whole-canvas copy and destination time/length
+workflow as gain. Separate session clipboards survive project loads and cannot
+cross parameter types. Copying an empty pan lane captures static pan; empty
+portable pan envelopes explicitly mean center. Destination guards use the old
+lane or static pan. Only pan points change; equivalent pastes preserve redo.
+Native `paste-automation parameter:"pan"` supports source-track ranges and tagged
+portable envelopes. Legacy untagged envelopes and default recipes remain gain.
+
+Validation on 2026-10-11:
+
+- **108 files / 1,412 frontend tests** pass with two workers; lint and production
+  tsc/Vite build pass. **71 media library + 3 CLI tests** pass; 10 existing
+  platform-specific tests remain ignored.
+- Unit checks cover signed source edges, time stretching, static source/destination
+  fallback, gain/media/metadata preservation, independent session clipboards,
+  no-op redo and rejected parameter mismatches. Native source-range and portable
+  recipe forms produce the same project.
+- `scripts/test-pan-envelope-copy.mjs` passes in Chrome and headless WebKit with
+  actual controls: locked source copy, interpolated edges, destination compression,
+  bounds, cancel/redo, undo/redo, live paste without playback restart, actual
+  Save/Open, locks/stale dialogs and German 390 px touch review. Screenshot checked.
+- Across every sample in the 10-second GUI fixture outside one-sample guards,
+  maximum change is Chrome 1.49×10⁻⁸ / WebKit 4.47×10⁻⁸ full scale. The pasted
+  interval changes audibly as expected. Each native 20-second stereo render has
+  **960,000 frames**; checked boundary/peak/outside samples differ from GUI by at
+  most Chrome 7.45×10⁻⁹ / WebKit 5.96×10⁻⁸. This is not full-file bit identity.
+- Existing gain envelope browser/native regression passes in Chrome: both recipe
+  forms match GUI project JSON, boundary samples match native exactly and outside
+  audio differs by at most 7.45×10⁻⁹.
+
+Local 0.8.19 app and optimized CLI are rebuilt/installed with signatures verified
+and recovery preserved. No release tag or Apple upload; physical iOS and installed
+WKWebView interaction remain unvalidated. Next M2.3 work: selected FX parameter
+lanes and protected Read/Touch/Latch/Write modes.

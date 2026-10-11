@@ -665,7 +665,7 @@ Select **Panorama** in the automation lane. The vertical scale is −1 left,
 0 center and +1 right. Numeric pan accepts −1…1; up/down arrows change 0.01
 (Shift: 0.1). Time, snapping, pointer/touch editing, cancellation and locks follow
 the gain lane rules. Switching parameters cancels an unfinished preview. Gain
-and pan points are independent, and pan has no envelope clipboard yet.
+and pan points are independent, and pan has its own session envelope clipboard.
 
 `panAutomation` contains absolute timeline seconds and absolute pan values.
 Linear interpolation, held endpoints and last-supplied duplicate timestamps
@@ -682,8 +682,39 @@ Native recipe example (omitting parameter still edits gain):
 ]}]
 ```
 
-Signed bounds are validated. Gain envelope paste rejects pan requests explicitly.
+Signed bounds are validated. Gain and pan envelope paste reject mismatched parameter tags.
 The optional FFmpeg audio compatibility renderer rejects nonempty pan envelopes;
 use GUI or native output. Project format remains 3 and old projects retain static
 pan. Centered mono now follows the playback equal-power law in exports too:
 −3.01 dB in each channel. Stereo center is unchanged.
+
+
+## Copy and retime pan envelopes (local 0.8.19)
+
+The Panorama lane has **Copy pan envelope / selected range** and **Paste pan
+envelope** controls. They follow the reviewed gain paste workflow: copy
+interpolated selection edges (or the whole canvas), choose a destination time
+and length, review replacements and apply one undo step. Only point clocks are
+stretched. One-sample guards preserve outside pan. Locked sources can be copied;
+locked destinations and stale dialogs reject paste. Gain and pan use independent
+session clipboards that survive project loads; neither clipboard is saved or undoable.
+
+Copying an empty pan lane snapshots the source's static pan into constant edge
+points. Destination guards use its own static pan when it has no points. An
+identity paste keeps the original lane and redo history, including an empty lane.
+The destination's static pan value, gain automation, clips and project metadata
+stay unchanged. Actual pan output remains subject to the normal stereo pan law.
+
+Native pan paste uses `parameter: "pan"` with either sourceTrackId/sourceStart/
+sourceEnd or a portable envelope tagged `parameter: "pan"`:
+
+```json
+[{"op":"paste-automation","parameter":"pan","trackId":"destination",
+  "time":4,"duration":3,"envelope":{"parameter":"pan","duration":6,"points":[
+    {"time":0,"value":-0.5},{"time":3,"value":1},{"time":6,"value":-0.5}
+  ]}}]
+```
+
+Untagged portable envelopes retain the legacy gain meaning; signed pan is bounded
+by −1…1. A tagged pan envelope with no points means center (0); GUI copies always
+include their actual edge values. Default recipes still edit gain.

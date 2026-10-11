@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.19 — 2026-10-11
+
+- Copy and paste selected-range or whole-track pan envelopes with reviewed
+  destination time/length, time stretching and one-sample outside guards.
+- Keep separate gain/pan session clipboards; capture static pan from empty lanes.
+  Preserve locks, stale-dialog checks, one-step undo and no-op/cancel redo.
+- Support native `paste-automation` pan recipes, including tagged portable pan
+  envelopes; reject parameter mismatches. Preserve gain, static pan and media clocks.
+
 ## 0.8.18 — 2026-10-11
 
 - Add a focused pan automation lane alongside gain: signed numeric edits,

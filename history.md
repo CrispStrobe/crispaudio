@@ -232,3 +232,15 @@ center remains unchanged. All 1,410 frontend and 70+3 native tests pass; Chrome
 and WebKit full mono/stereo comparisons stay within 1.64×10⁻⁷ full scale.
 Gain direct/copy regressions pass. Local app/CLI installed with autosave preserved;
 no release tag/Apple upload. Pan copy/retime, FX lanes and recording modes remain.
+
+### 2026-10-11 — local 0.8.19: pan envelope copy and retime
+
+Extended the reviewed envelope workflow to signed pan with an independent session
+clipboard, static-pan snapshots, interpolated selection edges and one-sample
+outside guards. Destination length stretches point clocks without changing gain,
+static pan, media clocks or metadata. GUI and native track-range/portable recipe
+forms agree; mismatched parameter tags fail. All 1,412 frontend and 71+3 native
+tests pass. Chrome/WebKit actual UI, live, Save/Open and compact German touch
+checks pass; measured native boundary-sample error stays below 5.96×10⁻⁸ full
+scale. Gain regression also passes. Local install preserves recovery; no Apple
+release. Continue M2.3 with selected FX lanes and protected recording modes.

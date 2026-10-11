@@ -1,4 +1,4 @@
-import {copyGainEnvelope,pasteGainEnvelope,type GainEnvelope} from '../lib/gainEnvelope';
+import {copyGainEnvelope,pasteGainEnvelope,copyPanEnvelope,pastePanEnvelope,type GainEnvelope} from '../lib/gainEnvelope';
 import i18n from 'i18next';
 import { moveClips, trimClips, linkedIds, splitClips, removeClips,projectSelection } from '../lib/projectEdits';
 // ---------------------------------------------------------------------------
@@ -57,6 +57,9 @@ interface ProjectState {
   sources: Map<string, AudioSource>;
   selection: TimelineSelection | null;
   clipboard: ClipboardState;
+  panClipboard: GainEnvelope | null;
+  copyPanAutomation: (trackId:string) => boolean;
+  pastePanAutomation: (trackId:string,time:number,duration:number) => boolean;
   gainClipboard: GainEnvelope | null;
   copyGainAutomation: (trackId:string) => boolean;
   pasteGainAutomation: (trackId:string,time:number,duration:number) => boolean;
@@ -206,6 +209,17 @@ export const useProjectStore = create<ProjectState>()(
       pasteGainAutomation: (trackId,time,duration) => {
         const state=get();if(!state.gainClipboard)return false;
         try {const project=pasteGainEnvelope(state.project,trackId,state.gainClipboard,time,duration);if(project!==state.project)set({project});return true;}
+        catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:i18n.t(String(error instanceof Error?error.message:error))}));return false;}
+      },
+      panClipboard: null,
+      copyPanAutomation: (trackId) => {
+        const state=get(),range=state.project.editRange;
+        try {set({panClipboard:copyPanEnvelope(state.project,trackId,range?.start,range?.end)});return true;}
+        catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:i18n.t(String(error instanceof Error?error.message:error))}));return false;}
+      },
+      pastePanAutomation: (trackId,time,duration) => {
+        const state=get();if(!state.panClipboard)return false;
+        try {const project=pastePanEnvelope(state.project,trackId,state.panClipboard,time,duration);if(project!==state.project)set({project});return true;}
         catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:i18n.t(String(error instanceof Error?error.message:error))}));return false;}
       },
       playheadPosition: 0,

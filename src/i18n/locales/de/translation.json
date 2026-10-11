@@ -1175,7 +1175,7 @@
     "pasteHelp": "Ersetzt nur diesen Bereich. Außen bleibt der Pegel erhalten; Grenzübergänge dauern ein Projektsample. Audioquellen und Clipzeiten bleiben gleich.",
     "applyPaste": "Einfügen",
     "bounds": "Einen gültigen Bereich innerhalb des Projekts wählen (mindestens ein Sample).",
-    "invalidEnvelope": "Die kopierte Pegelkurve ist ungültig.",
+    "invalidEnvelope": "Die kopierte Automationskurve ist ungültig.",
     "missingTrack": "Die Automationsspur fehlt.",
     "lockedEnvelope": "Die Zielspur vor dem Einfügen entsperren.",
     "changed": "Das Projekt wurde geändert. Einfügen schließen und erneut öffnen, um die aktuelle Kurve zu prüfen.",
@@ -1186,6 +1186,11 @@
     "panGraph": "Panorama-Automation",
     "automated": "Auto",
     "panHelp": "Panorama-Punkte ersetzen den festen Wert. Lineare Übergänge; Randwerte bleiben konstant. Ohne Punkte gilt der feste Wert. Ziehen oder Pfeiltasten; Umschalt vergrößert die Schritte. Alt umgeht das Einrasten.",
-    "openTitle": "Automation"
+    "openTitle": "Automation",
+    "panCopy": "Panoramakurve / Zeitbereich kopieren",
+    "panPaste": "Panoramakurve einfügen",
+    "panPasteHelp": "Nur Panorama-Punkte ändern sich. Randpunkte im Abstand eines Samples erhalten die umgebende Kurve. Fester Panorama-Wert und Pegel bleiben unverändert.",
+    "parameterMismatch": "Die kopierte Kurve gehört zu einem anderen Parameter.",
+    "panPoint": "Panorama-Punkt"
   }
 }

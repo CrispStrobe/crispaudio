@@ -113,11 +113,11 @@ losing redo. Track locks protect envelopes. Gain remains linear between points,
 with held endpoints; an empty envelope is unity. Edits update running playback,
 save/open and GUI/native exports. Copy the selected time range (or whole envelope) and paste it onto another track
 or time with a reviewed destination length. Time stretching changes point clocks
-while retaining gain values; outside gain is preserved with one-sample boundary
+while retaining parameter values; outside automation is preserved with one-sample boundary
 guards. Copy does not change the project, and paste is one undo step. Pan uses absolute −1 (left) to +1 (right), with linear ramps and held endpoints.
 An empty pan lane uses the static track pan; an active lane marks the mixer pan
-as Auto. Gain envelope copy/paste remains separate. Selected FX automation, pan
-envelope copy/paste and recording modes remain planned.
+as Auto. Gain and pan have separate session clipboards. Copying an empty pan lane captures
+its static pan value. Selected FX automation and recording modes remain planned.
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)
