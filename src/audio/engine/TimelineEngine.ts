@@ -496,6 +496,7 @@ export class TimelineEngine {
             ctx, node,
             p.bits ?? 8,
             p.mix ?? 0.5,
+            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.5);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.5,staticFeedback:0,staticTime:0});},
           );
           break;
         case 'lowpass':

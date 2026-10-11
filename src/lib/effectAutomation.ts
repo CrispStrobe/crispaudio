@@ -30,5 +30,5 @@ export function scheduleDelayTime(param:AudioParam,points:GainPoint[]|undefined,
  schedulePoints(param,sorted,contextStart,timelineStart);
 }
 
-export const supportsEffectParameter=(type:string|undefined,parameter:string)=>type==='delay'&&['mix','feedback','time'].includes(parameter)||type==='ringmod'&&parameter==='mix';
-export const effectParameterDefault=(type:string|undefined,parameter:DelayParameter)=>type==='ringmod'?.5:delayParameterDefault(parameter);
+export const supportsEffectParameter=(type:string|undefined,parameter:string)=>type==='delay'&&['mix','feedback','time'].includes(parameter)||(type==='ringmod'||type==='bitcrush')&&parameter==='mix';
+export const effectParameterDefault=(type:string|undefined,parameter:DelayParameter)=>type==='ringmod'||type==='bitcrush'?.5:delayParameterDefault(parameter);

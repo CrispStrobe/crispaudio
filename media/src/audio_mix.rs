@@ -316,6 +316,7 @@ enum Effect {
     BitCrush {
         levels: f64,
         mix: f64,
+        automation: Automation,
     },
     RingMod {
         frequency: f64,
@@ -332,17 +333,28 @@ impl Effect {
             Self::Distortion(distortion) => distortion.at(input),
             Self::Reverb(reverb) => reverb.at(input),
             Self::Chorus(chorus) => chorus.at(input, frame),
-            Self::BitCrush { levels, mix } => input.map(|v| {
+            Self::BitCrush {
+                levels,
+                mix,
+                automation,
+            } => input.map(|v| {
                 // Web Audio interpolates the 65536-entry Float32 waveshaper
                 // table; rounding the input directly gives different edges.
-                let index = (v.clamp(-1.0, 1.0) + 1.0) * 32767.5;
+                // Browser waveshaper indexing rounds the input, offset and
+                // scale in float precision, including steep quantization edges.
+                let index = (((v as f32).clamp(-1.0, 1.0) + 1.0) * 32767.5) as f64;
                 let left = index.floor();
                 let right = (left + 1.0).min(65535.0);
                 let table = |i: f64| {
                     (((i * 2.0 / 65535.0 - 1.0) * *levels).round() / *levels) as f32 as f64
                 };
                 let wet = table(left) + (table(right) - table(left)) * (index - left);
-                v * (1.0 - *mix) + wet * *mix
+                if automation.points.is_empty() {
+                    v * (1.0 - *mix) + wet * *mix
+                } else {
+                    let value = automation.at(frame as f64 / RATE);
+                    v * (1.0 - value) as f32 as f64 + wet * value as f32 as f64
+                }
             }),
             Self::RingMod {
                 frequency,
@@ -478,17 +490,18 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
         budget.reserve(0)?;
         if kind == "bitcrush" || kind == "ringmod" {
             let mix = finite(params, "mix", Some(0.5))?.clamp(0.0, 1.0) as f32 as f64;
+            let automation = Automation::parse(&effect["automation"]["mix"])?;
+            if automation.points.iter().any(|p| p.1 > 1.0) {
+                return Err("Effect mix automation outside 0..1".into());
+            }
             out.push(if kind == "bitcrush" {
                 let bits = finite(params, "bits", Some(8.0))?.round().clamp(1.0, 16.0);
                 Effect::BitCrush {
                     levels: 2.0f64.powf(bits - 1.0),
                     mix,
+                    automation,
                 }
             } else {
-                let automation = Automation::parse(&effect["automation"]["mix"])?;
-                if automation.points.iter().any(|p| p.1 > 1.0) {
-                    return Err("Ring mix automation outside 0..1".into());
-                }
                 Effect::RingMod {
                     frequency: finite(params, "freq", Some(200.0))?.clamp(0.1, RATE / 2.0) as f32
                         as f64,
@@ -769,7 +782,11 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
         {
             mono = false;
         }
-        let automation = Automation::parse(&track["automation"])?;
+        let mut automation = Automation::parse(&track["automation"])?;
+        // Gain automation values enter Web Audio as float AudioParam values.
+        for point in &mut automation.points {
+            point.1 = point.1 as f32 as f64;
+        }
         for c in segments {
             clip_count += 1;
             if clip_count > 256 {
@@ -936,7 +953,12 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
                     }
                 }
                 let factor = bus.envelope.at(time - bus.start) * bus.automation.at(time);
-                value = process(&mut bus.filters, value.map(|v| v * factor), frame);
+                // GainNode renders float samples and float parameter values.
+                value = process(
+                    &mut bus.filters,
+                    value.map(|v| ((v as f32) * (factor as f32)) as f64),
+                    frame,
+                );
                 value = pan(
                     value.map(|v| v * bus.gain),
                     bus.pan.at(time) as f32 as f64,
@@ -1032,6 +1054,49 @@ mod tests {
             };
             let expected = 0.25 * (1.0 - mix + mix * (std::f64::consts::TAU * 37.0 * t).sin());
             let out = process(&mut rack, [0.25, -0.125], frame);
+            assert!((out[0] - expected).abs() < 1e-7);
+            assert!((out[1] + expected / 2.0).abs() < 1e-7);
+        }
+        let mut bad = effect.clone();
+        bad[0]["automation"]["mix"][0]["value"] = json!(1.01);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+        bad = effect.clone();
+        bad[0]["automation"]["feedback"] = json!([]);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+    }
+    #[test]
+    fn bitcrush_float_index_edges_match_browser_measurements() {
+        // Four-bit wet outputs measured directly with both Chrome and WebKit.
+        let fx = json!([{"type":"bitcrush","enabled":true,"params":{"bits":4,"mix":1}}]);
+        let mut rack = filters(&fx, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        for (input, expected) in [
+            (0.0624999962747097, 0.05859375),
+            (0.0625, 0.05859375),
+            (0.0625000074505806, 0.05859375),
+            (0.06249000132083893, 0.017578125),
+            (-0.0625, -0.05859375),
+            (0.9375, 0.87890625),
+        ] {
+            let out = process(&mut rack, [input, input], 64);
+            assert!((out[0] - expected).abs() < 1e-7);
+            assert_eq!(out[0], out[1]);
+        }
+    }
+    #[test]
+    fn bitcrush_mix_dsp_follows_step_and_linear_points_and_rejects_caps() {
+        let effect = json!([{"type":"bitcrush","enabled":true,"params":{"bits":4,"mix":0.5},"automation":{"mix":[{"time":0,"value":0,"curve":"step"},{"time":0.02,"value":1},{"time":0.04,"value":0}]}}]);
+        let mut rack = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        for frame in [0, 400, 960, 1440, 1920] {
+            let t = frame as f64 / RATE;
+            let mix = if t < 0.02 {
+                0.0
+            } else if t >= 0.04 {
+                0.0
+            } else {
+                1.0 - (t - 0.02) / 0.02
+            };
+            let expected = 0.21 * (1.0 - mix) + 0.25 * mix;
+            let out = process(&mut rack, [0.21, -0.105], frame);
             assert!((out[0] - expected).abs() < 1e-7);
             assert!((out[1] + expected / 2.0).abs() < 1e-7);
         }

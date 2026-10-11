@@ -25,7 +25,7 @@ browser.
   trims, ripple trims, trim-to-playhead and slide edits have reviewed source limits.
 - Apply clip/track fades, audio crossfades, picture transitions, colour correction
   and orientation changes.
-- Mix with gain, pan, mute/solo, gain/pan, delay mix/feedback/time and ring-modulator mix automation,
+- Mix with gain, pan, mute/solo, gain/pan, delay mix/feedback/time and ring-modulator/bit-crusher mix automation,
   with clip/track/master effect racks.
   Current timeline effects include filters, bit crushing, ring modulation, delay,
   chorus, reverb, distortion and compression.
@@ -108,7 +108,7 @@ inserts and mixer strips show gain reduction; the limiter shows its own reductio
 These are sample-peak controls; true-peak and LUFS tools remain future work.
 
 The automation button opens a focused track lane beneath the timeline.
-Choose a track and gain, panorama, a delay insert’s mix, feedback or time, or ring modulation mix, click/tap to add points, drag to move, or use numeric time/dB/pan
+Choose a track and gain, panorama, a delay insert’s mix, feedback or time, or ring modulation/bit-crusher mix, click/tap to add points, drag to move, or use numeric time/dB/pan
 fields and keyboard arrows. Point edits commit on release; Escape cancels without
 losing redo. Track locks protect envelopes. Select a point to choose its outgoing Linear or
 Step curve. Linear ramps to the next point; Step holds the value and jumps at the
@@ -145,8 +145,13 @@ with the selected scope; lift retains their clocks. The direct lane edits track 
 modulated), held endpoints and static mix when empty (default 50%). Its separate
 clipboard supports reviewed copy/stretch paste, and curves/recording use the same
 protections. Live mix edits keep the carrier phase running; frequency changes
-still rebuild the graph. Clip/master ring mix metadata also renders in GUI/native
-exports. Ring and delay envelopes cannot be pasted into each other's inserts.
+still rebuild the graph. Clip/master ring and bit-crusher mix metadata also renders in GUI/native
+exports. Delay, ring and bit-crusher envelopes stay with their effect type.
+Bit-crusher mix also supports the same reviewed editing, recording and copy/retime
+workflow. It has its own clipboard; an empty envelope uses the static mix (default
+50%). Live mix changes retain the waveshaper graph; bit-depth changes rebuild it.
+Bit-depth automation is not implemented.
+
 Automation modes are available on these lanes. Read follows the existing envelope.
 Choose Touch (write while holding), Latch (hold the last touched value until Stop),
 or Write (write continuously), then explicitly arm while stopped and press Play.

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.29 — 2026-10-11
+
+- Add bit-crusher mix automation (0–100%) with point/Linear/Step editing, reviewed
+  preset/custom shapes, protected recording and its own tagged copy/retime clipboard.
+- Add matching native point/shape/paste/pass recipes and clip/track/master mix
+  rendering. Live mix changes retain the waveshaper graph; bit depth remains static.
+- Match native waveshaper index precision to browser floats at quantization edges,
+  improving static and automated bit-crusher render accuracy.
+
 ## 0.8.28 — 2026-10-11
 
 - Add ring-modulator mix automation (0–100%) with direct points, Linear/Step,

@@ -1011,3 +1011,22 @@ track inserts; optional clip/master mix metadata renders in GUI/native DSP.
   "time":6,"duration":2,"envelope":{"effectType":"ringmod","parameter":"mix",
   "duration":4,"points":[{"time":0,"value":0},{"time":4,"value":1}]}}]
 ```
+
+
+## Bit-crusher mix automation (0.8.29)
+
+Select the track insert's Bit-crusher mix in the automation lane. Edit 0–100%
+points, choose outgoing Linear/Step, shape a selected segment in review, or arm
+Read/Touch/Latch/Write recording and review its captured pass. Empty automation
+uses the insert's static mix, default 50%. Live mix changes keep the waveshaper
+graph running; static bit-depth changes rebuild it. Bit-depth automation is not
+implemented.
+
+Copy the selected range or whole envelope and review a destination time/length.
+Bit-crusher, ring-modulator and delay parameters have separate session clipboards.
+Stretch changes clocks while retaining values and curves; outside guards, locks,
+cancel/no-op history and save/open follow the existing automation rules. Native
+recipes use parameter `mix` and a zero-based bit-crusher effect index; portable
+envelopes require `effectType:"bitcrush"`. Cross-effect paste is rejected.
+GUI/native clip/track/master metadata rendering and scoped range retiming support
+this mix envelope; direct lane editing targets track inserts.

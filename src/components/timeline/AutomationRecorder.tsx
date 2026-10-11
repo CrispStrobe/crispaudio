@@ -109,7 +109,7 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
   {error&&<p role="alert" className="text-amber-300 w-full">{error}</p>}
   {review&&<Modal isOpen onClose={()=>setReview(null)} title={t('automation.reviewPass')}>
    <div data-automation-review className="space-y-3 text-sm" onKeyDown={e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();setReview(null);}}}>
-    <p>{track.name} · {t(target.parameter==='gain'?'automation.gainLane':target.parameter==='pan'?'automation.panLane':target.parameter==='mix'?(track.effects?.[target.effectIndex??-1]?.type==='ringmod'?'automation.ringmodMix':'automation.delayMix'):target.parameter==='time'?'automation.delayTime':'automation.delayFeedback')}</p>
+    <p>{track.name} · {t(target.parameter==='gain'?'automation.gainLane':target.parameter==='pan'?'automation.panLane':target.parameter==='mix'?(['ringmod','bitcrush'].includes(track.effects?.[target.effectIndex??-1]?.type??'')?`automation.${track.effects?.[target.effectIndex??-1]?.type}Mix`:'automation.delayMix'):target.parameter==='time'?'automation.delayTime':'automation.delayFeedback')}</p>
     <p className="text-xs text-gray-400">{t('automation.passReviewHelp')}</p>
     <ul className="max-h-48 overflow-y-auto text-xs">{review.spans.map((span,i)=><li key={i} data-recorded-start={span.points[0].time} data-recorded-end={span.points.at(-1)!.time}>{span.points[0].time.toFixed(3)}–{span.points.at(-1)!.time.toFixed(3)} s · {span.points.length} {t('automation.recordPoints')}</li>)}</ul>
     {errorPreview&&<p role="alert" className="text-amber-300">{errorPreview}</p>}

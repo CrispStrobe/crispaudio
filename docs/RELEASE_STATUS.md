@@ -2113,3 +2113,78 @@ Final lint, production TypeScript/Vite, Tauri app bundle and optimized standalon
 CLI build pass. Local app and CLI 0.8.28 are installed, signed, verified and
 launched, with the existing autosave preserved and a full recovery backup.
 No tag or Apple upload was created for this increment.
+
+
+## Local 0.8.29 — bit-crusher mix automation
+
+Bit-crusher mix has a direct 0–100% track lane, Linear/Step points, preset/custom
+shape review, protected recording and a separate tagged clipboard. Default empty
+mix is 0.5; copying an empty GUI lane captures its actual static value. Delay,
+ring-modulator and bit-crusher envelopes cannot cross-paste. Point/shape/paste/pass
+native recipes use `mix` with the existing effect index. Clip/track/master metadata
+renders in both engines and retimes with scoped range edits. Live mix updates keep
+the waveshaper graph; bit-depth edits rebuild it. Bit-depth automation is not added.
+The optional mix callback preserves the existing four-argument function arity.
+
+Native waveshaper indexing now rounds input/offset/scale to float, matching the
+primary [WebKit waveshaper implementation](https://raw.githubusercontent.com/WebKit/WebKit/main/Source/WebCore/Modules/webaudio/WaveShaperDSPKernel.cpp).
+Six edge probes measured in Chrome/WebKit have identical wet outputs and are
+native regression goldens. The initial copy comparison failed near a quantization
+edge at about 1.9128e-4; it now passes the unchanged 2e-6 budget. Native track gain
+also uses float automation values and float multiplication before its effect rack.
+
+**Remaining precision limit:** combining upstream gain ramps with static bit
+crushing can amplify browser float differences at steep quantization edges.
+For the same recorded-gain project, the corrected native output matches Chrome
+within 2.9802322e-8 but WebKit still fails 2e-6 at 1.4652312e-4. Installed 0.8.28
+already fails that fixture: Chrome 4.1823834e-5 / WebKit 1.4738273e-4. This is an
+existing renderer limit, not a parity pass or a byte-identical baseline exception.
+New mix recording comparisons isolate mix with constant upstream gain; the shared
+gain-capture regression disables the bit-crusher. No tolerance was widened.
+Existing long-delay WebKit precision limits also remain as documented above.
+
+117 frontend files / 1,448 tests pass with two workers and a local 15-second
+per-test timeout. Native 92 library + 3 CLI tests pass, with 10 existing ignored
+platform tests. Both Chrome and WebKit actual-UI/native bit-crusher checks pass:
+
+- Four shape cases, all 192,000 stereo frames/case: exact native recipe points,
+  exact range/full crops, point numeric bounds and keyboard edits, undo/cancel/redo,
+  protected review, Save/Open, live play/waveshaper counts and German 390-pixel fit.
+  Maximum PCM error Chrome 2.9802322e-8 / WebKit 2.5331974e-7.
+- Copy/retime, all 480,000 stereo frames: source-range and portable native recipe
+  JSON match, audible replacement, boundary guards, independent clipboards,
+  static capture, undo/cancel/redo, locks/reordered review, Save/Open and German
+  touch review. Maximum Chrome 2.2351742e-8 / WebKit 2.9802322e-8.
+- Recording, all 384,000 stereo frames/target: shared mode protections plus
+  bit-crusher Latch capture, actual wet quantization and Read restoration, exact
+  native pass JSON and Save/Open. Maximum Chrome 2.9802322e-8 / WebKit 1.9371510e-7.
+- Track/clip/master, all 384,000 stereo frames/rack with later clip/source offset:
+  exact crop, point/tagged paste recipes and insert/extract geometry/envelopes.
+  Maximum Chrome 2.9802322e-8 / WebKit 2.5331974e-7.
+
+All previous EN/DE leaves remain unchanged, with eight new keys each. Synthetic
+fixtures and debug media belong to OS temporary folders; private media untouched.
+Physical iOS and installed WKWebView interactions remain unvalidated by browser
+checks. M2.3 remains open for further selected FX parameters, ahead of M2.4 buses
+and M2.5 loudness/true-peak finishing.
+
+Existing 15-case gain/pan/delay shape regressions were rerun after the native gain
+precision changes. Chrome passes all PCM cases (old four targets max 8.0466270e-7,
+time 6.9476664e-5). WebKit's old four pass at max 8.3446503e-7; its three long-delay
+cases remain failures of the original 1e-4 budget (0.0013022944, 0.0007234961,
+0.0001447052), each byte-identical to the still-installed 0.8.28 CLI during the
+comparison. They are reported as known baseline limits, not parity passes.
+All UI/recipe/crop checks pass. Ten optimized recording/rack outputs are
+byte-identical to the audited debug outputs. Final lint, TypeScript/Vite,
+Tauri app bundle and optimized CLI builds pass. Shape/copy German screenshots
+were inspected and fit. No dependency upgrades, tags or Apple uploads.
+
+Local app and optimized standalone CLI 0.8.29 are installed, ad-hoc signed,
+verified and launched. One autosave is preserved with a full recovery backup.
+The preceding 0.8.28 main CI and iOS CI both passed before this push.
+
+Eight shape outputs are also byte-identical after the gain precision fix; the
+copy audit was repeated with the final optimized CLI in both browsers and passes
+at the reported errors. Earlier copy output changed by at most 1.49e-8 after
+float gain rounding; final GUI/native comparison was rerun rather than assuming
+byte identity.

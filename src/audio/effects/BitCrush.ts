@@ -12,6 +12,7 @@ export function createBitCrush(
   source: AudioNode,
   bits: number,
   mix: number,
+  onMix: ((wet:AudioParam,dry:AudioParam)=>void)|undefined = undefined,
 ): AudioNode {
   const bitsClamped = Math.max(1, Math.min(16, Math.round(bits)));
   const mixClamped = Math.max(0, Math.min(1, mix));
@@ -32,6 +33,7 @@ export function createBitCrush(
   dryGain.connect(output);
   wetGain.connect(output);
 
+  onMix?.(wetGain.gain,dryGain.gain);
   return output;
 }
 
