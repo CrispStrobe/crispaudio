@@ -6,7 +6,7 @@ import type { AudioSegment, AudioSource } from '../../../src/types/audio';
 function audioContext() {
   const nodes: ReturnType<typeof node>[] = [];
   function node(type:string) {
-    const param=()=>({value:1,setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn(),setTargetAtTime:vi.fn()});
+    const param=()=>({value:1,setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn(),setTargetAtTime:vi.fn(),cancelScheduledValues:vi.fn()});
     return {kind:type, connect:vi.fn(),disconnect:vi.fn(),stop:vi.fn(),start:vi.fn(),gain:param(),pan:param(),frequency:param(),Q:param(),delayTime:param()};
   }
   const make=(type:string)=>{const n=node(type);nodes.push(n);return n;};
@@ -33,6 +33,19 @@ describe('timeline master routing and graph disposal',()=>{
   expect(source.stop).not.toHaveBeenCalled();
   expect(nodes.find(n=>n.kind==='pan')!.pan.setTargetAtTime).toHaveBeenCalledWith(.8,0,.005);
   expect(engine.getMeter('t')).toHaveLength(2);
+  const pan=nodes.find(n=>n.kind==='pan')!.pan;
+  const automated={...p,tracks:p.tracks.map(t=>({...t,panAutomation:[{time:0,value:-1},{time:1,value:1}]}))};
+  engine.updateMix(automated);
+  expect(pan.cancelScheduledValues).toHaveBeenCalledWith(0);
+  expect(pan.setValueAtTime).toHaveBeenLastCalledWith(-1,0);
+  expect(pan.linearRampToValueAtTime).toHaveBeenLastCalledWith(1,1);
+  const scheduled=pan.setValueAtTime.mock.calls.length;
+  engine.updateMix({...automated,tracks:automated.tracks.map(t=>({...t,pan:.5}))});
+  expect(pan.setValueAtTime).toHaveBeenCalledTimes(scheduled); // static pan never replaces an active lane
+  engine.updateMix({...p,tracks:p.tracks.map(t=>({...t,pan:.5}))});
+  expect(pan.setValueAtTime).toHaveBeenLastCalledWith(.5,0);
+  expect(source.start).toHaveBeenCalledTimes(1);
+
   engine.updateMix({...p,tracks:p.tracks.map(t=>({...t,muted:true,solo:true}))});
   expect(source.start).toHaveBeenCalledTimes(1);
   engine.stop();

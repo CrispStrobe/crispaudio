@@ -220,3 +220,15 @@ GUI project. Chrome/WebKit actual Save/Open and live playback checks pass;
 boundary samples were checked with measured tolerances; see RELEASE_STATUS.md.
 Installed local app/CLI with recovery preserved; no release tag/Apple upload.
 M2.3 continues next with pan/selected FX lanes and recording modes.
+
+### 2026-10-11 — local 0.8.18: editable absolute pan envelopes
+
+Continued M2.3 with a pan parameter selector in the shared automation lane,
+signed points, live scheduling without source restarts, empty-lane static fallback,
+locks, Save/Open and range retiming. Native recipes/rendering use the same held
+linear endpoints and duplicate policy. Mixer shows Auto while pan points exist.
+Corrected centered mono exports to match playback's equal-power law; stereo
+center remains unchanged. All 1,410 frontend and 70+3 native tests pass; Chrome
+and WebKit full mono/stereo comparisons stay within 1.64×10⁻⁷ full scale.
+Gain direct/copy regressions pass. Local app/CLI installed with autosave preserved;
+no release tag/Apple upload. Pan copy/retime, FX lanes and recording modes remain.

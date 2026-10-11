@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-11, during local 0.8.17 implementation. This section is the current plan.
+Updated 2026-10-11, during local 0.8.18 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -54,7 +54,7 @@ playback/render paths and native media backends. Existing capabilities include:
 
 These are foundations to extend, not features to reinvent. In particular,
 Range edits preserve unaffected picture transitions and offer reviewed hard-cut
-replacement for crossed blends; the default preserve policy rejects such boundaries; gain automation has a focused direct-edit lane; `project.video.clips` is a single
+replacement for crossed blends; the default preserve policy rejects such boundaries; gain/pan automation have a focused direct-edit lane; `project.video.clips` is a single
 composition lane; timeline effects now include parametric EQ and a sample-peak
 limiter, but still lack sends/buses and general parameter automation. Timeline recording/takes are not
 implemented. SFX/Voice recording elsewhere does not fulfil that requirement.
@@ -194,8 +194,9 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
    updates without restarting. **Local 0.8.17 adds envelope copy/paste and time
    stretching**, with selected-range/whole-envelope snapshots, interpolated edges,
    one-sample outside guards, locked destination protection, no-op/cancel history
-   preservation and native recipes. Remaining: additional supported curves, pan and selected FX
-   parameters, then Read/Touch/Latch/Write modes with visible protection against
+   preservation and native recipes. Local 0.8.18 adds absolute pan points with the same direct editing, live updates,
+   save/load and range retiming. Remaining: pan envelope copy/paste, additional
+   supported curves and selected FX parameters, then Read/Touch/Latch/Write modes with visible protection against
    overwriting an envelope accidentally.
 4. Add buses and sends: start with track-to-bus routing and shared reverb/delay;
    specify pre/post-fader sends and feedback-cycle rejection. Sidechain/ducking
@@ -359,9 +360,9 @@ consume the interview/video editor's near-term milestones.
 ## Next concrete implementation slice
 
 M2.1 and M2.2's EQ/limiter/gain-reduction controls are available in local 0.8.15.
-Next implement M2.3's editable automation lanes: display existing track gain
-points on the timeline, add/move/remove points with mouse/touch/keyboard, preserve
-undo and save/load, and validate matching live/offline/native envelopes. Keep
+M2.3's gain/pan direct lanes and gain envelope copy/retime are available in local
+0.8.18. Next extend the reviewed envelope clipboard to pan, then add selected FX
+parameter lanes and protected Read/Touch/Latch/Write recording modes. Keep
 buses/sends as M2.4 and loudness/true-peak finishing as M2.5. Codecs and disk paging
 remain deferred; physical iOS validation remains outstanding.
 

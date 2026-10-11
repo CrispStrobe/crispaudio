@@ -28,6 +28,7 @@ beforeEach(() => {
   vi.stubGlobal('OfflineAudioContext', class {
     destination = {};
     createGain = gain;
+    createStereoPanner = () => ({connect:vi.fn(),pan:{setValueAtTime:vi.fn(),linearRampToValueAtTime:vi.fn()}});
     startRendering = startRendering;
     createBufferSource() {
       clock += cost;

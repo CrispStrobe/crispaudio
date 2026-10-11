@@ -1178,6 +1178,14 @@
     "invalidEnvelope": "The copied gain envelope is invalid.",
     "missingTrack": "The automation track is missing.",
     "lockedEnvelope": "Unlock the destination track before pasting automation.",
-    "changed": "The project changed. Close and reopen Paste to review the current envelope."
+    "changed": "The project changed. Close and reopen Paste to review the current envelope.",
+    "parameter": "Parameter",
+    "gainLane": "Gain",
+    "panLane": "Panorama",
+    "pan": "Point pan (−1…1)",
+    "panGraph": "Pan automation",
+    "automated": "Auto",
+    "panHelp": "Pan points override the static pan. Linear between points; endpoints hold. Delete all points to use static pan. Drag or use arrows; Shift increases the step. Alt bypasses snapping.",
+    "openTitle": "Automation"
   }
 }

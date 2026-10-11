@@ -1178,6 +1178,14 @@
     "invalidEnvelope": "Die kopierte Pegelkurve ist ungültig.",
     "missingTrack": "Die Automationsspur fehlt.",
     "lockedEnvelope": "Die Zielspur vor dem Einfügen entsperren.",
-    "changed": "Das Projekt wurde geändert. Einfügen schließen und erneut öffnen, um die aktuelle Kurve zu prüfen."
+    "changed": "Das Projekt wurde geändert. Einfügen schließen und erneut öffnen, um die aktuelle Kurve zu prüfen.",
+    "parameter": "Parameter",
+    "gainLane": "Pegel",
+    "panLane": "Panorama",
+    "pan": "Punkt-Panorama (−1…1)",
+    "panGraph": "Panorama-Automation",
+    "automated": "Auto",
+    "panHelp": "Panorama-Punkte ersetzen den festen Wert. Lineare Übergänge; Randwerte bleiben konstant. Ohne Punkte gilt der feste Wert. Ziehen oder Pfeiltasten; Umschalt vergrößert die Schritte. Alt umgeht das Einrasten.",
+    "openTitle": "Automation"
   }
 }

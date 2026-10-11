@@ -24,7 +24,7 @@ try {
   useProjectStore.getState().setEditRange(1,7);window.envelopeOriginal=useProjectStore.getState().project;useProjectStore.temporal.getState().clear();
  });
  const state=()=>page.evaluate(()=>({project:window.envelopeStore.getState().project,past:window.envelopeStore.temporal.getState().pastStates.length,future:window.envelopeStore.temporal.getState().futureStates.length}));
- await page.getByRole('button',{name:'Gain automation',exact:true}).click();const lane=page.locator('[data-gain-automation]');
+ await page.getByRole('button',{name:'Automation',exact:true}).click();const lane=page.locator('[data-gain-automation]');
  await lane.getByRole('button',{name:'Copy gain envelope / selected range',exact:true}).click();assert.equal((await state()).past,0);
  const copied=await page.evaluate(()=>window.envelopeStore.getState().gainClipboard);assert.deepEqual(copied.points,[{time:0,value:.25},{time:3,value:1},{time:6,value:.25}]);
  await lane.getByRole('combobox',{name:'Automation track'}).selectOption('b');

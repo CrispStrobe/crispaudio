@@ -18,6 +18,24 @@ export function scheduleGain(param:AudioParam,points:GainPoint[]|undefined,conte
   param.setValueAtTime(gainAt(points,timelineStart),contextStart);
   for(const point of normalizeGainPoints(points))if(point.time>timelineStart)param.linearRampToValueAtTime(point.value,contextStart+point.time-timelineStart);
 }
+/** Absolute pan, with the static position as the empty-lane fallback. */
+export function normalizePanPoints(points:GainPoint[]|undefined):GainPoint[] {
+  return [...new Map((points??[]).filter(p=>Number.isFinite(p.time)&&p.time>=0&&Number.isFinite(p.value)&&p.value>=-1&&p.value<=1).map(p=>[p.time,p])).values()].sort((a,b)=>a.time-b.time);
+}
+export function editPanPoint(points:GainPoint[]|undefined,originalTime:number|null,point:GainPoint):GainPoint[] {
+  return normalizePanPoints([...(points??[]).filter(p=>p.time!==originalTime&&p.time!==point.time),point]);
+}
+export function panAt(points:GainPoint[]|undefined,time:number,fallback=0):number {
+  const sorted=normalizePanPoints(points);
+  if(!sorted.length)return Math.max(-1,Math.min(1,fallback));
+  if(time<=sorted[0].time)return sorted[0].value;
+  for(let i=1;i<sorted.length;i++)if(time<sorted[i].time){const a=sorted[i-1],b=sorted[i];return a.value+(b.value-a.value)*(time-a.time)/(b.time-a.time);}
+  return sorted.at(-1)!.value;
+}
+export function schedulePan(param:AudioParam,points:GainPoint[]|undefined,contextStart:number,timelineStart:number,fallback=0){
+  param.setValueAtTime(panAt(points,timelineStart,fallback),contextStart);
+  for(const point of normalizePanPoints(points))if(point.time>timelineStart)param.linearRampToValueAtTime(point.value,contextStart+point.time-timelineStart);
+}
 export interface MicSection { start:number; end:number; trackId:string; confidence:number }
 /** Measured suggestions, not speaker recognition. Normalize each mic's active level first. */
 export async function suggestMicSections(tracks:TimelineTrack[],sources:Map<string,AudioSource>,signal?:AbortSignal):Promise<MicSection[]>{

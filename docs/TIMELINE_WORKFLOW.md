@@ -586,7 +586,7 @@ and [CLI recipe](MEDIA_WORKSPACE.md#output-limiter-and-gain-reduction).
 
 ## Direct gain automation
 
-Open **Gain automation** in the Timeline toolbar, then choose the track in the
+Open **Automation** in the Timeline toolbar, then choose the track in the
 focused lane. It shares the timeline's horizontal zoom and scroll. Click/tap
 blank space to add a point; drag a point and release to commit. The plus button
 adds a point at the playhead using the current envelope value. Select a point
@@ -611,8 +611,9 @@ rendering. Track locks also protect microphone-generated envelopes. Existing
 extract/insert range edits retime gain points and preserve boundary values.
 Saving/opening retains the same GainPoint data and project format 3.
 
-One focused gain lane is shown at a time. Pan/FX lanes and
-Read/Touch/Latch/Write recording modes are future M2.3 work. Browser touch checks
+One focused lane is shown at a time. Select **Gain** or **Panorama** beside the
+track selector. FX lanes and Read/Touch/Latch/Write recording modes are future
+M2.3 work. Browser touch checks
 do not constitute physical iOS validation.
 
 
@@ -656,3 +657,33 @@ Envelope point times are relative seconds; values are linear gain. Omit destinat
 `duration` to retain the copied length. Run this JSON with the existing CLI
 `edit-project --input ... --recipe ... --output ...` command. Unknown project
 metadata, source paths, clip geometry, markers and transcript clocks stay intact.
+
+
+## Pan automation (local 0.8.18)
+
+Select **Panorama** in the automation lane. The vertical scale is −1 left,
+0 center and +1 right. Numeric pan accepts −1…1; up/down arrows change 0.01
+(Shift: 0.1). Time, snapping, pointer/touch editing, cancellation and locks follow
+the gain lane rules. Switching parameters cancels an unfinished preview. Gain
+and pan points are independent, and pan has no envelope clipboard yet.
+
+`panAutomation` contains absolute timeline seconds and absolute pan values.
+Linear interpolation, held endpoints and last-supplied duplicate timestamps
+apply in realtime, GUI offline and native audio. No points means static track
+pan. While points exist the mixer shows Auto and disables its static pan slider;
+delete the points to restore it. Extract/insert retime pan along with gain;
+lift retains both clocks. Locked envelopes are protected even on empty tracks.
+
+Native recipe example (omitting parameter still edits gain):
+
+```json
+[{"op":"automation","parameter":"pan","trackId":"voice","points":[
+  {"time":0,"value":-1},{"time":2,"value":1},{"time":4,"value":0}
+]}]
+```
+
+Signed bounds are validated. Gain envelope paste rejects pan requests explicitly.
+The optional FFmpeg audio compatibility renderer rejects nonempty pan envelopes;
+use GUI or native output. Project format remains 3 and old projects retain static
+pan. Centered mono now follows the playback equal-power law in exports too:
+−3.01 dB in each channel. Stereo center is unchanged.

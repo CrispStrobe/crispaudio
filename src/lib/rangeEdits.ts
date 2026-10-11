@@ -1,7 +1,7 @@
 import type { TimelineProject, AudioSegment, VideoClip, GainPoint } from '../types/audio';
 import { videoClips, validateVideoClips, frameTime } from './videoEditing';
 import { timelineDuration } from './timelineView';
-import { gainAt } from './mixAutomation';
+import { gainAt, panAt } from './mixAutomation';
 
 type Clip=AudioSegment|VideoClip;
 export type RangeOperation='lift'|'extract'|'insert';
@@ -46,7 +46,7 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
   const groups=new Set(all.filter(c=>included(c)&&affected(c)&&c.linkGroup).map(c=>c.linkGroup));
   if(all.some(c=>c.linkGroup&&groups.has(c.linkGroup)&&!included(c)))fail('linkedScope');
   if(project.groupEditingEnabled!==false){const editGroups=new Set(all.filter(c=>included(c)&&affected(c)&&c.editGroup).map(c=>c.editGroup!.id));if(all.some(c=>c.editGroup&&editGroups.has(c.editGroup.id)&&!included(c)))fail('groupScope');}
-  if(project.tracks.some(t=>ids.has(t.id)&&t.locked&&t.segments.some(affected))||(includeVideo&&project.video?.locked&&videoClips(project.video).some(affected)))fail('locked');
+  if(project.tracks.some(t=>ids.has(t.id)&&t.locked&&(t.segments.some(affected)||(operation!=='lift'&&!!(t.automation?.length||t.panAutomation?.length))))||(includeVideo&&project.video?.locked&&videoClips(project.video).some(affected)))fail('locked');
   const cuts=new Map<string,VideoClip>();
   if(includeVideo){
     const review=planRangeTransitionCuts(project,start,end,operation).filter(c=>!options.trimmedClips?.has(c.clipId));
@@ -80,19 +80,19 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
     return parts;
   };
   const retime=(t:number)=>operation==='insert'?(t>=start?t+length:t):operation==='extract'?(t>=end?t-length:t>start?start:t):t;
-  const automation=(points?:GainPoint[]):GainPoint[]|undefined=>{
+  const automation=(points?:GainPoint[],pan=false):GainPoint[]|undefined=>{
     if(!points?.length||operation==='lift')return points;
     const result=points.filter(p=>operation==='insert'||p.time<start||p.time>=end).map(p=>({...p,time:retime(p.time)}));
     const epsilon=1/project.sampleRate;
-    if(start>0)result.push({time:Math.max(0,start-epsilon),value:gainAt(points,start)});
-    result.push({time:operation==='insert'?end:start,value:gainAt(points,operation==='insert'?start:end)});
+    if(start>0)result.push({time:Math.max(0,start-epsilon),value:(pan?panAt:gainAt)(points,start)});
+    result.push({time:operation==='insert'?end:start,value:(pan?panAt:gainAt)(points,operation==='insert'?start:end)});
     return [...new Map(result.sort((a,b)=>a.time-b.time).map(p=>[p.time,p])).values()];
   };
   const pictures=includeVideo?videoClips(project.video).flatMap(c=>edit(c) as VideoClip[]):undefined;
   // Validate the arrangement after the explicitly reviewed conversions.
   if(pictures&&project.video&&validateVideoClips(pictures,project.video.duration,project.video.sources))fail('pictureTopology');
   const next:TimelineProject={...project,editRange:operation==='lift'?{start,end}:undefined,
-    tracks:project.tracks.map(t=>ids.has(t.id)?{...t,segments:t.segments.flatMap(c=>edit(c) as AudioSegment[]),automation:automation(t.automation)}:t),
+    tracks:project.tracks.map(t=>ids.has(t.id)?{...t,segments:t.segments.flatMap(c=>edit(c) as AudioSegment[]),automation:automation(t.automation),panAutomation:automation(t.panAutomation,true)}:t),
     video:project.video&&includeVideo?{...project.video,clips:pictures,inPoint:undefined,outPoint:undefined}:project.video};
   if(operation==='lift')next.minimumDuration=timelineDuration(project);
   if(retimeGlobal){

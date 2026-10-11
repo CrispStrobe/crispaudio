@@ -20,7 +20,7 @@ try {
   useProjectStore.getState().loadProjectState({id:'p',name:'Mixer test',sampleRate:48000,duration:20,masterEffects:[],tracks:[{id:'t',name:'Room',muted:false,solo:false,volume:1,pan:0,segments:[clip]}]},new Map([['s',{id:'s',name:'tone',buffer,duration:20,sampleRate:48000,channels:2,peaks:[]}]]));useProjectStore.temporal.getState().clear();
  });
 
- await page.getByRole('button',{name:'Gain automation',exact:true}).click();
+ await page.getByRole('button',{name:'Automation',exact:true}).click();
  const lane=page.locator('[data-gain-automation]'),svg=lane.locator('svg[role="group"]');await svg.waitFor();
  let box=await svg.boundingBox();
  const state=()=>page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return {points:useProjectStore.getState().project.tracks[0].automation,past:useProjectStore.temporal.getState().pastStates.length,future:useProjectStore.temporal.getState().futureStates.length};});

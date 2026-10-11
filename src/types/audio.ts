@@ -45,6 +45,7 @@ export interface TimelineTrack {
   volume: number;
   pan: number;
   automation?: GainPoint[]; // absolute timeline seconds
+  panAutomation?: GainPoint[]; // absolute pan −1..1; empty uses static pan
   effects?: EffectConfig[];
   fadeInDuration?: number;
   fadeOutDuration?: number;

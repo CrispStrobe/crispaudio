@@ -590,7 +590,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Redo2} label={t('timeline.redo')} onClick={handleRedo}/>
         <ToolButton icon={Plus} label={t('timeline.addTrack')} onClick={handleAddTrack}/>
         <ToolButton icon={MessageSquare} label={t('tts.title')} onClick={()=>useUIStore.getState().openModal('tts')}/>
-        <ToolButton icon={Activity} label={t('automation.title')} aria-pressed={automation} onClick={()=>setAutomation(value=>!value)}/>
+        <ToolButton icon={Activity} label={t('automation.openTitle')} aria-pressed={automation} onClick={()=>setAutomation(value=>!value)}/>
         <ToolButton icon={SlidersHorizontal} label={t('mixer.title')} aria-pressed={mixer} onClick={()=>setMixer(value=>!value)}/>
         <MediaTools engine={engineRef} panelTarget={mediaPanel} />
         <ToolButton data-help-toggle icon={CircleHelp} label={t('usability.help')} aria-pressed={helpOpen} onClick={()=>setHelpOpen(value=>!value)}/>

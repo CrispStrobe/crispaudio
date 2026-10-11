@@ -1,7 +1,7 @@
 import {prepareOutputLimiter,createOutputLimiter} from '../effects/OutputLimiter';
 import {limiterParameters} from '../dsp/samplePeakLimiter';
 import {eqParameters,isEQ} from '../../lib/equalizer';
-import { scheduleGain } from '../../lib/mixAutomation';
+import { scheduleGain, schedulePan } from '../../lib/mixAutomation';
 import { scheduleEnvelope } from '../../lib/audioEnvelope';
 import { audibleTracks } from '../../lib/timelineView';
 // ---------------------------------------------------------------------------
@@ -40,7 +40,7 @@ export class TimelineEngine {
     return Math.max(0,...[...this.compressorNodes].filter(([key])=>key.startsWith(`${scope}:`)).map(([,node])=>-node.reduction));
   }
   private eqNodes = new Map<string, BiquadFilterNode>();
-  private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]}>();
+  private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]; points:TimelineTrack['panAutomation']; staticPan:number}>();
   private automationNodes = new Map<string, {node:GainNode; points:TimelineTrack['automation']}>();
   private playbackClock=0;
   private playbackStart=0;
@@ -72,7 +72,12 @@ export class TimelineEngine {
         scheduleGain(automation.node.gain,track.automation,now,this.playbackStart+now-this.playbackClock);
         automation.points=track.automation;
       }
-      nodes.pan.pan.setTargetAtTime(Math.max(-1, Math.min(1, track.pan)), now, .005);
+      if(nodes.points!==track.panAutomation || (!track.panAutomation?.length && nodes.staticPan!==track.pan)){
+        nodes.pan.pan.cancelScheduledValues(now);
+        if(track.panAutomation?.length || nodes.points?.length)schedulePan(nodes.pan.pan,track.panAutomation,now,this.playbackStart+now-this.playbackClock,track.pan);
+        else nodes.pan.pan.setTargetAtTime(Math.max(-1,Math.min(1,track.pan)),now,.005);
+        nodes.points=track.panAutomation;nodes.staticPan=track.pan;
+      }
     }
     this.outputGain?.gain.setTargetAtTime(project.masterVolume ?? 1, now, .005);
     if(this.limiterNode){const p=limiterParameters(project.outputLimiter);this.limiterNode.parameters.get('ceiling')!.setValueAtTime(p.ceiling,now);this.limiterNode.parameters.get('release')!.setValueAtTime(p.release,now);}
@@ -166,11 +171,11 @@ export class TimelineEngine {
       trackGain.gain.value = audible.has(track.id) ? track.volume : 0;
 
       const panner = ctx.createStereoPanner();
-      panner.pan.value = Math.max(-1, Math.min(1, track.pan));
+      schedulePan(panner.pan,track.panAutomation,now,startTime,track.pan);
       const meter = this.meterTap(ctx, panner);
       trackGain.connect(panner);
       panner.connect(masterInput);
-      this.mixerNodes.set(track.id, {gain: trackGain, pan: panner, meter});
+      this.mixerNodes.set(track.id, {gain: trackGain, pan: panner, meter,points:track.panAutomation,staticPan:track.pan});
 
       for (const segment of track.segments) {
         const segEnd = segment.startTime + segment.duration;
@@ -301,14 +306,10 @@ export class TimelineEngine {
       trackFade.connect(automated);this.applyEffects(offCtx,automated,track.effects??[]).connect(trackGain);
       trackGain.gain.value = track.volume;
 
-      if (track.pan !== 0) {
-        const panner = offCtx.createStereoPanner();
-        panner.pan.value = Math.max(-1, Math.min(1, track.pan));
-        trackGain.connect(panner);
-        panner.connect(masterOut);
-      } else {
-        trackGain.connect(masterOut);
-      }
+      const panner = offCtx.createStereoPanner();
+      schedulePan(panner.pan,track.panAutomation,0,startTime,track.pan);
+      trackGain.connect(panner);
+      panner.connect(masterOut);
 
       for (const segment of track.segments) {
         signal?.throwIfAborted();

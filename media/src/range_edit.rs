@@ -28,13 +28,23 @@ fn pictures(p: &Value) -> Vec<Value> {
         p["video"]["clips"].as_array().cloned().unwrap_or_else(||vec![json!({"id":"source-video","startTime":0,"duration":p["video"]["duration"],"sourceOffset":0,"fadeIn":0,"fadeOut":0,"transition":"cut","transitionDuration":0})])
     }
 }
+#[cfg(test)]
 fn gain_at(points: &[Value], t: f64) -> Result<f64> {
+    value_at(points, t, false)
+}
+fn value_at(points: &[Value], t: f64, pan: bool) -> Result<f64> {
     if points.is_empty() {
         return Ok(1.0);
     }
     let mut sorted = points.to_vec();
     for p in &sorted {
-        if number(p, "time")? < 0.0 || number(p, "value")? < 0.0 {
+        if number(p, "time")? < 0.0
+            || if pan {
+                !(-1.0..=1.0).contains(&number(p, "value")?)
+            } else {
+                number(p, "value")? < 0.0
+            }
+        {
             return Err("Invalid automation".into());
         }
     }
@@ -251,9 +261,13 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
     if tracks.iter().any(|t| {
         t["locked"] == true
             && t["id"].as_str().is_some_and(|id| ids.contains(id))
-            && t["segments"]
+            && (t["segments"]
                 .as_array()
                 .is_some_and(|cs| cs.iter().any(&affected))
+                || (operation != "lift"
+                    && ["automation", "panAutomation"]
+                        .iter()
+                        .any(|field| t[field].as_array().is_some_and(|points| !points.is_empty()))))
     }) || (video && p["video"]["locked"] == true && picture.iter().any(&affected))
     {
         return Err("Unlock affected tracks".into());
@@ -405,40 +419,42 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
         }
         track["segments"] = json!(clips);
         if operation != "lift" {
-            if let Some(points) = track["automation"].as_array().filter(|p| !p.is_empty()) {
-                let mut changed = vec![];
-                for p in points {
-                    let t = number(p, "time")?;
-                    if operation == "insert" || t < start || t >= end {
-                        let mut p = p.clone();
-                        p["time"] = json!(retime(t));
-                        changed.push(p)
+            for field in ["automation", "panAutomation"] {
+                if let Some(points) = track[field].as_array().filter(|p| !p.is_empty()) {
+                    let mut changed = vec![];
+                    for p in points {
+                        let t = number(p, "time")?;
+                        if operation == "insert" || t < start || t >= end {
+                            let mut p = p.clone();
+                            p["time"] = json!(retime(t));
+                            changed.push(p)
+                        }
                     }
-                }
-                if start > 0.0 {
-                    let rate = p["sampleRate"].as_f64().unwrap_or(48000.0);
-                    if !rate.is_finite() || rate <= 0.0 {
-                        return Err("Invalid sample rate".into());
-                    }
-                    changed.push(
-                        json!({"time":(start-1.0/rate).max(0.0),"value":gain_at(points,start)?}),
+                    if start > 0.0 {
+                        let rate = p["sampleRate"].as_f64().unwrap_or(48000.0);
+                        if !rate.is_finite() || rate <= 0.0 {
+                            return Err("Invalid sample rate".into());
+                        }
+                        changed.push(
+                        json!({"time":(start-1.0/rate).max(0.0),"value":value_at(points,start,field=="panAutomation")?}),
                     )
-                }
-                changed.push(json!({"time":if operation=="insert"{end}else{start},"value":gain_at(points,if operation=="insert"{start}else{end})?}));
-                changed.sort_by(|a, b| {
-                    a["time"]
-                        .as_f64()
-                        .unwrap()
-                        .total_cmp(&b["time"].as_f64().unwrap())
-                });
-                let mut unique: Vec<Value> = vec![];
-                for p in changed {
-                    if unique.last().is_some_and(|v| v["time"] == p["time"]) {
-                        unique.pop();
                     }
-                    unique.push(p)
+                    changed.push(json!({"time":if operation=="insert"{end}else{start},"value":value_at(points,if operation=="insert"{start}else{end},field=="panAutomation")?}));
+                    changed.sort_by(|a, b| {
+                        a["time"]
+                            .as_f64()
+                            .unwrap()
+                            .total_cmp(&b["time"].as_f64().unwrap())
+                    });
+                    let mut unique: Vec<Value> = vec![];
+                    for p in changed {
+                        if unique.last().is_some_and(|v| v["time"] == p["time"]) {
+                            unique.pop();
+                        }
+                        unique.push(p)
+                    }
+                    track[field] = json!(unique);
                 }
-                track["automation"] = json!(unique);
             }
         }
     }
@@ -541,6 +557,17 @@ mod tests {
           {"id":"b","linkGroup":"right","startTime":4,"duration":6,"sourceOffset":4,"fadeIn":0,"fadeOut":0,"transition":"fade","transitionDuration":1}
         ]);
         p
+    }
+    #[test]
+    fn signed_pan_retimes_and_protects_empty_locked_automation_tracks() {
+        let mut p = project();
+        p["tracks"][0]["panAutomation"] = json!([{"time":0,"value":-1},{"time":10,"value":1}]);
+        let out = apply(&p, &json!({"operation":"extract","start":3,"end":5})).unwrap();
+        let points = out["tracks"][0]["panAutomation"].as_array().unwrap();
+        assert!((value_at(points, 5.0, true).unwrap() - 0.4).abs() < 1e-6);
+        p["tracks"][0]["segments"] = json!([]);
+        p["tracks"][0]["locked"] = json!(true);
+        assert!(apply(&p, &json!({"operation":"extract","start":3,"end":5})).is_err());
     }
     #[test]
     fn reviewed_blend_cuts_preserve_linked_clock_for_all_range_operations() {

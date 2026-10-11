@@ -990,6 +990,11 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                 out["project"] = crate::gain_envelope::paste(&out["project"], op)?;
             }
             "automation" => {
+                let pan = match op["parameter"].as_str() {
+                    None | Some("gain") => false,
+                    Some("pan") => true,
+                    _ => return Err("Unknown automation parameter".into()),
+                };
                 let track = out["project"]["tracks"]
                     .as_array_mut()
                     .unwrap()
@@ -1001,7 +1006,13 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                     .ok_or("Missing automation points")?
                     .clone();
                 for p in &points {
-                    if number(p, "time")? < 0.0 || number(p, "value")? < 0.0 {
+                    if number(p, "time")? < 0.0
+                        || if pan {
+                            !(-1.0..=1.0).contains(&number(p, "value")?)
+                        } else {
+                            number(p, "value")? < 0.0
+                        }
+                    {
                         return Err("Invalid automation".into());
                     }
                 }
@@ -1017,7 +1028,7 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                 points.reverse();
                 points.dedup_by(|a, b| a["time"].as_f64() == b["time"].as_f64());
                 points.reverse();
-                track["automation"] = json!(points);
+                track[if pan { "panAutomation" } else { "automation" }] = json!(points);
             }
             _ => return Err(format!("Unknown recipe operation: {operation}")),
         }
@@ -1207,7 +1218,11 @@ fn render_audio_ffmpeg(doc: &Value, output: &str) -> Result<()> {
         } {
             continue;
         }
-        if track["pan"].as_f64().unwrap_or(0.0) != 0.0 {
+        if track["pan"].as_f64().unwrap_or(0.0) != 0.0
+            || track["panAutomation"]
+                .as_array()
+                .is_some_and(|p| !p.is_empty())
+        {
             return Err("CLI pan rendering is unsupported; use GUI export".into());
         }
         let segments = track["segments"].as_array().ok_or("Missing clips")?;
@@ -1379,6 +1394,31 @@ mod tests {
     use super::*;
     fn doc() -> Value {
         json!({"format":"crispaudio-project","version":2,"project":{"id":"p","duration":6,"tracks":[{"id":"t","segments":[{"id":"a","linkGroup":"g","trackId":"t","sourceId":"s","startTime":1,"sourceOffset":2,"duration":5}]}],"video":{"path":"unused","duration":10,"clips":[{"id":"v","linkGroup":"g","startTime":1,"sourceOffset":2,"duration":5,"transition":"cut"}]}},"sources":[{"id":"s","duration":10}]})
+    }
+    #[test]
+    fn pan_recipe_validates_bounds_locks_and_preserves_gain_and_geometry() {
+        let mut original = doc();
+        original["version"] = json!(3);
+        original["project"]["tracks"][0]["automation"] = json!([{"time":0,"value":0.5}]);
+        let recipe = json!([{"op":"automation","parameter":"pan","trackId":"t","points":[{"time":0,"value":0.5},{"time":0,"value":-1},{"time":2,"value":1}]}]);
+        let out = apply(&original, &recipe).unwrap();
+        assert_eq!(
+            out["project"]["tracks"][0]["panAutomation"],
+            json!([{"time":0,"value":-1},{"time":2,"value":1}])
+        );
+        let mut unchanged = out.clone();
+        unchanged["project"]["tracks"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("panAutomation");
+        assert_eq!(unchanged, original);
+        for value in [-1.01, 1.01] {
+            let mut bad = recipe.clone();
+            bad[0]["points"][0]["value"] = json!(value);
+            assert!(apply(&original, &bad).is_err());
+        }
+        original["project"]["tracks"][0]["locked"] = json!(true);
+        assert!(apply(&original, &recipe).is_err());
     }
     #[test]
     fn automation_recipe_last_duplicate_wins_and_locked_track_rejects() {

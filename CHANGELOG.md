@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.18 — 2026-10-11
+
+- Add a focused pan automation lane alongside gain: signed numeric edits,
+  mouse/touch/keyboard, snapping, locks, cancel/redo and one-step undo.
+- Schedule absolute linear pan envelopes live without restarting playback;
+  held endpoints, last duplicate wins, empty lane restores static pan.
+- Preserve pan in format-3 Save/Open, scoped range retiming and native renders;
+  native automation recipes accept `parameter: "pan"`. Mixer marks active pan Auto.
+- Correct centered mono exports to use playback's equal-power pan law (−3.01 dB
+  per channel). Stereo center remains unchanged. Envelope copy/paste remains gain-only.
+
 ## 0.8.17 — 2026-10-11
 
 - Copy selected-range or whole-track gain envelopes on a relative clock; paste

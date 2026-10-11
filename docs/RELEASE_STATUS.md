@@ -1618,3 +1618,52 @@ Evidence: `/tmp/envelope-tests-final.log`, `/tmp/envelope-native.log`,
 `/tmp/envelope-lint-final.log`, `/tmp/envelope-build-final.log`,
 `/tmp/envelope-browser-native.log`, `/tmp/envelope-webkit-native.log`,
 `/tmp/envelope-app-build-final.log`, `/tmp/envelope-install.log`.
+
+## Local 0.8.18 — directly editable pan automation
+
+M2.3 adds absolute pan points (−1 left…+1 right) in the focused automation lane.
+The lane shares timeline scale and supports pointer/touch, keyboard, numeric pan
+and seconds, snapping, locks, preview cancellation and one-step undo. An empty
+lane uses static track pan; a nonempty lane overrides it and marks the mixer Auto.
+Parameter switches cancel pending previews. Gain envelope copy remains gain-only.
+
+Live edits reschedule only pan AudioParam events; source playback continues.
+GUI/native endpoints hold, exact duplicates use the last supplied value, and
+signed points interpolate linearly. Save/Open retains format 3; extract/insert
+retime both envelopes. Locked automation-only tracks reject retiming. Native
+`automation` recipes accept `parameter: "pan"`; `paste-automation` rejects pan
+explicitly. FFmpeg audio compatibility rejects nonempty pan envelopes.
+
+Centered mono GUI/native exports now use the same equal-power pan law as live
+playback: −3.0103 dB per channel. Previously center bypassed the export panner and
+was louder per channel. Stereo center and the stereo integer PCM contract remain
+unchanged. Mono DSP/normalization tests now account for the center pan gain;
+the exact integer rounding fixture uses stereo to isolate quantization.
+
+Verified locally on 2026-10-11:
+
+- 108 frontend files / **1,410 tests** pass with two workers; lint and tsc/Vite pass.
+- **70 media library + 3 CLI tests** pass; 10 platform-specific tests stay ignored.
+  New tests cover signed validation, last duplicates, mono/stereo centers and
+  endpoints, native full/range PCM, locks, range retiming and project metadata.
+- `scripts/test-pan-automation.mjs` passes in Chrome and headless WebKit: actual
+  pointer/keyboard/numeric controls, cancel/switch history, live edit and lane
+  deletion without restarting, static fallback, actual Save/Open, locks and
+  German 390 px touch layout. Screenshots were inspected for overflow.
+- Each browser compares every sample of native **192,000-frame** mono and stereo
+  fixtures against GUI offline output. Chrome maximum native errors were
+  1.49×10⁻⁸ (mono) / 2.98×10⁻⁸ (stereo); WebKit 8.20×10⁻⁸ / 1.64×10⁻⁷ full scale.
+  GUI seeked range vs full slice errors were Chrome 2.98×10⁻⁸ / 5.22×10⁻⁸,
+  WebKit 8.20×10⁻⁸ / 1.51×10⁻⁷. These are measured float-ramp/trigonometric
+  differences within the explicit 2×10⁻⁷ full-scale budget, not bit identity.
+- Native pan recipe duplicate canonicalization matches the GUI envelope. Existing
+  direct-gain browser regression passes in Chrome; gain copy/stretch regression
+  passes in WebKit, including native track-range and portable recipe parity and
+  960,000-frame render/boundary sample checks (2.98×10⁻⁸ maximum sample error).
+- Sequential web then Tauri app build succeeds. Local 0.8.18 app and optimized
+  standalone CLI were installed, ad-hoc signed/verified and the app launched.
+  Full WebKit recovery was backed up; the one autosave's metadata is unchanged.
+
+No release tag or Apple upload. Headless WebKit is neither an installed WKWebView
+interaction test nor physical iOS validation. Next: pan envelope copy/retime,
+selected FX lanes, then protected automation recording modes.

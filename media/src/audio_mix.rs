@@ -129,13 +129,21 @@ impl Envelope {
 struct Automation {
     points: Vec<(f64, f64)>,
     cursor: usize,
+    fallback: f64,
 }
 impl Automation {
     fn parse(v: &Value) -> Result<Self> {
+        Self::parse_parameter(v, false, 1.0)
+    }
+    fn parse_parameter(v: &Value, pan: bool, fallback: f64) -> Result<Self> {
         let mut points = Vec::new();
         if let Some(v) = v.as_array() {
             for p in v {
-                points.push((positive(p, "time", None)?, positive(p, "value", None)?));
+                let value = finite(p, "value", None)?;
+                if (pan && !(-1.0..=1.0).contains(&value)) || (!pan && value < 0.0) {
+                    return Err("Invalid automation value".into());
+                }
+                points.push((positive(p, "time", None)?, value));
             }
         } else if !v.is_null() {
             return Err("Invalid automation".into());
@@ -144,11 +152,15 @@ impl Automation {
         points.reverse();
         points.dedup_by(|a, b| a.0 == b.0);
         points.reverse();
-        Ok(Self { points, cursor: 0 })
+        Ok(Self {
+            points,
+            cursor: 0,
+            fallback,
+        })
     }
     fn at(&mut self, t: f64) -> f64 {
         if self.points.is_empty() {
-            return 1.0;
+            return self.fallback;
         }
         if t <= self.points[0].0 {
             return self.points[0].1;
@@ -489,7 +501,7 @@ fn process(filters: &mut [Effect], mut sample: [f64; 2], frame: u32) -> [f64; 2]
     sample
 }
 fn pan(sample: [f64; 2], pan: f64, mono: bool) -> [f64; 2] {
-    if pan == 0.0 {
+    if pan == 0.0 && !mono {
         return sample;
     }
     let p = if mono {
@@ -556,7 +568,7 @@ struct Track {
     clips: Vec<Clip>,
     start: f64,
     gain: f64,
-    pan: f64,
+    pan: Automation,
     mono: bool,
     envelope: Envelope,
     automation: Automation,
@@ -773,7 +785,7 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
             clips,
             start,
             gain,
-            pan: p,
+            pan: Automation::parse_parameter(&track["panAutomation"], true, p)?,
             mono,
             envelope: Envelope::parse(track, stop - start)?,
             automation,
@@ -832,7 +844,11 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
                 }
                 let factor = bus.envelope.at(time - bus.start) * bus.automation.at(time);
                 value = process(&mut bus.filters, value.map(|v| v * factor), frame);
-                value = pan(value.map(|v| v * bus.gain), bus.pan, bus.mono);
+                value = pan(
+                    value.map(|v| v * bus.gain),
+                    bus.pan.at(time) as f32 as f64,
+                    bus.mono,
+                );
                 for ch in 0..2 {
                     master[i as usize][ch] += value[ch];
                 }
@@ -906,6 +922,44 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+    #[test]
+    fn pan_automation_renders_mono_and_stereo_center_endpoints_and_range() {
+        for channels in [1, 2] {
+            let folder = tempfile::tempdir().unwrap();
+            let input = source(
+                folder.path(),
+                channels,
+                if channels == 1 {
+                    &[0.25]
+                } else {
+                    &[0.25, -0.125]
+                },
+            );
+            let mut doc = project(&input);
+            doc["project"]["tracks"][0]["pan"] = json!(0.75);
+            doc["project"]["tracks"][0]["panAutomation"] =
+                json!([{"time":0.01,"value":1},{"time":0.01,"value":-1},{"time":0.05,"value":1}]);
+            let full = folder.path().join("full.wav");
+            render(&doc, full.to_str().unwrap()).unwrap();
+            let pcm = output(&full);
+            let expected = if channels == 1 { 0.25 } else { 0.125 };
+            assert!((pcm[0] - expected).abs() < 1e-7);
+            assert!(pcm[1].abs() < 1e-7);
+            let center = 1440 * 2;
+            if channels == 1 {
+                assert!((pcm[center] as f64 - 0.25 * std::f64::consts::FRAC_1_SQRT_2).abs() < 1e-7);
+                assert_eq!(pcm[center], pcm[center + 1]);
+            } else {
+                assert_eq!(&pcm[center..center + 2], &[0.25, -0.125]);
+            }
+            doc["renderRange"] = json!({"start":0.02,"end":0.06});
+            let range = folder.path().join("range.wav");
+            render(&doc, range.to_str().unwrap()).unwrap();
+            assert_eq!(output(&range), pcm[1920..5760]);
+            doc["project"]["tracks"][0]["panAutomation"] = json!([{"time":0,"value":1.01}]);
+            assert!(render(&doc, folder.path().join("invalid.wav").to_str().unwrap()).is_err());
+        }
     }
     #[test]
     fn output_limiter_follows_master_gain_and_preserves_range_history() {
@@ -1014,7 +1068,11 @@ mod tests {
     #[test]
     fn pcm_depths_preserve_gui_rounding_silence_polarity_and_clip_headroom() {
         let folder = tempfile::tempdir().unwrap();
-        let input = source(folder.path(), 1, &[0.0, -0.5, 0.5, -2.0, 2.0]);
+        let input = source(
+            folder.path(),
+            2,
+            &[0.0, 0.0, -0.5, -0.5, 0.5, 0.5, -2.0, -2.0, 2.0, 2.0],
+        );
         let expected: [(u16, [i32; 5]); 4] = [
             (8, [0, -64, 63, -128, 127]),
             (16, [0, -16383, 16384, -32767, 32767]),
@@ -1192,7 +1250,10 @@ mod tests {
                 json!([{"type":"bitcrush","enabled":true,"params":{"bits":4,"mix":mix}}]);
             let target = folder.path().join(format!("mix-{value}-{mix}.wav"));
             render(&doc, target.to_str().unwrap()).unwrap();
-            assert!((output(&target)[200] - expected).abs() < 1e-6);
+            assert!(
+                (output(&target)[200] as f64 - expected * std::f64::consts::FRAC_1_SQRT_2).abs()
+                    < 1e-6
+            );
         }
     }
     #[test]
@@ -1211,7 +1272,12 @@ mod tests {
             let pcm = output(&target);
             assert_eq!(pcm[100], 0.0);
             for (frame, carrier) in [(480, 0.0), (600, 1.0), (840, -1.0)] {
-                assert!((pcm[frame * 2] as f64 - 0.25 * (1.0 - mix + mix * carrier)).abs() < 1e-6);
+                assert!(
+                    (pcm[frame * 2] as f64
+                        - 0.25 * (1.0 - mix + mix * carrier) * std::f64::consts::FRAC_1_SQRT_2)
+                        .abs()
+                        < 1e-6
+                );
             }
         }
     }
@@ -1275,7 +1341,7 @@ mod tests {
         doc["project"]["tracks"][0]["segments"][0]["duration"] = json!(0.07);
         let target = folder.path().join("mix.wav");
         render(&doc, target.to_str().unwrap()).unwrap();
-        assert!((output(&target)[0] - 0.3).abs() < 1e-7);
+        assert!((output(&target)[0] as f64 - 0.3 * std::f64::consts::FRAC_1_SQRT_2).abs() < 1e-7);
     }
     #[test]
     fn integer_pcm_depths_are_normalized_without_quantizing_to_16_bit() {
@@ -1299,7 +1365,10 @@ mod tests {
             writer.finalize().unwrap();
             let target = folder.path().join(format!("float-{bits}.wav"));
             render(&project(&source), target.to_str().unwrap()).unwrap();
-            assert_eq!(output(&target)[0], -0.5, "{bits}-bit normalization");
+            assert!(
+                (output(&target)[0] as f64 + 0.5 * std::f64::consts::FRAC_1_SQRT_2).abs() < 1e-7,
+                "{bits}-bit normalization"
+            );
         }
     }
     #[test]

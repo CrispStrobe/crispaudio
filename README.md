@@ -25,7 +25,7 @@ browser.
   trims, ripple trims, trim-to-playhead and slide edits have reviewed source limits.
 - Apply clip/track fades, audio crossfades, picture transitions, colour correction
   and orientation changes.
-- Mix with gain, pan, mute/solo, gain automation and clip/track/master effect racks.
+- Mix with gain, pan, mute/solo, gain/pan automation and clip/track/master effect racks.
   Current timeline effects include filters, bit crushing, ring modulation, delay,
   chorus, reverb, distortion and compression.
 - Import camera and microphone recordings, review offset/drift synchronization,
@@ -106,16 +106,18 @@ master fader, with ceiling and release controls. It adds no delay. Compressor
 inserts and mixer strips show gain reduction; the limiter shows its own reduction.
 These are sample-peak controls; true-peak and LUFS tools remain future work.
 
-The gain automation button opens a focused track lane beneath the timeline.
-Choose a track, click/tap to add points, drag to move, or use numeric time/dB
+The automation button opens a focused track lane beneath the timeline.
+Choose a track and gain or panorama, click/tap to add points, drag to move, or use numeric time/dB/pan
 fields and keyboard arrows. Point edits commit on release; Escape cancels without
 losing redo. Track locks protect envelopes. Gain remains linear between points,
 with held endpoints; an empty envelope is unity. Edits update running playback,
 save/open and GUI/native exports. Copy the selected time range (or whole envelope) and paste it onto another track
 or time with a reviewed destination length. Time stretching changes point clocks
 while retaining gain values; outside gain is preserved with one-sample boundary
-guards. Copy does not change the project, and paste is one undo step. Pan/FX
-automation and recording modes remain planned.
+guards. Copy does not change the project, and paste is one undo step. Pan uses absolute −1 (left) to +1 (right), with linear ramps and held endpoints.
+An empty pan lane uses the static track pan; an active lane marks the mixer pan
+as Auto. Gain envelope copy/paste remains separate. Selected FX automation, pan
+envelope copy/paste and recording modes remain planned.
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)

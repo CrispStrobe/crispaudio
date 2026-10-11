@@ -78,7 +78,7 @@ interface ProjectState {
   addTrack: (name?: string) => void;
   removeTrack: (trackId: string) => void;
   reorderTrack: (trackId: string, newIndex: number) => void;
-  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'rippleEnabled' | 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'effects'>>) => void;
+  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'rippleEnabled' | 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'panAutomation' | 'effects'>>) => void;
 
   // Segment actions
   addSegment: (trackId: string, segment: AudioSegment) => void;
@@ -174,7 +174,7 @@ export const useProjectStore = create<ProjectState>()(
             if (!track.locked) return false;
             const after = next.project?.tracks.find(t => t.id === track.id) ?? (!next.project ? track : undefined);
             if (!after) return true;
-            if (JSON.stringify(track.automation) !== JSON.stringify(after.automation)) return true;
+            if (JSON.stringify(track.automation) !== JSON.stringify(after.automation) || JSON.stringify(track.panAutomation) !== JSON.stringify(after.panAutomation)) return true;
             if (JSON.stringify(track.segments) !== JSON.stringify(after.segments)) return true;
             return !!next.sources && track.segments.some(clip => before.sources.get(clip.sourceId) !== next.sources?.get(clip.sourceId));
           });

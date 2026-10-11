@@ -120,6 +120,8 @@ export async function deserializeProject(
 
   if (doc.project.masterVolume !== undefined && (!Number.isFinite(doc.project.masterVolume) || doc.project.masterVolume < 0)) throw new Error('Invalid master volume');
 
+  if(doc.project.tracks.some(track=>track.panAutomation!==undefined&&(!Array.isArray(track.panAutomation)||track.panAutomation.some(p=>!p||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value< -1||p.value>1))))throw new Error('Invalid pan automation');
+
   if(!validOutputLimiter(doc.project.outputLimiter))throw new Error('Invalid output limiter');
 
   const replacements=new Map<string,string>();

@@ -56,6 +56,9 @@ fn track<'a>(project: &'a Value, id: &Value) -> Result<&'a Value> {
         .ok_or_else(|| "Missing automation track".into())
 }
 pub fn paste(project: &Value, op: &Value) -> Result<Value> {
+    if !op["parameter"].is_null() && op["parameter"] != "gain" {
+        return Err("Envelope paste currently supports gain only".into());
+    }
     let target = track(project, &op["trackId"])?;
     if target["locked"].as_bool() == Some(true) {
         return Err("Unlock destination track before pasting automation".into());
