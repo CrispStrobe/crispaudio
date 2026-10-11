@@ -18,7 +18,7 @@ it('shapes every target in parameter units, keeps endpoint metadata and outside 
  }
 });
 it('copies partial shapes exactly through retime, preserves recorded outside points and retimes range boundaries',()=>{
- for(const target of targets){const p=shapeAutomationSegment(fixture(),target,1,'s-curve'),fx=target.effectIndex!==undefined;
+ for(const target of targets)for(const shape of ['s-curve','custom'] as AutomationShape[]){const p=shapeAutomationSegment(fixture(),target,1,shape,{x1:.2,y1:.9,x2:.7,y2:.2}),fx=target.effectIndex!==undefined;
   const copy=fx?copyEffectEnvelope(p,'t',0,target.parameter as 'mix',1.3,2.7):target.parameter==='pan'?copyPanEnvelope(p,'t',1.3,2.7):copyGainEnvelope(p,'t',1.3,2.7);
   const out=fx?pasteEffectEnvelope(p,'t',0,target.parameter as 'mix',copy as ReturnType<typeof copyEffectEnvelope>,4,2):target.parameter==='pan'?pastePanEnvelope(p,'t',copy,4,2):pasteGainEnvelope(p,'t',copy,4,2);
   for(const phase of [0,.13,.25,.5,.7,.99,1])expect(automationValue(out,target,4+phase*2)).toBeCloseTo(automationValue(p,target,1.3+phase*1.4),12);
@@ -36,4 +36,18 @@ it('uses fewer intervals on short spans and preserves identity/redo for flat and
  const p=fixture(),target=targets[0];p.tracks[0].automation=[{time:0,value:0},{time:3/48000,value:1,curve:'step'}];const out=shapeAutomationSegment(p,target,0,'ease-in');expect(out.tracks[0].automation).toHaveLength(4);expect(out.tracks[0].automation![1].time).toBe(1/48000);
  expect(shapeAutomationSegment(p,target,0,'linear')).toBe(p);p.tracks[0].automation=[{time:0,value:.5,curve:'step'},{time:4,value:.5}];expect(shapeAutomationSegment(p,target,0,'s-curve')).toBe(p);
  useProjectStore.getState().loadProjectState(p,new Map());useProjectStore.temporal.getState().clear();useProjectStore.getState().updateTrack('t',{name:'Temporary'});useProjectStore.temporal.getState().undo();expect(shapeAutomationSegment(useProjectStore.getState().project,target,0,'s-curve')).toBe(useProjectStore.getState().project);expect(useProjectStore.temporal.getState().futureStates).toHaveLength(1);
+});
+it('maps custom time handles to bounded values across every lane, descending values and vertical end handles',()=>{
+ for(const target of targets){const p=fixture();for(const controls of [{x1:0,y1:1,x2:0,y2:0},{x1:1,y1:0,x2:1,y2:1},{x1:.2,y1:.7,x2:.8,y2:.3}]){
+  const out=shapeAutomationSegment(p,target,1,'custom',controls),points=targetPoints(out,target)!;expect(points).toHaveLength(19);
+  expect(points[0]).toBe(targetPoints(p,target)![0]);expect(points[17]).toBe(targetPoints(p,target)![2]);
+  for(let i=1;i<17;i++){expect(points[i].value).toBeGreaterThanOrEqual(.2);expect(points[i].value).toBeLessThanOrEqual(.8);if(i>1)expect(points[i].time-points[i-1].time).toBeGreaterThanOrEqual(1/p.sampleRate);}
+ }
+ }
+ const p=fixture();p.tracks[0].automation=[{time:0,value:1.5},{time:2,value:.2,curve:'step'}];const out=shapeAutomationSegment(p,targets[0],0,'custom',{x1:1/3,y1:0,x2:2/3,y2:0});expect(automationValue(out,targets[0],1)).toBeCloseTo(1.3375,12);expect(out.tracks[0].automation!.at(-1)!.curve).toBe('step');
+});
+it('requires finite bounded monotone time controls and preserves custom linear identity/redo',()=>{
+ const p=fixture();for(const c of [undefined,{x1:.9,y1:0,x2:.2,y2:1},{x1:0,y1:NaN,x2:1,y2:1},{x1:0,y1:-.1,x2:1,y2:1}])expect(()=>shapeAutomationSegment(p,targets[0],1,'custom',c)).toThrow('invalidShapeControls');
+ p.tracks[0].automation=[{time:0,value:0},{time:4,value:1}];expect(shapeAutomationSegment(p,targets[0],0,'custom',{x1:.2,y1:.2,x2:.8,y2:.8})).toBe(p);
+ p.tracks[0].automation=[{time:0,value:0},{time:3/p.sampleRate,value:1}];expect(shapeAutomationSegment(p,targets[0],0,'custom',{x1:0,y1:0,x2:0,y2:1}).tracks[0].automation).toHaveLength(4);
 });

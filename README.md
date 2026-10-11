@@ -113,7 +113,9 @@ losing redo. Track locks protect envelopes. Select a point to choose its outgoin
 Step curve. Linear ramps to the next point; Step holds the value and jumps at the
 next point's clock. Missing curve metadata keeps the existing Linear behavior.
 The shape tool previews Ease-in, Ease-out and S-curve transitions between the
-selected point and its next neighbour. Apply creates up to 15 editable linear
+selected point and its next neighbour. Custom Bézier offers two draggable handles
+with keyboard and numeric time/value controls. Time handles cannot cross; values
+stay between the endpoints. Apply creates up to 15 editable linear
 points in one undo step, keeping endpoints and outside automation fixed. Gain
 shapes interpolate amplitude. Copy/retime, recording guards and exports retain
 the generated points. Undo the shape before choosing another shape for the original
@@ -147,7 +149,7 @@ only the recorded intervals in one undo step; Cancel keeps the original and redo
 Seeks, loops, Escape, interruptions and project changes discard the draft. Modes
 and arming are session-only and reset to Read; saved points work in GUI/native exports.
 Capture is driven by the audio clock and animation frames, not hardware automation
-recording. Other FX parameters and further curve shapes remain planned.
+recording. Other FX parameters and persistent curve handles remain planned.
 
 See [Formats, backends and licensing](docs/MEDIA_FORMATS_AND_LICENSES.md) for the
 exact support matrix and [Platform/distribution status](docs/RELEASE_STATUS.md)

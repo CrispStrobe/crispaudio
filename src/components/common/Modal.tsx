@@ -9,6 +9,8 @@ interface ModalProps {
   title?: string;
   /** Tailwind max-width class for the panel (default `max-w-md`). */
   widthClass?: string;
+  /** Focus a form control immediately, avoiding delayed focus stealing edits. */
+  initialFocusRef?: React.RefObject<HTMLElement | null>;
   children: React.ReactNode;
 }
 
@@ -17,6 +19,7 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   widthClass = 'max-w-md',
+  initialFocusRef,
   children,
 }) => {
   const { t } = useTranslation();
@@ -38,10 +41,11 @@ export const Modal: React.FC<ModalProps> = ({
     if (isOpen) {
       const previousFocus = document.activeElement as HTMLElement | null;
       // Small delay so portal has mounted
-      const id = setTimeout(() => closeBtnRef.current?.focus(), 50);
-      return () => { clearTimeout(id); if (previousFocus?.isConnected) previousFocus.focus(); };
+      const id = initialFocusRef?.current ? undefined : setTimeout(() => closeBtnRef.current?.focus(), 50);
+      initialFocusRef?.current?.focus();
+      return () => { if (id !== undefined) clearTimeout(id); if (previousFocus?.isConnected) previousFocus.focus(); };
     }
-  }, [isOpen]);
+  }, [isOpen, initialFocusRef]);
 
   // Trap focus inside modal
   useEffect(() => {

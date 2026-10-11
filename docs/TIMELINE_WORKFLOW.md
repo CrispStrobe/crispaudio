@@ -958,3 +958,29 @@ track insert index. `pointTime` is the exact existing point's absolute clock in
 seconds. Shapes are `linear`, `ease-in`, `ease-out` or `s-curve`. Parameter values
 and timeline geometry stay fixed outside the selected segment; the shared
 100,000-point limit applies. Invalid shapes, missing neighbours and bounds reject.
+
+
+## Custom Bézier review (local 0.8.27)
+
+Choose **Custom Bézier** in Shape outgoing segment. Drag either handle, use arrow
+keys (Shift for 10% steps), or commit numeric Time/Value percentages. Time is
+relative to the selected segment; value is progress from its first endpoint to
+its last, including descending segments. Time handles stay ordered; value handles
+stay at 0–100%, so the curve remains within the endpoint values. Cancelling a
+pointer gesture restores the review handles; Escape cancels the whole review.
+
+Apply bakes the displayed curve into up to 16 linear intervals on uniform clocks.
+Short spans use fewer intervals, with the existing two-sample endpoint minimum.
+This is an approximation, not persistent Bézier metadata: after Apply, handles
+are gone and ordinary editable points remain. Undo before reshaping the original
+whole segment. Preview never changes the project; Apply is one undo step.
+
+```json
+[{"op":"shape-automation","trackId":"voice","parameter":"gain","pointTime":1,
+  "shape":"custom","controls":{"x1":0.2,"y1":0.9,"x2":0.7,"y2":0.2}}]
+```
+
+Custom recipes require four finite normalized control values, each in 0–1,
+with `x1 <= x2`. Values represent endpoint progress, not dB or milliseconds.
+The existing target tags, delay insert index, locks and bounds apply. GUI/native
+use the same bounded time-axis inversion. DSP and project format remain unchanged.

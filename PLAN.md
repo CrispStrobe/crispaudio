@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-11, during local 0.8.26 implementation. This section is the current plan.
+Updated 2026-10-11, during local 0.8.27 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
@@ -210,7 +210,9 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
    history, protected pass recording, an independent copy/retime clipboard and native DSP.
    Local 0.8.26 adds reviewed Ease-in/Ease-out/S-curve segment shaping on all five
    targets, baked into editable linear points with native recipes and outside
-   protection. Further selected FX parameters and free curve controls remain open.
+   protection. Local 0.8.27 adds reviewed custom Bézier with two pointer/keyboard/
+   numeric handles and matching native recipes. Further selected FX parameters
+   and persistent curve handles remain open.
 4. Add buses and sends: start with track-to-bus routing and shared reverb/delay;
    specify pre/post-fader sends and feedback-cycle rejection. Sidechain/ducking
    follows the routing model; it should not be an unrelated special-case graph.
@@ -374,10 +376,10 @@ consume the interview/video editor's near-term milestones.
 
 M2.1 and M2.2's EQ/limiter/gain-reduction controls are available in local 0.8.15.
 M2.3's gain/pan direct lanes and gain envelope copy/retime are available in local
-0.8.26, including independent pan envelope copy/retime, track delay mix/feedback/time
+0.8.27, including independent pan envelope copy/retime, track delay mix/feedback/time
 lanes, independent delay envelope copy/retime and protected Read/Touch/Latch/Write capture with explicit review.
 Outgoing Linear/Step curves and reviewed Ease-in/Ease-out/S-curve point generation
-are available. Next add further selected FX parameters/free curve controls;
+and custom Bézier review handles are available. Next add further selected FX parameters;
 M2.3 remains open. Keep
 buses/sends as M2.4 and loudness/true-peak finishing as M2.5. Codecs and disk paging
 remain deferred; physical iOS validation remains outstanding.

@@ -8,6 +8,24 @@ fn number(v: &Value, key: &str) -> Result<f64> {
         .filter(|n| n.is_finite())
         .ok_or_else(|| format!("Missing finite {key}"))
 }
+fn cubic(p: f64, a: f64, b: f64) -> f64 {
+    3.0 * (1.0 - p) * (1.0 - p) * p * a + 3.0 * (1.0 - p) * p * p * b + p * p * p
+}
+fn custom_progress(x: f64, c: [f64; 4]) -> f64 {
+    if x == 0.0 || x == 1.0 {
+        return x;
+    }
+    let (mut lo, mut hi) = (0.0, 1.0);
+    for _ in 0..48 {
+        let mid = (lo + hi) / 2.0;
+        if cubic(mid, c[0], c[2]) < x {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    cubic((lo + hi) / 2.0, c[1], c[3])
+}
 pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     let parameter = op["parameter"].as_str().ok_or("Missing parameter")?;
     let maximum = match parameter {
@@ -18,9 +36,24 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
         _ => return Err("Unsupported automation parameter".into()),
     };
     let shape = op["shape"].as_str().ok_or("Missing shape")?;
-    if !["linear", "ease-in", "ease-out", "s-curve"].contains(&shape) {
+    if !["linear", "ease-in", "ease-out", "s-curve", "custom"].contains(&shape) {
         return Err("Unsupported automation shape".into());
     }
+    let controls = if shape == "custom" {
+        let c = &op["controls"];
+        let values = [
+            number(c, "x1")?,
+            number(c, "y1")?,
+            number(c, "x2")?,
+            number(c, "y2")?,
+        ];
+        if values.iter().any(|v| *v < 0.0 || *v > 1.0) || values[0] > values[2] {
+            return Err("Invalid shape controls".into());
+        }
+        Some(values)
+    } else {
+        None
+    };
     let id = op["trackId"].as_str().ok_or("Missing track id")?;
     let tracks = project["tracks"].as_array().ok_or("Missing tracks")?;
     let ti = tracks
@@ -100,6 +133,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
             "ease-in" => p * p,
             "ease-out" => p * (2.0 - p),
             "s-curve" => p * p * (3.0 - 2.0 * p),
+            "custom" => custom_progress(p, controls.unwrap()),
             _ => p,
         };
         result.push(json!({"time":point_time+duration*j as f64/intervals as f64,"value":av+(bv-av)*progress}));
@@ -171,5 +205,28 @@ mod tests {
         let mut locked = p;
         locked["tracks"][0]["locked"] = json!(true);
         assert!(apply(&locked, &op).is_err());
+    }
+    #[test]
+    fn custom_controls_match_cubic_value_and_validate_bounds() {
+        let p = json!({"sampleRate":48000,"minimumDuration":4,"tracks":[{"id":"t","segments":[],"automation":[{"time":0,"value":1.5},{"time":2,"value":0.2,"curve":"step"}]}]});
+        let mut op = json!({"trackId":"t","parameter":"gain","pointTime":0,"shape":"custom","controls":{"x1":1.0/3.0,"y1":0,"x2":2.0/3.0,"y2":0}});
+        let out = apply(&p, &op).unwrap();
+        let points = out["tracks"][0]["automation"].as_array().unwrap();
+        assert_eq!(points.len(), 17);
+        assert!((at_parameter(points, 1.0, 0.0) - 1.3375).abs() < 1e-12);
+        assert_eq!(points.last().unwrap()["curve"], "step");
+        for controls in [
+            json!({"x1":0.9,"y1":0,"x2":0.2,"y2":1}),
+            json!({"x1":0,"y1":-0.1,"x2":1,"y2":1}),
+            Value::Null,
+        ] {
+            op["controls"] = controls;
+            assert!(apply(&p, &op).is_err());
+        }
+        op["controls"] = json!({"x1":0,"y1":1,"x2":0,"y2":0});
+        assert!(apply(&p, &op).is_ok());
+        let flat = json!({"sampleRate":48000,"minimumDuration":4,"tracks":[{"id":"t","segments":[],"automation":[{"time":0,"value":0},{"time":4,"value":1}]}]});
+        op["controls"] = json!({"x1":0.2,"y1":0.2,"x2":0.8,"y2":0.8});
+        assert_eq!(apply(&flat, &op).unwrap(), flat);
     }
 }

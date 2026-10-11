@@ -2017,3 +2017,41 @@ fixtures does not establish arbitrary-signal bit identity. DSP is unchanged.
 Local 0.8.26 app and optimized CLI installed, signatures verified and app launched;
 one autosave preserved with a full recovery backup. No release tag or Apple upload.
 Physical iOS and installed WKWebView interactions remain unvalidated.
+
+
+## M2.3 custom Bézier review — 0.8.27
+
+The shape review now supports two custom Bézier control handles on all five
+lanes. Pointer dragging, arrow keys (Shift: larger steps) and numeric Time/Value
+percentages edit review state only. Time handles stay ordered; value handles
+remain at 0–100% endpoint progress, including descending segments. Apply bakes
+up to 15 additional ordinary linear points in one undo step. Persistent Bézier
+metadata and additional FX parameters remain future work. Cancelled pointer
+sessions restore the review handles; project/redo stay untouched until Apply.
+GUI/native recipes use the same bounded inversion of the normalized time axis.
+
+Validation: **115 files / 1,439 frontend tests** pass, including custom copy/retime/
+range/pass guards and immediate/default modal focus regressions. **85 library + 3 CLI tests**
+pass, with 10 existing platform tests ignored. Lint, final TypeScript/Vite production build,
+Tauri app bundle and optimized CLI build pass. Dependencies and DSP are
+unchanged. The actual browser custom-curve harness checks all five lanes,
+numeric/keyboard/pointer controls, pointer cancellation, undo/cancel/redo,
+lock/recording/stale/last-point protections, live no-restart, Save/Open, exact
+native recipe points and range/full crop equality. Every case compares 192,000
+stereo frames. Original four lanes peak at **8.05×10⁻⁷ Chrome / 7.75×10⁻⁷ WebKit**,
+passing the existing 2×10⁻⁶ budget. Chrome time peaks at **3.78×10⁻⁵**, passing
+10⁻⁴. **WebKit long-time custom audio exceeds 10⁻⁴ at 2.90×10⁻⁴**; its native
+WAV is byte-identical to the installed 0.8.26 CLI output before upgrade. This is
+an explicitly reported baseline failure, not an audio parity pass. No tolerance
+was changed. The existing 15 preset-shape Chrome UI regression also passes.
+WebKit mouse events quantize to whole pixels; drag assertions verify delivered
+coordinates. Final Chrome/WebKit UI runs pass enlarged pointer targets and flat
+no-op reviews. Equal endpoint handles stay on the flat line. German 390 px review
+screenshots are inspected and fit. The review uses immediate form focus to prevent
+the modal's delayed close-button focus interrupting fast numeric entry; other
+dialogs keep their default focus behavior, and regression tests cover both routes.
+Focus restores on close.
+
+Local 0.8.27 app and optimized CLI installed, signatures verified and app launched.
+One autosave preserved with a full recovery backup. No tags or Apple uploads;
+physical iOS and installed WKWebView UI interactions remain unvalidated.

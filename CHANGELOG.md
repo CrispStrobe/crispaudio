@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.27 — 2026-10-11
+
+- Add reviewed custom Bézier shaping on gain, pan and delay mix/feedback/time.
+  Two draggable, keyboard and numeric handles control normalized time/value;
+  time handles cannot cross and values remain within the endpoints.
+- Custom shapes bake up to 15 ordinary editable points in one undo step, with
+  matching native `shape-automation` controls, finite bounds and cancellation.
+  Existing formats, outside automation and DSP are preserved.
+- Prevent delayed modal focus from stealing fast handle edits; restore prior
+  focus on close and display equal-endpoint curves as flat no-ops.
+
 ## 0.8.26 — 2026-10-11
 
 - Add reviewed Ease-in, Ease-out and S-curve shaping between adjacent automation
