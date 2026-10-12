@@ -1,3 +1,4 @@
+import {snapProjectTime} from '../../lib/musicalTime';
 import {AutomationCurveHandles,type CurveDraft} from './AutomationCurveHandles';
 import {effectClipboardKey} from '../../lib/effectEnvelope';
 import type {AutomationTarget} from '../../lib/automationRecording';
@@ -83,11 +84,11 @@ function AutomationLane({width,onClose,parameter,onParameter,trackId,onTrack}:{w
     setSelected(next.time);return true;
   };
   const snap=(time:number,bypass=false)=>{
-    const state=useProjectStore.getState(),grid=project.snapGrid??.1;
+    const state=useProjectStore.getState();
     if(state.snapEnabled&&!bypass){
       const targets=[0,duration,state.playheadPosition,...(project.markers??[]).map(m=>m.time),...track.segments.flatMap(c=>[c.startTime,c.startTime+c.duration])];
       const magnetic=snapClipStart(time,0,targets,zoom,true);
-      time=targets.includes(magnetic)?magnetic:(grid?Math.round(time/grid)*grid:time);
+      time=targets.includes(magnetic)?magnetic:snapProjectTime(time,project);
     }
     return Math.max(0,Math.min(duration,time));
   };

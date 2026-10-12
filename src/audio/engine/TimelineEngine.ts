@@ -56,6 +56,8 @@ export class TimelineEngine {
   private mixNodes=new Map<string,{wet:AudioParam;dry:AudioParam;dryScale?:number;feedback?:AudioParam;time?:AudioParam;depth?:[AudioParam,AudioParam];staticDepth?:number;rate?:[AudioParam,AudioParam];staticRate?:number;points:EffectConfig['automation'];mix:number;staticFeedback:number;staticTime:number}>();
   private duckingNodes=new Map<string,AudioWorkletNode>();
   private routingGains=new Map<string,GainNode>();
+  private clockListeners=new Set<()=>void>();
+  onPlaybackClock(listener:()=>void):()=>void{this.clockListeners.add(listener);return()=>{this.clockListeners.delete(listener);};}
   private playbackGeneration=0;
   private playbackEnd=0;
   private playbackClock=0;
@@ -213,6 +215,7 @@ export class TimelineEngine {
     const outputGain = ctx.createGain();
     outputGain.gain.value = project.masterVolume ?? 1;
     this.outputGain = outputGain;
+    for(const listener of this.clockListeners)listener();
     let output:AudioNode=outputGain;
     if(project.outputLimiter?.enabled){
       const limiter=createOutputLimiter(this.ctx,project.outputLimiter);this.playbackNodes.add(limiter);this.limiterNode=limiter;
@@ -323,6 +326,7 @@ export class TimelineEngine {
     this.limiterNode=undefined;this.limiterReduction=0;
     if(this.loudnessNode){this.loudnessNode.port.postMessage({type:'dispose'});this.loudnessNode.port.close();this.loudnessNode=undefined;}
     this.outputGain = undefined;
+    for(const listener of this.clockListeners)listener();
     this.outputMeter = undefined;
   }
 

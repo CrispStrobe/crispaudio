@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-12, for local 0.9.1. This section is the current plan.
+Updated 2026-10-12, for local 0.9.2. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -37,6 +37,13 @@ See [delivery workflows and limits](docs/DELIVERY.md). Local validation passes a
 are installed with recovery preserved. Queue persistence, pre-master summing stems,
 ZIP packaging and OTIO import are beyond this first interchange subset.
 M9 paging/codecs remains deferred by user preference; no rewrite starts implicitly.
+
+M10 foundation is implemented in local 0.9.2: saved constant tempo/signature,
+bars/beats ruler, musical snapping, transport-clock monitor metronome and
+bar-aligned edit ranges. The absolute AV clock is preserved. See
+[musical timeline workflow](docs/MUSICAL_TIME.md). Sample-accurate loop restarts,
+tempo maps, MIDI devices/piano roll/instruments/export and plugin hosting remain
+future M10 increments.
 
 ## Historical acceptance: ASR and spoken-word editing (0.8.5–0.8.6)
 

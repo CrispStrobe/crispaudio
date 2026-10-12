@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import {pathToFileURL} from 'node:url';
+const {chromium,webkit}=await import(pathToFileURL(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE).href);
+const browser=await(process.env.CRISPAUDIO_WEBKIT_EXECUTABLE?webkit:chromium).launch({headless:true,executablePath:process.env.CRISPAUDIO_WEBKIT_EXECUTABLE||process.env.CRISPAUDIO_CHROME_EXECUTABLE});
+try {
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ await page.addInitScript(()=>{window.rulerLabels=[];const fill=CanvasRenderingContext2D.prototype.fillText;CanvasRenderingContext2D.prototype.fillText=function(text,...args){if(/^[-0-9]+\.[1-9]+$/.test(String(text)))window.rulerLabels.push(String(text));return fill.call(this,text,...args);};});
+ await page.goto(process.env.CRISPAUDIO_TEST_URL||'http://127.0.0.1:5191');await page.waitForLoadState('networkidle');
+ await page.evaluate(async()=>{
+  const {useProjectStore}=await import('/src/stores/projectStore.ts'),{useUIStore}=await import('/src/stores/uiStore.ts'),{TimelineEngine}=await import('/src/audio/engine/TimelineEngine.ts');
+  const {TimelineMetronome}=await import('/src/audio/engine/TimelineMetronome.ts');window.liveClicks=new Set();const startClick=TimelineMetronome.prototype.start,stopClick=TimelineMetronome.prototype.stop;TimelineMetronome.prototype.start=function(){window.liveClicks.add(this);return startClick.call(this);};TimelineMetronome.prototype.stop=function(){window.liveClicks.delete(this);return stopClick.call(this);};
+  window.musicStore=useProjectStore;window.programmeStarts=0;const original=TimelineEngine.prototype.play;
+  TimelineEngine.prototype.play=function(...args){window.programmeStarts++;return original.apply(this,args);};
+  useUIStore.getState().setActivePanel('timeline');
+  const buffer=new AudioBuffer({length:48000*8,numberOfChannels:1,sampleRate:48000});
+  const source={id:'s',name:'Silent source',buffer,duration:8,sampleRate:48000,channels:1,peaks:{min:new Float32Array(10),max:new Float32Array(10)}};
+  const clip={id:'a',trackId:'t',sourceId:'s',name:'Unchanged clip',startTime:1,sourceOffset:.25,duration:2,gain:1,effects:[],fadeInDuration:0,fadeOutDuration:0,fadeInCurve:'linear',fadeOutCurve:'linear',color:'#fff'};
+  const project={...useProjectStore.getInitialState().project,id:'music',duration:8,minimumDuration:8,tracks:[{id:'t',name:'Voice',muted:false,solo:false,pan:0,volume:1,segments:[clip]}]};
+  useProjectStore.getState().loadProjectState(project,new Map([['s',source]]));useProjectStore.temporal.getState().clear();
+ });
+ await page.getByRole('button',{name:'Musical time',exact:true}).click();const modal=page.getByRole('dialog');
+ const commit=async(name,value)=>{const input=modal.getByLabel(name,{exact:true});await input.fill(String(value));await input.press('Enter');};
+ await commit('Quarter-note BPM',90);assert.equal(await page.evaluate(()=>window.musicStore.temporal.getState().pastStates.length),1);
+ await commit('Beats per bar',6);await modal.getByLabel('Beat note value',{exact:true}).selectOption('8');await modal.getByLabel('Ruler',{exact:true}).selectOption('beats');await modal.getByLabel('Snap grid',{exact:true}).selectOption('eighth');
+ await page.waitForFunction(()=>window.rulerLabels.includes('2.1'));
+ assert.deepEqual(await page.evaluate(()=>{const p=window.musicStore.getState().project,c=p.tracks[0].segments[0];return [p.duration,c.startTime,c.sourceOffset,c.duration];}),[8,1,.25,2]);
+ await commit('Number of bars',2);await modal.getByRole('button',{name:'Set bar range',exact:true}).click();
+ assert.deepEqual(await page.evaluate(()=>window.musicStore.getState().project.editRange),{start:0,end:4});
+ const saved=await page.evaluate(async()=>{const {serializeProject,deserializeProject}=await import('/src/lib/projectFile.ts');const s=window.musicStore.getState(),ctx=new OfflineAudioContext(1,1,48000),json=serializeProject(s.project,s.sources),loaded=await deserializeProject(json,ctx);const bad=JSON.parse(json);bad.project.music.denominator=3;let rejected=false;try{await deserializeProject(JSON.stringify(bad),ctx);}catch{rejected=true;}return {music:loaded.project.music,range:loaded.project.editRange,rejected};});
+ assert.equal(saved.music.tempo,90);assert.equal(saved.music.denominator,8);assert.equal(saved.rejected,true);assert.deepEqual(saved.range,{start:0,end:4});
+ await modal.getByRole('checkbox',{name:'Metronome while playing / recording',exact:true}).check();await modal.getByRole('button',{name:'Play range in a loop',exact:true}).click();
+ await page.waitForFunction(()=>window.programmeStarts>0&&window.musicStore.getState().playheadPosition>.1);
+ const starts=await page.evaluate(()=>window.programmeStarts);await commit('Quarter-note BPM',100);assert.equal(await page.evaluate(()=>window.programmeStarts),starts);
+ assert.equal(await page.evaluate(()=>window.liveClicks.size),1);await page.evaluate(()=>window.musicStore.getState().setPlayheadPosition(3.95));await page.waitForFunction(()=>window.programmeStarts>=3&&window.musicStore.getState().playheadPosition<1);assert.equal(await page.evaluate(()=>window.liveClicks.size),1);
+ await page.evaluate(()=>window.musicStore.getState().setIsPlaying(false));await page.waitForFunction(()=>window.liveClicks.size===0);
+ const audio=await page.evaluate(async()=>{
+  const {TimelineMetronome}=await import('/src/audio/engine/TimelineMetronome.ts'),{DEFAULT_MUSIC}=await import('/src/lib/musicalTime.ts'),{TimelineEngine}=await import('/src/audio/engine/TimelineEngine.ts');
+  const ctx=new OfflineAudioContext(1,48000*2,48000);let now=0;
+  const clock={get currentTime(){return now;},sampleRate:ctx.sampleRate,createOscillator:()=>ctx.createOscillator(),createGain:()=>ctx.createGain()};
+  const met=new TimelineMetronome(clock,ctx.destination,{...DEFAULT_MUSIC,clickLevel:1},{frame:0,timeline:0},2);
+  for(now=0;now<2;now+=.05)met.pump();const pcm=(await ctx.startRendering()).getChannelData(0);
+  const rms=(a,b)=>{let sum=0;for(let i=Math.round(a*48000);i<Math.round(b*48000);i++)sum+=pcm[i]**2;return Math.sqrt(sum/((b-a)*48000));};
+  const pulses=[0,.5,1,1.5].map(t=>rms(t,t+.04)),gaps=[.1,.6,1.1,1.6].map(t=>rms(t,t+.1));met.stop();
+  const edgeCtx=new OfflineAudioContext(1,48000,48000);let edgeNow=.34999;const edgeClock={get currentTime(){return edgeNow;},sampleRate:48000,createOscillator:()=>edgeCtx.createOscillator(),createGain:()=>edgeCtx.createGain()};const edgeMet=new TimelineMetronome(edgeClock,edgeCtx.destination,{...DEFAULT_MUSIC,clickLevel:1},{frame:0,timeline:0},1);edgeMet.pump();edgeNow=.35;edgeMet.pump();const edgePCM=(await edgeCtx.startRendering()).getChannelData(0);const boundaryPeak=Math.max(...edgePCM.slice(24000,26000).map(Math.abs));edgeMet.stop();
+  const cancelled=new OfflineAudioContext(1,4800,48000),cancelMet=new TimelineMetronome(cancelled,cancelled.destination,DEFAULT_MUSIC,{frame:0,timeline:0},.1);cancelMet.start();cancelMet.stop();const cancelledPCM=(await cancelled.startRendering()).getChannelData(0);
+  const state=window.musicStore.getState(),engine=new TimelineEngine(new AudioContext());engine.setSources(state.sources);const mix=await engine.renderMixRange(state.project,0,1,undefined,state.sources);engine.stop();
+  return {pulses,gaps,boundaryPeak,cancelledPeak:Math.max(...cancelledPCM.map(Math.abs)),exportPeak:Math.max(...mix.getChannelData(0).map(Math.abs))};
+ });
+ assert.ok(audio.pulses.every(v=>v>.01),JSON.stringify(audio));assert.ok(audio.gaps.every(v=>v===0));assert.ok(audio.boundaryPeak>.01);assert.equal(audio.cancelledPeak,0);assert.equal(audio.exportPeak,0);
+ await page.setViewportSize({width:390,height:844});await page.evaluate(async()=>{const {default:i18n}=await import('/src/i18n/index.ts');await i18n.changeLanguage('de');});assert.equal(await page.locator('body').evaluate(e=>e.scrollWidth>window.innerWidth),false);assert.deepEqual(errors,[]);
+ console.log(JSON.stringify({savedClock:'passed',invalidClockRejected:'passed',absoluteClipTiming:'unchanged',tempoEditDuringPlayback:'no restart',barRange:saved.range,realOfflineClicks:audio,stopCancellation:'passed',seekAndLoop:'one active click scheduler',rulerLabels:'passed',exports:'click excluded',german390:'passed'}));
+}finally{await browser.close();}

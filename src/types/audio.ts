@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 export interface TimelineProject {
+  music?: import('../lib/musicalTime').MusicalSettings;
   groupEditingEnabled?: boolean;
   id: string;
   name: string;

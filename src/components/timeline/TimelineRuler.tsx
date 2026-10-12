@@ -1,3 +1,4 @@
+import {musicalTicks,snapProjectTime} from '../../lib/musicalTime';
 // ---------------------------------------------------------------------------
 // CrispAudio — TimelineRuler
 // Time ruler drawn on a canvas. Scrolls in sync with TimelineCanvas.
@@ -48,12 +49,14 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { t } = useTranslation();
   const range = useProjectStore(s=>s.project.editRange);
+  const music=useProjectStore(s=>s.project.music);
   const mode = useProjectStore(s=>s.selectionMode);
   const rangeDrag = useRef<{kind:'new'|'start'|'end';anchor:number;original:typeof range}|null>(null);
   useEffect(()=>()=>{if(rangeDrag.current)projectHistoryGesture.end();},[]);
   const rangeTime = (clientX:number, element:HTMLElement) => {
     const state=useProjectStore.getState();
-    return Math.max(0,Math.min(timelineDuration(state.project),state.scrollOffset+(clientX-element.getBoundingClientRect().left)/state.zoomLevel));
+    const time=state.scrollOffset+(clientX-element.getBoundingClientRect().left)/state.zoomLevel;
+    return Math.max(0,Math.min(timelineDuration(state.project),state.snapEnabled&&state.project.music?.grid!=='off'&&state.project.music?snapProjectTime(time,state.project):time));
   };
   const beginRange = (e:React.PointerEvent<HTMLElement>,kind:'new'|'start'|'end') => {
     e.preventDefault();e.stopPropagation();
@@ -121,6 +124,10 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
     ctx.lineTo(cssWidth, cssHeight - 0.5);
     ctx.stroke();
 
+    if(music?.ruler==='beats'){
+      ctx.font='10px Inter, sans-serif';ctx.strokeStyle=isLight?'#64748b':'#94a3b8';ctx.fillStyle=isLight?'#475569':'#cbd5e1';
+      for(const tick of musicalTicks(scrollOffset,scrollOffset+cssWidth/zoomLevel,zoomLevel,music)){const x=(tick.time-scrollOffset)*zoomLevel;ctx.beginPath();ctx.moveTo(x+.5,tick.label?4:cssHeight-6);ctx.lineTo(x+.5,cssHeight-1);ctx.stroke();if(tick.label)ctx.fillText(tick.label,x+3,14);}return;
+    }
     const majorInterval = chooseMajorInterval(zoomLevel);
     const minorInterval = majorInterval / 5;
 
@@ -168,7 +175,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
       }
     }
 
-  }, [zoomLevel, scrollOffset, width, range]);
+  }, [zoomLevel, scrollOffset, width, range,music]);
 
   useTimelineCanvasInvalidation(draw);
 
@@ -178,7 +185,7 @@ export const TimelineRuler: React.FC<TimelineRulerProps> = ({ width }) => {
       const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
       const x = e.clientX - rect.left;
       const time = scrollOffset + x / zoomLevel;
-      setPlayheadPosition(Math.max(0, time));
+      const state=useProjectStore.getState();setPlayheadPosition(state.snapEnabled&&state.project.music&&state.project.music.grid!=='off'?snapProjectTime(time,state.project):Math.max(0,time));
     },
     [scrollOffset, zoomLevel, setPlayheadPosition, mode],
   );

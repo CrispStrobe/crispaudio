@@ -18,6 +18,29 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.9.2 — musical timeline foundation
+
+Saved constant quarter-note tempo, signature and bar-one origin drive a bars/beats
+ruler, musical snapping and bar-aligned edit ranges. A monitor metronome follows
+transport anchors through seeks and loops; tempo edits leave programme playback
+running and clip clocks unchanged. See [Musical timeline](MUSICAL_TIME.md).
+
+Validation: 1,553 frontend tests (145 files), lint and TypeScript/Vite/Tauri builds
+pass. Chrome and WebKit exercise saved/reopened clocks, malformed-clock rejection,
+bar labels, unchanged clip clocks, no programme restart on tempo edits, seek/loop
+scheduler cleanup and German 390px controls. Real offline PCM verifies beat pulses,
+silent gaps, a lookahead-boundary regression, immediate stop cancellation and
+click-free programme exports. Native media code is unchanged from the validated
+0.9.1 checkpoint.
+
+Local app 0.9.2 is installed, signed, verified and launched with the existing
+optimized CLI and autosave preserved. No release tag or Apple upload. This is the
+first M10 increment: tempo maps, MIDI/devices/instruments/plugins and sample-accurate
+music loops remain future work. Physical click audibility is not inferred from
+headless PCM checks; playback remains fixed per the user. M9 stays deferred.
+Exact 0.9.1 CI and iOS workflows remain queued at this audit; local results are
+separate from remote workflow completion.
+
 ## Local 0.9.1 — delivery and portable project checkpoint
 
 Delivery provides per-export settings/presets, landscape/portrait and ProRes MOV,

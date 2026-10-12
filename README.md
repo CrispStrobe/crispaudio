@@ -17,6 +17,10 @@ Delivery adds per-export presets, range/clip/stem jobs, a cancellable queue,
 caption sidecars, portable media collection and reviewed cut-only OTIO export.
 See [Delivery workflows and limits](docs/DELIVERY.md).
 
+Musical time adds a saved tempo/signature overlay, bars/beats ruler, musical
+snapping and a monitor metronome. [Musical timeline workflow](docs/MUSICAL_TIME.md)
+describes the first M10 increment and its limits.
+
 ## Timeline and media editing
 
 - Multitrack audio waveforms and ordered picture layers share the timeline

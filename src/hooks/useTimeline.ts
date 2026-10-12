@@ -1,3 +1,4 @@
+import {snapProjectTime} from '../lib/musicalTime';
 import {capturePointerHistory,restorePointerHistory} from '../stores/pointerHistory';
 import {pointerTrim,type TrimFeedback} from '../lib/trimFeedback';
 import type {TimelineProject} from '../types/audio';
@@ -10,7 +11,7 @@ import {adjacentEdit} from '../lib/trimEdits';
 
 import { isNativeMac } from '../lib/nativeMenuPlatform';
 import { projectClips,linkedIds } from '../lib/projectEdits';
-import { snapClipStart } from '../lib/timelineSnap';
+import { snapProjectClipStart } from '../lib/timelineSnap';
 import { deleteSelection, nudgeSelection } from '../lib/timelineEditing';
 import { useRef, useCallback, useEffect, useState } from 'react';
 import type { AudioSegment, TimelineTrack } from '../types/audio';
@@ -122,10 +123,7 @@ export function useTimeline() {
   const snapTime = useCallback(
     (time: number): number => {
       if (!snapEnabled) return time;
-      // Snap to 0.1s grid (adjustable later)
-      const grid = useProjectStore.getState().project.snapGrid??0.1;
-      if(!grid)return time;
-      return Math.round(time / grid) * grid;
+      return snapProjectTime(time,useProjectStore.getState().project);
     },
     [snapEnabled],
   );
@@ -277,7 +275,7 @@ export function useTimeline() {
         const clip = store.project.tracks.flatMap(track => track.segments).find(clip => clip.id === ds.segmentId);
         const movingIds=new Set(linkedIds(store.project,[ds.segmentId]));
         const edges = [0, store.playheadPosition, ...(store.project.markers??[]).map(m=>m.time), ...projectClips(store.project).filter(clip=>!movingIds.has(clip.id)).flatMap(clip => [clip.startTime, clip.startTime + clip.duration])];
-        const newStart = snapClipStart(ds.originalStartTime + dtTime, clip?.duration ?? 0, edges, zoomLevel, store.snapEnabled && !e.altKey);
+        const newStart = snapProjectClipStart(ds.originalStartTime + dtTime, clip?.duration ?? 0, edges, zoomLevel, store.snapEnabled && !e.altKey,store.project);
         const newTrackIndex = Math.max(
           0,
           Math.min(

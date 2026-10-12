@@ -1,3 +1,5 @@
+import {MusicalControls} from './MusicalControls';
+import {useTimelineMetronome} from '../../hooks/useTimelineMetronome';
 import {DeliveryControls} from './DeliveryControls';
 import {SourceTranscriptControls} from './SourceTranscriptControls';
 import {MulticamControls} from './MulticamControls';
@@ -272,6 +274,7 @@ export const TimelinePanel: React.FC = () => {
   }, [store.sources]);
 
   useTimelineTransport(engineRef, audioEngine);
+  useTimelineMetronome(engineRef,audioEngine);
 
   useEffect(()=>{const failed=(e:Event)=>setProjectError((e as CustomEvent<string>).detail);window.addEventListener('crispaudio-recovery-error',failed);window.addEventListener('crispaudio-edit-error',failed);return()=>{window.removeEventListener('crispaudio-recovery-error',failed);window.removeEventListener('crispaudio-edit-error',failed);};},[]);
   // Track canvas width from container resize
@@ -633,6 +636,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton data-help="import" icon={Upload} label={t('timeline.import')} onClick={() => askImport()}/>
         <ToolButton icon={Download} label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}/>
         {store.project.editRange&&<ToolButton icon={Download} label={t('ranges.exportAudio')} disabled={exportStage!==null} onClick={()=>void handleExportMix(true)}/>}
+        <MusicalControls/>
         <DeliveryControls/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} />
         <AutoSyncTracks onError={setProjectError} />

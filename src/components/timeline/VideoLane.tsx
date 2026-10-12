@@ -11,7 +11,7 @@ import { useProjectStore } from '../../stores/projectStore';
 import { PlayheadHandle } from './PlayheadHandle';
 import { videoClips, clipSource, frameTime } from '../../lib/videoEditing';
 import { timelineDuration } from '../../lib/timelineView';
-import { snapClipStart } from '../../lib/timelineSnap';
+import { snapProjectClipStart } from '../../lib/timelineSnap';
 import { projectHistoryGesture } from '../../stores/projectStore';
 
 export const VIDEO_LANE_HEIGHT = 76;
@@ -72,7 +72,7 @@ export function VideoLane({ width, touchArrange = false,trackId }: { width: numb
         const duration=Math.max(0,Math.min(original.duration,frameTime(original[key]+delta,state.project.frameRate??25)));
         useProjectStore.setState({project:{...moving.project,video:{...moving.project.video!,clips:moving.clips.map(c=>c.id===clip.id?{...c,[key]:duration}:c)}}});
         return;
-      }if(moving.kind!=='move'){try{const result=pointerTrim(moving.project,clip.id,moving.kind,(e.clientX-moving.x)/scale,state.sources);useProjectStore.setState({project:result.project});setTrimFeedback(result.feedback);moving.error=undefined;}catch(error){moving.error=error instanceof Error?error.message:String(error);setTrimFeedback(previous=>({ids:linkedIds(moving.project,[clip.id]),side:moving.kind as 'left'|'right',requested:(e.clientX-moving.x)/scale,applied:previous?.applied??0,limited:false,error:String(error)}));}return;}const time=snapClipStart(moving.start+(e.clientX-moving.x)/scale,clip.duration,edges,scale,state.snapEnabled&&!e.altKey);try{useProjectStore.setState({project:moveClips(moving.project,[clip.id],time-moving.start,true)});moving.error=undefined;}catch(error){moving.error=String(error);}}}
+      }if(moving.kind!=='move'){try{const result=pointerTrim(moving.project,clip.id,moving.kind,(e.clientX-moving.x)/scale,state.sources);useProjectStore.setState({project:result.project});setTrimFeedback(result.feedback);moving.error=undefined;}catch(error){moving.error=error instanceof Error?error.message:String(error);setTrimFeedback(previous=>({ids:linkedIds(moving.project,[clip.id]),side:moving.kind as 'left'|'right',requested:(e.clientX-moving.x)/scale,applied:previous?.applied??0,limited:false,error:String(error)}));}return;}const time=snapProjectClipStart(moving.start+(e.clientX-moving.x)/scale,clip.duration,edges,scale,state.snapEnabled&&!e.altKey,moving.project);try{useProjectStore.setState({project:moveClips(moving.project,[clip.id],time-moving.start,true)});moving.error=undefined;}catch(error){moving.error=String(error);}}}
       onPointerUp={e=>{const finished=drag.current;if(!finished)return;drag.current=null;setTrimFeedback(null);projectHistoryGesture.end();e.currentTarget.releasePointerCapture(e.pointerId);if(finished.error)window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:t(finished.error.replace(/^Error: /,''))}));}}
       onPointerCancel={()=>{if(!drag.current)return;if(drag.current){useProjectStore.setState({project:drag.current.project});restorePointerHistory(drag.current.history);}drag.current=null;setTrimFeedback(null);projectHistoryGesture.end();}}
       onLostPointerCapture={()=>{if(drag.current){useProjectStore.setState({project:drag.current.project});restorePointerHistory(drag.current.history);drag.current=null;setTrimFeedback(null);projectHistoryGesture.end();}}}>

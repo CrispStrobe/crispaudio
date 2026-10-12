@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.9.2 — 2026-10-12
+
+- Add saved quarter-note tempo, time signature and bar-one origin without moving
+  recorded audio/video. Add bars/beats rulers and bar/note/triplet snapping.
+- Add a transport-clock monitor metronome with bar accents, cancellation on
+  stop/seek/loop and no exported clicks. Tempo edits keep programme playback running.
+- Create bar-aligned edit ranges with explicit empty-canvas extension and loop
+  playback through the existing range transport. Preserve undo/save/recovery.
+- This is the M10 musical timeline foundation; MIDI/instruments/plugins, tempo
+  maps and sample-accurate musical loop restarts remain future work.
+
 ## 0.9.1 — 2026-10-12
 
 - Add a Delivery panel with per-export settings and named presets, landscape /
