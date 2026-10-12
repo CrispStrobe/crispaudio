@@ -284,6 +284,7 @@ struct Chorus {
     rates: [f64; 2],
     depth: f32,
     mix: f64,
+    automation: Automation,
 }
 impl Chorus {
     fn at(&mut self, input: [f64; 2], frame: u32) -> [f64; 2] {
@@ -303,7 +304,14 @@ impl Chorus {
             }
         }
         self.cursor = (self.cursor + 1) % self.history.len();
-        std::array::from_fn(|ch| input[ch] * (1.0 - self.mix) + wet[ch] * self.mix)
+        if self.automation.points.is_empty() {
+            std::array::from_fn(|ch| input[ch] * (1.0 - self.mix) + wet[ch] * self.mix)
+        } else {
+            let mix = self.automation.at(frame as f64 / RATE);
+            let wet_gain = mix as f32 as f64;
+            let dry_gain = (1.0 - mix) as f32 as f64;
+            std::array::from_fn(|ch| input[ch] * dry_gain + wet[ch] * wet_gain)
+        }
     }
 }
 enum Effect {
@@ -455,6 +463,10 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
             continue;
         }
         if kind == "chorus" {
+            let automation = Automation::parse(&effect["automation"]["mix"])?;
+            if automation.points.iter().any(|p| p.1 > 1.0) {
+                return Err("Effect mix automation outside 0..1".into());
+            }
             let length = (RATE * 0.1) as usize + 2;
             budget.reserve(length * std::mem::size_of::<[f32; 2]>())?;
             let rate = finite(params, "rate", Some(1.5))?;
@@ -467,6 +479,7 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
                 ],
                 depth: (finite(params, "depth", Some(0.5))?.clamp(0.0, 1.0) * 0.01) as f32,
                 mix: finite(params, "mix", Some(0.3))?.clamp(0.0, 1.0) as f32 as f64,
+                automation,
             }));
             continue;
         }
@@ -1083,6 +1096,31 @@ mod tests {
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
         bad = effect.clone();
         bad[0]["automation"]["feedback"] = json!([]);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+    }
+    #[test]
+    fn chorus_mix_follows_steps_and_ramps_without_resetting_delay_history() {
+        let effect = json!([{"type":"chorus","enabled":true,"params":{"rate":1.5,"depth":0.5,"mix":0.3},"automation":{"mix":[{"time":0,"value":0,"curve":"step"},{"time":0.1,"value":1},{"time":0.2,"value":0}]}}]);
+        let mut rack = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        for frame in 0..14400 {
+            let mix = if frame < 4800 || frame >= 9600 {
+                0.0
+            } else {
+                1.0 - (frame - 4800) as f64 / 4800.0
+            };
+            let actual = process(&mut rack, [0.21, -0.105], frame);
+            let expected = 0.21 * (1.0 + mix);
+            assert!((actual[0] - expected).abs() < 1e-7);
+            assert!((actual[1] + expected / 2.0).abs() < 1e-7);
+        }
+        let mut bad = effect.clone();
+        bad[0]["automation"]["mix"][0]["value"] = json!(1.01);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+        bad = effect.clone();
+        bad[0]["automation"]["rate"] = json!([]);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+        bad = effect.clone();
+        bad[0]["automation"]["depth"] = json!([]);
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
     }
     #[test]

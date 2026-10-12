@@ -1049,3 +1049,24 @@ rules. Native `effect-automation`, `shape-automation`, `automation-pass` and
 index; portable envelopes require `effectType:"distortion"`. Cross-effect paste is
 rejected. Direct controls edit track inserts; clip/master metadata also renders in
 GUI/native exports and follows scoped range insert/extract operations.
+
+
+## Chorus mix automation (0.8.31)
+
+Select a track chorus insert's **Chorus mix** lane. Edit 0–100% mix points, choose
+outgoing Linear/Step, review preset/custom shapes or arm a protected Read/Touch/
+Latch/Write pass. Empty automation uses static mix, default 30%. Live mix edits
+retain both delayed voices and their modulation phase; rate/depth remain static.
+
+Copy a selected range or the whole envelope to its separate chorus mix clipboard,
+then review destination time/length. Stretching changes clocks, retaining values
+and curves. Outside one-sample guards, locks, cancel/no-op history and Save/Open
+follow the existing automation rules. Native point/shape/pass/paste recipes use
+`parameter:"mix"` and a zero-based chorus effect index. Portable envelopes require
+`effectType:"chorus"`; empty portable envelopes use 0.3, while GUI Copy captures
+actual static mix. Cross-effect paste rejects. The direct lane edits track inserts;
+clip/master metadata also renders in GUI/native DSP and follows scoped range edits.
+
+Chorus native/browser checks retain the established 1e-4 peak / 1e-5 RMS budget.
+Some cases exceed 2e-6, and abrupt wet tails diverge after clip ends; see
+[release validation](RELEASE_STATUS.md#chorus-mix-automation--local-0831-october-12).

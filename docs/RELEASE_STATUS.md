@@ -1,4 +1,4 @@
-# Distribution and platform status — 2026-10-11
+# Distribution and platform status — 2026-10-12
 
 Pushing `main` runs CI/web deployment workflows and the unsigned iOS simulator
 check. It does **not** automatically
@@ -2257,3 +2257,50 @@ completed successfully. The new main push requires its own CI check. Local 0.8.3
 app and optimized CLI are installed, ad-hoc signed, verified and launched with
 autosave recovery retained. No tags or Apple uploads. M2.3 remains open for further
 selected FX parameters; buses/sends and loudness finishing remain M2.4/M2.5.
+
+## Chorus mix automation — local 0.8.31 (October 12)
+
+Chorus mix now supports direct points, Linear/Step, reviewed preset/custom shapes,
+Read/Touch/Latch/Write recording and an independent tagged copy/retime clipboard.
+Native recipes and clip/track/master metadata use the same envelopes. Empty mix
+uses the static insert value, default 30%. Live mix edits preserve both delay lines
+and modulation phase; rate/depth remain static. M2.3 remains open for further
+selected parameters and persistent curve controls.
+
+Local validation: 119 frontend files / 1,458 tests and 101 native tests pass;
+10 existing native tests remain ignored. Lint, TypeScript/Vite, Tauri app and
+optimized CLI builds pass. App and standalone CLI 0.8.31 are ad-hoc signed,
+verified and installed; one existing autosave was preserved with a recovery backup.
+Actual Chrome and Playwright WebKit checks cover shape review, points, clipboard
+retiming, protected recording, history/locks/save-open, live graph preservation,
+German 390px dialogs and clip/track/master recipes. Range/full-render crops match
+exactly. This does not establish physical iOS or installed WKWebView interaction.
+
+Chorus uses its established native/browser DSP budget, **1e-4 peak / 1e-5 RMS**.
+The new suites also report failures of the stricter 2e-6 mix diagnostic:
+
+| Audit | Chrome peak / RMS | WebKit peak / RMS | Cases exceeding 2e-6 (Chrome / WebKit) |
+|---|---|---|---|
+| Four shape cases, 192,000 frames each | 9.2685e-6 / 2.4660e-8 | 4.1723e-7 / 6.8806e-8 | 4 / 0 |
+| Copy/retime, 480,000 frames | 2.2985e-5 / 2.2134e-6 | 1.3657e-5 / 2.0944e-6 | 1 / 1 |
+| Gain and mix recording, 384,000 frames each | 9.6262e-6 / 2.0396e-8 | 2.5332e-7 / 8.4433e-8 | 2 / 0 |
+| Three racks, 384,000 frames each | 2.1281e-6 / 2.0135e-7 | 2.1756e-6 / 1.8590e-7 | 3 / 3 |
+
+These are passes at the established chorus budget, **not blanket 2e-6 parity**.
+Ten existing static chorus cases also pass per browser (peak 3.5640e-5 / 3.5550e-5;
+RMS 1.8339e-6 / 1.0661e-6). All 20 native static WAVs are byte-identical to the
+previous installed 0.8.30 CLI. Existing audit tolerances and chorus DSP are retained.
+
+**Newly exposed inherited chorus tail limit:** the initial automated rack with
+nonzero wet mix at its abrupt clip end fails full PCM: Chrome peak 0.0821082,
+WebKit 0.0997399, both after the end at frame 355,200 (7.4s). The main rack fixture
+explicitly reaches dry mix at 7.4s to isolate automation; it does not validate
+arbitrary wet ends. `CRISPAUDIO_TEST_CHORUS_WET_END=1` retains that failing case.
+The separate `scripts/test-chorus-tail.mjs` checks static 30% wet ends at all three
+racks and fails its 1e-4 peak budget by default. Measured full errors reach
+0.0617415 in Chrome and 0.0749997 in WebKit; active audio stays within budget
+(peak 3.7584e-6 / 3.9339e-6). An explicit baseline CLI permits known-limit
+reporting only when the native static WAV is byte-identical to that baseline.
+All six tail WAVs match 0.8.30 exactly. This is evidence of an inherited limit,
+not a tail parity pass or a fix. The earlier long WebKit delay, upstream gain /
+bit-crusher precision and abrupt distortion tail limits also remain unresolved.

@@ -4,7 +4,7 @@ import {effectParameterAt,delayParameterMaximum,effectParameterDefault,supportsE
 import {applyAutomationPass,type AutomationTarget} from './automationRecording';
 import {timelineDuration} from './timelineView';
 export type EffectParameter=DelayParameter;
-export interface EffectEnvelope {effectType:'delay'|'ringmod'|'bitcrush'|'distortion';parameter:EffectParameter;duration:number;points:GainPoint[];sourceName?:string;sourceStart?:number}
+export interface EffectEnvelope {effectType:'delay'|'ringmod'|'bitcrush'|'distortion'|'chorus';parameter:EffectParameter;duration:number;points:GainPoint[];sourceName?:string;sourceStart?:number}
 const fail=(key:string):never=>{throw new Error(`automation.${key}`);};
 function points(input:GainPoint[]|undefined,parameter:EffectParameter){
  const maximum=delayParameterMaximum(parameter);
@@ -44,5 +44,5 @@ export function pasteEffectEnvelope(project:TimelineProject,trackId:string,index
  ]}]);
 }
 
-export type EffectClipboardKey=EffectParameter|'ringmodMix'|'bitcrushMix'|'distortionMix';
-export const effectClipboardKey=(type:string|undefined,parameter:EffectParameter):EffectClipboardKey=>type==='ringmod'||type==='bitcrush'||type==='distortion'?`${type}Mix`:parameter;
+export type EffectClipboardKey=EffectParameter|'ringmodMix'|'bitcrushMix'|'distortionMix'|'chorusMix';
+export const effectClipboardKey=(type:string|undefined,parameter:EffectParameter):EffectClipboardKey=>type==='ringmod'||type==='bitcrush'||type==='distortion'||type==='chorus'?`${type}Mix`:parameter;

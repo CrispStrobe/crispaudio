@@ -9,6 +9,7 @@ export function createChorus(
   rate: number,
   depth: number,
   mix: number,
+  mixNodes: ((wet: AudioParam, dry: AudioParam) => void) | undefined = undefined,
 ): AudioNode {
   const delay1 = ctx.createDelay(0.1);
   const delay2 = ctx.createDelay(0.1);
@@ -59,5 +60,6 @@ export function createChorus(
   lfo1.start();
   lfo2.start();
 
+  mixNodes?.(wetGain.gain, dryGain.gain);
   return output;
 }

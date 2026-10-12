@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.31 — 2026-10-12
+
+- Add chorus mix automation (0–100%) with direct points, Linear/Step, reviewed
+  preset/custom shapes, protected recording and a separate tagged copy/retime clipboard.
+- Add matching native point/shape/paste/pass recipes and clip/track/master rendering
+  with scoped range edits. Live mix changes preserve delay history and modulation
+  phase; empty envelopes use the insert mix, default 30%. Rate and depth stay static.
+- Document measured chorus precision and inherited abrupt wet-tail limits, with
+  separate diagnostic audits and unchanged static DSP.
+
 ## 0.8.30 — 2026-10-11
 
 - Add distortion mix automation (0–100%) with point/Linear/Step editing, reviewed

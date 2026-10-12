@@ -473,6 +473,7 @@ export class TimelineEngine {
             p.rate ?? 1.5,
             p.depth ?? 0.5,
             p.mix ?? 0.3,
+            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.3);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.3,staticFeedback:0,staticTime:0});},
           );
           break;
         case 'ringmod':

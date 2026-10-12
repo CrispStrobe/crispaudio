@@ -1559,6 +1559,35 @@ mod tests {
         assert!(apply(&p, &json!([point])).is_err());
     }
     #[test]
+    fn chorus_mix_recipes_support_points_shapes_passes_and_reject_other_parameters() {
+        let mut p = doc();
+        p["project"]["sampleRate"] = json!(48000);
+        p["project"]["tracks"][0]["effects"] =
+            json!([{"type":"chorus","enabled":true,"params":{"mix":0.7,"rate":1.5,"depth":0.5}}]);
+        let point = json!({"op":"effect-automation","trackId":"t","effectIndex":0,"parameter":"mix","points":[{"time":0,"value":0.2,"curve":"step"},{"time":2,"value":0.8},{"time":6,"value":0.1}]});
+        let shaped = json!({"op":"shape-automation","trackId":"t","effectIndex":0,"parameter":"mix","pointTime":2,"shape":"custom","controls":{"x1":0.2,"y1":0.9,"x2":0.7,"y2":0.2}});
+        let pass = json!({"op":"automation-pass","trackId":"t","effectIndex":0,"parameter":"mix","spans":[{"points":[{"time":3,"value":0},{"time":4,"value":1}]}]});
+        let out = apply(&p, &json!([point.clone(), shaped, pass])).unwrap();
+        assert_eq!(
+            out["project"]["tracks"][0]["segments"],
+            p["project"]["tracks"][0]["segments"]
+        );
+        assert!(
+            out["project"]["tracks"][0]["effects"][0]["automation"]["mix"]
+                .as_array()
+                .unwrap()
+                .len()
+                > 3
+        );
+        for parameter in ["feedback", "time"] {
+            let mut bad = point.clone();
+            bad["parameter"] = json!(parameter);
+            assert!(apply(&p, &json!([bad])).is_err());
+        }
+        p["project"]["tracks"][0]["locked"] = json!(true);
+        assert!(apply(&p, &json!([point])).is_err());
+    }
+    #[test]
     fn effect_automation_recipe_preserves_geometry_and_locks() {
         let mut p = doc();
         p["project"]["tracks"][0]["effects"] =

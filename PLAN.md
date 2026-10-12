@@ -215,6 +215,7 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
    and persistent curve handles remain open. Local 0.8.28 adds ring-modulator mix
    lanes, protected recording, an independent clipboard and GUI/native rendering.
    Local 0.8.29 adds the same workflow for bit-crusher mix; local 0.8.30 adds distortion mix while preserving oversampling history.
+   Local 0.8.31 adds chorus mix with delay-history and modulation-phase preservation.
 4. Add buses and sends: start with track-to-bus routing and shared reverb/delay;
    specify pre/post-fader sends and feedback-cycle rejection. Sidechain/ducking
    follows the routing model; it should not be an unrelated special-case graph.
@@ -378,10 +379,10 @@ consume the interview/video editor's near-term milestones.
 
 M2.1 and M2.2's EQ/limiter/gain-reduction controls are available in local 0.8.15.
 M2.3's gain/pan direct lanes and gain envelope copy/retime are available in local
-0.8.30, including independent pan envelope copy/retime, track delay mix/feedback/time
+0.8.31, including independent pan envelope copy/retime, track delay mix/feedback/time
 lanes, independent delay envelope copy/retime and protected Read/Touch/Latch/Write capture with explicit review.
 Outgoing Linear/Step curves and reviewed Ease-in/Ease-out/S-curve point generation
-and custom Bézier review handles are available, with ring-modulator mix added in 0.8.28 and bit-crusher mix in 0.8.29, followed by distortion mix in 0.8.30. Next add further selected FX parameters;
+and custom Bézier review handles are available, with ring-modulator mix added in 0.8.28 and bit-crusher mix in 0.8.29, followed by distortion mix in 0.8.30 and chorus mix in 0.8.31. Next add further selected FX parameters;
 M2.3 remains open. Keep
 buses/sends as M2.4 and loudness/true-peak finishing as M2.5. Codecs and disk paging
 remain deferred; physical iOS validation remains outstanding.

@@ -652,3 +652,13 @@ separate inherited tail limit, explicitly audited by test-distortion-tail.mjs.
 That audit fails unless an explicit baseline proves unchanged native static WAVs;
 known-limit reporting is not a parity pass. See RELEASE_STATUS.md for the measured
 limits, including long WebKit delay and upstream gain/bit-crushing precision.
+
+## Chorus mix automation (0.8.31)
+
+Chorus uses the same mix point/shape/pass/clipboard paths, with its own chorusMix
+clipboard and chorus portable tag. Empty mix defaults to 0.3, unlike ringmod,
+bitcrush and distortion (0.5). Rate and depth remain static. Live mix changes
+retain both delay lines and LFO phase. Native static/empty-envelope DSP stays
+unchanged. Chorus UI/native audits use the established chorus DSP budget of
+1e-4 peak / 1e-5 RMS and report stricter 2e-6 mix diagnostic failures separately;
+do not describe those cases as passing 2e-6 parity. Range/full crop remains exact.

@@ -181,6 +181,20 @@ mod tests {
         assert!(paste(&p, &source).is_err());
     }
     #[test]
+    fn chorus_paste_tags_and_empty_defaults_match_gui() {
+        let p = json!({"sampleRate":48000,"minimumDuration":8,"tracks":[{"id":"t","segments":[],"effects":[{"type":"chorus","params":{},"automation":{}},{"type":"delay","params":{},"automation":{}}]}]});
+        let op = json!({"trackId":"t","effectIndex":0,"parameter":"mix","time":2,"envelope":{"effectType":"chorus","parameter":"mix","duration":2,"points":[]}});
+        assert_eq!(paste(&p, &op).unwrap(), p);
+        let mut bad = op.clone();
+        bad["effectIndex"] = json!(1);
+        assert!(paste(&p, &bad).is_err());
+        bad = op.clone();
+        bad["parameter"] = json!("feedback");
+        assert!(paste(&p, &bad).is_err());
+        let source = json!({"trackId":"t","effectIndex":0,"parameter":"mix","time":2,"sourceTrackId":"t","sourceEffectIndex":1,"sourceStart":0,"sourceEnd":2});
+        assert!(paste(&p, &source).is_err());
+    }
+    #[test]
     fn retimes_tagged_delay_envelopes_and_preserves_other_parameters() {
         let project = json!({"duration":10,"minimumDuration":10,"sampleRate":48000,"tracks":[{"id":"a","locked":true,"segments":[],"effects":[{"type":"delay","params":{"mix":0.3,"feedback":0.4},"automation":{"mix":[{"time":0,"value":0},{"time":4,"value":1},{"time":8,"value":0}]}}]},{"id":"b","segments":[],"effects":[{"type":"delay","params":{"mix":0.2,"feedback":0.6},"automation":{"feedback":[{"time":0,"value":0.1}]}}]}]});
         let op = json!({"parameter":"mix","trackId":"b","effectIndex":0,"sourceTrackId":"a","sourceEffectIndex":0,"sourceStart":1,"sourceEnd":7,"time":4,"duration":3});
@@ -218,6 +232,7 @@ pub(crate) fn supports(effect: &Value, parameter: &str) -> bool {
     effect["type"] == "delay" && ["mix", "feedback", "time"].contains(&parameter)
         || (effect["type"] == "ringmod"
             || effect["type"] == "bitcrush"
-            || effect["type"] == "distortion")
+            || effect["type"] == "distortion"
+            || effect["type"] == "chorus")
             && parameter == "mix"
 }
