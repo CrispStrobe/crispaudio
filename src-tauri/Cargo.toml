@@ -1,6 +1,6 @@
 [package]
 name = "crispaudio"
-version = "0.9.2"
+version = "0.9.3"
 description = "CrispAudio - Integrated Audio Workstation"
 authors = ["CrispStrobe"]
 license = "MIT"
@@ -27,6 +27,9 @@ tauri-plugin-fs = "2"
 tauri-plugin-opener = "2"
 hound = "3.5"
 tauri-plugin-crispaudio-native = { path = "plugins/crispaudio-native" }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+midir = "0.11"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt"] }

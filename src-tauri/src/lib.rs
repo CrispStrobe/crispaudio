@@ -13,6 +13,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_crispaudio_native::init())
         .manage(native_files::OpenedFiles::default())
+        .manage(commands::midi::MidiState::default())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -35,6 +36,9 @@ pub fn run() {
     let app = builder
         .invoke_handler(tauri::generate_handler![
             native_menu::configure_native_menu,
+            commands::midi::list_midi_inputs,
+            commands::midi::connect_midi_input,
+            commands::midi::disconnect_midi_input,
             commands::audio_output::list_audio_outputs,
             commands::audio_output::select_audio_output,
             audio_export::export_wav,

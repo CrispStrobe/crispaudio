@@ -78,6 +78,7 @@ export interface DuckingConfig { source: string; threshold: number; ratio: numbe
 export interface Retime {renderDuration?:number;rate:number;reverse:boolean;preservePitch:boolean;semitones:number;original:{sourceId?:string;path?:string;offset:number;duration:number}}
 
 export interface AudioSegment {
+  midi?:import('../lib/midiPattern').MidiPattern;
   retime?:Retime;
   editGroup?: {id:string;name:string};
   linkGroup?: string;

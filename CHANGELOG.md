@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.9.3 — 2026-10-12
+
+- Add a source-clock piano roll with note movement, length/velocity editing and
+  start quantisation, sine/bell instruments and standard type-0 pattern MIDI export.
+- Capture channel notes and sustain from explicit native Mac CoreMIDI input or
+  supported Web MIDI browsers. Cancel audition/capture on blur, close or disconnect.
+- Render editable note patterns to durable audio clips with one undo step and
+  ordinary mixer/effects/export support. Preserve source windows through trims,
+  splits and copies; note edits create an independent source revision.
+- Fix Windows delivery publication by opening its owned stage with write access
+  for the durability flush while preserving no-overwrite hard-link publication.
+- Include MIDI dependency MIT notices. Live instrument tracks, MIDI file import,
+  arrangement MIDI export and plugin hosting remain subsequent M10 work.
+
 ## 0.9.2 — 2026-10-12
 
 - Add saved quarter-note tempo, time signature and bar-one origin without moving

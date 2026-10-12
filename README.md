@@ -21,6 +21,10 @@ Musical time adds a saved tempo/signature overlay, bars/beats ruler, musical
 snapping and a monitor metronome. [Musical timeline workflow](docs/MUSICAL_TIME.md)
 describes the first M10 increment and its limits.
 
+The MIDI piano roll adds editable notes, quantisation, controller input, sine/bell
+instruments and pattern MIDI export. [MIDI workflow and limits](docs/MIDI.md)
+describes rendered audio clips and input support.
+
 ## Timeline and media editing
 
 - Multitrack audio waveforms and ordered picture layers share the timeline

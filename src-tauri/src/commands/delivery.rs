@@ -211,7 +211,9 @@ pub fn publish_delivery_stage(staged: String, output: String) -> Result<(), Stri
     if staged.parent() != output.parent() {
         return Err("Delivery staging must share the output directory".into());
     }
-    fs::File::open(staged)
+    // FlushFileBuffers requires write access on Windows. Open the owned stage
+    // without truncation; close the handle before publishing its hard link.
+    OpenOptions::new().write(true).open(staged)
         .and_then(|f| f.sync_all())
         .map_err(|e| e.to_string())?;
     fs::hard_link(staged, output).map_err(|e| e.to_string())

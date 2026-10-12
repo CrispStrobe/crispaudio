@@ -18,6 +18,37 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.9.3 — MIDI notes and basic instruments
+
+The piano roll edits source-clock notes, velocity and durations, quantises starts,
+records channel notes/sustain from selected input and exports type-0 pattern MIDI.
+Sine/bell patterns render to durable audio clips with retained notes, preserving
+ordinary mixer/effects/export behavior and source windows through trims/splits.
+New destination track and clip publication are one undo step. Native Mac input
+uses CoreMIDI/midir; browsers use Web MIDI where available. See [MIDI](MIDI.md).
+
+Validation: 1,561 frontend tests (146 files), 25 app-native tests (one ignored),
+lint and TypeScript/Vite/Tauri builds pass. Native tests discover an owned virtual
+CoreMIDI source, receive note/sustain packets and close the connection. Chrome and
+WebKit exercise piano-roll editing, one undo, save/reopen, malformed-note rejection,
+independent split-window editing, stale-draft refusal, new-track publication,
+input-session/sustain capture, draft cancellation, Web MIDI disconnect cleanup and
+German 390px controls. Real PCM audition remains below full scale and stops
+immediately even during a release tail. Native/offline instrument output differs
+by at most 7.46e-9 in the checked render. Mido 1.3.3 validates the generated SMF.
+MIDI dependencies' MIT notices are included in About.
+
+Installed app 0.9.3 is signed/verified/launched with one autosave preserved;
+the optimized media CLI remains unchanged. No release tag/Apple upload. Virtual
+input tests are separate from physical controller/mobile acceptance. Live
+instrument tracks, MIDI file import/arrangement export, controller automation and
+plugin hosting remain subsequent M10 work; M9 stays deferred. Exact 0.9.2 iOS
+simulator CI passes. Frontend/media/Linux/macOS checks pass; Windows found a
+read-only durability-flush error in staged delivery publication. This checkpoint
+opens the owned stage for writing without truncation before syncing and hard-linking;
+Windows validation of the fix awaits the new CI run. The writable handle follows
+[Microsoft’s flush requirement](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers).
+
 ## Local 0.9.2 — musical timeline foundation
 
 Saved constant quarter-note tempo, signature and bar-one origin drive a bars/beats

@@ -155,6 +155,24 @@
     "repository": "https://github.com/ruuda/hound"
   },
   {
+    "name": "midir (native MIDI input)",
+    "version": "0.11.1",
+    "license": "MIT",
+    "repository": "https://github.com/Boddlnagg/midir"
+  },
+  {
+    "name": "coremidi (MIDI dependency)",
+    "version": "0.9.2",
+    "license": "MIT",
+    "repository": "https://github.com/chris-zen/coremidi"
+  },
+  {
+    "name": "coremidi-sys (MIDI dependency)",
+    "version": "3.2.1",
+    "license": "MIT",
+    "repository": "https://github.com/jonas-k/coremidi-sys"
+  },
+  {
     "name": "glint (vendored codec WASM)",
     "version": "vendored",
     "license": "MIT",

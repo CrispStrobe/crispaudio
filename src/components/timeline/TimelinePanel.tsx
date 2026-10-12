@@ -1,3 +1,4 @@
+import {MidiControls} from './MidiControls';
 import {MusicalControls} from './MusicalControls';
 import {useTimelineMetronome} from '../../hooks/useTimelineMetronome';
 import {DeliveryControls} from './DeliveryControls';
@@ -637,6 +638,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Download} label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}/>
         {store.project.editRange&&<ToolButton icon={Download} label={t('ranges.exportAudio')} disabled={exportStage!==null} onClick={()=>void handleExportMix(true)}/>}
         <MusicalControls/>
+        <MidiControls audio={audioEngine}/>
         <DeliveryControls/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} />
         <AutoSyncTracks onError={setProjectError} />

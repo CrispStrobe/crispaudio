@@ -5,3 +5,5 @@ pub mod native_files;
 pub mod project;
 
 pub mod delivery;
+
+pub mod midi;
