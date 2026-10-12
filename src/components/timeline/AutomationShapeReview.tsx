@@ -5,20 +5,21 @@ import {useEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Modal} from '../common/Modal';
 import {useProjectStore} from '../../stores/projectStore';
-import {shapeAutomationSegment,automationShapes,defaultShapeControls,type AutomationShape,type AutomationShapeControls} from '../../lib/automationShape';
+import {shapeAutomationSegment,automationShapes,defaultShapeControls,reviewedShapeSegment,type AutomationShape,type AutomationShapeControls} from '../../lib/automationShape';
 import {targetPoints,type AutomationTarget} from '../../lib/automationRecording';
 import type {TimelineProject} from '../../types/audio';
 
 /** Preview only; stale project reviews cannot write. */
 export function AutomationShapeReview({project,target,pointTime,onClose}:{project:TimelineProject;target:AutomationTarget;pointTime:number;onClose:()=>void}) {
- const {t}=useTranslation(),[shape,setShape]=useState<AutomationShape>('s-curve'),current=useProjectStore(s=>s.project);
+ const before=(target.parameter==='pan'?normalizePanPoints:normalizeGainPoints)(targetPoints(project,target)),saved=reviewedShapeSegment(before,before.findIndex(p=>p.time===pointTime));
+ const {t}=useTranslation(),[shape,setShape]=useState<AutomationShape>(saved?.review.shape??'s-curve'),current=useProjectStore(s=>s.project);
  const shapeInput=useRef<HTMLSelectElement>(null);
- const [controls,setControls]=useState<AutomationShapeControls>(defaultShapeControls);
+ const [controls,setControls]=useState<AutomationShapeControls>(saved?.review.controls??defaultShapeControls);
  const handleValue=(key:keyof AutomationShapeControls,value:number)=>setControls(c=>({...c,[key]:Math.max(key==='x2'?c.x1:0,Math.min(key==='x1'?c.x2:1,value))}));
  useEffect(()=>{const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();onClose();}};window.addEventListener('keydown',escape,true);return()=>window.removeEventListener('keydown',escape,true);},[onClose]);
  let preview:TimelineProject|undefined,error='';
  try{if(current!==project)throw new Error('automation.changed');preview=shapeAutomationSegment(project,target,pointTime,shape,controls);}catch(reason){error=t(reason instanceof Error?reason.message:String(reason));}
- const before=(target.parameter==='pan'?normalizePanPoints:normalizeGainPoints)(targetPoints(project,target)),a=before.find(p=>p.time===pointTime),b=before.filter(p=>p.time>pointTime).sort((a,b)=>a.time-b.time)[0];
+ const a=before.find(p=>p.time===pointTime),b=saved?.b??before.filter(p=>p.time>pointTime).sort((a,b)=>a.time-b.time)[0];
  const points=preview?(target.parameter==='pan'?normalizePanPoints:normalizeGainPoints)(targetPoints(preview,target)).filter(p=>p.time>=pointTime&&p.time<=(b?.time??pointTime)):[];
  const effectType=project.tracks.find(t=>t.id===target.trackId)?.effects?.[target.effectIndex??-1]?.type,mixOnly=effectType==='ringmod'||effectType==='bitcrush'||effectType==='distortion'||effectType==='chorus'||effectType==='reverb';
  const parameterLabel=target.parameter==='gain'?'automation.gainLane':target.parameter==='pan'?'automation.panLane':mixOnly?`automation.${effectType}Mix`:`automation.delay${target.parameter[0].toUpperCase()+target.parameter.slice(1)}`;

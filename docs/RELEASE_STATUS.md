@@ -2359,3 +2359,44 @@ unchanged audit; its cause is unresolved. WebKit retains three documented long-d
 failures at 1e-4, all native WAVs byte-identical to 0.8.31. Other previously documented
 bit-crusher precision, distortion tail and chorus precision/tail limits remain
 unresolved; this increment does not claim to fix them.
+
+## Saved automation shape reviews — local 0.8.33 (October 12)
+
+New preset/custom shapes save their review settings with the first baked point.
+Select that point to reopen and revise the original whole span after save/open.
+Revision replaces the existing interior points in one undo step; Linear flattens
+the span. Reapplying the same shape preserves history/redo. Complete copy/stretch
+and whole-span range shifts retain the dimensionless controls. Interior edits,
+Step changes and partial cuts can invalidate the saved span; the tool then reviews
+only the adjacent segment. Older shapes without metadata remain ordinary points.
+Audio continues to use the baked linear points. Direct curve controls and further
+selected FX parameters remain open in M2.3.
+
+Local validation: 121 frontend files / 1,468 tests, 108 native tests (10 existing
+ignored), lint, TypeScript/Vite, Tauri app and optimized CLI builds pass. Checks
+cover malformed metadata, JSON round-trip, complete copy/stretch/range shifts,
+whole-span revisions, Linear flattening and safe fallback after interior edits.
+App and optimized CLI 0.8.33 are installed, ad-hoc signed and verified, with one
+existing autosave preserved and a full recovery backup.
+
+Actual Chrome and Playwright WebKit audits cover ten initial/revised custom-shape
+cases across gain, pan and delay mix/feedback/time, fifteen preset regressions and
+four reverb mix cases. They check restored custom settings after save/open,
+whole-span bounds and stable point counts, numeric/keyboard/pointer handles,
+Undo/Cancel/Redo, locks/stale reviews, no playback restart, no-op/redo and German
+390px layout. The coordinate audit captures the matrix at the pointer event,
+matching the control while the modal animates; its original 0.001% tolerance is
+retained. An initial fixture filename collision was corrected with distinct names
+for revision outputs; the CLI's overwrite protection remains intact.
+
+All 58 native WAVs match the prior installed 0.8.32 CLI rendering the same final
+points byte-for-byte. This establishes unchanged native rendering, not a pass for
+inherited browser differences. Chrome custom cases pass the existing budgets
+(gain/pan/mix/feedback peak 8.0466e-7; time peak 3.7745e-5). WebKit's four other
+lanes pass (peak 7.7486e-7), while the initial custom long-delay case retains a
+known 1e-4-budget failure at 2.8940e-4, byte-identical to 0.8.32. The revised time
+case passes. The three older WebKit preset long-delay failures also remain.
+Reverb retains its documented headroom-scaled budget and strict 2e-6 diagnostic
+failures; measured values match the 0.8.32 evidence above. Full/range crops match
+exactly. Other documented precision/tail limits remain unresolved. Physical iOS
+and installed WKWebView interaction were not validated.

@@ -1090,3 +1090,19 @@ Portable envelopes require `effectType:"reverb"`; an empty portable envelope
 uses 0.3, while GUI Copy captures the actual static value. Clip/master metadata
 renders in GUI/native DSP and retimes with scoped range edits. Range export
 renders a prefix and crops it, retaining convolution history.
+
+
+## Reopening applied automation shapes (0.8.33)
+
+Newly applied preset/custom shapes retain their review settings with the first
+point. Select that point and open **Shape outgoing segment** to revise the original
+whole span. Saved handles return after save/open. Apply replaces the interior
+points in one undo step; changing to Linear removes them. Applying an unchanged
+review preserves redo. Playback and export still use the baked linear points.
+
+Complete shape copy/stretch and whole-span range shifts retain these settings.
+An interior point edit, Step change or partial cut can invalidate the saved span;
+the tool then reviews only the adjacent segment and leaves other points alone.
+Shapes saved by older versions have no review metadata and remain ordinary editable
+points. Locks, recording protection and stale-review checks also apply to revisions.
+Native `shape-automation` recipes use the same first point and integrity checks.

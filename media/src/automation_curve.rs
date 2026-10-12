@@ -5,7 +5,7 @@ pub(crate) fn validate(point: &Value) -> Result<()> {
     if point.get("curve").is_some() && !matches!(point["curve"].as_str(), Some("linear" | "step")) {
         return Err("Unsupported automation curve".into());
     }
-    Ok(())
+    crate::automation_shape::validate_review(point)
 }
 pub(crate) fn step(point: &Value) -> bool {
     point["curve"] == "step"
@@ -20,6 +20,11 @@ pub(crate) fn decorate(point: &mut Value, points: &[Value], time: f64) {
                 .unwrap()
                 .total_cmp(&b["time"].as_f64().unwrap())
         });
+    if let Some(source) = old.filter(|p| p["time"].as_f64() == Some(time)) {
+        if let Some(review) = source.get("shapeReview") {
+            point["shapeReview"] = review.clone();
+        }
+    }
     if old.is_some_and(step) {
         point["curve"] = json!("step")
     }

@@ -1,9 +1,10 @@
+import {validShapeReview} from './automationShapeMetadata';
 import type { GainPoint, TimelineTrack, AudioSource } from '../types/audio';
 /** A point controls the segment to its right. Missing curve is Linear. */
-export const validAutomationCurve=(point:GainPoint)=>point.curve===undefined||point.curve==='linear'||point.curve==='step';
-export function curveFields(points:GainPoint[]|undefined,time:number):Pick<GainPoint,'curve'> {
+export const validAutomationCurve=(point:GainPoint)=>(point.curve===undefined||point.curve==='linear'||point.curve==='step')&&validShapeReview(point);
+export function curveFields(points:GainPoint[]|undefined,time:number):Pick<GainPoint,'curve'|'shapeReview'> {
  let point:GainPoint|undefined;for(const p of points??[])if(p.time<=time&&(!point||p.time>=point.time))point=p;
- return point?.curve==='step'?{curve:'step'}:{};
+ return {...(point?.curve==='step'?{curve:'step' as const}:{}),...(point?.time===time&&point.shapeReview?{shapeReview:point.shapeReview}:{})};
 }
 export function automationCheckTimes(a:GainPoint[],b:GainPoint[]):number[]{
  const times=[...new Set([...a,...b].map(p=>p.time))].sort((a,b)=>a-b);

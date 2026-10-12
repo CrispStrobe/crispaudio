@@ -674,3 +674,16 @@ scale. Do not turn reverb into a fully wet blend at mix=1. Native set_mix change
 only wet/dry gains, preserving direct-head and FFT partition history. Empty
 native envelopes retain the old static DSP. Both GUI/native convolve through
 mix=0 so later wet changes reveal the existing tail.
+
+
+## Saved shape review handles (0.8.33)
+
+GainPoint.shapeReview is optional advisory metadata: shape, intervals (2..16),
+and controls for custom shapes. Validate it alongside curve metadata in GUI and
+native paths. Playback uses the existing linear baked points. Reopen a whole span
+only when every point matches the saved shape and spacing; changed/truncated
+spans fall back to adjacent-segment review. Full copy/stretch keeps dimensionless
+controls, with exact-boundary shapeReview fields carried by curveFields/decorate.
+Reapplying the saved shape preserves identity/redo. Linear removes its interior
+points and metadata; use the entire old segment for equivalence checks. Older
+shapes without metadata stay ordinary points; never infer handles from their audio.

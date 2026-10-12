@@ -26,6 +26,83 @@ fn custom_progress(x: f64, c: [f64; 4]) -> f64 {
     }
     cubic((lo + hi) / 2.0, c[1], c[3])
 }
+pub(crate) fn validate_review(point: &Value) -> Result<()> {
+    let Some(m) = point.get("shapeReview") else {
+        return Ok(());
+    };
+    let shape = m["shape"].as_str().ok_or("Invalid shape review")?;
+    if !m.is_object()
+        || !["ease-in", "ease-out", "s-curve", "custom"].contains(&shape)
+        || !m["intervals"]
+            .as_u64()
+            .is_some_and(|n| (2..=16).contains(&n))
+    {
+        return Err("Invalid shape review".into());
+    }
+    if shape == "custom" {
+        let c = &m["controls"];
+        let values = [
+            number(c, "x1")?,
+            number(c, "y1")?,
+            number(c, "x2")?,
+            number(c, "y2")?,
+        ];
+        if !c.is_object() || values.iter().any(|v| *v < 0.0 || *v > 1.0) || values[0] > values[2] {
+            return Err("Invalid shape controls".into());
+        }
+    } else if m.get("controls").is_some() {
+        return Err("Unexpected shape controls".into());
+    }
+    Ok(())
+}
+fn reviewed_end(points: &[Value], i: usize) -> Option<usize> {
+    let a = points.get(i)?;
+    validate_review(a).ok()?;
+    let m = a.get("shapeReview")?;
+    let n = m["intervals"].as_u64()? as usize;
+    let end = i + n;
+    let b = points.get(end)?;
+    let at = a["time"].as_f64()?;
+    let bt = b["time"].as_f64()?;
+    let av = a["value"].as_f64()?;
+    let bv = b["value"].as_f64()?;
+    if bt <= at {
+        return None;
+    }
+    for j in 0..n {
+        let point = points.get(i + j)?;
+        if point["curve"] == "step" || j > 0 && point.get("shapeReview").is_some() {
+            return None;
+        }
+        let phase = j as f64 / n as f64;
+        let progress = match m["shape"].as_str()? {
+            "ease-in" => phase * phase,
+            "ease-out" => phase * (2.0 - phase),
+            "s-curve" => phase * phase * (3.0 - 2.0 * phase),
+            "custom" => {
+                let c = &m["controls"];
+                custom_progress(
+                    phase,
+                    [
+                        c["x1"].as_f64()?,
+                        c["y1"].as_f64()?,
+                        c["x2"].as_f64()?,
+                        c["y2"].as_f64()?,
+                    ],
+                )
+            }
+            _ => return None,
+        };
+        let value = av + (bv - av) * progress;
+        let actual = point["value"].as_f64()?;
+        if (point["time"].as_f64()? - (at + (bt - at) * phase)).abs() > 1e-9 * (bt - at).max(1.0)
+            || (actual - value).abs() > 1e-12 * actual.abs().max(value.abs()).max(1.0)
+        {
+            return None;
+        }
+    }
+    Some(end)
+}
 pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     let parameter = op["parameter"].as_str().ok_or("Missing parameter")?;
     let maximum = match parameter {
@@ -101,7 +178,8 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
         .position(|p| p["time"].as_f64() == Some(point_time))
         .ok_or("Missing point")?;
     let a = &original[i];
-    let b = original.get(i + 1).ok_or("Missing following point")?;
+    let end_index = reviewed_end(&original, i).unwrap_or(i + 1);
+    let b = original.get(end_index).ok_or("Missing following point")?;
     let end = number(b, "time")?;
     let duration = end - point_time;
     if rate <= 0.0
@@ -115,7 +193,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     } else {
         ((duration * rate + 1e-9).floor() as usize).clamp(2, 16)
     };
-    if original.len() + intervals - 1 > 100000 {
+    if original.len() + intervals - (end_index - i) > 100000 {
         return Err("Automation point limit".into());
     }
     let mut first = a.clone();
@@ -123,6 +201,14 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
         .as_object_mut()
         .ok_or("Invalid point")?
         .remove("curve");
+    first.as_object_mut().unwrap().remove("shapeReview");
+    if shape != "linear" {
+        let mut review = json!({"shape":shape,"intervals":intervals});
+        if shape == "custom" {
+            review["controls"] = op["controls"].clone();
+        }
+        first["shapeReview"] = review;
+    }
     let mut result = original[..i].to_vec();
     result.push(first);
     let av = number(a, "value")?;
@@ -138,8 +224,8 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
         };
         result.push(json!({"time":point_time+duration*j as f64/intervals as f64,"value":av+(bv-av)*progress}));
     }
-    result.extend_from_slice(&original[i + 1..]);
-    let old_segment = vec![a.clone(), b.clone()];
+    result.extend_from_slice(&original[end_index..]);
+    let old_segment = original[i..end_index + 1].to_vec();
     let new_segment = &result[i..i + intervals + 1];
     if crate::automation_curve::check_times(&old_segment, new_segment)
         .iter()
@@ -162,6 +248,55 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn whole_shape_copy_and_stretch_preserve_reopening() {
+        let p = json!({"sampleRate":48000,"minimumDuration":8,"tracks":[{"id":"t","segments":[],"automation":[{"time":0,"value":0.2},{"time":2,"value":0.8},{"time":8,"value":0.1}]}]});
+        let op = json!({"trackId":"t","parameter":"gain","pointTime":0,"shape":"custom","controls":{"x1":0.2,"y1":0.9,"x2":0.7,"y2":0.2}});
+        let shaped = apply(&p, &op).unwrap();
+        let copied=crate::gain_envelope::paste(&shaped,&json!({"trackId":"t","sourceTrackId":"t","sourceStart":0,"sourceEnd":2,"time":3,"duration":4})).unwrap();
+        let points = copied["tracks"][0]["automation"].as_array().unwrap();
+        let i = points
+            .iter()
+            .position(|p| p["time"].as_f64() == Some(3.0))
+            .unwrap();
+        let end = reviewed_end(points, i).unwrap();
+        assert_eq!(points[end]["time"].as_f64(), Some(7.0));
+    }
+    #[test]
+    fn saved_controls_reopen_whole_span_and_linear_removes_the_baked_shape() {
+        let p = json!({"sampleRate":48000,"minimumDuration":8,"tracks":[{"id":"t","segments":[],"automation":[{"time":0,"value":0.2},{"time":2,"value":0.8},{"time":8,"value":0.1}]}]});
+        let mut op = json!({"trackId":"t","parameter":"gain","pointTime":0,"shape":"custom","controls":{"x1":0.2,"y1":0.9,"x2":0.7,"y2":0.2}});
+        let a = apply(&p, &op).unwrap();
+        assert_eq!(apply(&a, &op).unwrap(), a);
+        op["controls"]["y1"] = json!(0.3);
+        let b = apply(&a, &op).unwrap();
+        assert_eq!(b["tracks"][0]["automation"].as_array().unwrap().len(), 18);
+        op["shape"] = json!("linear");
+        assert_eq!(apply(&b, &op).unwrap(), p);
+        let mut edited = a.clone();
+        edited["tracks"][0]["automation"][5]["value"] = json!(0.5);
+        op["shape"] = json!("ease-in");
+        assert_eq!(
+            apply(&edited, &op).unwrap()["tracks"][0]["automation"]
+                .as_array()
+                .unwrap()
+                .len(),
+            33
+        );
+    }
+    #[test]
+    fn malformed_shape_review_is_rejected_before_editing() {
+        for review in [
+            json!(null),
+            json!({"shape":"custom","intervals":17,"controls":{"x1":0.2,"y1":0.9,"x2":0.7,"y2":0.2}}),
+            json!({"shape":"custom","intervals":16,"controls":{"x1":0.9,"y1":0,"x2":0.1,"y2":1}}),
+        ] {
+            assert!(crate::automation_curve::validate(
+                &json!({"time":0,"value":1,"shapeReview":review})
+            )
+            .is_err());
+        }
+    }
     #[test]
     fn shapes_all_parameters_without_changing_outside_or_geometry() {
         let points = json!([{"time":0,"value":0.2,"curve":"step"},{"time":1,"value":0.1},{"time":3,"value":0.8,"curve":"step"},{"time":5,"value":0.3}]);

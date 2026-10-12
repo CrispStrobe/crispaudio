@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.33 — 2026-10-12
+
+- Save applied automation shape controls with their baked points. Reopen the first
+  shaped point to revise the original span after save/open, without adding more
+  interior points; Linear flattens the span in one undo step.
+- Retain intact shape reviews through full copy/stretch and range shifts. Reject
+  malformed metadata; edited or truncated shapes fall back to adjacent-segment
+  review. Native recipes match GUI revisions; audio still uses linear points.
+
 ## 0.8.32 — 2026-10-12
 
 - Add reverb mix automation with direct points, Linear/Step, reviewed preset/custom
