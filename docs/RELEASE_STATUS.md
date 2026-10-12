@@ -42,12 +42,22 @@ Installed app 0.9.3 is signed/verified/launched with one autosave preserved;
 the optimized media CLI remains unchanged. No release tag/Apple upload. Virtual
 input tests are separate from physical controller/mobile acceptance. Live
 instrument tracks, MIDI file import/arrangement export, controller automation and
-plugin hosting remain subsequent M10 work; M9 stays deferred. Exact 0.9.2 iOS
-simulator CI passes. Frontend/media/Linux/macOS checks pass; Windows found a
-read-only durability-flush error in staged delivery publication. This checkpoint
-opens the owned stage for writing without truncation before syncing and hard-linking;
-Windows validation of the fix awaits the new CI run. The writable handle follows
+plugin hosting remain subsequent M10 work; M9 stays deferred. Exact 0.9.3
+[desktop CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38308670258)
+passes frontend/media and Windows/Linux/macOS checks, including the Windows
+delivery publication fix. This checkpoint opens the owned stage for writing
+without truncation before syncing and hard-linking. The writable handle follows
 [Microsoft’s flush requirement](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers).
+
+The [0.9.3 iOS run](https://github.com/CrispStrobe/crispaudio/actions/runs/38308670205)
+failed during Rust compilation: `num_threads` 0.1.7 calls `libc::mach_task_self`,
+but libc 0.2.190 restricts that wrapper to macOS. The iOS manifest now pins the
+compatible 0.2.189 release and the lockfile retains it. The
+[upstream 0.2.189 source](https://github.com/rust-lang/libc/blob/0.2.189/src/unix/bsd/apple/mod.rs)
+contains the unrestricted wrapper. A separate local check compiles the exact
+dependency pair for `aarch64-apple-ios-sim`; full remote simulator validation is
+pending this fix's push. Failed builds now skip the unsigned-app artifact step
+when no application was produced, preserving the original build error.
 
 ## Local 0.9.2 — musical timeline foundation
 

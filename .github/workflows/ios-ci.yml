@@ -85,7 +85,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload unsigned .app (for local Simulator use)
-        if: always()
+        if: always() && steps.app.outputs.path != ''
         uses: actions/upload-artifact@v4
         with:
           name: CrispAudio-ios-sim-app

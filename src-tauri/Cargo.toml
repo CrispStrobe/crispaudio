@@ -31,6 +31,11 @@ tauri-plugin-crispaudio-native = { path = "plugins/crispaudio-native" }
 [target.'cfg(target_os = "macos")'.dependencies]
 midir = "0.11"
 
+[target.'cfg(target_os = "ios")'.dependencies]
+# num_threads 0.1.7 calls libc::mach_task_self on iOS. libc 0.2.190
+# restricts that wrapper to macOS; retain the compatible release until fixed.
+libc = "=0.2.189"
+
 [dev-dependencies]
 tokio = { version = "1", features = ["rt"] }
 

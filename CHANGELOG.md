@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## 0.9.3 — 2026-10-12
 
+- Pin the iOS libc dependency to 0.2.189 to restore simulator compilation with
+  num_threads; skip app artifact upload when the simulator build produced no app.
+
 - Add a source-clock piano roll with note movement, length/velocity editing and
   start quantisation, sine/bell instruments and standard type-0 pattern MIDI export.
 - Capture channel notes and sustain from explicit native Mac CoreMIDI input or
