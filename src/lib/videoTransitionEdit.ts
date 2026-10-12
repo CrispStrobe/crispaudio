@@ -1,9 +1,12 @@
+import {pictureTrackId} from './pictureComposition';
 import type { TimelineProject, VideoClip } from '../types/audio';
 import { validateVideoClips, videoClips } from './videoEditing';
 
 /** Changing an existing blend's style preserves its interval and linked sound. */
 export function videoTransitionPatch(video:NonNullable<TimelineProject['video']>,id:string,type:VideoClip['transition'],duration?:number):Partial<VideoClip> {
-  const clips=videoClips(video),sorted=[...clips].sort((a,b)=>a.startTime-b.startTime),index=sorted.findIndex(clip=>clip.id===id),clip=sorted[index],previous=sorted[index-1];
+  const clips=videoClips(video),selected=clips.find(c=>c.id===id);
+  if(!selected)throw new Error('Missing video clip');
+  const lane=pictureTrackId(selected),sorted=clips.filter(c=>pictureTrackId(c)===lane).sort((a,b)=>a.startTime-b.startTime),index=sorted.findIndex(clip=>clip.id===id),clip=sorted[index],previous=sorted[index-1];
   if(!clip)throw new Error('Missing video clip');
   const overlap=previous?previous.startTime+previous.duration-clip.startTime:0;
   let patch:Partial<VideoClip>;

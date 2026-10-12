@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use tauri::ipc::{InvokeBody, Request, Response};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 pub const OPENED_FILES_EVENT: &str = "opened-files";
 
@@ -100,6 +100,87 @@ pub async fn stage_share_file(request: Request<'_>) -> Result<String, String> {
     let path = dir.join(name);
     std::fs::write(&path, bytes).map_err(|e| format!("Failed to stage file: {e}"))?;
     Ok(path.to_string_lossy().into_owned())
+}
+
+/// Captured originals live outside the temporary share directory and are never
+/// replaced by arrangement edits or automatically removed by undo.
+#[tauri::command]
+pub async fn persist_recording(app: AppHandle, request: Request<'_>) -> Result<String, String> {
+    let InvokeBody::Raw(bytes) = request.body() else {
+        return Err("Expected WAV recording bytes".into());
+    };
+    let folder = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("recordings");
+    write_recording(&folder, bytes)
+}
+fn write_recording(folder: &Path, bytes: &[u8]) -> Result<String, String> {
+    use std::io::Write;
+    if bytes.len() > 256 * 1024 * 1024 {
+        return Err("Recording exceeds the 256 MiB file budget".into());
+    }
+    let reader = hound::WavReader::new(std::io::Cursor::new(bytes)).map_err(|e| e.to_string())?;
+    let spec = reader.spec();
+    if !(1..=2).contains(&spec.channels)
+        || !(8000..=192000).contains(&spec.sample_rate)
+        || reader.duration() == 0
+    {
+        return Err("Invalid recording layout".into());
+    }
+    std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_nanos();
+    let path = folder.join(format!("recording-{}-{stamp}.wav", std::process::id()));
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)
+        .map_err(|e| e.to_string())?;
+    let result = file.write_all(bytes).and_then(|_| file.sync_all());
+    if let Err(error) = result {
+        let _ = std::fs::remove_file(&path);
+        return Err(error.to_string());
+    }
+    Ok(path.to_string_lossy().into_owned())
+}
+#[cfg(test)]
+mod recording_tests {
+    use super::*;
+    #[test]
+    fn original_wavs_are_durable_unique_and_invalid_input_publishes_nothing() {
+        let folder =
+            std::env::temp_dir().join(format!("crispaudio-recording-test-{}", std::process::id()));
+        let mut wav = std::io::Cursor::new(Vec::new());
+        {
+            let mut writer = hound::WavWriter::new(
+                &mut wav,
+                hound::WavSpec {
+                    channels: 1,
+                    sample_rate: 48000,
+                    bits_per_sample: 32,
+                    sample_format: hound::SampleFormat::Float,
+                },
+            )
+            .unwrap();
+            for _ in 0..480 {
+                writer.write_sample(0.125f32).unwrap();
+            }
+            writer.finalize().unwrap();
+        }
+        let bytes = wav.into_inner();
+        let first = write_recording(&folder, &bytes).unwrap();
+        let second = write_recording(&folder, &bytes).unwrap();
+        assert_ne!(first, second);
+        assert_eq!(std::fs::read(&first).unwrap(), bytes);
+        assert_eq!(std::fs::read(&second).unwrap(), bytes);
+        assert!(write_recording(&folder, b"not a WAV").is_err());
+        assert_eq!(std::fs::read_dir(&folder).unwrap().count(), 2);
+        std::fs::remove_dir_all(folder).unwrap();
+    }
 }
 
 fn is_inbox_copy(path: &Path) -> bool {

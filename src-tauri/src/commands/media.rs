@@ -389,3 +389,56 @@ pub fn crispasr_defaults() -> media::asr::AsrOptions {
         language: "de".into(),
     }
 }
+
+/// Derived media is durable, so undo/reopen never depends on a temporary render.
+#[tauri::command]
+pub async fn retime_media_asset(
+    app: tauri::AppHandle,
+    path: String,
+    settings: media::retime::Settings,
+    job_id: Option<String>,
+) -> Result<String, String> {
+    let folder = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("derived-media");
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        media::jobs::run(job_id, || {
+            use std::hash::{Hash, Hasher};
+            settings.validate()?;
+            let path = std::fs::canonicalize(path).map_err(|e| e.to_string())?;
+            let metadata = std::fs::metadata(&path).map_err(|e| e.to_string())?;
+            let mut hash = std::collections::hash_map::DefaultHasher::new();
+            path.hash(&mut hash);
+            metadata.len().hash(&mut hash);
+            metadata.modified().ok().hash(&mut hash);
+            serde_json::to_string(&settings)
+                .map_err(|e| e.to_string())?
+                .hash(&mut hash);
+            std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
+            let destination = folder.join(format!(
+                "wsola-v1-{:x}.{}",
+                hash.finish(),
+                if settings.video { "mp4" } else { "wav" }
+            ));
+            if !destination.exists() {
+                media::retime::derive(
+                    &path.to_string_lossy(),
+                    &destination.to_string_lossy(),
+                    &settings,
+                )?;
+            }
+            Ok(destination.to_string_lossy().into_owned())
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    app.asset_protocol_scope()
+        .allow_file(&result)
+        .map_err(|e| e.to_string())?;
+    app.fs_scope()
+        .allow_file(&result)
+        .map_err(|e| e.to_string())?;
+    Ok(result)
+}

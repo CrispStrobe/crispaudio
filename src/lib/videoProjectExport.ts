@@ -25,7 +25,7 @@ export async function exportVideoProject(options: ExportOptions, signal: AbortSi
   if (!project.video) throw new Error('Project has no video');
   const start = project.video.inPoint ?? 0;
   const end = project.video.outPoint ?? timelineDuration(project);
-  const edit = { path: project.video.path, sources: project.video.sources,
+  const edit = { graphics:project.video.graphics,captions:project.video.captions,tracks:project.video.tracks,width:project.video.width,height:project.video.height,path: project.video.path, sources: project.video.sources,
     frameRate: project.frameRate, duration: Math.max(project.duration, timelineDuration(project)),
     clips: videoClips(project.video), backend, outputFormat: format };
   const document = options.nativeMac ? linkedRenderDocument(project, sources) : null;

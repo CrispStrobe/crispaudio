@@ -1,3 +1,4 @@
+import {pictureLocked} from './pictureComposition';
 import type {TimelineProject} from '../types/audio';
 import {linkedIds,projectClips,trimClips} from './projectEdits';
 import {clipSource,frameTime} from './videoEditing';
@@ -22,7 +23,7 @@ export function pointerTrim(project:TimelineProject,id:string,side:'left'|'right
  const ids=linkedIds(project,[id]),selected=projectClips(project).filter(c=>ids.includes(c.id)),clip=selected.find(c=>c.id===id);
  if(!clip||!Number.isFinite(requested))throw new Error('trimEdits.amount');
  const handles=sourceHandles(project,ids,sources);
- if(project.tracks.some(t=>t.locked&&t.segments.some(c=>ids.includes(c.id)))||(project.video?.locked&&selected.some(c=>!('trackId' in c))))throw new Error('trimEdits.locked');
+ if(project.tracks.some(t=>t.locked&&t.segments.some(c=>ids.includes(c.id)))||selected.some(c=>!('trackId' in c)&&pictureLocked(project.video,c)))throw new Error('trimEdits.locked');
  const picture=selected.some(c=>!('trackId' in c)),fps=project.frameRate??25;
  if(picture&&(!Number.isFinite(fps)||fps<=0))throw new Error('trimEdits.frameEdge');
  const width=picture?1/fps:.01,edge=side==='left'?clip.startTime:clip.startTime+clip.duration;

@@ -1,3 +1,4 @@
+import {SourcePicturePreview} from './SourcePicturePreview';
 import { SpokenEditor } from './SpokenEditor';
 import { RangeEditError } from '../../lib/rangeEdits';
 import { mediaJob } from '../../lib/mediaJob';
@@ -51,12 +52,7 @@ export function TimelineWorkspace({tab,onTab,onClose}:{tab:WorkspaceTab;onTab:(t
         <ToolButton icon={Film} disabled={!native||busy} label={t('workspace.addVideo')} onClick={()=>void perform(async signal=>{const files=await open({multiple:true,filters:[{name:'Video',extensions:['mp4','mov','mkv','m4v','webm','avi','ogv','mpeg','mpg']}]});for(const path of (Array.isArray(files)?files:files?[files]:[])){signal.throwIfAborted();await importVideo(path,withAudio,signal);}})}/>
         {!native&&<p>{t('sync.desktop')}</p>}
         <label className="flex gap-2 items-center min-h-11"><input type="checkbox" checked={withAudio} onChange={e=>setWithAudio(e.target.checked)}/>{t('workspace.cameraAudio')}</label>
-        {videoSources(project.video).map(source=><div className="rounded bg-gray-950 p-2 space-y-2" key={source.id}><p className="break-all">{source.name}</p><p className="text-xs text-gray-400">{source.duration.toFixed(2)} s</p><button className="timeline-tool" onClick={()=>void run(()=>{
-          if(!project.video)return;const start=useProjectStore.getState().playheadPosition;
-          const clips=[...videoClips(project.video),{id:crypto.randomUUID(),...(source.id==='legacy-video'?{}:{sourceId:source.id}),startTime:start,sourceOffset:0,duration:source.duration,fadeIn:0,fadeOut:0,transition:'cut' as const,transitionDuration:0}];
-          const sorted=[...clips].sort((a,b)=>a.startTime-b.startTime);if(sorted.some((c,i)=>i&&sorted[i-1].startTime+sorted[i-1].duration>c.startTime+1e-6))throw new Error(t('workspace.overlap'));
-          const next={...project,video:{...project.video,clips,inPoint:undefined,outPoint:undefined}};commit({...next,duration:Math.max(project.duration,start+source.duration)});
-        })}>{t('workspace.insert')}</button>
+        {videoSources(project.video).map(source=><div className="rounded bg-gray-950 p-2 space-y-2" key={source.id}><p className="break-all">{source.name}</p><p className="text-xs text-gray-400">{source.duration.toFixed(2)} s</p><SourcePicturePreview source={source}/>
         <button disabled={!native||busy} className="timeline-tool" onClick={()=>void perform(async signal=>{const proxy=await mediaJob<string>('prepare_media_asset',{path:source.path,proxy:true},signal);signal.throwIfAborted();setPreviewProxy(source.path,proxy);})}>{t('workspace.proxy')}</button></div>)}
         {[...sources.values()].map(source=><div key={source.id} className="rounded bg-gray-950 p-2 space-y-2"><p>{source.name}</p><p className="text-xs text-gray-400">{source.duration.toFixed(2)} s · {source.channels} ch · {source.sampleRate} Hz</p><button className="timeline-tool" onClick={()=>{const state=useProjectStore.getState();state.addTrack(source.name);state.importAudioSource(source,state.playheadPosition,useProjectStore.getState().project.tracks.at(-1)!.id);}}>{t('workspace.insertTrack')}</button></div>)}
       </>}

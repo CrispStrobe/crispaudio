@@ -1,6 +1,8 @@
 fn main() {
     println!("cargo:rerun-if-changed=apple/MediaHelper.swift");
     println!("cargo:rerun-if-changed=apple/Transitions.swift");
+    println!("cargo:rerun-if-changed=apple/Graphics.swift");
+    println!("cargo:rerun-if-changed=apple/Retime.swift");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("macos") {
         return;
     }
@@ -23,6 +25,8 @@ fn main() {
             &format!("{arch}-apple-macosx13.0"),
             "apple/MediaHelper.swift",
             "apple/Transitions.swift",
+            "apple/Graphics.swift",
+            "apple/Retime.swift",
             "-o",
         ])
         .arg(output)

@@ -1,3 +1,5 @@
+import {PictureCompositionControls} from './PictureCompositionControls';
+import {pictureTrackId} from '../../lib/pictureComposition';
 import { VideoTransformControls } from './VideoTransformControls';
 import { VideoColorControls } from './VideoColorControls';
 import { useState } from 'react';
@@ -14,7 +16,7 @@ export function VideoClipSettings({id}: {id:string}) {
   const {t}=useTranslation(),video=useProjectStore(s=>s.project.video),fps=useProjectStore(s=>s.project.frameRate??25),[error,setError]=useState('');
   const clips=videoClips(video),clip=clips.find(candidate=>candidate.id===id);
   if(!video||!clip)return null;
-  const sorted=[...clips].sort((a,b)=>a.startTime-b.startTime),previous=sorted[sorted.findIndex(candidate=>candidate.id===id)-1];
+  const sorted=clips.filter(c=>pictureTrackId(c)===pictureTrackId(clip)).sort((a,b)=>a.startTime-b.startTime),previous=sorted[sorted.findIndex(candidate=>candidate.id===id)-1];
   const overlap=previous?previous.startTime+previous.duration-clip.startTime:0;
   const change=(patch:Partial<VideoClip>):boolean=>{
     const state=useProjectStore.getState(),currentVideo=state.project.video,currentClips=videoClips(currentVideo),current=currentClips.find(candidate=>candidate.id===id);
@@ -59,6 +61,7 @@ export function VideoClipSettings({id}: {id:string}) {
     <label className="flex items-center justify-between gap-3 text-sm text-gray-200">{t('editing.transitionDuration')}
       <NumberField key={`${id}-transition`} value={clip.transitionDuration} min={1/fps} step={1/fps} disabled={clip.transition==='cut'||!!clip.linkGroup} label={t('editing.transitionDuration')} onCommit={value=>transition(clip.transition,frameTime(value,fps))} onCancel={()=>setError('')}/>
     </label>
+    <PictureCompositionControls id={id}/>
     <VideoTransformControls id={id}/>
     <VideoColorControls id={id}/>
     <p className="text-xs text-gray-400">{t('editing.transitionTiming')}</p>

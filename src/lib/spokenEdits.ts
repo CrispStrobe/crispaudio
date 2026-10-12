@@ -26,6 +26,6 @@ export function deleteSpokenWord(project:TimelineProject,id:string):TimelineProj
     return [{...c,words:next,text:next.map(w=>w.text.trim()).join(' '),start:next[0].start,end:next.at(-1)!.end}];
   });
   // Existing range safety still validates locks, links, blend boundaries and source offsets.
-  const next=editTimeRange({...project,transcript:undefined},start,end,'extract',{trackIds:project.tracks.map(t=>t.id),includeVideo:!!project.video,retimeGlobal:true});
+  const next=editTimeRange({...project,transcript:undefined},start,end,'extract',{trackIds:project.tracks.map(t=>t.id),includeVideo:!!project.video,includeAllPictureTracks:true,retimeGlobal:true});
   return {...next,transcriptLayout:project.transcriptLayout?speechLayout(next):undefined,transcript:remaining?.map(c=>c.words?c:{...c,start:c.start>=end?c.start-(end-start):c.start,end:c.end>=end?c.end-(end-start):c.end})};
 }

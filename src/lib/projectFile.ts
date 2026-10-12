@@ -1,3 +1,10 @@
+import {validSourceTranscripts} from './sourceTranscript';
+import {validMulticam} from './multicam';
+import {validRetime} from './clipRetime';
+import {validRecording} from './recordingTakes';
+import {validGraphics} from './graphics';
+import {validPictureTracks,validPicture} from './pictureComposition';
+import {routingOrder} from './audioRouting';
 import {validAutomationCurve} from './mixAutomation';
 import {validEffectAutomation} from './effectAutomation';
 import {validOutputLimiter} from '../audio/dsp/samplePeakLimiter';
@@ -117,8 +124,16 @@ export async function deserializeProject(
     throw new Error('Unsupported CrispAudio project version');
   }
 
+  if(doc.project.video&&(!validPictureTracks(doc.project.video)||doc.project.video.clips?.some(c=>!validPicture(c.composition))))throw new Error('Invalid picture tracks or composition');
   if (doc.project.video?.clips?.some(clip => !validVideoTransform(clip.transform))) throw new Error('Invalid picture orientation');
   if (doc.project.video?.clips?.some(clip => !validVideoColor(clip.colorCorrection))) throw new Error('Invalid video colour settings');
+
+  if(!validGraphics(doc.project.video))throw new Error('Invalid graphics or captions');
+  if(!validSourceTranscripts(doc.project,new Set(doc.sources.map(s=>s.id))))throw new Error('Invalid source transcript or sections');
+  if(!validMulticam(doc.project))throw new Error('Invalid multicam groups');
+  if(!validRetime(doc.project,new Set(doc.sources.map(s=>s.id))))throw new Error('Invalid retime settings or original source');
+  if(!validRecording(doc.project,new Set(doc.sources.map(s=>s.id))))throw new Error('Invalid recording takes or inputs');
+  routingOrder(doc.project.tracks);
 
   if (doc.project.masterVolume !== undefined && (!Number.isFinite(doc.project.masterVolume) || doc.project.masterVolume < 0)) throw new Error('Invalid master volume');
 
@@ -187,4 +202,11 @@ export async function deserializeProject(
   }
 
   return { project: doc.project, sources };
+}
+
+/** Include alternate takes and originals, without importing another project's source map. */
+export function projectSourceIds(project:TimelineProject):Set<string>{
+ const ids=new Set<string>();
+ for(const track of project.tracks){for(const clip of [...track.segments,...(track.compBaseSegments??[])]){ids.add(clip.sourceId);if(clip.retime?.original.sourceId)ids.add(clip.retime.original.sourceId);}for(const take of track.takes??[])ids.add(take.sourceId);}
+ for(const record of project.sourceTranscripts??[])ids.add(record.sourceId);return ids;
 }

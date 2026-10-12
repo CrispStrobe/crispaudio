@@ -1,3 +1,5 @@
+import {pictureTrackId} from '../lib/pictureComposition';
+import {routingOrder,removeRoutingTrack} from '../lib/audioRouting';
 import {copyEffectEnvelope,pasteEffectEnvelope,type EffectEnvelope,effectClipboardKey,type EffectClipboardKey,type EffectParameter} from '../lib/effectEnvelope';
 import {hasEffectAutomation} from '../lib/effectAutomation';
 import {copyGainEnvelope,pasteGainEnvelope,copyPanEnvelope,pastePanEnvelope,type GainEnvelope} from '../lib/gainEnvelope';
@@ -9,7 +11,7 @@ import { moveClips, trimClips, linkedIds, splitClips, removeClips,projectSelecti
 // ---------------------------------------------------------------------------
 
 import { timelineDuration } from '../lib/timelineView';
-import { videoTimelineDuration, videoClips } from '../lib/videoEditing';
+import { videoTimelineDuration, videoClips,clipSource } from '../lib/videoEditing';
 import { create } from 'zustand';
 import { temporal } from 'zundo';
 import { createHistoryGesture } from './historyGesture';
@@ -86,7 +88,7 @@ interface ProjectState {
   addTrack: (name?: string) => void;
   removeTrack: (trackId: string) => void;
   reorderTrack: (trackId: string, newIndex: number) => void;
-  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'rippleEnabled' | 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'panAutomation' | 'effects'>>) => void;
+  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'recordArmed' | 'recordingInput' | 'takes' | 'compRegions' | 'compBaseSegments' | 'ducking' | 'output' | 'sends' | 'rippleEnabled' | 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'panAutomation' | 'effects'>>) => void;
 
   // Segment actions
   addSegment: (trackId: string, segment: AudioSegment) => void;
@@ -184,6 +186,7 @@ export const useProjectStore = create<ProjectState>()(
             if (!after) return true;
             if (JSON.stringify(track.automation) !== JSON.stringify(after.automation) || JSON.stringify(track.panAutomation) !== JSON.stringify(after.panAutomation)) return true;
             if ([...(track.effects??[]),...(after.effects??[])].some(hasEffectAutomation)&&JSON.stringify(track.effects)!==JSON.stringify(after.effects))return true;
+            if (['output','sends','ducking','takes','compRegions','compBaseSegments'].some(key=>JSON.stringify(track[key as keyof TimelineTrack])!==JSON.stringify(after[key as keyof TimelineTrack])))return true;
             if (JSON.stringify(track.segments) !== JSON.stringify(after.segments)) return true;
             return !!next.sources && track.segments.some(clip => before.sources.get(clip.sourceId) !== next.sources?.get(clip.sourceId));
           });
@@ -191,8 +194,14 @@ export const useProjectStore = create<ProjectState>()(
           const changedPicture = picture?.locked && next.project && (
             !next.project.video || picture.path !== next.project.video.path ||
             JSON.stringify(picture.clips) !== JSON.stringify(next.project.video.clips) ||
-            JSON.stringify(picture.sources) !== JSON.stringify(next.project.video.sources));
-          if (blocked || changedPicture) {
+            JSON.stringify(picture.sources) !== JSON.stringify(next.project.video.sources)||JSON.stringify(picture.graphics)!==JSON.stringify(next.project.video.graphics)||JSON.stringify(picture.captions)!==JSON.stringify(next.project.video.captions));
+          const changedLayer=picture?.tracks?.find(track=>track.locked&&next.project&&(
+            !next.project.video?.tracks?.some(t=>t.id===track.id)||
+            JSON.stringify(videoClips(picture).filter(c=>pictureTrackId(c)===track.id))!==JSON.stringify(videoClips(next.project.video).filter(c=>pictureTrackId(c)===track.id))||
+            videoClips(picture).filter(c=>pictureTrackId(c)===track.id).some(c=>JSON.stringify(clipSource(picture,c))!==JSON.stringify(clipSource(next.project?.video,c)))));
+          const changedGraphic=picture?.graphics?.some(track=>track.locked&&next.project&&JSON.stringify(track.clips)!==JSON.stringify(next.project.video?.graphics?.find(t=>t.id===track.id)?.clips));
+          const changedCaptions=picture?.captions?.locked&&next.project&&(JSON.stringify(picture.captions.cues)!==JSON.stringify(next.project.video?.captions?.cues)||JSON.stringify(picture.captions.style)!==JSON.stringify(next.project.video?.captions?.style));
+          if (blocked || changedPicture||changedLayer||changedGraphic||changedCaptions) {
             if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('crispaudio-edit-error', {detail:i18n.t('ranges.lockedNotice',{name:blocked?.name ?? i18n.t('video.track')})}));
             return;
           }
@@ -284,7 +293,7 @@ export const useProjectStore = create<ProjectState>()(
 
       removeTrack: (trackId) => {
         set((state) => {
-          const tracks = state.project.tracks.filter((t) => t.id !== trackId);
+          const tracks = removeRoutingTrack(state.project.tracks,trackId);
           return {
             project: {
               ...state.project,
@@ -316,14 +325,9 @@ export const useProjectStore = create<ProjectState>()(
           if (!track || (Object.keys(patch) as Array<keyof typeof patch>).every(
             (key) => Object.is(track[key], patch[key]),
           )) return state;
-          return {
-            project: {
-              ...state.project,
-              tracks: state.project.tracks.map((t) =>
-                t.id === trackId ? { ...t, ...patch } : t,
-              ),
-            },
-          };
+          const tracks=state.project.tracks.map(t=>t.id===trackId?{...t,...patch}:t);
+          routingOrder(tracks);
+          return {project:{...state.project,tracks}};
         });
       },
 
@@ -331,6 +335,7 @@ export const useProjectStore = create<ProjectState>()(
 
       addSegment: (trackId, segment) => {
         set((state) => {
+          if(state.project.tracks.find(t=>t.id===trackId)?.kind==='bus')throw new Error('routing.busClips');
           const tracks = state.project.tracks.map((track) =>
             track.id === trackId
               ? { ...track, segments: [...track.segments, segment] }
@@ -368,6 +373,7 @@ export const useProjectStore = create<ProjectState>()(
         set((state) => {
           const found = findSegmentById(state.project.tracks, segmentId);
           if (!found) return state;
+          if(newTrackId&&state.project.tracks.find(t=>t.id===newTrackId)?.kind==='bus')throw new Error('routing.busClips');
 
           if (found.segment.linkGroup||(found.segment.editGroup&&state.project.groupEditingEnabled!==false)) {
             const project=moveClips(state.project,[segmentId],Math.max(0,newStartTime)-found.segment.startTime,true);
@@ -600,9 +606,9 @@ export const useProjectStore = create<ProjectState>()(
           let targetId = trackId;
 
           // Fall back to the first track, or create one if the project is empty.
-          if (!targetId || !tracks.some((t) => t.id === targetId)) {
-            if (tracks.length > 0) {
-              targetId = tracks[0].id;
+          if (!targetId || !tracks.some((t) => t.id === targetId&&t.kind!=='bus')) {
+            if (tracks.some(t=>t.kind!=='bus')) {
+              targetId = tracks.find(t=>t.kind!=='bus')!.id;
             } else {
               const newTrack: TimelineTrack = {
                 id: uuid(),

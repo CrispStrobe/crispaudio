@@ -5,10 +5,14 @@ pub mod audio_encode;
 pub mod audio_mix;
 mod compressor;
 mod distortion;
+mod ducking;
+mod graphics;
 pub mod jobs;
 mod limiter;
 pub mod project_edit;
+pub mod retime;
 mod reverb;
+mod routing;
 pub mod spoken_edit;
 pub mod video_edit;
 use rustfft::{num_complex::Complex, FftPlanner};
@@ -959,11 +963,17 @@ pub struct Loudness {
 }
 /// Measurement only: does not rewrite or normalize the original recording.
 pub fn loudness(path: &str) -> Result<Loudness> {
-    let output = run_command(Command::new(tool("ffmpeg")).args([
-        "-hide_banner",
-        "-nostdin",
-        "-threads",
-        "1",
+    let mut command = Command::new(tool("ffmpeg"));
+    command.args(["-hide_banner", "-nostdin", "-threads", "1"]);
+    // A periodic float WAV can outscore its header in FFmpeg's MPEG-TS probe.
+    // Explicit WAV input keeps valid calibration tones measurable.
+    if Path::new(path)
+        .extension()
+        .is_some_and(|ext| ext.to_string_lossy().eq_ignore_ascii_case("wav"))
+    {
+        command.args(["-f", "wav"]);
+    }
+    let output = run_command(command.args([
         "-i",
         path,
         "-vn",

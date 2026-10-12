@@ -1,3 +1,10 @@
+import {SourceTranscriptControls} from './SourceTranscriptControls';
+import {MulticamControls} from './MulticamControls';
+import {ClipRetimeControls} from './ClipRetimeControls';
+import {TimelineRecording} from './TimelineRecording';
+import {GraphicHeaders,GraphicLanes} from './GraphicLanes';
+import {syncPictureScroll} from '../../lib/pictureScroll';
+import {PictureTrackHeaders} from './PictureTrackControls';
 import { importVideo } from '../../lib/mediaBin';
 import {GainAutomationLane} from './GainAutomationLane';
 import {TimelineEngineContext} from './timelineEngineContext';
@@ -58,7 +65,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../stores/uiStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { exportLinkedAudio } from '../../lib/linkedAudioExport';
-import { serializeProject, deserializeProject, linkedRenderDocument } from '../../lib/projectFile';
+import { serializeProject, projectSourceIds, deserializeProject, linkedRenderDocument } from '../../lib/projectFile';
 import { saveProjectFile, openProjectFile } from '../../lib/projectIO';
 import { TransportControls } from './TransportControls';
 import { TimelineRuler } from './TimelineRuler';
@@ -134,6 +141,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
         <button type="button" aria-label={t(track.locked?'ranges.unlock':'ranges.lock')} title={t(track.locked?'ranges.unlock':'ranges.lock')}
           data-help="lock" aria-pressed={!!track.locked} className={`shrink-0 p-0.5 ${track.locked?'text-amber-300':'text-gray-500'}`}
           onClick={()=>updateTrack(track.id,{locked:!track.locked})}>{track.locked?<Lock className="w-3 h-3"/>:<Unlock className="w-3 h-3"/>}</button>
+        {track.kind!=='bus'&&<button type="button" className={`shrink-0 p-0.5 text-xs ${track.recordArmed?'text-red-400':'text-gray-500'}`} disabled={track.locked} aria-label={`${track.name}: ${t('recording.arm')}`} aria-pressed={track.recordArmed??false} onClick={()=>updateTrack(track.id,{recordArmed:!track.recordArmed})}>R</button>}
         {/* Up/down reorder — works with touch and keyboard everywhere */}
         <div className={`track-reorder flex-shrink-0 flex flex-col -my-0.5 ${trackHeight<56?'hidden':''}`}>
           <button
@@ -504,8 +512,9 @@ export const TimelinePanel: React.FC = () => {
   const handleSaveProject = useCallback(async () => {
     setProjectError('');
     try {
-      const used = new Set(store.project.tracks.flatMap((track) => track.segments.map((segment) => segment.sourceId)));
-      const sources = new Map([...store.sources].filter(([id]) => used.has(id)));
+      // Retain alternate takes and original retiming sources, including inactive media.
+      const retained = projectSourceIds(store.project);
+      const sources = new Map([...store.sources].filter(([id]) => retained.has(id)));
       const json = serializeProject(store.project, sources, '__TAURI_INTERNALS__' in window && !isIOSApp() ? 'linked' : 'portable');
       await saveProjectFile(json, store.project.name || 'project');
     } catch (err) {
@@ -575,6 +584,7 @@ export const TimelinePanel: React.FC = () => {
       case 'export-range':await handleExportMix(true);break;
       case 'trim-tools':window.dispatchEvent(new Event('crispaudio-trim-tools'));break;
       case 'edit-groups':window.dispatchEvent(new Event('crispaudio-edit-groups'));break;
+      case 'recording':window.dispatchEvent(new Event('crispaudio-recording'));break;
       case 'commands':window.dispatchEvent(new Event('crispaudio-commands'));break;
       case 'previous-edit':case 'next-edit':state.setIsPlaying(false);state.setPlayheadPosition(adjacentEdit(state.project,state.playheadPosition,action==='previous-edit'?-1:1));break;
       case 'undo':handleUndo();break;
@@ -631,6 +641,10 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={MessageSquare} label={t('tts.title')} onClick={()=>useUIStore.getState().openModal('tts')}/>
         <ToolButton icon={Activity} label={t('automation.openTitle')} aria-pressed={automation} onClick={()=>setAutomation(value=>!value)}/>
         <ToolButton icon={SlidersHorizontal} label={t('mixer.title')} aria-pressed={mixer} onClick={()=>setMixer(value=>!value)}/>
+        <TimelineRecording engine={engineRef} audio={audioEngine}/>
+        <ClipRetimeControls/>
+        <MulticamControls/>
+        <SourceTranscriptControls/>
         <MediaTools engine={engineRef} panelTarget={mediaPanel} />
         <ToolButton data-help-toggle icon={CircleHelp} label={t('usability.help')} aria-pressed={helpOpen} onClick={()=>setHelpOpen(value=>!value)}/>
         {exportStage && <div className="flex flex-wrap gap-2 items-center">
@@ -710,7 +724,7 @@ export const TimelinePanel: React.FC = () => {
             </span>
           </div>
 
-          {store.project.video && <div data-track-header data-compact={store.trackHeight<56} data-touch-compact={store.trackHeight<96} className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
+          {store.project.video&&!store.project.video.tracks && <div data-track-header data-compact={store.trackHeight<56} data-touch-compact={store.trackHeight<96} className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
             <div className="track-heading flex items-center justify-between gap-2"><span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
               <button type="button" data-help="lock" aria-pressed={!!store.project.video.locked}
                 aria-label={t(store.project.video.locked?'ranges.unlock':'ranges.lock')} title={t(store.project.video.locked?'ranges.unlock':'ranges.lock')}
@@ -724,6 +738,8 @@ export const TimelinePanel: React.FC = () => {
               }}><Trash2 size={14}/></button></div>
             {store.trackHeight>=56&&<span className="track-subtitle text-xs text-gray-400">{t('editing.alignedVideoTrack')}</span>}
           </div>}
+          <GraphicHeaders/>
+          <PictureTrackHeaders/>
           {/* Per-track headers — scroll locked to canvas */}
           <div className="flex-1">
             {store.project.tracks.map((t, i) => (
@@ -772,7 +788,8 @@ export const TimelinePanel: React.FC = () => {
             <TimelineRuler width={canvasWidth} />
           </div>
 
-          {store.project.video && <VideoLane width={canvasWidth} touchArrange={touchArrange} />}
+          <GraphicLanes width={canvasWidth}/>
+          {store.project.video&&(store.project.video.tracks?<div data-picture-track-scroll className="shrink-0 overflow-y-auto" style={{maxHeight:Math.min(240,store.trackHeight*store.project.video.tracks.length)}} onScroll={e=>syncPictureScroll(e.currentTarget)}>{store.project.video.tracks.map(track=><VideoLane key={track.id} trackId={track.id} width={canvasWidth} touchArrange={touchArrange}/>)}</div>:<VideoLane width={canvasWidth} touchArrange={touchArrange} />)}
 
           {/* Canvas (internally virtual-scrolled via store.scrollOffset) */}
           <div

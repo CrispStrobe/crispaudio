@@ -11,21 +11,37 @@ struct Picture: Decodable {
     var fadeIn:Double?; var fadeOut:Double?; var transition:String; var transitionDuration:Double?
     struct Color:Decodable {var enabled:Bool;var exposure:Double;var contrast:Double;var saturation:Double}
     struct Orientation:Decodable {var rotation:Int;var flipHorizontal:Bool;var flipVertical:Bool}
-    var colorCorrection:Color?;var transform:Orientation?
+    struct Crop:Decodable {var left:Double;var top:Double;var right:Double;var bottom:Double}
+    struct Keyframe:Decodable {var time:Double;var x:Double;var y:Double;var scale:Double;var rotation:Double;var opacity:Double;var easing:String? = nil}
+    struct Placement:Decodable {var x:Double;var y:Double;var scale:Double;var rotation:Double;var opacity:Double;var crop:Crop;var keyframes:[Keyframe]?;var keyframeOffset:Double?}
+    var colorCorrection:Color?;var transform:Orientation?;var composition:Placement?;var videoTrackId:String?
+    func pose(_ local:Double)->Keyframe {
+        guard let c=composition else{return Keyframe(time:local,x:0,y:0,scale:1,rotation:0,opacity:1)}
+        let frames=(c.keyframes ?? []).sorted{$0.time<$1.time},clock=local+(c.keyframeOffset ?? 0)
+        if frames.isEmpty{return Keyframe(time:clock,x:c.x,y:c.y,scale:c.scale,rotation:c.rotation,opacity:c.opacity)}
+        guard let right=frames.firstIndex(where:{$0.time>clock}) else{return frames.last!}
+        if right==0{return frames[0]}
+        let a=frames[right-1],b=frames[right],fraction=(clock-a.time)/(b.time-a.time)
+        let p:Double
+        switch a.easing {case "step":p=0;case "ease-in":p=fraction*fraction;case "ease-out":p=1-(1-fraction)*(1-fraction);case "ease-in-out":p=fraction*fraction*(3-2*fraction);default:p=fraction}
+        return Keyframe(time:clock,x:a.x+(b.x-a.x)*p,y:a.y+(b.y-a.y)*p,scale:a.scale+(b.scale-a.scale)*p,rotation:a.rotation+(b.rotation-a.rotation)*p,opacity:a.opacity+(b.opacity-a.opacity)*p)
+    }
 }
 struct Source:Decodable {var id:String;var path:String}
-struct Edit:Decodable {var path:String;var sources:[Source]?;var clips:[Picture];var frameRate:Double?;var duration:Double?}
+struct PictureTrack:Decodable {var id:String;var name:String;var visible:Bool;var locked:Bool;var rippleEnabled:Bool}
+struct Edit:Decodable {var path:String;var sources:[Source]?;var clips:[Picture];var frameRate:Double?;var duration:Double?;var tracks:[PictureTrack]?;var width:Int?;var height:Int?;var graphics:[GraphicTrack]?;var captions:CaptionTrack?}
 struct RenderPicture {var clip:Picture;var track: CMPersistentTrackID;var preferred:CGAffineTransform}
 final class Instruction:NSObject,AVVideoCompositionInstructionProtocol {
     var timeRange:CMTimeRange;var enablePostProcessing=false;var containsTweening=true
     var requiredSourceTrackIDs:[NSValue]?;var passthroughTrackID:CMPersistentTrackID=kCMPersistentTrackID_Invalid
-    let pictures:[RenderPicture]
-    init(duration:Double,pictures:[RenderPicture]) {self.pictures=pictures;timeRange=CMTimeRange(start:.zero,duration:CMTime(seconds:duration,preferredTimescale:60000));requiredSourceTrackIDs=pictures.map{NSNumber(value:$0.track)}}
+    let pictures:[RenderPicture];let tracks:[PictureTrack];let graphics:[RenderGraphic]
+    init(duration:Double,pictures:[RenderPicture],tracks:[PictureTrack],graphics:[RenderGraphic]) {self.pictures=pictures;self.tracks=tracks;self.graphics=graphics;timeRange=CMTimeRange(start:.zero,duration:CMTime(seconds:duration,preferredTimescale:60000));requiredSourceTrackIDs=pictures.map{NSNumber(value:$0.track)}}
 }
 final class Compositor:NSObject,AVVideoCompositing {
     var sourcePixelBufferAttributes:[String:Any]?=[kCVPixelBufferPixelFormatTypeKey as String:kCVPixelFormatType_32BGRA]
     var requiredPixelBufferAttributesForRenderContext:[String:Any]=[kCVPixelBufferPixelFormatTypeKey as String:kCVPixelFormatType_32BGRA]
     private let context=CIContext(options:[.cacheIntermediates:false,.workingColorSpace:NSNull(), .outputColorSpace:NSNull()])
+    private var graphicImages:[String:CIImage]=[:]
     private let queue=DispatchQueue(label:"crispaudio.apple.compositor")
     func renderContextChanged(_ newRenderContext:AVVideoCompositionRenderContext) {}
     func startRequest(_ request:AVAsynchronousVideoCompositionRequest) {queue.async {autoreleasepool {
@@ -33,8 +49,12 @@ final class Compositor:NSObject,AVVideoCompositing {
         let size=request.renderContext.size,rect=CGRect(origin:.zero,size:size),time=request.compositionTime.seconds
         let black=CIImage(color:.black).cropped(to:rect)
         var result=black
+        let layered = !instruction.tracks.isEmpty
+        let tracks = layered ? instruction.tracks.reversed().filter{$0.visible} : [PictureTrack(id:"picture",name:"",visible:true,locked:false,rippleEnabled:true)]
+        for track in tracks {
+        var layer=CIImage(color:.clear).cropped(to:rect)
         var hasOutgoing=false
-        for item in instruction.pictures.sorted(by:{$0.clip.startTime<$1.clip.startTime}) {
+        for item in instruction.pictures.filter({($0.clip.videoTrackId ?? "picture")==track.id}).sorted(by:{$0.clip.startTime<$1.clip.startTime}) {
             let clip=item.clip,local=time-clip.startTime
             if local<0 || local>=clip.duration {continue}
             guard let buffer=request.sourceFrame(byTrackID:item.track) else {continue}
@@ -48,6 +68,18 @@ final class Compositor:NSObject,AVVideoCompositing {
                 let s=c.saturation,r=0.213*(1-s),g=0.715*(1-s),b=0.072*(1-s)
                 image=image.applyingFilter("CIColorMatrix",parameters:["inputRVector":CIVector(x:r+s,y:g,z:b,w:0),"inputGVector":CIVector(x:r,y:g+s,z:b,w:0),"inputBVector":CIVector(x:r,y:g,z:b+s,w:0)]).applyingFilter("CIColorClamp")
             }
+            let pose=clip.pose(local)
+            if layered {
+                let bounds=image.extent,sw=bounds.width,sh=bounds.height,turn=clip.transform?.rotation ?? 0
+                let rotated=turn % 180 != 0,fit=min(size.width/(rotated ? sh:sw),size.height/(rotated ? sw:sh))
+                if let c=clip.composition?.crop {image=image.cropped(to:CGRect(x:bounds.minX+c.left*sw,y:bounds.minY+c.bottom*sh,width:sw*(1-c.left-c.right),height:sh*(1-c.top-c.bottom)))}
+                image=image.transformed(by:CGAffineTransform(translationX:-sw/2,y:-sh/2))
+                image=image.transformed(by:CGAffineTransform(rotationAngle:-Double(turn)*Double.pi/180))
+                image=image.transformed(by:CGAffineTransform(scaleX:clip.transform?.flipHorizontal == true ? -1:1,y:clip.transform?.flipVertical == true ? -1:1))
+                image=image.transformed(by:CGAffineTransform(scaleX:fit*pose.scale,y:fit*pose.scale))
+                image=image.transformed(by:CGAffineTransform(rotationAngle:-pose.rotation*Double.pi/180))
+                image=image.transformed(by:CGAffineTransform(translationX:size.width*(0.5+pose.x),y:size.height*(0.5-pose.y)))
+            } else {
             if let t=clip.transform {
                 image=image.transformed(by:CGAffineTransform(rotationAngle:-Double(t.rotation)*Double.pi/180))
                 image=image.transformed(by:CGAffineTransform(scaleX:t.flipHorizontal ? -1:1,y:t.flipVertical ? -1:1))
@@ -56,17 +88,22 @@ final class Compositor:NSObject,AVVideoCompositing {
             let scale=min(size.width/image.extent.width,size.height/image.extent.height)
             image=image.transformed(by:CGAffineTransform(scaleX:scale,y:scale))
             image=image.transformed(by:CGAffineTransform(translationX:(size.width-image.extent.width)/2,y:(size.height-image.extent.height)/2))
-            // Fade the full fitted picture against black, then dissolve between clips.
+            }
+            // Legacy fades retain black fitting; stacked lanes keep transparent gaps.
             let fadeIn=clip.fadeIn ?? 0,fadeOut=clip.fadeOut ?? 0
             let opacity=min(1,fadeIn>0 ? local/fadeIn:1)*min(1,fadeOut>0 ? (clip.duration-local)/fadeOut:1)
-            image=image.applyingFilter("CIColorMatrix",parameters:["inputAVector":CIVector(x:0,y:0,z:0,w:opacity)]).composited(over:black)
+            image=image.applyingFilter("CIColorMatrix",parameters:["inputAVector":CIVector(x:0,y:0,z:0,w:opacity*(layered ? pose.opacity:1))])
+            if !layered {image=image.composited(over:black)}
             let transition=clip.transitionDuration ?? 0
             if hasOutgoing && transition>0 && local<transition {
-                do {result=try PictureTransitions.render(result,image,kind:clip.transition,progress:local/transition,rect:rect).cropped(to:rect)}
+                do {layer=try PictureTransitions.render(layer,image,kind:clip.transition,progress:local/transition,rect:rect).cropped(to:rect)}
                 catch {request.finish(with:error);return}
-            } else {result=image.cropped(to:rect)}
+            } else {layer=image.cropped(to:rect)}
             hasOutgoing=true
         }
+        result=layer.composited(over:result).cropped(to:rect)
+        }
+        for item in instruction.graphics where time>=item.clip.startTime && time<item.clip.startTime+item.clip.duration {do{result=try graphicFrame(item,time,size,&self.graphicImages).composited(over:result).cropped(to:rect)}catch{request.finish(with:error);return}}
         self.context.render(result,to:output,bounds:rect,colorSpace:nil)
         request.finish(withComposedVideoFrame:output)
     }}}
@@ -200,6 +237,7 @@ func validateM4a(_ path:String) throws {
     write.markAsFinished();await writer.finishWriting()
     guard writer.status == .completed else {try fail(writer.error?.localizedDescription ?? "Audio extraction failed")};return
   }
+  if operation=="retime-video" {guard args.count>4 else{try fail("Missing retime settings")};let settings=try JSONDecoder().decode(RetimeSettings.self,from:Data(args[4].utf8));try await retimeVideo(asset,output,settings);return}
   if operation=="proxy" {
     guard let session=AVAssetExportSession(asset:asset,presetName:AVAssetExportPreset640x480) else {try fail("Unsupported Apple proxy input")}
     try await export(session,to:output,type:.mp4);return
@@ -214,7 +252,9 @@ func validateM4a(_ path:String) throws {
     guard let baseTrack=try await base.loadTracks(withMediaType:.video).first else {try fail("Missing base picture track")}
     let baseSize=try await baseTrack.load(.naturalSize),baseTransform=try await baseTrack.load(.preferredTransform)
     let baseBounds=CGRect(origin:.zero,size:baseSize).applying(baseTransform)
-    let renderSize=CGSize(width:abs(baseBounds.width),height:abs(baseBounds.height))
+    let layered = !(edit.tracks ?? []).isEmpty || edit.width != nil || edit.height != nil || edit.clips.contains{$0.composition != nil} || !(edit.graphics ?? []).isEmpty || edit.captions != nil
+    let compositionTracks = (edit.tracks ?? []).isEmpty && layered ? [PictureTrack(id:"picture",name:"",visible:true,locked:false,rippleEnabled:true)] : (edit.tracks ?? [])
+    let renderSize=CGSize(width:edit.width.map{Double($0)} ?? (layered ? 1920:abs(baseBounds.width)),height:edit.height.map{Double($0)} ?? (layered ? 1080:abs(baseBounds.height)))
     for clip in edit.clips {
       let path=edit.sources?.first(where:{$0.id==clip.sourceId})?.path ?? edit.path
       let source=AVURLAsset(url:URL(fileURLWithPath:path))
@@ -235,7 +275,7 @@ func validateM4a(_ path:String) throws {
     video.renderSize=CGSize(width:floor(renderSize.width/2)*2,height:floor(renderSize.height/2)*2)
     let sourceFps=Double(try await baseTrack.load(.nominalFrameRate))
     let fps=edit.frameRate ?? (sourceFps>0 ? sourceFps:30);video.frameDuration=CMTime(seconds:1/fps,preferredTimescale:60000)
-    video.instructions=[Instruction(duration:duration,pictures:pictures)]
+    video.instructions=[Instruction(duration:duration,pictures:pictures,tracks:compositionTracks,graphics:try renderGraphics(edit.graphics ?? [],edit.captions,video.renderSize))]
     guard let session=AVAssetExportSession(asset:composition,presetName:AVAssetExportPresetHighestQuality) else {try fail("Apple export unavailable")}
     session.videoComposition=video;session.timeRange=CMTimeRange(start:CMTime(seconds:start,preferredTimescale:60000),duration:CMTime(seconds:end-start,preferredTimescale:60000))
     try await export(session,to:output,type:output.lowercased().hasSuffix(".mov") ? .mov:.mp4);return

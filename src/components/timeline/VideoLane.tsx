@@ -1,3 +1,4 @@
+import {pictureTrackId,pictureLocked} from '../../lib/pictureComposition';
 import {capturePointerHistory,restorePointerHistory} from '../../stores/pointerHistory';
 import {pointerTrim,type TrimFeedback} from '../../lib/trimFeedback';
 import {TrimSourceFeedback} from './TrimSourceFeedback';
@@ -14,7 +15,7 @@ import { snapClipStart } from '../../lib/timelineSnap';
 import { projectHistoryGesture } from '../../stores/projectStore';
 
 export const VIDEO_LANE_HEIGHT = 76;
-export function VideoLane({ width, touchArrange = false }: { width: number; touchArrange?: boolean }) {
+export function VideoLane({ width, touchArrange = false,trackId }: { width: number; touchArrange?: boolean;trackId?:string }) {
   const { t } = useTranslation();
   const video = useProjectStore((s) => s.project.video);
   const editRange=useProjectStore(s=>s.project.editRange);
@@ -57,13 +58,13 @@ export function VideoLane({ width, touchArrange = false }: { width: number; touc
     return () => abort.abort();
   }, [sourcesKey]);
   if (!video) return null;
-  const scale=zoom, clips=videoClips(video);
+  const scale=zoom,allClips=videoClips(video),clips=allClips.filter(c=>!trackId||pictureTrackId(c)===trackId);
   const start=video.inPoint ?? 0,end=video.outPoint ?? total;
-  return <div className="relative shrink-0 overflow-hidden bg-violet-950/20 border-b border-gray-700" style={{height,width}} data-video-track>
+  return <div className="relative shrink-0 overflow-hidden bg-violet-950/20 border-b border-gray-700" style={{height,width}} data-video-track={trackId??'picture'}>
     <div className="absolute inset-0" onPointerDown={e=>{const rect=e.currentTarget.getBoundingClientRect();const state=useProjectStore.getState();state.setIsPlaying(false);state.setSelection(null);state.setPlayheadPosition(Math.max(0,Math.min(total,scroll+(e.clientX-rect.left)/scale)));}}/>
     {clips.filter(clip=>clip.startTime+clip.duration>scroll&&clip.startTime<scroll+width/scale).map(clip=><button key={clip.id} className={`absolute top-1 bottom-1 rounded border overflow-hidden text-left ${selected.includes(clip.id)?'border-yellow-300 ring-1 ring-yellow-300':'border-violet-400'}`}
       style={{left:(clip.startTime-scroll)*scale,width:Math.max(2,clip.duration*scale),minHeight:0,minWidth:0,touchAction:touchArrange?'none':'pan-y',background:'#312e81'}} aria-label={`${t('editing.videoClip')} ${clip.sourceOffset.toFixed(3)} s`} title={clipSource(video,clip)?.name}
-      onPointerDown={e=>{e.stopPropagation();e.currentTarget.setPointerCapture(e.pointerId);const state=useProjectStore.getState();state.setIsPlaying(false);const selectionIds=e.shiftKey?[...new Set([...(state.selection?.segmentIds??[]),...linkedIds(state.project,[clip.id])])]:linkedIds(state.project,[clip.id]);const all=state.project.tracks.flatMap(t=>t.segments).concat([]);const group=[...all,...clips].filter(c=>selectionIds.includes(c.id));state.setSelection({startTime:Math.min(...group.map(c=>c.startTime)),endTime:Math.max(...group.map(c=>c.startTime+c.duration)),segmentIds:selectionIds});if(e.pointerType==='touch'&&!touchArrange)return;projectHistoryGesture.begin();setTrimFeedback(null);drag.current={id:clip.id,x:e.clientX,start:clip.startTime,kind:((e.target as HTMLElement).dataset.fade || (e.target as HTMLElement).dataset.trim || 'move') as 'move'|'left'|'right'|'fade-in'|'fade-out',clips,project:state.project,history:capturePointerHistory()};}}
+      onPointerDown={e=>{e.stopPropagation();e.currentTarget.setPointerCapture(e.pointerId);const state=useProjectStore.getState();state.setIsPlaying(false);const selectionIds=e.shiftKey?[...new Set([...(state.selection?.segmentIds??[]),...linkedIds(state.project,[clip.id])])]:linkedIds(state.project,[clip.id]);const all=state.project.tracks.flatMap(t=>t.segments).concat([]);const group=[...all,...allClips].filter(c=>selectionIds.includes(c.id));state.setSelection({startTime:Math.min(...group.map(c=>c.startTime)),endTime:Math.max(...group.map(c=>c.startTime+c.duration)),segmentIds:selectionIds});if(pictureLocked(video,clip)||(e.pointerType==='touch'&&!touchArrange))return;projectHistoryGesture.begin();setTrimFeedback(null);drag.current={id:clip.id,x:e.clientX,start:clip.startTime,kind:((e.target as HTMLElement).dataset.fade || (e.target as HTMLElement).dataset.trim || 'move') as 'move'|'left'|'right'|'fade-in'|'fade-out',clips:allClips,project:state.project,history:capturePointerHistory()};}}
       onPointerMove={e=>{const moving=drag.current;if(!moving || moving.id!==clip.id || Math.abs(e.clientX-moving.x)<3)return;const state=useProjectStore.getState();const edges=[0,state.playheadPosition,...(state.project.markers??[]).map(m=>m.time),...projectClips(moving.project).filter(c=>!linkedIds(moving.project,[clip.id]).includes(c.id)).flatMap(c=>[c.startTime,c.startTime+c.duration])];if(moving.kind==='fade-in'||moving.kind==='fade-out'){
         const original=moving.clips.find(c=>c.id===clip.id)!;
         const key=moving.kind==='fade-in'?'fadeIn':'fadeOut';

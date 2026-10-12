@@ -755,7 +755,16 @@ struct Clip {
     envelope: Envelope,
     filters: Vec<Effect>,
 }
+struct Send {
+    target: Option<usize>,
+    gain: f64,
+    pre: bool,
+}
 struct Track {
+    ducking: Option<crate::ducking::Ducking>,
+    destination: Option<usize>,
+    sends: Vec<Send>,
+    audible: bool,
     clips: Vec<Clip>,
     start: f64,
     gain: f64,
@@ -814,7 +823,16 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
     {
         return Err("Empty arrangement or output exceeds standard WAV size limits".into());
     }
-    let tracks = project["tracks"].as_array().ok_or("Missing tracks")?;
+    let mut legacy_tracks = project["tracks"]
+        .as_array()
+        .ok_or("Missing tracks")?
+        .clone();
+    for (i, track) in legacy_tracks.iter_mut().enumerate() {
+        if track.get("id").is_none() {
+            track["id"] = serde_json::json!(format!("__legacy-track-{i}"));
+        }
+    }
+    let tracks = &legacy_tracks;
     let sources = doc["sources"].as_array().ok_or("Missing sources")?;
     let parent = Path::new(output)
         .parent()
@@ -838,28 +856,28 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
         None
     };
     let mut master_filters = filters(&project["masterEffects"], &mut effect_budget)?;
-    let solo = tracks.iter().any(|t| t["solo"] == true);
+    let order = crate::routing::order(tracks)?;
+    let audible = crate::routing::audible(tracks);
     let mut buses = Vec::new();
     let mut prepared: HashMap<String, (PathBuf, bool, u32)> = HashMap::new();
     let mut clip_count = 0;
-    for track in tracks {
-        if if solo {
-            track["solo"] != true
-        } else {
-            track["muted"] == true
-        } {
-            continue;
-        }
+    let route_index: HashMap<&str, usize> = order
+        .iter()
+        .enumerate()
+        .map(|(i, &original)| (tracks[original]["id"].as_str().unwrap(), i))
+        .collect();
+    for &original in &order {
+        let track = &tracks[original];
+        let active = audible.contains(track["id"].as_str().unwrap());
         let segments = track["segments"].as_array().ok_or("Missing audio clips")?;
-        if segments.is_empty() {
-            continue;
-        }
+        // Keep empty routing nodes: they may receive sends or bus inputs.
+        let is_bus = track["kind"] == "bus";
         let gain = positive(track, "volume", Some(1.0))?;
         let p = finite(track, "pan", Some(0.0))?.clamp(-1.0, 1.0);
         let mut clips = Vec::new();
         let mut start = f64::INFINITY;
         let mut stop = 0.0f64;
-        let mut mono = true;
+        let mut mono = !is_bus;
         let track_filters = filters(&track["effects"], &mut effect_budget)?;
         if track_filters
             .iter()
@@ -872,7 +890,7 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
         for point in &mut automation.points {
             point.1 = point.1 as f32 as f64;
         }
-        for c in segments {
+        for c in segments.iter().filter(|_| active) {
             clip_count += 1;
             if clip_count > 256 {
                 return Err(
@@ -976,7 +994,42 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
             start = start.min(position);
             stop = stop.max(position + length);
         }
+        let destination = |id: &str| {
+            if id == "master" {
+                None
+            } else {
+                Some(route_index[id])
+            }
+        };
+        let sends = track["sends"]
+            .as_array()
+            .map(|s| {
+                s.iter()
+                    .map(|send| Send {
+                        target: destination(send["target"].as_str().unwrap()),
+                        gain: send["gain"].as_f64().unwrap(),
+                        pre: send["preFader"] == true,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        if segments.is_empty() || !active {
+            start = 0.0;
+            stop = duration;
+        }
+        let ducking = if let Some(config) = track.get("ducking") {
+            Some(crate::ducking::Ducking::new(
+                config,
+                route_index[config["source"].as_str().unwrap()],
+            )?)
+        } else {
+            None
+        };
         buses.push(Track {
+            ducking,
+            destination: destination(track["output"].as_str().unwrap_or("master")),
+            sends,
+            audible: active,
             clips,
             start,
             gain,
@@ -1008,11 +1061,13 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
         }
         let length = (total - block).min(BLOCK as u32);
         let mut master = vec![[0.0f64; 2]; length as usize];
-        for bus in &mut buses {
+        let mut inputs = vec![vec![[0.0f64; 2]; length as usize]; buses.len()];
+        let mut post_samples = vec![vec![[0.0f64; 2]; length as usize]; buses.len()];
+        for (bus_index, bus) in buses.iter_mut().enumerate() {
             for i in 0..length {
                 let frame = block + i;
                 let time = frame as f64 / RATE;
-                let mut value = [0.0; 2];
+                let mut value = inputs[bus_index][i as usize];
                 for clip in &mut bus.clips {
                     if (frame < clip.start
                         && !clip
@@ -1044,13 +1099,30 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
                     value.map(|v| ((v as f32) * (factor as f32)) as f64),
                     frame,
                 );
+                if let Some(duck) = &mut bus.ducking {
+                    let gain = duck.gain(post_samples[duck.source][i as usize]);
+                    value = value.map(|v| ((v as f32) as f64 * gain) as f32 as f64);
+                }
+                let pre = if bus.audible { value } else { [0.0; 2] };
                 value = pan(
-                    value.map(|v| v * bus.gain),
+                    pre.map(|v| v * bus.gain),
                     bus.pan.at(time) as f32 as f64,
                     bus.mono,
                 );
-                for ch in 0..2 {
-                    master[i as usize][ch] += value[ch];
+                post_samples[bus_index][i as usize] = value;
+                let mut route = |target: Option<usize>, sample: [f64; 2], gain: f64| {
+                    let out = if let Some(index) = target {
+                        &mut inputs[index][i as usize]
+                    } else {
+                        &mut master[i as usize]
+                    };
+                    for ch in 0..2 {
+                        out[ch] += sample[ch] * gain;
+                    }
+                };
+                route(bus.destination, value, 1.0);
+                for send in &bus.sends {
+                    route(send.target, if send.pre { pre } else { value }, send.gain);
                 }
             }
         }
@@ -1122,6 +1194,30 @@ mod tests {
             .samples::<f32>()
             .map(|v| v.unwrap())
             .collect()
+    }
+
+    #[test]
+    fn nested_bus_and_pre_post_sends_render_faders_and_mute_consistently() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = source(folder.path(), 2, &[0.2, -0.1]);
+        for (pre, expected) in [(true, 0.1f32), (false, 0.075f32)] {
+            let mut doc = project(&input);
+            let mut voice = doc["project"]["tracks"][0].clone();
+            voice["volume"] = json!(0.5);
+            voice["output"] = json!("bus");
+            voice["sends"] = json!([{"id":"send","target":"bus","gain":0.5,"preFader":pre}]);
+            doc["project"]["tracks"] =
+                json!([{"id":"bus","kind":"bus","volume":0.5,"pan":0,"segments":[]},voice]);
+            let out = folder.path().join(format!("send-{pre}.wav"));
+            render(&doc, out.to_str().unwrap()).unwrap();
+            let pcm = output(&out);
+            assert!((pcm[100] - expected).abs() < 1e-7);
+            assert!((pcm[101] + expected / 2.0).abs() < 1e-7);
+            doc["project"]["tracks"][1]["muted"] = json!(true);
+            let out = folder.path().join(format!("muted-{pre}.wav"));
+            render(&doc, out.to_str().unwrap()).unwrap();
+            assert!(output(&out).iter().all(|v| *v == 0.0));
+        }
     }
 
     #[test]

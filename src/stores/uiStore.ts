@@ -12,6 +12,7 @@ export type ActivePanel = 'sfx' | 'voice' | 'timeline';
 export type ActiveModal = 'settings' | 'about' | 'shortcuts' | 'voiceEffects' | 'tts' | null;
 
 interface UIState {
+  timelineRecording:boolean;
   activePanel: ActivePanel;
   activeModal: ActiveModal;
   sidebarCollapsed: boolean;
@@ -47,6 +48,7 @@ const INITIAL_PANEL: ActivePanel =
     : 'timeline';
 
 export const useUIStore = create<UIState>()((set, get) => ({
+  timelineRecording:false,
   activePanel: INITIAL_PANEL,
   activeModal: null,
   sidebarCollapsed: false,

@@ -18,6 +18,37 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.9.0 — selected M2.3–M7 checkpoint
+
+The desktop stack now includes twelve selected automation lanes, buses/sends and
+sidechain ducking, measured loudness finishing, picture layers/keyframes/source
+placement, titles/stills/captions, timeline capture/takes/comping, linked clip
+speed/reverse/pitch, multicam and source-word editing. See
+[workflows and platform limits](EDITOR_CHECKPOINT.md).
+
+Validation: 1,539 frontend unit tests; 119 media/native CLI tests (10 existing
+ignored); 19 app-native tests (one existing ignored). Lint, TypeScript/Vite,
+optimized CLI and local Tauri app builds pass. Chrome and Playwright WebKit cover
+routing/native PCM comparisons, loudness review, decoded picture/graphics,
+recording/take save-open and undo, count-in cancellation, second-channel capture,
+input interruption, real CLI retiming, multicam switching without restarting sound,
+source-word review/extract and German 390px layouts. Capture uses synthetic input;
+physical microphone permissions, acoustic calibration and mobile lifecycle remain
+unverified device acceptance checks.
+
+Actual Apple exports pass four picture-composition cases, five graphics/caption
+cases and native speed/pitch/reverse/recipe checks, including restoration after
+sample-rounded derivation and trimming. Legacy static chorus renders remain
+byte-identical to 0.8.39. The inherited abrupt wet-chorus tail mismatch remains
+(peak about 0.061742 in Chrome / 0.075000 in WebKit); no tail fix is claimed.
+
+Installed `~/Applications/CrispAudio-local.app` 0.9.0 and the independent optimized
+CLI are ad-hoc signed, verified and launched. One autosave was preserved, with a
+separate recovery backup. The microphone usage description is present in the
+bundle. Playback remains regarded as fixed following the user's audible test.
+Physical Finder MP4 drop acceptance remains unconfirmed. No release tag or Apple
+upload was triggered. Remote checkpoint CI is recorded below once available.
+
 ## Local 0.8.39 — chorus rate automation
 
 Chorus rate is a separate 0–8 Hz lane with direct points, Linear/Step and

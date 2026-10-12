@@ -34,6 +34,16 @@ enum Commands {
         #[arg(long, default_value = "de")]
         language: String,
     },
+    /// Create derived speed/reverse/pitch media without changing the input.
+    RetimeMedia {
+        #[arg(long)]
+        input: String,
+        #[arg(long)]
+        output: String,
+        /// JSON Settings (offset/duration/rate/reverse/preservePitch/semitones/video/frameRate).
+        #[arg(long)]
+        settings: String,
+    },
     /// Conservative rumble and FFT noise reduction, preserving the original recording.
     CleanAudio {
         #[arg(long)]
@@ -185,6 +195,17 @@ fn execute(cli: Cli) -> media::Result<()> {
                     .as_bytes(),
             )
             .map_err(|e| e.to_string())?;
+        }
+        Commands::RetimeMedia {
+            input,
+            output,
+            settings,
+        } => {
+            let options: media::retime::Settings = serde_json::from_str(
+                &std::fs::read_to_string(settings).map_err(|e| e.to_string())?,
+            )
+            .map_err(|e| e.to_string())?;
+            media::retime::derive(&input, &output, &options)?;
         }
         Commands::CleanAudio {
             input,

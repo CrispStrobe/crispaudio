@@ -22,9 +22,10 @@ export async function waitForPreviewFrame(signal:AbortSignal):Promise<void>{
   const started=performance.now();
   while(true){
     signal.throwIfAborted();
-    const video=document.querySelector<HTMLVideoElement>('video[data-timeline-preview]');
+    const videos=[...document.querySelectorAll<HTMLVideoElement>('video[data-timeline-preview]')];
+    const video=videos[0];
     const loading=document.querySelector('[data-preview-loading=true]');
-    if((!video&&!loading)||video?.style.opacity==='0'||(video&&video.readyState>=2&&!video.seeking))return;
+    if((!video&&!loading)||video?.style.opacity==='0'||(!loading&&videos.length>0&&videos.every(v=>v.readyState>=2&&!v.seeking)))return;
     if(performance.now()-started>15000)throw new Error('Video preview is still loading; prepare a lightweight preview or hide the viewer');
     await new Promise<void>(resolve=>setTimeout(resolve,40));
   }

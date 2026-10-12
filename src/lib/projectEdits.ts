@@ -1,10 +1,11 @@
+import {pictureTrackId,retainedPictureAnimation} from './pictureComposition';
 import { editTimeRange } from './rangeEdits';
 import type { TimelineProject, AudioSegment, VideoClip, TimelineSelection } from '../types/audio';
 import { videoClips, clipSource, validateVideoClips, frameTime } from './videoEditing';
 import { timelineDuration } from './timelineView';
 
 type Clip = AudioSegment | VideoClip;
-export const projectClips = (p: TimelineProject): Clip[] => [...p.tracks.flatMap(t=>t.segments), ...videoClips(p.video)];
+export const projectClips = (p: TimelineProject): Clip[] => [...p.tracks.flatMap(t=>t.segments??[]), ...videoClips(p.video)];
 export function linkedIds(p: TimelineProject, ids: string[],sourceOnly=false): string[] {
   const all=projectClips(p),selected=new Set(ids);let changed=true;
   while(changed){changed=false;const clips=all.filter(c=>selected.has(c.id)),links=new Set(clips.map(c=>c.linkGroup).filter(Boolean)),groups=new Set(sourceOnly||p.groupEditingEnabled===false?[]:clips.map(c=>c.editGroup?.id).filter(Boolean));
@@ -19,8 +20,8 @@ export function projectSelection(project:TimelineProject,ids:string[]):TimelineS
 function finish(p: TimelineProject): TimelineProject { return {...p,duration:timelineDuration(p)}; }
 export function mapClips(p: TimelineProject, fn:(clip:Clip)=>Clip, blendVideo=false): TimelineProject {
   const tracks=p.tracks.map(t=>({...t,segments:t.segments.map(c=>fn(c) as AudioSegment)}));
-  const original=videoClips(p.video); let clips=original.map(c=>fn(c) as VideoClip);
-  if(blendVideo&&clips.some((clip,index)=>clip.startTime!==original[index].startTime||clip.duration!==original[index].duration))clips=automaticVideoBlends(clips);
+  const original=videoClips(p.video); let clips=original.map(c=>retainedPictureAnimation(c,fn(c) as VideoClip));
+  if(blendVideo&&clips.some((clip,index)=>clip.startTime!==original[index].startTime||clip.duration!==original[index].duration))clips=[...new Set(clips.map(pictureTrackId))].flatMap(id=>automaticVideoBlends(clips.filter(c=>pictureTrackId(c)===id)));
   const video=p.video&&clips.some((c,i)=>c!==original[i])?{...p.video,clips,inPoint:undefined,outPoint:undefined}:p.video;
   const next=finish({...p,tracks,video});
   if(video&&validateVideoClips(clips,video.duration,video.sources))throw new Error('Invalid video edit: check overlaps and source bounds');
@@ -81,7 +82,7 @@ export function splitClips(p:TimelineProject,ids:string[],time:number):TimelineP
     return [{...c,duration:left,...('trackId' in c?{fadeOutDuration:0,fadeInDuration:Math.min(c.fadeInDuration,left)}:{fadeOut:0,fadeIn:Math.min(c.fadeIn,left)})},
       {...c,id:crypto.randomUUID(),linkGroup:group,startTime:time,duration:c.duration-left,sourceOffset:c.sourceOffset+left,...('trackId' in c?{fadeInDuration:0,fadeOutDuration:Math.min(c.fadeOutDuration,c.duration-left)}:{fadeIn:0,fadeOut:Math.min(c.fadeOut,c.duration-left),transition:'cut' as const,transitionDuration:0})}];
   };
-  return finish({...p,tracks:p.tracks.map(t=>({...t,segments:t.segments.flatMap(c=>split(c) as AudioSegment[])})),video:p.video?{...p.video,clips:videoClips(p.video).flatMap(c=>split(c) as VideoClip[]),inPoint:undefined,outPoint:undefined}:undefined});
+  return finish({...p,tracks:p.tracks.map(t=>({...t,segments:t.segments.flatMap(c=>split(c) as AudioSegment[])})),video:p.video?{...p.video,clips:videoClips(p.video).flatMap(c=>(split(c) as VideoClip[]).map(part=>retainedPictureAnimation(c,part))),inPoint:undefined,outPoint:undefined}:undefined});
 }
 export function removeClips(p:TimelineProject,ids:string[]):TimelineProject {
   const selected=linkedIds(p,ids),pictures=videoClips(p.video),changed=pictures.some(c=>selected.includes(c.id));

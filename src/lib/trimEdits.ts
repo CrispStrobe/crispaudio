@@ -1,3 +1,4 @@
+import {pictureLocked,pictureTrackId,pictureTracks} from './pictureComposition';
 import type {TimelineProject,AudioSegment,VideoClip} from '../types/audio';
 import {projectClips,linkedIds,mapClips,trimClips} from './projectEdits';
 import {clipSource,videoClips,frameTime,validateVideoClips} from './videoEditing';
@@ -9,7 +10,7 @@ const fail=(key:string):never=>{throw new TrimEditError(`trimEdits.${key}`);};
 const same=(a:number,b:number)=>Math.abs(a-b)<1e-6;
 const sourceLength=(p:TimelineProject,c:Clip,s:Sources)=>'trackId' in c?s.get(c.sourceId)?.duration:clipSource(p.video,c)?.duration;
 function chosen(p:TimelineProject,ids:string[]){const selected=projectClips(p).filter(c=>linkedIds(p,ids).includes(c.id));if(!selected.length)fail('selection');return selected;}
-function unlocked(p:TimelineProject,ids:Set<string>){if(p.tracks.some(t=>t.locked&&t.segments.some(c=>ids.has(c.id)))||(p.video?.locked&&videoClips(p.video).some(c=>ids.has(c.id))))fail('locked');}
+function unlocked(p:TimelineProject,ids:Set<string>){if(p.tracks.some(t=>t.locked&&t.segments.some(c=>ids.has(c.id)))||videoClips(p.video).some(c=>ids.has(c.id)&&pictureLocked(p.video,c)))fail('locked');}
 const fitFade=(c:Clip):Clip=>'trackId' in c?{...c,fadeInDuration:Math.min(c.fadeInDuration,c.duration),fadeOutDuration:Math.min(c.fadeOutDuration,c.duration)}:{...c,fadeIn:Math.min(c.fadeIn,c.duration/2),fadeOut:Math.min(c.fadeOut,c.duration/2)};
 
 /** Roll each selected left clip's shared cut with its adjacent right clip. */
@@ -18,7 +19,7 @@ export function rollCut(p:TimelineProject,ids:string[],delta:number,sources:Sour
  if(!Number.isFinite(delta))fail('amount');
  if(left.some(c=>!same(c.startTime+c.duration,cut)))fail('sharedCut');
  for(const clip of left){
-  const lane='trackId' in clip?p.tracks.find(t=>t.id===clip.trackId)?.segments??[]:videoClips(p.video);
+  const lane='trackId' in clip?p.tracks.find(t=>t.id===clip.trackId)?.segments??[]:videoClips(p.video).filter(c=>pictureTrackId(c)===pictureTrackId(clip));
   const candidates=lane.filter(c=>c.id!==clip.id&&(same(c.startTime,cut)||(!('trackId' in c)&&c.startTime>clip.startTime&&c.startTime<cut&&c.startTime+c.duration>cut&&c.transition!=='cut'&&same(c.transitionDuration,cut-c.startTime))));
   if(candidates.length!==1)fail('adjacent');rights.push(candidates[0]);
  }
@@ -54,8 +55,8 @@ function slideContext(p:TimelineProject,ids:string[],sources:Sources):SlideConte
  const width=picture?1/fps:.01;
  let min=-Infinity,max=Infinity;
  for(const clip of middle){
-  const lane='trackId' in clip?p.tracks.find(t=>t.id===clip.trackId)?.segments??[]:videoClips(p.video);
-  if(middle.filter(c=>'trackId' in clip?'trackId' in c&&c.trackId===clip.trackId:!('trackId' in c)).length!==1)fail('slideAdjacent');
+  const lane='trackId' in clip?p.tracks.find(t=>t.id===clip.trackId)?.segments??[]:videoClips(p.video).filter(c=>pictureTrackId(c)===pictureTrackId(clip));
+  if(middle.filter(c=>'trackId' in clip?'trackId' in c&&c.trackId===clip.trackId:!('trackId' in c)&&pictureTrackId(c)===pictureTrackId(clip)).length!==1)fail('slideAdjacent');
   const before=lane.filter(c=>c.id!==clip.id&&same(c.startTime+c.duration,start)),after=lane.filter(c=>c.id!==clip.id&&same(c.startTime+incoming(c),end));
   if(before.length!==1||after.length!==1)fail('slideAdjacent');
   const l=before[0],r=after[0],head=incoming(clip),tail=incoming(r);
@@ -101,13 +102,13 @@ export function trimToPlayhead(p:TimelineProject,ids:string[],side:'left'|'right
 /** Ripple trims use saved lane scope and the reviewed range-edit contract. */
 export function rippleTrim(p:TimelineProject,ids:string[],side:'left'|'right',delta:number,sources:Sources):TimelineProject{
  const selected=chosen(p,ids),pictures=[...videoClips(p.video)].sort((a,b)=>a.startTime-b.startTime);
- const incoming=(c:Clip)=>{if('trackId' in c)return 0;const i=pictures.findIndex(v=>v.id===c.id),prev=pictures[i-1];return prev?Math.max(0,prev.startTime+prev.duration-c.startTime):0;};
+ const incoming=(c:Clip)=>{if('trackId' in c)return 0;const i=pictures.findIndex(v=>v.id===c.id),prev=pictures.slice(0,i).filter(v=>pictureTrackId(v)===pictureTrackId(c as VideoClip)).at(-1);return prev?Math.max(0,prev.startTime+prev.duration-c.startTime):0;};
  const edge=side==='left'?selected[0].startTime+incoming(selected[0]):selected[0].startTime+selected[0].duration;
  if(selected.some(c=>!same(side==='left'?c.startTime+incoming(c):c.startTime+c.duration,edge)))fail('sharedCut');
  if(!Number.isFinite(delta)||delta===0)fail('amount');
  if(p.video&&p.video.rippleEnabled!==false){if(!same(edge,frameTime(edge,p.frameRate??25)))fail('frameEdge');delta=frameTime(edge+delta,p.frameRate??25)-edge;}
  if(delta===0)fail('amount');
- if(selected.some(c=>'trackId' in c?p.tracks.find(t=>t.id===c.trackId)?.rippleEnabled===false:p.video?.rippleEnabled===false))fail('scope');
+ if(selected.some(c=>'trackId' in c?p.tracks.find(t=>t.id===c.trackId)?.rippleEnabled===false:p.video?.rippleEnabled===false||pictureTracks(p.video).find(t=>t.id===pictureTrackId(c as VideoClip))?.rippleEnabled===false))fail('scope');
  // Check handles before ripple changes; extending into the old neighbour is
  // valid because insertion moves that neighbour away before applying the trim.
  unlocked(p,new Set(selected.map(c=>c.id)));

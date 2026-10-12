@@ -1,3 +1,7 @@
+import {prepareLoudness,createLoudness} from '../effects/Loudness';
+import type {LoudnessReading} from '../dsp/loudness';
+import {prepareDucking,createDucking} from '../effects/Ducking';
+import {routingOrder} from '../../lib/audioRouting';
 import type {AutomationTarget} from '../../lib/automationRecording';
 import {scheduleMix,scheduleChorusDepth,scheduleChorusRate,scheduleFeedback,scheduleDelayTime,effectParameterDefault,supportsEffectParameter} from '../../lib/effectAutomation';
 import {prepareOutputLimiter,createOutputLimiter} from '../effects/OutputLimiter';
@@ -34,8 +38,13 @@ export class TimelineEngine {
   private masterGain: GainNode;
   private limiterNode?: AudioWorkletNode;
   private limiterReduction=0;
+  private loudnessReady=false;
+  private loudnessNode?:AudioWorkletNode;
+  private loudnessReading?:LoudnessReading;
+  getLoudness(){return this.loudnessReading;}
+  resetLoudness(){this.loudnessReading=undefined;this.loudnessNode?.port.postMessage({type:'reset'});}
   private compressorNodes = new Map<string,DynamicsCompressorNode>();
-  async prepare(project:TimelineProject):Promise<void> {if(project.outputLimiter?.enabled)await prepareOutputLimiter(this.ctx);}
+  async prepare(project:TimelineProject):Promise<void> {if(project.outputLimiter?.enabled)await prepareOutputLimiter(this.ctx);if(project.tracks.some(t=>t.ducking))await prepareDucking(this.ctx);if(this.ctx.audioWorklet){await prepareLoudness(this.ctx);this.loudnessReady=true;}}
   getReduction(scope:string,index?:number):number {
     if(scope==='limiter')return this.limiterReduction;
     if(index!==undefined)return Math.max(0,-(this.compressorNodes.get(`${scope}:${index}`)?.reduction??0));
@@ -45,6 +54,8 @@ export class TimelineEngine {
   private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]; points:TimelineTrack['panAutomation']; staticPan:number}>();
   private automationNodes = new Map<string, {node:GainNode; points:TimelineTrack['automation']}>();
   private mixNodes=new Map<string,{wet:AudioParam;dry:AudioParam;dryScale?:number;feedback?:AudioParam;time?:AudioParam;depth?:[AudioParam,AudioParam];staticDepth?:number;rate?:[AudioParam,AudioParam];staticRate?:number;points:EffectConfig['automation'];mix:number;staticFeedback:number;staticTime:number}>();
+  private duckingNodes=new Map<string,AudioWorkletNode>();
+  private routingGains=new Map<string,GainNode>();
   private playbackGeneration=0;
   private playbackEnd=0;
   private playbackClock=0;
@@ -84,6 +95,11 @@ export class TimelineEngine {
         nodes.points=track.panAutomation;nodes.staticPan=track.pan;
       }
     }
+    for(const track of project.tracks){
+      if(track.ducking)for(const [key,value] of Object.entries(track.ducking))if(key!=='source')this.duckingNodes.get(track.id)?.parameters.get(key)?.setValueAtTime(Number(value),now);
+      this.routingGains.get(`pre:${track.id}`)?.gain.setTargetAtTime(audible.has(track.id)?1:0,now,.005);
+      for(const send of track.sends??[])this.routingGains.get(`${track.id}:${send.id}`)?.gain.setTargetAtTime(send.gain,now,.005);
+    }
     this.outputGain?.gain.setTargetAtTime(project.masterVolume ?? 1, now, .005);
     if(this.limiterNode){const p=limiterParameters(project.outputLimiter);this.limiterNode.parameters.get('ceiling')!.setValueAtTime(p.ceiling,now);this.limiterNode.parameters.get('release')!.setValueAtTime(p.release,now);}
     const racks: [string, EffectConfig[]][] = [['master',project.masterEffects]];
@@ -113,6 +129,11 @@ export class TimelineEngine {
   automationClock():{time:number;start:number;generation:number}|undefined {
     if(!this.outputGain)return;
     return {time:Math.min(this.playbackEnd,this.playbackStart+this.ctx.currentTime-this.playbackClock),start:this.playbackStart,generation:this.playbackGeneration};
+  }
+  /** Exact graph origin for capture placement; read after play(), not before graph creation. */
+  playbackAnchor():{frame:number;timeline:number}|undefined {
+    if(!this.outputGain)return;
+    return {frame:Math.round(this.playbackClock*this.ctx.sampleRate),timeline:this.playbackStart};
   }
   /** Audition one lane without changing the project or rebuilding DSP. Undefined restores Read. */
   previewAutomation(project:TimelineProject,target:AutomationTarget,value?:number):boolean {
@@ -168,6 +189,7 @@ export class TimelineEngine {
    * Schedules all segments that overlap [startTime, project.duration].
    */
   play(project: TimelineProject, startTime: number, endTime = project.duration): void {
+    routingOrder(project.tracks);
     this.stop();
 
     // Capture all nodes created by this graph, including effect oscillators and
@@ -197,6 +219,7 @@ export class TimelineEngine {
       limiter.port.onmessage=e=>{this.limiterReduction=Number(e.data.reduction)||0;};
       outputGain.connect(limiter);output=limiter;
     }
+    if(this.loudnessReady){const meter=createLoudness(this.ctx);this.playbackNodes.add(meter);meter.port.onmessage=e=>{this.loudnessReading=e.data;};output.connect(meter);output=meter;this.loudnessNode=meter;this.loudnessReading=undefined;}
     this.outputMeter = this.meterTap(ctx, output);
     rangeGate.connect(outputGain);
     output.connect(this.masterGain);
@@ -204,26 +227,31 @@ export class TimelineEngine {
     rangeGate.gain.setValueAtTime(0, now + Math.max(0, endTime - startTime));
     this.applyEffects(ctx, masterInput, project.masterEffects, 'master').connect(rangeGate);
     const audible = new Set(audibleTracks(project.tracks).map(track => track.id));
+    const busInputs=new Map(project.tracks.filter(t=>t.kind==='bus').map(t=>[t.id,ctx.createGain()]));
+    const posts=new Map(project.tracks.map(t=>[t.id,ctx.createGain()]));
+    const ducks=this.buildDucking(this.ctx,project.tracks,posts,true);
     const tracksToPlay = project.tracks;
 
     for (const track of tracksToPlay) {
-      if (!track.segments.length) continue;
+      if (!track.segments.length&&track.kind!=='bus') continue;
       const trackGain = ctx.createGain();
       const trackStart=Math.min(...track.segments.map(clip=>clip.startTime));
       const trackEnd=Math.max(0,...track.segments.map(clip=>clip.startTime+clip.duration));
       const trackFade=ctx.createGain();
-      scheduleEnvelope(trackFade.gain,now+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
+      if(track.kind!=='bus')scheduleEnvelope(trackFade.gain,now+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
       const automated=ctx.createGain();scheduleGain(automated.gain,track.automation,now,startTime);
       this.playbackClock=now;this.playbackStart=startTime;this.playbackEnd=endTime;
       this.automationNodes.set(track.id,{node:automated,points:track.automation});
-      trackFade.connect(automated);this.applyEffects(ctx,automated,track.effects??[],`track:${track.id}`).connect(trackGain);
+      busInputs.get(track.id)?.connect(trackFade);
+      trackFade.connect(automated);const inserted=this.applyEffects(ctx,automated,track.effects??[],`track:${track.id}`);const duck=ducks.get(track.id);if(duck)inserted.connect(duck);const processed=duck??inserted;processed.connect(trackGain);
+      const pre=ctx.createGain();pre.gain.value=audible.has(track.id)?1:0;processed.connect(pre);this.routingGains.set(`pre:${track.id}`,pre);
       trackGain.gain.value = audible.has(track.id) ? track.volume : 0;
 
       const panner = ctx.createStereoPanner();
       schedulePan(panner.pan,track.panAutomation,now,startTime,track.pan);
       const meter = this.meterTap(ctx, panner);
       trackGain.connect(panner);
-      panner.connect(masterInput);
+      panner.connect(posts.get(track.id)!);this.connectRouting(ctx,track,pre,posts.get(track.id)!,busInputs,masterInput,true);
       this.mixerNodes.set(track.id, {gain: trackGain, pan: panner, meter,points:track.panAutomation,staticPan:track.pan});
 
       for (const segment of track.segments) {
@@ -288,10 +316,12 @@ export class TimelineEngine {
       try { node.disconnect(); } catch { /* already disconnected */ }
     }
     this.playbackNodes.clear();
-    this.mixerNodes.clear();this.automationNodes.clear();this.mixNodes.clear();
+    for(const node of this.duckingNodes.values()){node.port.postMessage({type:'dispose'});node.port.close();}this.duckingNodes.clear();
+    this.routingGains.clear();this.mixerNodes.clear();this.automationNodes.clear();this.mixNodes.clear();
     this.eqNodes.clear();this.compressorNodes.clear();
     if(this.limiterNode){this.limiterNode.port.postMessage({type:'dispose'});this.limiterNode.port.close();}
     this.limiterNode=undefined;this.limiterReduction=0;
+    if(this.loudnessNode){this.loudnessNode.port.postMessage({type:'dispose'});this.loudnessNode.port.close();this.loudnessNode=undefined;}
     this.outputGain = undefined;
     this.outputMeter = undefined;
   }
@@ -322,6 +352,7 @@ export class TimelineEngine {
     signal?: AbortSignal,
   ): Promise<AudioBuffer> {
     signal?.throwIfAborted();
+    routingOrder(project.tracks);
     // Keep the source registry stable while graph construction yields to the UI.
     const sources = new Map(this.sources);
     let sliceStarted = performance.now();
@@ -331,6 +362,7 @@ export class TimelineEngine {
     const frames = Math.ceil(renderDuration * sampleRate);
 
     const offCtx = new OfflineAudioContext(2, frames, sampleRate);
+    if(project.tracks.some(t=>t.ducking)){await prepareDucking(offCtx);signal?.throwIfAborted();}
 
     const masterGain = offCtx.createGain();
     masterGain.gain.value = project.masterVolume ?? 1;
@@ -343,23 +375,29 @@ export class TimelineEngine {
     const masterOut = offCtx.createGain();
     this.applyEffects(offCtx, masterOut, project.masterEffects,undefined,startTime).connect(masterGain);
 
-    const tracksToRender = audibleTracks(project.tracks);
+    const busInputs=new Map(project.tracks.filter(t=>t.kind==='bus').map(t=>[t.id,offCtx.createGain()]));
+    const posts=new Map(project.tracks.map(t=>[t.id,offCtx.createGain()]));
+    const ducks=this.buildDucking(offCtx,project.tracks,posts,false);
+    const audible=new Set(audibleTracks(project.tracks).map(t=>t.id));
+    const tracksToRender = project.tracks.filter(t=>audible.has(t.id)||t.kind==='bus');
 
     for (const track of tracksToRender) {
-      if (!track.segments.length) continue;
+      if (!track.segments.length&&track.kind!=='bus') continue;
       const trackGain = offCtx.createGain();
       const trackStart=Math.min(...track.segments.map(clip=>clip.startTime));
       const trackEnd=Math.max(0,...track.segments.map(clip=>clip.startTime+clip.duration));
       const trackFade=offCtx.createGain();
-      scheduleEnvelope(trackFade.gain,Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
+      if(track.kind!=='bus')scheduleEnvelope(trackFade.gain,Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
       const automated=offCtx.createGain();scheduleGain(automated.gain,track.automation,0,startTime);
-      trackFade.connect(automated);this.applyEffects(offCtx,automated,track.effects??[],undefined,startTime).connect(trackGain);
-      trackGain.gain.value = track.volume;
+      busInputs.get(track.id)?.connect(trackFade);
+      trackFade.connect(automated);const inserted=this.applyEffects(offCtx,automated,track.effects??[],undefined,startTime);const duck=ducks.get(track.id);if(duck)inserted.connect(duck);const processed=duck??inserted;processed.connect(trackGain);
+      const pre=offCtx.createGain();pre.gain.value=audible.has(track.id)?1:0;processed.connect(pre);
+      trackGain.gain.value = audible.has(track.id)?track.volume:0;
 
       const panner = offCtx.createStereoPanner();
       schedulePan(panner.pan,track.panAutomation,0,startTime,track.pan);
       trackGain.connect(panner);
-      panner.connect(masterOut);
+      panner.connect(posts.get(track.id)!);this.connectRouting(offCtx,track,pre,posts.get(track.id)!,busInputs,masterOut,false);
 
       for (const segment of track.segments) {
         signal?.throwIfAborted();
@@ -433,6 +471,18 @@ export class TimelineEngine {
         reject(error);
       }
     });
+  }
+
+  private buildDucking(ctx:BaseAudioContext,tracks:TimelineTrack[],posts:Map<string,GainNode>,live:boolean){
+    const nodes=new Map<string,AudioWorkletNode>();
+    for(const track of tracks)if(track.ducking){const node=createDucking(ctx,track.ducking);posts.get(track.ducking.source)!.connect(node,0,1);nodes.set(track.id,node);if(live){this.duckingNodes.set(track.id,node);this.playbackNodes.add(node);}}
+    return nodes;
+  }
+
+  private connectRouting(ctx:BaseAudioContext,track:TimelineTrack,pre:AudioNode,post:AudioNode,inputs:Map<string,GainNode>,master:AudioNode,live:boolean){
+    const destination=(id:string)=>id==='master'?master:inputs.get(id)!;
+    post.connect(destination(track.output??'master'));
+    for(const send of track.sends??[]){const gain=ctx.createGain();gain.gain.value=send.gain;(send.preFader?pre:post).connect(gain);gain.connect(destination(send.target));if(live)this.routingGains.set(`${track.id}:${send.id}`,gain);}
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────

@@ -292,6 +292,7 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
         label("Playback", "Wiedergabe"),
         true,
         &[
+            &item("recording","Record / Takes…","Aufnahme / Takes…",timeline,Some("CmdOrCtrl+Shift+R"))?,
             &item(
                 "play",
                 "Play / Pause",

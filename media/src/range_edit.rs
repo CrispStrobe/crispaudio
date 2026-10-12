@@ -175,6 +175,240 @@ fn value_at(points: &[Value], t: f64, pan: bool) -> Result<f64> {
     }
     number(sorted.last().unwrap(), "value")
 }
+fn graphic_pieces(c: &Value, start: f64, end: f64, operation: &str) -> Result<Vec<Value>> {
+    let a = number(c, "startTime")?;
+    let b = a + number(c, "duration")?;
+    let length = end - start;
+    if b <= start {
+        return Ok(vec![c.clone()]);
+    }
+    if operation == "insert" && a >= start {
+        let mut next = c.clone();
+        next["startTime"] = json!(a + length);
+        return Ok(vec![next]);
+    }
+    if operation != "insert" && a >= end {
+        let mut next = c.clone();
+        if operation == "extract" {
+            next["startTime"] = json!(a - length);
+        }
+        return Ok(vec![next]);
+    }
+    let mut result = vec![];
+    if a < start {
+        let mut left = c.clone();
+        left["duration"] = json!(start - a);
+        result.push(left);
+    }
+    let cut = if operation == "insert" { start } else { end };
+    if operation == "insert" || b > end {
+        let mut right = c.clone();
+        if !result.is_empty() {
+            right["id"] = json!(newid());
+        }
+        right["startTime"] = json!(if operation == "extract" { start } else { end });
+        right["duration"] = json!(b - cut);
+        if c["composition"]["keyframes"]
+            .as_array()
+            .is_some_and(|f| !f.is_empty())
+        {
+            right["composition"]["keyframeOffset"] =
+                json!(c["composition"]["keyframeOffset"].as_f64().unwrap_or(0.0) + cut - a);
+        }
+        result.push(right);
+    }
+    Ok(result)
+}
+fn recording_pieces(c: &Value, start: f64, end: f64, operation: &str) -> Result<Vec<Value>> {
+    let mut pieces = graphic_pieces(c, start, end, operation)?;
+    let a = number(c, "startTime")?;
+    let cut = if operation == "insert" { start } else { end };
+    let b = a + number(c, "duration")?;
+    for p in &mut pieces {
+        let right = number(p, "startTime")? == if operation == "extract" { start } else { end };
+        if right && a < cut && (operation == "insert" || b > end) {
+            p["sourceOffset"] = json!(number(c, "sourceOffset")? + cut - a);
+        }
+        for field in ["fadeInDuration", "fadeOutDuration"] {
+            if let Some(v) = c[field].as_f64() {
+                p[field] = json!(v.min(number(p, "duration")?));
+            }
+        }
+    }
+    Ok(pieces)
+}
+fn edit_recording(track: &mut Value, start: f64, end: f64, operation: &str) -> Result<()> {
+    let before = track.clone();
+    let mut placements: HashMap<String, Vec<Value>> = HashMap::new();
+    if let Some(takes) = before["takes"].as_array() {
+        let mut all = vec![];
+        for t in takes {
+            let mut pieces = if t["inactive"] == true {
+                vec![t.clone()]
+            } else {
+                recording_pieces(t, start, end, operation)?
+            };
+            if pieces.is_empty() {
+                let mut inactive = t.clone();
+                inactive["inactive"] = json!(true);
+                pieces.push(inactive);
+            }
+            for piece in &mut pieces {
+                if piece != t && piece["originalPlacement"].is_null() {
+                    piece["originalPlacement"] = json!({"startTime":t["startTime"],"sourceOffset":t["sourceOffset"],"duration":t["duration"]});
+                }
+            }
+            placements.insert(
+                t["id"].as_str().ok_or("Invalid take ID")?.into(),
+                pieces.clone(),
+            );
+            all.extend(pieces);
+        }
+        track["takes"] = json!(all);
+    }
+    if let Some(regions) = before["compRegions"].as_array() {
+        let mut all = vec![];
+        for r in regions {
+            let mut shaped = r.clone();
+            shaped["startTime"] = r["start"].clone();
+            shaped["duration"] = json!(number(r, "end")? - number(r, "start")?);
+            for mut piece in graphic_pieces(&shaped, start, end, operation)? {
+                let a = number(&piece, "startTime")?;
+                let b = a + number(&piece, "duration")?;
+                let take = placements
+                    .get(r["takeId"].as_str().unwrap_or(""))
+                    .and_then(|ts| {
+                        ts.iter().find(|t| {
+                            t["inactive"] != true
+                                && t["startTime"].as_f64().unwrap_or(0.0) <= a + 1e-6
+                                && t["startTime"].as_f64().unwrap_or(0.0)
+                                    + t["duration"].as_f64().unwrap_or(0.0)
+                                    >= b - 1e-6
+                        })
+                    });
+                if let Some(take) = take {
+                    piece["start"] = json!(a);
+                    piece["end"] = json!(b);
+                    piece["takeId"] = take["id"].clone();
+                    piece.as_object_mut().unwrap().remove("startTime");
+                    piece.as_object_mut().unwrap().remove("duration");
+                    all.push(piece);
+                }
+            }
+        }
+        track["compRegions"] = json!(all);
+    }
+    if let Some(base) = before["compBaseSegments"].as_array() {
+        let mut all = vec![];
+        for clip in base {
+            all.extend(recording_pieces(clip, start, end, operation)?);
+        }
+        track["compBaseSegments"] = json!(all);
+    }
+    if before["locked"] == true && *track != before {
+        return Err("Unlock affected recording takes".into());
+    }
+    Ok(())
+}
+
+fn edit_graphics(
+    video: &mut Value,
+    start: f64,
+    end: f64,
+    operation: &str,
+    include_all: bool,
+) -> Result<()> {
+    if let Some(tracks) = video["graphics"].as_array_mut() {
+        for track in tracks {
+            if !include_all && track["rippleEnabled"] == false {
+                continue;
+            }
+            let mut out = vec![];
+            for clip in track["clips"].as_array().ok_or("Missing graphic clips")? {
+                let pieces = graphic_pieces(clip, start, end, operation)?;
+                if track["locked"] == true && pieces != vec![clip.clone()] {
+                    return Err("Unlock affected graphics tracks".into());
+                }
+                out.extend(
+                    pieces
+                        .into_iter()
+                        .filter(|c| c["duration"].as_f64().unwrap_or(0.0) >= 1.0 / 120.0),
+                );
+            }
+            track["clips"] = json!(out);
+        }
+    }
+    if !video["captions"].is_null() && (include_all || video["captions"]["rippleEnabled"] != false)
+    {
+        let caption = &mut video["captions"];
+        let mut out = vec![];
+        for cue in caption["cues"].as_array().ok_or("Missing caption cues")? {
+            let mut shaped = cue.clone();
+            shaped["startTime"] = cue["start"].clone();
+            shaped["duration"] = json!(number(cue, "end")? - number(cue, "start")?);
+            let pieces = graphic_pieces(&shaped, start, end, operation)?;
+            if caption["locked"] == true && pieces != vec![shaped.clone()] {
+                return Err("Unlock affected captions".into());
+            }
+            for mut piece in pieces {
+                piece["start"] = piece["startTime"].clone();
+                piece["end"] = json!(number(&piece, "startTime")? + number(&piece, "duration")?);
+                let map = piece.as_object_mut().unwrap();
+                map.remove("startTime");
+                map.remove("duration");
+                if piece != *cue {
+                    piece.as_object_mut().unwrap().remove("words");
+                }
+                out.push(piece);
+            }
+        }
+        caption["cues"] = json!(out);
+    }
+    Ok(())
+}
+pub(crate) fn picture_lane(c: &Value) -> &str {
+    c["videoTrackId"].as_str().unwrap_or("picture")
+}
+fn picture_cmp(a: &Value, b: &Value) -> std::cmp::Ordering {
+    picture_lane(a).cmp(picture_lane(b)).then(
+        a["startTime"]
+            .as_f64()
+            .unwrap_or(0.0)
+            .total_cmp(&b["startTime"].as_f64().unwrap_or(0.0)),
+    )
+}
+pub(crate) fn retain_picture_clock(original: &Value, edited: &mut Value) {
+    if original["multicam"].is_object()
+        && edited["multicam"].is_object()
+        && original["sourceId"] == edited["sourceId"]
+        && original["duration"] != edited["duration"]
+    {
+        edited["multicam"]["clockOffset"] = json!(
+            original["multicam"]["clockOffset"].as_f64().unwrap_or(0.0)
+                + edited["sourceOffset"].as_f64().unwrap_or(0.0)
+                - original["sourceOffset"].as_f64().unwrap_or(0.0)
+        );
+    }
+    if original["sourceId"] != edited["sourceId"]
+        || original.get("trackId").is_some()
+        || !original["composition"]["keyframes"]
+            .as_array()
+            .is_some_and(|f| !f.is_empty())
+        || original["duration"] == edited["duration"]
+    {
+        return;
+    }
+    let shift = edited["sourceOffset"].as_f64().unwrap_or(0.0)
+        - original["sourceOffset"].as_f64().unwrap_or(0.0);
+    if shift != 0.0 {
+        edited["composition"]["keyframeOffset"] = json!(
+            original["composition"]["keyframeOffset"]
+                .as_f64()
+                .unwrap_or(0.0)
+                + shift
+        );
+    }
+}
 fn validate_pictures(p: &Value, cs: &[Value]) -> Result<()> {
     for (i, c) in cs.iter().enumerate() {
         let duration = number(c, "duration")?;
@@ -233,7 +467,7 @@ fn validate_pictures(p: &Value, cs: &[Value]) -> Result<()> {
         if number(c, "duration")? < 1.0 / 120.0 {
             return Err("Unsupported picture topology".into());
         }
-        if i > 0 {
+        if i > 0 && picture_lane(c) == picture_lane(&cs[i - 1]) {
             let prev = &cs[i - 1];
             let overlap =
                 number(prev, "startTime")? + number(prev, "duration")? - number(c, "startTime")?;
@@ -242,6 +476,7 @@ fn validate_pictures(p: &Value, cs: &[Value]) -> Result<()> {
                     || (overlap - number(c, "transitionDuration")?).abs() > 1e-6
                     || overlap >= number(prev, "duration")?.min(number(c, "duration")?)
                     || (i > 1
+                        && picture_lane(c) == picture_lane(&cs[i - 2])
                         && number(&cs[i - 2], "startTime")? + number(&cs[i - 2], "duration")?
                             > number(c, "startTime")? + 1e-6))
             {
@@ -301,7 +536,8 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
     let duration = all
         .iter()
         .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
-        .fold(p["minimumDuration"].as_f64().unwrap_or(0.0), f64::max);
+        .fold(p["minimumDuration"].as_f64().unwrap_or(0.0), f64::max)
+        .max(crate::graphics::json_duration(&p["video"]));
     if !["lift", "extract", "insert"].contains(&operation)
         || start < 0.0
         || end <= start
@@ -323,7 +559,23 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
             return Err("Invalid range".into());
         }
     }
-    let included = |c: &Value| c["trackId"].as_str().map_or(video, |id| ids.contains(id));
+    let included = |c: &Value| {
+        c["trackId"].as_str().map_or_else(
+            || {
+                video
+                    && (op["includeAllPictureTracks"] == true
+                        || !p["video"]["tracks"]
+                            .as_array()
+                            .into_iter()
+                            .flatten()
+                            .any(|t| {
+                                t["id"].as_str() == Some(picture_lane(c))
+                                    && t["rippleEnabled"] == false
+                            }))
+            },
+            |id| ids.contains(id),
+        )
+    };
     let affected = |c: &Value| {
         let a = c["startTime"].as_f64().unwrap_or(0.0);
         let b = a + c["duration"].as_f64().unwrap_or(0.0);
@@ -388,21 +640,32 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
         vec![start, end]
     };
     let mut cuts: HashMap<String, Value> = HashMap::new();
+    if video
+        && p["video"]["tracks"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .any(|t| {
+                t["locked"] == true
+                    && picture.iter().any(|c| {
+                        t["id"].as_str() == Some(picture_lane(c)) && included(c) && affected(c)
+                    })
+            })
+    {
+        return Err("Unlock affected picture tracks".into());
+    }
     if video {
         let mut sorted = picture.clone();
-        sorted.sort_by(|a, b| {
-            a["startTime"]
-                .as_f64()
-                .unwrap_or(0.0)
-                .total_cmp(&b["startTime"].as_f64().unwrap_or(0.0))
-        });
+        sorted.sort_by(picture_cmp);
         validate_pictures(p, &sorted)?;
         let rate = p["frameRate"].as_f64().unwrap_or(25.0);
         for pair in sorted.windows(2) {
             let c = &pair[1];
             let a = number(c, "startTime")?;
             let b = number(&pair[0], "startTime")? + number(&pair[0], "duration")?;
-            if b - a <= 1e-6
+            if picture_lane(c) != picture_lane(&pair[0])
+                || !included(c)
+                || b - a <= 1e-6
                 || !boundaries.iter().any(|t| *t > a && *t < b)
                 || trims.contains_key(c["id"].as_str().unwrap_or(""))
             {
@@ -429,6 +692,7 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
                     cut[key] = json!(number(c, key)?.min(duration / 2.0));
                 }
             }
+            retain_picture_clock(c, &mut cut);
             cuts.insert(
                 c["id"].as_str().ok_or("Missing picture id")?.to_owned(),
                 cut,
@@ -495,6 +759,7 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
                 right["transition"] = json!("cut");
                 right["transitionDuration"] = json!(0)
             }
+            retain_picture_clock(c, &mut right);
             parts.push(right)
         }
         Ok(parts)
@@ -523,6 +788,7 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
         if !track["id"].as_str().is_some_and(|id| ids.contains(id)) {
             continue;
         }
+        edit_recording(track, start, end, operation)?;
         let mut clips = vec![];
         for c in track["segments"].as_array().ok_or("Missing segments")? {
             clips.extend(edit(c)?)
@@ -583,17 +849,21 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
         for c in &picture {
             cs.extend(edit(c)?)
         }
-        cs.sort_by(|a, b| {
-            a["startTime"]
-                .as_f64()
-                .unwrap()
-                .total_cmp(&b["startTime"].as_f64().unwrap())
-        });
+        cs.sort_by(picture_cmp);
         validate_pictures(p, &cs)?;
         out["video"]["clips"] = json!(cs);
         let v = out["video"].as_object_mut().unwrap();
         v.remove("inPoint");
         v.remove("outPoint");
+    }
+    if video {
+        edit_graphics(
+            &mut out["video"],
+            start,
+            end,
+            operation,
+            op["includeAllPictureTracks"] == true,
+        )?;
     }
     if global {
         if let Some(rack) = out.get_mut("masterEffects") {
@@ -607,6 +877,23 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
         }
         if let Some(floor) = p["minimumDuration"].as_f64() {
             out["minimumDuration"] = json!(retime(floor));
+        }
+        if let Some(sections) = p["sections"].as_array() {
+            let mut all = vec![];
+            for section in sections {
+                let mut shaped = section.clone();
+                shaped["startTime"] = section["start"].clone();
+                shaped["duration"] = json!(number(section, "end")? - number(section, "start")?);
+                for mut piece in graphic_pieces(&shaped, start, end, operation)? {
+                    piece["start"] = piece["startTime"].clone();
+                    piece["end"] =
+                        json!(number(&piece, "startTime")? + number(&piece, "duration")?);
+                    piece.as_object_mut().unwrap().remove("startTime");
+                    piece.as_object_mut().unwrap().remove("duration");
+                    all.push(piece);
+                }
+            }
+            out["sections"] = json!(all);
         }
         if let Some(markers) = p["markers"].as_array() {
             out["markers"] = json!(markers
@@ -662,7 +949,8 @@ pub(crate) fn apply_trim(p: &Value, op: &Value, trims: &HashMap<String, Value>) 
         .cloned()
         .chain(pictures(&out))
         .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
-        .fold(out["minimumDuration"].as_f64().unwrap_or(0.0), f64::max);
+        .fold(out["minimumDuration"].as_f64().unwrap_or(0.0), f64::max)
+        .max(crate::graphics::json_duration(&out["video"]));
     out["duration"] = json!(new_duration);
     Ok(out)
 }
@@ -824,5 +1112,32 @@ mod tests {
         assert!(apply(&p, &json!({"start":3,"end":5})).is_err());
         p["tracks"][0]["locked"] = json!(false);
         assert!(apply(&p, &json!({"start":8,"end":9})).is_err());
+    }
+}
+
+#[cfg(test)]
+mod checkpoint_metadata_tests {
+    use super::*;
+    #[test]
+    fn recording_comp_multicam_and_sections_follow_extract_without_rewriting_source_transcripts() {
+        let clip = json!({"id":"sound","trackId":"mic","sourceId":"s","startTime":0,"sourceOffset":10,"duration":4});
+        let mut p = json!({"sampleRate":48000,"duration":4,"tracks":[{"id":"mic","segments":[clip],"compBaseSegments":[],"takes":[{"id":"take","sourceId":"s","startTime":0,"sourceOffset":10,"duration":4}],"compRegions":[{"id":"comp","takeId":"take","start":0,"end":4,"crossfade":0.04}]}],"video":{"path":"camera.mp4","duration":20,"clips":[{"id":"shot","startTime":0,"sourceOffset":5,"duration":4,"fadeIn":0,"fadeOut":0,"transition":"cut","transitionDuration":0,"multicam":{"groupId":"scene","angleId":"one","clockOffset":0}}]},"sourceTranscripts":[{"sourceId":"s","cues":[{"start":11,"end":12,"text":"Original"}]}],"sections":[{"id":"section","name":"Answer","start":0,"end":4}]});
+        let next = apply(&p, &json!({"operation":"extract","start":1,"end":2})).unwrap();
+        assert_eq!(next["tracks"][0]["takes"][1]["sourceOffset"], 12.0);
+        assert_eq!(next["tracks"][0]["takes"][1]["startTime"], 1.0);
+        assert_eq!(
+            next["tracks"][0]["takes"][1]["originalPlacement"]["duration"],
+            4
+        );
+        assert_eq!(
+            next["tracks"][0]["compRegions"][1]["takeId"],
+            next["tracks"][0]["takes"][1]["id"]
+        );
+        assert_eq!(next["video"]["clips"][1]["multicam"]["clockOffset"], 2.0);
+        assert_eq!(next["sections"][1]["start"], 1.0);
+        assert_eq!(next["sections"][1]["end"], 3.0);
+        assert_eq!(next["sourceTranscripts"], p["sourceTranscripts"]);
+        p["tracks"][0]["locked"] = json!(true);
+        assert!(apply(&p, &json!({"operation":"extract","start":1,"end":2})).is_err());
     }
 }

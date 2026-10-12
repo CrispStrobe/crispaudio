@@ -15,7 +15,7 @@ browser.
 
 ## Timeline and media editing
 
-- Multitrack audio waveforms and a picture composition lane share the timeline
+- Multitrack audio waveforms and ordered picture layers share the timeline
   ruler, playhead, zoom and scrolling. Video preview can open in a fullscreen viewer.
 - Move, split, trim, slip, copy/cut/paste and reorder clips; use magnetic/grid
   snapping, frame/sample nudges and editable timecodes.
@@ -29,6 +29,17 @@ browser.
   with clip/track/master effect racks.
   Current timeline effects include filters, bit crushing, ring modulation, delay,
   chorus, reverb, distortion and compression.
+- Route tracks through buses and pre/post sends; duck one track from another.
+  Measure master loudness/true peak and review a target gain before applying it.
+- Composite picture layers with position/scale/rotation/crop/opacity and keyframes.
+  Add titles, stills, saved title presets and separately editable captions with
+  SRT/VTT sidecars or burn-in. Place source picture using In/Out selections.
+- Record into an armed track with explicit input/channel/monitoring, count-in,
+  punch or loop takes. Choose comp regions, adjust crossfades and retain originals.
+- Review clip speed/reverse, pitch-preserving stretch or pitch transposition;
+  linked sound/picture retain their original sources and editable settings.
+- Build multicam scenes from reviewed aligned camera layers. Switch shots at the
+  playhead while the microphone mix continues independently.
 - Import camera and microphone recordings, review offset/drift synchronization,
   switch microphones and manage sources in the optional media workspace.
 - Save/load projects with embedded or linked audio, recover autosaves and relink
@@ -36,7 +47,8 @@ browser.
 
 See [Timeline workflow](docs/TIMELINE_WORKFLOW.md),
 [Media workspace](docs/MEDIA_WORKSPACE.md) and the
-[Canon/H6 interview walkthrough](docs/INTERVIEW_WALKTHROUGH.md).
+[Canon/H6 interview walkthrough](docs/INTERVIEW_WALKTHROUGH.md) and
+[Mixing, picture, recording and interview tools](docs/EDITOR_CHECKPOINT.md).
 
 ## Transcription and spoken-text editing
 
@@ -46,7 +58,10 @@ timestamps through forced alignment. Deleting a timed word removes its matching
 interval across audio and video. Alternatively, paste a shortened transcript,
 review its matching words and retain only those passages, with one-step undo.
 Repeated phrases require explicit occurrence review; rewritten/reordered wording
-is rejected. Changed audio arrangements invalidate old alignment.
+is rejected. Mix-based transcript alignment is guarded against unrelated arrangement changes.
+Source transcripts keep their original timestamps: timeline words map through
+trims, repeated clips, speed and reverse. Search/select words, review lift/extract
+ranges, correct source words/speaker labels and organise named sections.
 
 See [Speech editing](docs/SPEECH_EDITING.md) and
 [Keep text editing](docs/KEEP_TEXT_EDITING.md) for setup and limitations.

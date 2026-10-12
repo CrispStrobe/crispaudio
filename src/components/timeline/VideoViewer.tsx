@@ -1,3 +1,5 @@
+import {hasPictureComposition} from '../../lib/pictureComposition';
+import {PictureLayers} from './PictureLayers';
 import { videoTransformStyle } from '../../lib/videoTransform';
 import { videoColorFilter } from '../../lib/videoColor';
 import { createPortal } from 'react-dom';
@@ -17,6 +19,8 @@ export function VideoViewer({children}: {children?:ReactNode}) {
   const {t}=useTranslation();
   const playing=useProjectStore(s=>s.isPlaying);
   const hasVideo=useProjectStore(s=>!!s.project.video);
+  const layered=useProjectStore(s=>hasPictureComposition(s.project.video));
+  const aspect=useProjectStore(s=>`${s.project.video?.width??1920}/${s.project.video?.height??1080}`);
   const enteredDocument=useRef(false);
   const wantsExpanded=useRef(false);
   const viewerRef=useRef<HTMLDivElement>(null);
@@ -121,8 +125,9 @@ export function VideoViewer({children}: {children?:ReactNode}) {
         else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
       }
     }} className={expanded?'fixed inset-0 z-[70] bg-black p-4 flex flex-col gap-3':'video-viewer-compact flex flex-wrap gap-3 items-start'}>
-      <div ref={frameRef} data-video-frame className={expanded?'relative bg-black w-full flex-1 min-h-0 overflow-hidden':'relative bg-black rounded-xl w-[140px] sm:w-[360px] max-w-full max-h-[18dvh] aspect-video overflow-hidden'}>
-        {url&&<>
+      <div ref={frameRef} data-video-frame style={layered?{aspectRatio:aspect}:undefined} className={expanded?'relative bg-black w-full flex-1 min-h-0 overflow-hidden':'relative bg-black rounded-xl w-[140px] sm:w-[360px] max-w-full max-h-[18dvh] aspect-video overflow-hidden'}>
+        {layered&&<PictureLayers/>}
+        {!layered&&url&&<>
         <div data-video-layer="previous" className="absolute inset-0"><video crossOrigin="anonymous" key={`${previousPath}-${previousUrl}-${attempt}-previous`} ref={previousRef} src={previousUrl || undefined} muted playsInline preload="metadata" aria-hidden="true" className="absolute inset-0 w-full h-full object-contain" onError={()=>setError(t('interview.previewFailed'))}/></div>
         <div data-video-layer="current" className="absolute inset-0"><video crossOrigin="anonymous" key={`${resolved?.path}-${url}-${attempt}`} ref={ref} data-timeline-preview src={url} muted playsInline preload="auto" aria-label={t('interview.preview')} className="absolute inset-0 w-full h-full object-contain" onCanPlay={()=>setError('')} onError={()=>setError(t('interview.previewFailed'))}/></div>
         </>}
@@ -143,7 +148,7 @@ export function VideoViewer({children}: {children?:ReactNode}) {
       {path&&error&&<p role="alert" className="text-sm text-amber-300 shrink-0">{error} <button className="timeline-tool" onClick={()=>setAttempt(n=>n+1)}>{t('editor.retryPreview')}</button></p>}
       {fullscreenError&&<p role="alert" className="text-xs text-amber-300 shrink-0">{t('usability.fullscreenFallback')}</p>}
     </div>;
-  return <div data-preview-loading={visible&&path&&!url?'true':undefined}>
+  return <div data-preview-loading={!layered&&visible&&path&&!url?'true':undefined}>
     {!visible && <div className="flex flex-wrap gap-2">{children}<ToolButton icon={Eye} label={t('interview.showPreview')} onClick={()=>setVisible(true)}/></div>}
     {visible&&(expanded?createPortal(content,document.body):content)}
   </div>;

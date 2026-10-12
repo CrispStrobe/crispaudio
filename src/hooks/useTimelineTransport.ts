@@ -1,4 +1,5 @@
-import {isEQ} from '../lib/equalizer';
+import {useUIStore} from '../stores/uiStore';
+import {playbackGraphKey} from '../lib/playbackGraphKey';
 import { waitForPreviewFrame } from '../lib/videoTransport';
 import { useEffect, useMemo } from 'react';
 import type { RefObject } from 'react';
@@ -9,10 +10,10 @@ import { useProjectStore } from '../stores/projectStore';
 /** Anchor the playhead to the audio clock. Explicit seeks reschedule audio;
  * animation frames only display that clock, including after a hidden tab. */
 export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>, audio: AudioEngineHandle) {
+  const recording=useUIStore(s=>s.timelineRecording);
   const playing = useProjectStore((s) => s.isPlaying);
   const project = useProjectStore((s) => s.project);
-  const playbackKey = useMemo(() => JSON.stringify({...project, masterVolume: undefined, outputLimiter:project.outputLimiter?.enabled?{enabled:true}:undefined,
-    tracks: project.tracks.map(track => ({...track, automation: undefined, panAutomation: undefined, volume: undefined, pan: undefined, muted: undefined, solo: undefined}))}, function(key,value) {if(key==='automation')return undefined;if(key==='params'&&isEQ(this.type))return undefined;if(key==='params'&&this.type==='chorus')return {...value,mix:undefined,depth:undefined,rate:undefined};if(key==='params'&&(this.type==='ringmod'||this.type==='bitcrush'||this.type==='distortion'||this.type==='chorus'||this.type==='reverb'))return {...value,mix:undefined};if(key==='params'&&this.type==='delay')return {...value,mix:undefined,feedback:undefined,time:undefined};return value;}), [project]);
+  const playbackKey = useMemo(() => playbackGraphKey(project), [project]);
   useEffect(() => useProjectStore.subscribe((next, previous) => {
     if (next.project !== previous.project && next.isPlaying) engineRef.current?.updateMix(next.project);
   }), [engineRef]);
@@ -21,7 +22,7 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
   useEffect(() => {
     const project = useProjectStore.getState().project;
     const engine = engineRef.current;
-    if (!engine || !playing) return;
+    if (!engine || !playing||recording) return;
     let cancelled = false;
     const previewAbort=new AbortController();
     let ready = false;
@@ -87,5 +88,5 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
       document.removeEventListener('visibilitychange', onVisibility);
       engine.stop();
     };
-  }, [audio, engineRef, playing, playbackKey, sources, rangePlayback]);
+  }, [audio, engineRef, playing, playbackKey, sources, rangePlayback, recording]);
 }

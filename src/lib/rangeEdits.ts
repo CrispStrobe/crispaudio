@@ -1,3 +1,6 @@
+import {recordingRange} from './recordingRange';
+import {editGraphicsRange} from './graphics';
+import {pictureTrackId,pictureTracks,pictureLocked,retainedPictureAnimation} from './pictureComposition';
 import {hasEffectAutomation} from './effectAutomation';
 import type { TimelineProject, AudioSegment, VideoClip, GainPoint, EffectConfig } from '../types/audio';
 import { videoClips, validateVideoClips, frameTime } from './videoEditing';
@@ -6,7 +9,7 @@ import { gainAt, panAt,curveFields } from './mixAutomation';
 
 type Clip=AudioSegment|VideoClip;
 export type RangeOperation='lift'|'extract'|'insert';
-export interface RangeEditOptions {trackIds?:string[];includeVideo?:boolean;retimeGlobal?:boolean;transitionPolicy?:'preserve'|'cut';/** Internal reviewed ripple-trim shapes; never imported from recipe JSON. */trimmedClips?:Map<string,Clip>}
+export interface RangeEditOptions {trackIds?:string[];includeVideo?:boolean;includeAllPictureTracks?:boolean;retimeGlobal?:boolean;transitionPolicy?:'preserve'|'cut';/** Internal reviewed ripple-trim shapes; never imported from recipe JSON. */trimmedClips?:Map<string,Clip>}
 export class RangeEditError extends Error {}
 const fail=(key:string):never=>{throw new RangeEditError(`rangeEdits.${key}`);};
 
@@ -19,7 +22,9 @@ export function planRangeTransitionCuts(project:TimelineProject,start:number,end
   const clips=videoClips(project.video);
   if(validateVideoClips(clips,project.video.duration,project.video.sources))fail('pictureTopology');
   start=frameTime(start,fps);end=Math.abs(end-timelineDuration(project))<1e-7?end:frameTime(end,fps);
-  const boundaries=operation==='insert'?[start]:[start,end],sorted=[...clips].sort((a,b)=>a.startTime-b.startTime),cuts:RangeTransitionCut[]=[];
+  const boundaries=operation==='insert'?[start]:[start,end],cuts:RangeTransitionCut[]=[];
+  for(const lane of [...new Set(clips.map(pictureTrackId))]){
+  const sorted=clips.filter(c=>pictureTrackId(c)===lane).sort((a,b)=>a.startTime-b.startTime);
   for(let i=1;i<sorted.length;i++){
     const c=sorted[i],b=sorted[i-1].startTime+sorted[i-1].duration;
     if(b-c.startTime<=1e-6||!boundaries.some(t=>t>c.startTime&&t<b))continue;
@@ -27,6 +32,7 @@ export function planRangeTransitionCuts(project:TimelineProject,start:number,end
     const incomingEnd=c.startTime+c.duration;
     const resultingCutTime=operation==='insert'?b+(end-start):b>=end?(operation==='extract'?b-(end-start):b):incomingEnd<=end?null:operation==='extract'?start:end;
     cuts.push({clipId:c.id,transition:c.transition,start:c.startTime,end:b,cutTime:b,resultingCutTime});
+  }
   }
   return cuts;
 }
@@ -42,15 +48,15 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
   if(includeVideo){if(!Number.isFinite(project.frameRate??25)||(project.frameRate??25)<=0)fail('invalid');start=frameTime(start,project.frameRate??25);end=Math.abs(end-timelineDuration(project))<1e-7?end:frameTime(end,project.frameRate??25);if(end<=start)fail('invalid');}
   const retimeGlobal=options.retimeGlobal??(includeVideo||(!project.video&&ids.size===project.tracks.length));
   const all:Clip[]=[...project.tracks.flatMap(t=>t.segments),...videoClips(project.video)];
-  const included=(clip:Clip)=>'trackId' in clip?ids.has(clip.trackId):includeVideo;
+  const included=(clip:Clip)=>'trackId' in clip?ids.has(clip.trackId):includeVideo&&(options.includeAllPictureTracks||(!project.video?.tracks&&options.includeVideo===true)||pictureTracks(project.video).find(t=>t.id===pictureTrackId(clip))?.rippleEnabled!==false);
   const affected=(clip:Clip)=>{const trim=options.trimmedClips?.get(clip.id);return !!(trim&&trim!==clip)||(operation==='insert'||operation==='extract'?clip.startTime+clip.duration>start:clip.startTime<end&&clip.startTime+clip.duration>start);};
   const groups=new Set(all.filter(c=>included(c)&&affected(c)&&c.linkGroup).map(c=>c.linkGroup));
   if(all.some(c=>c.linkGroup&&groups.has(c.linkGroup)&&!included(c)))fail('linkedScope');
   if(project.groupEditingEnabled!==false){const editGroups=new Set(all.filter(c=>included(c)&&affected(c)&&c.editGroup).map(c=>c.editGroup!.id));if(all.some(c=>c.editGroup&&editGroups.has(c.editGroup.id)&&!included(c)))fail('groupScope');}
-  if(project.tracks.some(t=>ids.has(t.id)&&t.locked&&(t.segments.some(affected)||(operation!=='lift'&&!!(t.automation?.length||t.panAutomation?.length||t.effects?.some(hasEffectAutomation)||t.segments.some(c=>c.effects.some(hasEffectAutomation))))))||(includeVideo&&project.video?.locked&&videoClips(project.video).some(affected)))fail('locked');
+  if(project.tracks.some(t=>ids.has(t.id)&&t.locked&&(t.segments.some(affected)||t.takes?.some(take=>!take.inactive&&(operation==='insert'||operation==='extract'?take.startTime+take.duration>start:take.startTime<end&&take.startTime+take.duration>start))||(operation!=='lift'&&!!(t.automation?.length||t.panAutomation?.length||t.effects?.some(hasEffectAutomation)||t.segments.some(c=>c.effects.some(hasEffectAutomation))))))||(includeVideo&&videoClips(project.video).some(c=>included(c)&&affected(c)&&pictureLocked(project.video,c))))fail('locked');
   const cuts=new Map<string,VideoClip>();
   if(includeVideo){
-    const review=planRangeTransitionCuts(project,start,end,operation).filter(c=>!options.trimmedClips?.has(c.clipId));
+    const review=planRangeTransitionCuts(project,start,end,operation).filter(c=>!options.trimmedClips?.has(c.clipId)&&included(videoClips(project.video).find(v=>v.id===c.clipId)!));
     if(review.length&&options.transitionPolicy!=='cut')fail('transitionBoundary');
     for(const item of review){
       const c=videoClips(project.video).find(c=>c.id===item.clipId)!,overlap=item.end-item.start,duration=c.duration-overlap;
@@ -90,19 +96,25 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
     return [...new Map(result.sort((a,b)=>a.time-b.time).map(p=>[p.time,p])).values()];
   };
   const effects=(rack:EffectConfig[]|undefined)=>rack?.map(e=>hasEffectAutomation(e)?{...e,automation:{...e.automation,...(e.automation?.mix===undefined?{}:{mix:automation(e.automation.mix,true)}),...(e.automation?.feedback===undefined?{}:{feedback:automation(e.automation.feedback,true)}),...(e.automation?.depth===undefined?{}:{depth:automation(e.automation.depth)}),...(e.automation?.rate===undefined?{}:{rate:automation(e.automation.rate)}),...(e.automation?.time===undefined?{}:{time:automation(e.automation.time)})}}:e);
-  const pictures=includeVideo?videoClips(project.video).flatMap(c=>edit(c) as VideoClip[]):undefined;
+  const pictures=includeVideo?videoClips(project.video).flatMap(c=>(edit(c) as VideoClip[]).map(part=>retainedPictureAnimation(c,part))):undefined;
   // Validate the arrangement after the explicitly reviewed conversions.
   if(pictures&&project.video&&validateVideoClips(pictures,project.video.duration,project.video.sources))fail('pictureTopology');
   const next:TimelineProject={...project,editRange:operation==='lift'?{start,end}:undefined,
-    tracks:project.tracks.map(t=>ids.has(t.id)?{...t,segments:t.segments.flatMap(c=>edit(c) as AudioSegment[]).map(c=>({...c,effects:effects(c.effects)!})),effects:effects(t.effects),automation:automation(t.automation),panAutomation:automation(t.panAutomation,true)}:t),
+    tracks:project.tracks.map(t=>ids.has(t.id)?{...t,...recordingRange(t,start,end,operation),segments:t.segments.flatMap(c=>edit(c) as AudioSegment[]).map(c=>({...c,effects:effects(c.effects)!})),effects:effects(t.effects),automation:automation(t.automation),panAutomation:automation(t.panAutomation,true)}:t),
     video:project.video&&includeVideo?{...project.video,clips:pictures,inPoint:undefined,outPoint:undefined}:project.video};
   if(operation==='lift')next.minimumDuration=timelineDuration(project);
   if(retimeGlobal){
     next.masterEffects=effects(project.masterEffects)!;
     if(operation!=='lift'&&project.minimumDuration!==undefined)next.minimumDuration=retime(project.minimumDuration);
+    next.sections=project.sections?.flatMap(section=>{
+      if(operation==='insert')return [{...section,start:retime(section.start),end:retime(section.end)}];
+      if(section.end<=start||section.start>=end)return [{...section,start:retime(section.start),end:retime(section.end)}];
+      const pieces=[];if(section.start<start)pieces.push({...section,end:start});if(section.end>end)pieces.push({...section,id:crypto.randomUUID(),start:operation==='extract'?start:end,end:retime(section.end)});return pieces;
+    });
     next.markers=project.markers?.filter(m=>operation==='insert'||operation==='lift'||m.time<start||m.time>=end).map(m=>({...m,time:retime(m.time)}));
     next.transcript=project.transcript?.filter(c=>operation==='insert'||c.end<=start||c.start>=end).map(c=>({...c,start:retime(c.start),end:retime(c.end),words:c.words?.map(w=>({...w,start:retime(w.start),end:retime(w.end)}))}));
   }
   if(retimeGlobal&&project.transcriptLayout&&JSON.stringify(project.transcriptLayout)===JSON.stringify(project.tracks.flatMap(t=>t.segments.map(c=>[t.id,c.id,c.sourceId,c.startTime,c.sourceOffset,c.duration]))))next.transcriptLayout=next.tracks.flatMap(t=>t.segments.map(c=>[t.id,c.id,c.sourceId,c.startTime,c.sourceOffset,c.duration]));
+  if(includeVideo&&next.video)next.video=editGraphicsRange(next.video,start,end,operation,options.includeAllPictureTracks);
   return {...next,duration:timelineDuration(next)};
 }

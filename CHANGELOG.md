@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.9.0 — 2026-10-12
+
+- Complete the selected automation workflow: twelve gain/pan/FX lanes with
+  points, curve handles, protected passes and independent copy/retime.
+- Add buses, validated outputs, pre/post sends and routed sidechain ducking with
+  matching live, offline and native mixing. Add master loudness/true-peak estimates
+  and reviewed, measured target finishing.
+- Add ordered picture layers, composition/crop/keyframes, source In/Out placement,
+  titles, stills, reusable presets and separate editable/burn-in/sidecar captions.
+  Apple MP4/MOV export renders the layers and graphics; the optional FFmpeg path
+  rejects compositions it cannot reproduce.
+- Record onto armed timeline tracks with explicit input/channel/monitor controls,
+  count-in, latency calibration, punch and loop takes. Preserve raw originals,
+  comp from recoverable takes, adjust crossfades and restore removed placements.
+- Add reviewed linked clip speed/reverse/pitch processing from retained originals.
+  Voice-oriented WSOLA preserves pitch; video uses nearest source frames at the
+  project frame rate. Native CLI derivation and retiming recipes retain originals.
+- Add reviewed multicam scene creation and shot switching without restarting the
+  microphone mix. Map source transcript words through trims, repeats and retiming;
+  review multiword lift/extract, correct words/speakers and organise sections.
+- Preserve inactive takes and original sources when saving; keep recording,
+  animation and multicam source clocks through range edits. Add the packaged Mac
+  microphone usage description. Existing playback is regarded as fixed following
+  the user's successful app test; no Apple release was submitted.
+
 ## 0.8.39 — 2026-10-12
 
 - Add chorus rate automation from 0 to 8 Hz, with direct points, Linear/Step

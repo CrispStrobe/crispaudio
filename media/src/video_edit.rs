@@ -72,6 +72,10 @@ fn color_filters(color: Option<&VideoColor>) -> String {
 #[serde(rename_all = "camelCase")]
 pub struct VideoClip {
     #[serde(default)]
+    pub video_track_id: Option<String>,
+    #[serde(default)]
+    pub composition: Option<PictureComposition>,
+    #[serde(default)]
     pub transform: Option<VideoTransform>,
     #[serde(default)]
     pub color_correction: Option<VideoColor>,
@@ -98,6 +102,16 @@ pub struct VideoSource {
 #[serde(rename_all = "camelCase")]
 pub struct VideoEdit {
     #[serde(default)]
+    pub graphics: Vec<crate::graphics::GraphicTrack>,
+    #[serde(default)]
+    pub captions: Option<crate::graphics::CaptionTrack>,
+    #[serde(default)]
+    pub tracks: Vec<VideoTrack>,
+    #[serde(default)]
+    pub width: Option<u32>,
+    #[serde(default)]
+    pub height: Option<u32>,
+    #[serde(default)]
     pub backend: Option<String>,
     #[serde(default)]
     pub output_format: Option<String>,
@@ -109,6 +123,92 @@ pub struct VideoEdit {
     #[serde(default)]
     pub duration: Option<f64>,
     pub clips: Vec<VideoClip>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VideoTrack {
+    pub id: String,
+    pub name: String,
+    pub visible: bool,
+    pub locked: bool,
+    pub ripple_enabled: bool,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Crop {
+    pub left: f64,
+    pub top: f64,
+    pub right: f64,
+    pub bottom: f64,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PictureKeyframe {
+    #[serde(default)]
+    pub easing: Option<String>,
+    pub time: f64,
+    pub x: f64,
+    pub y: f64,
+    pub scale: f64,
+    pub rotation: f64,
+    pub opacity: f64,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PictureComposition {
+    pub x: f64,
+    pub y: f64,
+    pub scale: f64,
+    pub rotation: f64,
+    pub opacity: f64,
+    pub crop: Crop,
+    #[serde(default)]
+    pub keyframes: Vec<PictureKeyframe>,
+    #[serde(default)]
+    pub keyframe_offset: Option<f64>,
+}
+impl PictureComposition {
+    pub(crate) fn valid(&self) -> bool {
+        let valid = |x: f64, y: f64, scale: f64, rotation: f64, opacity: f64| {
+            x.is_finite()
+                && x.abs() <= 2.0
+                && y.is_finite()
+                && y.abs() <= 2.0
+                && scale.is_finite()
+                && (0.05..=4.0).contains(&scale)
+                && rotation.is_finite()
+                && rotation.abs() <= 180.0
+                && opacity.is_finite()
+                && (0.0..=1.0).contains(&opacity)
+        };
+        valid(self.x, self.y, self.scale, self.rotation, self.opacity)
+            && [
+                self.crop.left,
+                self.crop.top,
+                self.crop.right,
+                self.crop.bottom,
+            ]
+            .iter()
+            .all(|v| v.is_finite() && (0.0..1.0).contains(v))
+            && self.crop.left + self.crop.right < 1.0
+            && self.crop.top + self.crop.bottom < 1.0
+            && self.keyframe_offset.is_none_or(|t| t.is_finite())
+            && self.keyframes.len() <= 10000
+            && self
+                .keyframes
+                .iter()
+                .map(|p| if p.time == 0.0 { 0 } else { p.time.to_bits() })
+                .collect::<std::collections::HashSet<_>>()
+                .len()
+                == self.keyframes.len()
+            && self.keyframes.iter().all(|p| {
+                p.time.is_finite()
+                    && p.time >= 0.0
+                    && p.easing.as_deref().is_none_or(|e| {
+                        ["linear", "step", "ease-in", "ease-out", "ease-in-out"].contains(&e)
+                    })
+                    && valid(p.x, p.y, p.scale, p.rotation, p.opacity)
+            })
+    }
 }
 const TRANSITIONS: &[&str] = &[
     "cut",
@@ -132,6 +232,34 @@ const TRANSITIONS: &[&str] = &[
 ];
 
 pub fn validate(edit: &VideoEdit, source_duration: f64) -> Result<Vec<VideoClip>> {
+    crate::graphics::validate(&edit.graphics, edit.captions.as_ref())?;
+    if [edit.width, edit.height]
+        .iter()
+        .flatten()
+        .any(|v| *v < 16 || *v > 7680 || v % 2 != 0)
+    {
+        return Err("Invalid composition dimensions".into());
+    }
+    if !edit.tracks.is_empty() {
+        let ids: std::collections::HashSet<_> = edit.tracks.iter().map(|t| t.id.as_str()).collect();
+        if edit.tracks.len() > 32
+            || ids.len() != edit.tracks.len()
+            || !ids.contains("picture")
+            || ids.contains("")
+            || edit
+                .clips
+                .iter()
+                .any(|c| !ids.contains(c.video_track_id.as_deref().unwrap_or("picture")))
+        {
+            return Err("Invalid picture tracks".into());
+        }
+    } else if edit.clips.iter().any(|c| {
+        c.video_track_id
+            .as_deref()
+            .is_some_and(|id| id != "picture")
+    }) {
+        return Err("Missing picture tracks".into());
+    }
     if edit
         .duration
         .is_some_and(|duration| !duration.is_finite() || duration < 0.0)
@@ -154,6 +282,7 @@ pub fn validate(edit: &VideoEdit, source_duration: f64) -> Result<Vec<VideoClip>
         .iter()
         .all(|v| v.is_finite())
             || c.transform.as_ref().is_some_and(|t| !t.valid())
+            || c.composition.as_ref().is_some_and(|t| !t.valid())
             || c.color_correction
                 .as_ref()
                 .is_some_and(|color| !color.valid())
@@ -174,16 +303,30 @@ pub fn validate(edit: &VideoEdit, source_duration: f64) -> Result<Vec<VideoClip>
             return Err("Invalid video clip timing or transition".into());
         }
     }
-    clips.sort_by(|a, b| a.start_time.total_cmp(&b.start_time));
+    clips.sort_by(|a, b| {
+        a.video_track_id
+            .as_deref()
+            .unwrap_or("picture")
+            .cmp(b.video_track_id.as_deref().unwrap_or("picture"))
+            .then(a.start_time.total_cmp(&b.start_time))
+    });
     for i in 1..clips.len() {
         let c = &clips[i];
         let p = &clips[i - 1];
+        if c.video_track_id.as_deref().unwrap_or("picture")
+            != p.video_track_id.as_deref().unwrap_or("picture")
+        {
+            continue;
+        }
         let overlap = p.start_time + p.duration - c.start_time;
         if overlap > 1e-6
             && (c.transition == "cut"
                 || (overlap - c.transition_duration).abs() > 1e-6
                 || overlap >= p.duration.min(c.duration)
-                || (i > 1 && clips[i - 2].start_time + clips[i - 2].duration > c.start_time + 1e-6))
+                || (i > 1
+                    && clips[i - 2].video_track_id.as_deref().unwrap_or("picture")
+                        == c.video_track_id.as_deref().unwrap_or("picture")
+                    && clips[i - 2].start_time + clips[i - 2].duration > c.start_time + 1e-6))
         {
             return Err("Overlapping clips require a transition matching their overlap; triple overlaps are unsupported".into());
         }
@@ -273,8 +416,15 @@ pub fn export_edit(
             return Err("Clip exceeds its video source".into());
         }
     }
-    let total = (clips.last().unwrap().start_time + clips.last().unwrap().duration)
-        .max(edit.duration.unwrap_or(0.0));
+    let total = clips
+        .iter()
+        .map(|c| c.start_time + c.duration)
+        .fold(0.0_f64, f64::max)
+        .max(edit.duration.unwrap_or(0.0))
+        .max(crate::graphics::duration(
+            &edit.graphics,
+            edit.captions.as_ref(),
+        ));
     if !start.is_finite() || !end.is_finite() || start < 0.0 || end <= start || end > total + 1e-6 {
         return Err("Invalid edited video range".into());
     }
@@ -321,6 +471,15 @@ pub fn export_edit(
         return Err(
             "Apple backend does not encode WebM; choose optional FFmpeg for VP9/AV1".into(),
         );
+    }
+    if !edit.graphics.is_empty()
+        || edit.captions.is_some()
+        || !edit.tracks.is_empty()
+        || edit.width.is_some()
+        || edit.height.is_some()
+        || edit.clips.iter().any(|c| c.composition.is_some())
+    {
+        return Err("Layered picture export currently requires the Apple MP4/MOV backend".into());
     }
     let geometry = run(
         "ffprobe",
@@ -693,6 +852,11 @@ mod tests {
         wav.finalize().unwrap();
         let doc = json!({"format":"crispaudio-project","version":3,"sources":[{"id":"s","path":audio}],"project":{"sampleRate":48000,"duration":3,"masterEffects":[],"tracks":[{"id":"t","volume":1,"pan":0,"muted":false,"solo":false,"effects":[],"segments":[{"sourceId":"s","startTime":0,"sourceOffset":0,"duration":3,"gain":1,"effects":[]}]}]}});
         let edit = VideoEdit {
+            graphics: vec![],
+            captions: None,
+            tracks: Vec::new(),
+            width: None,
+            height: None,
             backend: Some("apple".into()),
             output_format: Some("mp4".into()),
             path: source.to_string_lossy().into_owned(),
@@ -731,6 +895,8 @@ mod tests {
     }
     fn clip(start: f64, duration: f64) -> VideoClip {
         VideoClip {
+            video_track_id: None,
+            composition: None,
             color_correction: None,
             transform: None,
             id: "c".into(),
@@ -747,6 +913,11 @@ mod tests {
     #[test]
     fn ambiguous_overlap_and_invalid_fades_are_rejected() {
         let mut edit = VideoEdit {
+            graphics: vec![],
+            captions: None,
+            tracks: Vec::new(),
+            width: None,
+            height: None,
             backend: None,
             output_format: None,
             path: "unused".into(),
@@ -799,6 +970,11 @@ mod tests {
         picture.fade_in = 2.0;
         picture.fade_out = 2.0;
         let edit = VideoEdit {
+            graphics: vec![],
+            captions: None,
+            tracks: Vec::new(),
+            width: None,
+            height: None,
             backend: None,
             output_format: None,
             path: source.to_string_lossy().into(),
@@ -836,6 +1012,11 @@ mod tests {
     fn colour_settings_are_optional_and_strictly_bounded() {
         let mut picture = clip(0.0, 2.0);
         let mut edit = VideoEdit {
+            graphics: vec![],
+            captions: None,
+            tracks: Vec::new(),
+            width: None,
+            height: None,
             backend: None,
             output_format: None,
             path: "unused".into(),
@@ -923,6 +1104,11 @@ mod tests {
             saturation: 0.0,
         });
         let mut edit = VideoEdit {
+            graphics: vec![],
+            captions: None,
+            tracks: Vec::new(),
+            width: None,
+            height: None,
             backend: None,
             output_format: None,
             path: source.to_string_lossy().into(),
@@ -966,6 +1152,11 @@ mod tests {
             flip_vertical: false,
         });
         let edit = VideoEdit {
+            graphics: vec![],
+            captions: None,
+            tracks: Vec::new(),
+            width: None,
+            height: None,
             backend: None,
             output_format: None,
             path: source.to_string_lossy().into(),
@@ -1050,6 +1241,11 @@ mod tests {
             .unwrap()
             .success());
         let mut edit = VideoEdit {
+            graphics: vec![],
+            captions: None,
+            tracks: Vec::new(),
+            width: None,
+            height: None,
             backend: Some("apple".into()),
             output_format: Some("mov".into()),
             path: source.to_string_lossy().into_owned(),
@@ -1260,6 +1456,11 @@ mod tests {
             second.transition = kind.into();
             second.transition_duration = 0.8;
             let edit = VideoEdit {
+                graphics: vec![],
+                captions: None,
+                tracks: Vec::new(),
+                width: None,
+                height: None,
                 backend: Some("apple".into()),
                 output_format: Some("mp4".into()),
                 path: a.to_string_lossy().into_owned(),

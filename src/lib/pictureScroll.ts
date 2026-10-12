@@ -1,0 +1,1 @@
+export function syncPictureScroll(target:HTMLElement){for(const peer of document.querySelectorAll<HTMLElement>('[data-picture-track-scroll]'))if(peer!==target&&Math.abs(peer.scrollTop-target.scrollTop)>.5)peer.scrollTop=target.scrollTop;}

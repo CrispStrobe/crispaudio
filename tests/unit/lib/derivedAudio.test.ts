@@ -1,0 +1,15 @@
+import {it,expect,vi,afterEach,beforeEach} from 'vitest';
+import {decodeDerivedAudio} from '../../../src/lib/derivedAudio';
+afterEach(()=>vi.unstubAllGlobals());
+beforeEach(()=>vi.stubGlobal('AudioBuffer',class {data:Float32Array[];numberOfChannels:number;constructor(o:{length:number;numberOfChannels:number}){this.numberOfChannels=o.numberOfChannels;this.data=Array.from({length:o.numberOfChannels},()=>new Float32Array(o.length));}getChannelData(ch:number){return this.data[ch];}}));
+function wav(channels:number,values:number[]){const bytes=new Uint8Array(44+values.length*4),v=new DataView(bytes.buffer);const text=(at:number,s:string)=>{for(let i=0;i<s.length;i++)v.setUint8(at+i,s.charCodeAt(i));};text(0,'RIFF');v.setUint32(4,bytes.length-8,true);text(8,'WAVE');text(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,3,true);v.setUint16(22,channels,true);v.setUint32(24,48000,true);v.setUint32(28,48000*channels*4,true);v.setUint16(32,channels*4,true);v.setUint16(34,32,true);text(36,'data');v.setUint32(40,values.length*4,true);values.forEach((x,i)=>v.setFloat32(44+i*4,x,true));return bytes;}
+it('keeps authoritative mono/stereo layout and exact native float samples without a browser codec',async()=>{
+ vi.stubGlobal('AudioBuffer',class {numberOfChannels:number;sampleRate:number;length:number;data:Float32Array[];constructor(o:{length:number;numberOfChannels:number;sampleRate:number}){Object.assign(this,o);this.numberOfChannels=o.numberOfChannels;this.sampleRate=o.sampleRate;this.length=o.length;this.data=Array.from({length:o.numberOfChannels},()=>new Float32Array(o.length));}getChannelData(ch:number){return this.data[ch];}});
+ const mono=await decodeDerivedAudio(wav(1,[.125,-.25,.5]),48000);expect(mono.numberOfChannels).toBe(1);expect([...mono.getChannelData(0)]).toEqual([.125,-.25,.5]);const stereo=await decodeDerivedAudio(wav(2,[.125,-.125,.25,-.25]),48000);expect([...stereo.getChannelData(1)]).toEqual([-.125,-.25]);
+});
+it('rejects incomplete PCM and non-finite samples before a derived source can be applied',async()=>{await expect(decodeDerivedAudio(wav(1,[.1]).subarray(0,44),48000)).rejects.toThrow(/Truncated/);await expect(decodeDerivedAudio(wav(1,[NaN]),48000)).rejects.toThrow(/Non-finite/);});
+
+it('accepts the native hound float extensible header with its explicit IEEE-float GUID',async()=>{
+ vi.stubGlobal('AudioBuffer',class {numberOfChannels:number;data:Float32Array;constructor(o:{length:number;numberOfChannels:number}){this.numberOfChannels=o.numberOfChannels;this.data=new Float32Array(o.length);}getChannelData(){return this.data;}});
+ const original=wav(1,[.125,-.25]),bytes=new Uint8Array(original.length+24),v=new DataView(bytes.buffer);bytes.set(original.subarray(0,36));v.setUint32(4,bytes.length-8,true);v.setUint32(16,40,true);v.setUint16(20,65534,true);v.setUint16(36,22,true);v.setUint16(38,32,true);bytes.set([3,0,0,0,0,0,16,0,128,0,0,170,0,56,155,113],44);bytes.set(original.subarray(36),60);const buffer=await decodeDerivedAudio(bytes,48000);expect(buffer.numberOfChannels).toBe(1);expect([...buffer.getChannelData(0)]).toEqual([.125,-.25]);
+});

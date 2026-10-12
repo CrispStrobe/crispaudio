@@ -1,17 +1,39 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-12, for local 0.8.39. This section is the current plan.
-The implementation records below are historical; their old priorities, missing
-feature lists and test counts do not describe the current application.
+Updated 2026-10-12, for local 0.9.0. This section is the current plan.
+The implementation records below are historical; their old missing-feature lists
+and test counts do not describe the current application.
 
-Playback/output-device selection and whole-window Finder MP4 drops took priority
-in 0.8.38 after the user reported silent installed-app playback. A fresh app launch
-restored audible output, confirmed by the user; the precise WebKit failure remains
-unidentified. Chorus-rate automation continues M2.3 in 0.8.39. It adds the 0–8 Hz
-lane, protected passes, independent copy/retime and native export support. M2.3
-remains open for further selected parameters and broader curve controls.
+## Requested checkpoint: M2.3–M7
 
-## Current requested milestone: ASR and spoken-word editing
+The selected feature stack is implemented and locally validated. The 0.9.0 app
+and optimized CLI are installed with autosave preserved. Playback is regarded as fixed
+following the user's audible installed-app test. No Apple release is authorized.
+
+- M2.3: twelve selected gain/pan/FX lanes, saved curve handles, protected passes
+  and independent copy/retime. The selection is gain/pan, delay mix/feedback/time,
+  ring-modulator/bit-crusher/distortion/chorus/reverb mix, chorus depth/rate.
+  Arbitrary insert parameters and new clip/master lane inspectors are broader work.
+- M2.4: buses, acyclic outputs, pre/post sends and routed ducking, with live,
+  offline and native render checks.
+- M2.5: master loudness/true-peak estimates and measured, reviewed finishing.
+- M3–M4: ordered picture layers, source In/Out placement, composition/keyframes,
+  titles, stills, reusable presets and separate captions/sidecars/burn-in.
+- M5: explicit timeline input/arming/monitoring, count-in, calibration, punch/loop
+  takes, retained originals, comp regions and adjustable crossfades.
+- M6: linked speed/reverse, voice-oriented pitch-preserving stretch/transposition,
+  retained original mapping and native CLI derivation/recipe export.
+- M7: reviewed multicam scenes/shot switching without restarting sound, source
+  transcript mapping/search/correction, reviewed multiword lift/extract and sections.
+
+[Checkpoint workflow and limits](docs/EDITOR_CHECKPOINT.md) defines the working
+platform boundary: Apple layered/graphic export, nearest-frame retiming, one input,
+external CrispASR and device acceptance still required for physical mobile capture.
+Browser responsive tests are not physical iOS/Android validation. Existing DSP
+precision/tail limits remain explicit. Wider paging/codec rewrites stay deferred.
+After the checkpoint, M8 delivery/interchange is the next roadmap milestone.
+
+## Historical acceptance: ASR and spoken-word editing (0.8.5–0.8.6)
 
 Implemented local 0.8.5: desktop CrispASR adapter, mix/microphone choice, German
 forced word alignment, spoken-word deletion across all sound/picture, frame
@@ -23,8 +45,8 @@ one undo step, and export a reviewed CLI recipe. See
 [Keep text editing](docs/KEEP_TEXT_EDITING.md) for real interview verification.
 This fulfills the newly requested speech-editing increments; it does not complete
 the remaining DAW/video roadmap. Embedded/mobile ASR, multiword text selection,
-inline re-alignment after text correction and speaker-aware editing remain future
-extensions. Existing priority/deferred paging decisions below remain in force.
+inline forced re-alignment remain future extensions. The source mapping, multiword
+review and speaker-label workflow is implemented in 0.9.0. Existing priority/deferred paging decisions below remain in force.
 
 ## Product direction and priority decision
 
@@ -194,7 +216,9 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
    shelves and bell bands), sample-peak output limiter and compressor gain reduction.
    Existing effect presets remain compatible. Limiter follows master gain, has
    instant attack/adjustable release and adds no latency. True-peak is M2.5.
-3. **Gain-lane slice implemented in local 0.8.16.** Focused lane shares timeline
+3. **Selected workflow complete in local 0.9.0.** The incremental implementation
+   record follows; the twelve selected targets are enumerated in the active section.
+   **Gain-lane slice implemented in local 0.8.16.** Focused lane shares timeline
    zoom/scroll; mouse/touch add/move/delete, keyboard/numeric edits, snapping,
    locks, one-step commit/cancel, save/open and existing range retiming. Linear
    gain with held endpoints; last supplied duplicate timestamp wins. Playback
@@ -230,7 +254,8 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
    Local 0.8.36 adds chorus depth editing/recording/copy-retime and native recipes;
    Local 0.8.37 lets any intact saved shape interior point expose whole-span
    direct handles and review, while retaining individual point editing.
-   Further selected FX parameters and broader curve editing remain open.
+   Chorus rate completes the selected twelve-target workflow in 0.9.0; arbitrary
+   additional parameters and new clip/master inspectors remain broader work.
 4. Add buses and sends: start with track-to-bus routing and shared reverb/delay;
    specify pre/post-fader sends and feedback-cycle rejection. Sidechain/ducking
    follows the routing model; it should not be an unrelated special-case graph.

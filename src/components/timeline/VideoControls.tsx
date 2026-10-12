@@ -1,3 +1,5 @@
+import {GraphicControls} from './GraphicControls';
+import {PictureTrackControls} from './PictureTrackControls';
 import { timelineDuration } from '../../lib/timelineView';
 import { ToolButton } from '../common/ToolButton';
 import { Brackets } from 'lucide-react';
@@ -17,7 +19,7 @@ export function VideoControls() {
   const setRange = useProjectStore((s) => s.setVideoRange);
   if (!video) return null;
   const start = video.inPoint ?? 0, end = video.outPoint ?? total;
-  return <><ToolButton icon={Brackets} label={t('video.range')} onClick={()=>setOpen(true)}/>
+  return <><GraphicControls/><PictureTrackControls/><ToolButton icon={Brackets} label={t('video.range')} onClick={()=>setOpen(true)}/>
     <Modal isOpen={open} onClose={()=>setOpen(false)} title={t('video.range')}>
     <p className="text-sm text-gray-300 mb-3">{start.toFixed(3)}–{end.toFixed(3)} s</p>
     <div className="flex flex-wrap gap-2 items-center">

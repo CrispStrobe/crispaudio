@@ -21,6 +21,14 @@ fn id() -> String {
         COUNT.fetch_add(1, Ordering::Relaxed)
     )
 }
+fn same_lane(a: &Value, b: &Value) -> bool {
+    if a.get("trackId").is_some() || b.get("trackId").is_some() {
+        a.get("trackId") == b.get("trackId")
+    } else {
+        a["videoTrackId"].as_str().unwrap_or("picture")
+            == b["videoTrackId"].as_str().unwrap_or("picture")
+    }
+}
 fn clips(project: &Value) -> Vec<Value> {
     let mut list: Vec<Value> = project["tracks"]
         .as_array()
@@ -42,6 +50,7 @@ pub(crate) fn timeline_duration(project: &Value) -> f64 {
         .iter()
         .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
         .fold(project["minimumDuration"].as_f64().unwrap_or(0.0), f64::max)
+        .max(crate::graphics::json_duration(&project["video"]))
 }
 fn mutate(project: &mut Value, mut edit: impl FnMut(&Value) -> Result<Vec<Value>>) -> Result<()> {
     if let Some(tracks) = project["tracks"].as_array_mut() {
@@ -61,7 +70,11 @@ fn mutate(project: &mut Value, mut edit: impl FnMut(&Value) -> Result<Vec<Value>
             .collect();
         let mut out = Vec::new();
         for c in picture {
-            out.extend(edit(&c)?);
+            let mut pieces = edit(&c)?;
+            for piece in &mut pieces {
+                crate::range_edit::retain_picture_clock(&c, piece);
+            }
+            out.extend(pieces);
         }
         project["video"]["clips"] = json!(out);
         project["video"].as_object_mut().unwrap().remove("inPoint");
@@ -135,7 +148,7 @@ fn slide_edit(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<Val
             .filter(|c| c.get("trackId").is_none())
             .cloned()
             .collect();
-        let edit=serde_json::from_value(json!({"path":p["path"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
+        let edit=serde_json::from_value(json!({"path":p["path"],"tracks":p.get("tracks").cloned().unwrap_or(json!([])),"width":p["width"],"height":p["height"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
         crate::video_edit::validate(&edit, number(p, "duration")?)?;
     }
     let width = if picture { 1.0 / fps } else { 0.01 };
@@ -149,16 +162,8 @@ fn slide_edit(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<Val
         {
             return Err("Selected slide clips must share start and end".into());
         }
-        let lane: Vec<_> = all
-            .iter()
-            .filter(|n| n.get("trackId") == c.get("trackId"))
-            .collect();
-        if middle
-            .iter()
-            .filter(|n| n.get("trackId") == c.get("trackId"))
-            .count()
-            != 1
-        {
+        let lane: Vec<_> = all.iter().filter(|n| same_lane(n, c)).collect();
+        if middle.iter().filter(|n| same_lane(n, c)).count() != 1 {
             return Err("Slide needs one middle clip per lane".into());
         }
         let left: Vec<_> = lane
@@ -305,7 +310,7 @@ fn slide_edit(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<Val
             .into_iter()
             .filter(|c| c.get("trackId").is_none())
             .collect();
-        let edit=serde_json::from_value(json!({"path":p["path"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
+        let edit=serde_json::from_value(json!({"path":p["path"],"tracks":p.get("tracks").cloned().unwrap_or(json!([])),"width":p["width"],"height":p["height"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
         crate::video_edit::validate(&edit, number(p, "duration")?)?;
     }
     Ok(out)
@@ -327,10 +332,14 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
     }
     let mut ordered_picture: Vec<_> = all.iter().filter(|c| c.get("trackId").is_none()).collect();
     ordered_picture.sort_by(|a, b| {
-        a["startTime"]
-            .as_f64()
-            .unwrap_or(0.0)
-            .total_cmp(&b["startTime"].as_f64().unwrap_or(0.0))
+        crate::range_edit::picture_lane(a)
+            .cmp(crate::range_edit::picture_lane(b))
+            .then(
+                a["startTime"]
+                    .as_f64()
+                    .unwrap_or(0.0)
+                    .total_cmp(&b["startTime"].as_f64().unwrap_or(0.0)),
+            )
     });
     let incoming = |c: &Value| -> f64 {
         if c.get("trackId").is_some() {
@@ -342,6 +351,7 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
             .unwrap_or(0);
         index
             .checked_sub(1)
+            .filter(|i| same_lane(ordered_picture[*i], c))
             .map(|i| {
                 (ordered_picture[i]["startTime"].as_f64().unwrap_or(0.0)
                     + ordered_picture[i]["duration"].as_f64().unwrap_or(0.0)
@@ -406,7 +416,7 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
                 .filter(|c| c.get("trackId").is_none())
                 .cloned()
                 .collect();
-            let edit=serde_json::from_value(json!({"path":p["path"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
+            let edit=serde_json::from_value(json!({"path":p["path"],"tracks":p.get("tracks").cloned().unwrap_or(json!([])),"width":p["width"],"height":p["height"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
             crate::video_edit::validate(&edit, number(p, "duration")?)?;
         }
         for c in &left {
@@ -414,7 +424,7 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
                 .iter()
                 .filter(|n| {
                     n["id"] != c["id"]
-                        && n.get("trackId") == c.get("trackId")
+                        && same_lane(n, c)
                         && n["startTime"].as_f64().is_some_and(|v| {
                             equal(v, edge)
                                 || (n.get("trackId").is_none()
@@ -530,6 +540,14 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
                     .is_some_and(|t| t["rippleEnabled"] == false)
             } else {
                 doc["project"]["video"]["rippleEnabled"] == false
+                    || doc["project"]["video"]["tracks"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .any(|t| {
+                            t["id"].as_str() == Some(crate::range_edit::picture_lane(c))
+                                && t["rippleEnabled"] == false
+                        })
             };
             if excluded {
                 return Err("Selected lanes must participate in ripple edits".into());
@@ -556,7 +574,7 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
             })
         {
             let p = &doc["project"]["video"];
-            let edit=serde_json::from_value(json!({"path":p["path"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":ordered_picture})).map_err(|e|e.to_string())?;
+            let edit=serde_json::from_value(json!({"path":p["path"],"tracks":p.get("tracks").cloned().unwrap_or(json!([])),"width":p["width"],"height":p["height"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":ordered_picture})).map_err(|e|e.to_string())?;
             crate::video_edit::validate(&edit, number(p, "duration")?)?;
             let index = ordered_picture
                 .iter()
@@ -691,13 +709,216 @@ fn advanced_trim(doc: &Value, op: &Value, selected: &HashSet<String>) -> Result<
             .into_iter()
             .filter(|c| c.get("trackId").is_none())
             .collect();
-        let edit=serde_json::from_value(json!({"path":p["path"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
+        let edit=serde_json::from_value(json!({"path":p["path"],"tracks":p.get("tracks").cloned().unwrap_or(json!([])),"width":p["width"],"height":p["height"],"sources":p.get("sources").cloned().unwrap_or(json!([])),"clips":pictures})).map_err(|e|e.to_string())?;
         if !pictures.is_empty() {
             crate::video_edit::validate(&edit, number(p, "duration")?)?;
         }
     }
     Ok(out)
 }
+fn retime_project(doc: &Value, selected: &HashSet<String>, op: &Value) -> Result<Value> {
+    let restore = op["restore"].as_bool().unwrap_or(false);
+    let all = clips(&doc["project"]);
+    let chosen: Vec<_> = all
+        .iter()
+        .filter(|c| selected.contains(c["id"].as_str().unwrap_or("")))
+        .collect();
+    if chosen.is_empty() {
+        return Err("Select clips to retime".into());
+    }
+    for c in &chosen {
+        let locked = if let Some(track) = c["trackId"].as_str() {
+            doc["project"]["tracks"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|t| t["id"] == track && t["locked"] == true)
+        } else {
+            doc["project"]["video"]["locked"] == true
+                || doc["project"]["video"]["tracks"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .any(|t| {
+                        t["id"].as_str() == Some(crate::range_edit::picture_lane(c))
+                            && t["locked"] == true
+                    })
+        };
+        if locked {
+            return Err("Unlock selected clips before retiming".into());
+        }
+    }
+    let folder = if restore {
+        None
+    } else {
+        let folder = std::path::Path::new(
+            op["directory"]
+                .as_str()
+                .ok_or("Retime recipe needs a directory for derived media")?,
+        );
+        std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
+        Some(std::fs::canonicalize(folder).map_err(|e| e.to_string())?)
+    };
+    let mut replacements = HashMap::new();
+    let mut audio_sources = Vec::new();
+    let mut video_sources = Vec::new();
+    for c in chosen {
+        let audio = c.get("trackId").is_some();
+        let mut original = if c["retime"].is_object() {
+            c["retime"]["original"].clone()
+        } else {
+            json!({"sourceId":c["sourceId"],"offset":c["sourceOffset"],"duration":c["duration"]})
+        };
+        if c["retime"].is_object() {
+            let rate = if let Some(render_duration) = c["retime"]["renderDuration"].as_f64() {
+                number(&original, "duration")? / render_duration
+            } else {
+                number(&c["retime"], "rate")?
+            };
+            let offset = number(c, "sourceOffset")?;
+            let duration = number(c, "duration")?;
+            let local = if c["retime"]["reverse"] == true {
+                number(&original, "duration")? - (offset + duration) * rate
+            } else {
+                offset * rate
+            };
+            original["offset"] = json!(number(&original, "offset")? + local);
+            original["duration"] = json!(duration * rate);
+        }
+        let source = if audio {
+            doc["sources"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .find(|s| s["id"] == original["sourceId"])
+        } else if original["sourceId"].is_string() {
+            doc["project"]["video"]["sources"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .find(|s| s["id"] == original["sourceId"])
+        } else {
+            Some(&doc["project"]["video"])
+        }
+        .ok_or("Missing original retime source")?;
+        let offset = number(&original, "offset")?;
+        let duration = number(&original, "duration")?;
+        if offset < 0.0 || duration <= 0.0 || offset + duration > number(source, "duration")? + 1e-6
+        {
+            return Err("Original retime interval exceeds source".into());
+        }
+        let settings = crate::retime::Settings {
+            offset,
+            duration,
+            rate: op["rate"].as_f64().unwrap_or(1.0),
+            reverse: op["reverse"].as_bool().unwrap_or(false),
+            preserve_pitch: op["preservePitch"].as_bool().unwrap_or(true),
+            semitones: op["semitones"].as_f64().unwrap_or(0.0),
+            video: !audio,
+            frame_rate: doc["project"]["frameRate"].as_f64().unwrap_or(25.0),
+        };
+        settings.validate()?;
+        let mut next = c.clone();
+        let new_duration = if restore {
+            duration
+        } else {
+            duration / settings.rate
+        };
+        let scale = new_duration / number(c, "duration")?;
+        if restore {
+            next["sourceId"] = original["sourceId"].clone();
+            next["sourceOffset"] = json!(offset);
+            next.as_object_mut().unwrap().remove("retime");
+        } else {
+            let id = id();
+            let output = folder.as_ref().unwrap().join(format!(
+                "retimed-{id}.{}",
+                if audio { "wav" } else { "mp4" }
+            ));
+            crate::retime::derive(
+                source["path"]
+                    .as_str()
+                    .ok_or("Retiming requires linked original media")?,
+                &output.to_string_lossy(),
+                &settings,
+            )?;
+            let derived = json!({"id":id,"name":"Retimed media","path":output.to_string_lossy(),"duration":new_duration,"sampleRate":48000,"channels":source["channels"].as_u64().unwrap_or(2)});
+            if audio {
+                audio_sources.push(derived);
+            } else {
+                video_sources.push(derived);
+                original["path"] = source["path"].clone();
+            }
+            next["sourceId"] = json!(id);
+            next["sourceOffset"] = json!(0);
+            next["retime"] = json!({"original":original,"rate":settings.rate,"reverse":settings.reverse,"preservePitch":settings.preserve_pitch,"semitones":settings.semitones});
+        }
+        next["duration"] = json!(new_duration);
+        for key in if audio {
+            ["fadeInDuration", "fadeOutDuration"]
+        } else {
+            ["fadeIn", "fadeOut"]
+        } {
+            if let Some(v) = c[key].as_f64() {
+                next[key] = json!(v * scale);
+            }
+        }
+        if audio {
+            for effect in next["effects"].as_array_mut().into_iter().flatten() {
+                for points in effect["automation"]
+                    .as_object_mut()
+                    .into_iter()
+                    .flat_map(|m| m.values_mut())
+                {
+                    for point in points.as_array_mut().into_iter().flatten() {
+                        point["time"] = json!(
+                            number(c, "startTime")?
+                                + (number(point, "time")? - number(c, "startTime")?) * scale
+                        );
+                    }
+                }
+            }
+        } else {
+            if let Some(v) = c["transitionDuration"].as_f64() {
+                next["transitionDuration"] = json!(v * scale);
+            }
+            if next["composition"].is_object() {
+                next["composition"]["keyframeOffset"] =
+                    json!(c["composition"]["keyframeOffset"].as_f64().unwrap_or(0.0) * scale);
+                for key in next["composition"]["keyframes"]
+                    .as_array_mut()
+                    .into_iter()
+                    .flatten()
+                {
+                    key["time"] = json!(number(key, "time")? * scale);
+                }
+            }
+        }
+        replacements.insert(c["id"].as_str().unwrap().to_owned(), next);
+    }
+    let mut out = doc.clone();
+    out["sources"]
+        .as_array_mut()
+        .ok_or("Missing sources")?
+        .extend(audio_sources);
+    if !video_sources.is_empty() {
+        if !out["project"]["video"]["sources"].is_array() {
+            out["project"]["video"]["sources"] = json!([]);
+        }
+        out["project"]["video"]["sources"]
+            .as_array_mut()
+            .unwrap()
+            .extend(video_sources);
+    }
+    mutate(&mut out["project"], |c| {
+        Ok(vec![replacements
+            .get(c["id"].as_str().unwrap_or(""))
+            .cloned()
+            .unwrap_or_else(|| c.clone())])
+    })?;
+    Ok(out)
+}
+
 pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
     if doc["format"] != "crispaudio-project" || !doc["project"]["tracks"].is_array() {
         return Err("Expected CrispAudio project".into());
@@ -751,6 +972,9 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             .collect();
         let operation = op["op"].as_str().ok_or("Missing operation")?;
         match operation {
+            "retime" => {
+                out = retime_project(&out, &selected, op)?;
+            }
             "output-limiter" => {
                 let enabled = op["enabled"]
                     .as_bool()
@@ -820,12 +1044,18 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             "range-edit" => {
                 out["project"] = crate::range_edit::apply(&out["project"], op)?;
             }
-            "color" | "orientation" => {
+            "color" | "orientation" | "composition" => {
                 let settings = op
                     .get("settings")
                     .ok_or("Missing colour settings; use null to reset")?;
                 if !settings.is_null() {
-                    let valid = if operation == "color" {
+                    let valid = if operation == "composition" {
+                        serde_json::from_value::<crate::video_edit::PictureComposition>(
+                            settings.clone(),
+                        )
+                        .map_err(|e| e.to_string())?
+                        .valid()
+                    } else if operation == "color" {
                         serde_json::from_value::<crate::video_edit::VideoColor>(settings.clone())
                             .map_err(|e| e.to_string())?
                             .valid()
@@ -851,7 +1081,9 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                 {
                     return Err("No selected picture clips".into());
                 }
-                let field = if operation == "color" {
+                let field = if operation == "composition" {
+                    "composition"
+                } else if operation == "color" {
                     "colorCorrection"
                 } else {
                     "transform"
@@ -1138,6 +1370,21 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
             || picture["path"] != out["project"]["video"]["path"])
     {
         return Err("Unlock the video track before editing its clips".into());
+    }
+    for track in picture["tracks"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|t| t["locked"] == true)
+    {
+        let lane = |v: &Value| {
+            v["videoTrackId"].as_str().unwrap_or("picture") == track["id"].as_str().unwrap_or("")
+        };
+        let before: Vec<_> = clips(&doc["project"]).into_iter().filter(&lane).collect();
+        let after: Vec<_> = clips(&out["project"]).into_iter().filter(&lane).collect();
+        if before != after {
+            return Err("Unlock the picture track before editing its clips".into());
+        }
     }
     Ok(out)
 }
@@ -1451,7 +1698,7 @@ pub fn render_project(doc: &Value, output: &str, video: bool) -> Result<()> {
             .into_iter()
             .filter(|c| c.get("trackId").is_none())
             .collect();
-        let edit=serde_json::from_value(json!({"path":picture["path"],"sources":picture.get("sources").cloned().unwrap_or(json!([])),"frameRate":doc["project"].get("frameRate"),"backend":picture.get("backend"),"outputFormat":picture.get("outputFormat"),"duration":doc["project"]["duration"],"clips":picture_clips})).map_err(|e|e.to_string())?;
+        let edit=serde_json::from_value(json!({"path":picture["path"],"graphics":picture.get("graphics").cloned().unwrap_or(json!([])),"captions":picture["captions"],"tracks":picture.get("tracks").cloned().unwrap_or(json!([])),"width":picture["width"],"height":picture["height"],"sources":picture.get("sources").cloned().unwrap_or(json!([])),"frameRate":doc["project"].get("frameRate"),"backend":picture.get("backend"),"outputFormat":picture.get("outputFormat"),"duration":doc["project"]["duration"],"clips":picture_clips})).map_err(|e|e.to_string())?;
         let duration = picture_clips
             .iter()
             .map(|c| c["startTime"].as_f64().unwrap_or(0.0) + c["duration"].as_f64().unwrap_or(0.0))
@@ -1469,6 +1716,51 @@ pub fn render_project(doc: &Value, output: &str, video: bool) -> Result<()> {
 }
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn layered_picture_trim_and_locks_preserve_animation_clock() {
+        let mut d = serde_json::json!({"format":"crispaudio-project","version":3,"project":{"duration":4,"frameRate":25,"sampleRate":48000,"tracks":[],"video":{"path":"v.mp4","duration":10,"tracks":[{"id":"upper","name":"Upper","visible":true,"locked":false,"rippleEnabled":true},{"id":"picture","name":"Base","visible":true,"locked":true,"rippleEnabled":false}],"clips":[{"id":"base","startTime":0,"duration":4,"sourceOffset":0,"fadeIn":0,"fadeOut":0,"transition":"cut","transitionDuration":0},{"id":"top","videoTrackId":"upper","startTime":0,"duration":4,"sourceOffset":0,"fadeIn":0,"fadeOut":0,"transition":"cut","transitionDuration":0,"composition":{"x":0,"y":0,"scale":1,"rotation":0,"opacity":1,"crop":{"left":0,"top":0,"right":0,"bottom":0},"keyframes":[{"time":0,"x":0,"y":0,"scale":1,"rotation":0,"opacity":1},{"time":4,"x":1,"y":0,"scale":1,"rotation":0,"opacity":1}]}}]}},"sources":[]});
+        let trimmed = super::apply(
+            &d,
+            &serde_json::json!([{"op":"trim","ids":["top"],"side":"left","seconds":1}]),
+        )
+        .unwrap();
+        assert_eq!(
+            trimmed["project"]["video"]["clips"][1]["composition"]["keyframeOffset"].as_f64(),
+            Some(1.0)
+        );
+        assert_eq!(
+            trimmed["project"]["video"]["clips"][0],
+            d["project"]["video"]["clips"][0]
+        );
+        assert!(super::apply(
+            &d,
+            &serde_json::json!([{"op":"move","ids":["base"],"seconds":1}])
+        )
+        .is_err());
+        let extracted = super::apply(
+            &d,
+            &serde_json::json!([{"op":"range-edit","operation":"extract","start":1,"end":2}]),
+        )
+        .unwrap();
+        assert_eq!(
+            extracted["project"]["video"]["clips"][0],
+            d["project"]["video"]["clips"][0]
+        );
+        let right = extracted["project"]["video"]["clips"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["videoTrackId"] == "upper" && c["startTime"].as_f64() == Some(1.0))
+            .unwrap();
+        assert_eq!(right["composition"]["keyframeOffset"].as_f64(), Some(2.0));
+        d["project"]["video"]["tracks"][0]["locked"] = serde_json::json!(true);
+        assert!(super::apply(
+            &d,
+            &serde_json::json!([{"op":"move","ids":["top"],"seconds":1}])
+        )
+        .is_err());
+    }
+
     use super::*;
     fn doc() -> Value {
         json!({"format":"crispaudio-project","version":2,"project":{"id":"p","duration":6,"tracks":[{"id":"t","segments":[{"id":"a","linkGroup":"g","trackId":"t","sourceId":"s","startTime":1,"sourceOffset":2,"duration":5}]}],"video":{"path":"unused","duration":10,"clips":[{"id":"v","linkGroup":"g","startTime":1,"sourceOffset":2,"duration":5,"transition":"cut"}]}},"sources":[{"id":"s","duration":10}]})

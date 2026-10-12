@@ -9,7 +9,7 @@ export function parseTranscript(text:string,offset=0):TranscriptCue[]{
     const doc=JSON.parse(text);offset+=Number(doc.crispaudioOffset??0);const segments=Array.isArray(doc)?doc:doc.segments??doc.cues??doc.transcript??doc.transcription;
     if(!Array.isArray(segments))throw new Error('Expected timed segments in JSON');
     const timing=(c:Record<string,unknown>)=>{const o=c.offsets as {from:number;to:number}|undefined;return {start:o?Number(o.from)/1000:Number(c.start??c.startTime),end:o?Number(o.to)/1000:Number(c.end??c.endTime)};};
-    cues=segments.map(c=>({...timing(c),text:String(c.text??''),...(Array.isArray(c.words)?{words:c.words.map((w:Record<string,unknown>)=>({...timing(w),id:crypto.randomUUID(),text:String(w.text??'')}))}:{})}));
+    cues=segments.map(c=>({...timing(c),text:String(c.text??''),...(typeof c.speaker==='string'?{speaker:c.speaker}:{}),...(Array.isArray(c.words)?{words:c.words.map((w:Record<string,unknown>)=>({...timing(w),id:crypto.randomUUID(),text:String(w.text??'')}))}:{})}));
   }else{
     cues=text.replace(/^\uFEFF/,'').replace(/\r/g,'').split(/\n\s*\n/).flatMap(block=>{
       const lines=block.trim().split('\n'),at=lines.findIndex(line=>line.includes('-->'));

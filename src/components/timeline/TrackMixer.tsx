@@ -1,3 +1,5 @@
+import {LoudnessControls} from './LoudnessControls';
+import {AddBus,RoutingControls} from './RoutingControls';
 import {OutputLimiterControls} from './OutputLimiterControls';
 import {GainReduction} from './GainReduction';
 import { signalLevels } from '../../lib/mixer';
@@ -79,6 +81,7 @@ function Strip({track, engine, onInserts}: {track?: TimelineTrack; engine: RefOb
       <label className="block text-xs">{t('mixer.pan')} {track.panAutomation?.length?t('automation.automated'):track.pan===0?'C':`${track.pan<0?'L':'R'} ${Math.round(Math.abs(track.pan)*100)}`}
         <input type="range" className="w-full min-h-11" aria-label={`${track.name}: ${t('mixer.pan')}`} min={-1} max={1} step={.01} value={track.pan} disabled={track.locked||!!track.panAutomation?.length} title={track.panAutomation?.length?t('automation.panHelp'):undefined} onPointerDown={begin} onPointerUp={end} onPointerCancel={end} onBlur={end} onKeyDown={begin} onKeyUp={end} onDoubleClick={()=>{if(!track.locked&&!track.panAutomation?.length)useProjectStore.getState().updateTrack(track.id,{pan:0});}} onChange={e=>useProjectStore.getState().updateTrack(track.id,{pan:Number(e.target.value)})}/></label>
       <div className="flex gap-1">{(['muted','solo'] as const).map(key=><button key={key} disabled={track.locked} aria-label={`${track.name}: ${t(key==='solo'?'timeline.solo':'timeline.mute')}`} aria-pressed={track[key]} className={`flex-1 min-h-11 rounded ${track[key]?'bg-indigo-600':'bg-gray-800'}`} onClick={()=>useProjectStore.getState().updateTrack(track.id,{[key]:!track[key]})}>{key==='solo'?'S':'M'}</button>)}</div>
+      <RoutingControls track={track}/>
     </>}
     <div className="flex gap-1"><button className="min-w-11 min-h-11 rounded bg-gray-800 text-xs" disabled={track?.locked} onClick={()=>update(1)} title={t('mixer.unity')} aria-label={t('mixer.unity')}>0 dB</button><button className="flex-1 min-h-11 rounded bg-gray-800 text-xs" onClick={()=>onInserts(id)}>{t('mixer.inserts')} · {(track ? track.effects ?? [] : useProjectStore.getState().project.masterEffects).length}</button></div>
   </section>;
@@ -89,9 +92,9 @@ export function TrackMixer({engine,onClose}: {engine: RefObject<TimelineEngine |
   const [insertId,setInsertId]=useState<string|null>(null);
   const track=project.tracks.find(track=>track.id===insertId);
   return <aside className="shrink-0 border-t border-gray-700 bg-gray-950 text-gray-200 min-w-0" aria-label={t('mixer.title')}>
-    <div className="flex items-center justify-between px-3"><span className="text-sm flex gap-2 items-center"><SlidersHorizontal size={16}/>{t('mixer.title')}</span><ToolButton icon={X} label={t('common.close')} onClick={onClose}/></div>
+    <div className="flex items-center justify-between px-3"><span className="text-sm flex gap-2 items-center"><SlidersHorizontal size={16}/>{t('mixer.title')}</span><div className="flex gap-2"><AddBus/><ToolButton icon={X} label={t('common.close')} onClick={onClose}/></div></div>
     <div className="flex gap-2 p-2 overflow-x-auto max-h-80 overflow-y-auto">
-      <div className="w-36 shrink-0 space-y-2"><Strip engine={engine} onInserts={setInsertId}/><OutputLimiterControls/></div>
+      <div className="w-36 shrink-0 space-y-2"><Strip engine={engine} onInserts={setInsertId}/><OutputLimiterControls/><LoudnessControls engine={engine}/></div>
       {project.tracks.map(track=><Strip key={track.id} track={track} engine={engine} onInserts={setInsertId}/>)}
       {insertId&&(insertId==='master'||track)&&<div className="w-80 shrink-0 p-2 space-y-2"><button className="min-h-11 text-sm" onClick={()=>setInsertId(null)}>{t('common.close')} · {track?.name??t('mixer.master')}</button><fieldset disabled={track?.locked}><EffectChainEditor scope={track?`track:${track.id}`:'master'} label={t('mixer.inserts')} effects={track ? track.effects??[] : project.masterEffects} onChange={effects=>{const state=useProjectStore.getState();if(track)state.updateTrack(track.id,{effects});else useProjectStore.setState({project:{...state.project,masterEffects:effects}});}}/></fieldset></div>}
     </div>

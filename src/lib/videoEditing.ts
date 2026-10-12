@@ -1,3 +1,4 @@
+import {pictureTracks,pictureTrackId,validPicture} from './pictureComposition';
 import { validVideoTransform } from './videoTransform';
 import { validVideoColor } from './videoColor';
 import type { TimelineProject, VideoClip, VideoSource } from '../types/audio';
@@ -7,16 +8,19 @@ export function videoClips(video: TimelineProject['video']): VideoClip[] {
   return video ? video.clips ?? [{id: 'source-video', startTime: 0, duration: video.duration, sourceOffset: 0, fadeIn: 0, fadeOut: 0, transition: 'cut', transitionDuration: 0}] : [];
 }
 export function videoTimelineDuration(video: TimelineProject['video']): number {
-  return Math.max(0, ...videoClips(video).map(clip => clip.startTime + clip.duration));
+  return Math.max(0, ...videoClips(video).map(clip => clip.startTime + clip.duration),...(video?.graphics??[]).flatMap(t=>t.clips.map(c=>c.startTime+c.duration)),...(video?.captions?.cues??[]).map(c=>c.end));
 }
 export function activeVideoClips(video: TimelineProject['video'], time: number): VideoClip[] {
-  return videoClips(video).filter(clip => clip.startTime <= time && time < clip.startTime + clip.duration).sort((a,b) => a.startTime-b.startTime);
+  return videoClips(video).filter(clip => pictureTracks(video).find(t=>t.id===pictureTrackId(clip))?.visible!==false&&clip.startTime <= time && time < clip.startTime + clip.duration).sort((a,b) => a.startTime-b.startTime);
 }
 /** Reject ambiguous overlaps rather than silently changing clip/audio timing. */
 export function validateVideoClips(clips: VideoClip[], sourceDuration: number, sources?: VideoSource[]): string | null {
-  const sorted = [...clips].sort((a,b) => a.startTime-b.startTime);
+  const lanes=[...new Set(clips.map(pictureTrackId))];
+  for(const lane of lanes){
+  const sorted = clips.filter(c=>pictureTrackId(c)===lane).sort((a,b) => a.startTime-b.startTime);
   for (let i=0; i<sorted.length; i++) {
     const clip=sorted[i], previous=sorted[i-1];
+    if(!validPicture(clip.composition))return 'Invalid picture composition';
     if (!validVideoTransform(clip.transform)) return 'Invalid picture orientation';
     if (!validVideoColor(clip.colorCorrection)) return 'Invalid video colour settings';
     if (![clip.startTime,clip.duration,clip.sourceOffset,clip.fadeIn,clip.fadeOut,clip.transitionDuration].every(Number.isFinite) || clip.startTime<0 || clip.sourceOffset<0 || clip.duration<1/120 || clip.sourceOffset+clip.duration>(clip.sourceId ? sources?.find(s=>s.id===clip.sourceId)?.duration ?? -1 : sourceDuration)+1e-6 || clip.transitionDuration<0 || clip.fadeIn<0 || clip.fadeOut<0 || clip.fadeIn>clip.duration || clip.fadeOut>clip.duration || !VIDEO_TRANSITIONS.includes(clip.transition)) return 'Invalid video clip timing';
@@ -24,6 +28,7 @@ export function validateVideoClips(clips: VideoClip[], sourceDuration: number, s
       const overlap=previous.startTime+previous.duration-clip.startTime;
       if (overlap>1e-6 && (clip.transition==='cut' || Math.abs(overlap-clip.transitionDuration)>1e-6 || overlap>=Math.min(previous.duration,clip.duration) || (i>1 && sorted[i-2].startTime+sorted[i-2].duration>clip.startTime+1e-6))) return 'Overlapping video clips need a transition matching the overlap';
     }
+  }
   }
   return null;
 }
