@@ -1,3 +1,4 @@
+import {timelineCommand} from './browser-command.mjs';
 import assert from 'node:assert/strict';
 import {pathToFileURL} from 'node:url';
 const {chromium,webkit}=await import(pathToFileURL(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE).href);
@@ -19,7 +20,7 @@ try {
   const project={...useProjectStore.getInitialState().project,id:'music',duration:8,minimumDuration:8,tracks:[{id:'t',name:'Voice',muted:false,solo:false,pan:0,volume:1,segments:[clip]}]};
   useProjectStore.getState().loadProjectState(project,new Map([['s',source]]));useProjectStore.temporal.getState().clear();
  });
- await page.getByRole('button',{name:'Musical time',exact:true}).click();const modal=page.getByRole('dialog');
+ await timelineCommand(page,'Musical Time…');const modal=page.getByRole('dialog');
  const commit=async(name,value)=>{const input=modal.getByLabel(name,{exact:true});await input.fill(String(value));await input.press('Enter');};
  await commit('Quarter-note BPM',90);assert.equal(await page.evaluate(()=>window.musicStore.temporal.getState().pastStates.length),1);
  await commit('Beats per bar',6);await modal.getByLabel('Beat note value',{exact:true}).selectOption('8');await modal.getByLabel('Ruler',{exact:true}).selectOption('beats');await modal.getByLabel('Snap grid',{exact:true}).selectOption('eighth');

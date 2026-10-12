@@ -1,3 +1,4 @@
+import {timelineCommand} from './browser-command.mjs';
 // Optional real-browser pan editing and native PCM comparison; owned fixtures only.
 import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,readFile} from 'node:fs/promises';
@@ -35,7 +36,7 @@ try {
  await point.focus();await page.keyboard.press('Delete');await page.waitForFunction(()=>{const nodes=window.panEngine.getMeter('t');const a=new Float32Array(2048);nodes[0].getFloatTimeDomainData(a);return Math.max(...a.map(Math.abs))>.14;});assert.equal(await page.evaluate(()=>window.panStarts),1);await page.getByRole('button',{name:'Stop',exact:true}).click();
  await page.evaluate(()=>window.panStore.temporal.getState().undo());assert.equal((await state()).project.tracks[0].panAutomation[0].value,1);
  const save=page.waitForEvent('download');await page.getByRole('button',{name:'Save project',exact:true}).click();const saved=join(temp,'saved.crispaudio');await (await save).saveAs(saved);
- await page.evaluate(()=>window.panStore.getState().updateTrack('t',{panAutomation:[]}));const pick=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Open project',exact:true}).click();await (await pick).setFiles(saved);await page.waitForFunction(()=>window.panStore.getState().project.tracks[0].panAutomation?.[0]?.value===1);
+ await page.evaluate(()=>window.panStore.getState().updateTrack('t',{panAutomation:[]}));const pick=page.waitForEvent('filechooser');await timelineCommand(page,'Open Project…');await (await pick).setFiles(saved);await page.waitForFunction(()=>window.panStore.getState().project.tracks[0].panAutomation?.[0]?.value===1);
  await page.evaluate(()=>window.panStore.getState().updateTrack('t',{locked:true}));const locked=await state();box=await svg.boundingBox();await page.mouse.click(box.x+200,box.y+10);await lane.locator('[data-gain-point]').first().focus();await page.keyboard.press('Delete');assert.deepEqual(await state(),locked);await page.evaluate(()=>window.panStore.getState().updateTrack('t',{locked:false}));
  const audio=[];
  for(const channels of [1,2]){

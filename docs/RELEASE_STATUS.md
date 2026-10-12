@@ -1,4 +1,4 @@
-# Distribution and platform status — 2026-10-12
+# Distribution and platform status — 2026-10-13
 
 Pushing `main` runs CI/web deployment workflows and the unsigned iOS simulator
 check. It does **not** automatically
@@ -17,6 +17,34 @@ Evidence: [iOS workflow run](https://github.com/CrispStrobe/crispaudio/actions/r
 A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
+
+## Local 0.9.5 — compact timeline and desktop menus
+
+Secondary tools now open through native macOS menus or File/Edit/View/Tools
+menus on other platforms, with the same catalog in command search. Compact
+editing/mixing/recording icons remain visible. Existing tool controllers and
+queues stay mounted; explanations move into collapsed Help sections. Track
+Settings retains its existing controls separately from the strip mixer.
+
+Local checks: 1,568 unit tests pass across 147 files; ESLint, TypeScript/Vite and Tauri app build
+pass. Native tests pass (25, one ignored), and the locked iOS simulator library
+check passes. Chrome and Playwright WebKit pass menu/search/disabled-state/undo
+and German 390px checks. The real interview workflow passes range edits,
+save/reopen and byte-identical browser range exports; native rendering differs
+by at most one int16 unit and produces the expected five-second AV output.
+Musical-time playback/save/reopen and fast dialog focus checks pass. Rack
+copy/reorder now preserves time/depth/rate envelopes alongside mix/feedback.
+
+The local 0.9.5 app is installed, signed, verified and relaunched, with one
+autosave preserved and a fresh recovery backup. Existing optimized CLI retained.
+Playback remains fixed per the user's prior audible confirmation. No new
+physical microphone/controller/mobile acceptance is claimed. Clip/master
+supported FX inspectors remain the next DAW increment; further MIDI is deferred.
+
+The earlier iOS repair is also remotely verified: exact main 5fa86a3's
+[iOS simulator CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38313174409)
+succeeded. New checkpoint CI status must be checked at its exact pushed SHA;
+local checks do not establish remote CI success. No release tag or Apple upload.
 
 ## Local 0.9.4 — MIDI capture alongside timeline playback
 

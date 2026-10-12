@@ -1,3 +1,5 @@
+import {HelpDetails} from '../common/HelpDetails';
+import {useTimelineTool} from '../../hooks/useTimelineTool';
 import { createPortal } from 'react-dom';
 import { OverflowMenu } from '../common/OverflowMenu';
 import { ToolButton } from '../common/ToolButton';
@@ -18,9 +20,9 @@ import type { TimelineEngine } from '../../audio/engine/TimelineEngine';
 import { exportVideoProject } from '../../lib/videoProjectExport';
 import { hasRecoverableAutosave, restoreAutosaveAudio } from '../../hooks/useAutosave';
 
-interface Props { engine: React.RefObject<TimelineEngine | null>; panelTarget: HTMLElement | null }
+interface Props { launcher?:boolean; engine: React.RefObject<TimelineEngine | null>; panelTarget: HTMLElement | null }
 
-export function MediaTools({ engine, panelTarget }: Props) {
+export function MediaTools({ engine, panelTarget, launcher=true }: Props) {
   const { t } = useTranslation();
   const [exportOptions,setExportOptions]=useState(false);
   const [videoFormat,setVideoFormat]=useState('mp4');
@@ -135,9 +137,14 @@ export function MediaTools({ engine, panelTarget }: Props) {
             {recoverable && <button role="menuitem" className={`${button} w-full text-left`} disabled={!!busy || playing} onClick={recover}>{t('interview.recover')}</button>}
         </OverflowMenu>
       </div>);
+  useTimelineTool('video-setup',()=>setSetup(true),available&&!busy&&!playing);
+  useTimelineTool('export-video',()=>setExportOptions(true),available&&!busy&&!playing&&!!video&&!!videoTimelineDuration(video));
+  useTimelineTool('open-session',loadSession,available&&!busy&&!playing);
+  useTimelineTool('recover-media',recover,available&&recoverable&&!busy&&!playing);
+  useTimelineTool('detach-video',()=>{const state=useProjectStore.getState(),project={...state.project,video:undefined};useProjectStore.setState({project:{...project,duration:timelineDuration(project)},isPlaying:false});},available&&!!video&&!busy&&!playing);
   if (!available) return null;
   return <>
-    {controls}
+    {launcher && controls}
     {panelTarget && (video || busy || error || notice) && createPortal(<section className="relative z-30 shrink-0 border-b border-gray-800 bg-gray-900/70 px-3 py-1" aria-label={t('interview.title')}>
       {busy && <p role="status" className="text-sm text-indigo-300 mt-2">{busy}{busy===t('interview.exporting')&&<button className="timeline-tool" onClick={()=>{exportAbort.current?.abort();}}>{t('common.cancel')}</button>}</p>}
       {error && !exportOptions && <p role="alert" className="text-sm text-red-300 break-words mt-2">{error}</p>}
@@ -170,7 +177,7 @@ export function MediaTools({ engine, panelTarget }: Props) {
           {!selectedAudio.length && <p className="mt-2 text-gray-400">{t('interview.notSelected')}</p>}
         </li>
       </ol>
-      <p className="text-sm text-gray-400 mt-4">{t('interview.setupHelp')}</p>
+      <HelpDetails><p>{t('interview.setupHelp')}</p></HelpDetails>
       {error && <p role="alert" className="text-red-300 mt-2">{error}</p>}
       <button className={`${button} mt-4 !bg-indigo-600`} disabled={!!busy || !selectedVideo} onClick={analyze}>{busy || t('interview.analyze')}</button>
     </Modal>

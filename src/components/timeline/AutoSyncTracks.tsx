@@ -1,3 +1,5 @@
+import {HelpDetails} from '../common/HelpDetails';
+import {useTimelineTool} from '../../hooks/useTimelineTool';
 import { ToolButton } from '../common/ToolButton';
 import { AudioLines } from 'lucide-react';
 import { isIOSApp } from '../../lib/native';
@@ -10,7 +12,7 @@ import { AlignmentView } from './AlignmentView';
 import { analysisTrack, syncPayload } from '../../lib/trackSync';
 import type { Alignment } from '../../lib/media';
 import { Modal } from '../common/Modal';
-export function AutoSyncTracks({onError}:{onError:(error:string)=>void}) {
+export function AutoSyncTracks({onError,launcher=true}:{launcher?:boolean;onError:(error:string)=>void}) {
   const {t}=useTranslation(), tracks=useProjectStore(s=>s.project.tracks);
   const [show,setShow]=useState(false),[reference,setReference]=useState(''),[selected,setSelected]=useState<string[]>([]);
   const [error,setError]=useState('');
@@ -33,11 +35,12 @@ export function AutoSyncTracks({onError}:{onError:(error:string)=>void}) {
       setResults(next);
     }catch(err){report(String(err));}finally{setBusy(false);}
   };
+  useTimelineTool('auto-sync',()=>{setReference(tracks.find(track=>track.segments.length)!.id);setSelected(tracks.filter(track=>track.segments.length).map(track=>track.id));setSnapshot(useProjectStore.getState().project);setResults([]);setShow(true);},native&&tracks.filter(track=>track.segments.length).length>=2);
   return <>
-    <ToolButton icon={AudioLines} label={t('sync.title')} disabled={!native || tracks.filter(track=>track.segments.length).length<2} title={!native?t('sync.desktop'):t('sync.title')} onClick={()=>{setReference(tracks.find(track=>track.segments.length)!.id);setSelected(tracks.filter(track=>track.segments.length).map(track=>track.id));setSnapshot(useProjectStore.getState().project);setResults([]);setShow(true);}}/>
+    {launcher && <ToolButton icon={AudioLines} label={t('sync.title')} disabled={!native || tracks.filter(track=>track.segments.length).length<2} title={!native?t('sync.desktop'):t('sync.title')} onClick={()=>{setReference(tracks.find(track=>track.segments.length)!.id);setSelected(tracks.filter(track=>track.segments.length).map(track=>track.id));setSnapshot(useProjectStore.getState().project);setResults([]);setShow(true);}}/>}
     <Modal isOpen={show} onClose={()=>{if(!busy)setShow(false);}} title={t('sync.title')} widthClass="max-w-2xl">
       {error && <p role="alert" className="text-amber-300 mb-3">{error}</p>}
-      <p className="text-sm text-gray-300 mb-3">{t('sync.help')}</p>
+      <HelpDetails><p className="text-sm text-gray-300 mb-3">{t('sync.help')}</p></HelpDetails>
       <label className="text-sm text-gray-200">{t('alignment.reference')} <select disabled={busy} className="bg-gray-800 min-h-11 rounded px-3" value={reference} onChange={e=>{setReference(e.target.value);setResults([]);}}>{tracks.filter(track=>track.segments.length).map(track=><option key={track.id} value={track.id}>{track.name}</option>)}</select></label>
       {tracks.filter(track=>track.segments.length && track.id!==reference).map(track=><label key={track.id} className="min-h-11 flex gap-3 items-center text-gray-200"><input disabled={busy} type="checkbox" checked={selected.includes(track.id)} onChange={e=>{setSelected(old=>e.target.checked?[...old,track.id]:old.filter(id=>id!==track.id));setResults([]);}}/>{track.name}</label>)}
       <button className="timeline-tool" disabled={busy || !selected.some(id=>id!==reference)} onClick={()=>void analyze()}>{t(busy?'sync.analyzing':'sync.analyze')}</button>

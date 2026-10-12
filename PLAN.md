@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-12, for local 0.9.4. This section is the current plan.
+Updated 2026-10-13, for local 0.9.5. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -10,7 +10,11 @@ The user explicitly lowered MIDI priority after 0.9.4. Further MIDI sequencing,
 instrument tracks and MIDI interchange are deferred. Continue improving audio
 recording, editing and mixing before expanding music sequencing.
 
-The next increment is clip/master automation editing: expose the supported
+The 0.9.5 consolidation moves secondary timeline tools into desktop menus and
+command search, keeps compact editing controls visible and folds explanations
+into Help. This GUI correction takes precedence over adding more permanent tools.
+
+The next DAW increment is clip/master automation editing: expose the supported
 effect envelopes with clear clock/scope selection, protected edits, undo and
 save/reopen, preserving playback/offline/native rendering consistency. Track
 automation already has direct editing and pass controls; clip/master effect

@@ -13,6 +13,12 @@ it('retains the default delayed close-button focus for other dialogs',()=>{
  vi.useFakeTimers();render(<Modal isOpen onClose={()=>{}}><p>Other dialog</p></Modal>);act(()=>vi.advanceTimersByTime(60));expect(document.activeElement).toBe(screen.getByRole('button',{name:'Close panel',exact:true}));
 });
 
+it('preserves a field focused before the default timer and includes Help in the focus trap',()=>{
+ vi.useFakeTimers();render(<Modal isOpen onClose={()=>{}}><input aria-label="Fast edit"/><details><summary>Help</summary><p>Explanation</p></details></Modal>);
+ const field=screen.getByRole('textbox',{name:'Fast edit'});field.focus();fireEvent.change(field,{target:{value:'90'}});act(()=>vi.advanceTimersByTime(60));expect(document.activeElement).toBe(field);
+ const help=screen.getByText('Help');help.focus();fireEvent.keyDown(help,{key:'Tab'});expect(document.activeElement).toBe(screen.getByRole('button',{name:'Close panel',exact:true}));
+});
+
 it('keeps fast paste-bound edits focused and applies the displayed retimed interval',async()=>{
  const {GainEnvelopePaste}=await import('../../../src/components/timeline/GainEnvelopePaste');
  const {useProjectStore}=await import('../../../src/stores/projectStore');

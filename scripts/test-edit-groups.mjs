@@ -1,3 +1,4 @@
+import {timelineCommand} from './browser-command.mjs';
 // Optional actual-WebKit groups/command search and native recipe parity.
 import {pathToFileURL} from 'node:url';
 import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
@@ -14,7 +15,7 @@ function semantic(p){return {enabled:p.groupEditingEnabled??true,clips:[...p.tra
 try{
  const page=await browser.newPage({viewport:{width:1280,height:900}});await page.goto(process.env.CRISPAUDIO_TEST_URL||'http://127.0.0.1:5190');await page.waitForLoadState('networkidle');
  await page.evaluate(async p=>{const {useUIStore}=await import('/src/stores/uiStore.ts');useUIStore.getState().setActivePanel('timeline');const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.getState().loadProjectState(p,new Map());useProjectStore.getState().setSelection({segmentIds:['a','b'],startTime:0,endTime:6});},project);
- await page.getByRole('button',{name:'Named edit groups',exact:true}).click();const dialog=page.getByRole('dialog');
+ await timelineCommand(page,'Named Edit Groups…');const dialog=page.getByRole('dialog');
  await dialog.getByLabel('Group name',{exact:true}).fill('Section');await dialog.getByRole('button',{name:'Create / rename group from selection',exact:true}).click();
  const grouped=await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.getState().selectSegment('a');return {p:useProjectStore.getState().project,selection:useProjectStore.getState().selection};});
  assert.deepEqual(grouped.selection.segmentIds,['a','b','v']);assert.equal(grouped.p.video.clips[0].editGroup.name,'Section');

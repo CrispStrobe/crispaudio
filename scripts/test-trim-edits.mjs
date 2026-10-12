@@ -1,3 +1,4 @@
+import {timelineCommand} from './browser-command.mjs';
 // Optional actual-WebKit trim dialog, undo and native recipe parity.
 import {pathToFileURL} from 'node:url';
 import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
@@ -20,7 +21,7 @@ try{
   useProjectStore.getState().loadProjectState(p,new Map([['s',{id:'s',name:'s',duration:20,sampleRate:48000,channels:1,buffer:context.createBuffer(1,20*48000,48000),peaks:[]}]]));
   useProjectStore.getState().setSelection({segmentIds:['a','v'],startTime:0,endTime:5});useProjectStore.temporal.getState().clear();
  },project);
- await page.getByRole('button',{name:'Trim tools',exact:true}).click();const dialog=page.getByRole('dialog');
+ await timelineCommand(page,'Trim Tools…');const dialog=page.getByRole('dialog');
  await dialog.getByLabel('Move edge by (seconds)').fill('100');assert.equal(await dialog.getByRole('button',{name:'Apply edit'}).isEnabled(),false);
  await dialog.getByLabel('Move edge by (seconds)').fill('0.2');await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
  const edited=await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;});
@@ -45,7 +46,7 @@ try{
  slideProject.tracks[0].segments.push({...clip,id:'c',linkGroup:'last',startTime:10,sourceOffset:12});
  slideProject.video.clips.push({...picture,id:'x',linkGroup:'last',startTime:10,sourceOffset:12});
  await page.evaluate(async p=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.setState({project:p,selection:{segmentIds:['b'],startTime:5,endTime:10}});useProjectStore.temporal.getState().clear();},slideProject);
- await page.getByRole('button',{name:'Trim tools',exact:true}).click();
+ await timelineCommand(page,'Trim Tools…');
  await dialog.locator('select').selectOption('slide');
  await dialog.getByLabel('Move edge by (seconds)').fill('0.08');await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
  const slid=await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;});
@@ -65,7 +66,7 @@ try{
  const blendProject=structuredClone(project);blendProject.frameRate=25;
  Object.assign(blendProject.video.clips[1],{startTime:4.6,sourceOffset:6.6,duration:5.4,transition:'fade',transitionDuration:.4});
  await page.evaluate(async p=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.setState({project:p,selection:{segmentIds:['a'],startTime:0,endTime:5}});useProjectStore.temporal.getState().clear();},blendProject);
- await page.getByRole('button',{name:'Trim tools',exact:true}).click();await dialog.getByLabel('Move edge by (seconds)').fill('0.2');await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
+ await timelineCommand(page,'Trim Tools…');await dialog.getByLabel('Move edge by (seconds)').fill('0.2');await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
  const rolled=await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;});
  assert.equal(rolled.video.clips[1].transitionDuration,.4);assert.equal(rolled.video.clips[1].startTime,4.8);assert.equal(rolled.tracks[0].segments[1].startTime,5.2);
  await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.temporal.getState().undo();});
@@ -84,7 +85,7 @@ try{
  Object.assign(slideBlend.video.clips[1],{startTime:4.6,sourceOffset:6.6,duration:5.4,transition:'fade',transitionDuration:.4});
  Object.assign(slideBlend.video.clips[2],{startTime:9.6,sourceOffset:11.6,duration:5.4,transition:'wipeleft',transitionDuration:.4});
  await page.evaluate(async p=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.setState({project:p,selection:{segmentIds:['b'],startTime:5,endTime:10}});useProjectStore.temporal.getState().clear();},slideBlend);
- await page.getByRole('button',{name:'Trim tools',exact:true}).click();await dialog.locator('select').selectOption('slide');await dialog.getByLabel('Move edge by (seconds)').fill('0.08');await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
+ await timelineCommand(page,'Trim Tools…');await dialog.locator('select').selectOption('slide');await dialog.getByLabel('Move edge by (seconds)').fill('0.08');await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
  const blendSlid=await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;});assert.equal(blendSlid.tracks[0].segments[1].startTime,5.08);assert.equal(blendSlid.video.clips[1].sourceOffset,6.6);assert.equal(blendSlid.video.clips[2].transitionDuration,.4);
  await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.temporal.getState().undo();});
  assert.deepEqual(semantic(await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;})),semantic(slideBlend));
@@ -98,7 +99,7 @@ try{
   }
  }
  await page.evaluate(async p=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.setState({project:p,selection:{segmentIds:['b'],startTime:5,endTime:10}});useProjectStore.temporal.getState().clear();},slideBlend);
- await page.getByRole('button',{name:'Trim tools',exact:true}).click();await dialog.locator('select').selectOption('ripple-right');await dialog.getByLabel('Move edge by (seconds)').fill('-0.08');await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
+ await timelineCommand(page,'Trim Tools…');await dialog.locator('select').selectOption('ripple-right');await dialog.getByLabel('Move edge by (seconds)').fill('-0.08');await dialog.getByRole('button',{name:'Apply edit'}).click();await dialog.waitFor({state:'hidden'});
  const rippled=await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;});assert.ok(Math.abs(rippled.duration-14.92)<1e-9);assert.equal(rippled.video.clips[1].transitionDuration,.4);assert.equal(rippled.video.clips[1].id,'w');assert.equal(rippled.tracks[0].segments[1].id,'b');
  await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.temporal.getState().undo();});
  assert.deepEqual(semantic(await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().project;})),semantic(slideBlend));

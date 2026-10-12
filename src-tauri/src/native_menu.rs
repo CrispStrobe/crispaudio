@@ -6,6 +6,7 @@ use serde::Deserialize;
 #[serde(default, rename_all = "camelCase")]
 pub struct MenuContext {
     language: String,
+    disabled_tools: Vec<String>,
     labels: std::collections::HashMap<String, String>,
     ready: bool,
     timeline: bool,
@@ -45,7 +46,7 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
     let enabled = context.ready && !context.blocked;
     let timeline = enabled && context.timeline && !context.text_editing;
     let item = |id: &str, en: &'static str, german: &'static str, active, key: Option<&str>| {
-        MenuItem::with_id(app, format!("ca-{id}"), label(en, german), active, key)
+        MenuItem::with_id(app, format!("ca-{id}"), label(en, german), active && !context.disabled_tools.iter().any(|tool|tool==id), key)
     };
     let sep = || Native::separator(app);
     let app_menu = Submenu::with_items(
@@ -120,6 +121,11 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
                 Some("CmdOrCtrl+Shift+E"),
             )?,
             &item("export-range", "Export Selected Audio Range…", "Ausgewählten Audiobereich exportieren…", enabled && context.edit_range, None)?,
+            &sep()?,
+            &item("load-tracks", "Import Tracks…", "Spuren importieren…", enabled, None)?,
+            &item("save-tracks", "Save Tracks…", "Spuren speichern…", timeline, None)?,
+            &item("delivery", "Delivery…", "Ausgabe…", timeline, None)?,
+            &item("export-video", "Export Video…", "Video exportieren…", timeline && context.content, None)?,
             &sep()?,
             &Native::close_window(app, None)?,
         ],
@@ -199,6 +205,15 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
     }
     edit.append_items(&[
         &sep()?,
+        &item("clip-settings", "Clip Settings…", "Clip-Einstellungen…", timeline && context.selection, None)?,
+        &item("fades", "Fades…", "Blenden…", timeline && context.selection, None)?,
+        &item("retime", "Speed / Pitch…", "Tempo / Tonhöhe…", timeline && context.selection, None)?,
+        &item("blend", "Crossfade Overlaps", "Überlappungen überblenden", timeline && context.selection, None)?,
+        &item("split-all", "Split All at Playhead", "Alle am Abspielkopf teilen", timeline && context.content, None)?,
+        &item("range-tools", "Range Edits…", "Bereich bearbeiten…", timeline && context.edit_range, None)?,
+        &item("nudge-left", "Nudge Left", "Nach links verschieben", timeline && context.selection, None)?,
+        &item("nudge-right", "Nudge Right", "Nach rechts verschieben", timeline && context.selection, None)?,
+        &item("nudge-settings", "Nudge Step…", "Verschiebeschritt…", timeline, None)?,
         &item("edit-groups","Named Edit Groups…","Benannte Schnittgruppen…",timeline&&context.content,None)?,
         &item("commands","Find Command…","Befehl suchen…",enabled,Some("CmdOrCtrl+K"))?,
         &item("trim-tools","Trim Tools…","Schnittwerkzeuge…",timeline&&context.selection,None)?,
@@ -224,6 +239,10 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
         label("View", "Darstellung"),
         true,
         &[
+            &item("mixer", "Mixer", "Mixer", timeline, None)?,
+            &item("automation", "Automation", "Automation", timeline, None)?,
+            &item("track-settings", "Track Settings…", "Spureinstellungen…", timeline, None)?,
+            &sep()?,
             &item(
                 "zoom-in",
                 "Zoom In Timeline",
@@ -245,6 +264,7 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
                 enabled && context.content,
                 Some("CmdOrCtrl+0"),
             )?,
+            &item("waveform-mode", "Waveform Display", "Wellenformdarstellung", timeline, None)?,
             &item("height-up", "Taller Tracks", "Spuren höher", enabled, None)?,
             &item(
                 "height-down",
@@ -348,6 +368,21 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
             )?,
         ],
     )?;
+    let tools = Submenu::with_items(app, label("Tools", "Werkzeuge"), true, &[
+        &item("align", "Alignment…", "Ausrichtung…", timeline && context.content, None)?,
+        &item("auto-sync", "Synchronize Tracks…", "Spuren synchronisieren…", timeline && context.content, None)?,
+        &item("source-speech", "Source Transcripts…", "Quelltranskripte…", timeline && context.content, None)?,
+        &item("tts", "Text to Speech…", "Sprachausgabe…", timeline, None)?,
+        &sep()?,
+        &item("video-setup", "Video Setup…", "Video einrichten…", timeline, None)?,
+        &item("open-session", "Open Media Session…", "Mediensitzung öffnen…", timeline, None)?,
+        &item("detach-video", "Detach Video", "Video entfernen", timeline, None)?,
+        &item("recover-media", "Recover Media…", "Medien wiederherstellen…", timeline, None)?,
+        &item("multicam", "Multicam…", "Mehrkamera…", timeline, None)?,
+        &sep()?,
+        &item("musical-time", "Musical Time…", "Musikalische Zeit…", timeline, None)?,
+        &item("midi", "MIDI…", "MIDI…", timeline, None)?,
+    ])?;
     let window = Submenu::with_items(
         app,
         label("Window", "Fenster"),
@@ -381,7 +416,7 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
     )?;
     app.set_menu(Menu::with_items(
         app,
-        &[&app_menu, &file, &edit, &view, &playback, &window, &help],
+        &[&app_menu, &file, &edit, &view, &playback, &tools, &window, &help],
     )?)?;
     Ok(())
 }

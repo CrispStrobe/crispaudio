@@ -1,3 +1,5 @@
+import {HelpDetails} from '../common/HelpDetails';
+import {useTimelineTool} from '../../hooks/useTimelineTool';
 import { ToolButton } from '../common/ToolButton';
 import { FolderInput, Archive } from 'lucide-react';
 import { useState } from 'react';
@@ -7,7 +9,7 @@ import { serializeProject, deserializeProject } from '../../lib/projectFile';
 import { openProjectFile, saveProjectFile } from '../../lib/projectIO';
 import { timelineDuration } from '../../lib/timelineView';
 import { Modal } from '../common/Modal';
-export function TrackFiles({ context, onError }: { context: () => BaseAudioContext; onError: (error: string) => void }) {
+export function TrackFiles({ context, onError, launcher = true }: { launcher?: boolean; context: () => BaseAudioContext; onError: (error: string) => void }) {
   const { t } = useTranslation();
   const tracks = useProjectStore(s => s.project.tracks);
   const [show, setShow] = useState(false), [busy, setBusy] = useState(false);
@@ -37,11 +39,13 @@ export function TrackFiles({ context, onError }: { context: () => BaseAudioConte
       if (await saveProjectFile(serializeProject(project,new Map([...state.sources].filter(([id])=>used.has(id))),'portable'),project.name)) setShow(false);
     } catch(err) {onError(String(err));} finally {setBusy(false);}
   };
+  useTimelineTool('load-tracks', load, !busy);
+  useTimelineTool('save-tracks',()=>{setSelected(tracks.map(track=>track.id));setShow(true);}, !busy&&!!tracks.length);
   return <>
-    <ToolButton icon={FolderInput} label={t('editor.loadTracks')} disabled={busy} onClick={()=>void load()}/>
-    <ToolButton icon={Archive} label={t('editor.saveTracks')} disabled={busy || !tracks.length} onClick={()=>{setSelected(tracks.map(track=>track.id));setShow(true);}}/>
+    {launcher && <ToolButton icon={FolderInput} label={t('editor.loadTracks')} disabled={busy} onClick={()=>void load()}/>}
+    {launcher && <ToolButton icon={Archive} label={t('editor.saveTracks')} disabled={busy || !tracks.length} onClick={()=>{setSelected(tracks.map(track=>track.id));setShow(true);}}/>}
     <Modal isOpen={show} onClose={()=>setShow(false)} title={t('editor.saveTracks')}>
-      <p className="text-sm text-gray-300 mb-3">{t('editor.trackFilesHelp')}</p>
+      <HelpDetails><p className="text-sm text-gray-300 mb-3">{t('editor.trackFilesHelp')}</p></HelpDetails>
       {tracks.map(track=><label key={track.id} className="flex items-center gap-3 min-h-11 text-gray-200"><input type="checkbox" checked={selected.includes(track.id)} onChange={e=>setSelected(old=>e.target.checked?[...old,track.id]:old.filter(id=>id!==track.id))}/>{track.name}</label>)}
       <button className="timeline-tool mt-3" disabled={busy || !selected.length} onClick={()=>void save()}>{t('editor.saveTracks')}</button>
     </Modal>

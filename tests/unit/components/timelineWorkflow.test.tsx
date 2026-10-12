@@ -1,3 +1,4 @@
+import {runTimelineTool} from '../../../src/hooks/useTimelineTool';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TimelineActions } from '../../../src/components/timeline/TimelineActions';
@@ -19,18 +20,18 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 describe('interview touch workflow', () => {
-  it('splits both microphones at the same boundary and undoes as one edit', () => {
+  it('splits both microphones at the same boundary and undoes as one edit', async () => {
     render(<TimelineActions touchArrange={false} onTouchArrange={() => {}} />);
-    fireEvent.click(screen.getByRole('button',{name:'timeline.splitAll',exact:true}));
+    await act(async()=>runTimelineTool('split-all'));
     for (const track of useProjectStore.getState().project.tracks) {
       expect(track.segments.map((clip) => [clip.startTime, clip.duration, clip.sourceOffset])).toEqual([[0, 4, 2], [4, 6, 6]]);
     }
     act(() => useProjectStore.temporal.getState().undo());
     expect(useProjectStore.getState().project.tracks.map((track) => track.segments.length)).toEqual([1, 1]);
   });
-  it('switches microphone audibly by clearing previous solos and mutes', () => {
+  it('switches microphone audibly by clearing previous solos and mutes', async () => {
     render(<TimelineActions touchArrange={false} onTouchArrange={() => {}} />);
-    fireEvent.click(screen.getByRole('button',{name:'timeline.mixer',exact:true}));
+    await act(async()=>runTimelineTool('track-settings'));
     const room = screen.getByDisplayValue('Room').closest('section')!;
     fireEvent.click(within(room).getByText('timeline.listenOnly'));
     expect(useProjectStore.getState().project.tracks.map((track) => [track.muted, track.solo])).toEqual([[true, false], [false, false]]);
@@ -65,10 +66,10 @@ describe('interview touch workflow', () => {
 
 });
 
-it('applies selected clip fades in one undo step and stops playback', () => {
+it('applies selected clip fades in one undo step and stops playback', async () => {
   useProjectStore.setState({selection:{startTime:0,endTime:10,segmentIds:['clip-0','clip-1']},isPlaying:true});
   render(<TimelineActions touchArrange={false} onTouchArrange={()=>{}}/>);
-  fireEvent.click(screen.getByRole('button',{name:'fades.title'}));
+  await act(async()=>runTimelineTool('fades'));
   fireEvent.click(screen.getByRole('button',{name:'fades.both'}));
   expect(useProjectStore.getState().isPlaying).toBe(false);
   expect(useProjectStore.getState().project.tracks.map(t=>[t.segments[0].fadeInDuration,t.segments[0].fadeOutDuration])).toEqual([[.25,.25],[.25,.25]]);
@@ -76,10 +77,10 @@ it('applies selected clip fades in one undo step and stops playback', () => {
   expect(useProjectStore.getState().project.tracks.map(t=>t.segments[0].fadeInDuration)).toEqual([0,0]);
 });
 
-it('edits track and master racks independently through the mixer',()=>{
+it('edits track and master racks independently through track settings',async()=>{
   useProjectStore.setState({isPlaying:true});
   render(<TimelineActions touchArrange={false} onTouchArrange={()=>{}}/>);
-  fireEvent.click(screen.getByRole('button',{name:'timeline.mixer'}));
+  await act(async()=>runTimelineTool('track-settings'));
   const rack=within(screen.getByRole('region',{name:'Jacket rack.trackEffects'}));
   fireEvent.change(rack.getByRole('combobox',{name:'timeline.addEffect'}),{target:{value:'highpass'}});
   expect(useProjectStore.getState().project.tracks[0].effects?.[0].type).toBe('highpass');

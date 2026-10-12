@@ -1,3 +1,4 @@
+import {timelineCommand} from './browser-command.mjs';
 // Optional end-to-end browser save/open/export + native linked render audit.
 // Requires Playwright; CRISPAUDIO_CLI additionally requires installed FFmpeg/FFprobe.
 import assert from 'node:assert/strict';
@@ -33,7 +34,7 @@ try{
  await page.getByRole('button',{name:'Edit time range',exact:true}).click();await page.getByRole('dialog').getByRole('button',{name:'Apply edit'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
  const extracted=await snapshot();assert.equal(extracted.duration,10);assert.deepEqual(clean(extracted.tracks[2]),clean(project.tracks[2]));assert.equal(extracted.video.clips.at(-1).startTime+extracted.video.clips.at(-1).duration,9);assert.equal(extracted.markers[0].time,7);
  await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.getState().setSelection({segmentIds:['a'],startTime:0,endTime:3});});
- await page.getByRole('button',{name:'Trim tools',exact:true}).click();await page.getByRole('dialog').getByLabel('Move edge by (seconds)').fill('0.08');await page.getByRole('dialog').getByRole('button',{name:'Apply edit'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
+ await timelineCommand(page,'Trim Tools…');await page.getByRole('dialog').getByLabel('Move edge by (seconds)').fill('0.08');await page.getByRole('dialog').getByRole('button',{name:'Apply edit'}).click();await page.getByRole('dialog').waitFor({state:'hidden'});
  const rolled=await snapshot();assert.ok(Math.abs(rolled.tracks[0].segments[0].duration-3.08)<1e-7);assert.equal(rolled.video.clips[0].duration,rolled.tracks[1].segments[0].duration);
  await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.temporal.getState().undo();});assert.deepEqual(clean(await snapshot()),clean(extracted));
  await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.temporal.getState().undo();});assert.deepEqual(clean(await snapshot()),clean(project));
@@ -44,12 +45,12 @@ try{
  await page.waitForFunction(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().playheadPosition>1.05;});
  await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.getState().setIsPlaying(false);});
  const save=page.waitForEvent('download');await page.getByRole('button',{name:'Save project',exact:true}).click();const saved=await save;const savedPath=join(temp,'saved.crispaudio');await saved.saveAs(savedPath);
- const beforeDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Export selected audio range',exact:true}).click();await (await beforeDownload).saveAs(join(temp,'before.wav'));
+ const beforeDownload=page.waitForEvent('download');await timelineCommand(page,'Export Selected Audio Range…');await (await beforeDownload).saveAs(join(temp,'before.wav'));
  // Open through the actual browser picker; decoded source identity and metadata survive.
- const choose=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Open project',exact:true}).click();await (await choose).setFiles(savedPath);
+ const choose=page.waitForEvent('filechooser');await timelineCommand(page,'Open Project…');await (await choose).setFiles(savedPath);
  await page.waitForFunction(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');return useProjectStore.getState().sources.size===3&&useProjectStore.getState().playheadPosition===0;});
  assert.deepEqual(clean(await snapshot()),clean(final));
- const afterDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Export selected audio range',exact:true}).click();await (await afterDownload).saveAs(join(temp,'after.wav'));
+ const afterDownload=page.waitForEvent('download');await timelineCommand(page,'Export Selected Audio Range…');await (await afterDownload).saveAs(join(temp,'after.wav'));
  const before=pcm(await readFile(join(temp,'before.wav'))),after=pcm(await readFile(join(temp,'after.wav')));assert.deepEqual(before,after);assert.equal(after.length,5*48000*2*2);
  let native;
  if(process.env.CRISPAUDIO_CLI){

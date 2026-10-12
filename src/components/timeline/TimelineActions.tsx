@@ -1,13 +1,12 @@
+import {useTimelineTool} from '../../hooks/useTimelineTool';
+import {NumberField} from './NumberField';
 import { ClipFadeTools } from './ClipFadeTools';
 import {EditGroups} from './EditGroups';
 import {TrimEditDialog} from './TrimEditDialog';
-import {adjacentEdit} from '../../lib/trimEdits';
-import {MoveHorizontal,ChevronsLeft,ChevronsRight} from 'lucide-react';
-import { TrendingUp } from 'lucide-react';
 import { EffectChainEditor } from './EffectChainEditor';
 import { splitClips, projectClips, blendAudioOverlaps } from '../../lib/projectEdits';
 import { ToolButton } from '../common/ToolButton';
-import { Hand, Blend, SlidersHorizontal, Scissors, Layers, Settings2, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Hand, Scissors, Settings2, Trash2 } from 'lucide-react';
 import { VideoClipSettings } from './VideoClipSettings';
 import { videoClips } from '../../lib/videoEditing';
 import { deleteSelection, nudgeSelection } from '../../lib/timelineEditing';
@@ -23,7 +22,7 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
   const [fades, setFades] = useState(false);
   const [trim,setTrim]=useState(false);
   useEffect(()=>{const open=()=>setTrim(true);window.addEventListener('crispaudio-trim-tools',open);return()=>window.removeEventListener('crispaudio-trim-tools',open);},[]);
-  const [mixer, setMixer] = useState(false);
+  const [mixer,setMixer] = useState(false);
   const [inspector, setInspector] = useState(false);
   const video = useProjectStore(s=>s.project.video);
   const masterEffects = useProjectStore(s=>s.project.masterEffects);
@@ -35,32 +34,32 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
   const selectedVideo=videoClips(video).filter(clip=>selection?.segmentIds.includes(clip.id));
   const allSelected=[...selected,...selectedVideo];
   const splittable = allSelected.filter((clip) => position > clip.startTime && position < clip.startTime + clip.duration);
+  const [nudgeOpen,setNudgeOpen]=useState(false);
+  useTimelineTool('track-settings',()=>setMixer(true),!!tracks.length);
+  useTimelineTool('fades',()=>setFades(true),!!allSelected.length);
+  useTimelineTool('split-all',()=>{const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,projectClips(state.project).map(c=>c.id),state.playheadPosition),selection:null});},!!tracks.length||!!video);
+  useTimelineTool('blend',()=>{const state=useProjectStore.getState();useProjectStore.setState({project:blendAudioOverlaps(state.project,state.selection?.segmentIds??[])});},selected.length>=2);
+  useTimelineTool('nudge-left',()=>nudgeSelection(-nudge),!!allSelected.length);
+  useTimelineTool('nudge-right',()=>nudgeSelection(nudge),!!allSelected.length);
+  useTimelineTool('nudge-settings',()=>setNudgeOpen(true));
   if (!tracks.length&&!video) return null;
   const button = 'min-h-11 px-3 rounded-lg border border-gray-700 bg-gray-800 text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-40';
   return <>
     <div className="timeline-clip-actions flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 shrink-0" aria-label={t('timeline.clipActions')}>
       <ToolButton data-help="move" icon={Hand} label={t(touchArrange?'timeline.touchArrangeOn':'timeline.touchArrangeOff')} className="touch-arrange-toggle" aria-pressed={touchArrange} onClick={onTouchArrange}/>
-      <ToolButton data-help="mixer" icon={SlidersHorizontal} label={t('timeline.mixer')} disabled={!tracks.length} onClick={()=>setMixer(true)}/>
-      <EditGroups/>
+
+      <EditGroups launcher={false}/>
       <ToolButton data-help="split" icon={Scissors} label={t('timeline.splitAtPlayhead')} className="clip-split-selected" disabled={!splittable.length} onClick={()=>{
         const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,selection?.segmentIds??[],position),selection:null});
       }}/>
-      <ToolButton data-help="split" icon={Layers} label={t('timeline.splitAll')} onClick={()=>{
-        const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,projectClips(state.project).map(c=>c.id),position),selection:null});
-      }}/>
+
       <ToolButton data-help="inspector" icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>onInspector?onInspector():setInspector(true)}/>
-      <ToolButton data-help="trim" icon={MoveHorizontal} label={t('trimEdits.title')} disabled={!allSelected.length} onClick={()=>setTrim(true)}/>
-      {([-1,1] as const).map(direction=><ToolButton key={`edit-${direction}`} icon={direction<0?ChevronsLeft:ChevronsRight} label={t(direction<0?'trimEdits.previous':'trimEdits.next')} onClick={()=>{const state=useProjectStore.getState();state.setIsPlaying(false);state.setPlayheadPosition(adjacentEdit(state.project,state.playheadPosition,direction));}}/>)}
-      <ToolButton data-help="overlap" icon={Blend} label={t('usability.blendAudio')} disabled={selected.length<2} onClick={()=>{try{const state=useProjectStore.getState();useProjectStore.setState({project:blendAudioOverlaps(state.project,selection?.segmentIds??[])});}catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:String(error)}));}}}/>
-      <ToolButton data-help="fades" icon={TrendingUp} label={t('fades.title')} disabled={!allSelected.length} onClick={() => setFades(true)}/>
+
+
+
       <ToolButton data-help="remove" icon={Trash2} label={t('timeline.delete')} disabled={!allSelected.length} onClick={deleteSelection}/>
-      <span className="text-xs text-gray-400 hidden lg:block">{t('editing.nudge')}</span>
-      <ToolButton data-help="nudge" icon={ArrowLeft} label={t('editing.nudgeLeft')} onClick={()=>nudgeSelection(-nudge)}/>
-      <select data-help="nudge" className="bg-gray-800 rounded min-h-11 px-1 text-xs text-gray-200 w-20" value={nudge} aria-label={t('editing.nudgeStep')} onChange={e=>setNudge(Number(e.target.value))}>
-        <option value={1/useProjectStore.getState().project.sampleRate}>{t('editing.sample')}</option><option value={.001}>1 ms</option><option value={.01}>10 ms</option><option value={1/30}>33 ms</option><option value={.1}>100 ms</option>
-      </select>
-      <ToolButton data-help="nudge" icon={ArrowRight} label={t('editing.nudgeRight')} onClick={()=>nudgeSelection(nudge)}/>
     </div>
+    <Modal isOpen={nudgeOpen} onClose={()=>setNudgeOpen(false)} title={t('editing.nudgeStep')}><NumberField label={t('editing.nudgeStep')} value={nudge} min={1/useProjectStore.getState().project.sampleRate} step={.001} onCommit={value=>{if(value<=0)return false;setNudge(value);return true;}}/></Modal>
     {trim&&<TrimEditDialog onClose={()=>setTrim(false)}/>}
     <Modal isOpen={fades && allSelected.length > 0} onClose={() => setFades(false)} title={t('fades.title')}>
       <ClipFadeTools/>
@@ -68,7 +67,7 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
     <Modal isOpen={inspector && allSelected.length > 0} onClose={() => setInspector(false)} title={t('timeline.clipSettings')}>
       {selectedVideo.length ? <VideoClipSettings id={selectedVideo[0].id}/> : <SegmentEffectsPanel onClose={() => setInspector(false)} />}
     </Modal>
-    <Modal isOpen={mixer} onClose={() => setMixer(false)} title={t('timeline.mixer')} widthClass="max-w-2xl">
+    <Modal isOpen={mixer} onClose={() => setMixer(false)} title={t('nativeMenu.Track Settings…')} widthClass="max-w-2xl">
       <button className="timeline-tool mb-3" onClick={()=>{const state=useProjectStore.getState();tracks.forEach(track=>state.updateTrack(track.id,{solo:false}));}}>{t('editor.clearSolos')}</button>
       <p className="text-sm text-gray-400 mb-4">{t('timeline.mixerHelp')}</p>
       <div className="space-y-4">

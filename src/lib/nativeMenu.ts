@@ -5,11 +5,12 @@ import { useVoiceStore } from '../stores/voiceStore';
 import { useProjectStore } from '../stores/projectStore';
 import { timelineDuration } from './timelineView';
 import i18n from '../i18n';
+import {disabledTimelineTools} from '../hooks/useTimelineTool';
 
 export const textEditing = () => document.activeElement instanceof HTMLElement&&!!document.activeElement.closest('textarea,[contenteditable="true"],input:not([type="range"]):not([type="checkbox"]):not([type="button"]):not([type="file"])');
 export const menuBlocked = () => useUIStore.getState().activeModal!==null||!!document.querySelector('[role="dialog"],[data-timeline-help="true"]');
-const editActions=new Set(['undo','redo','cut','copy','paste','delete','select-all','deselect','split','trim-tools','edit-groups']);
-const timelineActions=new Set(['recording','new','open','save','import','export','export-range','commands','previous-edit','next-edit',...editActions,'add-track','zoom-in','zoom-out','fit','height-up','height-down','workspace','snap','play','stop','start','end','loop','range-mode','play-range','clear-range','help']);
+const editActions=new Set(['undo','redo','cut','copy','paste','delete','select-all','deselect','split','trim-tools','edit-groups','clip-settings','split-all','fades','blend','retime','range-tools','nudge-left','nudge-right']);
+const timelineActions=new Set(['track-settings','load-tracks','save-tracks','delivery','mixer','automation','waveform-mode','align','auto-sync','source-speech','tts','video-setup','open-session','export-video','detach-video','recover-media','multicam','musical-time','midi','clip-settings','split-all','fades','blend','retime','range-tools','nudge-left','nudge-right','nudge-settings','recording','new','open','save','import','export','export-range','commands','previous-edit','next-edit',...editActions,'add-track','zoom-in','zoom-out','fit','height-up','height-down','workspace','snap','play','stop','start','end','loop','range-mode','play-range','clear-range','help']);
 type Handler=(action:string)=>void|Promise<void>;
 let handler:Handler|undefined,pending:string|undefined,busy=false;
 export const nativeMenuBusy=()=>busy;
@@ -45,7 +46,7 @@ export function nativeMenuContext(){
  if(labelsLanguage!==i18n.language){labelsLanguage=i18n.language;labels=i18n.t('nativeMenu',{returnObjects:true}) as Record<string,string>;}
  const state=useProjectStore.getState(),panel=useUIStore.getState().activePanel,history=panel==='sfx'?useSynthStore.temporal.getState():panel==='voice'?useVoiceStore.temporal.getState():useProjectStore.temporal.getState();
  return {
-  language:i18n.language,labels,ready:true,timeline:useUIStore.getState().activePanel==='timeline',
+  language:i18n.language,labels,disabledTools:disabledTimelineTools(),ready:true,timeline:useUIStore.getState().activePanel==='timeline',
   textEditing:textEditing(),blocked:menuBlocked()||busy,helpMode:!!document.querySelector('[data-timeline-help="true"]'),
   canUndo:history.pastStates.length>0,canRedo:history.futureStates.length>0,
   selection:!!state.selection?.segmentIds.length,

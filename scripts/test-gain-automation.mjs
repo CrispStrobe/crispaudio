@@ -1,3 +1,4 @@
+import {timelineCommand} from './browser-command.mjs';
 // Real audio graph and pointer regression; no installed project/media touched.
 import assert from 'node:assert/strict';
 import {mkdtemp} from 'node:fs/promises';
@@ -54,7 +55,7 @@ try {
  const savedState=await state(),temp=await mkdtemp(join(tmpdir(),'crispaudio-automation-'));
  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Save project',exact:true}).click();const savedPath=join(temp,'saved.crispaudio');await (await download).saveAs(savedPath);
  await page.evaluate(async()=>{const {useProjectStore}=await import('/src/stores/projectStore.ts');useProjectStore.getState().updateTrack('t',{automation:[]});});
- const choose=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Open project',exact:true}).click();await (await choose).setFiles(savedPath);
+ const choose=page.waitForEvent('filechooser');await timelineCommand(page,'Open Project…');await (await choose).setFiles(savedPath);
  await page.waitForFunction(()=>window.automationStore.getState().project.tracks[0].automation?.length===4);
  assert.deepEqual((await state()).points,savedState.points);
  // A release without movement and a cancelled blank-space addition retain redo/history.

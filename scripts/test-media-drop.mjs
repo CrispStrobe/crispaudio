@@ -17,8 +17,9 @@ try{
   const callbacks=new Map(),listeners=new Map();let next=1;window.dropCalls=[];
   window.__TAURI_INTERNALS__={metadata:{currentWebview:{label:'main'},currentWindow:{label:'main'}},transformCallback(cb){const id=next++;callbacks.set(id,cb);return id;},convertFileSrc:path=>`http://asset.localhost/${path}`,async invoke(command,args){
    window.dropCalls.push({command,args});
-   if(command==='plugin:event|listen'){listeners.set(args.event,args.handler);return next++;}
-   if(command==='plugin:event|unlisten'||command==='configure_native_menu')return;
+   if(command==='plugin:event|listen'){const id=next++,entries=listeners.get(args.event)??new Map();entries.set(id,args.handler);listeners.set(args.event,entries);return id;}
+   if(command==='plugin:event|unlisten'){listeners.get(args.event)?.delete(args.eventId);return;}
+   if(command==='configure_native_menu')return;
    if(command==='take_opened_files')return [];
    if(command==='desktop_media_available')return true;
    if(command==='probe_media')return {has_video:true,channels:2,duration:2,sample_rate:48000};
@@ -32,7 +33,7 @@ try{
    throw new Error(`Mock native unavailable: ${command}`);
   }};
   window.__TAURI_EVENT_PLUGIN_INTERNALS__={unregisterListener(){}};
-  window.deliverDrop=(event,payload)=>{const id=listeners.get(event);if(!id)throw new Error('Missing drop listener');callbacks.get(id)({event,id:1,payload});};
+  window.deliverDrop=(event,payload)=>{const entries=listeners.get(event);if(!entries?.size)throw new Error('Missing drop listener');for(const [id,handler] of entries)callbacks.get(handler)({event,id,payload});};
  });
  await page.goto(process.env.CRISPAUDIO_TEST_URL||'http://127.0.0.1:5190');await page.waitForLoadState('networkidle');
  await page.evaluate(async()=>{const {useUIStore}=await import('/src/stores/uiStore.ts');const {useProjectStore}=await import('/src/stores/projectStore.ts');window.dropUI=useUIStore;window.dropProject=useProjectStore;useUIStore.getState().setActivePanel('sfx');});

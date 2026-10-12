@@ -1,3 +1,4 @@
+import {timelineCommand} from './browser-command.mjs';
 // Owned fixtures; actual mode controls, draft safety and complete browser/native PCM.
 import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,readFile} from 'node:fs/promises';
@@ -51,7 +52,7 @@ try{
   engine.play(p,1);await new Promise(r=>setTimeout(r,100));const a=new Float32Array(2048);engine.getMeter('t')[0].getFloatTimeDomainData(a);const peak=Math.max(...a.map(Math.abs));engine.stop();if(peak<.35||peak>.42)throw new Error(`FX seek clock peak ${peak}`);
  });
  // Real Save/Open preserves the committed points; session modes reset to Read.
- const savedState=await state(),save=page.waitForEvent('download');await page.getByRole('button',{name:'Save project',exact:true}).click();const saved=join(temp,'saved.crispaudio');await (await save).saveAs(saved);await page.evaluate(()=>window.recStore.getState().updateTrack('t',{automation:[]}));const choose=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Open project',exact:true}).click();await (await choose).setFiles(saved);await page.waitForFunction(()=>window.recStore.getState().project.tracks[0].automation?.length>2);assert.deepEqual((await state()).project,savedState.project);assert.equal(await mode.inputValue(),'read');
+ const savedState=await state(),save=page.waitForEvent('download');await page.getByRole('button',{name:'Save project',exact:true}).click();const saved=join(temp,'saved.crispaudio');await (await save).saveAs(saved);await page.evaluate(()=>window.recStore.getState().updateTrack('t',{automation:[]}));const choose=page.waitForEvent('filechooser');await timelineCommand(page,'Open Project…');await (await choose).setFiles(saved);await page.waitForFunction(()=>window.recStore.getState().project.tracks[0].automation?.length>2);assert.deepEqual((await state()).project,savedState.project);assert.equal(await mode.inputValue(),'read');
  let maximumError=0;
  if(process.env.CRISPAUDIO_TEST_CLI){
   const data=Buffer.alloc(48000*8*8);for(let i=0;i<data.length/4;i++)data.writeFloatLE(i%2===0?.25:-.125,i*4);const h=Buffer.alloc(44);h.write('RIFF');h.writeUInt32LE(36+data.length,4);h.write('WAVEfmt ',8);h.writeUInt32LE(16,16);h.writeUInt16LE(3,20);h.writeUInt16LE(2,22);h.writeUInt32LE(48000,24);h.writeUInt32LE(384000,28);h.writeUInt16LE(8,32);h.writeUInt16LE(32,34);h.write('data',36);h.writeUInt32LE(data.length,40);const source=join(temp,'source.wav');await writeFile(source,Buffer.concat([h,data]));

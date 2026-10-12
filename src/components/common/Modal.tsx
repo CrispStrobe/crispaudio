@@ -41,7 +41,9 @@ export const Modal: React.FC<ModalProps> = ({
     if (isOpen) {
       const previousFocus = document.activeElement as HTMLElement | null;
       // Small delay so portal has mounted
-      const id = initialFocusRef?.current ? undefined : setTimeout(() => closeBtnRef.current?.focus(), 50);
+      const id = initialFocusRef?.current ? undefined : setTimeout(() => {
+        if (!panelRef.current?.contains(document.activeElement)) closeBtnRef.current?.focus();
+      }, 50);
       initialFocusRef?.current?.focus();
       return () => { if (id !== undefined) clearTimeout(id); if (previousFocus?.isConnected) previousFocus.focus(); };
     }
@@ -52,7 +54,7 @@ export const Modal: React.FC<ModalProps> = ({
     if (!isOpen || !panelRef.current) return;
     const panel = panelRef.current;
     const focusable = panel.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])'
     );
     const first = focusable[0];
     const last = focusable[focusable.length - 1];

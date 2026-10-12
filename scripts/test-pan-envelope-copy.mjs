@@ -1,3 +1,4 @@
+import {timelineCommand} from './browser-command.mjs';
 // Optional actual pan envelope copy/paste + native recipe/render audit. Own fixtures only.
 import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,readFile} from 'node:fs/promises';
@@ -47,7 +48,7 @@ try {
  const undone=await state();await open();await bounds('4','3');await page.keyboard.press('Escape');assert.deepEqual(await state(),undone);
  await page.evaluate(()=>window.envelopeStore.temporal.getState().redo());assert.deepEqual((await state()).project,pasted.project);
  const save=page.waitForEvent('download');await page.getByRole('button',{name:'Save project',exact:true}).click();const saved=join(temp,'saved.crispaudio');await (await save).saveAs(saved);
- await page.evaluate(()=>window.envelopeStore.getState().updateTrack('b',{panAutomation:[]}));const pick=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Open project',exact:true}).click();await (await pick).setFiles(saved);
+ await page.evaluate(()=>window.envelopeStore.getState().updateTrack('b',{panAutomation:[]}));const pick=page.waitForEvent('filechooser');await timelineCommand(page,'Open Project…');await (await pick).setFiles(saved);
  await page.waitForFunction(()=>window.envelopeStore.getState().project.tracks[1].panAutomation?.length===7);assert.deepEqual((await state()).project.tracks[1].panAutomation,pasted.project.tracks[1].panAutomation);
  // Dialog snapshots reject changes while it is open, including an indirect lock.
  await open();await page.evaluate(()=>window.envelopeStore.getState().updateTrack('b',{locked:true}));assert.equal(await dialog.getByRole('button',{name:'Paste',exact:true}).isEnabled(),false);await page.keyboard.press('Escape');assert.equal(await lane.getByRole('button',{name:'Paste pan envelope',exact:true}).isEnabled(),false);

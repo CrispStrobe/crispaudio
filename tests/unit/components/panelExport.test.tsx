@@ -39,7 +39,7 @@ beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
   useSynthStore.setState({ buffer: data, isPlaying: false, sampleRate: 44100, bitDepth: 16 });
   useVoiceStore.setState({ sourceBuffer: buffer, processedBuffer: buffer, isProcessing: false });
-  useProjectStore.setState(s => ({ project: { ...s.project, duration: 1, tracks: [] }, isPlaying: false }));
+  useProjectStore.setState(s => ({ project: { ...s.project, duration: 1, minimumDuration: 1, tracks: [] }, isPlaying: false }));
   useSettingsStore.setState({ defaultExportFormat: 'wav', defaultBitrateKbps: 128, defaultBitDepth: 16 });
   mocks.render.mockResolvedValue(buffer);
   mocks.save.mockResolvedValue(true);
@@ -49,14 +49,15 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const panels = [
   { name: 'SFX', Panel: SFXPanel, button: 'sfx.downloadWav', encode: mocks.wav },
   { name: 'Voice', Panel: VoicePanel, button: 'voice.export', encode: mocks.wav },
-  { name: 'Timeline', Panel: TimelinePanel, button: 'timeline.export', encode: mocks.stereoWav },
+  { name: 'Timeline', Panel: TimelinePanel, button: 'nativeMenu.Export Audio Mix…', encode: mocks.stereoWav },
 ];
 
 it('shows rendering with its CPU limitation and aborts before encoding', async () => {
   const pending = deferred<AudioBuffer>();
   mocks.render.mockReturnValueOnce(pending.promise);
   render(<TimelinePanel />);
-  fireEvent.click(screen.getByRole('button', { name: 'timeline.export' }));
+  fireEvent.click(screen.getByRole('button', { name: 'nativeMenu.File', exact: true }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'nativeMenu.Export Audio Mix…' }));
   expect(screen.getByRole('status')).toHaveTextContent('audioExport.rendering');
   expect(screen.getByText('audioExport.renderCancelNote')).toBeInTheDocument();
   const signal = mocks.render.mock.calls[0][3] as AbortSignal;
@@ -88,7 +89,7 @@ describe.each(panels)('$name export', ({ Panel, button, encode, name }) => {
     const compressed = name === 'Timeline' ? mocks.stereo : mocks.mono;
     render(<Panel />);
     const run = async (saves: number) => {
-      fireEvent.click(screen.getByRole('button', { name: button }));
+      if (name === 'Timeline') { fireEvent.click(screen.getByRole('button', {name: 'nativeMenu.File',exact:true})); fireEvent.click(screen.getByRole('menuitem',{name:button})); } else fireEvent.click(screen.getByRole('button', { name: button }));
       await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(saves));
     };
     await run(1);
@@ -115,7 +116,7 @@ describe.each(panels)('$name export', ({ Panel, button, encode, name }) => {
     const pending = deferred<Blob>();
     encode.mockReturnValueOnce(pending.promise);
     const { unmount } = render(<Panel />);
-    fireEvent.click(screen.getByRole('button', { name: button }));
+    if (name === 'Timeline') { fireEvent.click(screen.getByRole('button', {name: 'nativeMenu.File',exact:true})); fireEvent.click(screen.getByRole('menuitem',{name:button})); } else fireEvent.click(screen.getByRole('button', { name: button }));
     await waitFor(() => expect(encode).toHaveBeenCalledTimes(1));
     const signal = encode.mock.calls[0].at(-1) as AbortSignal;
     unmount();
@@ -128,13 +129,13 @@ describe.each(panels)('$name export', ({ Panel, button, encode, name }) => {
     const next = deferred<Blob>();
     encode.mockReturnValueOnce(first.promise).mockReturnValueOnce(next.promise);
     render(<Panel />);
-    fireEvent.click(screen.getByRole('button', { name: button }));
+    if (name === 'Timeline') { fireEvent.click(screen.getByRole('button', {name: 'nativeMenu.File',exact:true})); fireEvent.click(screen.getByRole('menuitem',{name:button})); } else fireEvent.click(screen.getByRole('button', { name: button }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('audioExport.encoding'));
     expect(encode).toHaveBeenCalledTimes(1);
     const signal = encode.mock.calls[0].at(-1) as AbortSignal;
     fireEvent.click(screen.getByRole('button', { name: 'audioExport.cancel' }));
     expect(signal.aborted).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: button }));
+    if (name === 'Timeline') { fireEvent.click(screen.getByRole('button', {name: 'nativeMenu.File',exact:true})); fireEvent.click(screen.getByRole('menuitem',{name:button})); } else fireEvent.click(screen.getByRole('button', { name: button }));
     await waitFor(() => expect(encode).toHaveBeenCalledTimes(2));
     await act(async () => { first.resolve(new Blob(['old'])); });
     expect(screen.getByRole('status')).toHaveTextContent('audioExport.encoding');

@@ -1,3 +1,4 @@
+import {HelpDetails} from '../common/HelpDetails';
 import {GainReduction} from './GainReduction';
 import {EqualizerGraph} from './EqualizerGraph';
 import React, { useState } from 'react';
@@ -180,13 +181,13 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
           {specs.map((spec) => (
             <ParamSlider
               key={spec.key}
-              label={t(`timeline.effectParams.${spec.label.toLowerCase()}`, spec.label)+((spec.key==='mix'||spec.key==='feedback')&&effect.automation?.[spec.key]?.length?' · '+t('automation.automated'):'')}
+              label={t(`timeline.effectParams.${spec.label.toLowerCase()}`, spec.label)+(Object.entries(effect.automation??{}).some(([key,points])=>key===spec.key&&points.length>0)?' · '+t('automation.automated'):'')}
               value={effect.params[spec.key] ?? 0}
               min={spec.min}
               max={spec.max}
               step={spec.step}
               unit={spec.unit}
-              disabled={!effect.enabled||((spec.key==='mix'||spec.key==='feedback')&&!!effect.automation?.[spec.key]?.length)}
+              disabled={!effect.enabled||(Object.entries(effect.automation??{}).some(([key,points])=>key===spec.key&&points.length>0))}
               onChange={(val) =>
                 onUpdate(index, {
                   params: { ...effect.params, [spec.key]: val },
@@ -201,7 +202,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
 };
 
 const useEffectClipboard = create<{effects: EffectConfig[] | null}>(() => ({effects: null}));
-const clone = (effects: EffectConfig[]) => effects.map(effect => ({...effect, params: {...effect.params},...(effect.automation?{automation:{mix:effect.automation.mix?.map(p=>({...p})),feedback:effect.automation.feedback?.map(p=>({...p}))}}:{})}));
+const clone = (effects: EffectConfig[]) => structuredClone(effects);
 
 /** Same ordered processing rack at clip, track and master scope. */
 export function EffectChainEditor({effects, onChange, label, scope}: {
@@ -228,7 +229,7 @@ export function EffectChainEditor({effects, onChange, label, scope}: {
         onClick={() => {const enabled = !effects.some(e => e.enabled); onChange(effects.map(e => ({...e, enabled})));}}/>
     </div>
     <EqualizerGraph effects={effects} onChange={onChange}/>
-    <p className="text-xs text-gray-400">{t('rack.orderHelp')}</p>
+    <HelpDetails><p className="text-xs text-gray-400">{t('rack.orderHelp')}</p></HelpDetails>
     {!effects.length && <p className="text-xs text-gray-500 py-2">{t('timeline.noEffects')}</p>}
     {effects.map((effect, i) => <EffectRow scope={scope} key={`${i}-${effect.type}`} effect={effect} index={i} count={effects.length} onUpdate={update}
       onRemove={index => onChange(effects.filter((_, j) => j !== index))} onMove={move}/>)}

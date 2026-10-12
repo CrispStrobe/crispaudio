@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.9.5 — 2026-10-13
+
+- Consolidate the timeline toolbar around compact editing, mixing and recording
+  icons. Move secondary tools into native macOS menus and shared command search;
+  provide File/Edit/View/Tools menus on other platforms.
+- Keep tool dialogs, recording and export queues mounted while their launchers
+  are hidden. Preserve disabled states, keyboard access and existing settings.
+- Preserve fast dialog typing and include Help summaries in keyboard focus.
+- Fold longer explanations into Help sections and distinguish Track Settings
+  from the strip mixer.
+- Preserve all supported FX automation envelopes when copying/reordering racks,
+  and mark automated time/depth/rate controls consistently.
+
 ## 0.9.4 — 2026-10-12
 
 - Add a reviewed MIDI capture pass alongside timeline playback. Place the new

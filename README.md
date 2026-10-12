@@ -13,6 +13,10 @@ browser.
 [Releases](https://github.com/CrispStrobe/crispaudio/releases) ·
 [Roadmap](PLAN.md)
 
+The timeline uses compact icon controls. On macOS, File, Edit, View, Playback
+and Tools menus open the secondary tools; other platforms show in-window menus.
+Find command (⌘/Ctrl K) searches the same tools. Longer explanations open under Help.
+
 Delivery adds per-export presets, range/clip/stem jobs, a cancellable queue,
 caption sidecars, portable media collection and reviewed cut-only OTIO export.
 See [Delivery workflows and limits](docs/DELIVERY.md).

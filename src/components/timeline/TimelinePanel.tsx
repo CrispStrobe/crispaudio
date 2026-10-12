@@ -1,3 +1,5 @@
+import {runTimelineTool} from '../../hooks/useTimelineTool';
+import {TimelineCommandMenus} from './TimelineCommandMenus';
 import {MidiControls} from './MidiControls';
 import {MusicalControls} from './MusicalControls';
 import {useTimelineMetronome} from '../../hooks/useTimelineMetronome';
@@ -22,9 +24,8 @@ import { projectClips, projectSelection, splitClips } from '../../lib/projectEdi
 import { prepareAudioImport, type AudioImportInput, type ImportPhase } from '../../lib/audioImport';
 import { TimelineHelp } from './TimelineHelp';
 import { TimelineWorkspace, type WorkspaceTab } from './TimelineWorkspace';
-import { Library } from 'lucide-react';
 import { ToolButton } from '../common/ToolButton';
-import { FilePlus2, Scan, CircleHelp, AlignHorizontalJustifyCenter, AudioLines } from 'lucide-react';
+import { Scan, AudioLines } from 'lucide-react';
 import { timelineDuration } from '../../lib/timelineView';
 import { TimelineNavigation } from './TimelineNavigation';
 import { TrackFiles } from './TrackFiles';
@@ -47,7 +48,6 @@ import React, {
 } from 'react';
 import {
   Lock, Unlock,
-  Plus,
   Trash2,
   ZoomIn,
   ZoomOut,
@@ -55,13 +55,10 @@ import {
   Undo2,
   Redo2,
   Upload,
-  Download,
   Save,
-  FolderOpen,
   GripVertical,
   ChevronUp,
   ChevronDown,
-  MessageSquare,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
@@ -585,8 +582,8 @@ export const TimelinePanel: React.FC = () => {
       case 'open':await handleOpenProject();break;
       case 'save':await handleSaveProject();break;
       case 'import':askImport();break;
-      case 'export':await handleExportMix();break;
-      case 'export-range':await handleExportMix(true);break;
+      case 'export':void handleExportMix();break;
+      case 'export-range':void handleExportMix(true);break;
       case 'trim-tools':window.dispatchEvent(new Event('crispaudio-trim-tools'));break;
       case 'edit-groups':window.dispatchEvent(new Event('crispaudio-edit-groups'));break;
       case 'recording':window.dispatchEvent(new Event('crispaudio-recording'));break;
@@ -608,6 +605,12 @@ export const TimelinePanel: React.FC = () => {
       case 'height-up':state.setTrackHeight(Math.min(640,state.trackHeight*1.25));break;
       case 'height-down':state.setTrackHeight(Math.max(24,state.trackHeight/1.25));break;
       case 'workspace':setWorkspace(old=>old?null:'media');break;
+      case 'mixer':setMixer(value=>!value);break;
+      case 'automation':setAutomation(value=>!value);break;
+      case 'clip-settings':setWorkspace('edit');break;
+      case 'tts':useUIStore.getState().openModal('tts');break;
+      case 'waveform-mode':setWaveformMode(mode=>mode==='normalized'?'level':'normalized');break;
+      case 'align':if(state.project.tracks.length>=2){state.setIsPlaying(false);setAlignmentOpen(true);}break;
       case 'snap':state.setSnapEnabled(!state.snapEnabled);break;
       case 'play':state.setIsPlaying(!state.isPlaying);break;
       case 'stop':state.setIsPlaying(false);state.setPlayheadPosition(0);break;
@@ -618,6 +621,7 @@ export const TimelinePanel: React.FC = () => {
       case 'clear-range':state.clearEditRange();break;
       case 'loop':state.setLoopEnabled(!state.loopEnabled);break;
       case 'help':setHelpOpen(true);break;
+      default:await runTimelineTool(action);break;
     }
   }));
 
@@ -630,31 +634,24 @@ export const TimelinePanel: React.FC = () => {
       <div className="timeline-main-tools flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900 shrink-0">
         <input ref={fileInputRef} type="file" accept="audio/*" multiple className="hidden"
           onChange={(e) => { void handleImportFiles(fileInputs(Array.from(e.target.files??[]))); e.target.value = ''; }} />
-        <ToolButton data-help="files" icon={FilePlus2} label={t('editor.newProject')} onClick={() => setResetOpen(true)}/>
-        <CommandSearch/>
-        <ToolButton data-help="files" icon={FolderOpen} label={t('timeline.openProject')} onClick={() => void handleOpenProject()}/>
-        <ToolButton data-help="files" icon={Save} label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}/>
+        <TimelineCommandMenus/>
         <ToolButton data-help="import" icon={Upload} label={t('timeline.import')} onClick={() => askImport()}/>
-        <ToolButton icon={Download} label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}/>
-        {store.project.editRange&&<ToolButton icon={Download} label={t('ranges.exportAudio')} disabled={exportStage!==null} onClick={()=>void handleExportMix(true)}/>}
-        <MusicalControls/>
-        <MidiControls audio={audioEngine}/>
-        <DeliveryControls/>
-        <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} />
-        <AutoSyncTracks onError={setProjectError} />
-        <ToolButton icon={Library} label={t('workspace.title')} aria-pressed={workspace!==null} onClick={()=>setWorkspace(old=>old?null:'media')}/>
+        <ToolButton data-help="files" icon={Save} label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}/>
         <ToolButton icon={Undo2} label={t('timeline.undo')} onClick={handleUndo}/>
         <ToolButton icon={Redo2} label={t('timeline.redo')} onClick={handleRedo}/>
-        <ToolButton icon={Plus} label={t('timeline.addTrack')} onClick={handleAddTrack}/>
-        <ToolButton icon={MessageSquare} label={t('tts.title')} onClick={()=>useUIStore.getState().openModal('tts')}/>
         <ToolButton icon={Activity} label={t('automation.openTitle')} aria-pressed={automation} onClick={()=>setAutomation(value=>!value)}/>
         <ToolButton icon={SlidersHorizontal} label={t('mixer.title')} aria-pressed={mixer} onClick={()=>setMixer(value=>!value)}/>
-        <TimelineRecording engine={engineRef} audio={audioEngine}/>
-        <ClipRetimeControls/>
-        <MulticamControls/>
-        <SourceTranscriptControls/>
-        <MediaTools engine={engineRef} panelTarget={mediaPanel} />
-        <ToolButton data-help-toggle icon={CircleHelp} label={t('usability.help')} aria-pressed={helpOpen} onClick={()=>setHelpOpen(value=>!value)}/>
+        <CommandSearch/>
+        <MusicalControls launcher={false}/>
+        <MidiControls audio={audioEngine} launcher={false}/>
+        <DeliveryControls launcher={false}/>
+        <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} launcher={false}/>
+        <AutoSyncTracks onError={setProjectError} launcher={false}/>
+        <TimelineRecording engine={engineRef} audio={audioEngine} launcher={false}/>
+        <ClipRetimeControls launcher={false}/>
+        <MulticamControls launcher={false}/>
+        <SourceTranscriptControls launcher={false}/>
+        <MediaTools engine={engineRef} panelTarget={mediaPanel} launcher={false}/>
         {exportStage && <div className="flex flex-wrap gap-2 items-center">
           <span role="status" className="text-sm text-gray-300">{t(`audioExport.${exportStage}`)}</span>
           {exportStage === 'rendering' && <span className="text-xs text-gray-400">{t('audioExport.renderCancelNote')}</span>}
@@ -696,11 +693,9 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton data-help="navigation" icon={ZoomOut} label={t('timeline.zoomOut')} onClick={handleZoomOut}/>
         <ToolButton data-help="navigation" icon={ZoomIn} label={t('timeline.zoomIn')} onClick={handleZoomIn}/>
         <ToolButton data-help="snap" icon={Magnet} label={t('timeline.snap')} aria-pressed={store.snapEnabled} onClick={()=>store.setSnapEnabled(!store.snapEnabled)}/>
-        <ToolButton icon={AlignHorizontalJustifyCenter} label={t('alignment.title')} disabled={store.project.tracks.length<2} onClick={()=>{useProjectStore.getState().setIsPlaying(false);setAlignmentOpen(true);}}/>
+
         <ToolButton data-help="waveform" icon={AudioLines} label={t(waveformMode === 'normalized' ? 'alignment.normalizedHelp' : 'alignment.levelHelp')} aria-pressed={waveformMode === 'normalized'} onClick={()=>setWaveformMode(mode=>mode==='normalized'?'level':'normalized')}/>
-        <label className="text-xs text-gray-400 flex items-center gap-2">{t('editor.trackHeight')}
-          <input data-help="height" aria-label={t('editor.trackHeight')} className="slider-styled w-24" type="range" min={24} max={640} value={store.trackHeight} onChange={e => store.setTrackHeight(+e.target.value)} />
-        </label>
+
       </div>
       <TimelineActions onInspector={()=>setWorkspace('edit')} touchArrange={touchArrange} onTouchArrange={() => setTouchArrange((old) => !old)} />
       </div>

@@ -1195,3 +1195,23 @@ retaining frequency values. Outside parameter values remain protected, while
 later LFO phase follows the new rate history. Empty lanes use the insert rate,
 default 1.5 Hz; 0 Hz holds phase. Rate edits keep the live graph and delay history.
 Native recipes and exports support rate automation in clip, track and master racks.
+
+
+### Compact controls and menus (0.9.5)
+
+The main toolbar keeps import, save, undo/redo, automation, mixer, command search
+and recording icons. Playback and essential clip editing remain directly visible.
+On macOS, use the desktop menus; on other platforms, File/Edit/View/Tools appear
+inside the window. Find command (⌘/Ctrl K) searches the same tool catalog.
+
+File contains project, track import/save and delivery/export actions. Edit opens
+trim, fades, speed/pitch, range edits and nudge settings. View opens the mixer,
+track settings and workspace, and adjusts timeline height/zoom. Tools contains
+synchronization, source transcripts, picture and musical tools. Mac recording
+is also in Playback. Track Settings retains naming, fades, ordering and listen-only
+controls. Longer explanations are collapsed under Help; status/errors stay visible.
+
+Dialogs retain their settings and background job ownership when closed. Active
+recording stays visible through the red toolbar icon; an active delivery queue
+shows a compact activity icon. Neither recording nor delivery is started merely
+by opening its dialog.

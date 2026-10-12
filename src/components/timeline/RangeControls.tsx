@@ -1,3 +1,4 @@
+import {useTimelineTool} from '../../hooks/useTimelineTool';
 import { MousePointer2, ScanLine, Play, X, Scissors } from 'lucide-react';
 import { useState } from 'react';
 import { RangeEditDialog } from './RangeEditDialog';
@@ -16,6 +17,7 @@ export function RangeControls() {
   const setRange = useProjectStore(s=>s.setEditRange);
   const playRange = useProjectStore(s=>s.playEditRange);
   const clear = useProjectStore(s=>s.clearEditRange);
+  useTimelineTool('range-tools',()=>setTools(true),!!range);
   return <div className="flex items-center gap-1 min-w-0" title={t('ranges.rangeHelp')}>
     <ToolButton data-help="range" icon={mode==='range'?ScanLine:MousePointer2} label={t(mode==='range'?'ranges.clips':'ranges.mode')}
       aria-pressed={mode==='range'} onClick={()=>setMode(mode==='range'?'clips':'range')}/>

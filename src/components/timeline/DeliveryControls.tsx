@@ -1,3 +1,6 @@
+import {Package} from 'lucide-react';
+import {ToolButton} from '../common/ToolButton';
+import {useTimelineTool} from '../../hooks/useTimelineTool';
 import {useContext,useEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {open} from '@tauri-apps/plugin-dialog';
@@ -15,7 +18,7 @@ import {mediaJob} from '../../lib/mediaJob';
 import {isTauri,isIOSApp} from '../../lib/native';
 const PRESETS_KEY='crispaudio-delivery-presets';
 interface MediaReview {json:string;files:{path:string;missing:boolean;bytes:number}[];}
-export function DeliveryControls(){
+export function DeliveryControls({launcher=true}:{launcher?:boolean}={}){
  const {t}=useTranslation(),engineRef=useContext(TimelineEngineContext),project=useProjectStore(s=>s.project),selection=useProjectStore(s=>s.selection),[opened,setOpened]=useState(false),[settings,setSettings]=useState<DeliverySettings>(DELIVERY_DEFAULTS),[directory,setDirectory]=useState(''),[jobs,setJobs]=useState<DeliveryJob[]>([]),[error,setError]=useState(''),[stems,setStems]=useState<string[]>([]),[busy,setBusy]=useState(false),[mediaReview,setMediaReview]=useState<MediaReview>(),[interchange,setInterchange]=useState<ReturnType<typeof cutInterchange>>(),[packagePath,setPackagePath]=useState(''),[presetName,setPresetName]=useState(''),[presets,setPresets]=useState<{name:string;settings:DeliverySettings}[]>(()=>{try{const items=JSON.parse(localStorage.getItem(PRESETS_KEY)??'[]');return Array.isArray(items)?items.filter(p=>p&&typeof p.name==='string'&&p.settings&&typeof p.settings==='object').slice(-32):[];}catch{return [];}});
  const queue=useRef<DeliveryQueue|null>(null),collection=useRef<AbortController|null>(null),mounted=useRef(false);
  useEffect(()=>{mounted.current=true;const value=new DeliveryQueue((job,signal,phase)=>runDelivery(job,engineRef?.current??null,signal,phase),()=>{if(mounted.current)setJobs(value.jobs.map(job=>({...job})));});queue.current=value;return()=>{mounted.current=false;value.dispose();collection.current?.abort();};},[engineRef]);
@@ -34,7 +37,8 @@ export function DeliveryControls(){
  const collect=async()=>{if(!mediaReview||mediaReview.files.some(file=>file.missing))return;const picked=await open({directory:true,multiple:false,title:t('delivery.chooseFolder')});if(typeof picked!=='string')return;const destination=deliveryFile(picked,project.name||'project','package');const controller=new AbortController();collection.current=controller;setBusy(true);try{const path=await mediaJob<string>('collect_project_media',{json:mediaReview.json,directory:destination},controller.signal);if(mounted.current)setPackagePath(path);}finally{if(mounted.current)setBusy(false);collection.current=null;}};
  const savePreset=()=>{if(!presetName.trim())return;const next=[...presets.filter(p=>p.name!==presetName.trim()),{name:presetName.trim(),settings:{...settings}}].slice(-32);localStorage.setItem(PRESETS_KEY,JSON.stringify(next));setPresets(next);setPresetName('');};
  const running=jobs.filter(j=>j.status==='queued'||j.status==='running').length;
- return <><button className="timeline-tool" onClick={()=>setOpened(true)}>{t('delivery.title')}{running?` (${running})`:''}</button><Modal isOpen={opened} onClose={()=>setOpened(false)} title={t('delivery.title')} widthClass="max-w-2xl"><div className="space-y-4 text-sm">
+ useTimelineTool('delivery',()=>{setOpened(true);});
+    return <>{!launcher && running>0 && <ToolButton icon={Package} label={`${t('delivery.title')} (${running})`} className="animate-pulse" onClick={()=>setOpened(true)}/>} {launcher && <button className="timeline-tool" onClick={()=>setOpened(true)}>{t('delivery.title')}{running?` (${running})`:''}</button>}<Modal isOpen={opened} onClose={()=>setOpened(false)} title={t('delivery.title')} widthClass="max-w-2xl"><div className="space-y-4 text-sm">
   <div className="flex flex-wrap gap-2">{Object.entries(DELIVERY_PRESETS).map(([name,preset])=><button className="timeline-tool" key={name} onClick={()=>patch(preset)}>{t(`delivery.${name}`)}</button>)}{presets.map(p=><button className="timeline-tool" key={p.name} onClick={()=>setSettings({...p.settings})}>{p.name}</button>)}</div>
   <div className="grid grid-cols-2 gap-3">
    <label>{t('delivery.format')}<select aria-label={t('delivery.format')} className="w-full min-h-11 bg-gray-800" value={settings.format} onChange={e=>patch({format:e.target.value as DeliverySettings['format']})}>{['wav','flac','aac','mp4','mov'].map(v=><option key={v}>{v}</option>)}</select></label>
