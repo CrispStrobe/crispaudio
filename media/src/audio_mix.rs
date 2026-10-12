@@ -283,16 +283,22 @@ struct Chorus {
     cursor: usize,
     rates: [f64; 2],
     depth: f32,
+    depth_automation: Automation,
     mix: f64,
     automation: Automation,
 }
 impl Chorus {
     fn at(&mut self, input: [f64; 2], frame: u32) -> [f64; 2] {
         self.history[self.cursor] = input.map(|v| v as f32);
+        let depth = if self.depth_automation.points.is_empty() {
+            self.depth
+        } else {
+            (self.depth_automation.at(frame as f64 / RATE) * 0.01) as f32
+        };
         let mut wet = [0.0; 2];
         for (rate, base) in self.rates.into_iter().zip([0.02f32, 0.03f32]) {
             let phase = std::f64::consts::TAU * rate * frame as f64 / RATE;
-            let seconds = base + phase.sin() as f32 * self.depth;
+            let seconds = base + phase.sin() as f32 * depth;
             let delay = seconds.clamp(0.0, 0.1) as f64 * RATE;
             let whole = delay.floor() as usize;
             let fraction = delay - whole as f64;
@@ -480,6 +486,10 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
             if automation.points.iter().any(|p| p.1 > 1.0) {
                 return Err("Effect mix automation outside 0..1".into());
             }
+            let depth_automation = Automation::parse(&effect["automation"]["depth"])?;
+            if depth_automation.points.iter().any(|p| p.1 > 1.0) {
+                return Err("Chorus depth automation outside 0..1".into());
+            }
             let length = (RATE * 0.1) as usize + 2;
             budget.reserve(length * std::mem::size_of::<[f32; 2]>())?;
             let rate = finite(params, "rate", Some(1.5))?;
@@ -493,6 +503,7 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
                 depth: (finite(params, "depth", Some(0.5))?.clamp(0.0, 1.0) * 0.01) as f32,
                 mix: finite(params, "mix", Some(0.3))?.clamp(0.0, 1.0) as f32 as f64,
                 automation,
+                depth_automation,
             }));
             continue;
         }
@@ -1145,6 +1156,30 @@ mod tests {
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
     }
     #[test]
+    fn chorus_depth_keeps_history_and_empty_static_behavior() {
+        let static_fx =
+            json!([{"type":"chorus","enabled":true,"params":{"rate":1.5,"depth":0.25,"mix":0.3}}]);
+        let mut same = static_fx.clone();
+        same[0]["automation"] = json!({"depth":[{"time":0,"value":0.25}]});
+        let mut a = filters(&static_fx, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        let mut b = filters(&same, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        for frame in 0..12000 {
+            let input = [0.21 * (frame as f64 * 0.03).sin(), -0.1];
+            assert_eq!(process(&mut a, input, frame), process(&mut b, input, frame));
+        }
+        let mut varying = static_fx.clone();
+        varying[0]["automation"] = json!({"depth":[{"time":0,"value":0},{"time":0.1,"value":1,"curve":"step"},{"time":0.15,"value":0},{"time":0.2,"value":1}]});
+        let mut rack = filters(&varying, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        for frame in 0..12000 {
+            let actual = process(&mut rack, [0.21, -0.105], frame);
+            if frame > 4800 {
+                assert!((actual[0] - 0.21 * 1.3).abs() < 1e-7);
+            }
+        }
+        varying[0]["automation"]["depth"][0]["value"] = json!(1.01);
+        assert!(filters(&varying, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+    }
+    #[test]
     fn chorus_mix_follows_steps_and_ramps_without_resetting_delay_history() {
         let effect = json!([{"type":"chorus","enabled":true,"params":{"rate":1.5,"depth":0.5,"mix":0.3},"automation":{"mix":[{"time":0,"value":0,"curve":"step"},{"time":0.1,"value":1},{"time":0.2,"value":0}]}}]);
         let mut rack = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
@@ -1166,7 +1201,7 @@ mod tests {
         bad[0]["automation"]["rate"] = json!([]);
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
         bad = effect.clone();
-        bad[0]["automation"]["depth"] = json!([]);
+        bad[0]["automation"]["feedback"] = json!([]);
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
     }
     #[test]

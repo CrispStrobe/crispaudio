@@ -1137,3 +1137,19 @@ expose no handles. Older unannotated curves remain ordinary segments: direct
 handles act on the selected point and its immediate next point. Drafts change
 only the displayed curve; release changes playback. Native shape recipes and
 saved projects use the existing baked linear points.
+
+
+## Chorus depth automation (0.8.36)
+
+Choose the chorus insert's depth lane. Depth spans 0–100%, scaling each LFO's
+amplitude from zero to ±10 ms around the two existing base delays. Empty lanes
+use insert depth, default 50%. Linear/Step points, reviewed shapes, direct saved
+handles, locks and protected Read/Touch/Latch/Write recording follow the other
+lanes. Depth edits retain delay history and both LFO phases; rate remains static.
+Copy a selected range or whole envelope into the separate chorus depth clipboard
+and review a stretched paste into another chorus depth lane. Mix is independent.
+Clipboard type/parameter tags reject cross-parameter/effect paste. Full and range
+exports support depth on clip, track and master racks; range edits retime depth
+with the selected scope. Native effect-automation, shape-automation,
+automation-pass and paste-effect-automation recipes use parameter:"depth" with
+chorus inserts, in 0–1 values. Existing chorus wet-tail/precision limits remain.

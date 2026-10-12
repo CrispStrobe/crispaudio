@@ -704,3 +704,13 @@ handle span. shapeHandleControls expresses polynomial presets as exact cubic
 controls with x1=1/3,x2=2/3. Exposing/moving back to baseline must preserve project
 identity; only a changed curve becomes custom through shapeAutomationSegment.
 Exclude Step/flat/last/short/out-of-bounds spans before pointer gestures.
+
+## Chorus depth automation (0.8.36)
+
+Chorus alone supports depth 0..1, default .5, with chorusDepth clipboard. The
+shared legacy DelayParameter union now includes depth; effect predicates still
+restrict depth to chorus. scheduleChorusDepth multiplies values by .01 seconds on
+both LFO gains. createChorus optional seventh callback preserves old arity5.
+TimelineEngine schedules/updates/previews both gains without graph restart;
+transport key strips chorus depth and mix only. Native Chorus.depth_automation
+sets per-frame amplitude, while empty/static branches keep the previous scalar.

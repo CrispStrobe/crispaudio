@@ -3,7 +3,7 @@ import {gainAt,normalizeGainPoints,normalizePanPoints,panAt,curveFields,validAut
 import {effectParameterAt,delayParameterMaximum,effectParameterDefault,supportsEffectParameter} from './effectAutomation';
 import {timelineDuration} from './timelineView';
 export type AutomationMode='read'|'touch'|'latch'|'write';
-export interface AutomationTarget {trackId:string;parameter:'gain'|'pan'|'mix'|'feedback'|'time';effectIndex?:number}
+export interface AutomationTarget {trackId:string;parameter:'gain'|'pan'|'mix'|'feedback'|'time'|'depth';effectIndex?:number}
 export interface AutomationSpan {points:GainPoint[]}
 const fail=(key:string):never=>{throw new Error(`automation.${key}`);};
 export function targetPoints(project:TimelineProject,target:AutomationTarget):GainPoint[]|undefined {

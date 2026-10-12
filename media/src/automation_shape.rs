@@ -107,7 +107,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     let parameter = op["parameter"].as_str().ok_or("Missing parameter")?;
     let maximum = match parameter {
         "gain" => f64::INFINITY,
-        "pan" | "mix" => 1.0,
+        "pan" | "mix" | "depth" => 1.0,
         "feedback" => 0.95,
         "time" => 2.0,
         _ => return Err("Unsupported automation parameter".into()),

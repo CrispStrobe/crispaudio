@@ -108,7 +108,7 @@ inserts and mixer strips show gain reduction; the limiter shows its own reductio
 These are sample-peak controls; true-peak and LUFS tools remain future work.
 
 The automation button opens a focused track lane beneath the timeline.
-Choose a track and gain, panorama, a delay insert’s mix, feedback or time, or ring modulation/bit-crusher/distortion/chorus/reverb mix, click/tap to add points, drag to move, or use numeric time/dB/pan
+Choose a track and gain, panorama, a delay insert’s mix, feedback or time, chorus depth, or ring modulation/bit-crusher/distortion/chorus/reverb mix, click/tap to add points, drag to move, or use numeric time/dB/pan
 fields and keyboard arrows. Point edits commit on release; Escape cancels without
 losing redo. Track locks protect envelopes. Select a point to choose its outgoing Linear or
 Step curve. Linear ramps to the next point; Step holds the value and jumps at the
@@ -161,8 +161,11 @@ Bit-depth automation is not implemented. Distortion mix uses the same 0–100%
 workflow and its own clipboard, with static mix (default 50%) when empty. Live
 mix edits retain the oversampling filters; drive remains a static insert setting.
 Chorus mix adds the same workflow and a separate clipboard, with 30% default when
-empty. Live edits retain the delayed voices and modulation phase; rate/depth
-remain static insert settings.
+empty. Live edits retain the delayed voices and modulation phase. Chorus depth
+also supports 0–100% automation (up to ±10 ms), protected recording, saved curve
+handles and a separate clipboard. Empty depth envelopes use insert depth, default
+50%. Depth edits update both LFO amplitudes while retaining phase and delayed
+audio; rate remains static.
 Reverb mix also has its own clipboard and retains convolution history during live
 edits. Its existing blend keeps 30% dry at maximum mix; empty envelopes use the
 insert value, default 30%. Size and decay remain static.

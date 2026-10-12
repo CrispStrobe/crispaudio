@@ -29,7 +29,7 @@ fn at(points: &[Value], time: f64, fallback: f64) -> Result<f64> {
 }
 pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     let parameter = op["parameter"].as_str().ok_or("Missing parameter")?;
-    if !["gain", "pan", "mix", "feedback", "time"].contains(&parameter) {
+    if !["gain", "pan", "mix", "feedback", "time", "depth"].contains(&parameter) {
         return Err("Unsupported parameter".into());
     }
     let tracks = project["tracks"].as_array().ok_or("Missing tracks")?;
@@ -41,7 +41,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     if track["locked"] == true {
         return Err("Track is locked".into());
     }
-    let index = if ["mix", "feedback", "time"].contains(&parameter) {
+    let index = if ["mix", "feedback", "time", "depth"].contains(&parameter) {
         Some(op["effectIndex"].as_u64().ok_or("Missing effect index")? as usize)
     } else {
         None
@@ -63,18 +63,18 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
             e["automation"][parameter].clone(),
             e["params"][parameter]
                 .as_f64()
-                .unwrap_or(
-                    if e["type"] == "ringmod"
-                        || e["type"] == "bitcrush"
-                        || e["type"] == "distortion"
-                    {
-                        0.5
-                    } else if parameter == "feedback" {
-                        0.4
-                    } else {
-                        0.3
-                    },
-                )
+                .unwrap_or(if parameter == "depth" {
+                    0.5
+                } else if e["type"] == "ringmod"
+                    || e["type"] == "bitcrush"
+                    || e["type"] == "distortion"
+                {
+                    0.5
+                } else if parameter == "feedback" {
+                    0.4
+                } else {
+                    0.3
+                })
                 .clamp(
                     0.0,
                     match parameter {
@@ -101,7 +101,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     };
     let minimum = if parameter == "pan" { -1.0 } else { 0.0 };
     let maximum = match parameter {
-        "pan" | "mix" => 1.0,
+        "pan" | "mix" | "depth" => 1.0,
         "feedback" => 0.95,
         "time" => 2.0,
         _ => f64::INFINITY,

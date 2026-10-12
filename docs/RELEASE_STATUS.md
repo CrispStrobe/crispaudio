@@ -18,6 +18,59 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.8.36 — chorus depth automation
+
+Installed local app and optimized standalone CLI are ad-hoc signed and verified;
+the existing autosave was preserved.
+
+Chorus depth now has a 0–100% lane (up to ±10 ms modulation), Linear/Step,
+preset/custom shaping, saved direct handles, protected recording and an independent
+`chorusDepth` clipboard. Empty depth uses insert depth, default 50%; mix retains
+its 30% default. Both LFO gains update without restarting oscillators or delay
+buffers; rate remains static. Native points/shapes/passes/source and portable paste
+recipes use parameter `depth`; clip/track/master rendering and range retiming work.
+
+Validation on this Mac:
+
+- **123 frontend files / 1,475 tests passed**, including four depth tests for
+  defaults/caps, tags/clipboard independence, protected edits and scheduling both
+  LFO gains. Lint, full TypeScript/Vite and Tauri app/optimized CLI builds passed.
+- **107 native library + 3 CLI tests passed**, 10 existing ignored. New tests cover
+  points/shapes/passes/paste, mix preservation, caps/locks and retained delay history.
+  The old test rejecting empty depth now checks unsupported feedback instead;
+  its mix, rate and audio assertions are unchanged.
+- Chrome and Playwright WebKit: four new depth shapes, copy/stretch, gain+depth
+  recording, Read restoration, clip/track/master racks, native points, portable
+  recipes, locks/history/stale edits/save-open/live no-restart all passed. Direct
+  handles include depth: **130 edits each browser**, **260 exact native projects**.
+  German 390px checks passed; WebKit depth paste screenshot inspected. Browser
+  emulation is not physical iOS or installed WKWebView interaction.
+- New depth audio retains the established chorus **1e-4 peak / 1e-5 RMS** budget.
+  Shapes peak Chrome **6.258488e-7**, WebKit **4.097819e-7** (all pass 2e-6);
+  copy peak/RMS Chrome **1.0121614e-5 / 1.6109822e-6**, WebKit
+  **8.3241612e-6 / 1.5407633e-6** (both fail the stricter 2e-6 diagnostic).
+  Recording peak Chrome **1.3694167e-5**, WebKit **2.8759241e-6**; strict diagnostic
+  failures 2/2 and 1/2. Rack peaks Chrome **1.271069e-5**, WebKit **1.1697412e-6**;
+  strict diagnostic failures 3/3 and 0/3. Full/range crops are exactly equal.
+- Depth copy preserves outside envelope values to 1e-12. Its audio prefix differs
+  Chrome **3.1003729e-6 peak / 5.9186208e-8 RMS**, WebKit **8.4767817e-7 /
+  2.3128929e-8**. The new depth prefix uses the chorus
+  budget, unlike the original mix test's unchanged 2e-7 prefix check, which passes.
+  An isolated Chrome LFO-gain control render measured **4.656613e-10 seconds**
+  peak difference after ramp splitting; this supports a float scheduling explanation.
+  These are bounded audio differences, not claims of bit-identical outside audio.
+- Existing chorus mix shape/copy/record/rack suites and ten static chorus cases per
+  browser pass their unchanged budgets. **40 native WAVs** are byte-identical to
+  installed 0.8.35 for those same projects; six additional abrupt-tail WAVs are
+  byte-identical in the dedicated tail suite. That suite still fails full audio
+  parity: Chrome **0.0617415** track/clip, **0.0562498** master; WebKit **0.0749997**
+  all racks. These remain inherited known-limit reports, not parity passes. New
+  depth rack tests turn mix dry at the abrupt clip end to isolate depth behavior.
+
+Other delay, bit-crusher, distortion and reverb limitations were not fixed or
+rerun. M2.3 remains open for further selected FX parameters and broader curve
+editing. No release tag or Apple upload was created.
+
 ## Local 0.8.35 — direct Linear and preset curve handles
 
 Installed local app and optimized standalone CLI 0.8.35 are ad-hoc signed and

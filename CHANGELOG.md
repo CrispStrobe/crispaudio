@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.36 — 2026-10-12
+
+- Add chorus depth automation (0–100%, up to ±10 ms modulation) with direct
+  Linear/Step points, preset/custom shaping, saved timeline handles, protected
+  recording and its own tagged copy/retime clipboard.
+- Schedule both LFO gains without resetting phase or delay history. Empty depth
+  envelopes use insert depth, default 50%; rate remains static. Native point,
+  shape, pass and paste recipes, rack rendering and range retiming support depth.
+
 ## 0.8.35 — 2026-10-12
 
 - Expose direct timeline handles on ordinary Linear segments and intact saved

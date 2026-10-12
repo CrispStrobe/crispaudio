@@ -20,7 +20,7 @@ fn retime_effects(
     }
     if let Some(effects) = rack.as_array_mut() {
         for effect in effects {
-            for parameter in ["mix", "feedback", "time"] {
+            for parameter in ["mix", "feedback", "time", "depth"] {
                 if let Some(points) = effect["automation"][parameter]
                     .as_array()
                     .filter(|p| !p.is_empty())
@@ -95,11 +95,13 @@ fn boundary(
 fn has_effect_automation(rack: &Value) -> bool {
     rack.as_array().is_some_and(|r| {
         r.iter().any(|e| {
-            ["mix", "feedback", "time"].iter().any(|parameter| {
-                e["automation"][*parameter]
-                    .as_array()
-                    .is_some_and(|p| !p.is_empty())
-            })
+            ["mix", "feedback", "time", "depth"]
+                .iter()
+                .any(|parameter| {
+                    e["automation"][*parameter]
+                        .as_array()
+                        .is_some_and(|p| !p.is_empty())
+                })
         })
     })
 }

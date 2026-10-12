@@ -7,7 +7,7 @@ export function scheduleMix(wet:AudioParam,dry:AudioParam,points:GainPoint[]|und
  wet.setValueAtTime(value,contextStart);dry.setValueAtTime(1-value*dryScale,contextStart);
  schedulePoints(wet,sorted,contextStart,timelineStart);schedulePoints(dry,sorted,contextStart,timelineStart,v=>1-v*dryScale);
 }
-export const hasEffectAutomation=(effect:EffectConfig)=>!!(effect.automation?.mix?.length||effect.automation?.feedback?.length||effect.automation?.time?.length);
+export const hasEffectAutomation=(effect:EffectConfig)=>!!(effect.automation?.mix?.length||effect.automation?.feedback?.length||effect.automation?.time?.length||effect.automation?.depth?.length);
 export function scheduleFeedback(param:AudioParam,points:GainPoint[]|undefined,contextStart:number,timelineStart:number,fallback:number){
  const sorted=normalizeGainPoints(points).filter(p=>p.value<=.95);
  param.setValueAtTime(mixAt(sorted,timelineStart,Math.min(.95,fallback)),contextStart);
@@ -15,10 +15,10 @@ export function scheduleFeedback(param:AudioParam,points:GainPoint[]|undefined,c
 }
 export function validEffectAutomation(effect:EffectConfig){
  const a=effect.automation;if(a===undefined)return true;
- return supportsEffectParameter(effect.type,'mix')&&!!a&&typeof a==='object'&&!Array.isArray(a)&&Object.keys(a).every(k=>supportsEffectParameter(effect.type,k))&&(['mix','feedback','time'] as const).every(key=>a[key]===undefined||(Array.isArray(a[key])&&a[key]!.every(p=>p&&Number.isFinite(p.time)&&p.time>=0&&Number.isFinite(p.value)&&validAutomationCurve(p)&&p.value>=0&&p.value<=delayParameterMaximum(key))));
+ return supportsEffectParameter(effect.type,'mix')&&!!a&&typeof a==='object'&&!Array.isArray(a)&&Object.keys(a).every(k=>supportsEffectParameter(effect.type,k))&&(['mix','feedback','time','depth'] as const).every(key=>a[key]===undefined||(Array.isArray(a[key])&&a[key]!.every(p=>p&&Number.isFinite(p.time)&&p.time>=0&&Number.isFinite(p.value)&&validAutomationCurve(p)&&p.value>=0&&p.value<=delayParameterMaximum(key))));
 }
 
-export type DelayParameter='mix'|'feedback'|'time';
+export type DelayParameter='mix'|'feedback'|'time'|'depth';
 export const delayParameterMaximum=(parameter:DelayParameter)=>parameter==='time'?2:parameter==='feedback'?.95:1;
 export const delayParameterDefault=(parameter:DelayParameter)=>parameter==='feedback'?.4:.3;
 export function effectParameterAt(points:GainPoint[]|undefined,time:number,fallback:number,parameter:DelayParameter){
@@ -30,5 +30,11 @@ export function scheduleDelayTime(param:AudioParam,points:GainPoint[]|undefined,
  schedulePoints(param,sorted,contextStart,timelineStart);
 }
 
-export const supportsEffectParameter=(type:string|undefined,parameter:string)=>type==='delay'&&['mix','feedback','time'].includes(parameter)||(type==='ringmod'||type==='bitcrush'||type==='distortion'||type==='chorus'||type==='reverb')&&parameter==='mix';
-export const effectParameterDefault=(type:string|undefined,parameter:DelayParameter)=>type==='ringmod'||type==='bitcrush'||type==='distortion'?.5:delayParameterDefault(parameter);
+export const supportsEffectParameter=(type:string|undefined,parameter:string)=>type==='delay'&&['mix','feedback','time'].includes(parameter)||type==='chorus'&&parameter==='depth'||(type==='ringmod'||type==='bitcrush'||type==='distortion'||type==='chorus'||type==='reverb')&&parameter==='mix';
+export const effectParameterDefault=(type:string|undefined,parameter:DelayParameter)=>parameter==='depth'?.5:type==='ringmod'||type==='bitcrush'||type==='distortion'?.5:delayParameterDefault(parameter);
+
+/** Chorus depth scales both LFO amplitudes by ten milliseconds, without restart. */
+export function scheduleChorusDepth(params:readonly AudioParam[],points:GainPoint[]|undefined,contextStart:number,timelineStart:number,fallback:number){
+ const sorted=normalizeMixPoints(points),value=effectParameterAt(sorted,timelineStart,fallback,'depth');
+ for(const param of params){param.setValueAtTime(value*.01,contextStart);schedulePoints(param,sorted,contextStart,timelineStart,v=>v*.01);}
+}

@@ -16,7 +16,7 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
  const track=project.tracks.find(track=>track.id===target.trackId)!;
  const [mode,setMode]=useState<AutomationMode>('read'),[armed,setArmed]=useState(false),[review,setReview]=useState<Pass|null>(null),[error,setError]=useState('');
  const pass=useRef<Pass|null>(null),slider=useRef<HTMLInputElement>(null),readout=useRef<HTMLOutputElement>(null),modeRef=useRef(mode);
- const minimum=target.parameter==='pan'?-1:0,maximum=target.parameter==='time'?2:target.parameter==='feedback'?.95:target.parameter==='mix'||target.parameter==='pan'?1:10**(.6);
+ const minimum=target.parameter==='pan'?-1:0,maximum=target.parameter==='time'?2:target.parameter==='feedback'?.95:target.parameter==='mix'||target.parameter==='depth'||target.parameter==='pan'?1:10**(.6);
  const toControl=(v:number)=>target.parameter==='gain'?(v<=.001?-60:Math.max(-60,20*Math.log10(v))):target.parameter==='pan'?v:target.parameter==='time'?v*1000:v*100;
  const fromControl=(v:number)=>target.parameter==='gain'?(v<=-60?0:10**(v/20)):target.parameter==='pan'?v:target.parameter==='time'?v/1000:v/100;
  const display=(value:number)=>target.parameter==='gain'?`${toControl(value).toFixed(1)} dB`:target.parameter==='pan'?value.toFixed(2):target.parameter==='time'?`${(value*1000).toFixed(1)} ms`:`${(value*100).toFixed(1)}%`;
@@ -109,7 +109,7 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
   {error&&<p role="alert" className="text-amber-300 w-full">{error}</p>}
   {review&&<Modal isOpen onClose={()=>setReview(null)} title={t('automation.reviewPass')}>
    <div data-automation-review className="space-y-3 text-sm" onKeyDown={e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();setReview(null);}}}>
-    <p>{track.name} · {t(target.parameter==='gain'?'automation.gainLane':target.parameter==='pan'?'automation.panLane':target.parameter==='mix'?(['ringmod','bitcrush','distortion','chorus','reverb'].includes(track.effects?.[target.effectIndex??-1]?.type??'')?`automation.${track.effects?.[target.effectIndex??-1]?.type}Mix`:'automation.delayMix'):target.parameter==='time'?'automation.delayTime':'automation.delayFeedback')}</p>
+    <p>{track.name} · {t(target.parameter==='gain'?'automation.gainLane':target.parameter==='pan'?'automation.panLane':target.parameter==='depth'?'automation.chorusDepth':target.parameter==='mix'?(['ringmod','bitcrush','distortion','chorus','reverb'].includes(track.effects?.[target.effectIndex??-1]?.type??'')?`automation.${track.effects?.[target.effectIndex??-1]?.type}Mix`:'automation.delayMix'):target.parameter==='time'?'automation.delayTime':'automation.delayFeedback')}</p>
     <p className="text-xs text-gray-400">{t('automation.passReviewHelp')}</p>
     <ul className="max-h-48 overflow-y-auto text-xs">{review.spans.map((span,i)=><li key={i} data-recorded-start={span.points[0].time} data-recorded-end={span.points.at(-1)!.time}>{span.points[0].time.toFixed(3)}–{span.points.at(-1)!.time.toFixed(3)} s · {span.points.length} {t('automation.recordPoints')}</li>)}</ul>
     {errorPreview&&<p role="alert" className="text-amber-300">{errorPreview}</p>}

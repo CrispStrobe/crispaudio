@@ -1003,6 +1003,7 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                     Some("mix") => "mix",
                     Some("feedback") => "feedback",
                     Some("time") => "time",
+                    Some("depth") => "depth",
                     _ => return Err("Unsupported effect parameter".into()),
                 };
                 let maximum = match parameter {
@@ -1556,6 +1557,32 @@ mod tests {
             assert!(apply(&p, &json!([bad])).is_err());
         }
         p["project"]["tracks"][0]["locked"] = json!(true);
+        assert!(apply(&p, &json!([point])).is_err());
+    }
+    #[test]
+    fn chorus_depth_recipes_preserve_mix_and_validate_locks_and_caps() {
+        let mut p = doc();
+        p["project"]["sampleRate"] = json!(48000);
+        p["project"]["tracks"][0]["effects"] = json!([{"type":"chorus","enabled":true,"params":{"mix":0.3,"depth":0.7},"automation":{"mix":[{"time":0,"value":0.3}]}}]);
+        let point = json!({"op":"effect-automation","trackId":"t","effectIndex":0,"parameter":"depth","points":[{"time":0,"value":0.2,"curve":"step"},{"time":2,"value":0.8},{"time":6,"value":0.1}]});
+        let shape = json!({"op":"shape-automation","trackId":"t","effectIndex":0,"parameter":"depth","pointTime":2,"shape":"custom","controls":{"x1":0.2,"y1":0.9,"x2":0.7,"y2":0.2}});
+        let pass = json!({"op":"automation-pass","trackId":"t","effectIndex":0,"parameter":"depth","spans":[{"points":[{"time":3,"value":0},{"time":4,"value":1}]}]});
+        let out = apply(&p, &json!([point.clone(), shape, pass])).unwrap();
+        assert_eq!(
+            out["project"]["tracks"][0]["effects"][0]["automation"]["mix"],
+            p["project"]["tracks"][0]["effects"][0]["automation"]["mix"]
+        );
+        let copy = json!({"op":"paste-effect-automation","parameter":"depth","trackId":"t","effectIndex":0,"sourceTrackId":"t","sourceEffectIndex":0,"sourceStart":1,"sourceEnd":4,"time":4,"duration":2});
+        assert!(apply(&out, &json!([copy])).is_ok());
+        for value in [-0.1, 1.01] {
+            let mut bad = point.clone();
+            bad["points"][0]["value"] = json!(value);
+            assert!(apply(&p, &json!([bad])).is_err());
+        }
+        p["project"]["tracks"][0]["locked"] = json!(true);
+        assert!(apply(&p, &json!([point.clone()])).is_err());
+        p["project"]["tracks"][0]["locked"] = json!(false);
+        p["project"]["tracks"][0]["effects"][0]["type"] = json!("delay");
         assert!(apply(&p, &json!([point])).is_err());
     }
     #[test]
