@@ -194,6 +194,12 @@ impl Reverb {
             dry: (1.0 - mix * 0.7) as f32 as f64,
         }
     }
+    /// Adjust output gains without clearing convolution history or FFT overlap.
+    pub(crate) fn set_mix(&mut self, mix: f64) {
+        let mix = mix.clamp(0.0, 1.0);
+        self.wet = mix as f32 as f64;
+        self.dry = (1.0 - mix * 0.7) as f32 as f64;
+    }
     pub(crate) fn at(&mut self, input: [f64; 2]) -> [f64; 2] {
         let sample = input.map(|v| v as f32);
         self.history[self.cursor] = sample;
@@ -218,6 +224,33 @@ impl Reverb {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn mix_changes_preserve_head_and_partitioned_convolution_history() {
+        let impulse: Vec<_> = (0..5001)
+            .map(|i| [((i as f64 * 0.13).sin() * 0.02) as f32; 2])
+            .collect();
+        let mut reverb = Reverb::from_impulse(&impulse, 0.0);
+        for frame in 0..6000 {
+            let mix = if frame < 100 {
+                0.0
+            } else if frame < 3000 {
+                1.0
+            } else {
+                0.5
+            };
+            reverb.set_mix(mix);
+            let input = if frame == 0 { [0.25; 2] } else { [0.0; 2] };
+            let actual = reverb.at(input);
+            let expected = input[0] * (1.0 - mix * 0.7) as f32 as f64
+                + impulse
+                    .get(frame)
+                    .map(|h| h[0] as f64 * 0.25 * mix)
+                    .unwrap_or(0.0);
+            assert!((actual[0] - expected).abs() < 1e-7, "frame={frame}");
+        }
+        reverb.set_mix(1.0);
+        assert_eq!(reverb.dry, 0.3f32 as f64);
+    }
     #[test]
     fn partition_boundaries_match_independent_sparse_convolution() {
         let impulse: Vec<_> = (0..10001)

@@ -662,3 +662,15 @@ retain both delay lines and LFO phase. Native static/empty-envelope DSP stays
 unchanged. Chorus UI/native audits use the established chorus DSP budget of
 1e-4 peak / 1e-5 RMS and report stricter 2e-6 mix diagnostic failures separately;
 do not describe those cases as passing 2e-6 parity. Range/full crop remains exact.
+
+
+## Reverb mix automation (0.8.32)
+
+Reverb joins the shared mix editing/shape/pass/tagged clipboard paths. Empty
+mix defaults to 0.3; size and decay remain static. scheduleMix has an optional
+seventh dryScale argument, default 1; reverb passes 0.7 on graph creation, live
+update and recording preview/restoration. Its mixNodes entry must retain that
+scale. Do not turn reverb into a fully wet blend at mix=1. Native set_mix changes
+only wet/dry gains, preserving direct-head and FFT partition history. Empty
+native envelopes retain the old static DSP. Both GUI/native convolve through
+mix=0 so later wet changes reveal the existing tail.

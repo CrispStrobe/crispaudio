@@ -1070,3 +1070,23 @@ clip/master metadata also renders in GUI/native DSP and follows scoped range edi
 Chorus native/browser checks retain the established 1e-4 peak / 1e-5 RMS budget.
 Some cases exceed 2e-6, and abrupt wet tails diverge after clip ends; see
 [release validation](RELEASE_STATUS.md#chorus-mix-automation--local-0831-october-12).
+
+
+## Reverb mix automation (0.8.32)
+
+Select a track reverb insert's **Reverb mix** lane. Edit 0–100% mix points,
+choose outgoing Linear/Step, review preset/custom shapes or record a protected
+Read/Touch/Latch/Write pass. Live mix edits retain the convolver and its tail.
+The existing blend is preserved: wet gain is mix, dry gain is 1 − 0.7 × mix,
+so 30% dry remains at maximum mix. Empty lanes use the static insert value,
+default 30%. Size and decay remain static.
+
+Copy a selected range or the entire envelope to the separate reverb mix
+clipboard; review destination time/duration before applying. Other effect types
+have independent clipboards and cannot accept a reverb envelope. Native
+`effect-automation`, `shape-automation`, `paste-effect-automation` and
+`automation-pass` recipes accept `parameter:"mix"` and a zero-based reverb index.
+Portable envelopes require `effectType:"reverb"`; an empty portable envelope
+uses 0.3, while GUI Copy captures the actual static value. Clip/master metadata
+renders in GUI/native DSP and retimes with scoped range edits. Range export
+renders a prefix and crops it, retaining convolution history.

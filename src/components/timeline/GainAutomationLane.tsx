@@ -42,7 +42,7 @@ function AutomationLane({width,onClose,parameter,onParameter,trackId,onTrack}:{w
   const [selected,setSelected]=useState<number|null>(null),[recording,setRecording]=useState(false);
   const [draft,setDraft]=useState<{project:typeof project;trackId:string;points:GainPoint[];time:number;originalTime:number|null}|null>(null);
   const track=project.tracks.find(track=>track.id===trackId)??project.tracks[0];
-  const fxType=track?.effects?.[effectIndex]?.type,fxPrefix=fxType==='ringmod'||fxType==='bitcrush'||fxType==='distortion'||fxType==='chorus'?`${fxType}Mix`:fxParameter,fxGraph=`automation.${fxPrefix}Graph`,fxHelp=`automation.${fxPrefix}Help`;
+  const fxType=track?.effects?.[effectIndex]?.type,fxPrefix=fxType==='ringmod'||fxType==='bitcrush'||fxType==='distortion'||fxType==='chorus'||fxType==='reverb'?`${fxType}Mix`:fxParameter,fxGraph=`automation.${fxPrefix}Graph`,fxHelp=`automation.${fxPrefix}Help`;
   const clipboard=useProjectStore(s=>isFx?s.effectClipboards[effectClipboardKey(track?.effects?.[effectIndex]?.type,fxParameter)]:isPan?s.panClipboard:s.gainClipboard);
   const [paste,setPaste]=useState<{project:typeof project;trackId:string;envelope:NonNullable<typeof clipboard>;effectIndex?:number}|null>(null);
   const svg=useRef<SVGSVGElement>(null);

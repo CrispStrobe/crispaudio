@@ -10,7 +10,7 @@ it('schedules complementary linear ramps at a seek, holds endpoints and defaults
  expect(wet.setValueAtTime).toHaveBeenCalledWith(.25,10);expect(dry.setValueAtTime).toHaveBeenCalledWith(.75,10);
  expect(wet.linearRampToValueAtTime).toHaveBeenCalledWith(1,13);expect(dry.linearRampToValueAtTime).toHaveBeenCalledWith(0,13);
  scheduleMix(wet as unknown as AudioParam,dry as unknown as AudioParam,[],10,1,.3);expect(wet.setValueAtTime).toHaveBeenLastCalledWith(.3,10);
- expect(validEffectAutomation(effect)).toBe(true);expect(validEffectAutomation({...effect,type:'reverb'})).toBe(false);expect(validEffectAutomation({...effect,automation:{mix:[{time:0,value:2}]}})).toBe(false);
+ expect(validEffectAutomation(effect)).toBe(true);expect(validEffectAutomation({...effect,type:'compressor'})).toBe(false);expect(validEffectAutomation({...effect,automation:{mix:[{time:0,value:2}]}})).toBe(false);
 });
 it('retimes insert envelopes, preserves lift and blocks locked automation-only tracks',()=>{
  const p={...useProjectStore.getInitialState().project,minimumDuration:10,tracks:[{id:'t',name:'Delay',pan:0,volume:1,muted:false,solo:false,segments:[],effects:[effect]}]};

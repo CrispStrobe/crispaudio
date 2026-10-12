@@ -86,6 +86,7 @@ export function createReverb(
   size: number,
   decay: number,
   mix: number,
+  mixNodes: ((wet: AudioParam, dry: AudioParam) => void) | undefined = undefined,
 ): AudioNode {
   const sizeClamped = Math.max(0, Math.min(1, size));
   const duration = 0.1 + sizeClamped * 4.9; // 0.1s–5.0s
@@ -108,5 +109,6 @@ export function createReverb(
   dryGain.connect(output);
   wetGain.connect(output);
 
+  mixNodes?.(wetGain.gain, dryGain.gain);
   return output;
 }

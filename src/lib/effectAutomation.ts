@@ -2,10 +2,10 @@ import type {EffectConfig,GainPoint} from '../types/audio';
 import {gainAt,normalizeGainPoints,schedulePoints,validAutomationCurve} from './mixAutomation';
 export function normalizeMixPoints(points:GainPoint[]|undefined){return normalizeGainPoints(points).filter(p=>p.value<=1);}
 export function mixAt(points:GainPoint[]|undefined,time:number,fallback:number){return points?.length?gainAt(points,time):Math.max(0,Math.min(1,fallback));}
-export function scheduleMix(wet:AudioParam,dry:AudioParam,points:GainPoint[]|undefined,contextStart:number,timelineStart:number,fallback:number){
+export function scheduleMix(wet:AudioParam,dry:AudioParam,points:GainPoint[]|undefined,contextStart:number,timelineStart:number,fallback:number,dryScale=1){
  const sorted=normalizeMixPoints(points),value=mixAt(sorted,timelineStart,fallback);
- wet.setValueAtTime(value,contextStart);dry.setValueAtTime(1-value,contextStart);
- schedulePoints(wet,sorted,contextStart,timelineStart);schedulePoints(dry,sorted,contextStart,timelineStart,v=>1-v);
+ wet.setValueAtTime(value,contextStart);dry.setValueAtTime(1-value*dryScale,contextStart);
+ schedulePoints(wet,sorted,contextStart,timelineStart);schedulePoints(dry,sorted,contextStart,timelineStart,v=>1-v*dryScale);
 }
 export const hasEffectAutomation=(effect:EffectConfig)=>!!(effect.automation?.mix?.length||effect.automation?.feedback?.length||effect.automation?.time?.length);
 export function scheduleFeedback(param:AudioParam,points:GainPoint[]|undefined,contextStart:number,timelineStart:number,fallback:number){
@@ -30,5 +30,5 @@ export function scheduleDelayTime(param:AudioParam,points:GainPoint[]|undefined,
  schedulePoints(param,sorted,contextStart,timelineStart);
 }
 
-export const supportsEffectParameter=(type:string|undefined,parameter:string)=>type==='delay'&&['mix','feedback','time'].includes(parameter)||(type==='ringmod'||type==='bitcrush'||type==='distortion'||type==='chorus')&&parameter==='mix';
+export const supportsEffectParameter=(type:string|undefined,parameter:string)=>type==='delay'&&['mix','feedback','time'].includes(parameter)||(type==='ringmod'||type==='bitcrush'||type==='distortion'||type==='chorus'||type==='reverb')&&parameter==='mix';
 export const effectParameterDefault=(type:string|undefined,parameter:DelayParameter)=>type==='ringmod'||type==='bitcrush'||type==='distortion'?.5:delayParameterDefault(parameter);

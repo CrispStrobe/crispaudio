@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.32 — 2026-10-12
+
+- Add reverb mix automation with direct points, Linear/Step, reviewed preset/custom
+  shapes, protected recording and an independent tagged copy/retime clipboard.
+- Add native point/shape/paste/pass recipes and clip/track/master rendering with
+  scoped range edits. Live mix edits retain convolution history and the existing
+  blend (30% dry at maximum mix). Empty envelopes use the insert value, default
+  30%; size and decay remain static.
+
 ## 0.8.31 — 2026-10-12
 
 - Add chorus mix automation (0–100%) with direct points, Linear/Step, reviewed

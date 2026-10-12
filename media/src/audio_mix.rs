@@ -323,7 +323,10 @@ enum Effect {
         mix: f64,
         automation: Automation,
     },
-    Reverb(Box<crate::reverb::Reverb>),
+    Reverb {
+        dsp: Box<crate::reverb::Reverb>,
+        automation: Automation,
+    },
     Chorus(Chorus),
     BitCrush {
         levels: f64,
@@ -354,7 +357,12 @@ impl Effect {
                 });
                 dsp.at(input)
             }
-            Self::Reverb(reverb) => reverb.at(input),
+            Self::Reverb { dsp, automation } => {
+                if !automation.points.is_empty() {
+                    dsp.set_mix(automation.at(frame as f64 / RATE));
+                }
+                dsp.at(input)
+            }
             Self::Chorus(chorus) => chorus.at(input, frame),
             Self::BitCrush {
                 levels,
@@ -457,9 +465,14 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
             budget.reserve(crate::reverb::Reverb::state_bytes(
                 crate::reverb::Reverb::length(size),
             ))?;
-            out.push(Effect::Reverb(Box::new(crate::reverb::Reverb::new(
-                size, decay, mix,
-            )?)));
+            let automation = Automation::parse(&effect["automation"]["mix"])?;
+            if automation.points.iter().any(|p| p.1 > 1.0) {
+                return Err("Effect mix automation outside 0..1".into());
+            }
+            out.push(Effect::Reverb {
+                dsp: Box::new(crate::reverb::Reverb::new(size, decay, mix)?),
+                automation,
+            });
             continue;
         }
         if kind == "chorus" {
@@ -812,7 +825,7 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
         let track_filters = filters(&track["effects"], &mut effect_budget)?;
         if track_filters
             .iter()
-            .any(|e| matches!(e, Effect::Reverb(_) | Effect::Compressor(_)))
+            .any(|e| matches!(e, Effect::Reverb { .. } | Effect::Compressor(_)))
         {
             mono = false;
         }
@@ -846,7 +859,7 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
             let clip_filters = filters(&c["effects"], &mut effect_budget)?;
             if clip_filters
                 .iter()
-                .any(|e| matches!(e, Effect::Reverb(_) | Effect::Compressor(_)))
+                .any(|e| matches!(e, Effect::Reverb { .. } | Effect::Compressor(_)))
             {
                 mono = false;
             }
@@ -1096,6 +1109,39 @@ mod tests {
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
         bad = effect.clone();
         bad[0]["automation"]["feedback"] = json!([]);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+    }
+    #[test]
+    fn reverb_mix_steps_and_ramps_preserve_the_wet_tail_and_dry_law() {
+        let effect = json!([{"type":"reverb","enabled":true,"params":{"size":0,"decay":0.2,"mix":0.3},"automation":{"mix":[{"time":0,"value":0,"curve":"step"},{"time":0.001,"value":1},{"time":0.08,"value":0}]}}]);
+        let mut rack = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        let mut reference = crate::reverb::Reverb::new(0.0, 0.2, 1.0).unwrap();
+        for frame in 0..6000 {
+            let input = if frame == 0 || frame == 2400 {
+                [0.25, -0.125]
+            } else {
+                [0.0; 2]
+            };
+            let mix = if frame < 48 || frame >= 3840 {
+                0.0
+            } else {
+                1.0 - (frame - 48) as f64 / (3840.0 - 48.0)
+            };
+            let wet = reference.at(input);
+            let actual = process(&mut rack, input, frame);
+            for ch in 0..2 {
+                let expected = input[ch] * (1.0 - mix * 0.7) as f32 as f64
+                    + (wet[ch] - input[ch] * 0.3f32 as f64) * mix as f32 as f64;
+                assert!((actual[ch] - expected).abs() < 1e-7, "frame={frame}");
+            }
+        }
+        for key in ["size", "decay"] {
+            let mut bad = effect.clone();
+            bad[0]["automation"][key] = json!([]);
+            assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+        }
+        let mut bad = effect;
+        bad[0]["automation"]["mix"][0]["value"] = json!(1.01);
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
     }
     #[test]

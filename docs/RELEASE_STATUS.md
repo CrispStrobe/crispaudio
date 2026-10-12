@@ -2304,3 +2304,58 @@ reporting only when the native static WAV is byte-identical to that baseline.
 All six tail WAVs match 0.8.30 exactly. This is evidence of an inherited limit,
 not a tail parity pass or a fix. The earlier long WebKit delay, upstream gain /
 bit-crusher precision and abrupt distortion tail limits also remain unresolved.
+
+## Reverb mix automation — local 0.8.32 (October 12)
+
+Reverb mix now supports direct points, Linear/Step, reviewed preset/custom shapes,
+protected Read/Touch/Latch/Write recording and an independent tagged copy/retime
+clipboard. Native recipes and clip/track/master metadata use the same envelopes.
+Live edits retain convolution history. The existing blend is preserved: wet gain
+is mix and dry gain is 1 − 0.7 × mix, retaining 30% dry at maximum mix. Empty
+lanes use the static insert value, default 30%; size/decay remain static. M2.3
+remains open for further selected parameters and persistent curve controls.
+
+Local checks: 120 frontend files / 1,464 tests, 105 native tests (10 existing
+ignored), lint, TypeScript/Vite, Tauri app and optimized CLI builds pass. Actual
+Chrome and Playwright WebKit checks cover shape/point edits, copy/retime,
+protected recording, Undo/Cancel/Redo, locks/stale review, save/open, live graph
+preservation and German 390px dialogs. This does not validate physical iOS or
+installed WKWebView interaction.
+
+The new audio audits use the existing effects budget: 1e-4 peak / 1e-5 RMS,
+scaled by the reference peak only above full scale. Raw errors and normalized
+errors are reported, alongside the stricter absolute 2e-6 diagnostic. The shape
+fixture's sustained DC excites a high reverb output (peak about 10.879), so its
+raw RMS exceeds the nominal 1e-5 budget; it passes the established headroom rule.
+No existing effect audit tolerance or convolution kernel was changed.
+
+| Audit | Chrome raw peak / RMS | WebKit raw peak / RMS | Cases exceeding absolute 2e-6 (Chrome / WebKit) |
+|---|---|---|---|
+| Four shapes, 192,000 frames each | 4.3869e-5 / 2.4573e-5 | 5.5313e-5 / 2.5448e-5 | 4 / 4 |
+| Copy/retime, 480,000 frames | 4.0531e-6 / 1.1464e-6 | 4.1723e-6 / 1.1688e-6 | 1 / 1 |
+| Gain and mix recording, 384,000 frames each | 2.9802e-8 / 7.3610e-9 | 2.0862e-7 / 7.6685e-8 | 0 / 0 |
+| Three racks, 384,000 frames each | 1.2219e-6 / 2.5819e-7 | 1.3858e-6 / 2.6872e-7 | 0 / 0 |
+
+Maximum normalized shape errors are 4.0326e-6 peak / 2.2589e-6 RMS in Chrome
+and 5.0846e-6 / 2.3392e-6 in WebKit. Copy output peaks about 1.004; recording
+and rack peaks remain below full scale. Recording uses size=0 / decay=0.01 to
+isolate gain/mix gestures and muting. The rack fixture uses size=0.5 / decay=1.5,
+a later clip/source offset and **nonzero wet mix at the abrupt clip end**. Its
+full PCM, including the tail through the export end, passes 2e-6 in both browsers.
+Shape and rack range exports match full-render crops exactly. These results do
+not establish blanket 2e-6 parity for every reverb mix envelope.
+
+Eight existing static reverb cases pass per browser, including mono/endpoints,
+impulses and long responses: peak 7.1712e-8 / 3.1867e-7, RMS 6.3859e-9 /
+8.4357e-8 (Chrome / WebKit). All 16 static native WAVs match the previous
+installed 0.8.31 CLI byte-for-byte. App and optimized standalone CLI 0.8.32 are
+installed and ad-hoc signed/verified; one existing autosave was preserved with a
+full recovery backup.
+
+The 15 older gain/pan/delay shape cases were also checked. Chrome's final unchanged
+audit passes (gain/pan/mix/feedback peak 8.0466e-7; time peak 6.9477e-5). An initial
+large gain S-curve discrepancy did not reproduce in a diagnostic run or the final
+unchanged audit; its cause is unresolved. WebKit retains three documented long-delay
+failures at 1e-4, all native WAVs byte-identical to 0.8.31. Other previously documented
+bit-crusher precision, distortion tail and chorus precision/tail limits remain
+unresolved; this increment does not claim to fix them.
