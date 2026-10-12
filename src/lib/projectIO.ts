@@ -6,6 +6,7 @@
 // arbitrary path, which fails on mobile.
 // ---------------------------------------------------------------------------
 
+import {isIOSApp} from './native';
 import { save, open } from '@tauri-apps/plugin-dialog';
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 
@@ -56,7 +57,12 @@ export async function openProjectFile(): Promise<string | null> {
     try {
       const selected = await open({ multiple: false, filters: FILTERS });
       if (!selected || typeof selected !== 'string') return null;
-      return await readTextFile(selected);
+      const json=await readTextFile(selected);
+      if(!isIOSApp()&&!/Android/.test(navigator.userAgent)){
+        const {invoke}=await import('@tauri-apps/api/core');
+        return await invoke<string>('resolve_project_media',{json,projectPath:selected});
+      }
+      return json;
     } catch (err) {
       throw new Error(`Cannot open project: ${String(err)}`, { cause: err });
     }

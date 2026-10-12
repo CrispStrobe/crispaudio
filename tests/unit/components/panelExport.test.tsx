@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({ wav: vi.fn(), stereoWav: vi.fn(), mono: vi.fn(
 vi.mock('react-i18next', async importOriginal => ({ ...await importOriginal<typeof import('react-i18next')>(), useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock('../../../src/lib/wavExport', () => ({ exportWav: mocks.wav, encodeAudioBufferWav: mocks.stereoWav, downloadWavFile: mocks.save }));
 vi.mock('../../../src/lib/codecs', () => ({ encodeMono: mocks.mono, encodeAudioBuffer: mocks.stereo }));
-vi.mock('../../../src/lib/native', () => ({ haptic: vi.fn() }));
+vi.mock('../../../src/lib/native', async (importOriginal) => ({ ...(await importOriginal<typeof import('../../../src/lib/native')>()), haptic: vi.fn() }));
 vi.mock('../../../src/hooks/useAudioEngine', () => ({ useAudioEngine: () => mocks.engine }));
 vi.mock('../../../src/audio/engine/TimelineEngine', () => ({ TimelineEngine: class { setSources() {} stop() {} renderToBuffer = mocks.render; } }));
 vi.mock('../../../src/components/sfx/SfxParameters', () => ({ SfxParameters: () => null, ParamInfoButton: () => null }));

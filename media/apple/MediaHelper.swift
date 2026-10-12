@@ -29,7 +29,7 @@ struct Picture: Decodable {
 }
 struct Source:Decodable {var id:String;var path:String}
 struct PictureTrack:Decodable {var id:String;var name:String;var visible:Bool;var locked:Bool;var rippleEnabled:Bool}
-struct Edit:Decodable {var path:String;var sources:[Source]?;var clips:[Picture];var frameRate:Double?;var duration:Double?;var tracks:[PictureTrack]?;var width:Int?;var height:Int?;var graphics:[GraphicTrack]?;var captions:CaptionTrack?}
+struct Edit:Decodable {var path:String;var sources:[Source]?;var clips:[Picture];var frameRate:Double?;var duration:Double?;var tracks:[PictureTrack]?;var width:Int?;var height:Int?;var graphics:[GraphicTrack]?;var captions:CaptionTrack?;var exportPreset:String?}
 struct RenderPicture {var clip:Picture;var track: CMPersistentTrackID;var preferred:CGAffineTransform}
 final class Instruction:NSObject,AVVideoCompositionInstructionProtocol {
     var timeRange:CMTimeRange;var enablePostProcessing=false;var containsTweening=true
@@ -276,7 +276,10 @@ func validateM4a(_ path:String) throws {
     let sourceFps=Double(try await baseTrack.load(.nominalFrameRate))
     let fps=edit.frameRate ?? (sourceFps>0 ? sourceFps:30);video.frameDuration=CMTime(seconds:1/fps,preferredTimescale:60000)
     video.instructions=[Instruction(duration:duration,pictures:pictures,tracks:compositionTracks,graphics:try renderGraphics(edit.graphics ?? [],edit.captions,video.renderSize))]
-    guard let session=AVAssetExportSession(asset:composition,presetName:AVAssetExportPresetHighestQuality) else {try fail("Apple export unavailable")}
+    let preset:String
+    switch edit.exportPreset {case "prores":preset=AVAssetExportPresetAppleProRes422LPCM;default:preset=AVAssetExportPresetHighestQuality}
+    guard AVAssetExportSession.exportPresets(compatibleWith:composition).contains(preset) else {try fail("Selected Apple export preset is unavailable")}
+    guard let session=AVAssetExportSession(asset:composition,presetName:preset) else {try fail("Apple export unavailable")}
     session.videoComposition=video;session.timeRange=CMTimeRange(start:CMTime(seconds:start,preferredTimescale:60000),duration:CMTime(seconds:end-start,preferredTimescale:60000))
     try await export(session,to:output,type:output.lowercased().hasSuffix(".mov") ? .mov:.mp4);return
   }

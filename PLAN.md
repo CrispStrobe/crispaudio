@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-12, for local 0.9.0. This section is the current plan.
+Updated 2026-10-12, for local 0.9.1. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -31,7 +31,12 @@ platform boundary: Apple layered/graphic export, nearest-frame retiming, one inp
 external CrispASR and device acceptance still required for physical mobile capture.
 Browser responsive tests are not physical iOS/Android validation. Existing DSP
 precision/tail limits remain explicit. Wider paging/codec rewrites stay deferred.
-After the checkpoint, M8 delivery/interchange is the next roadmap milestone.
+M8 delivery/interchange is implemented in local 0.9.1: per-export settings,
+solo track/bus stems, queue, media collection and reviewed cut-only OTIO export.
+See [delivery workflows and limits](docs/DELIVERY.md). Local validation passes and app/CLI 0.9.1
+are installed with recovery preserved. Queue persistence, pre-master summing stems,
+ZIP packaging and OTIO import are beyond this first interchange subset.
+M9 paging/codecs remains deferred by user preference; no rewrite starts implicitly.
 
 ## Historical acceptance: ASR and spoken-word editing (0.8.5–0.8.6)
 

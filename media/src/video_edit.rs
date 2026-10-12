@@ -115,6 +115,8 @@ pub struct VideoEdit {
     pub backend: Option<String>,
     #[serde(default)]
     pub output_format: Option<String>,
+    #[serde(default)]
+    pub export_preset: Option<String>,
     pub path: String,
     #[serde(default)]
     pub sources: Vec<VideoSource>,
@@ -233,6 +235,18 @@ const TRANSITIONS: &[&str] = &[
 
 pub fn validate(edit: &VideoEdit, source_duration: f64) -> Result<Vec<VideoClip>> {
     crate::graphics::validate(&edit.graphics, edit.captions.as_ref())?;
+    if edit
+        .export_preset
+        .as_deref()
+        .is_some_and(|v| !matches!(v, "highest" | "prores"))
+    {
+        return Err("Unsupported export quality".into());
+    }
+    if edit.export_preset.as_deref() == Some("prores")
+        && edit.output_format.as_deref() != Some("mov")
+    {
+        return Err("ProRes delivery requires MOV".into());
+    }
     if [edit.width, edit.height]
         .iter()
         .flatten()
@@ -471,6 +485,9 @@ pub fn export_edit(
         return Err(
             "Apple backend does not encode WebM; choose optional FFmpeg for VP9/AV1".into(),
         );
+    }
+    if edit.export_preset.is_some() {
+        return Err("Delivery quality presets require Apple video export".into());
     }
     if !edit.graphics.is_empty()
         || edit.captions.is_some()
@@ -859,6 +876,7 @@ mod tests {
             height: None,
             backend: Some("apple".into()),
             output_format: Some("mp4".into()),
+            export_preset: None,
             path: source.to_string_lossy().into_owned(),
             sources: vec![],
             frame_rate: Some(25.0),
@@ -920,6 +938,7 @@ mod tests {
             height: None,
             backend: None,
             output_format: None,
+            export_preset: None,
             path: "unused".into(),
             sources: vec![],
             frame_rate: None,
@@ -977,6 +996,7 @@ mod tests {
             height: None,
             backend: None,
             output_format: None,
+            export_preset: None,
             path: source.to_string_lossy().into(),
             sources: vec![],
             frame_rate: Some(25.0),
@@ -1019,6 +1039,7 @@ mod tests {
             height: None,
             backend: None,
             output_format: None,
+            export_preset: None,
             path: "unused".into(),
             sources: vec![],
             frame_rate: None,
@@ -1111,6 +1132,7 @@ mod tests {
             height: None,
             backend: None,
             output_format: None,
+            export_preset: None,
             path: source.to_string_lossy().into(),
             sources: vec![],
             frame_rate: Some(25.0),
@@ -1159,6 +1181,7 @@ mod tests {
             height: None,
             backend: None,
             output_format: None,
+            export_preset: None,
             path: source.to_string_lossy().into(),
             sources: vec![],
             frame_rate: Some(25.0),
@@ -1248,6 +1271,7 @@ mod tests {
             height: None,
             backend: Some("apple".into()),
             output_format: Some("mov".into()),
+            export_preset: None,
             path: source.to_string_lossy().into_owned(),
             sources: vec![],
             frame_rate: Some(25.0),
@@ -1463,6 +1487,7 @@ mod tests {
                 height: None,
                 backend: Some("apple".into()),
                 output_format: Some("mp4".into()),
+                export_preset: None,
                 path: a.to_string_lossy().into_owned(),
                 sources: vec![VideoSource {
                     id: "b".into(),

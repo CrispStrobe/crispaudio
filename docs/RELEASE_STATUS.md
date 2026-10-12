@@ -18,6 +18,35 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.9.1 — delivery and portable project checkpoint
+
+Delivery provides per-export settings/presets, landscape/portrait and ProRes MOV,
+project/range/selected-clip exports, solo track/bus stems and a sequential queue
+with cancellation, retry, final paths and settings records. Media collection
+reviews missing references and copies originals/takes/video/stills into a new
+relocatable folder. Cut-only OTIO exports explicitly report omitted editor state.
+See [Delivery workflows and limits](DELIVERY.md).
+
+Validation: 1,544 frontend tests pass (143 files), with 119 media/CLI tests and
+23 app-native tests (10 media / one app test ignored). Lint, TypeScript/Vite,
+optimized CLI and local Tauri builds pass. Chrome/WebKit exercise native range WAV,
+mono WAV, routed track/bus stems, four settings records, frozen source-map offline
+rendering, unchanged project undo history, cut review and German 390px layouts.
+Actual Apple landscape/portrait/review/ProRes MOV exports retain requested sizes,
+codec and trimmed duration; routed stem range export passes. Package tests cover
+relocation, canonical deduplication, originals/stills, missing-media refusal,
+no-overwrite publication and legacy project path resolution. OpenTimelineIO 0.18.1
+reads the generated exchange with correct clip count and duration.
+
+Installed local app 0.9.1 and optimized CLI are ad-hoc signed, verified and launched;
+one autosave remains preserved with recovery backups. No release tag/Apple upload.
+Solo stems include master/returns and need not sum to the full mix. Queue restart
+persistence, pre-master summing stems, ZIP packaging, OTIO import and physical
+mobile/device acceptance are outside this increment. Native video delivery uses
+Apple on macOS; FLAC/AAC require linked 48 kHz sources. Existing quick exports
+remain separate. The previous 0.9.0 iOS simulator build/launch passes; macOS,
+Windows and Linux Rust checks pass, with remaining workflow jobs pending at audit.
+
 ## Local 0.9.0 — selected M2.3–M7 checkpoint
 
 The desktop stack now includes twelve selected automation lanes, buses/sends and
@@ -47,7 +76,9 @@ CLI are ad-hoc signed, verified and launched. One autosave was preserved, with a
 separate recovery backup. The microphone usage description is present in the
 bundle. Playback remains regarded as fixed following the user's audible test.
 Physical Finder MP4 drop acceptance remains unconfirmed. No release tag or Apple
-upload was triggered. Remote checkpoint CI is recorded below once available.
+upload was triggered. The exact 0.9.0 checkpoint has successful [iOS simulator CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38291438004)
+and all three platform Rust checks; remaining [CI jobs](https://github.com/CrispStrobe/crispaudio/actions/runs/38291437967)
+were still pending at the 0.9.1 audit.
 
 ## Local 0.8.39 — chorus rate automation
 

@@ -16,6 +16,7 @@ interface ExportOptions {
   backend: string;
   format: string;
   nativeMac: boolean;
+  quality?: 'highest'|'prores';
 }
 
 /** A stable project snapshot is passed by the caller before starting the job. */
@@ -26,7 +27,7 @@ export async function exportVideoProject(options: ExportOptions, signal: AbortSi
   const start = project.video.inPoint ?? 0;
   const end = project.video.outPoint ?? timelineDuration(project);
   const edit = { graphics:project.video.graphics,captions:project.video.captions,tracks:project.video.tracks,width:project.video.width,height:project.video.height,path: project.video.path, sources: project.video.sources,
-    frameRate: project.frameRate, duration: Math.max(project.duration, timelineDuration(project)),
+    exportPreset:options.quality, frameRate: project.frameRate, duration: Math.max(project.duration, timelineDuration(project)),
     clips: videoClips(project.video), backend, outputFormat: format };
   const document = options.nativeMac ? linkedRenderDocument(project, sources) : null;
   if (document) {
@@ -35,7 +36,7 @@ export async function exportVideoProject(options: ExportOptions, signal: AbortSi
     return;
   }
   if (!engine) throw new Error('Audio engine is unavailable');
-  const rendered = await engine.renderToBuffer(project, start, end, signal);
+  const rendered = await engine.renderMixRange({...project,duration:Math.max(project.duration,timelineDuration(project))}, start, end, signal,sources);
   const wav = await encodeAudioBufferWav(rendered, 24, signal);
   signal.throwIfAborted();
   const mix = await invoke<string>('stage_share_file', new Uint8Array(await wav.arrayBuffer()), {

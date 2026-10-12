@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.9.1 — 2026-10-12
+
+- Add a Delivery panel with per-export settings and named presets, landscape /
+  portrait / review exports, WAV channel/depth and AAC bitrate, ProRes MOV and
+  range-shifted SRT/VTT captions or burn-in.
+- Queue frozen project/source snapshots for project, range, selected-clip and
+  solo track/bus stem exports. Preserve DSP pre-roll, show job phases/paths,
+  cancel sequentially and retry to a fresh filename. Publish without overwrite
+  and retain a settings record beside completed outputs.
+- Review missing media and collect originals, takes, video and stills into a new
+  portable folder; resolve relative paths when opening a moved package.
+- Review/export a cut-only OTIO subset with explicit loss reports, URI escaping,
+  gaps and overlap lanes; validate files with the official OTIO reader.
+
 ## 0.9.0 — 2026-10-12
 
 - Complete the selected automation workflow: twelve gain/pan/FX lanes with

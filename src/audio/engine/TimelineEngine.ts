@@ -329,12 +329,12 @@ export class TimelineEngine {
   // ── Offline render ─────────────────────────────────────────────────────────
 
   /** Preserve DSP history at range start, then crop at exact sample boundaries. */
-  async renderMixRange(project:TimelineProject,start:number,end:number,signal?:AbortSignal):Promise<AudioBuffer>{
+  async renderMixRange(project:TimelineProject,start:number,end:number,signal?:AbortSignal,sourceSnapshot?:Map<string,AudioSource>):Promise<AudioBuffer>{
     signal?.throwIfAborted();
     if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>project.duration)throw new Error('Invalid audio export range');
     const first=Math.round(start*project.sampleRate),last=Math.round(end*project.sampleRate);
     if(last<=first)throw new Error('Empty audio export range');
-    const full=await this.renderToBuffer(project,0,last/project.sampleRate,signal);
+    const full=await this.renderToBuffer(project,0,last/project.sampleRate,signal,sourceSnapshot);
     signal?.throwIfAborted();
     const result=this.ctx.createBuffer(full.numberOfChannels,last-first,project.sampleRate);
     for(let ch=0;ch<full.numberOfChannels;ch++)result.copyToChannel(full.getChannelData(ch).subarray(first,last),ch);
@@ -350,11 +350,12 @@ export class TimelineEngine {
     startTime = 0,
     endTime?: number,
     signal?: AbortSignal,
+    sourceSnapshot?: Map<string,AudioSource>,
   ): Promise<AudioBuffer> {
     signal?.throwIfAborted();
     routingOrder(project.tracks);
     // Keep the source registry stable while graph construction yields to the UI.
-    const sources = new Map(this.sources);
+    const sources = new Map(sourceSnapshot??this.sources);
     let sliceStarted = performance.now();
     const renderEnd = endTime ?? project.duration;
     const renderDuration = Math.max(0.01, renderEnd - startTime);

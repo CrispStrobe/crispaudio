@@ -13,6 +13,10 @@ browser.
 [Releases](https://github.com/CrispStrobe/crispaudio/releases) ·
 [Roadmap](PLAN.md)
 
+Delivery adds per-export presets, range/clip/stem jobs, a cancellable queue,
+caption sidecars, portable media collection and reviewed cut-only OTIO export.
+See [Delivery workflows and limits](docs/DELIVERY.md).
+
 ## Timeline and media editing
 
 - Multitrack audio waveforms and ordered picture layers share the timeline

@@ -1,3 +1,4 @@
+import {DeliveryControls} from './DeliveryControls';
 import {SourceTranscriptControls} from './SourceTranscriptControls';
 import {MulticamControls} from './MulticamControls';
 import {ClipRetimeControls} from './ClipRetimeControls';
@@ -632,6 +633,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton data-help="import" icon={Upload} label={t('timeline.import')} onClick={() => askImport()}/>
         <ToolButton icon={Download} label={t('timeline.export')} disabled={exportStage !== null || store.project.duration <= 0} onClick={() => void handleExportMix()}/>
         {store.project.editRange&&<ToolButton icon={Download} label={t('ranges.exportAudio')} disabled={exportStage!==null} onClick={()=>void handleExportMix(true)}/>}
+        <DeliveryControls/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} />
         <AutoSyncTracks onError={setProjectError} />
         <ToolButton icon={Library} label={t('workspace.title')} aria-pressed={workspace!==null} onClick={()=>setWorkspace(old=>old?null:'media')}/>

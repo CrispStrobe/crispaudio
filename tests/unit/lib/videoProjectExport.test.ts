@@ -19,10 +19,10 @@ function fixture() {
   const source = { id: 's', name: 'mic', filePath: '/mic.wav', duration: 4, channels: 1, sampleRate: 48000,
     buffer: { getChannelData: () => { throw new Error('Must not read PCM'); } } } as AudioSource;
   const sources = new Map([['s', source]]);
-  const renderToBuffer = vi.fn();
-  const engine = { renderToBuffer } as unknown as TimelineEngine;
+  const renderMixRange = vi.fn();
+  const engine = { renderMixRange } as unknown as TimelineEngine;
   const options = { project, sources, engine, output: '/export.mp4', backend: 'apple', format: 'mp4', nativeMac: true };
-  return { project, source, sources, renderToBuffer, options };
+  return { project, source, sources, renderMixRange, options };
 }
 beforeEach(() => {
   vi.resetAllMocks();
@@ -30,9 +30,9 @@ beforeEach(() => {
 });
 describe('linked desktop video export', () => {
   it('sends only paths and the complete clock to the native mixer, retaining the selected section', async () => {
-    const { options, renderToBuffer } = fixture();
+    const { options, renderMixRange } = fixture();
     await exportVideoProject(options, new AbortController().signal);
-    expect(renderToBuffer).not.toHaveBeenCalled();
+    expect(renderMixRange).not.toHaveBeenCalled();
     expect(encodeAudioBufferWav).not.toHaveBeenCalled();
     expect(invoke).toHaveBeenCalledExactlyOnceWith('export_linked_project_video', expect.objectContaining({
       document: expect.objectContaining({ sources: [expect.objectContaining({ path: '/mic.wav' })],
@@ -40,10 +40,10 @@ describe('linked desktop video export', () => {
     }));
   });
   it('does not silently fall back after a native render failure', async () => {
-    const { options, renderToBuffer } = fixture();
+    const { options, renderMixRange } = fixture();
     vi.mocked(invoke).mockRejectedValueOnce(new Error('DSP budget exceeded'));
     await expect(exportVideoProject(options, new AbortController().signal)).rejects.toThrow('DSP budget');
-    expect(renderToBuffer).not.toHaveBeenCalled();
+    expect(renderMixRange).not.toHaveBeenCalled();
   });
   it('ignores a muted in-memory source, but honors solo even while its mute is stored', () => {
     const { project, sources } = fixture();
@@ -53,13 +53,13 @@ describe('linked desktop video export', () => {
     expect(linkedRenderDocument(project, sources)).toBeNull();
   });
   it('uses Web Audio for in-memory sources and removes its staged mix on export failure', async () => {
-    const { source, options, renderToBuffer } = fixture();
+    const { source, options, renderMixRange } = fixture();
     source.filePath = undefined;
-    renderToBuffer.mockResolvedValue({});
+    renderMixRange.mockResolvedValue({});
     vi.mocked(encodeAudioBufferWav).mockResolvedValue({ arrayBuffer: async () => new ArrayBuffer(8) } as Blob);
     vi.mocked(invoke).mockResolvedValueOnce('/temp/mix.wav').mockRejectedValueOnce(new Error('Picture failed'));
     await expect(exportVideoProject(options, new AbortController().signal)).rejects.toThrow('Picture failed');
-    expect(renderToBuffer).toHaveBeenCalledWith(options.project, 1, 3, expect.any(AbortSignal));
+    expect(renderMixRange).toHaveBeenCalledWith(options.project, 1, 3, expect.any(AbortSignal),options.sources);
     expect(remove).toHaveBeenCalledWith('/temp/mix.wav');
   });
   it('rejects pre-cancelled work without invoking or reading any audio', async () => {
