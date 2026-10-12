@@ -1184,3 +1184,14 @@ browsers use their system output. Test output sends a short tone through the sam
 master chain as timeline playback. Its signal check does not prove physical
 speaker audibility. If macOS audio works while the installed app is silent, quit
 and reopen CrispAudio to reset its WebKit process.
+
+
+### Chorus rate lane (0.8.39)
+
+The track chorus rate lane spans 0–8 Hz and supports the same numeric points,
+Linear/Step transitions, shaping, saved handles and protected recording as depth.
+Rate has its own tagged copy/retime clipboard; stretching changes times while
+retaining frequency values. Outside parameter values remain protected, while
+later LFO phase follows the new rate history. Empty lanes use the insert rate,
+default 1.5 Hz; 0 Hz holds phase. Rate edits keep the live graph and delay history.
+Native recipes and exports support rate automation in clip, track and master racks.

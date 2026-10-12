@@ -1,5 +1,5 @@
 import type {AutomationTarget} from '../../lib/automationRecording';
-import {scheduleMix,scheduleChorusDepth,scheduleFeedback,scheduleDelayTime,effectParameterDefault,supportsEffectParameter} from '../../lib/effectAutomation';
+import {scheduleMix,scheduleChorusDepth,scheduleChorusRate,scheduleFeedback,scheduleDelayTime,effectParameterDefault,supportsEffectParameter} from '../../lib/effectAutomation';
 import {prepareOutputLimiter,createOutputLimiter} from '../effects/OutputLimiter';
 import {limiterParameters} from '../dsp/samplePeakLimiter';
 import {eqParameters,isEQ} from '../../lib/equalizer';
@@ -44,7 +44,7 @@ export class TimelineEngine {
   private eqNodes = new Map<string, BiquadFilterNode>();
   private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]; points:TimelineTrack['panAutomation']; staticPan:number}>();
   private automationNodes = new Map<string, {node:GainNode; points:TimelineTrack['automation']}>();
-  private mixNodes=new Map<string,{wet:AudioParam;dry:AudioParam;dryScale?:number;feedback?:AudioParam;time?:AudioParam;depth?:[AudioParam,AudioParam];staticDepth?:number;points:EffectConfig['automation'];mix:number;staticFeedback:number;staticTime:number}>();
+  private mixNodes=new Map<string,{wet:AudioParam;dry:AudioParam;dryScale?:number;feedback?:AudioParam;time?:AudioParam;depth?:[AudioParam,AudioParam];staticDepth?:number;rate?:[AudioParam,AudioParam];staticRate?:number;points:EffectConfig['automation'];mix:number;staticFeedback:number;staticTime:number}>();
   private playbackGeneration=0;
   private playbackEnd=0;
   private playbackClock=0;
@@ -94,12 +94,13 @@ export class TimelineEngine {
     for (const [scope,effects] of racks) effects.forEach((effect,index)=>{
       const node=this.eqNodes.get(`${scope}:${index}`);
       const mix=this.mixNodes.get(`${scope}:${index}`);
-      if(mix&&(mix.points!==effect.automation||(!effect.automation?.mix?.length&&mix.mix!==(effect.params.mix??effectParameterDefault(effect.type,'mix')))||(mix.feedback&&!effect.automation?.feedback?.length&&mix.staticFeedback!==(effect.params.feedback??.4))||(mix.time&&!effect.automation?.time?.length&&mix.staticTime!==(effect.params.time??.3))||(mix.depth&&!effect.automation?.depth?.length&&mix.staticDepth!==(effect.params.depth??.5)))){
+      if(mix&&(mix.points!==effect.automation||(!effect.automation?.mix?.length&&mix.mix!==(effect.params.mix??effectParameterDefault(effect.type,'mix')))||(mix.feedback&&!effect.automation?.feedback?.length&&mix.staticFeedback!==(effect.params.feedback??.4))||(mix.time&&!effect.automation?.time?.length&&mix.staticTime!==(effect.params.time??.3))||(mix.depth&&!effect.automation?.depth?.length&&mix.staticDepth!==(effect.params.depth??.5))||(mix.rate&&!effect.automation?.rate?.length&&mix.staticRate!==(effect.params.rate??1.5)))){
         mix.wet.cancelScheduledValues(now);mix.dry.cancelScheduledValues(now);
         scheduleMix(mix.wet,mix.dry,effect.automation?.mix,now,this.playbackStart+now-this.playbackClock,effect.params.mix??effectParameterDefault(effect.type,'mix'),mix.dryScale);
         if(mix.feedback){mix.feedback.cancelScheduledValues(now);scheduleFeedback(mix.feedback,effect.automation?.feedback,now,this.playbackStart+now-this.playbackClock,effect.params.feedback??.4);}
         if(mix.time){mix.time.cancelScheduledValues(now);scheduleDelayTime(mix.time,effect.automation?.time,now,this.playbackStart+now-this.playbackClock,effect.params.time??.3);}
         if(mix.depth){for(const param of mix.depth)param.cancelScheduledValues(now);scheduleChorusDepth(mix.depth,effect.automation?.depth,now,this.playbackStart+now-this.playbackClock,effect.params.depth??.5);mix.staticDepth=effect.params.depth??.5;}
+        if(mix.rate){for(const param of mix.rate)param.cancelScheduledValues(now);scheduleChorusRate(mix.rate,effect.automation?.rate,now,this.playbackStart+now-this.playbackClock,effect.params.rate??1.5);mix.staticRate=effect.params.rate??1.5;}
         mix.staticTime=effect.params.time??.3;mix.points=effect.automation;mix.mix=effect.params.mix??effectParameterDefault(effect.type,'mix');mix.staticFeedback=effect.params.feedback??.4;
       }
       if(!node||!isEQ(effect.type))return;
@@ -131,6 +132,8 @@ export class TimelineEngine {
       scheduleMix(nodes.wet,nodes.dry,value===undefined?effect.automation?.mix:[],now,time,value??effect.params.mix??effectParameterDefault(effect.type,'mix'),nodes.dryScale);
     }else if(target.parameter==='time'&&nodes.time){
       nodes.time.cancelScheduledValues(now);scheduleDelayTime(nodes.time,value===undefined?effect.automation?.time:[],now,time,value??effect.params.time??.3);
+    }else if(target.parameter==='rate'&&nodes.rate){
+      for(const param of nodes.rate)param.cancelScheduledValues(now);scheduleChorusRate(nodes.rate,value===undefined?effect.automation?.rate:[],now,time,value??effect.params.rate??1.5);
     }else if(target.parameter==='depth'&&nodes.depth){
       for(const param of nodes.depth)param.cancelScheduledValues(now);scheduleChorusDepth(nodes.depth,value===undefined?effect.automation?.depth:[],now,time,value??effect.params.depth??.5);
     }else if(nodes.feedback){
@@ -479,6 +482,7 @@ export class TimelineEngine {
             p.mix ?? 0.3,
             (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.3);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.3,staticFeedback:0,staticTime:0});},
             (first,second)=>{scheduleChorusDepth([first,second],fx.automation?.depth,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.depth??.5);if(scope){const nodes=this.mixNodes.get(`${scope}:${index}`)!;nodes.depth=[first,second];nodes.staticDepth=p.depth??.5;}},
+            (first,second)=>{scheduleChorusRate([first,second],fx.automation?.rate,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.rate??1.5);if(scope){const nodes=this.mixNodes.get(`${scope}:${index}`)!;nodes.rate=[first,second];nodes.staticRate=p.rate??1.5;}},
           );
           break;
         case 'ringmod':

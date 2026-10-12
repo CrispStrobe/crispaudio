@@ -89,7 +89,7 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
     result.push({time:operation==='insert'?end:start,value:(pan?panAt:gainAt)(points,operation==='insert'?start:end),...curveFields(points,operation==='insert'?start:end)});
     return [...new Map(result.sort((a,b)=>a.time-b.time).map(p=>[p.time,p])).values()];
   };
-  const effects=(rack:EffectConfig[]|undefined)=>rack?.map(e=>hasEffectAutomation(e)?{...e,automation:{...e.automation,...(e.automation?.mix===undefined?{}:{mix:automation(e.automation.mix,true)}),...(e.automation?.feedback===undefined?{}:{feedback:automation(e.automation.feedback,true)}),...(e.automation?.depth===undefined?{}:{depth:automation(e.automation.depth)}),...(e.automation?.time===undefined?{}:{time:automation(e.automation.time)})}}:e);
+  const effects=(rack:EffectConfig[]|undefined)=>rack?.map(e=>hasEffectAutomation(e)?{...e,automation:{...e.automation,...(e.automation?.mix===undefined?{}:{mix:automation(e.automation.mix,true)}),...(e.automation?.feedback===undefined?{}:{feedback:automation(e.automation.feedback,true)}),...(e.automation?.depth===undefined?{}:{depth:automation(e.automation.depth)}),...(e.automation?.rate===undefined?{}:{rate:automation(e.automation.rate)}),...(e.automation?.time===undefined?{}:{time:automation(e.automation.time)})}}:e);
   const pictures=includeVideo?videoClips(project.video).flatMap(c=>edit(c) as VideoClip[]):undefined;
   // Validate the arrangement after the explicitly reviewed conversions.
   if(pictures&&project.video&&validateVideoClips(pictures,project.video.duration,project.video.sources))fail('pictureTopology');

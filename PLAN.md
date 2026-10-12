@@ -1,14 +1,15 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-12, during local 0.8.38 implementation. This section is the current plan.
+Updated 2026-10-12, for local 0.8.39. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
 
 Playback/output-device selection and whole-window Finder MP4 drops took priority
 in 0.8.38 after the user reported silent installed-app playback. A fresh app launch
 restored audible output, confirmed by the user; the precise WebKit failure remains
-unidentified. Chorus-rate M2.3 work is parked locally until this playback/import
-increment is complete. M2.3 remains open.
+unidentified. Chorus-rate automation continues M2.3 in 0.8.39. It adds the 0–8 Hz
+lane, protected passes, independent copy/retime and native export support. M2.3
+remains open for further selected parameters and broader curve controls.
 
 ## Current requested milestone: ASR and spoken-word editing
 

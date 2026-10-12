@@ -284,6 +284,9 @@ struct Chorus {
     rates: [f64; 2],
     depth: f32,
     depth_automation: Automation,
+    rate_automation: Automation,
+    phase_frame: u32,
+    phases: [f64; 2],
     mix: f64,
     automation: Automation,
 }
@@ -295,9 +298,26 @@ impl Chorus {
         } else {
             (self.depth_automation.at(frame as f64 / RATE) * 0.01) as f32
         };
+        // Frequency is integrated from oscillator start, including silent time
+        // before a later clip. Rate edits never reset phase or the delay buffer.
+        if !self.rate_automation.points.is_empty() {
+            while self.phase_frame < frame {
+                let value = self.rate_automation.at(self.phase_frame as f64 / RATE);
+                for (phase, scale) in self.phases.iter_mut().zip([1.0, 1.2]) {
+                    let increment =
+                        ((value * scale) as f32 * (4096.0 / RATE) as f32) as f64 / 4096.0;
+                    *phase = (*phase + increment).rem_euclid(1.0);
+                }
+                self.phase_frame += 1;
+            }
+        }
         let mut wet = [0.0; 2];
-        for (rate, base) in self.rates.into_iter().zip([0.02f32, 0.03f32]) {
-            let phase = std::f64::consts::TAU * rate * frame as f64 / RATE;
+        for (index, (rate, base)) in self.rates.into_iter().zip([0.02f32, 0.03f32]).enumerate() {
+            let phase = if self.rate_automation.points.is_empty() {
+                std::f64::consts::TAU * rate * frame as f64 / RATE
+            } else {
+                std::f64::consts::TAU * self.phases[index]
+            };
             let seconds = base + phase.sin() as f32 * depth;
             let delay = seconds.clamp(0.0, 0.1) as f64 * RATE;
             let whole = delay.floor() as usize;
@@ -490,6 +510,10 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
             if depth_automation.points.iter().any(|p| p.1 > 1.0) {
                 return Err("Chorus depth automation outside 0..1".into());
             }
+            let rate_automation = Automation::parse(&effect["automation"]["rate"])?;
+            if rate_automation.points.iter().any(|p| p.1 > 8.0) {
+                return Err("Chorus rate automation outside 0..8 Hz".into());
+            }
             let length = (RATE * 0.1) as usize + 2;
             budget.reserve(length * std::mem::size_of::<[f32; 2]>())?;
             let rate = finite(params, "rate", Some(1.5))?;
@@ -504,6 +528,9 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
                 mix: finite(params, "mix", Some(0.3))?.clamp(0.0, 1.0) as f32 as f64,
                 automation,
                 depth_automation,
+                rate_automation,
+                phase_frame: 0,
+                phases: [0.0; 2],
             }));
             continue;
         }
@@ -1156,6 +1183,52 @@ mod tests {
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
     }
     #[test]
+    fn chorus_rate_integrates_phase_before_late_clips_and_freezes_at_zero() {
+        let effect = json!([{"type":"chorus","enabled":true,"params":{"rate":1.5,"depth":0.5,"mix":0.3},"automation":{"rate":[{"time":0,"value":1},{"time":0.1,"value":3,"curve":"step"},{"time":0.2,"value":0}]}}]);
+        let mut sequential = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        let mut late = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        for frame in 0..=12000 {
+            process(&mut sequential, [0.21, -0.105], frame);
+        }
+        process(&mut late, [0.21, -0.105], 12000);
+        let Effect::Chorus(a) = &sequential[0] else {
+            panic!()
+        };
+        let Effect::Chorus(b) = &late[0] else {
+            panic!()
+        };
+        assert_eq!(a.phases, b.phases);
+        // Left-sample integration of the 1..3 Hz ramp, then 3 Hz held to .2s.
+        assert!((a.phases[0] - (0.5 - 1.0 / RATE)).abs() < 1e-7);
+        assert!((a.phases[1] - (0.5 - 1.0 / RATE) * 1.2).abs() < 1e-7);
+        let phase = a.phases;
+        for frame in 12001..14400 {
+            process(&mut sequential, [0.21, -0.105], frame);
+        }
+        let Effect::Chorus(a) = &sequential[0] else {
+            panic!()
+        };
+        assert_eq!(a.phases, phase);
+        assert_eq!(a.cursor, 14400 % a.history.len());
+        let mut bad = effect;
+        bad[0]["automation"]["rate"][0]["value"] = json!(8.01);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+    }
+    #[test]
+    fn chorus_empty_rate_keeps_legacy_static_samples() {
+        for rate in [1.5, 8.0, -2.0, 12.0] {
+            let effect = json!([{"type":"chorus","enabled":true,"params":{"rate":rate,"depth":0.5,"mix":0.3}}]);
+            let mut empty = effect.clone();
+            empty[0]["automation"] = json!({"rate":[]});
+            let mut a = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+            let mut b = filters(&empty, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+            for frame in 0..12000 {
+                let input = [0.21 * (frame as f64 * 0.03).sin(), -0.105];
+                assert_eq!(process(&mut a, input, frame), process(&mut b, input, frame));
+            }
+        }
+    }
+    #[test]
     fn chorus_depth_keeps_history_and_empty_static_behavior() {
         let static_fx =
             json!([{"type":"chorus","enabled":true,"params":{"rate":1.5,"depth":0.25,"mix":0.3}}]);
@@ -1198,7 +1271,7 @@ mod tests {
         bad[0]["automation"]["mix"][0]["value"] = json!(1.01);
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
         bad = effect.clone();
-        bad[0]["automation"]["rate"] = json!([]);
+        bad[0]["automation"]["time"] = json!([]);
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
         bad = effect.clone();
         bad[0]["automation"]["feedback"] = json!([]);

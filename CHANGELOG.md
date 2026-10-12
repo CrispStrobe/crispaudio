@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.39 — 2026-10-12
+
+- Add chorus rate automation from 0 to 8 Hz, with direct points, Linear/Step
+  transitions, preset/custom shapes, timeline handles, protected recording and
+  an independent copy/retime clipboard.
+- Change both LFO frequencies without restarting phase or delay history; 0 Hz
+  holds phase. Empty envelopes retain insert rate (default 1.5 Hz). Native point,
+  shape, pass, paste and range-edit recipes support rate in every effect rack.
+- Keep existing depth, mix and delay keyboard-edit increments unchanged, and
+  prevent delayed dialog focus from stealing rapid paste-bound edits.
+
 ## 0.8.38 — 2026-10-12
 
 - Add a playback-device selector and a short output test in Settings. On macOS,

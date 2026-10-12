@@ -75,7 +75,7 @@ export interface AudioSegment {
 export type FadeCurve = 'linear' | 'exponential' | 'scurve';
 
 export interface EffectConfig {
-  automation?: {mix?: GainPoint[];feedback?: GainPoint[];time?: GainPoint[];depth?: GainPoint[]}; // absolute timeline seconds; delay mix/feedback/time, chorus depth, or ringmod/bitcrush/distortion/chorus/reverb mix
+  automation?: {mix?: GainPoint[];feedback?: GainPoint[];time?: GainPoint[];depth?: GainPoint[];rate?: GainPoint[]}; // absolute timeline seconds; delay mix/feedback/time, chorus depth/rate, or ringmod/bitcrush/distortion/chorus/reverb mix
   type: EffectType;
   enabled: boolean;
   params: Record<string, number>;

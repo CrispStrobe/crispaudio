@@ -18,6 +18,42 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.8.39 — chorus rate automation
+
+Chorus rate is a separate 0–8 Hz lane with direct points, Linear/Step and
+preset/custom shapes, saved timeline handles, protected Read/Touch/Latch/Write
+recording, and an independent copy/retime clipboard. Native point, shape, pass,
+paste and range-edit recipes support rate in clip, track and master racks.
+Live changes preserve both oscillators and delay history; the second oscillator
+runs at 1.2 times the first. Zero holds phase. Empty rate envelopes preserve the
+existing static DSP. Changing earlier frequency can change later audio phase,
+even when paste guards preserve the later parameter values.
+
+Validation: 1,491 frontend unit tests and 113 native tests passed (10 existing
+native tests ignored), along with lint, TypeScript/Vite, optimized CLI and local
+Tauri app builds. Chrome and Playwright WebKit cover shape review, copy/retime,
+recording, save/open, locks, history, live graph continuity and German 390px UI.
+The expanded inline-handle audit covers 252 edits per browser with matching native
+recipes. An earlier audit encountered a navigation interruption; a diagnostic
+rerun completed without a browser error or extra navigation. Its cause remains
+unestablished.
+
+All 0–8 Hz rack renders and rate workflow fixtures pass the established chorus
+PCM budget of peak <1e-4 and RMS <1e-5; these results do not establish the stricter
+2e-6 diagnostic for every fixture. The all-rack maximum peak/RMS differences were
+1.563e-5 / 1.422e-7 in Chrome and 8.970e-6 / 1.840e-6 in WebKit. GUI range renders
+match full-render crops exactly. Existing depth workflows and static-tail audits
+also pass their regression checks; 22 native renders are byte-identical to the
+optimized 0.8.38 CLI. Abrupt wet chorus endings still exceed the PCM budget
+(peak up to 0.061742 in Chrome and 0.075000 in WebKit); that existing tail limit
+has not been fixed. Other documented DSP precision limits remain open.
+
+The local app and independent optimized CLI are ad-hoc signed and verified;
+autosave is preserved with a separate recovery backup. The previous installed-app
+tone was audible after relaunch, confirmed by the user. A physical Finder MP4 drop
+in the installed app remains unconfirmed. M2.3 remains open for further selected
+FX parameters and broader curve controls. No release tag or Apple upload.
+
 ## Local 0.8.38 — playback output and Finder media drops
 
 Settings lists real CoreAudio outputs on macOS (selection changes system output

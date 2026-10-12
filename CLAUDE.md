@@ -737,3 +737,14 @@ master signal and clock; only a listener can confirm physical audibility.
 useMediaDrop subscribes at app scope to Tauri webview drag events (DOM file drops
 are insufficient on desktop). Paths queue in uiStore until Timeline mounts; video
 uses importVideo with linked unmuted audio, with project-ID/cancellation guards.
+
+
+## Chorus rate automation (0.8.39)
+
+Rate is chorus-only, 0..8 Hz, default1.5, independent chorusRate clipboard. The
+optional eighth createChorus callback exposes both oscillator frequencies;
+createChorus.length stays5. Schedule frequencies at ratio1/1.2; live update and
+Read restoration retain oscillator phase and buffer history. NativeChorus rate
+phase integrates prior per-frame frequency, including silent time before a late
+clip. Empty-rate branch retains legacy static DSP. Rate copy protects outside
+parameter values, not later audio phase. Preserve existing delay keyboard steps.

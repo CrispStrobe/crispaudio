@@ -25,7 +25,7 @@ browser.
   trims, ripple trims, trim-to-playhead and slide edits have reviewed source limits.
 - Apply clip/track fades, audio crossfades, picture transitions, colour correction
   and orientation changes.
-- Mix with gain, pan, mute/solo, gain/pan, delay mix/feedback/time and ring-modulator/bit-crusher/distortion/chorus/reverb mix automation,
+- Mix with gain, pan, mute/solo, gain/pan, delay mix/feedback/time and ring-modulator/bit-crusher/distortion/chorus/reverb mix automation, plus chorus depth and rate automation,
   with clip/track/master effect racks.
   Current timeline effects include filters, bit crushing, ring modulation, delay,
   chorus, reverb, distortion and compression.

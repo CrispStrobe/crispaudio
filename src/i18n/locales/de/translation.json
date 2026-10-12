@@ -1327,6 +1327,14 @@
     "recordHelp_read": "Read folgt der Hüllkurve. Modus wählen und im Stopp ausdrücklich scharfstellen. Spurwechsel verwirft Entwürfe.",
     "recordHelp_touch": "Touch nimmt auf, solange der Regler gehalten wird; Loslassen kehrt zur Hüllkurve zurück. Stopp öffnet die Prüfung. Escape bricht ab.",
     "recordHelp_latch": "Latch nimmt ab der ersten Berührung bis Stopp auf und hält den letzten Wert. Vor Übernahme prüfen; Escape bricht ab.",
-    "recordHelp_write": "Write nimmt ab Wiedergabestart bis Stopp durchgehend auf. Scharfstellen und Prüfung schützen Hüllkurven; Escape bricht ab."
+    "recordHelp_write": "Write nimmt ab Wiedergabestart bis Stopp durchgehend auf. Scharfstellen und Prüfung schützen Hüllkurven; Escape bricht ab.",
+    "chorusRate": "Chorus-Rate",
+    "chorusRateGraph": "Chorus-Ratenautomation",
+    "chorusRateHelp": "Chorus-LFO-Rate von 0 bis 8 Hz automatisieren. Null hält die Phase; ohne Punkte gilt die Insert-Rate, standardmäßig 1,5 Hz. Live-Änderungen erhalten Phase und Delay-Verlauf.",
+    "chorusRatePoint": "Chorusrate des Punkts (Hz)",
+    "chorusRateCopy": "Chorusrate kopieren / ausgewählter Bereich",
+    "chorusRatePaste": "Chorus-Ratenhüllkurve einfügen",
+    "chorusRatePasteHelp": "Ersetzt nur dieses Chorus-Ratenintervall mit Schutzpunkten außen. Strecken ändert Zeiten; Hz-Werte und Kurven bleiben. Die spätere Modulationsphase folgt dem geänderten Frequenzverlauf.",
+    "chorusRateShapeHelp": "Chorus-Ratenübergang in Hz prüfen. Anwenden ersetzt den Abschnitt mit {{count}} editierbaren Punkten; Mix und Tiefe bleiben unabhängig."
   }
 }

@@ -1327,6 +1327,14 @@
     "recordHelp_read": "Read follows the envelope. Choose a mode and explicitly arm while stopped to record a pass. Changing lanes cancels drafts.",
     "recordHelp_touch": "Touch records while holding the control; release returns to the original envelope. Stop playback to review. Escape cancels.",
     "recordHelp_latch": "Latch records from the first touch until Stop, holding the last touched value. Review before Apply; Escape cancels.",
-    "recordHelp_write": "Write records continuously from playback start until Stop. Explicit arm and review protect existing envelopes; Escape cancels."
+    "recordHelp_write": "Write records continuously from playback start until Stop. Explicit arm and review protect existing envelopes; Escape cancels.",
+    "chorusRate": "Chorus rate",
+    "chorusRateGraph": "Chorus rate automation",
+    "chorusRateHelp": "Automate chorus LFO rate from 0 to 8 Hz. Zero holds phase; empty envelopes use insert rate, default 1.5 Hz. Live edits keep phase and delay history.",
+    "chorusRatePoint": "Point chorus rate (Hz)",
+    "chorusRateCopy": "Copy chorus rate envelope / selected range",
+    "chorusRatePaste": "Paste chorus rate envelope",
+    "chorusRatePasteHelp": "Replaces only this chorus rate interval with outside guards. Stretch changes times, keeping Hz values and curves. Later modulation phase follows the edited frequency history.",
+    "chorusRateShapeHelp": "Preview the chorus rate transition in Hz. Apply replaces this span with {{count}} editable points; mix and depth stay independent."
   }
 }

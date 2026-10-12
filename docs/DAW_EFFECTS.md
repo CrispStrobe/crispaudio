@@ -112,3 +112,20 @@ An empty lane follows static time; live static/envelope edits keep the delay
 buffer and playback clock. A moving read head can change pitch; jumps can click.
 Clip and master delay-time metadata renders in GUI/native export too. Native
 state reserves two seconds when time is automated, within the shared DSP budget.
+
+
+### Chorus rate automation (0.8.39)
+
+Select the track's chorus rate in the automation lane to edit 0–8 Hz points and
+Linear/Step transitions, shape an outgoing segment, or use the saved timeline
+handles. Rate has its own copy/retime clipboard and Read/Touch/Latch/Write pass
+workflow. Mix and depth remain independent. Empty rate envelopes use the insert
+rate, default 1.5 Hz; 0 Hz holds the modulation phase.
+
+Live edits change the two LFO frequencies (second voice at 1.2×) without restarting
+the oscillators or clearing delay history. Copy/retime preserves Hz values and
+changes point times. Outside rate points are protected, but later modulation phase
+follows the edited frequency history, so later audio can change. Native exports
+and point/shape/pass/paste/range recipes also support rate, including clip and
+master metadata. The existing chorus precision/tail limits remain documented in
+RELEASE_STATUS.md.
