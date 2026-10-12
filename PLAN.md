@@ -4,6 +4,28 @@ Updated 2026-10-12, for local 0.9.4. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
+## Current priority: audio DAW workflow
+
+The user explicitly lowered MIDI priority after 0.9.4. Further MIDI sequencing,
+instrument tracks and MIDI interchange are deferred. Continue improving audio
+recording, editing and mixing before expanding music sequencing.
+
+The next increment is clip/master automation editing: expose the supported
+effect envelopes with clear clock/scope selection, protected edits, undo and
+save/reopen, preserving playback/offline/native rendering consistency. Track
+automation already has direct editing and pass controls; clip/master effect
+envelopes can render but lack comparable inspectors. Do not duplicate those
+existing track tools or claim arbitrary parameter support.
+
+Follow with recording and take/comp workflow improvements, then track
+organization and grouped editing. Audit the existing punch/loop/take/comp and
+bus/send tools before selecting each concrete addition. Multiple simultaneous
+recording inputs remain a meaningful recording gap. Track folders and grouped
+controls are separate from the existing audio bus routing.
+
+Playback remains fixed per user confirmation. M9 paging/codecs remains deferred.
+Completed editing/mixing/video milestones and existing MIDI features are retained.
+
 ## Requested checkpoint: M2.3–M7
 
 The selected feature stack is implemented and locally validated. The 0.9.0 app
@@ -48,7 +70,8 @@ quantisation, sine/bell rendering with retained editable notes and type-0 patter
 MIDI export. 0.9.4 adds a reviewed audio-clock MIDI capture pass alongside timeline
 playback, ending on stop/seek/loop restart and publishing one placed pattern in
 one undo step. See [MIDI workflow](docs/MIDI.md). Live instrument tracks, automatic
-loop takes, arrangement MIDI import/export and richer instruments remain future work.
+MIDI loop takes, arrangement MIDI import/export and richer instruments are now
+deferred behind the audio DAW priorities above.
 
 ## Historical acceptance: ASR and spoken-word editing (0.8.5–0.8.6)
 
