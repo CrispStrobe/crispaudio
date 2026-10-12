@@ -36,3 +36,19 @@ export function reviewedShapeSegment(points:GainPoint[],index:number) {
  }
  return {a,b,endIndex,review:m};
 }
+
+/** Polynomial presets have exact cubic equivalents with a linear time axis.
+ * Merely exposing handles never rewrites the saved points or their metadata. */
+export function shapeHandleControls(shape:Exclude<AutomationShape,'custom'>):AutomationShapeControls {
+ return {x1:1/3,x2:2/3,y1:shape==='ease-out'?2/3:shape==='linear'?1/3:0,y2:shape==='ease-in'?1/3:shape==='linear'?2/3:1};
+}
+/** Intact saved spans use their original endpoint; ordinary Linear uses its next
+ * point. A damaged hint must never silently become a different direct span. */
+export function curveHandleSegment(points:GainPoint[],index:number,sampleRate:number,endTime=Infinity) {
+ const a=points[index];if(!a||a.curve==='step')return undefined;
+ const saved=reviewedShapeSegment(points,index);
+ if(a.shapeReview!==undefined&&!saved)return undefined;
+ const b=saved?.b??points[index+1];
+ if(!b||!Number.isFinite(sampleRate)||sampleRate<=0||b.time>endTime||b.time-a.time<2/sampleRate-1e-12||a.value===b.value)return undefined;
+ return {a,b,controls:saved?.review.shape==='custom'?{...saved.review.controls!}:shapeHandleControls(saved?.review.shape??'linear')};
+}

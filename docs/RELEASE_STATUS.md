@@ -18,6 +18,47 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.8.35 — direct Linear and preset curve handles
+
+Installed local app and optimized standalone CLI 0.8.35 are ad-hoc signed and
+verified; the existing autosave was preserved.
+
+Direct lane handles now cover ordinary adjacent Linear segments and intact saved
+Ease-in, Ease-out and S-curve spans, alongside custom spans. Preset controls are
+mathematically equivalent cubic controls with a linear time axis. Selecting,
+cancelling or returning to baseline retains project identity and preset metadata.
+Changing a handle converts the whole span to saved custom points, replacing old
+interiors. Step, flat, last-point, damaged-hint and sub-two-sample spans have no
+handles; locks and recording remain protected. Older unannotated curves expose
+only the ordinary selected-to-next-point span.
+
+Validation on this Mac:
+
+- **122 frontend files / 1,471 tests passed**, including three tests for equivalent
+  polynomial controls, whole-span conversion/identity across five parameter
+  types, outside/end metadata and excluded spans. Lint and TypeScript/Vite passed.
+- **105 native library + 3 CLI tests passed**, 10 existing ignored. Tauri debug app
+  and optimized CLI built. No native renderer or project schema changed.
+- Chrome and Playwright WebKit each passed **120 direct keyboard/pointer edits**:
+  all five shape types across ascending/descending gain/pan, delay mix/feedback/
+  time and five other FX mix lanes. All **240 native recipe projects** exactly
+  match GUI points. Selecting and moving back to baseline preserve original
+  points/metadata/history; undo, redo, cancellation, bounds, stale edits, locks,
+  recording, Step/flat/short exclusions and point counts passed.
+- German 390px lane passed overflow checks; WebKit screenshot inspected. Browser
+  emulation is not physical iOS or installed WKWebView interaction.
+- Existing custom Bézier regression **10 cases each browser**: native points,
+  audio/full-range crop, save/open, live no-restart and history checks passed,
+  except the unchanged known WebKit initial long-delay case. Chrome old four
+  parameters peak **8.046627e-7**, delay time **3.7744641e-5**; WebKit old four
+  **7.7486038e-7**. WebKit initial custom delay time **2.8939545e-4** still exceeds
+  its **1e-4** budget; native WAV is byte-identical to installed 0.8.34. This is a
+  known-limit report, not a parity pass. Revised custom delay time passes.
+
+Other existing delay, bit-crusher precision, distortion/chorus abrupt-tail and
+reverb headroom limits were not fixed or rerun. M2.3 remains open for further
+selected FX parameters and broader curve editing. No release tag or Apple upload.
+
 ## Local 0.8.34 — direct saved custom timeline handles
 
 Select the first point of an intact saved custom Bézier span for two direct lane

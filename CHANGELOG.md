@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.35 — 2026-10-12
+
+- Expose direct timeline handles on ordinary Linear segments and intact saved
+  Ease-in, Ease-out and S-curve spans. Presets start with equivalent Bézier
+  controls; selecting, cancelling or returning to the original curve preserves
+  points, metadata and history. Moving a handle converts the whole span to custom.
+- Keep Step, flat, damaged-hint and sub-two-sample spans protected. Converted
+  preset spans replace their old interior points rather than accumulating points.
+
 ## 0.8.34 — 2026-10-12
 
 - Select the first point of an intact saved custom Bézier span to expose two

@@ -695,3 +695,12 @@ clock/value scale. Local CurveDraft points preview without store writes; pointer
 release or arrow keyup commits once against the original project identity.
 Escape, pointer cancellation, blur and stale project changes discard drafts.
 Recording and locks hide handles. No DSP/native representation change.
+
+## Direct Linear/preset handles (0.8.35)
+
+curveHandleSegment distinguishes an intact saved span from ordinary adjacent
+Linear points; damaged shapeReview must not silently fall back to a shorter
+handle span. shapeHandleControls expresses polynomial presets as exact cubic
+controls with x1=1/3,x2=2/3. Exposing/moving back to baseline must preserve project
+identity; only a changed curve becomes custom through shapeAutomationSegment.
+Exclude Step/flat/last/short/out-of-bounds spans before pointer gestures.

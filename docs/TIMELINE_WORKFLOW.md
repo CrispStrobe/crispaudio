@@ -1120,3 +1120,20 @@ the draft and retains redo. Drafts change the displayed curve; playback changes
 when committed. Locked tracks and active recording hide handles. Flat, preset,
 older or modified spans use the existing shape review tool; direct handles require
 an intact saved custom span. The native renderer still consumes baked linear points.
+
+
+## Direct Linear and preset curve handles (0.8.35)
+
+Select a Linear point with a later, different-valued endpoint, or the first point
+of an intact saved Ease-in, Ease-out or S-curve span. Two purple handles appear
+on the shared timeline. Preset controls are equivalent cubic Bézier controls with
+a linear time axis. Selecting handles, cancelling or returning them to their
+starting curve keeps the original points, preset metadata and history.
+Changing a handle converts the entire displayed span into saved custom points
+in one undo step, replacing a preset's old interiors. Pointer/keyboard behavior,
+locks and recording protection follow the custom handle workflow above.
+Step, flat, last-point, damaged-hint and spans shorter than two audio samples
+expose no handles. Older unannotated curves remain ordinary segments: direct
+handles act on the selected point and its immediate next point. Drafts change
+only the displayed curve; release changes playback. Native shape recipes and
+saved projects use the existing baked linear points.

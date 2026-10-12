@@ -1,18 +1,20 @@
+import {curveHandleSegment} from '../../lib/automationShapeMetadata';
+import {timelineDuration} from '../../lib/timelineView';
 import {useEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useProjectStore} from '../../stores/projectStore';
-import {shapeAutomationSegment,reviewedShapeSegment,type AutomationShapeControls} from '../../lib/automationShape';
+import {shapeAutomationSegment,type AutomationShapeControls} from '../../lib/automationShape';
 import {targetPoints,type AutomationTarget} from '../../lib/automationRecording';
 import {normalizeGainPoints,normalizePanPoints} from '../../lib/mixAutomation';
 import type {GainPoint,TimelineProject} from '../../types/audio';
 
 export interface CurveDraft {project:TimelineProject;trackId:string;points:GainPoint[]}
-/** Saved custom spans share the lane's clock and value scale. Gesture drafts never
+/** Linear and saved shaped spans share the lane's clock and value scale. Gesture drafts never
  * write the store; release commits once only while the original project is current. */
 export function AutomationCurveHandles({project,target,pointTime,disabled,x,y,valueAtY,scroll,zoom,onPreview}:{project:TimelineProject;target:AutomationTarget;pointTime:number;disabled:boolean;x:(time:number)=>number;y:(value:number)=>number;valueAtY:(py:number)=>number;scroll:number;zoom:number;onPreview:(draft:CurveDraft|null)=>void}) {
  const {t}=useTranslation(),[draft,setDraft]=useState<AutomationShapeControls|null>(null);
  const gesture=useRef<{controls:AutomationShapeControls;preview:TimelineProject;pointer?:number}|null>(null);
- const normalize=target.parameter==='pan'?normalizePanPoints:normalizeGainPoints,points=normalize(targetPoints(project,target)),span=reviewedShapeSegment(points,points.findIndex(p=>p.time===pointTime));
+ const normalize=target.parameter==='pan'?normalizePanPoints:normalizeGainPoints,points=normalize(targetPoints(project,target)),span=curveHandleSegment(points,points.findIndex(p=>p.time===pointTime),project.sampleRate,timelineDuration(project));
  const cancel=()=>{gesture.current=null;setDraft(null);onPreview(null);};
  useEffect(()=>{
   const cancel=()=>{gesture.current=null;setDraft(null);onPreview(null);};
@@ -20,8 +22,8 @@ export function AutomationCurveHandles({project,target,pointTime,disabled,x,y,va
   window.addEventListener('keydown',escape,true);window.addEventListener('blur',cancel);
   return()=>{gesture.current=null;onPreview(null);window.removeEventListener('keydown',escape,true);window.removeEventListener('blur',cancel);};
  },[project,pointTime,target.trackId,target.parameter,target.effectIndex,disabled,onPreview]);
- if(!span||span.review.shape!=='custom'||!span.review.controls||span.a.value===span.b.value||disabled)return null;
- const controls=draft??span.review.controls,{a,b}=span;
+ if(!span||disabled)return null;
+ const controls=draft??span.controls,{a,b}=span;
  const update=(index:1|2,px:number,py:number)=>{
   if(useProjectStore.getState().project!==project){cancel();return;}
   const next={...controls,[`x${index}`]:Math.max(index===1?0:controls.x1,Math.min(index===1?controls.x2:1,px)),[`y${index}`]:Math.max(0,Math.min(1,py))};

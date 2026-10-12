@@ -219,7 +219,8 @@ CLI recipes expose deterministic range/trim/ripple operations where applicable.
    Local 0.8.32 adds reverb mix, retaining convolution history and the existing dry blend.
    Local 0.8.33 persists applied shape review handles with whole-span revision;
    Local 0.8.34 adds direct timeline handles for intact saved custom spans;
-   further selected FX parameters and broader direct curve controls remain open.
+   Local 0.8.35 extends direct handles to ordinary Linear and saved preset spans;
+   further selected FX parameters and broader curve editing remain open.
 4. Add buses and sends: start with track-to-bus routing and shared reverb/delay;
    specify pre/post-fader sends and feedback-cycle rejection. Sidechain/ducking
    follows the routing model; it should not be an unrelated special-case graph.
