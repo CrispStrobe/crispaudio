@@ -1,3 +1,4 @@
+import {AutomationCurveHandles,type CurveDraft} from './AutomationCurveHandles';
 import {effectClipboardKey} from '../../lib/effectEnvelope';
 import type {AutomationTarget} from '../../lib/automationRecording';
 import {AutomationShapeReview} from './AutomationShapeReview';
@@ -39,6 +40,7 @@ function AutomationLane({width,onClose,parameter,onParameter,trackId,onTrack}:{w
   const at=(points:GainPoint[]|undefined,time:number)=>isFx?effectParameterAt(points,time,track?.effects?.[effectIndex]?.params[fxParameter]??effectParameterDefault(track?.effects?.[effectIndex]?.type,fxParameter),fxParameter):isPan?panAt(points,time,track?.pan??0):gainAt(points,time);
   const project=useProjectStore(s=>s.project),zoom=useProjectStore(s=>s.zoomLevel),scroll=useProjectStore(s=>s.scrollOffset);
   const [shapeTime,setShapeTime]=useState<{project:ReturnType<typeof useProjectStore.getState>['project'];time:number;target:AutomationTarget}|null>(null);
+  const [curveDraft,setCurveDraft]=useState<CurveDraft|null>(null);
   const [selected,setSelected]=useState<number|null>(null),[recording,setRecording]=useState(false);
   const [draft,setDraft]=useState<{project:typeof project;trackId:string;points:GainPoint[];time:number;originalTime:number|null}|null>(null);
   const track=project.tracks.find(track=>track.id===trackId)??project.tracks[0];
@@ -48,7 +50,7 @@ function AutomationLane({width,onClose,parameter,onParameter,trackId,onTrack}:{w
   const svg=useRef<SVGSVGElement>(null);
   const gesture=useRef<{project:typeof project;trackId:string;time:number;originalTime:number|null;points:GainPoint[];pointer?:number}|null>(null);
   const onRecorderBusy=useCallback((busy:boolean)=>{if(busy){if(gesture.current)setSelected(gesture.current.originalTime);gesture.current=null;setDraft(null);}setRecording(busy);},[]);
-  const displayed=draft?.project===project&&draft.trackId===track?.id?draft.points:normalize(getPoints(track));
+  const displayed=draft?.project===project&&draft.trackId===track?.id?draft.points:curveDraft?.project===project&&curveDraft.trackId===track?.id?curveDraft.points:normalize(getPoints(track));
   const duration=timelineDuration(project);
   const x=(time:number)=>(time-scroll)*zoom;
   const cancel=()=>{if(gesture.current)setSelected(gesture.current.originalTime);gesture.current=null;setDraft(null);};
@@ -142,6 +144,7 @@ function AutomationLane({width,onClose,parameter,onParameter,trackId,onTrack}:{w
           <circle cx={x(p.time)} cy={y(p.value)} r={22} fill="transparent"/>
           <circle cx={x(p.time)} cy={y(p.value)} r={8} stroke={p.time===selected?'white':'#fbbf24'} strokeWidth={2} fill="#92400e" pointerEvents="none"/>
         </g>) }
+        {selected!==null&&<AutomationCurveHandles project={project} target={{trackId:track.id,parameter:isFx?fxParameter:isPan?'pan':'gain',...(isFx?{effectIndex}:{})}} pointTime={selected} disabled={recording||!!track.locked||!!draft} x={x} y={y} valueAtY={valueAtY} scroll={scroll} zoom={zoom} onPreview={setCurveDraft}/> }
       </svg>
     </div>
   <AutomationRecorder key={track.id} target={{trackId:track.id,parameter:isFx?fxParameter:isPan?'pan':'gain',...(isFx?{effectIndex}:{})}} onBusy={onRecorderBusy}/>

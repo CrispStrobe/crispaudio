@@ -687,3 +687,11 @@ controls, with exact-boundary shapeReview fields carried by curveFields/decorate
 Reapplying the saved shape preserves identity/redo. Linear removes its interior
 points and metadata; use the entire old segment for equivalence checks. Older
 shapes without metadata stay ordinary points; never infer handles from their audio.
+
+## Direct automation shape handles (0.8.34)
+
+AutomationCurveHandles edits only intact custom shapeReview spans on the lane's
+clock/value scale. Local CurveDraft points preview without store writes; pointer
+release or arrow keyup commits once against the original project identity.
+Escape, pointer cancellation, blur and stale project changes discard drafts.
+Recording and locks hide handles. No DSP/native representation change.

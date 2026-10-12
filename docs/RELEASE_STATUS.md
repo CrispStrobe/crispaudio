@@ -18,6 +18,40 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.8.34 — direct saved custom timeline handles
+
+Select the first point of an intact saved custom Bézier span for two direct lane
+handles. Pointer/keyboard drafts change displayed points locally; release commits
+one whole-span undo step, without accumulating points. Escape, cancellation, blur
+and stale project identity retain history/redo. Locked/recording/flat/preset or
+invalidated spans expose no handles. Gain uses the lane's dB scale; all available
+pan, delay and FX mix targets share the same saved linear-point representation.
+
+Validation on this Mac:
+
+- Frontend: **121 files / 1,468 tests**, lint and full TypeScript/Vite build passed.
+- Native: **105 library + 3 CLI tests passed**, 10 existing ignored; optimized CLI
+  and debug Tauri macOS app built.
+- Real Chrome and Playwright WebKit: **24 direct keyboard/pointer edits each**
+  across ascending/descending gain and pan, delay mix/feedback/time and ringmod,
+  bitcrush, distortion, chorus and reverb mix. Local path preview, one-step undo,
+  redo preservation, cancellation, bounds, external edits, locks and recording
+  protection passed. All **48 native recipe projects** match GUI points exactly.
+- German 390px lane has no horizontal overflow; WebKit screenshot inspected.
+  This is browser emulation, not physical iOS or installed WKWebView interaction.
+- Existing custom Bézier regression: **10 cases per browser**, native recipe,
+  save/open, unchanged-shape redo, live no-restart and full/range crop checks passed.
+  Chrome old four targets peak **8.046627e-7**, delay time **3.7744641e-5**;
+  WebKit old four targets **7.7486038e-7**. The initial long-delay custom case
+  remains **2.8939545e-4**, exceeding its unchanged **1e-4** budget; its native
+  WAV is byte-identical to installed 0.8.33. This is an inherited known-limit
+  report, not a parity pass. Revised custom delay time meets the existing budget.
+
+No renderer or native schema changed. Other existing delay, bit-crusher precision,
+distortion/chorus abrupt-tail and reverb headroom limits were not fixed or rerun
+by this increment. M2.3 remains open for further selected FX parameters and broader
+direct curve controls. No release tag or Apple upload was created.
+
 ## Features by platform
 
 | Capability | Local desktop | iOS/iPadOS | Browser |

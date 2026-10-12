@@ -121,6 +121,9 @@ points in one undo step, keeping endpoints and outside automation fixed. Gain
 shapes interpolate amplitude. Copy/retime, recording guards and exports retain
 the generated points. Newly applied shapes save their review handles. Select the first shaped point
 to reopen and revise the original whole span, or choose Linear to flatten it.
+Saved custom automation spans expose two purple timeline handles when their first
+point is selected. Drag or use arrows to reshape the whole span; release commits
+one undo step, Escape cancels. Gain follows the lane’s dB scale (local 0.8.34).
 Reapplying the same shape keeps history unchanged. Interior point edits or partial
 cuts invalidate whole-span review; ordinary point editing remains available. Endpoints hold; an empty gain envelope is unity. Edits update running playback,
 save/open and GUI/native exports. Copy the selected time range (or whole envelope) and paste it onto another track

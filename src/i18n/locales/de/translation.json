@@ -1266,6 +1266,8 @@
     "flatShapeHelp": "Gleiche Endwerte halten das Segment konstant. Anwenden lässt Projekt und Wiederholen unverändert.",
     "shape_custom": "Eigene Bézierkurve",
     "invalidShapeControls": "Griffwerte müssen zwischen 0 und 100 % liegen; Zeitgriffe dürfen sich nicht kreuzen.",
+    "inlineShapeHandle": "Kurvengriff {{index}}",
+    "inlineShapeHelp": "Ziehen oder Pfeiltasten: gespeicherten Abschnitt formen. Loslassen übernimmt einmal; Escape verwirft. Umschalt für größere Schritte.",
     "shapeHandle": "Griff {{index}}",
     "handleTime": "Zeit",
     "handleValue": "Wert",

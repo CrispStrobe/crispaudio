@@ -1106,3 +1106,17 @@ the tool then reviews only the adjacent segment and leaves other points alone.
 Shapes saved by older versions have no review metadata and remain ordinary editable
 points. Locks, recording protection and stale-review checks also apply to revisions.
 Native `shape-automation` recipes use the same first point and integrity checks.
+
+
+## Direct saved custom curve handles (0.8.34)
+
+Select the first point of an intact saved custom Bézier span. Two purple handles
+appear in the automation lane on the shared timeline clock. Drag or focus a handle
+and use arrow keys; Shift takes larger steps. Time handles cannot cross and value
+handles stay between the endpoints. Gain uses the lane's logarithmic dB scale.
+Release the pointer or arrow key to commit the whole span as one undo step.
+Escape, pointer cancellation, focus loss or an external project change discards
+the draft and retains redo. Drafts change the displayed curve; playback changes
+when committed. Locked tracks and active recording hide handles. Flat, preset,
+older or modified spans use the existing shape review tool; direct handles require
+an intact saved custom span. The native renderer still consumes baked linear points.

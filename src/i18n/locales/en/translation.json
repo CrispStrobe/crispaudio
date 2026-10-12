@@ -1266,6 +1266,8 @@
     "flatShapeHelp": "Equal endpoint values keep this segment flat. Apply leaves the project and redo unchanged.",
     "shape_custom": "Custom Bézier",
     "invalidShapeControls": "Handle values must be between 0 and 100%; time handles cannot cross.",
+    "inlineShapeHandle": "Curve handle {{index}}",
+    "inlineShapeHelp": "Drag or use arrows to reshape the saved span. Release commits once; Escape cancels. Shift uses larger steps.",
     "shapeHandle": "Handle {{index}}",
     "handleTime": "Time",
     "handleValue": "Value",

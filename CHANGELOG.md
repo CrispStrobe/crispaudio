@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.34 — 2026-10-12
+
+- Select the first point of an intact saved custom Bézier span to expose two
+  handles directly on the timeline. Drag or use arrows to revise the whole span;
+  release commits one undo step and Escape/cancellation discards the draft.
+- Use the lane's shared clock and value scale, including logarithmic gain and
+  descending spans. Locked, recording, flat or invalidated spans hide handles.
+  Saved points and native shape recipes retain the existing audio representation.
+
 ## 0.8.33 — 2026-10-12
 
 - Save applied automation shape controls with their baked points. Reopen the first
