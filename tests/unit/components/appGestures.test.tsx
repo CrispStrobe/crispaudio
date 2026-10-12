@@ -8,7 +8,7 @@ import { useProjectStore } from '../../../src/stores/projectStore';
 import App from '../../../src/App';
 
 vi.mock('../../../src/hooks/useAutosave', () => ({ useAutosave: () => {} }));
-vi.mock('../../../src/lib/native', () => ({
+vi.mock('../../../src/lib/native', () => ({isTauri:()=>false,isIOSApp:()=>false,
   setAudioSessionType: vi.fn(),
   subscribeOpenedFiles: vi.fn().mockResolvedValue(() => {}),
 }));

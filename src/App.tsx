@@ -3,6 +3,7 @@
 // Root component. Renders AppShell and switches panels based on uiStore.
 // ---------------------------------------------------------------------------
 
+import {useTranslation} from 'react-i18next';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import { useUIStore } from './stores/uiStore';
@@ -13,6 +14,7 @@ import { projectHistoryGesture } from './stores/projectStore';
 import { HistoryGestureBoundary } from './components/shared/HistoryGestureBoundary';
 import { isNativeMac } from './lib/nativeMenuPlatform';
 import { useNativeMenu } from './hooks/useNativeMenu';
+import { useMediaDrop } from './hooks/useMediaDrop';
 import { useAutosave } from './hooks/useAutosave';
 import { setAudioSessionType, subscribeOpenedFiles } from './lib/native';
 
@@ -26,9 +28,11 @@ const VoiceEffectsModal = lazy(() => import('./components/timeline/VoiceEffectsM
 const TTSModal = lazy(() => import('./components/timeline/TTSModal').then(m => ({ default: m.TTSModal })));
 
 export default function App() {
+  const {t}=useTranslation();
   const { activePanel, setActivePanel, openModal, activeModal } = useUIStore();
 
   // Autosave timeline project structure periodically + on unload
+  const dropping = useMediaDrop();
   useAutosave();
   useNativeMenu();
 
@@ -112,6 +116,7 @@ export default function App() {
 
   return (
     <AppShell>
+      {dropping && <div className="fixed inset-0 z-[100] pointer-events-none flex items-center justify-center bg-indigo-950/50 ring-4 ring-inset ring-indigo-400"><span className="rounded-xl bg-gray-900 px-6 py-4 text-indigo-200">{t('common.dropMedia')}</span></div>}
       {fsSelfTest && (
         <div
           style={{

@@ -1167,3 +1167,20 @@ point. Changing an interior point can invalidate its saved shape: subsequent
 review uses the adjacent segment, and direct handles at the damaged start stay
 hidden. Truncated or unannotated curves retain adjacent-segment editing. Native
 `shape-automation` recipes still use the original first point's time.
+
+
+### Desktop media drops and playback output (0.8.38)
+
+Drop an MP4/video from Finder onto any part of the desktop app window. The app
+switches to Timeline and prepares linked picture and camera audio, unmuted by
+default. Existing picture appends at the composition end; the first picture uses
+the playhead when there is already audio. Drop audio to create a track at the
+playhead. Progress includes Cancel; failed preparation does not add a partial
+video clip. A dropped `.crispaudio` project opens the project.
+
+Settings → Playback device lists actual Mac outputs and changes the macOS system
+output for all apps. Supported browsers route playback per context; unsupported
+browsers use their system output. Test output sends a short tone through the same
+master chain as timeline playback. Its signal check does not prove physical
+speaker audibility. If macOS audio works while the installed app is silent, quit
+and reopen CrispAudio to reset its WebKit process.

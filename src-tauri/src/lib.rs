@@ -35,6 +35,8 @@ pub fn run() {
     let app = builder
         .invoke_handler(tauri::generate_handler![
             native_menu::configure_native_menu,
+            commands::audio_output::list_audio_outputs,
+            commands::audio_output::select_audio_output,
             audio_export::export_wav,
             audio_export::export_wav_binary,
             project::save_project,

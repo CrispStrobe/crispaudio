@@ -725,3 +725,15 @@ curves never infer parent shapes. Direct handles use the resolved `a.time` for
 lane keeps its actual selected point for numeric, movement and deletion edits.
 No native recipe, DSP or project format changes. Native shape recipes still
 address the original start point, not an interior selection.
+
+
+## Playback and Finder drops (0.8.38)
+
+Playback contexts use src/lib/audioOutput.ts for creation, resume and routing.
+Mac output selection uses CoreAudio default-output commands, affecting all apps;
+no microphone permission is requested. Browser routing rolls back failures and
+routes contexts created during a pending selection. Test output checks the shared
+master signal and clock; only a listener can confirm physical audibility.
+useMediaDrop subscribes at app scope to Tauri webview drag events (DOM file drops
+are insufficient on desktop). Paths queue in uiStore until Timeline mounts; video
+uses importVideo with linked unmuted audio, with project-ID/cancellation guards.

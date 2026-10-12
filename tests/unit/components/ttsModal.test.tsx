@@ -34,6 +34,7 @@ beforeAll(() => {
     'AudioContext',
     class {
       state = 'running';
+      addEventListener = vi.fn();
       async decodeAudioData() {
         return { duration: 1.5, sampleRate: 22050, numberOfChannels: 1, getChannelData: () => new Float32Array(10) };
       }

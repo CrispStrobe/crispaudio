@@ -1,8 +1,14 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-12, during local 0.8.37 implementation. This section is the current plan.
+Updated 2026-10-12, during local 0.8.38 implementation. This section is the current plan.
 The implementation records below are historical; their old priorities, missing
 feature lists and test counts do not describe the current application.
+
+Playback/output-device selection and whole-window Finder MP4 drops took priority
+in 0.8.38 after the user reported silent installed-app playback. A fresh app launch
+restored audible output, confirmed by the user; the precise WebKit failure remains
+unidentified. Chorus-rate M2.3 work is parked locally until this playback/import
+increment is complete. M2.3 remains open.
 
 ## Current requested milestone: ASR and spoken-word editing
 

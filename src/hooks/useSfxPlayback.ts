@@ -1,3 +1,4 @@
+import {createPlaybackContext,resumePlaybackContext} from '../lib/audioOutput';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useSfxPlayback(buffer: Float32Array | null, sampleRate: number, isPlaying: boolean, setIsPlaying: (playing: boolean) => void) {
@@ -22,13 +23,13 @@ export function useSfxPlayback(buffer: Float32Array | null, sampleRate: number, 
   const handlePlay = useCallback(async () => {
     if (!buffer) return;
     if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-      audioCtxRef.current = new AudioContext({ sampleRate });
+      audioCtxRef.current = createPlaybackContext({ sampleRate });
     }
     const ctx = audioCtxRef.current;
     stopSource();
     const generation = generationRef.current;
-    if (ctx.state === 'suspended') {
-      try { await ctx.resume(); } catch {
+    {
+      try { await resumePlaybackContext(ctx); } catch {
         if (generation === generationRef.current) setIsPlaying(false);
         return;
       }

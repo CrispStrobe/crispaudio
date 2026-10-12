@@ -1,4 +1,23 @@
 {
+  "audioOutput": {
+    "title": "Playback device",
+    "disconnected": "Selected output unavailable; refresh or choose another device.",
+    "systemDefault": "System default",
+    "macHelp": "Changes the Mac output device for all apps. Refresh after connecting headphones or an audio interface.",
+    "systemHelp": "This browser uses the system output device. Select it in your system sound settings.",
+    "browserHelp": "Routes CrispAudio playback to this output. If devices are missing, use Choose output when available.",
+    "refresh": "Refresh outputs",
+    "choose": "Choose output",
+    "test": "Test output",
+    "sent": "Test signal sent. You should hear a short tone.",
+    "closed": "Audio output closed. Reopen the app.",
+    "notRunning": "Audio output could not start. Retry Test output.",
+    "busy": "Output selection is already in progress.",
+    "unsupported": "Select the output in your system sound settings.",
+    "permissionHelp": "This browser cannot request output devices. Use system sound settings.",
+    "rollbackFailed": "Output routing failed. Reopen the app to restore system output.",
+    "noSignal": "No test signal reached the output. Retry or reopen the app."
+  },
   "nativeMenu": {
     "About CrispAudio": "About CrispAudio",
     "Add Audio Track": "Add Audio Track",
@@ -552,7 +571,8 @@
     "undo": "Undo",
     "redo": "Redo",
     "importError": "Failed to import file",
-    "decodeError": "Could not decode audio file"
+    "decodeError": "Could not decode audio file",
+    "dropMedia": "Drop media here"
   },
   "nav": {
     "sfx": "SFX",

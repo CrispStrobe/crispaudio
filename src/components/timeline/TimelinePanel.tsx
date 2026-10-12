@@ -1,3 +1,4 @@
+import { importVideo } from '../../lib/mediaBin';
 import {GainAutomationLane} from './GainAutomationLane';
 import {TimelineEngineContext} from './timelineEngineContext';
 import { TrackMixer } from './TrackMixer';
@@ -398,6 +399,44 @@ export const TimelinePanel: React.FC = () => {
       }catch(error){setProjectError(String(error));}
     }else fileInputRef.current?.click();
   };
+
+  const droppedPaths = useUIStore(s=>s.pendingDroppedPaths);
+  useEffect(()=>{
+    if(!droppedPaths.length)return;
+    let disposed=false;
+    // StrictMode replays mount effects; drain only after the retained mount.
+    queueMicrotask(()=>{
+    if(disposed)return;
+    const paths=useUIStore.getState().takeDroppedPaths();
+    const abort=new AbortController();importAbort.current?.abort();importAbort.current=abort;
+    let projectId=useProjectStore.getState().project.id;
+    void (async()=>{
+      setProjectError('');
+      try{
+        for(const [index,path] of paths.entries()){
+          abort.signal.throwIfAborted();
+          if(useProjectStore.getState().project.id!==projectId)throw new Error(t('usability.importProjectChanged'));
+          const name=path.split(/[\\/]/).pop()??path;
+          setImportProgress({name,phase:'decoding',index:index+1,total:paths.length});
+          if(/\.(mp4|mov|m4v|mkv|webm|avi|ogv|mpeg|mpg)$/i.test(path))await importVideo(path,true,abort.signal);
+          else if(/\.crispaudio$/i.test(path)){
+            const {readTextFile}=await import('@tauri-apps/plugin-fs');
+            const {project,sources}=await deserializeProject(await readTextFile(path),audioEngine.getContext());
+            abort.signal.throwIfAborted();useProjectStore.getState().loadProjectState(project,sources);projectId=project.id;
+          }else{
+            const {readFile}=await import('@tauri-apps/plugin-fs');
+            const source=await prepareAudioImport(audioEngine.getContext(),{name,filePath:path,read:async()=>{const bytes=await readFile(path);return bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer;}},abort.signal,phase=>setImportProgress({name,phase,index:index+1,total:paths.length}));
+            abort.signal.throwIfAborted();const state=useProjectStore.getState();
+            if(state.project.id!==projectId)throw new Error(t('usability.importProjectChanged'));
+            state.addTrack(name);state.importAudioSource(source,state.playheadPosition,useProjectStore.getState().project.tracks.at(-1)!.id);
+          }
+        }
+      }catch(error){if(!abort.signal.aborted)setProjectError(String(error));}
+      finally{if(importAbort.current===abort){setImportProgress(null);importAbort.current=null;}}
+    })();
+    });
+    return()=>{disposed=true;};
+  },[droppedPaths,audioEngine,t]);
 
   // Files opened from other apps ("Open in CrispAudio", Files, AirDrop):
   // projects replace the session, audio lands at the playhead.

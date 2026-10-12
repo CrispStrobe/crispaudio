@@ -1,4 +1,23 @@
 {
+  "audioOutput": {
+    "title": "Wiedergabegerät",
+    "disconnected": "Gewählte Ausgabe nicht verfügbar; aktualisieren oder anderes Gerät wählen.",
+    "systemDefault": "Systemstandard",
+    "macHelp": "Ändert das Mac-Ausgabegerät für alle Apps. Nach Anschluss von Kopfhörern oder Audiointerface aktualisieren.",
+    "systemHelp": "Dieser Browser nutzt die Systemausgabe. Gerät in den Systemeinstellungen für Ton wählen.",
+    "browserHelp": "Leitet CrispAudio-Wiedergabe an diese Ausgabe. Fehlende Geräte über „Ausgabe wählen“ freigeben, falls verfügbar.",
+    "refresh": "Ausgaben aktualisieren",
+    "choose": "Ausgabe wählen",
+    "test": "Ausgabe testen",
+    "sent": "Testsignal gesendet. Ein kurzer Ton sollte hörbar sein.",
+    "closed": "Audioausgabe geschlossen. App erneut öffnen.",
+    "notRunning": "Audioausgabe konnte nicht starten. Test erneut versuchen.",
+    "busy": "Ausgabewahl läuft bereits.",
+    "unsupported": "Ausgabe in den Systemeinstellungen für Ton wählen.",
+    "permissionHelp": "Dieser Browser kann keine Ausgabegeräte anfordern. Systemeinstellungen für Ton verwenden.",
+    "rollbackFailed": "Ausgaberouting fehlgeschlagen. App für Systemausgabe erneut öffnen.",
+    "noSignal": "Kein Testsignal an der Ausgabe. Erneut versuchen oder App erneut öffnen."
+  },
   "nativeMenu": {
     "About CrispAudio": "Über CrispAudio",
     "Add Audio Track": "Audiospur hinzufügen",
@@ -552,7 +571,8 @@
     "undo": "Rückgängig",
     "redo": "Wiederholen",
     "importError": "Datei konnte nicht importiert werden",
-    "decodeError": "Audiodatei konnte nicht dekodiert werden"
+    "decodeError": "Audiodatei konnte nicht dekodiert werden",
+    "dropMedia": "Medien hier ablegen"
   },
   "nav": {
     "sfx": "SFX",

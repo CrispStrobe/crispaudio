@@ -6,8 +6,8 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 it('waits for resume and cancels a pending play on stop or unmount', async () => {
   let resume!: () => void;
   const context = {
-    state: 'suspended', destination: {}, close: vi.fn(async () => {}),
-    resume: vi.fn(() => new Promise<void>((resolve) => { resume = resolve; })),
+    state: 'suspended', destination: {}, addEventListener: vi.fn(), close: vi.fn(async () => {}),
+    resume: vi.fn(() => new Promise<void>((resolve) => { resume = () => { context.state='running'; resolve(); }; })),
     createBuffer: vi.fn(() => ({ getChannelData: () => new Float32Array(3) })),
     createBufferSource: vi.fn(() => ({ connect: vi.fn(), start: vi.fn(), stop: vi.fn(), disconnect: vi.fn() })),
   };
@@ -19,6 +19,7 @@ it('waits for resume and cancels a pending play on stop or unmount', async () =>
   act(() => result.current.handleStop());
   await act(async () => resume());
   expect(context.createBufferSource).not.toHaveBeenCalled();
+  context.state='suspended';
   act(() => { void result.current.handlePlay(); });
   unmount();
   await act(async () => resume());

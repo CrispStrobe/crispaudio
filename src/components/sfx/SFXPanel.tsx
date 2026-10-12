@@ -1,3 +1,4 @@
+import {createPlaybackContext} from '../../lib/audioOutput';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { SpectrumDisplay } from '../shared/SpectrumDisplay';
 import { ToolButton } from '../common/ToolButton';
@@ -284,7 +285,7 @@ export function SFXPanel() {
   // Send to Timeline
   const sendToTimeline = useCallback(() => {
     if (!buffer) return;
-    const ctx = audioCtxRef.current ?? new AudioContext({ sampleRate });
+    const ctx = audioCtxRef.current ?? createPlaybackContext({ sampleRate });
     if (!audioCtxRef.current) audioCtxRef.current = ctx;
     const audioBuffer = samplesToAudioBuffer(buffer, sampleRate, ctx);
     const peaks = computeWaveformPeaks(buffer, 256);

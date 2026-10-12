@@ -1,3 +1,4 @@
+import {createPlaybackContext,resumePlaybackContext} from '../../lib/audioOutput';
 // ---------------------------------------------------------------------------
 // CrispAudio — VoiceEffectsModal
 // Apply voice processing effects to a timeline segment.
@@ -81,7 +82,7 @@ export function VoiceEffectsModal() {
     const numSamples = Math.floor(segment.duration * sr);
     const channels = source.buffer.numberOfChannels;
 
-    const ctx = audioCtxRef.current ?? new AudioContext();
+    const ctx = audioCtxRef.current ?? createPlaybackContext();
     if (!audioCtxRef.current) audioCtxRef.current = ctx;
 
     const extracted = ctx.createBuffer(channels, numSamples, sr);
@@ -124,9 +125,9 @@ export function VoiceEffectsModal() {
       const processed = await voiceEngine.processAudio(buf, settings);
       previewBufferRef.current = processed;
 
-      const ctx = audioCtxRef.current ?? new AudioContext();
+      const ctx = audioCtxRef.current ?? createPlaybackContext();
       if (!audioCtxRef.current) audioCtxRef.current = ctx;
-      if (ctx.state === 'suspended') await ctx.resume();
+      await resumePlaybackContext(ctx);
 
       const src = ctx.createBufferSource();
       src.buffer = processed;

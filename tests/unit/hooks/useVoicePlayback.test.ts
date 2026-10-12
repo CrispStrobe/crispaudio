@@ -10,8 +10,8 @@ const buffer: AudioBuffer = {
 function setup() {
   const resumes: { resolve: () => void; reject: (error: Error) => void }[] = [];
   const context = {
-    state: 'suspended', destination: {}, close: vi.fn(async () => {}),
-    resume: vi.fn(() => new Promise<void>((resolve, reject) => { resumes.push({ resolve, reject }); })),
+    state: 'suspended', destination: {}, addEventListener: vi.fn(), close: vi.fn(async () => {}),
+    resume: vi.fn(() => new Promise<void>((resolve, reject) => { resumes.push({ resolve: () => {context.state='running';resolve();}, reject }); })),
     createBufferSource: vi.fn(() => ({
       buffer: null as AudioBuffer | null, onended: null as (() => void) | null,
       connect: vi.fn(), start: vi.fn(), stop: vi.fn(), disconnect: vi.fn(),

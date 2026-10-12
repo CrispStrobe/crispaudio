@@ -1,3 +1,4 @@
+import {createPlaybackContext,resumePlaybackContext} from '../lib/audioOutput';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 type PlayingBuffer = 'source' | 'processed';
@@ -27,13 +28,13 @@ export function useVoicePlayback() {
   const handlePlay = useCallback(async (buffer: AudioBuffer | null, which: PlayingBuffer) => {
     if (!buffer) return;
     if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-      audioCtxRef.current = new AudioContext({ sampleRate: buffer.sampleRate });
+      audioCtxRef.current = createPlaybackContext({ sampleRate: buffer.sampleRate });
     }
     const ctx = audioCtxRef.current;
     stopSource();
     const generation = generationRef.current;
-    if (ctx.state === 'suspended') {
-      try { await ctx.resume(); } catch {
+    {
+      try { await resumePlaybackContext(ctx); } catch {
         if (generation === generationRef.current) setPlayingBuffer(null);
         return;
       }

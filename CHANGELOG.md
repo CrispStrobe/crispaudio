@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.38 — 2026-10-12
+
+- Add a playback-device selector and a short output test in Settings. On macOS,
+  selection changes the system output; supported browsers route live and new
+  playback contexts to the selected device, with rollback on failure.
+- Resume interrupted playback contexts and use the hardware's default sample
+  rate. Keep gesture recovery active after the first interaction.
+- Accept Finder media drops anywhere in the desktop app, switch to the timeline,
+  and import MP4/video as linked picture and unmuted camera audio. Audio drops
+  create tracks; project drops open the project. Show progress and cancellation.
+- Reject a video import if the project changes while it is being prepared.
+
 ## 0.8.37 — 2026-10-12
 
 - Select any interior point of an intact saved automation shape to expose its

@@ -5,6 +5,7 @@
 // ---------------------------------------------------------------------------
 
 import { useRef, useCallback, useEffect, useMemo } from 'react';
+import {createPlaybackContext,resumePlaybackContext} from '../lib/audioOutput';
 
 export interface AudioEngineHandle {
   getContext: () => AudioContext;
@@ -31,7 +32,7 @@ function getOrCreateCtx(): {
     };
   }
 
-  const ctx = new AudioContext({ sampleRate: 44100, latencyHint: 'interactive' });
+  const ctx = createPlaybackContext({ latencyHint: 'interactive' });
 
   const masterGain = ctx.createGain();
   masterGain.gain.value = 1;
@@ -59,15 +60,15 @@ export function useAudioEngine(): AudioEngineHandle {
     initialized.current = true;
 
     const resume = () => {
-      if (sharedCtx && sharedCtx.state === 'suspended') {
-        void sharedCtx.resume();
+      if (sharedCtx && sharedCtx.state !== 'running') {
+        void resumePlaybackContext(sharedCtx).catch(()=>{});
       }
     };
 
     // iOS / Chrome require a gesture before AudioContext can start
-    window.addEventListener('click', resume, { once: true });
-    window.addEventListener('keydown', resume, { once: true });
-    window.addEventListener('touchstart', resume, { once: true });
+    window.addEventListener('click', resume);
+    window.addEventListener('keydown', resume);
+    window.addEventListener('touchstart', resume);
 
     return () => {
       window.removeEventListener('click', resume);
@@ -83,9 +84,7 @@ export function useAudioEngine(): AudioEngineHandle {
 
   const resume = useCallback(async () => {
     const { ctx } = getOrCreateCtx();
-    if (ctx.state === 'suspended') {
-      await ctx.resume();
-    }
+    await resumePlaybackContext(ctx);
   }, []);
 
   // Ensure nodes are created

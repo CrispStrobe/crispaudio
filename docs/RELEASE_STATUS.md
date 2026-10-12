@@ -18,6 +18,45 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.8.38 — playback output and Finder media drops
+
+Settings lists real CoreAudio outputs on macOS (selection changes system output
+for all apps), with a shared-master test tone. Supported browser contexts route to
+the selected output and roll back a failed selection. Interrupted contexts resume,
+the shared engine uses the hardware sample rate, and gesture recovery stays active.
+
+The user initially heard no installed-app tone despite a running graph and positive
+software signal. A separate macOS-native tone was audible. Quitting and reopening
+the installed app restored its test tone, confirmed by the user. Repeated WebKit
+GPU audio IPC failures were observed, but the root cause is not established and
+this is not proof of a permanent fix. No permissions or system volume were changed.
+A signal meter alone does not prove speaker audibility.
+
+Whole-window Tauri/Finder drops switch from any panel to Timeline. Video imports
+linked picture plus unmuted camera audio; audio imports tracks; project drops open
+the project. Cancellation/project-change guards protect prepared video commits.
+A development StrictMode mount replay originally consumed and cancelled the first
+drop; deferring queue consumption to the retained mount corrected it.
+
+Chrome and Playwright WebKit integration passed global Tauri drop events from SFX,
+linked/unmuted AV, actual synthetic H.264 picture playback, audio transport and
+undo/redo. The native bridge was mocked in these browser tests; this is not proof
+of a physical Finder drag in the installed app. The user's real MP4 passed native
+Apple extraction to a 48 kHz stereo WAV, with nonzero peak/RMS measured separately.
+Earlier output-chain browser audits passed signal/clock, replay and German 390px
+layout; browser routing/rollback passed in Chrome, WebKit follows system output.
+
+Installed app 0.8.38 is ad-hoc signed/verified and launched, with one autosave
+preserved and a separate full recovery backup. The existing optimized CLI is
+unchanged (no media DSP changes). Final frontend: 126 files / 1486 tests passed;
+lint, full TypeScript/Vite and Tauri app build passed. Native app: 18 tests passed,
+one hardware-only test normally ignored; that hardware test passed explicitly on
+this Mac, enumerating the real default and selecting the same UID. Media tests:
+107 library + 3 CLI passed, 10 existing ignored.
+
+M2.3 remains open; the local chorus-rate WIP is parked while this requested
+playback/import increment ships. No tags or Apple uploads.
+
 ## Local 0.8.37 — select interior shape points
 
 Installed local app and optimized standalone CLI are ad-hoc signed and verified;

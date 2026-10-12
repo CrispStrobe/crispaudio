@@ -7,6 +7,7 @@ import { videoClips } from './videoEditing';
 import { timelineDuration } from './timelineView';
 /** Prepare all data first; a failed import leaves the arrangement untouched. */
 export async function importVideo(path:string,withAudio:boolean,signal?:AbortSignal){
+  const projectId=useProjectStore.getState().project.id;
   const info=await invoke<MediaInfo>('probe_media',{path});
   if(!info.has_video)throw new Error('No video stream');
   let audio: {path:string;buffer:AudioBuffer}|undefined;
@@ -17,6 +18,7 @@ export async function importVideo(path:string,withAudio:boolean,signal?:AbortSig
     audio={path:extracted,buffer:await ctx.decodeAudioData(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer)};
   }
   signal?.throwIfAborted();
+  if(useProjectStore.getState().project.id!==projectId)throw new Error('Project changed during media import');
   const state=useProjectStore.getState(),id=crypto.randomUUID(),group=audio?crypto.randomUUID():undefined,name=path.split(/[\\/]/).pop()||'Video';
   const start=state.project.video?timelineDuration(state.project):(state.project.tracks.some(t=>t.segments.length)?Math.max(0,state.playheadPosition):0);
   const clip={id:crypto.randomUUID(),startTime:start,duration:info.duration,sourceOffset:0,fadeIn:0,fadeOut:0,transition:'cut' as const,transitionDuration:0,linkGroup:group,...(state.project.video?{sourceId:id}:{})};
@@ -24,7 +26,7 @@ export async function importVideo(path:string,withAudio:boolean,signal?:AbortSig
   const sources=new Map(state.sources),tracks=[...state.project.tracks];
   if(audio){const sourceId=crypto.randomUUID(),trackId=crypto.randomUUID(),buffer=audio.buffer;
     sources.set(sourceId,{id:sourceId,name,buffer,duration:buffer.duration,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels,filePath:audio.path,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))});
-    tracks.push({id:trackId,name,muted:tracks.some(t=>t.segments.length),solo:false,pan:0,volume:1,segments:[{id:crypto.randomUUID(),trackId,sourceId,startTime:start,duration:Math.min(info.duration,buffer.duration),sourceOffset:0,linkGroup:group,fadeInDuration:0,fadeOutDuration:0,fadeInCurve:'linear',fadeOutCurve:'linear',effects:[],gain:1,color:'#a78bfa',name}]});
+    tracks.push({id:trackId,name,muted:false,solo:false,pan:0,volume:1,segments:[{id:crypto.randomUUID(),trackId,sourceId,startTime:start,duration:Math.min(info.duration,buffer.duration),sourceOffset:0,linkGroup:group,fadeInDuration:0,fadeOutDuration:0,fadeInCurve:'linear',fadeOutCurve:'linear',effects:[],gain:1,color:'#a78bfa',name}]});
   }
   const project={...state.project,video,tracks};useProjectStore.setState({project:{...project,duration:timelineDuration(project)},sources,isPlaying:false});
 }

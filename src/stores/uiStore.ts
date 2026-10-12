@@ -21,6 +21,7 @@ interface UIState {
   voiceEffectsTargetSegmentId: string | null;
   /** Files opened from other apps, waiting for the timeline to import them. */
   pendingOpenedFiles: OpenedFile[];
+  pendingDroppedPaths: string[];
 
   setActivePanel: (panel: ActivePanel) => void;
   openModal: (modal: Exclude<ActiveModal, null>) => void;
@@ -32,6 +33,8 @@ interface UIState {
   setSnapInterval: (interval: number) => void;
   queueOpenedFiles: (files: OpenedFile[]) => void;
   takeOpenedFiles: () => OpenedFile[];
+  queueDroppedPaths: (paths: string[]) => void;
+  takeDroppedPaths: () => string[];
 }
 
 // Optional build-time override of the starting panel — used only by the
@@ -52,6 +55,7 @@ export const useUIStore = create<UIState>()((set, get) => ({
   snapInterval: 16,
   voiceEffectsTargetSegmentId: null,
   pendingOpenedFiles: [],
+  pendingDroppedPaths: [],
 
   setActivePanel: (panel) => set({ activePanel: panel }),
   openModal: (modal) => set({ activeModal: modal }),
@@ -83,6 +87,8 @@ export const useUIStore = create<UIState>()((set, get) => ({
       pendingOpenedFiles: [...state.pendingOpenedFiles, ...files],
       activePanel: 'timeline',
     })),
+  queueDroppedPaths: (paths) => set(state => ({pendingDroppedPaths:[...state.pendingDroppedPaths,...paths],activePanel:"timeline",activeModal:null})),
+  takeDroppedPaths: () => {const paths=get().pendingDroppedPaths;if(paths.length)set({pendingDroppedPaths:[]});return paths;},
   takeOpenedFiles: () => {
     const files = get().pendingOpenedFiles;
     if (files.length > 0) set({ pendingOpenedFiles: [] });

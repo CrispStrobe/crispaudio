@@ -1,3 +1,4 @@
+import {createPlaybackContext,resumePlaybackContext} from '../../lib/audioOutput';
 // ---------------------------------------------------------------------------
 // CrispAudio — TTSModal
 // Text-to-speech dialog: enter text, pick a voice, generate audio, preview,
@@ -67,7 +68,7 @@ export function TTSModal() {
 
   const getOrCreateCtx = useCallback(() => {
     if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-      audioCtxRef.current = new AudioContext();
+      audioCtxRef.current = createPlaybackContext();
     }
     return audioCtxRef.current;
   }, []);
@@ -115,7 +116,7 @@ export function TTSModal() {
     if (!generatedBuffer) return;
 
     const ctx = getOrCreateCtx();
-    if (ctx.state === 'suspended') await ctx.resume();
+    await resumePlaybackContext(ctx);
 
     const src = ctx.createBufferSource();
     src.buffer = generatedBuffer;

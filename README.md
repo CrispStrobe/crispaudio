@@ -76,6 +76,14 @@ macOS menus expose file, edit, playback and view actions.
 | Desktop video export | MP4/MOV H.264 + AAC through Apple frameworks or optional FFmpeg; VP9/AV1 WebM through optional FFmpeg |
 | Native CLI audio export | Linked projects to WAV; macOS also supports FLAC and AAC/M4A |
 
+On desktop, drag an MP4 or other supported video from Finder onto any part of the
+app window to create linked picture and camera-audio clips. Imported camera audio
+starts unmuted. Settings → Playback device lists Mac outputs (selection changes
+macOS output for all apps) and offers a short output test. Browser device selection
+is available where supported; other browsers follow the system output. If the
+installed app becomes silent while the system can play audio, quit and reopen it
+to reset its WebKit audio process.
+
 macOS 13+ provides the native media backend. Whip, glitch and page-peel transitions
 require compatible Metal hardware. Automatic synchronization, denoising/loudness
 preparation and some format paths require separately installed FFmpeg/FFprobe.

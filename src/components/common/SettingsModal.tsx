@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { useTranslation } from 'react-i18next';
+import {AudioOutputSettings} from './AudioOutputSettings';
 import { Info } from 'lucide-react';
 import { Modal } from './Modal';
 import { isIOSApp } from '../../lib/native';
@@ -69,6 +70,7 @@ export function SettingsModal() {
       title={t('settings.title')}
     >
       <div className="flex flex-col gap-5">
+        {activeModal==='settings'&&<AudioOutputSettings/>}
         {/* Language */}
         <div>
           <label className={fieldLabel} htmlFor="settings-language">

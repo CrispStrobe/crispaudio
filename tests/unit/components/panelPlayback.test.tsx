@@ -22,6 +22,7 @@ class FakeSource {
 class FakeContext {
   static instances: FakeContext[] = [];
   state = 'running';
+  addEventListener = vi.fn();
   destination = {};
   sources: FakeSource[] = [];
   resume = vi.fn(async () => { this.state = 'running'; });
@@ -48,36 +49,36 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-const playSfx = () => fireEvent.click(screen.getByRole('button', { name: /sfx.play A/ }));
+const playSfx = async () => {await act(async()=>{fireEvent.click(screen.getByRole('button', { name: /sfx.play A/ }));});};
 const stopSfx = () => fireEvent.click(screen.getByRole('button', { name: 'sfx.stop' }));
 
 describe('store render isolation', () => {
-  it('does not render SFX waveform interactions for export quality changes', () => {
+  it('does not render SFX waveform interactions for export quality changes', async () => {
     render(<SFXPanel />);
     translate.mockClear();
     act(() => useSynthStore.setState({ bitDepth: 24 }));
     expect(translate.mock.calls.filter(([key]) => key === 'sfx.zoomIn')).toHaveLength(0);
   });
-  it('does not render Voice visualizations for processing changes', () => {
+  it('does not render Voice visualizations for processing changes', async () => {
     useVoiceStore.setState({ isProcessing: false });
     render(<VoicePanel />);
     translate.mockClear();
     act(() => useVoiceStore.getState().setIsProcessing(true));
     expect(translate.mock.calls.filter(([key]) => key === 'voice.noAudio')).toHaveLength(0);
   });
-  it('does not render SFX parameter controls for playback changes', () => {
+  it('does not render SFX parameter controls for playback changes', async () => {
     render(<SFXPanel />);
     translate.mockClear();
     act(() => useSynthStore.getState().setIsPlaying(true));
     expect(translate.mock.calls.filter(([key]) => key === 'sfx.baseFreq')).toHaveLength(0);
   });
-  it('does not render voice parameter controls for processing changes', () => {
+  it('does not render voice parameter controls for processing changes', async () => {
     render(<VoicePanel />);
     translate.mockClear();
     act(() => useVoiceStore.getState().setIsProcessing(true));
     expect(translate.mock.calls.filter(([key]) => key === 'voice.pitchShift')).toHaveLength(0);
   });
-  it('refreshes the visible B waveform without changing the active A sound', () => {
+  it('refreshes the visible B waveform without changing the active A sound', async () => {
     render(<SFXPanel />);
     const before = useSynthStore.getState();
     act(() => useSynthStore.setState({ paramsB: { ...before.paramsB, p_base_freq: 0.72 } }));
@@ -86,7 +87,7 @@ describe('store render isolation', () => {
     expect(after.bufferA).toBe(before.bufferA);
     expect(after.buffer).toBe(before.buffer);
   });
-  it('VoicePanel ignores inactive slot edits', () => {
+  it('VoicePanel ignores inactive slot edits', async () => {
     const onRender = vi.fn();
     render(<Profiler id="voice" onRender={onRender}><VoicePanel /></Profiler>);
     onRender.mockClear();
@@ -96,18 +97,18 @@ describe('store render isolation', () => {
 });
 
 describe('Voice playback', () => {
-  it('ignores replaced source callbacks and disconnects on unmount', () => {
+  it('ignores replaced source callbacks and disconnects on unmount', async () => {
     const buffer: AudioBuffer = {
       sampleRate: 44100, duration: 1, length: 3, numberOfChannels: 1,
       getChannelData: () => new Float32Array(3), copyFromChannel: vi.fn(), copyToChannel: vi.fn(),
     };
     useVoiceStore.setState({ sourceBuffer: buffer, processedBuffer: buffer });
     const { unmount } = render(<VoicePanel />);
-    fireEvent.click(screen.getByRole('button', { name: 'voice.playSource' }));
+    await act(async()=>{fireEvent.click(screen.getByRole('button', { name: 'voice.playSource' }));});
     const ctx = FakeContext.instances[0];
     const oldEnded = ctx.sources[0].onended;
     fireEvent.click(screen.getByRole('button', { name: 'voice.stopSource' }));
-    fireEvent.click(screen.getByRole('button', { name: 'voice.playProcessed' }));
+    await act(async()=>{fireEvent.click(screen.getByRole('button', { name: 'voice.playProcessed' }));});
     act(() => oldEnded?.());
     expect(screen.getByRole('button', { name: 'voice.stopProcessed' })).not.toBeNull();
     unmount();
@@ -117,7 +118,7 @@ describe('Voice playback', () => {
 });
 
 describe('SFX waveform interaction', () => {
-  it('preserves independent zoom, pointer pan, and reset across panel updates', () => {
+  it('preserves independent zoom, pointer pan, and reset across panel updates', async () => {
     const { container } = render(<SFXPanel />);
     fireEvent.click(screen.getAllByRole('button', { name: 'sfx.zoomIn' })[0]);
     expect(screen.getAllByTitle('sfx.zoomReset')).toHaveLength(1);
@@ -136,20 +137,20 @@ describe('SFX waveform interaction', () => {
 });
 
 describe('SFX playback', () => {
-  it('ignores a replaced source ending after replay has started', () => {
+  it('ignores a replaced source ending after replay has started', async () => {
     render(<SFXPanel />);
-    playSfx();
+    await playSfx();
     const ctx = FakeContext.instances[0];
     const oldEnded = ctx.sources[0].onended;
     stopSfx();
-    playSfx();
+    await playSfx();
     act(() => oldEnded?.());
     expect(useSynthStore.getState().isPlaying).toBe(true);
     expect(ctx.sources[0].disconnect).toHaveBeenCalled();
   });
-  it('loops continuously on the same source and disables looping in place', () => {
+  it('loops continuously on the same source and disables looping in place', async () => {
     render(<SFXPanel />);
-    fireEvent.click(screen.getByRole('button', { name: 'sfx.loop' }));
+    await act(async()=>{fireEvent.click(screen.getByRole('button', { name: 'sfx.loop' }));});
     const ctx = FakeContext.instances[0];
     expect(ctx.sources[0].loop).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'sfx.stopLoop' }));
@@ -157,21 +158,21 @@ describe('SFX playback', () => {
     expect(ctx.sources[0].stop).not.toHaveBeenCalled();
     expect(ctx.sources).toHaveLength(1);
   });
-  it('suspends on stop and resumes the same AudioContext on replay', () => {
+  it('suspends on stop and resumes the same AudioContext on replay', async () => {
     render(<SFXPanel />);
-    playSfx();
+    await playSfx();
     stopSfx();
     const ctx = FakeContext.instances[0];
     ctx.state = 'suspended';
-    playSfx();
+    await playSfx();
     expect(ctx.resume).toHaveBeenCalled();
     expect(FakeContext.instances).toHaveLength(1);
   });
 
-  it('clears pending replay timers and does not restart after unmount', () => {
+  it('clears pending replay timers and does not restart after unmount', async () => {
     vi.useFakeTimers();
     render(<SFXPanel />);
-    playSfx();
+    await playSfx();
     const ctx = FakeContext.instances[0];
     cleanup();
     vi.advanceTimersByTime(100);
@@ -179,11 +180,11 @@ describe('SFX playback', () => {
     vi.useRealTimers();
   });
 
-  it('reuses the converted buffer on replay with a fresh source', () => {
+  it('reuses the converted buffer on replay with a fresh source', async () => {
     render(<SFXPanel />);
-    playSfx();
+    await playSfx();
     stopSfx();
-    playSfx();
+    await playSfx();
     const ctx = FakeContext.instances[0];
     expect(ctx.sources).toHaveLength(2);
     expect(ctx.createBuffer).toHaveBeenCalledTimes(1);
