@@ -14,7 +14,7 @@ export async function openMidiInputs(): Promise<MidiAccessHandle> {
         return { ports: () => ports, close: () => { }, connect: async (id, onMessage, onDisconnect) => {
                 const session = crypto.randomUUID();
                 let closed = false;
-                
+
                 const unlisten = await listen<{
                     session: string;
                     data: number[];
