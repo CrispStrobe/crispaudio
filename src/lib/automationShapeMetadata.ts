@@ -37,6 +37,21 @@ export function reviewedShapeSegment(points:GainPoint[],index:number) {
  return {a,b,endIndex,review:m};
 }
 
+/** An intact shape owns its start and interior points, never its right endpoint.
+ * Shared endpoints belong to the outgoing span. Never infer an older curve or
+ * extend a damaged hint; saved shapes have at most sixteen intervals. */
+export function reviewedShapeForPoint(points:GainPoint[],index:number) {
+ if(!points[index])return undefined;
+ const own=reviewedShapeSegment(points,index);
+ if(own||points[index].shapeReview!==undefined)return own;
+ for(let start=index-1;start>=Math.max(0,index-16);start--){
+  if(!points[start].shapeReview)continue;
+  const saved=reviewedShapeSegment(points,start);
+  if(saved&&index<saved.endIndex)return saved;
+ }
+ return undefined;
+}
+
 /** Polynomial presets have exact cubic equivalents with a linear time axis.
  * Merely exposing handles never rewrites the saved points or their metadata. */
 export function shapeHandleControls(shape:Exclude<AutomationShape,'custom'>):AutomationShapeControls {
@@ -45,8 +60,8 @@ export function shapeHandleControls(shape:Exclude<AutomationShape,'custom'>):Aut
 /** Intact saved spans use their original endpoint; ordinary Linear uses its next
  * point. A damaged hint must never silently become a different direct span. */
 export function curveHandleSegment(points:GainPoint[],index:number,sampleRate:number,endTime=Infinity) {
- const a=points[index];if(!a||a.curve==='step')return undefined;
- const saved=reviewedShapeSegment(points,index);
+ const selected=points[index];if(!selected||selected.curve==='step')return undefined;
+ const saved=reviewedShapeForPoint(points,index),a=saved?.a??selected;
  if(a.shapeReview!==undefined&&!saved)return undefined;
  const b=saved?.b??points[index+1];
  if(!b||!Number.isFinite(sampleRate)||sampleRate<=0||b.time>endTime||b.time-a.time<2/sampleRate-1e-12||a.value===b.value)return undefined;

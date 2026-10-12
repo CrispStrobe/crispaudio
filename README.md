@@ -119,11 +119,13 @@ with keyboard and numeric time/value controls. Time handles cannot cross; values
 stay between the endpoints. Apply creates up to 15 editable linear
 points in one undo step, keeping endpoints and outside automation fixed. Gain
 shapes interpolate amplitude. Copy/retime, recording guards and exports retain
-the generated points. Newly applied shapes save their review handles. Select the first shaped point
-to reopen and revise the original whole span, or choose Linear to flatten it.
-Linear segments and intact saved preset/custom spans expose two purple timeline
-handles when their first point is selected. Drag or use arrows to reshape the whole span; release commits
-one undo step, Escape cancels. Preset handles start at equivalent Bézier controls;
+the generated points. Newly applied shapes save their review handles. Select the
+start or any interior shaped point to reopen and revise the original whole span,
+or choose Linear to flatten it. Two purple timeline handles appear for intact
+saved preset/custom spans and ordinary Linear segments. Drag or use arrows to
+reshape the span; release commits one undo step, Escape cancels. Shared endpoints
+select the outgoing span; individual point edits still affect the selected point.
+Preset handles start at equivalent Bézier controls;
 changing a handle converts the whole span to custom points. Selecting or returning
 to the original curve preserves history. Gain follows the lane’s dB scale.
 Reapplying the same shape keeps history unchanged. Interior point edits or partial

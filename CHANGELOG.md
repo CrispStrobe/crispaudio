@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.8.37 — 2026-10-12
+
+- Select any interior point of an intact saved automation shape to expose its
+  whole-span timeline handles or reopen the original shape review. Individual
+  point edits still target the selected point; shared endpoints select the
+  outgoing span. Selection and unchanged reviews preserve history and redo.
+- Keep damaged, truncated and unannotated curves on adjacent-point editing;
+  saved points, native recipes and DSP remain unchanged.
+
 ## 0.8.36 — 2026-10-12
 
 - Add chorus depth automation (0–100%, up to ±10 ms modulation) with direct

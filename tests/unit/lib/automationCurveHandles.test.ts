@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest';
-import {curveHandleSegment,shapeHandleControls,customShapeProgress,shapeProgress,type AutomationShape} from '../../../src/lib/automationShapeMetadata';
+import {curveHandleSegment,reviewedShapeForPoint,shapeHandleControls,customShapeProgress,shapeProgress,type AutomationShape} from '../../../src/lib/automationShapeMetadata';
 import {shapeAutomationSegment} from '../../../src/lib/automationShape';
 import {targetPoints,type AutomationTarget} from '../../../src/lib/automationRecording';
 import {useProjectStore} from '../../../src/stores/projectStore';
@@ -23,4 +23,35 @@ it('excludes damaged hints, Step, flat, missing endpoints and unshapeable clocks
  points[5].value+=.01;expect(curveHandleSegment(points,1,48000)).toBeUndefined();
  for(const [a,b] of [[{time:1,value:0,curve:'step' as const},{time:3,value:1}],[{time:1,value:1},{time:3,value:1}],[{time:1,value:0},{time:1+1/48000,value:1}]])expect(curveHandleSegment([a,b],0,48000)).toBeUndefined();
  expect(curveHandleSegment([{time:1,value:0}],0,48000)).toBeUndefined();expect(curveHandleSegment([{time:1,value:0},{time:3,value:1}],0,0)).toBeUndefined();expect(curveHandleSegment([{time:1,value:0},{time:3,value:1}],0,48000,2)).toBeUndefined();
+});
+
+it('resolves every interior saved point to the original span without altering point selection',()=>{
+ for(const shape of ['ease-in','ease-out','s-curve','custom'] as const){
+  const target={trackId:'t',parameter:'gain' as const},project=shapeAutomationSegment(fixture(),target,1,shape,{x1:.2,y1:.3,x2:.7,y2:.8});
+  const points=JSON.parse(JSON.stringify(project.tracks[0].automation!));
+  for(let index=1;index<17;index++){
+   const span=curveHandleSegment(points,index,48000,4)!;
+   expect(span.a.time).toBe(1);expect(span.b.time).toBe(3);
+   expect(reviewedShapeForPoint(points,index)?.endIndex).toBe(17);
+   expect(shapeAutomationSegment(project,target,span.a.time,'custom',span.controls)).toBe(project);
+  }
+  // Right boundary is Step here and must not select its incoming shape.
+  expect(reviewedShapeForPoint(points,17)).toBeUndefined();expect(curveHandleSegment(points,17,48000,4)).toBeUndefined();
+ }
+});
+it('uses the outgoing shape at shared boundaries and retains adjacent editing after damage',()=>{
+ const target={trackId:'t',parameter:'gain' as const},base=fixture();base.tracks[0].automation![2].curve=undefined;
+ const p=shapeAutomationSegment(shapeAutomationSegment(base,target,1,'ease-in'),target,3,'ease-out'),points=p.tracks[0].automation!;
+ expect(reviewedShapeForPoint(points,17)?.a.time).toBe(3);expect(curveHandleSegment(points,18,48000,4)?.b.time).toBe(4);
+ points[5].value+=.01;
+ expect(reviewedShapeForPoint(points,8)).toBeUndefined();expect(curveHandleSegment(points,8,48000,4)?.a).toBe(points[8]);expect(curveHandleSegment(points,8,48000,4)?.b).toBe(points[9]);
+ expect(curveHandleSegment(points,1,48000,4)).toBeUndefined();
+ expect(reviewedShapeForPoint(points,-1)).toBeUndefined();expect(reviewedShapeForPoint(points,points.length)).toBeUndefined();
+});
+it('never guesses parent shapes from unannotated or partially copied points',()=>{
+ const target={trackId:'t',parameter:'gain' as const},p=shapeAutomationSegment(fixture(),target,1,'s-curve'),points=p.tracks[0].automation!;
+ for(const fragment of [points.slice(2),points.slice(0,10),points.map(({time,value,curve})=>({time,value,curve}))]){
+  expect(reviewedShapeForPoint(fragment,5)).toBeUndefined();
+  expect(curveHandleSegment(fragment,5,48000,4)?.a).toBe(fragment[5]);expect(curveHandleSegment(fragment,5,48000,4)?.b).toBe(fragment[6]);
+ }
 });

@@ -1275,7 +1275,7 @@
     "shape_custom": "Eigene Bézierkurve",
     "invalidShapeControls": "Griffwerte müssen zwischen 0 und 100 % liegen; Zeitgriffe dürfen sich nicht kreuzen.",
     "inlineShapeHandle": "Kurvengriff {{index}}",
-    "inlineShapeHelp": "Ziehen oder Pfeiltasten: diesen Abschnitt formen. Loslassen übernimmt einmal; Escape verwirft. Umschalt für größere Schritte.",
+    "inlineShapeHelp": "Start- oder Innenpunkt der Form wählen. Ziehen oder Pfeiltasten formt den ganzen Abschnitt. Loslassen übernimmt einmal; Escape verwirft. Umschalt für größere Schritte.",
     "shapeHandle": "Griff {{index}}",
     "handleTime": "Zeit",
     "handleValue": "Wert",

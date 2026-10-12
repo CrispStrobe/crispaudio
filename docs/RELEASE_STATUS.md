@@ -18,6 +18,44 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.8.37 — select interior shape points
+
+Installed local app and optimized standalone CLI are ad-hoc signed and verified;
+the existing autosave was preserved.
+
+The start or any interior point of an intact saved preset/custom shape now
+exposes whole-span timeline handles and reopens its original shape review.
+Shared endpoints select the outgoing span. Numeric, arrow and deletion edits
+still target the selected point; damaged, truncated and unannotated curves keep
+adjacent-segment editing. Native recipes still address the original start time.
+No DSP, native recipe or project-format change.
+
+Validation on this Mac:
+
+- **123 frontend files / 1,478 tests passed** (three new tests), lint and full
+  TypeScript/Vite build passed. Tauri app and optimized CLI builds passed.
+- **107 native library + 3 CLI tests passed**, 10 existing ignored.
+- Chrome and Playwright WebKit each passed **234 keyboard/pointer edits** from
+  start/interior selections, with **468 exact native project comparisons**.
+  No-op selection, return to baseline, cancellation, undo/redo, bounds, locks,
+  stale project, recording protection, flat/Step/short spans and German 390px
+  checks passed. Interior review restored original bounds/controls, unchanged
+  Apply kept history, Linear flattened the whole span, and numeric editing
+  affected only the actual interior point. Actual WebKit interior point click
+  and German 390px screenshot passed and were visually inspected.
+- Existing custom-shape regression: ten cases per browser, native generation,
+  save/open, live no-restart, history and exact full/range crops passed. Gain,
+  pan, delay mix/feedback peaks Chrome **8.046627e-7**, WebKit **7.748604e-7**
+  pass 2e-6. Chrome delay-time peak **3.774464e-5** passes 1e-4. WebKit initial
+  custom delay-time still **fails 1e-4** at **2.8939545e-4**, byte-identical to
+  installed 0.8.36 native output for that project; this is a known-limit report,
+  not a parity pass. Revised delay-time case passes.
+
+Other delay/FX precision and tail limits remain unresolved and were not rerun.
+Browser viewport checks are not physical iOS or installed WKWebView validation.
+M2.3 remains open for further selected FX parameters and broader curve editing.
+No release tag or Apple upload was created.
+
 ## Local 0.8.36 — chorus depth automation
 
 Installed local app and optimized standalone CLI are ad-hoc signed and verified;

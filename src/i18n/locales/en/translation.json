@@ -1275,7 +1275,7 @@
     "shape_custom": "Custom Bézier",
     "invalidShapeControls": "Handle values must be between 0 and 100%; time handles cannot cross.",
     "inlineShapeHandle": "Curve handle {{index}}",
-    "inlineShapeHelp": "Drag or use arrows to shape this span. Release commits once; Escape cancels. Shift uses larger steps.",
+    "inlineShapeHelp": "Select a start or interior shape point. Drag or use arrows to reshape the whole span. Release commits once; Escape cancels. Shift uses larger steps.",
     "shapeHandle": "Handle {{index}}",
     "handleTime": "Time",
     "handleValue": "Value",

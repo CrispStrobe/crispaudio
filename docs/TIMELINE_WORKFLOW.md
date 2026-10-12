@@ -1153,3 +1153,17 @@ exports support depth on clip, track and master racks; range edits retime depth
 with the selected scope. Native effect-automation, shape-automation,
 automation-pass and paste-effect-automation recipes use parameter:"depth" with
 chorus inserts, in 0–1 values. Existing chorus wet-tail/precision limits remain.
+
+## Select interior shape points (0.8.37)
+
+Select the start or any interior point of an intact saved preset/custom shape
+for its whole-span purple timeline handles. **Shape outgoing segment** also
+reopens that shape's original bounds and controls. Cancelling or applying an
+unchanged review preserves history and redo; revising replaces the whole span.
+At a shared endpoint, handles and review belong to the outgoing span.
+
+The numeric fields, arrows on the point and Delete still edit the actual selected
+point. Changing an interior point can invalidate its saved shape: subsequent
+review uses the adjacent segment, and direct handles at the damaged start stay
+hidden. Truncated or unannotated curves retain adjacent-segment editing. Native
+`shape-automation` recipes still use the original first point's time.

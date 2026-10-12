@@ -714,3 +714,14 @@ both LFO gains. createChorus optional seventh callback preserves old arity5.
 TimelineEngine schedules/updates/previews both gains without graph restart;
 transport key strips chorus depth and mix only. Native Chorus.depth_automation
 sets per-frame amplitude, while empty/static branches keep the previous scalar.
+
+## Interior shape selection (0.8.37)
+
+`reviewedShapeForPoint` resolves a saved shape's start or strict interior point,
+using the existing integrity check and at most sixteen preceding points. Right
+endpoints belong to the outgoing span; damaged hints and older unannotated
+curves never infer parent shapes. Direct handles use the resolved `a.time` for
+`shapeAutomationSegment`; the review dialog also uses that original start. The
+lane keeps its actual selected point for numeric, movement and deletion edits.
+No native recipe, DSP or project format changes. Native shape recipes still
+address the original start point, not an interior selection.

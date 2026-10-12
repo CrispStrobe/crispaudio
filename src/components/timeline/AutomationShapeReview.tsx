@@ -5,13 +5,14 @@ import {useEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Modal} from '../common/Modal';
 import {useProjectStore} from '../../stores/projectStore';
-import {shapeAutomationSegment,automationShapes,defaultShapeControls,reviewedShapeSegment,type AutomationShape,type AutomationShapeControls} from '../../lib/automationShape';
+import {shapeAutomationSegment,automationShapes,defaultShapeControls,type AutomationShape,type AutomationShapeControls} from '../../lib/automationShape';
 import {targetPoints,type AutomationTarget} from '../../lib/automationRecording';
 import type {TimelineProject} from '../../types/audio';
+import {reviewedShapeForPoint} from '../../lib/automationShapeMetadata';
 
 /** Preview only; stale project reviews cannot write. */
-export function AutomationShapeReview({project,target,pointTime,onClose}:{project:TimelineProject;target:AutomationTarget;pointTime:number;onClose:()=>void}) {
- const before=(target.parameter==='pan'?normalizePanPoints:normalizeGainPoints)(targetPoints(project,target)),saved=reviewedShapeSegment(before,before.findIndex(p=>p.time===pointTime));
+export function AutomationShapeReview({project,target,pointTime:selectedTime,onClose}:{project:TimelineProject;target:AutomationTarget;pointTime:number;onClose:()=>void}) {
+ const before=(target.parameter==='pan'?normalizePanPoints:normalizeGainPoints)(targetPoints(project,target)),saved=reviewedShapeForPoint(before,before.findIndex(p=>p.time===selectedTime)),pointTime=saved?.a.time??selectedTime;
  const {t}=useTranslation(),[shape,setShape]=useState<AutomationShape>(saved?.review.shape??'s-curve'),current=useProjectStore(s=>s.project);
  const shapeInput=useRef<HTMLSelectElement>(null);
  const [controls,setControls]=useState<AutomationShapeControls>(saved?.review.controls??defaultShapeControls);

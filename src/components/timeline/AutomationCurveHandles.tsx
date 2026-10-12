@@ -27,7 +27,7 @@ export function AutomationCurveHandles({project,target,pointTime,disabled,x,y,va
  const update=(index:1|2,px:number,py:number)=>{
   if(useProjectStore.getState().project!==project){cancel();return;}
   const next={...controls,[`x${index}`]:Math.max(index===1?0:controls.x1,Math.min(index===1?controls.x2:1,px)),[`y${index}`]:Math.max(0,Math.min(1,py))};
-  const preview=shapeAutomationSegment(project,target,pointTime,'custom',next);
+  const preview=shapeAutomationSegment(project,target,a.time,'custom',next);
   gesture.current={...gesture.current,controls:next,preview};setDraft(next);onPreview({project,trackId:target.trackId,points:normalize(targetPoints(preview,target))});
  };
  const finish=()=>{const current=gesture.current;cancel();if(current&&useProjectStore.getState().project===project&&current.preview!==project)useProjectStore.setState({project:current.preview});};
