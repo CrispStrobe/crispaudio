@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-12, for local 0.9.3. This section is the current plan.
+Updated 2026-10-12, for local 0.9.4. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -45,8 +45,10 @@ bar-aligned edit ranges. The absolute AV clock is preserved. See
 tempo maps and live instrument tracks/plugin hosting remain future M10 increments.
 M10 notes are implemented in 0.9.3: native Mac/Web MIDI input, piano roll,
 quantisation, sine/bell rendering with retained editable notes and type-0 pattern
-MIDI export. See [MIDI workflow](docs/MIDI.md). Arrangement MIDI import/export,
-transport-synced MIDI overdubbing and richer instruments remain future work.
+MIDI export. 0.9.4 adds a reviewed audio-clock MIDI capture pass alongside timeline
+playback, ending on stop/seek/loop restart and publishing one placed pattern in
+one undo step. See [MIDI workflow](docs/MIDI.md). Live instrument tracks, automatic
+loop takes, arrangement MIDI import/export and richer instruments remain future work.
 
 ## Historical acceptance: ASR and spoken-word editing (0.8.5–0.8.6)
 

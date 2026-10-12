@@ -1713,6 +1713,11 @@
     "trimNote": "Bearbeiten der ursprünglichen Notenquelle erhält das getrimmte Clipfenster. Andere Kopien behalten ihren Klang. MIDI-Export enthält das vollständige Quellmuster.",
     "stopFirst": "Wiedergabe und Aufnahme vor dem Anwenden stoppen.",
     "stale": "Projekt beim Vorbereiten geändert. Vor dem Anwenden das aktuelle Projekt prüfen.",
-    "newTrack": "Neue Audiospur"
+    "newTrack": "Neue Audiospur",
+    "recordTransport": "Mit Zeitleiste aufnehmen",
+    "transportFirst": "Zeitleistenwiedergabe starten und ein neues Muster auswählen, bevor du mit der Zeitleiste aufnimmst.",
+    "transportNote": "Mit Zeitleiste aufnehmen setzt das neue Muster am Audio-Abspielkopf ein. Stopp, Sprung, Schleifenneustart oder das Musterende beendet diesen Durchgang. Wiedergabe stoppen, Noten prüfen, dann Anwenden.",
+    "playTimeline": "Zeitleiste abspielen",
+    "stopTimeline": "Zeitleiste stoppen"
   }
 }

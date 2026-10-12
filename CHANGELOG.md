@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.9.4 — 2026-10-12
+
+- Add a reviewed MIDI capture pass alongside timeline playback. Place the new
+  pattern at the audio-clock playhead, retain channel/velocity/sustain, and end
+  the pass on stop, seek, loop restart, programme end or pattern length.
+- Add timeline play/stop controls to the piano roll. Apply the captured pattern
+  as one durable editable clip and one undo step after stopping playback.
+- Preserve separate free-running capture and draft cancellation. Live instrument
+  tracks, loop takes, MIDI interchange and plugin hosting remain subsequent work.
+
 ## 0.9.3 — 2026-10-12
 
 - Pin the iOS libc dependency to 0.2.189 to restore simulator compilation with

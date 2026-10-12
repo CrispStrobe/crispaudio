@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '../common/Modal';
 import { NumberField } from './NumberField';
@@ -8,6 +8,8 @@ import { DEFAULT_MUSIC, gridSeconds, barSeconds } from '../../lib/musicalTime';
 import { EMPTY_MIDI, MidiCapture, prepareMidiClip, quantizeMidi, validMidiPattern, type MidiNote, type MidiPattern } from '../../lib/midiPattern';
 import { openMidiInputs, type MidiAccessHandle, type MidiInputPort } from '../../lib/midiInput';
 import { encodeMidiFile, saveMidiFile } from '../../lib/midiFile';
+import { MidiTransportCapture } from '../../lib/midiTransportCapture';
+import { TimelineEngineContext } from './timelineEngineContext';
 import { MidiAudition } from '../../audio/engine/MidiAudition';
 import type { AudioEngineHandle } from '../../hooks/useAudioEngine';
 export function MidiControls({ audio }: {
@@ -22,29 +24,55 @@ function MidiEditor({ audio, onClose }: {
 }) {
     const { t } = useTranslation(), project = useProjectStore(s => s.project), playing = useProjectStore(s => s.isPlaying), recording = useUIStore(s => s.timelineRecording), selection = useProjectStore(s => s.selection);
     const initial = useRef(project), selected = project.tracks.flatMap(t => t.segments).find(c => selection?.segmentIds.includes(c.id) && c.midi), [replaceId, setReplaceId] = useState(selected?.id ?? ''), [trackId, setTrackId] = useState(selected?.trackId ?? project.tracks.find(t => !t.locked && t.kind !== 'bus')?.id ?? 'new'), [position, setPosition] = useState(useProjectStore.getState().playheadPosition), [pattern, setPattern] = useState<MidiPattern>(() => structuredClone(selected?.midi ?? EMPTY_MIDI)), [noteId, setNoteId] = useState(''), [base, setBase] = useState(48), [step, setStep] = useState(gridSeconds(project.music ?? DEFAULT_MUSIC) || 30 / (project.music ?? DEFAULT_MUSIC).tempo), [error, setError] = useState(''), [ports, setPorts] = useState<MidiInputPort[]>([]), [portId, setPortId] = useState(''), [connected, setConnected] = useState(false), [connecting, setConnecting] = useState(false), [capturing, setCapturing] = useState(false), [busy, setBusy] = useState(false), [count, setCount] = useState(0);
+    const engine = useContext(TimelineEngineContext), [transportReady, setTransportReady] = useState(false);
     const reviewedClip = useRef(selected);
     const access = useRef<MidiAccessHandle | null>(null), disconnect = useRef<(() => Promise<void>) | null>(null), audition = useRef<MidiAudition | null>(null), capture = useRef<{
         recorder: MidiCapture;
         start: number;
+        transport?: MidiTransportCapture;
     } | null>(null), disposed = useRef(false), operation = useRef(0), connectionPending = useRef(false), draft = useRef(pattern), heldKeys = useRef(new Set<number>()), focused = useRef(true), publishing = useRef(false);
     useEffect(() => { draft.current = pattern; }, [pattern]);
-    const finishCapture = () => { const active = capture.current; if (active) {
-        const notes = active.recorder.stop(audio.getContext().currentTime - active.start);
+    const finishCapture = useCallback(() => { const active = capture.current; if (active) {
+        const elapsed = audio.getContext().currentTime - active.start;
+        const notes = active.transport ? active.transport.stop(undefined, elapsed) : active.recorder.stop(elapsed);
         capture.current = null;
         setPattern(p => ({ ...p, notes: [...p.notes, ...notes] }));
         setCapturing(false);
         setCount(notes.length);
-    } };
+    } }, [audio]);
     const panic = () => { heldKeys.current.clear(); audition.current?.stop(); audition.current = null; finishCapture(); };
     useEffect(() => { disposed.current = false; const focus = () => { focused.current = true; }; const blur = () => { focused.current = false; heldKeys.current.clear(); audition.current?.stop(); audition.current = null; const active = capture.current; if (active) {
-        const notes = active.recorder.stop(audio.getContext().currentTime - active.start);
+        const elapsed = audio.getContext().currentTime - active.start;
+        const notes = active.transport ? active.transport.stop(undefined, elapsed) : active.recorder.stop(elapsed);
         capture.current = null;
         setPattern(p => ({ ...p, notes: [...p.notes, ...notes] }));
         setCapturing(false);
     } }; window.addEventListener('blur', blur); window.addEventListener('focus', focus); return () => { disposed.current = true; window.removeEventListener('blur', blur); window.removeEventListener('focus', focus); audition.current?.stop(); capture.current = null; void disconnect.current?.().catch(() => { }); access.current?.close(); }; }, [audio]);
+    useEffect(() => {
+        const current = engine?.current;
+        const changed = () => {
+            setTransportReady(!!current?.automationClock());
+            const active = capture.current;
+            if (active?.transport && !active.transport.tick(current?.automationClock())) {
+                finishCapture();
+                audition.current?.stop();
+                audition.current = null;
+            }
+        };
+        changed();
+        return current?.onPlaybackClock(changed);
+    }, [engine, audio, finishCapture]);
     const receive = (data: number[]) => { if (!focused.current)
-        return; const ctx = audio.getContext(); if (!audition.current)
-        audition.current = new MidiAudition(ctx, audio.masterGain, draft.current); audition.current.message(data); const active = capture.current; if (active) {
+        return; const active = capture.current;
+        if (active?.transport && !active.transport.message(data, engine?.current?.automationClock())) {
+            finishCapture();
+            audition.current?.stop();
+            audition.current = null;
+            return;
+        }
+        if (active?.transport) setCount(active.transport.count);
+        const ctx = audio.getContext(); if (!audition.current)
+        audition.current = new MidiAudition(ctx, audio.masterGain, draft.current); audition.current.message(data); if (active && !active.transport) {
         const time = ctx.currentTime - active.start;
         if (time >= draft.current.length) {
             finishCapture();
@@ -55,7 +83,7 @@ function MidiEditor({ audio, onClose }: {
         active.recorder.message(data, time);
         setCount(active.recorder.notes.length);
     } };
-    const refresh = async () => { panic(); await disconnect.current?.(); disconnect.current = null; setConnected(false); access.current?.close(); access.current = null; const generation = ++operation.current; try {
+    const refresh = async () => { panic(); const previous = disconnect.current; disconnect.current = null; setConnected(false); await previous?.(); access.current?.close(); access.current = null; const generation = ++operation.current; try {
         const next = await openMidiInputs();
         if (disposed.current || generation !== operation.current) {
             next.close();
@@ -74,11 +102,13 @@ function MidiEditor({ audio, onClose }: {
         return; connectionPending.current = true; setConnecting(true); const generation = ++operation.current; try {
         await audio.resume();
         panic();
-        await disconnect.current?.();
+        const previous = disconnect.current;
         disconnect.current = null;
         setConnected(false);
+        await previous?.();
         const stop = await access.current?.connect(portId, data => { if (!disposed.current && generation === operation.current)
             receive(data); }, () => { if (!disposed.current && generation === operation.current) {
+            disconnect.current = null;
             panic();
             setConnected(false);
         } });
@@ -139,18 +169,42 @@ function MidiEditor({ audio, onClose }: {
     const grids = [{value:quarter,label:t('music.quarter')},{value:quarter/2,label:t('music.eighth')},{value:quarter/4,label:t('music.sixteenth')},{value:quarter/3,label:t('music.triplet')},{value:barSeconds(project.music ?? DEFAULT_MUSIC),label:t('music.bar')},...[.125,.25,.5,1].map(value=>({value,label:`${value} s`}))].filter((grid,index,list)=>list.findIndex(other=>Math.abs(other.value-grid.value)<1e-9)===index);
     const note = pattern.notes.find(n => n.id === noteId), clips = project.tracks.flatMap(t => t.segments.filter(c => c.midi).map(c => ({ clip: c, track: t }))), disabled = playing || recording || capturing || busy;
     useEffect(() => { if (!capturing)
-        return; const timer = setInterval(() => { const active = capture.current; if (active && audio.getContext().currentTime - active.start >= draft.current.length) {
+        return; const timer = setInterval(() => { const active = capture.current;
+        if (active?.transport) {
+            if (!active.transport.tick(engine?.current?.automationClock())) {
+                finishCapture();
+                audition.current?.stop();
+                audition.current = null;
+            }
+            return;
+        }
+        if (active && audio.getContext().currentTime - active.start >= draft.current.length) {
         const notes = active.recorder.stop(draft.current.length);
         capture.current = null;
         setPattern(p => ({ ...p, notes: [...p.notes, ...notes] }));
         setCapturing(false);
         audition.current?.stop();
         audition.current = null;
-    } }, 100); return () => clearInterval(timer); }, [capturing, audio]);
-    const startCapture = async () => { try {
+    } }, 20); return () => clearInterval(timer); }, [capturing, audio, engine, finishCapture]);
+    const startCapture = async (followTransport = false) => { const generation = operation.current; try {
         await audio.resume();
+        if (disposed.current || !focused.current || !connected || !disconnect.current || generation !== operation.current || capture.current || useUIStore.getState().timelineRecording) return;
+        const state = useProjectStore.getState();
+        if (state.project.id !== initial.current.id) throw new Error(t('midi.stale'));
+        const clock = engine?.current?.automationClock();
+        if (followTransport && (!state.isPlaying || !clock || replaceId)) throw new Error(t('midi.transportFirst'));
+        if (!followTransport && state.isPlaying) throw new Error(t('midi.stopFirst'));
         panic();
-        capture.current = { recorder: new MidiCapture(pattern.length), start: audio.getContext().currentTime };
+        const start = audio.getContext().currentTime;
+        let transport: MidiTransportCapture | undefined;
+        if (followTransport && clock) {
+            const end = state.rangePlayback && state.project.editRange ? Math.min(state.project.duration, state.project.editRange.end) : state.project.duration;
+            const length = Math.min(pattern.length, end - clock.time);
+            if (length < .01) throw new Error(t('midi.transportFirst'));
+            transport = new MidiTransportCapture(clock, length);
+            setPosition(transport.position);
+        }
+        capture.current = { recorder: new MidiCapture(pattern.length), start, transport };
         setCapturing(true);
         setCount(0);
         setError('');
@@ -169,7 +223,7 @@ function MidiEditor({ audio, onClose }: {
   <p className="text-xs text-gray-400">{t('midi.rollHelp')}</p>
   {note && <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{(['pitch', 'start', 'duration', 'velocity'] as const).map(key => <label key={key}>{t(`midi.${key}`)}<NumberField width="w-full" label={t(`midi.${key}`)} value={note[key]} min={key === 'duration' ? .001 : key === 'velocity' ? .001 : 0} step={key === 'pitch' ? 1 : key === 'velocity' ? .05 : step} disabled={capturing} onCommit={v => updateNote({ [key]: v })}/></label>)}<button className="timeline-tool" disabled={capturing} onClick={() => { setPattern({ ...pattern, notes: pattern.notes.filter(n => n.id !== noteId) }); setNoteId(''); }}>{t('midi.delete')}</button></div>}
   <div className="flex flex-wrap gap-2"><button className="timeline-tool" disabled={capturing} onClick={() => setPattern(quantizeMidi(pattern, step))}>{t('midi.quantize')}</button><button className="timeline-tool" disabled={disabled || !trackId || !validMidiPattern(pattern)} onClick={() => void apply()}>{t('midi.apply')}</button><button className="timeline-tool" disabled={capturing || !validMidiPattern(pattern)} onClick={() => void saveMidiFile(encodeMidiFile(pattern, project.music ?? DEFAULT_MUSIC)).catch(e => setError(String(e)))}>{t('midi.export')}</button></div>
-  <fieldset className="border border-gray-700 rounded p-2 space-y-2"><legend>{t('midi.input')}</legend><div className="flex flex-wrap gap-2"><button className="timeline-tool" disabled={capturing || connecting} onClick={() => void refresh().catch(e => setError(String(e)))}>{t('midi.refresh')}</button><select className="bg-gray-800 min-h-11 max-w-full" aria-label={t('midi.input')} value={portId} disabled={capturing || connected || connecting} onChange={e => setPortId(e.target.value)}>{ports.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select><button className="timeline-tool" disabled={!portId || capturing || connected || connecting} onClick={() => void connect()}>{t('midi.connect')}</button><button className="timeline-tool" onClick={panic}>{t('midi.panic')}</button><button className="timeline-tool" disabled={disabled || !connected} onClick={() => void startCapture()}>{t('midi.record')}</button><button className="timeline-tool" disabled={!capturing} onClick={finishCapture}>{t('midi.stop')}</button></div><p role="status">{t(connected ? 'midi.connected' : 'midi.disconnected')} · {count} {t('midi.notes')}</p><p className="text-xs text-gray-400">{t('midi.recordNote')}</p></fieldset>
+  <fieldset className="border border-gray-700 rounded p-2 space-y-2"><legend>{t('midi.input')}</legend><div className="flex flex-wrap gap-2"><button className="timeline-tool" disabled={capturing || connecting} onClick={() => void refresh().catch(e => setError(String(e)))}>{t('midi.refresh')}</button><select className="bg-gray-800 min-h-11 max-w-full" aria-label={t('midi.input')} value={portId} disabled={capturing || connected || connecting} onChange={e => setPortId(e.target.value)}>{ports.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select><button className="timeline-tool" disabled={!portId || capturing || connected || connecting} onClick={() => void connect()}>{t('midi.connect')}</button><button className="timeline-tool" onClick={panic}>{t('midi.panic')}</button><button className="timeline-tool" disabled={disabled || !connected} onClick={() => void startCapture()}>{t('midi.record')}</button><button className="timeline-tool" disabled={recording || capturing || busy || !connected || !playing || !transportReady || !!replaceId} onClick={() => void startCapture(true)}>{t('midi.recordTransport')}</button><button className="timeline-tool" disabled={!capturing} onClick={finishCapture}>{t('midi.stop')}</button></div><p role="status">{t(connected ? 'midi.connected' : 'midi.disconnected')} · {count} {t('midi.notes')}</p><p className="text-xs text-gray-400">{t('midi.recordNote')}</p><p className="text-xs text-gray-400">{t('midi.transportNote')}</p><button className="timeline-tool" disabled={recording || (capturing && !playing)} onClick={() => useProjectStore.getState().setIsPlaying(!useProjectStore.getState().isPlaying)}>{t(playing ? 'midi.stopTimeline' : 'midi.playTimeline')}</button></fieldset>
   <div className="flex flex-wrap gap-1" aria-label={t('midi.keyboard')}>{Array.from({ length: 12 }, (_, i) => base + i).map(pitch => <button key={pitch} className="min-h-11 w-10 border border-gray-600 rounded touch-none" aria-label={`${t('midi.pitch')} ${pitch}`} onPointerDown={e => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); heldKeys.current.add(pitch); void audio.resume().then(() => { if (!disposed.current && heldKeys.current.has(pitch))
         receive([0x90, pitch, 100]); }).catch(e => setError(String(e))); }} onPointerUp={() => { if (heldKeys.current.delete(pitch))
         receive([0x80, pitch, 0]); }} onPointerCancel={() => panic()} onLostPointerCapture={() => { if (heldKeys.current.delete(pitch))

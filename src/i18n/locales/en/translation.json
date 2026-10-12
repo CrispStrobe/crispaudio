@@ -1713,6 +1713,11 @@
     "trimNote": "Editing the original note source preserves this clip’s trimmed window. Other copies keep their existing sound. MIDI export includes the complete source pattern.",
     "stopFirst": "Stop playback and recording before applying notes.",
     "stale": "Project changed while preparing notes. Review the current project before applying.",
-    "newTrack": "New audio track"
+    "newTrack": "New audio track",
+    "recordTransport": "Record with timeline",
+    "transportFirst": "Start timeline playback and select a new pattern before recording with the timeline.",
+    "transportNote": "Record with timeline places the new pattern at the audio-clock playhead. Stop, seek, loop restart or the pattern end finishes this pass. Stop playback, review the notes, then Apply.",
+    "playTimeline": "Play timeline",
+    "stopTimeline": "Stop timeline"
   }
 }

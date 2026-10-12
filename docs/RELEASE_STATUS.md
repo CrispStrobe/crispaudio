@@ -18,6 +18,32 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.9.4 — MIDI capture alongside timeline playback
+
+The piano roll can start/stop ordinary timeline playback and capture a reviewed
+MIDI pass into a new pattern at the running audio-clock position. Channel,
+velocity and sustain are retained. Stop, seek, loop/graph restart, programme end
+or pattern length ends the pass; subsequent loops do not merge into that draft.
+Stop playback and Apply publishes one durable editable clip in one undo step.
+Existing free-running capture and cancellation remain available. See [MIDI](MIDI.md).
+
+Validation: 1,566 frontend tests across 147 files, full lint and TypeScript pass;
+25 native tests (one ignored) pass with the iOS dependency repair. Chrome and
+WebKit exercise real TimelineEngine/AudioContext placement, stop, one-step
+publication, seek cancellation and range-loop termination, plus the existing
+piano-roll/save/reopen/source-window/input-session/offline checks. The exact
+`num_threads`/libc pair and the complete Tauri library compile locally for the
+ARM iOS simulator with the committed lockfile. This is a compile check; remote
+unsigned-app build/launch and physical-device acceptance are separate evidence.
+
+TypeScript/Vite/Tauri app builds pass. Local 0.9.4 is installed, ad-hoc signed,
+verified and launched with one autosave preserved and a fresh recovery backup.
+The optimized media CLI is unchanged. New-head remote CI is pending this push.
+No release tag or Apple upload is authorized. Playback remains fixed per the user.
+Live instrument tracks, automatic MIDI loop takes, richer instruments,
+arrangement MIDI interchange and plugin hosting remain further M10 work; M9
+paging/codecs stays deferred.
+
 ## Local 0.9.3 — MIDI notes and basic instruments
 
 The piano roll edits source-clock notes, velocity and durations, quantises starts,

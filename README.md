@@ -22,8 +22,9 @@ snapping and a monitor metronome. [Musical timeline workflow](docs/MUSICAL_TIME.
 describes the first M10 increment and its limits.
 
 The MIDI piano roll adds editable notes, quantisation, controller input, sine/bell
-instruments and pattern MIDI export. [MIDI workflow and limits](docs/MIDI.md)
-describes rendered audio clips and input support.
+instruments, pattern MIDI export and a reviewed capture pass alongside timeline
+playback. [MIDI workflow and limits](docs/MIDI.md) describes rendered audio clips,
+input support and capture placement.
 
 ## Timeline and media editing
 

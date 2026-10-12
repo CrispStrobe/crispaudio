@@ -1,4 +1,4 @@
-# MIDI notes and basic instruments — 0.9.3
+# MIDI notes, basic instruments and transport capture — 0.9.4
 
 Open **Timeline → MIDI / Piano roll**. Choose an existing audio track or **New audio
 track**, the insert time and pattern length. Click in the roll to add notes; drag
@@ -38,6 +38,18 @@ Window blur finishes capture and silences audition until focus returns. Device
 removal ends capture; native device discovery polls every two seconds. No MIDI
 output, device programming or SysEx is exposed.
 
+To play along with the project, choose **New pattern**, connect the input and
+press **Play timeline**. Once playback starts, **Record with timeline** captures
+notes into the draft and sets **Insert at** to the running audio-clock position.
+It retains channel, velocity and sustain, and leaves existing draft notes intact.
+**Stop timeline**, a seek, a loop/graph restart, programme end or the pattern
+length ends this single pass. Held notes close at the old pass's audio-clock
+boundary; notes from a new loop are not appended to it. Playback can continue
+after **Finish capture**. Stop playback, review or quantise the notes, then
+**Apply to timeline** to create one editable, durable clip in one undo step.
+Closing without applying discards the draft. Existing MIDI clips must be edited
+separately; transport capture creates a new placed pattern.
+
 **Export pattern MIDI** writes a standard type-0 `.mid` file with PPQ480, the current
 quarter-note tempo/time signature, channel notes and baked sustain durations.
 Export includes the full source pattern, not just a trimmed clip window. The file
@@ -48,8 +60,9 @@ Limits: one connected input; patterns up to 120 seconds, 2,048 notes and 600 tot
 voice seconds; source sample rates 8–192 kHz, with pitches above Nyquist rejected.
 Rendered polyphony is peak-normalised if necessary. Live audition has eight voices
 (oldest voice stolen) and a lower monitor level to keep chord peaks bounded. Input
-arrival timing is not calibrated sample-accurate MIDI recording; no transport-synced
-MIDI overdubbing, punch/count-in or hardware-output clock is added. Instrument
+arrival timing is not calibrated sample-accurate MIDI recording. Transport capture
+supports one reviewed pass; punch/count-in, automatic loop takes and hardware-output
+clock remain future work. Instrument
 tracks with live sequencing, richer instruments, arrangement MIDI export/import,
 CC/pitch-bend automation, plugin hosting and sample-accurate musical loops remain
 subsequent M10 work. M9 paging/codec expansion stays deferred.
@@ -61,6 +74,9 @@ save/reopen, split-window editing, draft cancellation, input-session handling,
 Web MIDI disconnect cleanup, bounded audition PCM and immediate stop, native/offline
 render comparison and German 390px layout. These are virtual-device/headless
 checks, not physical controller or mobile acceptance.
+Transport checks cover source-relative clock placement, one-step publication,
+stop/sustain timing, seek isolation and range-loop termination. Chrome/WebKit
+exercise these paths against the real TimelineEngine and AudioContext.
 
 Implementation reference: [midir input API](https://docs.rs/midir/0.11.1/midir/struct.MidiInput.html).
 The MIT notices for midir/coremidi/coremidi-sys are included in About → Licenses.
