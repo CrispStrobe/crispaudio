@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.11.3. This section is the current plan.
+Updated 2026-10-13, for local 0.11.4. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -37,6 +37,10 @@ session API. Real AU/VST3 tests compare variable-sized streaming blocks against
 whole-file renders and exercise state, bypass, cancellation and hung-child cleanup.
 Timeline inserts are still pending AudioWorklet scheduling, graph-wide latency
 compensation, seek/loop integration, compact track controls and export parity.
+Local 0.11.4 adds and validates the native AudioWorklet bridge with fixed sample
+clock, pooled transfers and hard underrun/fault handling. Native VST3 timing and AU
+bypass headroom pass through actual Chromium/WebKit worklets. It remains internal
+until graph-wide compensation, timeline transport, track UI and export are ready.
 Record scope and remaining requirements honestly; these are initial complete
 workflows, not full commercial-editor parity. Large-file
 paging remains deferred unless actual project measurements justify it. MIDI remains

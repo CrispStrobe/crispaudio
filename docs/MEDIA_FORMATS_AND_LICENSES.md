@@ -269,3 +269,30 @@ routing paths, seek/loop resets and equivalent export processing. Existing sourc
 preview/render commands keep their documented two-minute limit. AU v3/commercial
 plugin coverage, native plugin windows and other desktop platforms remain future
 acceptance work; current tests use Apple AUBandpass and Steinberg ADelay fixtures.
+
+### Worklet bridge (0.11.4)
+
+The internal NativePluginNode processes 1024-frame blocks through the persistent
+native stream. PluginBlockBuffer pools its input buffers, transfers them across
+MessagePort and schedules output at a fixed 4096-frame delay (85.33 ms at 48 kHz).
+Reported plugin latency adds to that delay; the node exposes both values for the
+future graph compensation planner. Input and output preserve mono/stereo float
+headroom. Parameter/bypass updates take effect at block boundaries.
+
+The worklet never waits for native I/O. Missing output at its exact sample deadline,
+invalid/out-of-order replies, clock discontinuities, input corruption, processor
+errors and changes to reported plugin latency stop the bridge and mute output.
+Late output is discarded; the clock is never shifted and there is no automatic dry
+fallback. Disposal/abort closes the native session and ignores outstanding replies.
+The node's scheduled origin must remain in the future after plugin initialization.
+
+Actual Chromium/WebKit worklet tests use native Steinberg ADelay and Apple
+AUBandpass helper processes through a simulated Tauri IPC binding. An impulse stays
+at source frame + transport delay + intentional effect delay; dry stereo samples
+1.5/-1.25 remain exact. A deliberately delayed native reply verifies underrun mute
+and session cleanup. This validates the isolated bridge, not the complete installed
+timeline graph or physical output latency. Tauri still exchanges sample arrays.
+
+The bridge is internal: TimelineEngine keeps its existing playback path. Enabling
+track inserts still requires graph-wide compensation, synchronized graph origins,
+seek/loop reset, saved rack state, compact track controls and offline-export parity.

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.11.4 — 2026-10-13
+
+- Add an internal AudioWorklet bridge to persistent AU/VST3 processing, with pooled transferable buffers and fixed sample-clock scheduling.
+- Mute and close on missed deadlines, invalid output, processor errors or changed plugin latency. Late blocks never shift the audio clock.
+- Preserve parameter updates, bypass and state snapshots through the bridge; release native sessions on disposal or abort.
+- Validate real native DSP through the browser worklet in Chromium and WebKit. Timeline graph compensation, track controls and export integration remain pending.
+
 ## 0.11.3 — 2026-10-13
 
 - Add an internal persistent AU/VST3 block-processing transport with continuous DSP state, block parameter updates, saved state, bypass, reported latency and float32 headroom.
