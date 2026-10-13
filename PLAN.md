@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.4. This section is the current plan.
+Updated 2026-10-13, for local 0.10.5. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -62,6 +62,9 @@ original recording, comp, mixing and picture samples. All seven software steps
 are complete at this checkpoint. See [mix review](docs/MIX_REVIEW.md) and
 [sample walkthroughs](docs/SAMPLE_WALKTHROUGHS.md). Shared frame scheduling does not remove independent-device drift. Track folders
 and grouped controls are distinct from routing.
+0.10.5 moves direct Record/Stop into the transport, with a separate setup arrow
+and live input meters in the transport and active track headers. Default count-in
+is zero. Short-clip trim hit targets stay separate and above the playhead.
 Keep secondary controls in menus or focused inspectors, with concise labels.
 
 Playback remains fixed per user confirmation. M9 paging/codecs remains deferred.

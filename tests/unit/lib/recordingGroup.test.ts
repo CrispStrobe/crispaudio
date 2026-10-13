@@ -1,5 +1,5 @@
 import {beforeEach,expect,it} from 'vitest';
-import {recordingTargets,publishRecordingGroup,type PreparedRecording} from '../../../src/lib/recordingGroup';
+import {quickRecordingTrack,defaultRecordingInput,recordingTargets,publishRecordingGroup,type PreparedRecording} from '../../../src/lib/recordingGroup';
 import {useProjectStore} from '../../../src/stores/projectStore';
 import type {TimelineProject,AudioSource} from '../../../src/types/audio';
 const project=():TimelineProject=>({...useProjectStore.getInitialState().project,id:'group',duration:4,minimumDuration:4,tracks:['a','b'].map((id,i)=>({id,name:id,volume:1,pan:0,muted:false,solo:false,recordArmed:true,segments:[],recordingInput:{deviceId:id,channel:i?'right':'mono',monitor:false,countIn:i,latencyMs:i*10}}))});
@@ -16,4 +16,8 @@ it('publishes all sources/takes/comps in one undo and retains originals for redo
 });
 it('fails atomically for stale projects or any invalid/locked/duplicate capture',()=>{
  const p=project(),sources=new Map<string,AudioSource>();expect(()=>publishRecordingGroup(p,{...p},sources,[prepared('a')],.04)).toThrow('projectChanged');const invalid=prepared('b');invalid.takes[0].duration=3;expect(()=>publishRecordingGroup(p,p,sources,[prepared('a'),invalid],.04)).toThrow('invalidComp');expect(p.tracks.every(t=>!t.takes&&t.segments.length===0)).toBe(true);expect(sources.size).toBe(0);expect(()=>publishRecordingGroup(p,p,sources,[prepared('a'),prepared('a')],.04)).toThrow('groupCount');p.tracks[1].locked=true;expect(()=>publishRecordingGroup(p,p,sources,[prepared('a'),prepared('b')],.04)).toThrow('locked');
+});
+
+it('quick recording honors setup and armed targets while protecting locks and bus tracks',()=>{
+ const p=project();expect(defaultRecordingInput.countIn).toBe(0);expect(quickRecordingTrack(p,'b')?.id).toBe('b');p.tracks[0].locked=true;expect(quickRecordingTrack(p,'')?.id).toBe('b');expect(()=>quickRecordingTrack(p,'a')).toThrow('recording.locked');p.tracks[1].recordArmed=false;expect(quickRecordingTrack(p,'','b')?.id).toBe('b');p.tracks[1].kind='bus';expect(quickRecordingTrack(p,'')).toBeUndefined();expect(p.tracks[1].recordArmed).toBe(false);
 });

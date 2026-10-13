@@ -1,6 +1,12 @@
 import type {AudioSource,RecordingInput,RecordingTake,TimelineProject} from '../types/audio';
 import {chooseTake} from './recordingTakes';
-export const defaultRecordingInput:RecordingInput={deviceId:'',channel:'mono',monitor:false,countIn:3,latencyMs:0};
+export const defaultRecordingInput:RecordingInput={deviceId:'',channel:'mono',monitor:false,countIn:0,latencyMs:0};
+/** Prefer explicit setup, then an armed/selected track. Locked targets stay protected. */
+export function quickRecordingTrack(project:TimelineProject,preferred:string,selected?:string){
+ const configured=project.tracks.find(t=>t.id===preferred&&t.kind!=='bus');
+ if(configured?.locked)throw new Error('recording.locked');
+ return configured??project.tracks.find(t=>t.kind!=='bus'&&t.recordArmed&&!t.locked)??project.tracks.find(t=>t.id===selected&&t.kind!=='bus'&&!t.locked)??project.tracks.find(t=>t.kind!=='bus'&&!t.locked);
+}
 export function recordingTargets(project:TimelineProject,selectedId:string,allArmed:boolean){
  const tracks=allArmed?project.tracks.filter(t=>t.kind!=='bus'&&t.recordArmed):project.tracks.filter(t=>t.id===selectedId);
  if(!tracks.length||tracks.length>8)throw new Error('recording.groupCount');

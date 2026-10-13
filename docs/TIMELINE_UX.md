@@ -36,3 +36,13 @@ Explain Timeline Controls lets you point at, tap or focus timeline controls.
 Buttons, fields, summaries, boundary handles and ribbon commands have explanation
 cards. Help gestures are intercepted until help is closed, so inspection does
 not alter the arrangement.
+
+Very short selected audio clips keep distinct start/end trim buttons, even when
+their waveform is narrower than the touch targets. Buttons move apart inside the
+viewport and use relative pointer motion, so pressing one does not jump the clip
+boundary. Their start/end icons distinguish them, and their hit targets take
+priority over the playhead. Escape restores the edit; a completed drag is one undo.
+
+The transport now contains Record/Stop, a small settings arrow and actual input
+levels. The arrow opens the existing setup/take dialog; capture itself uses the
+transport, and active tracks show their own input levels.

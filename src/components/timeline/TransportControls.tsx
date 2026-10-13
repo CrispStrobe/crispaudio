@@ -47,7 +47,7 @@ function TimelineScrubber({width}: {width?: number}) {
     onChange={e=>seekTimeline(+e.target.value,width)} />;
 }
 
-export const TransportControls = React.memo(function TransportControls({viewportWidth}: {viewportWidth?:number}) {
+export const TransportControls = React.memo(function TransportControls({viewportWidth,recordingControls}: {viewportWidth?:number;recordingControls?:React.ReactNode}) {
   const { t } = useTranslation();
   const isPlaying = useProjectStore((s) => s.isPlaying);
   const loopEnabled = useProjectStore((s) => s.loopEnabled);
@@ -104,6 +104,8 @@ export const TransportControls = React.memo(function TransportControls({viewport
           <Play className="w-4 h-4 ml-0.5" />
         )}
       </button>
+
+      {recordingControls}
 
       {/* Stop */}
       <button

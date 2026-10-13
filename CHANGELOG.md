@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.5 — 2026-10-13
+
+- Start and stop capture directly beside Play; the down-arrow opens per-track recording setup and take review. Default count-in is zero.
+- Show actual input levels in the transport and active track headers, independently of the dialog and project history. Stop releases automatically opened inputs.
+- Wait for every input to buffer pre-roll before starting the common playback clock, preserving group placement under startup load.
+- Keep short-clip trim handles separate and reachable at viewport edges and under the playhead.
+
 ## 0.10.4 — 2026-10-13
 
 - Hide the audio playhead over the empty-session welcome and import button.

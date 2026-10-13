@@ -1,3 +1,4 @@
+import {RecordingInputMeter} from './RecordingInputMeter';
 import {InfoButton} from '../common/InfoButton';
 import {SampleWalkthroughs} from './SampleWalkthroughs';
 import {ExportReview} from './ExportReview';
@@ -236,6 +237,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
           {track.volume > 0 ? `${(20 * Math.log10(track.volume)).toFixed(1)} dB` : '−∞'}
         </span>
       </div>
+      {track.kind!=='bus'&&<RecordingInputMeter trackId={track.id} compact/>}
     </div>
   );
 });
@@ -661,7 +663,6 @@ export const TimelinePanel: React.FC = () => {
         <DeliveryControls launcher={false}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} launcher={false}/>
         <AutoSyncTracks onError={setProjectError} launcher={false}/>
-        <TimelineRecording engine={engineRef} audio={audioEngine} launcher={false}/>
         <ClipRetimeControls launcher={false}/>
         <MulticamControls launcher={false}/>
         <SourceTranscriptControls launcher={false}/>
@@ -702,7 +703,7 @@ export const TimelinePanel: React.FC = () => {
         }}>{t('editor.clearArrangement')}</button>
       </Modal>
       <div ref={setMediaPanel} />
-      <TransportControls viewportWidth={canvasWidth} />
+      <TransportControls viewportWidth={canvasWidth} recordingControls={<TimelineRecording engine={engineRef} audio={audioEngine}/>}/>
       <div className="timeline-command-strip flex shrink-0 overflow-x-auto">
       <div className="timeline-view-tools flex flex-wrap items-center gap-2 px-3 py-1 border-b border-gray-800 shrink-0">
         <ToolButton data-help="navigation" icon={Scan} label={t('timeline.fit')} disabled={!timelineDuration(store.project)} onClick={fitAll}/>

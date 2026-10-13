@@ -984,7 +984,11 @@
     "help_section": "Opens or closes {{label}}. Hidden options remain available here.",
     "help_control": "{{label}}. Use its information button for additional details.",
     "help_trackName_title": "Track name",
-    "help_trackName": "Renames this track without changing its clips or routing."
+    "help_trackName": "Renames this track without changing its clips or routing.",
+    "help_record_title": "Record",
+    "help_record": "Start capture directly with the chosen input. If no track is armed, an eligible audio track is armed or created. Press again to stop and save. The arrow opens setup.",
+    "help_inputLevel_title": "Input level",
+    "help_inputLevel": "Shows the actual microphone input before track gain and effects. Red means near full scale. Levels are measured during capture or an explicitly connected input preview."
   },
   "analysis": {
     "outputSpectrogram": "Output spectrogram",
@@ -1592,7 +1596,9 @@
     "multiShort": "{{count}} tracks",
     "punchShort": "Punch",
     "loopShort": "Loop",
-    "monitorShort": "Monitor"
+    "monitorShort": "Monitor",
+    "settings": "Recording settings",
+    "preparing": "Connecting…"
   },
   "retime": {
     "title": "Speed / pitch",
@@ -2082,8 +2088,8 @@
     "recordingSteps": [
       "Load the mixing sample, then open Record / Takes.",
       "Add an audio track, arm it and choose your microphone under Input setup. Leave monitoring off for speakers.",
-      "Record five seconds of speech, then stop. Check that the input meter moves.",
-      "Close the recording dialog and play your new clip. Undo restores the previous arrangement."
+      "Close setup, press the red Record button and speak for five seconds. Watch input levels in the transport and track header.",
+      "Press the red Stop button and play your new clip. Undo restores the previous arrangement."
     ],
     "compSteps": [
       "Load the takes sample, then open Record / Takes.",

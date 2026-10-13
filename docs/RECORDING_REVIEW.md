@@ -1,10 +1,26 @@
 # Recording and comp review
 
-Open Record / takes. Choose an audio track, arm it, select an input and connect.
-Expand Input setup to choose a device/channel, connect or monitor. Expand
-Recording options for count-in, punch/loop or simultaneous armed tracks.
-The meter shows the incoming signal. Keep monitoring off when using speakers;
-use headphones for monitored recording. Record a short passage, stop and play it.
+Press the red Record button beside Play to start capture. Press it again to stop
+and save. A missing recording track is created; an eligible unarmed track is
+armed automatically. Explicit setup targets and locked tracks remain protected.
+The default count-in is zero; a configured count-in is honored and visible in the
+transport. The settings arrow opens Record / takes without requesting input or
+starting capture. Close setup before using the transport.
+
+Input levels appear beside Record and in each active input track's header, with
+the dialog closed. They measure microphone input before mix gain/effects and do
+not enter project history. Red indicates near full scale. Automatically opened
+inputs are released after Stop. An explicitly connected preview can stay warm
+until Disconnect, a device/setup change, or leaving the timeline.
+
+Choose a track in setup; expand Input setup for device/channel, Connect or monitor.
+Expand Recording options for count-in, punch/loop or simultaneous armed tracks.
+Keep monitoring off with speakers; use headphones for monitored recording. Each
+input buffers a short pre-roll before the common playback clock starts, so a
+slower worklet startup cannot shift one take relative to the others. Pre-roll is
+retained in the original but excluded from the visible take. Independent physical
+input clocks may still drift and require device acceptance checks.
+
 Changing the project, selected track, device or input channel releases the old
 preview connection. Undoing an input change also releases it. A delayed permission
 result cannot reconnect an input to a different project.

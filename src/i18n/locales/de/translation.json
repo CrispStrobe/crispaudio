@@ -997,7 +997,11 @@
     "help_section": "Öffnet oder schließt {{label}}. Eingeklappte Optionen bleiben hier verfügbar.",
     "help_control": "{{label}}. Weitere Hinweise öffnen über den Infoknopf.",
     "help_trackName_title": "Spurname",
-    "help_trackName": "Benennt diese Spur um. Clips und Audiorouten bleiben erhalten."
+    "help_trackName": "Benennt diese Spur um. Clips und Audiorouten bleiben erhalten.",
+    "help_record_title": "Aufnahme",
+    "help_record": "Startet die Aufnahme direkt mit dem gewählten Eingang. Ohne scharf geschaltete Spur wird eine geeignete Audiospur scharf geschaltet oder neu angelegt. Erneut drücken stoppt und speichert die Aufnahme. Der Pfeil öffnet die Einstellungen.",
+    "help_inputLevel_title": "Eingangspegel",
+    "help_inputLevel": "Zeigt den tatsächlichen Mikrofoneingang vor Spurpegel und Effekten. Rot bedeutet nahe Vollaussteuerung. Eingang wird beim Aufnehmen oder einer ausdrücklich verbundenen Vorschau gemessen."
   },
   "analysis": {
     "outputSpectrogram": "Ausgabe-Spektrogramm",
@@ -1605,7 +1609,9 @@
     "multiShort": "{{count}} Spuren",
     "punchShort": "Punch",
     "loopShort": "Loop",
-    "monitorShort": "Mithören"
+    "monitorShort": "Mithören",
+    "settings": "Aufnahmeeinstellungen",
+    "preparing": "Verbinden…"
   },
   "retime": {
     "title": "Tempo / Tonhöhe",
@@ -2095,8 +2101,8 @@
     "recordingSteps": [
       "Mischbeispiel laden und Aufnahme / Takes öffnen.",
       "Audiospur hinzufügen, scharf schalten und unter Eingangsoptionen das Mikrofon wählen. Bei Lautsprechern Monitoring ausgeschaltet lassen.",
-      "Fünf Sekunden sprechen und aufnehmen, dann stoppen. Der Eingangspegel muss ausschlagen.",
-      "Aufnahmedialog schließen und den neuen Clip abspielen. Rückgängig stellt den vorherigen Zustand wieder her."
+      "Einstellungen schließen, die rote Aufnahmetaste drücken und fünf Sekunden sprechen. Der Eingangspegel ist im Transport und an der Spur sichtbar.",
+      "Die rote Stopptaste drücken und den neuen Clip abspielen. Rückgängig stellt den vorherigen Zustand wieder her."
     ],
     "compSteps": [
       "Take-Beispiel laden und Aufnahme / Takes öffnen.",
