@@ -10,6 +10,9 @@ export const timelineCommands: Record<string, TimelineCommand[]> = {
         { id: 'delivery', label: 'Delivery…' }, { id: 'export-video', label: 'Export Video…', requires: 'content' },
     ],
     Edit: [
+        {id:'place-clips',label:'Place Clips at Time…',requires:'selection'},
+        {id:'trim-start-playhead',label:'Trim Start to Playhead',requires:'selection'}, {id:'trim-end-playhead',label:'Trim End to Playhead',requires:'selection'},
+        {id:'previous-clip',label:'Select Previous Clip',key:'['}, {id:'next-clip',label:'Select Next Clip',key:']'}, {id:'clip-above',label:'Select Clip Above',key:'Alt ↑'}, {id:'clip-below',label:'Select Clip Below',key:'Alt ↓'},
         { id: 'undo', label: 'Undo', key: '⌘/Ctrl Z', requires: 'canUndo' }, { id: 'redo', label: 'Redo', key: '⌘/Ctrl Shift Z', requires: 'canRedo' },
         { id: 'cut', label: 'Cut', key: '⌘/Ctrl X', requires: 'selection' }, { id: 'copy', label: 'Copy', key: '⌘/Ctrl C', requires: 'selection' }, { id: 'paste', label: 'Paste at Playhead', key: '⌘/Ctrl V', requires: 'clipboard' },
         { id: 'select-all', label: 'Select All Clips', requires: 'content', key: '⌘/Ctrl A' }, { id: 'deselect', label: 'Deselect All', requires: 'selection' },

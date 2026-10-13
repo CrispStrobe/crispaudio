@@ -1,3 +1,5 @@
+import {useUIStore} from '../stores/uiStore';
+import {navigateClip} from '../lib/clipNavigation';
 import {visibleTrackRows} from '../lib/trackFolders';
 import {snapProjectTime} from '../lib/musicalTime';
 import {capturePointerHistory,restorePointerHistory} from '../stores/pointerHistory';
@@ -11,7 +13,7 @@ import {adjacentEdit} from '../lib/trimEdits';
 // ---------------------------------------------------------------------------
 
 import { isNativeMac } from '../lib/nativeMenuPlatform';
-import { projectClips,linkedIds } from '../lib/projectEdits';
+import { projectClips,linkedIds,moveClips,projectSelection } from '../lib/projectEdits';
 import { snapProjectClipStart } from '../lib/timelineSnap';
 import { deleteSelection, nudgeSelection } from '../lib/timelineEditing';
 import { useRef, useCallback, useEffect, useState } from 'react';
@@ -212,7 +214,7 @@ export function useTimeline() {
       const { segment, trackIndex } = hit as { segment: AudioSegment; trackIndex: number };
 
       if (hit.type === 'segment') {
-        store.selectSegment(segment.id, e.shiftKey);
+        if(!store.selection?.segmentIds.includes(segment.id)||e.shiftKey)store.selectSegment(segment.id, e.shiftKey);
         dragState.current = {
           kind: 'move',
           segmentId: segment.id,
@@ -286,7 +288,7 @@ export function useTimeline() {
         );
         const newTrackId = visibleTrackRows(store.project)[newTrackIndex]?.id;
         if(!store.project.tracks.some(t=>t.id===newTrackId))return;
-        try{store.moveSegment(ds.segmentId, newStart, newTrackId);}catch{/* Retain the last valid linked placement. */}
+        try{if((store.selection?.segmentIds.length??0)>1&&store.selection?.segmentIds.includes(ds.segmentId)){const project=moveClips(store.project,store.selection.segmentIds,newStart-(clip?.startTime??newStart),true);useProjectStore.setState({project,selection:projectSelection(project,store.selection.segmentIds)});}else store.moveSegment(ds.segmentId, newStart, newTrackId);}catch{/* Retain the last valid linked placement. */}
       } else if (ds.kind === 'trim-left'||ds.kind === 'trim-right') {
         const side=ds.kind==='trim-left'?'left':'right',requested=dx/zoomLevel;
         try{
@@ -358,6 +360,7 @@ export function useTimeline() {
       if(isNativeMac()&&((e.metaKey&&['KeyZ','KeyC','KeyX','KeyV','KeyA'].includes(e.code))||e.code==='Backspace'))return;
       const store = useProjectStore.getState();
       const ctrl = e.ctrlKey || e.metaKey;
+      if(!ctrl&&!useUIStore.getState().timelineRecording&&((!e.altKey&&['BracketLeft','BracketRight'].includes(e.code))||(e.altKey&&['ArrowUp','ArrowDown'].includes(e.code)))){e.preventDefault();const next=navigateClip(store.project,store.selection,store.playheadPosition,['BracketLeft','ArrowUp'].includes(e.code)?-1:1,e.altKey);if(next){store.setSelection(next.selection);store.setPlayheadPosition(next.time);}return;}
       if(ctrl&&e.altKey&&(e.code==='ArrowLeft'||e.code==='ArrowRight')){if(isNativeMac())return;e.preventDefault();store.setIsPlaying(false);store.setPlayheadPosition(adjacentEdit(store.project,store.playheadPosition,e.code==='ArrowLeft'?-1:1));return;}
 
       if (!ctrl && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) {

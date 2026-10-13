@@ -1821,5 +1821,13 @@
     "dissolve": "Dissolve",
     "invalid": "Choose a name and at least one track.",
     "apply": "Apply"
+  },
+  "placement": {
+    "title": "Place clips at time",
+    "time": "Start (seconds)",
+    "offsets": "The earliest selected clip moves here; relative offsets and links are preserved.",
+    "invalid": "Choose a valid time and at least one clip.",
+    "trimStart": "Trim start to playhead",
+    "trimEnd": "Trim end to playhead"
   }
 }

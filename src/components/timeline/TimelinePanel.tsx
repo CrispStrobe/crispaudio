@@ -1,3 +1,6 @@
+import {ClipPlacement} from './ClipPlacement';
+import {navigateClip} from '../../lib/clipNavigation';
+import {trimToPlayhead} from '../../lib/trimEdits';
 import {TrackFolders,FolderHeader} from './TrackFolders';
 import {visibleTrackRows} from '../../lib/trackFolders';
 import {SampleSessions} from './SampleSessions';
@@ -587,6 +590,8 @@ export const TimelinePanel: React.FC = () => {
       case 'import':askImport();break;
       case 'export':void handleExportMix();break;
       case 'export-range':void handleExportMix(true);break;
+      case 'previous-clip':case 'next-clip':case 'clip-above':case 'clip-below':{const next=navigateClip(state.project,state.selection,state.playheadPosition,['previous-clip','clip-above'].includes(action)?-1:1,action.startsWith('clip-'));if(next){state.setSelection(next.selection);state.setPlayheadPosition(next.time);}break;}
+      case 'trim-start-playhead':case 'trim-end-playhead':{if(useUIStore.getState().timelineRecording)break;useProjectStore.setState({project:trimToPlayhead(state.project,state.selection?.segmentIds??[],action==='trim-start-playhead'?'left':'right',state.playheadPosition,state.sources),isPlaying:false});break;}
       case 'trim-tools':window.dispatchEvent(new Event('crispaudio-trim-tools'));break;
       case 'edit-groups':window.dispatchEvent(new Event('crispaudio-edit-groups'));break;
       case 'recording':window.dispatchEvent(new Event('crispaudio-recording'));break;
@@ -645,7 +650,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Activity} label={t('automation.openTitle')} aria-pressed={automation} onClick={()=>setAutomation(value=>!value)}/>
         <ToolButton icon={SlidersHorizontal} label={t('mixer.title')} aria-pressed={mixer} onClick={()=>setMixer(value=>!value)}/>
         <CommandSearch/>
-        <TrackFolders/><SampleSessions/><MusicalControls launcher={false}/>
+        <ClipPlacement/><TrackFolders/><SampleSessions/><MusicalControls launcher={false}/>
         <MidiControls audio={audioEngine} launcher={false}/>
         <DeliveryControls launcher={false}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} launcher={false}/>

@@ -1821,5 +1821,13 @@
     "dissolve": "Auflösen",
     "invalid": "Name und mindestens eine Spur wählen.",
     "apply": "Anwenden"
+  },
+  "placement": {
+    "title": "Clips zeitlich platzieren",
+    "time": "Anfang (Sekunden)",
+    "offsets": "Der erste gewählte Clip beginnt hier; relative Abstände und Verknüpfungen bleiben erhalten.",
+    "invalid": "Gültige Zeit und mindestens einen Clip wählen.",
+    "trimStart": "Anfang bis Abspielposition kürzen",
+    "trimEnd": "Ende bis Abspielposition kürzen"
   }
 }

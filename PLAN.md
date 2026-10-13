@@ -49,7 +49,9 @@ media. Playback, save/open and native audio/video export are locally checked.
 Input ownership and take audition/comp removal/reset/version comparison are
 implemented in 0.9.9. Built-in MacBook microphone acceptance is pending; additional
 physical inputs can be checked later when connected. Track folders, collapse, shared mute/solo and linked clip selection are now
-implemented and browser-checked. Next: faster editing. Audit existing punch/loop/take/comp and bus/send tools before
+implemented and browser-checked. Faster editing is implemented: visible clip keyboard navigation, exact group
+placement, context trims and multi-selection drag. Next: clip/master automation
+passes and additional useful FX parameters. Audit existing punch/loop/take/comp and bus/send tools before
 selecting each concrete addition. Shared frame scheduling does not remove independent-device drift. Track folders
 and grouped controls are distinct from routing.
 Keep secondary controls in menus or focused inspectors, with concise labels.

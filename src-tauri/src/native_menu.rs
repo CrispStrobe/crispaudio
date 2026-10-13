@@ -320,7 +320,14 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
             enabled,
             Some("CmdOrCtrl+K"),
         )?,
-        &item(
+        &item("place-clips", "Place Clips at Time…", "Clips zeitlich platzieren…", timeline && context.selection, None)?,
+            &item("trim-start-playhead", "Trim Start to Playhead", "Anfang bis Abspielposition kürzen", timeline && context.selection, None)?,
+            &item("trim-end-playhead", "Trim End to Playhead", "Ende bis Abspielposition kürzen", timeline && context.selection, None)?,
+            &item("previous-clip", "Select Previous Clip", "Vorigen Clip auswählen", timeline, None)?,
+            &item("next-clip", "Select Next Clip", "Nächsten Clip auswählen", timeline, None)?,
+            &item("clip-above", "Select Clip Above", "Clip darüber auswählen", timeline, None)?,
+            &item("clip-below", "Select Clip Below", "Clip darunter auswählen", timeline, None)?,
+            &item(
             "trim-tools",
             "Trim Tools…",
             "Schnittwerkzeuge…",

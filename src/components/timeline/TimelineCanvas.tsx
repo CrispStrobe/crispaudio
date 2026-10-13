@@ -1,3 +1,6 @@
+import {projectSelection,linkedIds} from '../../lib/projectEdits';
+import {trimToPlayhead} from '../../lib/trimEdits';
+import {runTimelineTool} from '../../hooks/useTimelineTool';
 import {visibleTrackRows} from '../../lib/trackFolders';
 import { gainAt } from '../../lib/mixAutomation';
 // ---------------------------------------------------------------------------
@@ -761,6 +764,8 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         >
           {contextMenu.segmentId ? (
             <>
+              {(['left','right'] as const).map(side=><button key={side} role="menuitem" tabIndex={-1} className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700" onClick={()=>{if(!contextMenu.segmentId||useUIStore.getState().timelineRecording)return;try{const state=useProjectStore.getState(),next=trimToPlayhead(state.project,[contextMenu.segmentId],side,state.playheadPosition,state.sources);useProjectStore.setState({project:next,selection:projectSelection(next,linkedIds(next,[contextMenu.segmentId])),isPlaying:false});}catch(e){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:t(e instanceof Error?e.message:String(e))}));}closeMenu();}}>{t(side==='left'?'placement.trimStart':'placement.trimEnd')}</button>)}
+              <button role="menuitem" tabIndex={-1} className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700" onClick={()=>{if(contextMenu.segmentId){store.selectSegment(contextMenu.segmentId);closeMenu();void runTimelineTool('place-clips');}}}>{t('placement.title')}</button>
               <button
                 type="button"
                 role="menuitem"
