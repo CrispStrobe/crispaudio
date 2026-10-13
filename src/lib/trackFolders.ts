@@ -1,10 +1,11 @@
 import type {TimelineProject,TimelineTrack,TrackFolder} from '../types/audio';
 import {projectSelection} from './projectEdits';
 import {linkedIds} from './projectEdits';
-const rows=new WeakMap<TimelineProject,TimelineTrack[]>();
+const rows=new WeakMap<TimelineTrack[],{folders:TrackFolder[];rows:TimelineTrack[]}>();
 /** View-only folder rows share canvas/header/hit-test geometry; no routing nodes. */
 export function visibleTrackRows(project:TimelineProject):TimelineTrack[]{
- const cached=rows.get(project);if(cached)return cached;
+ if(!project.trackFolders?.length)return project.tracks;
+ const cached=rows.get(project.tracks);if(cached?.folders===project.trackFolders)return cached.rows;
  const result:TimelineTrack[]=[],seen=new Set<string>();
  for(const track of project.tracks){
   const folder=project.trackFolders?.find(f=>f.trackIds.includes(track.id));
@@ -12,7 +13,7 @@ export function visibleTrackRows(project:TimelineProject):TimelineTrack[]{
   result.push({id:folder.id,name:folder.name,segments:[],kind:'bus',muted:false,solo:false,volume:1,pan:0});
   if(!folder.collapsed)result.push(...project.tracks.filter(t=>folder.trackIds.includes(t.id)));
  }
- rows.set(project,result);return result;
+ rows.set(project.tracks,{folders:project.trackFolders,rows:result});return result;
 }
 export function validTrackFolders(project:TimelineProject){
  if(project.trackFolders===undefined)return true;

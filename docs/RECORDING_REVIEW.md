@@ -1,13 +1,15 @@
 # Recording and comp review
 
 Open Record / takes. Choose an audio track, arm it, select an input and connect.
+Expand Input setup to choose a device/channel, connect or monitor. Expand
+Recording options for count-in, punch/loop or simultaneous armed tracks.
 The meter shows the incoming signal. Keep monitoring off when using speakers;
 use headphones for monitored recording. Record a short passage, stop and play it.
 Changing the project, selected track, device or input channel releases the old
 preview connection. Undoing an input change also releases it. A delayed permission
 result cannot reconnect an input to a different project.
 
-Each take has a Play icon for raw audition. Select a timeline range to audition
+Expand Takes & comp to review recorded takes. Each take has a Play icon for raw audition. Select a timeline range to audition
 only that interval. Raw audition bypasses clip/track/master effects and uses unity
 source gain. Comp audition uses the project mix, effects and routing with the
 chosen track soloed. Both stop the main transport, preserve project history and

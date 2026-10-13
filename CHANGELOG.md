@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.0 — 2026-10-13
+
+- Simplify Record / takes: basic track/arm/meter/record controls, with input setup,
+  recording options and takes/comp editing collapsed by default.
+- Add saved track folders, collapse, shared mute/solo and linked clip selection.
+- Add keyboard clip navigation, precise selected-group placement, context trims
+  and multi-clip drag as one undo.
+- Built-in MacBook microphone capture and audible speech playback are confirmed.
+
 ## 0.9.9 — 2026-10-13
 
 - Close stale recording previews after project replacement, undo, input changes

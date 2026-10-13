@@ -2906,4 +2906,18 @@ real-worklet input audits cover warm preview replacement, undo and late input
 results. Coordinated two-input synthetic capture still passes. Comp GUI audits
 cover audition without history, region replacement/removal, reset/undo, named
 versions, save/reopen and German 390 px layout. Physical built-in microphone
-acceptance is requested; additional-device hardware acceptance awaits availability.
+capture and audible recorded speech are user-confirmed; additional-device hardware acceptance awaits availability.
+
+## Local 0.10.0 — folders, fast editing and a simpler recording dialog
+
+Signed app installed with one autosave preserved. Lint, web/Tauri build and locked
+iOS simulator library check pass. Final frontend suite: 1,592 tests / 153 files.
+The first full run exposed unnecessary canvas work after metadata changes; the
+folder view cache now preserves track-array identity and the final full run passes.
+That cache correction follows the installed build and is included in the next build.
+Chrome/WebKit folder and editing workflows pass actual collapse hit geometry,
+shared controls, save/reopen, exact placement, keyboard navigation, selected-group
+drag, context trims and German 390 px layout. Simplified recording/comp audits pass;
+single-input Chrome and coordinated-input WebKit capture/punch/loop remain checked.
+User confirmed physical MacBook microphone capture and audible speech in 0.9.9.
+Additional physical inputs remain unavailable; no new Apple distribution occurred.

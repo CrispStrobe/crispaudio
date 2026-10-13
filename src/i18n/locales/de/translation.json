@@ -1559,7 +1559,15 @@
     "versions": "Comp-Versionen",
     "versionName": "Versionsname",
     "saveVersion": "Version speichern",
-    "deleteVersion": "Version löschen"
+    "deleteVersion": "Version löschen",
+    "inputLevel": "Eingangspegel",
+    "inputSetup": "Eingang einrichten",
+    "options": "Aufnahmeoptionen",
+    "takesComp": "Aufnahmen & Comp",
+    "multiShort": "{{count}} Spuren",
+    "punchShort": "Punch",
+    "loopShort": "Loop",
+    "monitorShort": "Mithören"
   },
   "retime": {
     "title": "Tempo / Tonhöhe",

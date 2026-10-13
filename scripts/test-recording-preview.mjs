@@ -13,7 +13,7 @@ try{
  });
  await page.goto(process.env.CRISPAUDIO_TEST_URL||'http://127.0.0.1:5191');await page.waitForLoadState('networkidle');
  await page.evaluate(async()=>{const {useUIStore:u}=await import('/src/stores/uiStore.ts');const {useProjectStore:s}=await import('/src/stores/projectStore.ts');window.store=s;window.ui=u;u.getState().setActivePanel('timeline');const p={...s.getInitialState().project,id:'group',sampleRate:48000,duration:4,minimumDuration:4,tracks:['a','b'].map((id,i)=>({id,name:id,segments:[],muted:false,solo:false,volume:1,pan:0,recordArmed:true,recordingInput:{deviceId:id,channel:i?'right':'mono',monitor:false,countIn:0,latencyMs:i*10}}))};s.getState().loadProjectState(p,new Map());s.getState().setPlayheadPosition(1);s.temporal.getState().clear();});
- await page.getByRole('button',{name:'Record / takes',exact:true}).click();const dialog=page.getByRole('dialog');await dialog.getByRole('checkbox',{name:'All armed tracks (2)',exact:true}).check();assert.deepEqual(await page.evaluate(()=>window.requests),[]);
+ await page.getByRole('button',{name:'Record / takes',exact:true}).click();const dialog=page.getByRole('dialog');await dialog.locator('[data-recording-section=options] > summary').click();await dialog.locator('[data-recording-section=input] > summary').click();await dialog.getByRole('checkbox',{name:'All armed tracks (2)',exact:true}).check();assert.deepEqual(await page.evaluate(()=>window.requests),[]);
  // Warm preview ownership across project replacement, undo and late permission results.
  await dialog.getByRole('checkbox',{name:'All armed tracks (2)',exact:true}).uncheck();
  await dialog.getByRole('button',{name:'Connect input',exact:true}).click();

@@ -5,7 +5,7 @@ import {playbackGraphKey} from '../../../src/lib/playbackGraphKey';
 import type {TimelineProject} from '../../../src/types/audio';
 const project=()=>({...useProjectStore.getInitialState().project,tracks:['a','b','c'].map(id=>({id,name:id,segments:[],volume:1,pan:0,muted:false,solo:false}))});
 it('folder rows are contiguous and collapse only changes presentation, with stable cached geometry',()=>{
- const p=project(),next=saveTrackFolder(p,'Group',['a','c'],'folder');expect(visibleTrackRows(next).map(t=>t.id)).toEqual(['folder','a','c','b']);expect(visibleTrackRows(next)).toBe(visibleTrackRows(next));expect(next.tracks).toBe(p.tracks);expect(playbackGraphKey(next)).toBe(playbackGraphKey(p));
+ const p=project(),next=saveTrackFolder(p,'Group',['a','c'],'folder');expect(visibleTrackRows(next).map(t=>t.id)).toEqual(['folder','a','c','b']);expect(visibleTrackRows(next)).toBe(visibleTrackRows(next));expect(visibleTrackRows({...next,name:'Changed'})).toBe(visibleTrackRows(next));expect(next.tracks).toBe(p.tracks);expect(playbackGraphKey(next)).toBe(playbackGraphKey(p));
  const collapsed={...next,trackFolders:next.trackFolders.map(f=>({...f,collapsed:true}))};expect(visibleTrackRows(collapsed).map(t=>t.id)).toEqual(['folder','b']);expect(collapsed.tracks).toBe(p.tracks);
 });
 it('membership moves between folders, rejects duplicate/unknown members and ID collisions',()=>{

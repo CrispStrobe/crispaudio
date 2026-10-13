@@ -1559,7 +1559,15 @@
     "versions": "Comp versions",
     "versionName": "Version name",
     "saveVersion": "Save version",
-    "deleteVersion": "Delete version"
+    "deleteVersion": "Delete version",
+    "inputLevel": "Input level",
+    "inputSetup": "Input setup",
+    "options": "Recording options",
+    "takesComp": "Takes & comp",
+    "multiShort": "{{count}} tracks",
+    "punchShort": "Punch",
+    "loopShort": "Loop",
+    "monitorShort": "Monitor"
   },
   "retime": {
     "title": "Speed / pitch",
