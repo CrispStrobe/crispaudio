@@ -1749,5 +1749,24 @@
     "transportNote": "Record with timeline places the new pattern at the audio-clock playhead. Stop, seek, loop restart or the pattern end finishes this pass. Stop playback, review the notes, then Apply.",
     "playTimeline": "Play timeline",
     "stopTimeline": "Stop timeline"
+  },
+  "fxInspector": {
+    "title": "FX automation",
+    "clock": "Project seconds",
+    "parameter": "Parameter",
+    "curve": "Automation curve",
+    "point": "Point",
+    "add": "Add at playhead",
+    "remove": "Delete point",
+    "clear": "Clear parameter",
+    "time": "Time (s)",
+    "value": "Value",
+    "segment": "Outgoing segment",
+    "apply": "Apply",
+    "missing": "This effect is unavailable.",
+    "stale": "The project changed. Reopen this inspector.",
+    "protected": "Recording or a track lock protects this effect.",
+    "invalid": "Invalid automation.",
+    "help": "Click the curve to add/select points, or use the point selector and numeric fields. Times are absolute project seconds; the shaded band marks the clip. Apply creates one undo step; clearing restores the static parameter. Other envelopes and points outside the clip remain intact."
   }
 }

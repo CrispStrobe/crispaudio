@@ -94,7 +94,7 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
           </div>
           <details>
             <summary className="text-sm text-gray-300 cursor-pointer py-2">{t('rack.trackEffects')}</summary>
-            <EffectChainEditor effects={track.effects ?? []} label={`${track.name} ${t('rack.trackEffects')}`} onChange={effects => {
+            <EffectChainEditor scope={`track:${track.id}`} effects={track.effects ?? []} label={`${track.name} ${t('rack.trackEffects')}`} onChange={effects => {
               const state = useProjectStore.getState(); state.setIsPlaying(false); state.updateTrack(track.id, {effects});
             }}/>
           </details>
@@ -107,7 +107,7 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
       </div>
       <section className="mt-4 p-3 rounded-xl bg-gray-950 border border-indigo-800">
         <h3 className="font-semibold text-sm mb-2">{t('rack.masterEffects')}</h3>
-        {mixer && <EffectChainEditor effects={masterEffects} label={t('rack.masterEffects')} onChange={effects => {
+        {mixer && <EffectChainEditor scope="master" effects={masterEffects} label={t('rack.masterEffects')} onChange={effects => {
           const state = useProjectStore.getState();
           useProjectStore.setState({project: {...state.project, masterEffects: effects}, isPlaying: false});
         }}/>}

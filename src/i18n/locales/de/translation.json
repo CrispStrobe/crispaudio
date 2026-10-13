@@ -1749,5 +1749,24 @@
     "transportNote": "Mit Zeitleiste aufnehmen setzt das neue Muster am Audio-Abspielkopf ein. Stopp, Sprung, Schleifenneustart oder das Musterende beendet diesen Durchgang. Wiedergabe stoppen, Noten prüfen, dann Anwenden.",
     "playTimeline": "Zeitleiste abspielen",
     "stopTimeline": "Zeitleiste stoppen"
+  },
+  "fxInspector": {
+    "title": "FX-Automation",
+    "clock": "Projektsekunden",
+    "parameter": "Parameter",
+    "curve": "Automationskurve",
+    "point": "Punkt",
+    "add": "Am Abspielkopf hinzufügen",
+    "remove": "Punkt löschen",
+    "clear": "Parameter leeren",
+    "time": "Zeit (s)",
+    "value": "Wert",
+    "segment": "Folgendes Segment",
+    "apply": "Anwenden",
+    "missing": "Dieser Effekt ist nicht verfügbar.",
+    "stale": "Das Projekt wurde geändert. Öffne den Inspector erneut.",
+    "protected": "Aufnahme oder Spursperre schützt diesen Effekt.",
+    "invalid": "Ungültige Automation.",
+    "help": "Klicke auf die Kurve, um Punkte hinzuzufügen oder auszuwählen, oder nutze Punktauswahl und Zahlenfelder. Zeiten gelten in Projektsekunden; die schattierte Fläche markiert den Clip. Anwenden erzeugt einen Rückgängig-Schritt. Leeren stellt den statischen Wert wieder her. Andere Hüllkurven und Punkte außerhalb des Clips bleiben erhalten."
   }
 }

@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.9.5. This section is the current plan.
+Updated 2026-10-13, for local 0.9.6. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -14,18 +14,17 @@ The 0.9.5 consolidation moves secondary timeline tools into desktop menus and
 command search, keeps compact editing controls visible and folds explanations
 into Help. This GUI correction takes precedence over adding more permanent tools.
 
-The next DAW increment is clip/master automation editing: expose the supported
-effect envelopes with clear clock/scope selection, protected edits, undo and
-save/reopen, preserving playback/offline/native rendering consistency. Track
-automation already has direct editing and pass controls; clip/master effect
-envelopes can render but lack comparable inspectors. Do not duplicate those
-existing track tools or claim arbitrary parameter support.
+Clip/master supported FX automation inspectors are implemented in 0.9.6.
+They use absolute project time, protected local drafts, one undo on Apply and
+save/reopen. Live commits retain the running graph; offline/native comparisons
+pass the existing moving-delay tolerance. Track lane/pass tools remain separate.
+Arbitrary FX parameters and clip/master recording passes are still broader work.
 
-Follow with recording and take/comp workflow improvements, then track
-organization and grouped editing. Audit the existing punch/loop/take/comp and
-bus/send tools before selecting each concrete addition. Multiple simultaneous
-recording inputs remain a meaningful recording gap. Track folders and grouped
-controls are separate from the existing audio bus routing.
+Next: recording and take/comp workflow improvements, then track organization
+and grouped editing. Audit existing punch/loop/take/comp and bus/send tools before
+selecting each concrete addition. Multiple simultaneous recording inputs remain
+a meaningful gap. Track folders and grouped controls are distinct from routing.
+Keep secondary controls in menus or focused inspectors, with concise labels.
 
 Playback remains fixed per user confirmation. M9 paging/codecs remains deferred.
 Completed editing/mixing/video milestones and existing MIDI features are retained.

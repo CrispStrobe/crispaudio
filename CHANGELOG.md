@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.9.6 — 2026-10-13
+
+- Add compact clip/master supported FX automation inspectors inside expanded
+  effect racks, with curve/point editing and Linear/Step segments.
+- Keep draft edits local until Apply, publishing one undo step. Guard locks,
+  recording and stale projects; preserve redo on equivalent Apply.
+- Use absolute project time and retain other envelopes, clip source offsets
+  and points outside the programme/clip window. Preserve the running graph
+  for supported automation updates and the existing project format.
+
 ## 0.9.5 — 2026-10-13
 
 - Consolidate the timeline toolbar around compact editing, mixing and recording

@@ -1,11 +1,16 @@
+import {ScopedEffectAutomation} from './ScopedEffectAutomation';
+import {scopedEffect, effectParameters} from '../../lib/scopedEffectAutomation';
+import {supportsEffectParameter} from '../../lib/effectAutomation';
+import {useProjectStore} from '../../stores/projectStore';
+import {useUIStore} from '../../stores/uiStore';
 import {HelpDetails} from '../common/HelpDetails';
 import {GainReduction} from './GainReduction';
 import {EqualizerGraph} from './EqualizerGraph';
 import React, { useState } from 'react';
 import { create } from 'zustand';
-import { ChevronDown, ChevronRight, Power, Trash2, Copy, ClipboardPaste, ArrowUp, ArrowDown } from 'lucide-react';
+import { ChevronDown, ChevronRight, Power, Trash2, Copy, ClipboardPaste, ArrowUp, ArrowDown, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { EffectConfig, EffectType } from '../../types/audio';
+import type { EffectConfig, EffectType, TimelineProject } from '../../types/audio';
 import { ParamSlider } from '../shared/ParamSlider';
 import { ToolButton } from '../common/ToolButton';
 
@@ -126,6 +131,10 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const specs = EFFECT_PARAMS[effect.type] ?? [];
+  const [automation, setAutomation] = useState<{snapshot:TimelineProject;original:EffectConfig}>();
+  const supported = !!scope && (scope === 'master' || scope.startsWith('clip:')) && effectParameters.some(key => supportsEffectParameter(effect.type, key));
+  const locked = useProjectStore(state => { if(!supported || !scope)return true;try{return scopedEffect(state.project,scope,index).locked;}catch{return true;} });
+  const recording = useUIStore(state => state.timelineRecording);
 
   return (
     <div className="border border-gray-700 rounded overflow-hidden">
@@ -178,6 +187,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
       {/* Params */}
       {expanded && (
         <div className={`px-3 py-2 space-y-2 ${!effect.enabled ? 'opacity-50' : ''}`}>
+          {supported && <div className="flex justify-end"><ToolButton icon={Activity} label={t('fxInspector.title')} disabled={locked||recording} onClick={()=>{const snapshot=useProjectStore.getState().project;setAutomation({snapshot,original:scopedEffect(snapshot,scope!,index).effect});}}/></div>}
           {specs.map((spec) => (
             <ParamSlider
               key={spec.key}
@@ -197,6 +207,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
           ))}
         </div>
       )}
+      {automation && scope && <ScopedEffectAutomation snapshot={automation.snapshot} original={automation.original} scope={scope} index={index} onClose={()=>setAutomation(undefined)}/>}
     </div>
   );
 };

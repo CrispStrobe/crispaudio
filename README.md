@@ -16,6 +16,8 @@ browser.
 The timeline uses compact icon controls. On macOS, File, Edit, View, Playback
 and Tools menus open the secondary tools; other platforms show in-window menus.
 Find command (⌘/Ctrl K) searches the same tools. Longer explanations open under Help.
+Clip and master racks have compact inspectors for supported FX envelopes; expand
+an effect and choose FX automation. See [effects and automation](docs/DAW_EFFECTS.md).
 
 Delivery adds per-export presets, range/clip/stem jobs, a cancellable queue,
 caption sidecars, portable media collection and reviewed cut-only OTIO export.

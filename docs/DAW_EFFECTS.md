@@ -4,7 +4,7 @@
 
 1. Select one or several clips. Shift adds clips; linked picture/audio is selected
    together. Unlink if only one member should receive the batch edit.
-2. Choose **Fade selected clips** (rising-line icon beside the crossfade tool).
+2. Choose **Edit → Fades…**, also available in Find command.
 3. Enter a duration and choose linear, exponential or S-curve for audio.
 4. Apply to the beginning, end, both ends, or remove fades. Audio durations are
    sample-clock seconds; picture durations round to project video frames. Each
@@ -28,7 +28,7 @@ transitions between pictures are separate controls.
 1. Select an audio clip and open **Clip settings** for its rack.
 2. Open **Mixer** in the Timeline toolbar, then **Inserts** on a track or the
    Master strip. Track racks process that lane; Master processes their sum.
-   **Tracks & microphones** also provides track effects and fade settings.
+   **View → Track Settings…** also provides track effects and fade settings.
 3. Add reverb, delay, chorus, ring modulation, distortion, bit crushing,
    low/high-pass filtering, bell/shelf EQ or compression. Expand an effect to edit parameters.
 4. Effects run top to bottom. Arrow controls reorder them; power bypasses one
@@ -52,6 +52,35 @@ silently extend the project. GUI WAV/MP4 mix export retains Web Audio effects.
 Native CLI `render-project` supports the documented native rack DSP and output
 limiter, and rejects unsupported processing; it must not silently drop a rack. `edit-video` uses the
 same native picture fade validation/export as the GUI.
+
+## Clip and master FX automation (0.9.6)
+
+Open Clip settings, or Mixer → Master → Inserts. Expand a supported effect and
+choose the **FX automation** icon. The focused inspector shows one parameter
+at a time, with a curve, point selector and numeric time/value fields. Click the
+curve to add/select a point, or add at the playhead. Delete removes a point;
+Clear removes only the selected parameter's envelope. Linear/Step controls the
+segment following the selected point.
+
+Supported envelopes are delay mix/feedback/time, chorus mix/depth/rate, and mix
+for reverb, ring modulation, bit crushing and distortion. Mix/depth span 0–1,
+feedback 0–0.95, delay time 0–2 seconds and chorus rate 0–8 Hz. Other insert
+parameters do not gain automation from this inspector. Track automation keeps
+its existing timeline lane, recording and copy/retime controls.
+
+All point times are **absolute project seconds**, including clip FX. A clip's
+source offset does not shift this clock. The shaded curve band marks the clip's
+current timeline window. Existing points outside that window or the current
+programme duration remain intact; other envelopes and static parameters remain
+unchanged. Save/open retains the existing project format.
+
+Edits remain a local draft until Apply, which creates one undo step. Cancel or
+closing the dialog discards the draft; equivalent Apply preserves redo. A track
+lock protects clip effects, recording blocks publication, and changes to the
+project require reopening the inspector. Supported envelope commits update the
+running racks without a transport restart. Existing renderer precision and tail
+limits still apply; this does not add arbitrary parameter automation or clip/master
+recording passes. Longer explanations stay under Help.
 
 ## EQ, limiter and gain reduction
 

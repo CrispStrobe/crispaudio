@@ -18,6 +18,32 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.9.6 — clip/master supported FX automation inspectors
+
+Expanded clip and master effects now open a focused automation inspector.
+Local drafts support curve/point selection, numeric time/value, Linear/Step,
+add/delete and parameter clear. Apply publishes one undo; equivalent drafts
+preserve redo. Project changes, recording and clip track locks protect edits.
+Other envelopes retain their original data; all clocks are project seconds.
+Track lanes/passes remain separate, and arbitrary parameters are not added.
+
+Validation: 1,575 unit tests across 148 files pass; ESLint, TypeScript/Vite,
+Tauri app build and locked iOS simulator library check pass. Chrome and
+Playwright WebKit exercise actual clip/master dialogs, draft cancellation,
+bounds, undo/no-op/redo, locks/stale drafts, live commits without graph restart,
+save/reopen and German 390px layout. Offline full/range crops match exactly.
+Native PCM peak differences are 9.0637e-6 (Chrome) and 2.5481e-6 (WebKit), within
+the existing 1e-4 moving-delay audit budget. This covers the tested mixed
+clip/master delay case; it does not remove documented renderer precision limits.
+The native media implementation and optimized CLI remain unchanged.
+
+The local 0.9.6 app is installed, signed, verified and relaunched, retaining one
+autosave and a fresh recovery backup. Playback remains fixed per the user's
+prior confirmation. Physical device acceptance is unchanged. Both exact 0.9.5
+[general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38315509696) and
+[iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38315509728) succeeded.
+The new checkpoint's remote checks are separate. No release tag or Apple upload.
+
 ## Local 0.9.5 — compact timeline and desktop menus
 
 Secondary tools now open through native macOS menus or File/Edit/View/Tools
