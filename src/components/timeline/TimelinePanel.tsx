@@ -1,3 +1,4 @@
+import {InfoButton} from '../common/InfoButton';
 import {SampleWalkthroughs} from './SampleWalkthroughs';
 import {ExportReview} from './ExportReview';
 import {MixReview} from './MixReview';
@@ -721,10 +722,10 @@ export const TimelinePanel: React.FC = () => {
         onTouchStart={e => { const p = e.touches[0]; if (!touchArrange && p && !(e.target as HTMLElement).closest('[data-timeline-playhead], [data-track-reorder]')) touchPan.current = {x:p.clientX,y:p.clientY,scroll:useProjectStore.getState().scrollOffset}; }}
         onTouchEnd={() => {touchPan.current=null;}}
         onTouchMove={e => { const start=touchPan.current, p=e.touches[0]; if (!start || !p || touchArrange) return; const dx=start.x-p.clientX; if (Math.abs(dx) > Math.abs(start.y-p.clientY)+8) { const state=useProjectStore.getState(); state.setScrollOffset(Math.min(Math.max(0,timelineDuration(state.project)-canvasWidth/state.zoomLevel),Math.max(0,start.scroll+dx/state.zoomLevel))); } }} >
-        {!store.project.tracks.length && !store.project.video && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-5 bg-gray-950 text-center" style={{top:RULER_HEIGHT}}>
+        {!store.project.tracks.length && !store.project.video && <div data-empty-timeline className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 p-5 bg-gray-950 text-center" style={{top:RULER_HEIGHT}}>
           <Upload className="w-10 h-10 text-indigo-400" />
           <h2 className="text-lg font-semibold text-gray-100">{t('timeline.startTitle')}</h2>
-          <p className="text-sm text-gray-400 max-w-md">{t('timeline.startHelp')}</p>
+          <InfoButton label={t('timeline.startInfo')}>{t('timeline.startHelp')}</InfoButton>
           <button className="timeline-tool !bg-indigo-600 !border-indigo-500" onClick={() => askImport()}>{t('timeline.importAudio')}</button>
         </div>}
         {/* Left: track headers column */}

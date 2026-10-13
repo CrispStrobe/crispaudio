@@ -593,7 +593,8 @@
     "viewTools": "Ansicht & Werkzeuge",
     "startTitle": "Mit einer Aufnahme beginnen",
     "startHelp": "Eine Aufnahme importieren oder mehrere ausgerichtete Mikrofondateien für getrennte Spuren auswählen. Ein gespeichertes Projekt lässt sich ebenfalls öffnen.",
-    "addEffect": "Effekt hinzufügen"
+    "addEffect": "Effekt hinzufügen",
+    "startInfo": "Erste Schritte"
   },
   "common": {
     "slotA": "A",

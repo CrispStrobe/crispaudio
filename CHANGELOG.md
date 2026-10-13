@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.4 — 2026-10-13
+
+- Hide the audio playhead over the empty-session welcome and import button.
+- Move the longer getting-started explanation into an information button.
+
 ## 0.10.3 — DAW checkpoint
 
 - Mix A/B snapshots with synchronized audition, optional loudness matching, LUFS/peak/RMS measurements, protected restore and save/reopen.

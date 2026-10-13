@@ -101,6 +101,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     time: 0,
   });
 
+  const hasContent = useProjectStore(s=>s.project.tracks.length>0||!!s.project.video);
   const trackHeight = useProjectStore((s) => s.trackHeight);
   const tracks = useProjectStore((s) => visibleTrackRows(s.project));
   const store = useProjectStore(useShallow((s) => ({
@@ -752,7 +753,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       />
 
       <TrimSourceFeedback feedback={trimFeedback}/>
-      <PlayheadHandle width={width} />
+      {hasContent&&<PlayheadHandle width={width} />}
 
       {touchArrange&&<ClipTrimHandles tracks={tracks} selection={store.selection} zoom={store.zoomLevel} scroll={store.scrollOffset} width={width} height={trackHeight} onBegin={(e,seg,row,side)=>{e.preventDefault();e.stopPropagation();const canvas=canvasRef.current;if(!canvas)return;e.currentTarget.setPointerCapture(e.pointerId);onMouseDown({clientX:e.clientX,clientY:e.clientY,shiftKey:e.shiftKey,currentTarget:canvas} as React.MouseEvent<HTMLCanvasElement>,{type:side==='left'?'trim-left':'trim-right',segment:seg,trackIndex:row});}} onMove={e=>{if(!e.currentTarget.hasPointerCapture(e.pointerId)||!canvasRef.current)return;onMouseMove({clientX:e.clientX,clientY:e.clientY,currentTarget:canvasRef.current} as React.MouseEvent<HTMLCanvasElement>);}} onEnd={e=>{onMouseUp();if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);}} onCancel={cancelDrag}/>}
       {/* Context menu */}

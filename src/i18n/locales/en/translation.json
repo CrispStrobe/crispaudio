@@ -580,7 +580,8 @@
     "viewTools": "View & tools",
     "startTitle": "Start with your audio",
     "startHelp": "Import a recording, or select several aligned microphone files to create separate tracks. You can also open a saved project.",
-    "addEffect": "Add effect"
+    "addEffect": "Add effect",
+    "startInfo": "Getting started"
   },
   "common": {
     "slotA": "A",

@@ -93,6 +93,7 @@ describe('timeline drawing invalidation', () => {
     expect(container.querySelector('[data-timeline-playhead]')).toHaveStyle({ transform: 'translateX(300px)' });
   });
   it('moves a separate playhead overlay without repainting waveforms', () => {
+    useProjectStore.getState().addTrack('Audio');
     const { container } = render(<TimelineCanvas width={800} />);
     frame();
     clearRect.mockClear();
@@ -148,6 +149,7 @@ describe('timeline drawing invalidation', () => {
   });
 
   it.each([TimelineCanvas, TimelineRuler])('resizes and restores the latest hidden playhead', (Component) => {
+    useProjectStore.getState().addTrack('Audio');
     const { container, rerender } = render(<Component width={800} />);
     frame();
     clearRect.mockClear();
@@ -167,6 +169,7 @@ describe('timeline drawing invalidation', () => {
   });
 
   it.each([TimelineCanvas, TimelineRuler])('cancels pending drawing and removes observers on unmount', async (Component) => {
+    useProjectStore.getState().addTrack('Audio');
     const { container, unmount } = render(<Component width={800} />);
     const overlay = container.querySelector('[data-timeline-playhead]') as HTMLElement;
     expect(frames.size).toBe(1);
