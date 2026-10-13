@@ -31,7 +31,7 @@ jobs:
       - name: Require VERCEL_TOKEN
         if: env.HAS_TOKEN != 'true'
         run: echo "::warning::VERCEL_TOKEN secret not set — add it to enable CI deploys. Skipping."
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: env.HAS_TOKEN == 'true'
       - uses: actions/setup-node@v4
         if: env.HAS_TOKEN == 'true'
