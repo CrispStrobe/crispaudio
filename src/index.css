@@ -629,9 +629,9 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
   font-weight:700;
 }
 
-.floating-inspector {right:16px;top:100px;width:360px;max-width:calc(100vw - 16px);}
-.floating-inspector [data-floating-inspector-body] {max-height:65dvh;}
+.floating-inspector {--inspector-body-height:65dvh;right:16px;top:100px;width:360px;max-width:calc(100vw - 16px);}
+.floating-inspector [data-floating-inspector-body] {max-height:var(--inspector-body-height); }
 @media (max-width:767px) {
-  .floating-inspector {top:auto;bottom:16px;right:8px;}
-  .floating-inspector [data-floating-inspector-body] {max-height:22dvh;}
+  .floating-inspector {--inspector-body-height:22dvh;top:auto;bottom:16px;right:8px;}
+  .floating-inspector [data-floating-inspector-body] {max-height:var(--inspector-body-height); }
 }

@@ -102,3 +102,9 @@ linked audio, Shift-click extends the selection, and dragging retains the group.
 Escape abandons the pending click as well as the drag; opening the touch/context
 menu retains its existing selection. Track Shift ranges start at the clicked
 track if their previous anchor no longer exists.
+
+Floating inspectors retain their compact body height after moving. Collapsing a
+moved panel leaves just its header; rotating or resizing keeps the panel inside
+the viewport. Losing pointer capture or window focus ends panel dragging.
+Picture header Shift-click can start its range from an already selected video
+clip, retaining linked audio and highlighting every selected track.

@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.9. This section is the current plan.
+Updated 2026-10-13, for local 0.10.10. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -74,6 +74,8 @@ context actions, retaining linked audio/video edits and protected cancellation.
 optional navigation and master loudness, and compact picture track/preview tools.
 0.10.9 makes video plain-click/Shift-click selection consistent with audio and
 protects track ranges from removed anchors.
+0.10.10 preserves compact inspector geometry after dragging/rotation and starts
+picture header ranges from a selected clip.
 Window movement remains working per the latest user confirmation.
 Keep secondary controls in menus or focused inspectors, with concise labels.
 

@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.10 — 2026-10-13
+
+- Keep floating inspectors compact after touch dragging, collapse and viewport rotation; release stale drags when capture or window focus is lost.
+- Start picture-track Shift-click ranges from the selected video clip, retaining linked audio and visible selection markers.
+
 ## 0.10.9 — 2026-10-13
 
 - Match video selection to audio: a plain click selects one clip with its linked audio, Shift-click extends selection, and dragging retains the group. Escape and touch context menus preserve the selection.
