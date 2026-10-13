@@ -14,6 +14,7 @@ function fixture() {
     video:{path:'camera.mp4', duration:20, session:{} as NonNullable<typeof p.video>['session'], clips:[video]}};
 }
 describe('batch clip fades', () => {
+  it('leaves locked audio and picture untouched during live batch edits',()=>{const p=fixture();p.tracks[0].locked=true;p.video!.locked=true;const next=applyClipFades(p,['a','v'],'both',1,'linear');expect(next.tracks[0].segments[0]).toBe(p.tracks[0].segments[0]);expect(next.video).toBe(p.video);});
   it('limits selected AV fades to each length without moving or trimming material', () => {
     const p = fixture(), next = applyClipFades(p,['a','v'],'both',1.5,'scurve');
     const a = next.tracks[0].segments[0], v = next.video!.clips![0];

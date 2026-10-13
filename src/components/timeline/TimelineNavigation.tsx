@@ -1,5 +1,3 @@
-import { CircleHelp } from 'lucide-react';
-import { ToolButton } from '../common/ToolButton';
 import { ProjectOverview } from './ProjectOverview';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +16,6 @@ export function TimelineNavigation({ width }: { width: number }) {
       <button className="min-h-9 px-2" aria-label={t('editor.panLeft')} disabled={scroll <= 0} onClick={() => move(scroll - width / zoom * .8)}>◀</button>
       <ProjectOverview viewportWidth={width}/>
       <button className="min-h-9 px-2" aria-label={t('editor.panRight')} disabled={scroll >= max} onClick={() => move(scroll + width / zoom * .8)}>▶</button>
-      <ToolButton icon={CircleHelp} label={t('editor.panHelp')}/>
     </div>
     <div ref={ref} hidden={!max} className="timeline-horizontal-scroll overflow-x-scroll" style={{ width, maxWidth: '100%', height: 16 }} aria-label={t('editor.scroll')}
       onScroll={e => { const value = e.currentTarget.scrollLeft / zoom; if (Math.abs(value - Math.min(scroll, max)) > .5 / zoom) move(value); }}>

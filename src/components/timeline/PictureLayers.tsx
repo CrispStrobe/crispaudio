@@ -1,3 +1,6 @@
+import {Scan} from 'lucide-react';
+import {ToolButton} from '../common/ToolButton';
+import {InfoButton} from '../common/InfoButton';
 import {convertFileSrc} from '@tauri-apps/api/core';
 import {drawTitle,graphicAsVideo} from '../../lib/graphics';
 import type {GraphicClip} from '../../types/audio';
@@ -95,8 +98,8 @@ export function PictureLayers(){
     <canvas ref={canvas} data-picture-composition className="absolute inset-0 w-full h-full object-contain" aria-label={t('interview.preview')}/>
     {videoClips(video).map(clip=><PictureDecoder key={clip.id} clip={clip} register={register} onError={setError}/>)}
     {(video?.graphics??[]).filter(t=>t.visible).flatMap(t=>t.clips).filter(c=>c.type==='image'&&c.startTime<=time&&c.startTime+c.duration>time).map(clip=><GraphicImage key={clip.id} clip={clip} register={registerImage} onError={setError}/>)}
-    {safe&&<div className="absolute pointer-events-none border border-dashed border-white/70" style={{inset:'5%'}}><div className="absolute border border-dashed border-white/50" style={{inset:'5.56%'}}/></div>}
-    <button className="absolute top-0 right-0 min-h-11 px-2 text-[10px] bg-black/50 text-white" aria-pressed={safe} onClick={()=>setSafe(v=>!v)}>{t('graphics.safeAreas')}</button>
+    {safe&&<div data-safe-areas className="absolute pointer-events-none border border-dashed border-white/70" style={{inset:'5%'}}><div className="absolute border border-dashed border-white/50" style={{inset:'5.56%'}}/></div>}
+    <div className="absolute top-0 right-0 flex items-center bg-black/50 rounded text-white z-30"><ToolButton icon={Scan} label={t('graphics.safeAreas')} aria-pressed={safe} onClick={()=>setSafe(v=>!v)}/><InfoButton label={t('graphics.safeAreasInfo')}><p>{t('graphics.safeAreasHelp')}</p></InfoButton></div>
     <PictureHandles/>
     {error&&<span role="alert" className="absolute bottom-0 text-xs bg-black text-amber-300">{error}</span>}
   </>;

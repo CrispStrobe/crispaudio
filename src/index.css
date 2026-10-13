@@ -617,3 +617,21 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
   .timeline-editor [data-track-header][data-touch-compact="false"] .track-mixer > span { display:none; }
 }
 .timeline-editor [data-track-header][data-compact="true"] .track-heading .track-drag { display:none; }
+
+/* Selection belongs to its rows and clips, never a wash over other tracks. */
+.timeline-editor [data-track-header][data-selected="true"] {
+  background-color:#312e81;
+  box-shadow:inset 4px 0 #fde047;
+}
+.timeline-editor [data-track-header][data-selected="true"] .track-heading input,
+.timeline-editor [data-track-header][data-selected="true"] [data-picture-track-name] {
+  color:#fef08a;
+  font-weight:700;
+}
+
+.floating-inspector {right:16px;top:100px;width:360px;max-width:calc(100vw - 16px);}
+.floating-inspector [data-floating-inspector-body] {max-height:65dvh;}
+@media (max-width:767px) {
+  .floating-inspector {top:auto;bottom:16px;right:8px;}
+  .floating-inspector [data-floating-inspector-body] {max-height:22dvh;}
+}

@@ -262,7 +262,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
           ctx.fillRect(segLeft, segTop, fadeWidth, segHeight);
 
           // Curve indicator line
-          ctx.strokeStyle = hexToRgba(baseColor, 0.9);
+          ctx.strokeStyle = '#f8fafc';
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.moveTo(segLeft, segBottom);
@@ -285,7 +285,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
           ctx.fillRect(clampedFadeOutStart, segTop, fadeWidth, segHeight);
 
           // Curve indicator line
-          ctx.strokeStyle = hexToRgba(baseColor, 0.9);
+          ctx.strokeStyle = '#f8fafc';
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           drawFadeCurveSegment(ctx, seg.fadeOutCurve, clampedFadeOutStart, segBottom, segRight, segTop, 'out');
@@ -326,9 +326,9 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
       // Border
       ctx.strokeStyle = isSelected
-        ? baseColor
+        ? '#fde047'
         : hexToRgba(baseColor, 0.7);
-      ctx.lineWidth = isSelected ? 2 : 1;
+      ctx.lineWidth = isSelected ? 3 : 1;
       ctx.beginPath();
       roundRect(ctx, segLeft, segTop, segRight - segLeft, segHeight, 3);
       ctx.stroke();
@@ -435,7 +435,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     }
 
     // ── Selection highlight ───────────────────────────────────────────────
-    if (store.selection) {
+    if (store.selection && !store.selection.segmentIds.length && !store.selection.trackIds?.length) {
       const selLeft = timeToPixels(store.selection.startTime);
       const selRight = timeToPixels(store.selection.endTime);
       if (selRight > 0 && selLeft < cssWidth) {
@@ -454,6 +454,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
     for (let ti = 0; ti < tracks.length; ti++) {
       const track = tracks[ti];
+      if(store.selection?.trackIds?.includes(track.id)||track.segments.some(c=>selectedIds.has(c.id))){ctx.fillStyle='rgba(99,102,241,.12)';ctx.fillRect(0,ti*trackHeight,cssWidth,trackHeight);}
       for (const seg of track.segments) {
         drawSegment(ctx, seg, track, ti, selectedIds.has(seg.id));
       }
@@ -567,7 +568,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       if('segment' in hit)setActiveTrimId(hit.segment.id);
       if (!touchArrange) {
         const state = useProjectStore.getState();
-        if ('segment' in hit) state.selectSegment(hit.segment.id, false);
+        if ('segment' in hit) state.selectSegment(hit.segment.id, e.shiftKey);
         else { state.setPlayheadPosition(hit.time); state.setSelection(null); }
       } else onMouseDown(e);
 

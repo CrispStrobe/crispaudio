@@ -57,7 +57,8 @@ outside clicks, scrolling, Escape or another track menu. Arrow/Home/End navigate
 the menu. Recording setup opens on that track without starting microphone input.
 
 With multiple selected audio clips, the boundary buttons follow the focused clip
-(last touched or right-clicked). The other clips remain selected. If it is outside
+(last touched or right-clicked). Context focus and dragging retain the other selected clips; a plain click or tap
+selects only the clicked clip. If it is outside
 the viewport, the first visible selected clip supplies the buttons. Linked trim
 rules and one-undo/Escape behavior are unchanged.
 
@@ -73,3 +74,25 @@ settings, placement, trim tools, trim to playhead, fades, retiming, edit groups,
 split, copy, cut and delete. The same commands remain in desktop menus and the
 touch ribbon. Locked picture and recording protect mutations. Menus stay inside
 the viewport, support keyboard navigation and close on Escape or an outside tap.
+
+Track and clip selection now highlights only its rows and clip outlines. Selected
+headers have a yellow stripe and name. Header Shift-click selects an anchored
+track range, including empty tracks; plain click replaces it. A plain clip-body
+click also replaces the selection when Move & Trim is on; dragging retains the
+selected group. Shift-click clip
+selection also works with Move & Trim off. Explicit edit ranges remain separate.
+
+Clip and fade inspectors are modeless, movable by the grip (or arrow keys), and
+collapsible. The timeline remains usable. Fade sliders change unlocked selected
+clips live, draw a shared envelope preview, and group a drag into one undo. The
+original duration presets remain collapsed. Capture protects fade edits.
+
+View and the touch ribbon toggle the persisted Zoom and Navigation row. Its
+inactive question-mark button is removed. Master loudness is beside Master and
+Limiter and has a persisted visibility checkbox. Settings uses an accessible
+gear button. Video layer headers share visibility, locking, ripple participation,
+selection, ordering, settings and removal through an ellipsis/right-click menu.
+Layer settings and output format open collapsed; capture disables changes.
+Titles/captions and picture/output tools use icons. Safe-area guides use an icon
+toggle and an information button explaining the 90%/80% guides and preview-only
+behavior. No guides are included in exports.

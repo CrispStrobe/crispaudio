@@ -427,6 +427,13 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
             &item("mixer", "Mixer", "Mixer", timeline, None)?,
             &item("automation", "Automation", "Automation", timeline, None)?,
             &item(
+                "navigation-view",
+                "Show / Hide Zoom and Navigation",
+                "Zoom und Navigation ein-/ausblenden",
+                timeline,
+                None,
+            )?,
+            &item(
                 "view-settings",
                 "Timeline View…",
                 "Zeitleistenansicht…",

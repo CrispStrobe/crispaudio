@@ -1,3 +1,5 @@
+import {Captions} from 'lucide-react';
+import {ToolButton} from '../common/ToolButton';
 import {useState,useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {open} from '@tauri-apps/plugin-dialog';
@@ -49,7 +51,7 @@ export function GraphicControls(){
   const target=track&&!track.locked?track:tracks.find(t=>!t.locked);const next=target?tracks.map(t=>t.id===target.id?{...t,clips:[...t.clips,clip]}:t):[{id:crypto.randomUUID(),name:t('graphics.track'),visible:true,locked:false,rippleEnabled:true,clips:[clip]},...tracks];if(update({graphics:next}))setSelected(id);
  };
  const caption=video.captions;
- return <><button className="timeline-tool" onClick={()=>setOpened(true)}>{t('graphics.tools')}</button><Modal isOpen={opened} onClose={()=>setOpened(false)} title={t('graphics.tools')}>
+ return <><ToolButton icon={Captions} label={t('graphics.tools')} onClick={()=>setOpened(true)}/><Modal isOpen={opened} onClose={()=>setOpened(false)} title={t('graphics.tools')}>
   <div className="space-y-3 text-sm"><div className="flex gap-2">{(['graphics','captions'] as const).map(key=><button key={key} className="timeline-tool" aria-pressed={tab===key} onClick={()=>setTab(key)}>{t(`graphics.${key}`)}</button>)}</div>
   {tab==='captions'?caption?<><div className="flex gap-3">{(['visible','locked','rippleEnabled'] as const).map(key=><label className="flex min-h-11 items-center gap-1" key={key}><input type="checkbox" checked={caption[key]} onChange={e=>update({captions:{...caption,[key]:e.target.checked}})}/>{t(`picture.${key}`)}</label>)}</div><CaptionEditor caption={caption} update={captions=>update({captions})}/></>:<button className="timeline-tool" onClick={()=>update({captions:{id:crypto.randomUUID(),name:t('graphics.captions'),visible:true,locked:false,rippleEnabled:true,burnIn:false,style:TITLE_PRESETS.caption,cues:[]}})}>{t('graphics.addCaptions')}</button>:<>
    <div className="flex gap-2 flex-wrap">{(['title','lowerThird'] as const).map(preset=><button key={preset} className="timeline-tool" onClick={()=>add('title',preset)}>{t(`graphics.${preset}`)}</button>)}<button className="timeline-tool" onClick={()=>void (async()=>{try{const path=await open({filters:[{name:'Image',extensions:['png','jpg','jpeg','tif','tiff']}]});if(typeof path==='string')add('image','title',path);}catch(e){setError(String(e));}})()}>{t('graphics.image')}</button></div>

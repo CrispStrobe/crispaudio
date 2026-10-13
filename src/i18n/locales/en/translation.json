@@ -99,7 +99,8 @@
     "MIDI…": "MIDI…",
     "Sample Sessions…": "Sample sessions…",
     "Review Export…": "Review Export…",
-    "Sample Walkthroughs…": "Sample walkthroughs…"
+    "Sample Walkthroughs…": "Sample walkthroughs…",
+    "Show / Hide Zoom and Navigation": "Show / Hide Zoom and Navigation"
   },
   "app": {
     "name": "CrispAudio",
@@ -139,22 +140,22 @@
     "download": "Download WAV",
     "sampleRate": "Sample Rate",
     "bitDepth": "Bit Depth",
-    "preset_pickupCoin": "Pickup/Coin",
-    "preset_laserShoot": "Laser/Shoot",
+    "preset_pickupCoin": "Coin",
+    "preset_laserShoot": "Laser",
     "preset_explosion": "Explosion",
-    "preset_powerUp": "Power Up",
-    "preset_hitHurt": "Hit/Hurt",
+    "preset_powerUp": "Powerup",
+    "preset_hitHurt": "Hit",
     "preset_jump": "Jump",
     "preset_ambient": "Ambient",
     "preset_random": "Random",
-    "preset_blipSelect": "Blip/Select",
-    "preset_zapElectric": "Zap/Electric",
-    "preset_wooshWind": "Woosh/Wind",
-    "preset_droneBuzz": "Drone/Buzz",
-    "preset_clickUI": "Click/UI",
+    "preset_blipSelect": "Blip",
+    "preset_zapElectric": "Electric",
+    "preset_wooshWind": "Wind",
+    "preset_droneBuzz": "Drone",
+    "preset_clickUI": "Click",
     "preset_glitchDigital": "Glitch",
-    "preset_portalWarp": "Portal/Warp",
-    "preset_warningAlarm": "Warning/Alarm",
+    "preset_portalWarp": "Portal",
+    "preset_warningAlarm": "Alarm",
     "waveSquare": "Square",
     "waveSawtooth": "Sawtooth",
     "waveSine": "Sine",
@@ -657,7 +658,8 @@
     "timelineRibbon": "Touch ribbon",
     "ribbon_auto": "Automatic on touch devices",
     "ribbon_always": "Always show",
-    "ribbon_never": "Hide"
+    "ribbon_never": "Hide",
+    "timelineNavigation": "Show Zoom and Navigation"
   },
   "about": {
     "title": "About",
@@ -913,7 +915,10 @@
     "oneSource": "Select a track using one audio source.",
     "linkedOnly": "Save or reimport this source as a linked audio file first.",
     "durationChanged": "Cleanup changed the source duration; original audio retained.",
-    "addPoint": "Add gain point"
+    "addPoint": "Add gain point",
+    "movePanel": "Move panel",
+    "collapsePanel": "Collapse panel",
+    "expandPanel": "Expand panel"
   },
   "usability": {
     "contextHelp": "Help mode: hover, focus or tap a highlighted control.",
@@ -995,7 +1000,9 @@
     "help_trackActions_title": "Track actions",
     "help_trackActions": "Opens mute, solo, arm, recording setup, clip selection, reorder, lock and remove actions. Right-click the track header also opens this menu. Changes are disabled during capture.",
     "help_videoClip_title": "Video segment",
-    "help_videoClip": "Select, then drag the start or end with Move & Trim enabled. Linked audio stays synchronized. Right-click or long-press opens settings, trim, fades, speed/pitch, copy and other actions. Escape cancels a drag."
+    "help_videoClip": "Select, then drag the start or end with Move & Trim enabled. Linked audio stays synchronized. Right-click or long-press opens settings, trim, fades, speed/pitch, copy and other actions. Escape cancels a drag.",
+    "help_pictureTrackActions_title": "Video track actions",
+    "help_pictureTrackActions": "Opens visibility, lock, ripple participation, clip selection, ordering and removal. The same menu opens with a right-click. Track settings contain the output format. Changes are disabled during recording."
   },
   "analysis": {
     "outputSpectrogram": "Output spectrogram",
@@ -1027,7 +1034,10 @@
     "in": "Fade in",
     "out": "Fade out",
     "both": "Fade both ends",
-    "clear": "Remove fades"
+    "clear": "Remove fades",
+    "preview": "Live fade envelope",
+    "presets": "Preset duration",
+    "liveHelp": "Sliders change selected unlocked clips immediately. The timeline and envelope update during the gesture. Undo reverses a completed drag."
   },
   "videoColor": {
     "title": "Colour correction",
@@ -1491,7 +1501,8 @@
       "ease-in": "Ease in",
       "ease-out": "Ease out",
       "ease-in-out": "Ease in/out"
-    }
+    },
+    "format": "Output format"
   },
   "graphics": {
     "title": "Title",
@@ -1527,7 +1538,9 @@
     "titleText": "Title text",
     "tools": "Titles and captions",
     "safeAreas": "Safe areas",
-    "savePreset": "Save title preset"
+    "savePreset": "Save title preset",
+    "safeAreasInfo": "About safe areas",
+    "safeAreasHelp": "The outer dashed rectangle keeps action inside 90% of the picture; the inner rectangle keeps titles inside 80%. Leave important text and faces inside these guides to allow for cropped displays. The guides are preview aids and are never exported."
   },
   "recording": {
     "title": "Record / takes",
@@ -1960,7 +1973,8 @@
     "collapse": "Collapse ribbon",
     "mix-review": "Mix A/B",
     "review-export": "Review export",
-    "walkthroughs": "Sample walkthroughs"
+    "walkthroughs": "Sample walkthroughs",
+    "navigation-view": "Navigation"
   },
   "commandHelp": {
     "samples": "Open Sample Sessions for the current project or selection.",

@@ -1,3 +1,4 @@
+import {InfoButton} from '../common/InfoButton';
 import {useEffect,useRef,useState,type RefObject} from 'react';
 import {useTranslation} from 'react-i18next';
 import {measureBuffer,finishingGain,type LoudnessReading} from '../../audio/dsp/loudness';
@@ -39,7 +40,7 @@ export function LoudnessControls({engine}:{engine:RefObject<TimelineEngine|null>
   };
   return <section className="rounded border border-gray-700 p-2 space-y-2 text-xs" aria-label={t('loudness.title')}>
     <p>{t('loudness.title')}</p>
-    <p className="text-gray-400">{t('loudness.liveEstimate')}</p>
+
     <p>I {display(live?.integrated)} LUFS · TP {display(live?.truePeak)} dBTP</p>
     <p>M {display(live?.momentary)} · S {display(live?.shortTerm)} LUFS</p>
     <button className="min-h-11" onClick={()=>engine.current?.resetLoudness()}>{t('loudness.reset')}</button>
@@ -48,7 +49,7 @@ export function LoudnessControls({engine}:{engine:RefObject<TimelineEngine|null>
     <button className="min-h-11 w-full rounded bg-gray-800" disabled={busy} onClick={()=>void measure()}>{t('loudness.measure')}</button>
     {busy&&<button className="min-h-11" onClick={()=>job.current?.abort()}>{t('common.cancel')}</button>}
     {error&&<p role="alert" className="text-amber-300">{error}</p>}
-    <p className="text-gray-400">{t('loudness.help')}</p>
+    <InfoButton label={t('loudness.title')}><p>{t('loudness.liveEstimate')}</p><p>{t('loudness.help')}</p></InfoButton>
     {review&&<Modal isOpen onClose={()=>setReview(undefined)} title={t('loudness.review')}>
       <div className="space-y-3 text-sm">
         <p>{t('loudness.before')}: {display(review.before.integrated)} LUFS / {display(review.before.truePeak)} dBTP</p>

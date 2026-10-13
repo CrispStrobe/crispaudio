@@ -97,9 +97,6 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
         style={{ width: 56, height: 52, gap: 3 }}
       >
         <Settings size={18} />
-        <span className="nav-label">
-          {t('nav.settings')}
-        </span>
       </button>
     </aside>
   );

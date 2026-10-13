@@ -1,3 +1,4 @@
+import {FloatingInspector} from '../common/FloatingInspector';
 import {InspectorTransport} from './InspectorTransport';
 import {HelpDetails} from '../common/HelpDetails';
 import {useTimelineTool} from '../../hooks/useTimelineTool';
@@ -37,9 +38,9 @@ export function TimelineActions({ touchArrange, onTouchArrange }: { touchArrange
   const allSelected=[...selected,...selectedVideo];
   const splittable = allSelected.filter((clip) => position > clip.startTime && position < clip.startTime + clip.duration);
   const [nudgeOpen,setNudgeOpen]=useState(false);
-  useTimelineTool('clip-settings',()=>setInspector(true),!!allSelected.length);
+  useTimelineTool('clip-settings',()=>{setFades(false);setInspector(true);},!!allSelected.length);
   useTimelineTool('track-settings',()=>setMixer(true),!!tracks.length);
-  useTimelineTool('fades',()=>setFades(true),!!allSelected.length);
+  useTimelineTool('fades',()=>{setInspector(false);setFades(true);},!!allSelected.length);
   useTimelineTool('split-all',()=>{const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,projectClips(state.project).map(c=>c.id),state.playheadPosition),selection:null});},!!tracks.length||!!video);
   useTimelineTool('blend',()=>{const state=useProjectStore.getState();useProjectStore.setState({project:blendAudioOverlaps(state.project,state.selection?.segmentIds??[])});},selected.length>=2);
   useTimelineTool('nudge-left',()=>nudgeSelection(-nudge),!!allSelected.length);
@@ -64,13 +65,13 @@ export function TimelineActions({ touchArrange, onTouchArrange }: { touchArrange
     </div>
     <Modal isOpen={nudgeOpen} onClose={()=>setNudgeOpen(false)} title={t('editing.nudgeStep')}><NumberField label={t('editing.nudgeStep')} value={nudge} min={1/useProjectStore.getState().project.sampleRate} step={.001} onCommit={value=>{if(value<=0)return false;setNudge(value);return true;}}/></Modal>
     {trim&&<TrimEditDialog onClose={()=>setTrim(false)}/>}
-    <Modal isOpen={fades && allSelected.length > 0} onClose={() => setFades(false)} title={t('fades.title')}>
+    {fades && allSelected.length > 0&&<FloatingInspector onClose={() => setFades(false)} title={t('fades.title')}><InspectorTransport/>
       <ClipFadeTools/>
-    </Modal>
-    <Modal isOpen={inspector && allSelected.length > 0} onClose={() => setInspector(false)} title={t('timeline.clipSettings')}><InspectorTransport/>
+    </FloatingInspector>}
+    {inspector && allSelected.length > 0&&<FloatingInspector onClose={() => setInspector(false)} title={t('timeline.clipSettings')}><InspectorTransport/>
       {!!selected.length&&!!selectedVideo.length&&<div className="flex gap-2 mb-3" role="tablist" aria-label={t('timeline.clipSettings')}><button className="timeline-tool" role="tab" aria-selected={!inspectPicture} onClick={()=>setInspectPicture(false)}>{t('interview.audio')}</button><button className="timeline-tool" role="tab" aria-selected={inspectPicture} onClick={()=>setInspectPicture(true)}>{t('interview.video')}</button></div>}
       {selectedVideo.length&&(!selected.length||inspectPicture)?<VideoClipSettings id={selectedVideo[0].id}/>:<SegmentEffectsPanel onClose={()=>setInspector(false)}/>}
-    </Modal>
+    </FloatingInspector>}
     <Modal isOpen={mixer} onClose={() => setMixer(false)} title={t('nativeMenu.Track Settings…')} widthClass="max-w-2xl">
       <button className="timeline-tool mb-3" onClick={()=>{const state=useProjectStore.getState();tracks.forEach(track=>state.updateTrack(track.id,{solo:false}));}}>{t('editor.clearSolos')}</button>
       <HelpDetails><p>{t('timeline.mixerHelp')}</p></HelpDetails>

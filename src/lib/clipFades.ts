@@ -1,3 +1,4 @@
+import {pictureLocked} from './pictureComposition';
 import type { TimelineProject, FadeCurve } from '../types/audio';
 import { videoClips, frameTime } from './videoEditing';
 
@@ -6,13 +7,13 @@ export function applyClipFades(project: TimelineProject, ids: string[], side: 'i
   if (!Number.isFinite(duration) || duration < 0) throw new Error('Invalid fade duration');
   const selected = new Set(ids);
   const tracks = project.tracks.map(track => ({...track, segments: track.segments.map(clip => {
-    if (!selected.has(clip.id)) return clip;
+    if (track.locked||!selected.has(clip.id)) return clip;
     const value = Math.min(duration, clip.duration);
     return {...clip, ...(side !== 'out' ? {fadeInDuration: value, fadeInCurve: curve} : {}),
       ...(side !== 'in' ? {fadeOutDuration: value, fadeOutCurve: curve} : {})};
   })}));
   const original = videoClips(project.video);
-  const clips = original.map(clip => !selected.has(clip.id) ? clip : {
+  const clips = original.map(clip => (pictureLocked(project.video,clip)||!selected.has(clip.id)) ? clip : {
     ...clip, ...(side !== 'out' ? {fadeIn: Math.min(frameTime(duration, project.frameRate ?? 25), clip.duration)} : {}),
     ...(side !== 'in' ? {fadeOut: Math.min(frameTime(duration, project.frameRate ?? 25), clip.duration)} : {}),
   });

@@ -21,6 +21,10 @@ export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 interface SettingsState {
   timelineAutoFit:boolean;
+  timelineNavigation:boolean;
+  mixerLoudness:boolean;
+  setTimelineNavigation:(enabled:boolean)=>void;
+  setMixerLoudness:(enabled:boolean)=>void;
   timelineRibbon:'auto'|'always'|'never';
   setTimelineAutoFit:(enabled:boolean)=>void;
   setTimelineRibbon:(mode:'auto'|'always'|'never')=>void;
@@ -62,6 +66,10 @@ export const useSettingsStore = create<SettingsState>()(
       language: (i18n.language?.startsWith('de') ? 'de' : 'en') as Language,
       theme: 'dark' as Theme,
       timelineAutoFit:true,
+      timelineNavigation:true,
+      mixerLoudness:true,
+      setTimelineNavigation:(timelineNavigation)=>set({timelineNavigation}),
+      setMixerLoudness:(mixerLoudness)=>set({mixerLoudness}),
       timelineRibbon:'auto',
       setTimelineAutoFit:(timelineAutoFit)=>set({timelineAutoFit}),
       setTimelineRibbon:(timelineRibbon)=>set({timelineRibbon}),

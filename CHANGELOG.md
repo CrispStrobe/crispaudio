@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.8 — 2026-10-13
+
+- Highlight selected tracks in their headers and rows, with clear clip outlines. Remove the selection wash across unrelated tracks; support Shift-click ranges in headers and clips. Plain clicks replace selection; group dragging retains it.
+- Keep clip and fade controls in movable, collapsible panels. Fade sliders update the timeline and an envelope preview live, with one undo per drag and lock/capture protection.
+- Add a persisted View/ribbon toggle for Zoom and Navigation; remove its inactive help button. Place optional Master loudness beside Master/Limiter.
+- Consolidate video layer actions into desktop/touch menus and collapse output settings. Use icons for titles/captions, picture tracks and safe areas, with safe-area information.
+- Keep Settings as an accessible gear button and shorten SFX preset labels to one word.
+
 ## 0.10.7 — 2026-10-13
 
 - Give selected video clips distinct start/end trim handles, including very short clips, with linked audio/video trimming and one-step undo.

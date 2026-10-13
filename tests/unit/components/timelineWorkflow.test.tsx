@@ -8,6 +8,7 @@ import type { AudioSegment } from '../../../src/types/audio';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock('../../../src/components/timeline/SegmentEffectsPanel', () => ({ SegmentEffectsPanel: () => <div>inspector</div> }));
+vi.mock('../../../src/components/timeline/InspectorTransport',()=>({InspectorTransport:()=>null}));
 beforeEach(() => {
   useProjectStore.setState(useProjectStore.getInitialState());
   const state = useProjectStore.getState();
@@ -70,6 +71,7 @@ it('applies selected clip fades in one undo step and stops playback', async () =
   useProjectStore.setState({selection:{startTime:0,endTime:10,segmentIds:['clip-0','clip-1']},isPlaying:true});
   render(<TimelineActions touchArrange={false} onTouchArrange={()=>{}}/>);
   await act(async()=>runTimelineTool('fades'));
+  act(()=>{screen.getByText('fades.presets').closest('details')!.open=true;});
   fireEvent.click(screen.getByRole('button',{name:'fades.both'}));
   expect(useProjectStore.getState().isPlaying).toBe(false);
   expect(useProjectStore.getState().project.tracks.map(t=>[t.segments[0].fadeInDuration,t.segments[0].fadeOutDuration])).toEqual([[.25,.25],[.25,.25]]);

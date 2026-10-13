@@ -1,3 +1,4 @@
+import {selectTimelineTrack} from '../../lib/trackSelection';
 import {TrackHeaderMenu} from './TrackHeaderMenu';
 import {openTrackMenu} from '../../lib/trackHeaderMenu';
 import {RecordingInputMeter} from './RecordingInputMeter';
@@ -118,6 +119,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
   const { t } = useTranslation();
   const track = useProjectStore((s) => s.project.tracks[trackIndex]);
   const trackHeight = useProjectStore((s) => s.trackHeight);
+  const selected=useProjectStore(s=>{const track=s.project.tracks[trackIndex];return !!track&&(!!s.selection?.trackIds?.includes(track.id)||track.segments.some(c=>s.selection?.segmentIds.includes(c.id)));});
   const hasSolo = useProjectStore((s) => s.project.tracks.some(t => t.solo));
   const recording = useUIStore(s=>s.timelineRecording);
   const updateTrack = useProjectStore((s) => s.updateTrack);
@@ -135,6 +137,8 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
       onContextMenu={e=>{if(e.target instanceof Element&&e.target.closest('input'))return;e.preventDefault();openTrackMenu(track.id,e.clientX,e.clientY);}}
       data-track-index={trackIndex}
       data-track-header
+      data-selected={selected}
+      onClick={e=>{if(e.target instanceof Element&&e.target.closest('button,select,input[type="range"]'))return;if(!recording)selectTimelineTrack(track.id,e.shiftKey);}}
       data-compact={trackHeight<56}
       data-touch-compact={trackHeight<96}
     >
@@ -210,6 +214,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
 // ── TimelinePanel ─────────────────────────────────────────────────────────────
 
 export const TimelinePanel: React.FC = () => {
+  const recording=useUIStore(s=>s.timelineRecording);
   const store = useProjectStore(useShallow((s) => ({
     project: s.project, sources: s.sources, selection: s.selection,
     isPlaying: s.isPlaying, zoomLevel: s.zoomLevel, snapEnabled: s.snapEnabled,
@@ -267,6 +272,7 @@ export const TimelinePanel: React.FC = () => {
   }, []);
 
   const { t } = useTranslation();
+  const navigationVisible=useSettingsStore(s=>s.timelineNavigation);
   const defaultBitDepth = useSettingsStore((s) => s.defaultBitDepth);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { stage: exportStage, error: exportError, start: startExport, cancel: cancelExport } = useAudioExport();
@@ -591,6 +597,7 @@ export const TimelinePanel: React.FC = () => {
       case 'automation':setAutomation(value=>!value);break;
       case 'tts':useUIStore.getState().openModal('tts');break;
       case 'waveform-mode':setWaveformOpen(true);break;
+      case 'navigation-view':{const s=useSettingsStore.getState();s.setTimelineNavigation(!s.timelineNavigation);break;}
       case 'align':if(state.project.tracks.length>=2){state.setIsPlaying(false);setAlignmentOpen(true);}break;
       case 'snap':state.setSnapEnabled(!state.snapEnabled);break;
       case 'play':state.setIsPlaying(!state.isPlaying);break;
@@ -711,12 +718,12 @@ export const TimelinePanel: React.FC = () => {
 
           {store.project.video&&!store.project.video.tracks && <div data-track-header data-compact={store.trackHeight<56} data-touch-compact={store.trackHeight<96} className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
             <div className="track-heading flex items-center justify-between gap-2"><span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
-              <button type="button" data-help="lock" aria-pressed={!!store.project.video.locked}
+              <button type="button" disabled={recording} data-help="lock" aria-pressed={!!store.project.video.locked}
                 aria-label={t(store.project.video.locked?'ranges.unlock':'ranges.lock')} title={t(store.project.video.locked?'ranges.unlock':'ranges.lock')}
                 className={`shrink-0 p-1 ${store.project.video.locked?'text-amber-300':'text-gray-500'}`}
                 onClick={()=>useProjectStore.setState(state=>({project:{...state.project,video:{...state.project.video!,locked:!state.project.video?.locked}}}))}>
                 {store.project.video.locked?<Lock size={14}/>:<Unlock size={14}/>}</button>
-              <button type="button" disabled={!!store.project.video.locked} className="p-1 text-gray-400 hover:text-red-400 disabled:opacity-30" data-help="remove" aria-label={t('usability.removeVideo')} title={t('usability.removeVideo')} onClick={()=>{
+              <button type="button" disabled={recording||!!store.project.video.locked} className="p-1 text-gray-400 hover:text-red-400 disabled:opacity-30" data-help="remove" aria-label={t('usability.removeVideo')} title={t('usability.removeVideo')} onClick={()=>{
                 const state=useProjectStore.getState();const groups=new Set(state.project.video?.clips?.map(clip=>clip.linkGroup).filter(Boolean));
                 const project={...state.project,video:undefined,tracks:state.project.tracks.map(track=>({...track,segments:track.segments.map(clip=>clip.linkGroup&&groups.has(clip.linkGroup)?{...clip,linkGroup:undefined}:clip)}))};
                 useProjectStore.setState({project:{...project,duration:timelineDuration(project)},selection:null,isPlaying:false});
@@ -813,7 +820,7 @@ export const TimelinePanel: React.FC = () => {
       </div>
       {automation&&<GainAutomationLane key={store.project.id} width={canvasWidth} onClose={()=>setAutomation(false)}/>}
       {mixer&&<TrackMixer engine={engineRef} onClose={()=>setMixer(false)}/>}
-      <TimelineNavigation width={canvasWidth} />
+      {navigationVisible&&<TimelineNavigation width={canvasWidth} />}
       {/* Status bar */}
       <div className="flex items-center gap-4 px-4 py-1 bg-gray-900 border-t border-gray-800 text-xs text-gray-500 flex-shrink-0 select-none">
         <span>

@@ -43,7 +43,7 @@ export function SettingsModal() {
   const { t } = useTranslation();
   const { activeModal, closeModal, openModal } = useUIStore();
   const {
-    timelineAutoFit,timelineRibbon,setTimelineAutoFit,setTimelineRibbon,
+    timelineAutoFit,timelineRibbon,timelineNavigation,setTimelineNavigation,setTimelineAutoFit,setTimelineRibbon,
     language,
     theme,
     defaultSampleRate,
@@ -110,7 +110,7 @@ export function SettingsModal() {
           </select>
         </div>
 
-        <section className="space-y-2"><h3 className="text-xs font-semibold text-gray-300">{t('settings.timelineView')}</h3><label className="flex gap-2 items-center min-h-11 text-sm"><input type="checkbox" checked={timelineAutoFit} onChange={e=>setTimelineAutoFit(e.target.checked)}/>{t('settings.timelineAutoFit')}</label><label className={fieldLabel} htmlFor="timeline-ribbon">{t('settings.timelineRibbon')}</label><select id="timeline-ribbon" className={selectClass} value={timelineRibbon} onChange={e=>setTimelineRibbon(e.target.value as typeof timelineRibbon)}>{(['auto','always','never'] as const).map(mode=><option value={mode} key={mode}>{t(`settings.ribbon_${mode}`)}</option>)}</select></section>
+        <section className="space-y-2"><h3 className="text-xs font-semibold text-gray-300">{t('settings.timelineView')}</h3><label className="flex gap-2 items-center min-h-11 text-sm"><input type="checkbox" checked={timelineAutoFit} onChange={e=>setTimelineAutoFit(e.target.checked)}/>{t('settings.timelineAutoFit')}</label><label className="flex gap-2 items-center min-h-11 text-sm"><input type="checkbox" checked={timelineNavigation} onChange={e=>setTimelineNavigation(e.target.checked)}/>{t('settings.timelineNavigation')}</label><label className={fieldLabel} htmlFor="timeline-ribbon">{t('settings.timelineRibbon')}</label><select id="timeline-ribbon" className={selectClass} value={timelineRibbon} onChange={e=>setTimelineRibbon(e.target.value as typeof timelineRibbon)}>{(['auto','always','never'] as const).map(mode=><option value={mode} key={mode}>{t(`settings.ribbon_${mode}`)}</option>)}</select></section>
 
         {/* Default export format */}
         <div>

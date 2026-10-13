@@ -86,6 +86,7 @@ export function useTimeline() {
   const scrollOffset = useProjectStore((state) => state.scrollOffset);
   const snapEnabled = useProjectStore((state) => state.snapEnabled);
   const dragState = useRef<DragState>({ kind: 'none' });
+  const clickSelection=useRef<{id:string;projectId:string}|null>(null);
   const trimOrigin=useRef<TimelineProject|null>(null);
   const historyOrigin=useRef<ReturnType<typeof capturePointerHistory>|null>(null);
   const [trimFeedback,setTrimFeedback]=useState<TrimFeedback|null>(null);
@@ -194,6 +195,7 @@ export function useTimeline() {
       const canvasX = e.clientX - rect.left;
       const canvasY = e.clientY - rect.top;
 
+      clickSelection.current=null;
       const hit = forcedHit??hitTest(canvasX, canvasY);
       const store = useProjectStore.getState();
 
@@ -214,6 +216,7 @@ export function useTimeline() {
       const { segment, trackIndex } = hit as { segment: AudioSegment; trackIndex: number };
 
       if (hit.type === 'segment') {
+        if(!e.shiftKey)clickSelection.current={id:segment.id,projectId:store.project.id};
         if(!store.selection?.segmentIds.includes(segment.id)||e.shiftKey)store.selectSegment(segment.id, e.shiftKey);
         dragState.current = {
           kind: 'move',
@@ -274,6 +277,8 @@ export function useTimeline() {
       const dx = canvasX - ds.startX;
 
       if (ds.kind === 'move') {
+        if(Math.hypot(dx,canvasY-ds.startY)<3)return;
+        clickSelection.current=null;
         const dtTime = dx / zoomLevel;
         const clip = store.project.tracks.flatMap(track => track.segments).find(clip => clip.id === ds.segmentId);
         const movingIds=new Set(linkedIds(store.project,[ds.segmentId]));
@@ -310,12 +315,14 @@ export function useTimeline() {
 
   const onMouseUp = useCallback(() => {
     if (dragState.current.kind === 'none') return;
+    const clicked=clickSelection.current;clickSelection.current=null;
+    if(clicked&&useProjectStore.getState().project.id===clicked.projectId)useProjectStore.getState().selectSegment(clicked.id,false);
     dragState.current = { kind: 'none' };
     trimOrigin.current=null;historyOrigin.current=null;setTrimFeedback(null);
     projectHistoryGesture.end();
   }, []);
 
-  const cancelDrag=useCallback(()=>{if(dragState.current.kind==='none')return;if(trimOrigin.current)useProjectStore.setState({project:trimOrigin.current});if(historyOrigin.current)restorePointerHistory(historyOrigin.current);onMouseUp();},[onMouseUp]);
+  const cancelDrag=useCallback(()=>{clickSelection.current=null;if(dragState.current.kind==='none')return;if(trimOrigin.current)useProjectStore.setState({project:trimOrigin.current});if(historyOrigin.current)restorePointerHistory(historyOrigin.current);onMouseUp();},[onMouseUp]);
 
   useEffect(() => {
     const endings = ['mouseup', 'pointerup', 'pointercancel', 'blur'] as const;

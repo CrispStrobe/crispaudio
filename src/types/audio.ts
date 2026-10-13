@@ -139,6 +139,9 @@ export interface AudioSource {
 }
 
 export interface TimelineSelection {
+  /** Explicit header selection also represents empty tracks. */
+  trackIds?: string[];
+  trackAnchorId?: string;
   startTime: number;
   endTime: number;
   segmentIds: string[];

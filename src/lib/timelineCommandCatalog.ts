@@ -26,6 +26,7 @@ export const timelineCommands: Record<string, TimelineCommand[]> = {
     View: [
         {id:'commands',label:'Find Command…',key:'⌘/Ctrl K'},
         {id:'view-settings',label:'Timeline View…'},
+        {id:'navigation-view',label:'Show / Hide Zoom and Navigation'},
         { id: 'track-folders', label: 'Track Folders…' },
         { id: 'mixer', label: 'Mixer' }, { id: 'track-settings', label: 'Track Settings…' }, { id: 'automation', label: 'Automation' }, { id: 'workspace', label: 'Show / Hide Workspace' },
         { id: 'fit', label: 'Fit All Tracks', requires: 'content', key: '⌘/Ctrl 0' }, { id: 'zoom-in', label: 'Zoom In Timeline' }, { id: 'zoom-out', label: 'Zoom Out Timeline' },

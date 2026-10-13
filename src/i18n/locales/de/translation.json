@@ -112,7 +112,8 @@
     "Range Selection": "Bereichsauswahl",
     "Clear Range": "Bereich entfernen",
     "Review Export…": "Export prüfen…",
-    "Sample Walkthroughs…": "Beispielanleitungen…"
+    "Sample Walkthroughs…": "Beispielanleitungen…",
+    "Show / Hide Zoom and Navigation": "Zoom und Navigation ein-/ausblenden"
   },
   "app": {
     "name": "CrispAudio",
@@ -152,22 +153,22 @@
     "download": "WAV herunterladen",
     "sampleRate": "Abtastrate",
     "bitDepth": "Bittiefe",
-    "preset_pickupCoin": "Aufsammeln/Münze",
-    "preset_laserShoot": "Laser/Schuss",
+    "preset_pickupCoin": "Münze",
+    "preset_laserShoot": "Laser",
     "preset_explosion": "Explosion",
-    "preset_powerUp": "Power-Up",
-    "preset_hitHurt": "Treffer/Schmerz",
+    "preset_powerUp": "Powerup",
+    "preset_hitHurt": "Treffer",
     "preset_jump": "Sprung",
     "preset_ambient": "Ambient",
     "preset_random": "Zufall",
-    "preset_blipSelect": "Blip/Auswahl",
-    "preset_zapElectric": "Zap/Elektro",
-    "preset_wooshWind": "Woosh/Wind",
-    "preset_droneBuzz": "Drone/Brummen",
-    "preset_clickUI": "Klick/UI",
+    "preset_blipSelect": "Blip",
+    "preset_zapElectric": "Strom",
+    "preset_wooshWind": "Wind",
+    "preset_droneBuzz": "Brummen",
+    "preset_clickUI": "Klick",
     "preset_glitchDigital": "Glitch",
-    "preset_portalWarp": "Portal/Warp",
-    "preset_warningAlarm": "Warnung/Alarm",
+    "preset_portalWarp": "Portal",
+    "preset_warningAlarm": "Alarm",
     "waveSquare": "Rechteck",
     "waveSawtooth": "Sägezahn",
     "waveSine": "Sinus",
@@ -670,7 +671,8 @@
     "timelineRibbon": "Touch-Menüband",
     "ribbon_auto": "Automatisch auf Touch-Geräten",
     "ribbon_always": "Immer anzeigen",
-    "ribbon_never": "Ausblenden"
+    "ribbon_never": "Ausblenden",
+    "timelineNavigation": "Zoom und Navigation anzeigen"
   },
   "about": {
     "title": "Über",
@@ -926,7 +928,10 @@
     "oneSource": "Eine Spur mit einer Audioquelle auswählen.",
     "linkedOnly": "Diese Quelle zuerst als verknüpfte Audiodatei speichern oder erneut importieren.",
     "durationChanged": "Die Bearbeitung änderte die Quelldauer; Originalaudio bleibt erhalten.",
-    "addPoint": "Pegelpunkt hinzufügen"
+    "addPoint": "Pegelpunkt hinzufügen",
+    "movePanel": "Panel verschieben",
+    "collapsePanel": "Panel einklappen",
+    "expandPanel": "Panel ausklappen"
   },
   "usability": {
     "contextHelp": "Hilfemodus: Markierte Bedienelemente mit Maus, Tastatur oder Antippen erkunden.",
@@ -1008,7 +1013,9 @@
     "help_trackActions_title": "Spuraktionen",
     "help_trackActions": "Öffnet Spuraktionen: Mute, Solo, Scharfschalten, Aufnahmeeinstellungen, Clipauswahl, Reihenfolge, Sperren und Entfernen. Auch per Rechtsklick auf den Spurkopf erreichbar. Während der Aufnahme sind Änderungen gesperrt.",
     "help_videoClip_title": "Videosegment",
-    "help_videoClip": "Auswählen, dann bei aktiviertem Verschieben & Kürzen am Anfang oder Ende ziehen. Verknüpftes Audio bleibt synchron. Rechtsklick oder langes Drücken öffnet Einstellungen, Kürzen, Blenden, Tempo/Tonhöhe, Kopieren und weitere Aktionen. Escape bricht eine Bearbeitung ab."
+    "help_videoClip": "Auswählen, dann bei aktiviertem Verschieben & Kürzen am Anfang oder Ende ziehen. Verknüpftes Audio bleibt synchron. Rechtsklick oder langes Drücken öffnet Einstellungen, Kürzen, Blenden, Tempo/Tonhöhe, Kopieren und weitere Aktionen. Escape bricht eine Bearbeitung ab.",
+    "help_pictureTrackActions_title": "Videospur-Aktionen",
+    "help_pictureTrackActions": "Öffnet Sichtbarkeit, Sperre, Ripple-Teilnahme, Clip-Auswahl, Reihenfolge und Entfernen. Rechtsklick öffnet dasselbe Menü. Das Ausgabeformat steht in den Spureinstellungen. Änderungen sind während der Aufnahme gesperrt."
   },
   "analysis": {
     "outputSpectrogram": "Ausgabe-Spektrogramm",
@@ -1040,7 +1047,10 @@
     "in": "Einblenden",
     "out": "Ausblenden",
     "both": "Beide Enden blenden",
-    "clear": "Blenden entfernen"
+    "clear": "Blenden entfernen",
+    "preview": "Live-Blendenverlauf",
+    "presets": "Vorgabedauer",
+    "liveHelp": "Regler ändern ausgewählte, ungesperrte Clips sofort. Zeitleiste und Verlauf aktualisieren sich während des Ziehens. Rückgängig setzt eine abgeschlossene Bewegung zurück."
   },
   "videoColor": {
     "title": "Farbkorrektur",
@@ -1504,7 +1514,8 @@
       "ease-in": "Langsam starten",
       "ease-out": "Langsam enden",
       "ease-in-out": "Sanft starten/enden"
-    }
+    },
+    "format": "Ausgabeformat"
   },
   "graphics": {
     "title": "Titel",
@@ -1540,7 +1551,9 @@
     "titleText": "Titeltext",
     "tools": "Titel und Untertitel",
     "safeAreas": "Sicherheitsbereiche",
-    "savePreset": "Titelvorlage speichern"
+    "savePreset": "Titelvorlage speichern",
+    "safeAreasInfo": "Sicherheitsbereiche erklären",
+    "safeAreasHelp": "Der äußere gestrichelte Rahmen umfasst 90 % des Bildes, der innere 80 %. Wichtige Handlung und Gesichter innerhalb des äußeren Rahmens, Titel innerhalb des inneren platzieren: So bleibt Abstand zum Rand bei beschnittenen Anzeigen. Die Hilfslinien erscheinen nur in der Vorschau und werden nicht exportiert."
   },
   "recording": {
     "title": "Aufnahme / Takes",
@@ -1973,7 +1986,8 @@
     "collapse": "Menüband einklappen",
     "mix-review": "Mix A/B",
     "review-export": "Export prüfen",
-    "walkthroughs": "Beispielanleitungen"
+    "walkthroughs": "Beispielanleitungen",
+    "navigation-view": "Navigation"
   },
   "commandHelp": {
     "samples": "Öffnet Beispielsitzungen für das aktuelle Projekt oder die Auswahl.",

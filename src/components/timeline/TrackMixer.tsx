@@ -1,3 +1,4 @@
+import {useSettingsStore} from '../../stores/settingsStore';
 import {LoudnessControls} from './LoudnessControls';
 import {AddBus,RoutingControls} from './RoutingControls';
 import {OutputLimiterControls} from './OutputLimiterControls';
@@ -88,13 +89,15 @@ function Strip({track, engine, onInserts}: {track?: TimelineTrack; engine: RefOb
 }
 
 export function TrackMixer({engine,onClose}: {engine: RefObject<TimelineEngine | null>; onClose:()=>void}) {
+  const loudnessVisible=useSettingsStore(s=>s.mixerLoudness),setLoudnessVisible=useSettingsStore(s=>s.setMixerLoudness);
   const {t}=useTranslation(), project=useProjectStore(s=>s.project);
   const [insertId,setInsertId]=useState<string|null>(null);
   const track=project.tracks.find(track=>track.id===insertId);
   return <aside className="shrink-0 border-t border-gray-700 bg-gray-950 text-gray-200 min-w-0" aria-label={t('mixer.title')}>
     <div className="flex items-center justify-between px-3"><span className="text-sm flex gap-2 items-center"><SlidersHorizontal size={16}/>{t('mixer.title')}</span><div className="flex gap-2"><AddBus/><ToolButton icon={X} label={t('common.close')} onClick={onClose}/></div></div>
     <div className="flex gap-2 p-2 overflow-x-auto max-h-80 overflow-y-auto">
-      <div className="w-36 shrink-0 space-y-2"><Strip engine={engine} onInserts={setInsertId}/><OutputLimiterControls/><LoudnessControls engine={engine}/></div>
+      <div className="w-36 shrink-0 space-y-2" data-master-strip><Strip engine={engine} onInserts={setInsertId}/><OutputLimiterControls/><label className="flex gap-2 items-center min-h-11 text-xs"><input type="checkbox" checked={loudnessVisible} onChange={e=>setLoudnessVisible(e.target.checked)}/>{t('loudness.title')}</label></div>
+      {loudnessVisible&&<div className="w-60 shrink-0" data-master-loudness><LoudnessControls engine={engine}/></div>}
       {project.tracks.map(track=><Strip key={track.id} track={track} engine={engine} onInserts={setInsertId}/>)}
       {insertId&&(insertId==='master'||track)&&<div className="w-80 shrink-0 p-2 space-y-2"><button className="min-h-11 text-sm" onClick={()=>setInsertId(null)}>{t('common.close')} · {track?.name??t('mixer.master')}</button><fieldset disabled={track?.locked}><EffectChainEditor scope={track?`track:${track.id}`:'master'} label={t('mixer.inserts')} effects={track ? track.effects??[] : project.masterEffects} onChange={effects=>{const state=useProjectStore.getState();if(track)state.updateTrack(track.id,{effects});else useProjectStore.setState({project:{...state.project,masterEffects:effects}});}}/></fieldset></div>}
     </div>
