@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.11.0. This section is the current plan.
+Updated 2026-10-13, for local 0.11.1. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -26,6 +26,8 @@ parameter edits. Continuous timeline inserts, custom plugin windows, wider plugi
 compatibility and Windows/Linux hosting are subsequent extensions, not implemented
 by this source-processing host. Native third-party commercial plugins and physical
 iPad/interface acceptance remain separate hardware/software acceptance checks.
+Local 0.11.1 isolates each VST3 discovery operation with a ten-second deadline,
+retains healthy results after scan failures and exposes collapsed failure details.
 Record scope and remaining requirements honestly; these are initial complete
 workflows, not full commercial-editor parity. Large-file
 paging remains deferred unless actual project measurements justify it. MIDI remains

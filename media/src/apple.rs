@@ -52,7 +52,8 @@ fn invoke(args: &[String], edit: Option<&VideoEdit>) -> Result<Vec<u8>> {
     let result = crate::run_command(Command::new(helper).args(args))?;
     if !result.status.success() {
         return Err(format!(
-            "Apple media backend: {}",
+            "Apple media backend ({}): {}",
+            result.status,
             String::from_utf8_lossy(&result.stderr)
         ));
     }
@@ -163,24 +164,73 @@ pub fn plugin(operation: &str, request: &str) -> Result<serde_json::Value> {
     std::fs::write(&path, request).map_err(|e| e.to_string())?;
     let value: serde_json::Value = serde_json::from_str(request).map_err(|e| e.to_string())?;
     if operation == "plugin-scan" {
-        let mut result: serde_json::Value = serde_json::from_slice(&invoke(
-            &[operation.into(), path.to_string_lossy().into_owned()],
-            None,
-        )?)
-        .map_err(|e| e.to_string())?;
-        let vst: serde_json::Value = serde_json::from_slice(&invoke(
+        if !cfg!(target_os = "macos") {
+            return Err("Desktop plugin hosting requires macOS".into());
+        }
+        let mut plugins = Vec::new();
+        let mut warnings = Vec::new();
+        let mut collect =
+            |label: &str, operation: &str, request_path: &std::path::Path| -> Result<()> {
+                let response = invoke(
+                    &[
+                        operation.into(),
+                        request_path.to_string_lossy().into_owned(),
+                    ],
+                    None,
+                )
+                .and_then(|bytes| {
+                    serde_json::from_slice::<serde_json::Value>(&bytes).map_err(|e| e.to_string())
+                })
+                .and_then(|value| {
+                    value
+                        .as_array()
+                        .cloned()
+                        .ok_or("Invalid plugin scan".into())
+                });
+                if crate::jobs::cancelled() {
+                    return Err("Operation cancelled".into());
+                }
+                match response {
+                    Ok(values) => plugins.extend(values),
+                    Err(error) => warnings.push(serde_json::json!({"path":label,"reason":error})),
+                }
+                Ok(())
+            };
+        collect("Audio Unit", operation, &path)?;
+        // Enumeration never loads plugin code. Each bundle then runs in a new,
+        // directly cancellable helper with its own ten-second scan deadline.
+        let paths = invoke(
             &[
-                "vst3-plugin-scan".into(),
+                "vst3-plugin-paths".into(),
                 path.to_string_lossy().into_owned(),
             ],
             None,
-        )?)
-        .map_err(|e| e.to_string())?;
-        result
-            .as_array_mut()
-            .ok_or("Invalid AU scan")?
-            .extend(vst.as_array().ok_or("Invalid VST3 scan")?.iter().cloned());
-        return Ok(result);
+        )
+        .and_then(|bytes| serde_json::from_slice::<Vec<String>>(&bytes).map_err(|e| e.to_string()));
+        match paths {
+            Ok(paths) => {
+                for bundle in paths {
+                    if crate::jobs::cancelled() {
+                        return Err("Operation cancelled".into());
+                    }
+                    let module_path = directory.path().join("module.json");
+                    std::fs::write(&module_path, serde_json::json!({"path":bundle}).to_string())
+                        .map_err(|e| e.to_string())?;
+                    collect(&bundle, "vst3-plugin-scan", &module_path)?;
+                }
+            }
+            Err(error) => {
+                if crate::jobs::cancelled() {
+                    return Err("Operation cancelled".into());
+                }
+                warnings.push(serde_json::json!({"path":"VST3","reason":error}));
+            }
+        }
+        return Ok(if value["report"].as_bool() == Some(true) {
+            serde_json::json!({"plugins":plugins,"warnings":warnings})
+        } else {
+            serde_json::json!(plugins)
+        });
     }
     let operation = if value["id"]
         .as_str()
@@ -223,6 +273,84 @@ mod plugin_tests {
             .unwrap();
         assert_eq!(frequency["value"], 440.0);
         assert!(!info["state"].as_str().unwrap().is_empty());
+    }
+    fn broken_fixture(root: &std::path::Path, name: &str, body: &str) -> std::path::PathBuf {
+        let bundle = root.join(format!("{name}.vst3"));
+        let contents = bundle.join("Contents");
+        std::fs::create_dir_all(contents.join("MacOS")).unwrap();
+        std::fs::write(contents.join("Info.plist"), format!(r#"<?xml version="1.0"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>{name}</string><key>CFBundleIdentifier</key><string>test.crispaudio.{name}</string><key>CFBundlePackageType</key><string>BNDL</string></dict></plist>"#)).unwrap();
+        let source = root.join(format!("{name}.c"));
+        std::fs::write(&source, format!("#include <unistd.h>\n#include <stdio.h>\n__attribute__((constructor)) static void load(void) {{{body}}}" )).unwrap();
+        assert!(std::process::Command::new("xcrun")
+            .args(["clang", "-dynamiclib"])
+            .arg(source)
+            .arg("-o")
+            .arg(contents.join("MacOS").join(name))
+            .status()
+            .unwrap()
+            .success());
+        bundle
+    }
+    #[test]
+    fn scan_preserves_healthy_plugins_after_crash_and_timeout() {
+        let Ok(folder) = std::env::var("CRISPAUDIO_TEST_PLUGIN_FOLDER") else {
+            return;
+        };
+        let root = tempfile::tempdir().unwrap();
+        let crash = broken_fixture(root.path(), "Crash", "_exit(42);");
+        let hang = broken_fixture(root.path(), "Hang", "sleep(30);");
+        let report = plugin(
+            "plugin-scan",
+            &serde_json::json!({"folders":[root.path(),folder],"report":true}).to_string(),
+        )
+        .unwrap();
+        assert!(report["plugins"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p["name"] == "ADelay"));
+        assert!(report["plugins"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p["name"] == "AUBandpass"));
+        for bundle in [crash, hang] {
+            let warning = report["warnings"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|w| w["path"] == bundle.to_str().unwrap())
+                .unwrap();
+            assert!(!warning["reason"].as_str().unwrap().is_empty());
+        }
+    }
+    #[test]
+    fn cancel_scan_kills_current_bundle_and_returns_no_partial_result() {
+        let root = tempfile::tempdir().unwrap();
+        let marker = root.path().join("loaded");
+        broken_fixture(
+            root.path(),
+            "Cancel",
+            &format!(
+                "FILE *f=fopen(\"{}\",\"w\");fclose(f);sleep(30);",
+                marker.display()
+            ),
+        );
+        let request = serde_json::json!({"folders":[root.path()],"report":true}).to_string();
+        let id = format!("plugin-cancel-{}", std::process::id());
+        let worker_id = id.clone();
+        let worker = std::thread::spawn(move || {
+            crate::jobs::run(Some(worker_id), || plugin("plugin-scan", &request))
+        });
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
+        while !marker.exists() {
+            assert!(std::time::Instant::now() < deadline, "Fixture never loaded");
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        let start = std::time::Instant::now();
+        assert!(crate::jobs::cancel(&id));
+        assert_eq!(worker.join().unwrap().unwrap_err(), "Operation cancelled");
+        assert!(start.elapsed() < std::time::Duration::from_secs(2));
     }
     #[test]
     fn vst3_source_fixture_renders_and_restores_state_when_supplied() {

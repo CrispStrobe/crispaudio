@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.11.1 — 2026-10-13
+
+- Scan each VST3 bundle in its own cancellable process with a ten-second deadline. Crashed, timed-out or invalid plugins no longer hide healthy effects.
+- Keep AU and VST3 discovery independent and show skipped plugins in a collapsed details section.
+
 ## 0.11.0 — 2026-10-13
 
 - Add a focused source editor in Edit, command search, the touch ribbon and audio clip menus: sample ranges, channels, zero-crossing snapping, zoom, loop audition and local undo/redo.

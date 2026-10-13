@@ -2227,6 +2227,7 @@
     "parameters": "Parameters",
     "processing": "Processing effect…",
     "value": "value",
-    "folder": "VST3 folder…"
+    "folder": "VST3 folder…",
+    "skipped": "{{count}} plugins skipped"
   }
 }

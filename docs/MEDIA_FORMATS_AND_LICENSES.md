@@ -234,3 +234,8 @@ The macOS source-effect host includes a pinned subset of Steinberg's MIT VST3 SD
 embedded at compile time and uses Apple system frameworks at runtime. Audio Unit
 and VST3 source processing produces ordinary saved PCM; export does not require
 loading the plugin again. Temporary SDK test plugins are not distributed.
+
+VST3 discovery enumerates bundles without loading their code, then scans each bundle
+in a separate cancellable helper with a ten-second deadline. A crash, timeout or
+invalid bundle leaves healthy AU/VST3 effects available; skipped paths and failure
+details are shown in a collapsed section. Re-scan retries failed bundles.

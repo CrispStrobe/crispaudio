@@ -2240,6 +2240,7 @@
     "parameters": "Parameter",
     "processing": "Effekt berechnen…",
     "value": "Wert",
-    "folder": "VST3-Ordner…"
+    "folder": "VST3-Ordner…",
+    "skipped": "{{count}} Plug-ins übersprungen"
   }
 }
