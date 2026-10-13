@@ -431,3 +431,53 @@ the audible cursor because of bridge buffering. The low-level stream snapshot AP
 still supports sequential non-worklet clients; bridge users must use the node's
 pause policy. Normal GUI native racks, persistence and matching graph exports are
 still pending, along with actual Tauri runtime/background/load qualification.
+
+
+### Coordinated native export and actual Tauri validation (0.11.8)
+
+`renderNativeToBuffer` prepares native sessions in offline mode using a small seed
+OfflineAudioContext, reads the actual rack latencies, then binds the same prepared
+sessions to an exactly sized render context at project sample rate. It reuses
+TimelineEngine's playback graph, including clip/track/master built-in effects,
+native inserts, routing, sends, ducking, envelopes, automation and output limiting.
+Native request settings and source/project registries are captured before awaiting
+preparation. Requested range endpoints round to samples; results remove shared
+lead time and compensated native bridge latency without clamping float32 headroom.
+
+Offline rendering pauses every 4096 frames. The main thread waits for native DSP
+and explicit worklet acceptance before resuming; asynchronous processing cannot
+run behind an unchecked offline sample clock. Worklet barriers flush earlier fault
+messages. A final pause/barrier after the selected output interval prevents an
+end-of-render fault from being mistaken for valid output; padding is discarded.
+VST3 and AU streams explicitly select realtime/offline mode, and their initial
+mode acknowledgement is checked. Rebinding is allowed only before node activation
+and at the same sample rate. Mode-dependent native latency is read after offline
+initialization. There is no silent bypass on processing failure.
+
+`renderNativeMixRange` renders from project zero to retain DSP history, then crops
+the requested interval. Cancellation closes native sessions and disconnects the
+render graph, wakes pending waits, resumes any scheduled suspension for cheap
+remaining zero rendering and discards that result. OfflineAudioContext cannot
+cancel its underlying render allocation/CPU work; caller cancellation remains
+prompt and produces no publishable buffer. These APIs are internal and not yet
+connected to native rack controls or delivery queue persistence.
+
+`scripts/test-native-timeline-tauri.mjs` builds a separate feature-gated validation
+executable and temporary frontend. It uses production engine modules, native
+helpers, commands, binary IPC and production CSP in an actual Tauri WebView.
+Its own identifier and WebKit data-store UUID isolate storage from the installed
+app; the default executable does not register validation commands. Capture output
+is silent. On macOS 26.2/Apple Silicon, visible and hidden-window checks pass wet
+SDK VST3 delay, native AU bus bypass, exact native/dry cancellation, independent
+bus signal/headroom, project transport and an eight-second gap. Offline checks
+cover sample count, clip fade, stereo headroom, history-preserving range crop and
+cancellation during native block processing, with zero retained owned sessions.
+
+The default validation includes 8 ms of main-thread work per 16 ms interval. This
+stress check passes some runs but repeatedly exposes realtime underruns; transport
+telemetry can be fast before failure, so ordinary native UI activation remains
+blocked on scheduling stability. Do not describe the load case as qualified or
+increase buffering merely to hide it. `CRISPAUDIO_NATIVE_VALIDATION_MODES` selects
+explicit visible/hidden/load subsets for focused export checks; the default still
+runs all three and fails on underrun. Physical output latency, eight simultaneous
+inserts, commercial/AUv3 compatibility and seamless looping remain unqualified.

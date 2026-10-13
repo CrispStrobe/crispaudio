@@ -1,11 +1,12 @@
 [package]
 name = "crispaudio"
-version = "0.11.7"
+version = "0.11.8"
 description = "CrispAudio - Integrated Audio Workstation"
 authors = ["CrispStrobe"]
 license = "MIT"
 repository = "https://github.com/CrispStrobe/crispaudio"
 edition = "2021"
+default-run = "crispaudio"
 rust-version = "1.77.2"
 
 [lib]
@@ -44,3 +45,12 @@ opt-level = 3
 
 [profile.dev.package.rustfft]
 opt-level = 3
+
+
+[features]
+native-validation = []
+
+[[bin]]
+name = "crispaudio-native-validation"
+path = "src/bin/native_validation.rs"
+required-features = ["native-validation"]

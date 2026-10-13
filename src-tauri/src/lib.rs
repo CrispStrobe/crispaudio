@@ -1,3 +1,7 @@
+#[cfg(all(feature = "native-validation", target_os = "macos"))]
+mod native_validation;
+#[cfg(all(feature = "native-validation", target_os = "macos"))]
+pub use native_validation::run as run_native_validation;
 mod commands;
 mod native_menu;
 

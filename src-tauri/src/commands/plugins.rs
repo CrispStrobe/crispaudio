@@ -71,6 +71,12 @@ struct Registry {
 #[derive(Clone, Default)]
 pub struct PluginStreams(Arc<Mutex<Registry>>);
 impl PluginStreams {
+    #[cfg(feature = "native-validation")]
+    pub fn validation_counts(&self) -> (usize, usize) {
+        let registry = self.0.lock().unwrap();
+        (registry.entries.len(), registry.opening.len())
+    }
+
     fn reserve(&self, owner: &str) -> Result<String, String> {
         let session = format!(
             "stream-{}-{}",

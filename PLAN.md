@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.11.7. This section is the current plan.
+Updated 2026-10-13, for local 0.11.8. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -55,6 +55,14 @@ to VST3 realtime context and AU host callbacks. State queries require paused aud
 seeks/restarts use new sessions and discontinuous block positions are rejected.
 Background/load qualification, equivalent native exports and compact rack UI with
 persistence remain pending before ordinary playback activation.
+Local 0.11.8 adds internal native whole-graph and history-preserving range exports,
+with coordinated offline pauses, accepted-output barriers and cancellation cleanup.
+An isolated actual Tauri executable validates wet DSP through production raw IPC
+and the same timeline engine, including eight-second silent gaps in visible/hidden
+windows. UI-load stress is intermittently failing with underruns and remains a
+blocker for normal native rack activation. Wider graph/export qualification,
+compact controls, persisted state/recovery and ordinary transport/loop wiring are
+still pending. The new export API is not yet connected to delivery queue controls.
 Record scope and remaining requirements honestly; these are initial complete
 workflows, not full commercial-editor parity. Large-file
 paging remains deferred unless actual project measurements justify it. MIDI remains

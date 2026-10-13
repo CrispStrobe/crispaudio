@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.11.8 — 2026-10-13
+
+- Add internal native whole-graph and range exports using coordinated offline rendering, preserving routing, fades, automation and float32 headroom.
+- Wait for native block acceptance and worklet barriers before advancing offline time or accepting output; reject faults and release sessions on cancellation.
+- Select and verify native realtime/offline processing modes, and crop bridge pre-roll at exact sample boundaries.
+- Add an opt-in isolated Tauri validation executable using production commands and the production engine, including wet audio and hidden-window checks.
+- Native rack UI/persistence remain pending. Repeated realtime UI-load checks still expose intermittent underruns; normal playback controls remain on the existing path.
+
 ## 0.11.7 — 2026-10-13
 
 - Provide native timeline effects with project sample position, tempo, meter and musical origin for every block.

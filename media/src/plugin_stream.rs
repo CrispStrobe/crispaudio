@@ -190,6 +190,11 @@ mod native {
             };
             let initial = stream.receive(Duration::from_secs(10))?;
             stream.validate(&initial, 0, 0)?;
+            if initial.metadata["processMode"].as_str()
+                != Some(request["processMode"].as_str().unwrap_or("realtime"))
+            {
+                return Err("Invalid native process mode".into());
+            }
             stream.info = initial.metadata;
             Ok(stream)
         }
@@ -472,6 +477,52 @@ mod tests {
             .collect::<Vec<_>>();
         requests.extend(alternate);
         requests
+    }
+    #[test]
+    fn offline_and_realtime_modes_preserve_fixture_dsp_and_transport() {
+        for request in context_requests() {
+            let rate = request["sampleRate"].as_f64().unwrap();
+            let samples = (0..2)
+                .map(|channel| {
+                    (0..2048)
+                        .map(|frame| {
+                            ((frame as f64
+                                * (if channel == 0 { 440.0 } else { 2200.0 })
+                                * std::f64::consts::TAU
+                                / rate)
+                                .sin()
+                                * 0.2) as f32
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>();
+            let transport = StreamTransport {
+                sample_position: (rate * 2.0) as u64,
+                tempo: 90.0,
+                numerator: 7,
+                denominator: 8,
+                origin_seconds: 3.0,
+                playing: true,
+            };
+            let mut results = Vec::new();
+            for mode in ["realtime", "offline"] {
+                let mut settings = request.clone();
+                settings["processMode"] = json!(mode);
+                let mut stream = PluginStream::open(&settings).unwrap();
+                assert_eq!(stream.info["processMode"], mode);
+                let reply = stream
+                    .process_with_transport(&samples, &json!({}), false, Some(&transport))
+                    .unwrap();
+                results.push(reply.samples);
+            }
+            let delta = results[0]
+                .iter()
+                .flatten()
+                .zip(results[1].iter().flatten())
+                .map(|(a, b)| (a - b).abs())
+                .fold(0.0f32, f32::max);
+            assert!(delta < 1e-5, "Offline DSP difference {delta}");
+        }
     }
     #[test]
     fn project_transport_reaches_native_render_context_and_advances_without_drift() {

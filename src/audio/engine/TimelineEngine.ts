@@ -36,7 +36,7 @@ import { createEQ } from '../effects/Filter';
 // ── TimelineEngine ────────────────────────────────────────────────────────────
 
 export class TimelineEngine {
-  private ctx: AudioContext;
+  private ctx: BaseAudioContext;
   private sources: Map<string, AudioSource>;
   private activeSources: AudioBufferSourceNode[] = [];
   private masterGain: GainNode;
@@ -71,7 +71,7 @@ export class TimelineEngine {
 
   getMeter(id: string): AnalyserNode[] | undefined { return id === 'master' ? this.outputMeter : this.mixerNodes.get(id)?.meter; }
 
-  private meterTap(ctx: AudioContext, input: AudioNode): AnalyserNode[] {
+  private meterTap(ctx: BaseAudioContext, input: AudioNode): AnalyserNode[] {
     const splitter = ctx.createChannelSplitter(2);
     input.connect(splitter);
     return [0, 1].map(channel => {
@@ -204,7 +204,7 @@ export class TimelineEngine {
   }
 
 
-  constructor(ctx: AudioContext, masterGain?: GainNode) {
+  constructor(ctx: BaseAudioContext, masterGain?: GainNode) {
     this.ctx = ctx;
     this.sources = new Map();
     if (masterGain) {
@@ -233,7 +233,7 @@ export class TimelineEngine {
     try{this.buildPlayback(project,startTime,endTime);}catch(error){this.stop();throw error;}
   }
 
-  private buildPlayback(project:TimelineProject,startTime:number,endTime:number,native?:NativeTimelineGraph,sources=this.sources):void{
+  private buildPlayback(project:TimelineProject,startTime:number,endTime:number,native?:NativeTimelineGraph,sources=this.sources,autoStop=true):void{
     // Capture all nodes created by this graph, including effect oscillators and
     // feedback loops, so repeated play/stop cannot leave a live processing graph.
     const nodes = this.playbackNodes;
@@ -278,7 +278,7 @@ export class TimelineEngine {
     rangeGate.gain.setValueAtTime(1,audibleTime);
     rangeGate.gain.setValueAtTime(0,audibleTime+Math.max(0,endTime-startTime));
     rack('master',masterInput,project.masterEffects,native?.plan.masterInput??0).connect(rangeGate);
-    if(clock){const boundary=ctx.createBufferSource();boundary.buffer=ctx.createBuffer(1,1,ctx.sampleRate);boundary.connect(rangeGate);const generation=this.playbackGeneration;boundary.onended=()=>{if(this.playbackGeneration===generation)this.stop();};boundary.start(clock.endFrame/ctx.sampleRate);this.activeSources.push(boundary);}
+    if(clock&&autoStop){const boundary=ctx.createBufferSource();boundary.buffer=ctx.createBuffer(1,1,ctx.sampleRate);boundary.connect(rangeGate);const generation=this.playbackGeneration;boundary.onended=()=>{if(this.playbackGeneration===generation)this.stop();};boundary.start(clock.endFrame/ctx.sampleRate);this.activeSources.push(boundary);}
     const audible = new Set(audibleTracks(project.tracks).map(track => track.id));
     const busInputs=new Map(project.tracks.filter(t=>t.kind==='bus').map(t=>[t.id,ctx.createGain()]));
     const posts=new Map(project.tracks.map(t=>[t.id,ctx.createGain()]));
@@ -387,6 +387,36 @@ export class TimelineEngine {
   }
 
   // ── Offline render ─────────────────────────────────────────────────────────
+
+  /** Internal native export: reuse the playback graph, pausing offline rendering for native replies. */
+  async renderNativeToBuffer(project:TimelineProject,startTime:number,endTime:number,racks:NativeTimelineRacks,signal?:AbortSignal,sourceSnapshot?:Map<string,AudioSource>):Promise<AudioBuffer>{
+    signal?.throwIfAborted();routingOrder(project.tracks);
+    if(!Number.isFinite(startTime)||startTime<0||!Number.isFinite(endTime)||endTime<=startTime||(endTime>project.duration&&Math.round(endTime*project.sampleRate)>Math.round(project.duration*project.sampleRate)))throw new Error('Invalid native export range');
+    project=structuredClone(project);const sources=new Map(sourceSnapshot??this.sources),rate=project.sampleRate,controller=new AbortController();
+    const requests=new Map([...racks].map(([scope,entries])=>[scope,entries.map(entry=>({...entry,sampleRate:rate,parameters:{...entry.parameters}}))]));
+    const first=Math.round(startTime*rate),last=Math.round(endTime*rate),frames=last-first;if(frames<=0)throw new Error('Empty native export range');startTime=first/rate;endTime=last/rate;
+    const transport=projectPluginTransport(project,startTime,rate),seed=new OfflineAudioContext(2,128,rate);
+    let graph:NativeTimelineGraph|undefined,engine:TimelineEngine|undefined,ctx:OfflineAudioContext|undefined,pause:Promise<void>|undefined,seedFinished=false;
+    const abort=()=>controller.abort(signal?.reason);signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)abort();
+    const wait=<T>(task:Promise<T>)=>new Promise<T>((resolve,reject)=>{const stopped=()=>reject(controller.signal.reason);controller.signal.addEventListener('abort',stopped,{once:true});if(controller.signal.aborted)stopped();task.then(resolve,reject).finally(()=>controller.signal.removeEventListener('abort',stopped));});
+    try{
+      graph=await prepareNativeTimelineGraph(seed,project,requests,controller.signal,reason=>controller.abort(new Error(reason)),transport,'offline');
+      const prefix=4096+graph.plan.output;ctx=new OfflineAudioContext(2,prefix+frames+256,rate);
+      await graph.bindContext(ctx);await seed.startRendering();seedFinished=true;controller.signal.throwIfAborted();
+      engine=new TimelineEngine(ctx);engine.setSources(sources);await engine.prepare(project);engine.nativeGraph=graph;engine.buildPlayback(project,startTime,endTime,graph,sources,false);
+      const origin=engine.playbackAnchor()!.frame;pause=ctx.suspend(128/rate);const rendered=ctx.startRendering();void rendered.catch(()=>{});
+      const guard=Math.ceil((origin+frames)/128)*128;
+      for(let frame=128;;){await wait(pause);await wait(graph.drain());controller.signal.throwIfAborted();if(frame===guard){await ctx.resume();break;}frame=Math.min(frame+4096,guard);pause=ctx.suspend(frame/rate);await ctx.resume();}
+      const full=await wait(rendered),output=this.ctx.createBuffer(2,frames,rate);for(let channel=0;channel<2;channel++)output.copyToChannel(full.getChannelData(channel).subarray(origin,origin+frames),channel);return output;
+    }finally{signal?.removeEventListener('abort',abort);controller.abort();engine?.stop();await graph?.close();if(!seedFinished)await seed.startRendering().catch(()=>{});if(ctx){const context=ctx;void pause?.then(()=>context.resume().catch(()=>{}),()=>{});if(context.state==='suspended')void context.resume().catch(()=>{});}}
+  }
+
+  /** Native range delivery preserves history by rendering from project zero, then cropping. */
+  async renderNativeMixRange(project:TimelineProject,start:number,end:number,racks:NativeTimelineRacks,signal?:AbortSignal,sourceSnapshot?:Map<string,AudioSource>):Promise<AudioBuffer>{
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>project.duration)throw new Error('Invalid native export range');
+    const first=Math.round(start*project.sampleRate),last=Math.round(end*project.sampleRate);if(last<=first)throw new Error('Empty native export range');
+    const full=await this.renderNativeToBuffer(project,0,last/project.sampleRate,racks,signal,sourceSnapshot);signal?.throwIfAborted();const output=this.ctx.createBuffer(2,last-first,project.sampleRate);for(let channel=0;channel<2;channel++)output.copyToChannel(full.getChannelData(channel).subarray(first,last),channel);return output;
+  }
 
   /** Preserve DSP history at range start, then crop at exact sample boundaries. */
   async renderMixRange(project:TimelineProject,start:number,end:number,signal?:AbortSignal,sourceSnapshot?:Map<string,AudioSource>):Promise<AudioBuffer>{
