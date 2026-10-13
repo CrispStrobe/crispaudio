@@ -46,3 +46,17 @@ priority over the playhead. Escape restores the edit; a completed drag is one un
 The transport now contains Record/Stop, a small settings arrow and actual input
 levels. The arrow opens the existing setup/take dialog; capture itself uses the
 transport, and active tracks show their own input levels.
+
+Track headers keep the name and arm control visible. The ellipsis menu and
+right-click on a header offer mute, solo, arm, per-track recording setup, select
+track clips, move up/down, lock/unlock and remove. Native text editing still owns
+right-clicks in the name field. Taller touch rows put Arm/Mute/Solo below the name.
+Compact rows keep the same actions in the menu. Capture disables header mutations;
+locked tracks protect audio changes and removal. Menus close on another project,
+outside clicks, scrolling, Escape or another track menu. Arrow/Home/End navigate
+the menu. Recording setup opens on that track without starting microphone input.
+
+With multiple selected audio clips, the boundary buttons follow the focused clip
+(last touched or right-clicked). The other clips remain selected. If it is outside
+the viewport, the first visible selected clip supplies the buttons. Linked trim
+rules and one-undo/Escape behavior are unchanged.

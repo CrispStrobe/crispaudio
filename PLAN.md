@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.5. This section is the current plan.
+Updated 2026-10-13, for local 0.10.6. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -65,6 +65,9 @@ and grouped controls are distinct from routing.
 0.10.5 moves direct Record/Stop into the transport, with a separate setup arrow
 and live input meters in the transport and active track headers. Default count-in
 is zero. Short-clip trim hit targets stay separate and above the playhead.
+0.10.6 consolidates track headers with a shared right-click/touch action menu,
+readable names at compact heights, per-track recording setup and protected actions
+during capture. Trim handles follow the focused selected clip to avoid collisions.
 Keep secondary controls in menus or focused inspectors, with concise labels.
 
 Playback remains fixed per user confirmation. M9 paging/codecs remains deferred.

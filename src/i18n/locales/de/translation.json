@@ -594,7 +594,9 @@
     "startTitle": "Mit einer Aufnahme beginnen",
     "startHelp": "Eine Aufnahme importieren oder mehrere ausgerichtete Mikrofondateien für getrennte Spuren auswählen. Ein gespeichertes Projekt lässt sich ebenfalls öffnen.",
     "addEffect": "Effekt hinzufügen",
-    "startInfo": "Erste Schritte"
+    "startInfo": "Erste Schritte",
+    "trackActions": "Spuraktionen",
+    "selectTrackClips": "Clips der Spur auswählen"
   },
   "common": {
     "slotA": "A",
@@ -1001,7 +1003,9 @@
     "help_record_title": "Aufnahme",
     "help_record": "Startet die Aufnahme direkt mit dem gewählten Eingang. Ohne scharf geschaltete Spur wird eine geeignete Audiospur scharf geschaltet oder neu angelegt. Erneut drücken stoppt und speichert die Aufnahme. Der Pfeil öffnet die Einstellungen.",
     "help_inputLevel_title": "Eingangspegel",
-    "help_inputLevel": "Zeigt den tatsächlichen Mikrofoneingang vor Spurpegel und Effekten. Rot bedeutet nahe Vollaussteuerung. Eingang wird beim Aufnehmen oder einer ausdrücklich verbundenen Vorschau gemessen."
+    "help_inputLevel": "Zeigt den tatsächlichen Mikrofoneingang vor Spurpegel und Effekten. Rot bedeutet nahe Vollaussteuerung. Eingang wird beim Aufnehmen oder einer ausdrücklich verbundenen Vorschau gemessen.",
+    "help_trackActions_title": "Spuraktionen",
+    "help_trackActions": "Öffnet Spuraktionen: Mute, Solo, Scharfschalten, Aufnahmeeinstellungen, Clipauswahl, Reihenfolge, Sperren und Entfernen. Auch per Rechtsklick auf den Spurkopf erreichbar. Während der Aufnahme sind Änderungen gesperrt."
   },
   "analysis": {
     "outputSpectrogram": "Ausgabe-Spektrogramm",

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.6 — 2026-10-13
+
+- Keep track names readable by consolidating secondary actions into a shared desktop context and touch menu, including per-track recording setup.
+- Arrange Arm/Mute/Solo below the name on taller touch rows. Protect header changes during capture.
+- Show trim handles for the focused selected clip, retaining multi-selection and avoiding neighboring handle collisions.
+
 ## 0.10.5 — 2026-10-13
 
 - Start and stop capture directly beside Play; the down-arrow opens per-track recording setup and take review. Default count-in is zero.

@@ -600,3 +600,20 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
 @media (max-width:480px) { .sfx-preset { padding-left:9px; gap:7px; font-size:12px; } }
 
 [data-timeline-help="true"] :is(button,input,select,summary,canvas,[role="slider"]) {outline:1px dashed #818cf8;outline-offset:2px;cursor:help;}
+
+/* Keep a readable track name; secondary commands share one context/touch menu. */
+.track-more { width:24px; min-width:24px; height:24px; min-height:24px; display:grid; place-items:center; }
+@media (pointer:coarse), (max-width:767px) {
+  .timeline-editor .track-heading .track-drag { display:none!important; }
+  .timeline-editor .track-heading { gap:4px; }
+  .timeline-editor .track-heading input { font-size:12px; }
+  .timeline-editor .track-more { width:44px; min-width:44px; height:44px; min-height:44px; }
+  .timeline-editor [data-track-header][data-touch-compact="true"] .track-more { width:28px; min-width:28px; }
+}
+
+@media (pointer:coarse), (max-width:767px) {
+  .timeline-editor [data-track-header][data-touch-compact="false"] .track-arm { display:none; }
+  .timeline-editor [data-track-header][data-touch-compact="false"] .track-arm-mixer { display:flex; }
+  .timeline-editor [data-track-header][data-touch-compact="false"] .track-mixer > span { display:none; }
+}
+.timeline-editor [data-track-header][data-compact="true"] .track-heading .track-drag { display:none; }

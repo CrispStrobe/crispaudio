@@ -1,3 +1,5 @@
+import {TrackHeaderMenu} from './TrackHeaderMenu';
+import {openTrackMenu} from '../../lib/trackHeaderMenu';
 import {RecordingInputMeter} from './RecordingInputMeter';
 import {InfoButton} from '../common/InfoButton';
 import {SampleWalkthroughs} from './SampleWalkthroughs';
@@ -69,8 +71,6 @@ import {
   Upload,
   Save,
   GripVertical,
-  ChevronUp,
-  ChevronDown,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
@@ -119,15 +119,12 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
   const track = useProjectStore((s) => s.project.tracks[trackIndex]);
   const trackHeight = useProjectStore((s) => s.trackHeight);
   const hasSolo = useProjectStore((s) => s.project.tracks.some(t => t.solo));
-  const trackCount = useProjectStore((s) => s.project.tracks.length);
+  const recording = useUIStore(s=>s.timelineRecording);
   const updateTrack = useProjectStore((s) => s.updateTrack);
-  const removeTrack = useProjectStore((s) => s.removeTrack);
   const reorderTrack = useProjectStore((s) => s.reorderTrack);
   if (!track) return null;
 
   const audible = hasSolo ? track.solo : !track.muted;
-  const isFirst = trackIndex === 0;
-  const isLast = trackIndex === trackCount - 1;
 
   return (
     <div
@@ -135,73 +132,41 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
         isDragOver ? 'bg-indigo-900/30 border-t-2 border-t-indigo-400' : ''
       }`}
       style={{ width: TRACK_HEADER_WIDTH, height: trackHeight }}
+      onContextMenu={e=>{if(e.target instanceof Element&&e.target.closest('input'))return;e.preventDefault();openTrackMenu(track.id,e.clientX,e.clientY);}}
       data-track-index={trackIndex}
       data-track-header
       data-compact={trackHeight<56}
       data-touch-compact={trackHeight<96}
     >
       <div className="track-heading flex items-center gap-1.5 mb-1">
-        <button type="button" data-track-reorder data-help="reorder"
+        <button type="button" disabled={recording} data-track-reorder data-help="reorder"
           onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);onDragStart(e,track.id);}}
           onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))onDragOver(e,trackIndex);}}
           onPointerUp={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId)){onDrop(e,trackIndex);e.currentTarget.releasePointerCapture(e.pointerId);}}}
           onPointerCancel={onDragEnd}
           onLostPointerCapture={onDragEnd}
           onKeyDown={e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.stopPropagation();e.preventDefault();reorderTrack(track.id,trackIndex+(e.key==='ArrowUp'?-1:1));}}}
-          className="flex-shrink-0 cursor-grab active:cursor-grabbing p-0.5 text-gray-500" style={{touchAction:'none'}} aria-label={t('timeline.reorderTrack')} title={t('timeline.reorderTrack')}>
+          className="track-drag flex-shrink-0 cursor-grab active:cursor-grabbing p-0.5 text-gray-500" style={{touchAction:'none'}} aria-label={t('timeline.reorderTrack')} title={t('timeline.reorderTrack')}>
           <GripVertical className="w-3 h-3" />
         </button>
-        <button type="button" aria-label={t(track.locked?'ranges.unlock':'ranges.lock')} title={t(track.locked?'ranges.unlock':'ranges.lock')}
-          data-help="lock" aria-pressed={!!track.locked} className={`shrink-0 p-0.5 ${track.locked?'text-amber-300':'text-gray-500'}`}
-          onClick={()=>updateTrack(track.id,{locked:!track.locked})}>{track.locked?<Lock className="w-3 h-3"/>:<Unlock className="w-3 h-3"/>}</button>
-        {track.kind!=='bus'&&<button type="button" className={`shrink-0 p-0.5 text-xs ${track.recordArmed?'text-red-400':'text-gray-500'}`} disabled={track.locked} data-help-command="recording" aria-label={`${track.name}: ${t('recording.arm')}`} aria-pressed={track.recordArmed??false} onClick={()=>updateTrack(track.id,{recordArmed:!track.recordArmed})}>R</button>}
-        {/* Up/down reorder — works with touch and keyboard everywhere */}
-        <div className={`track-reorder flex-shrink-0 flex flex-col -my-0.5 ${trackHeight<56?'hidden':''}`}>
-          <button
-            type="button"
-            onClick={() => reorderTrack(track.id, trackIndex - 1)}
-            disabled={isFirst}
-            className="p-0.5 text-gray-600 hover:text-gray-300 disabled:opacity-30 disabled:hover:text-gray-600 transition-colors leading-none"
-            aria-label={t('timeline.moveTrackUp')}
-            title={t('timeline.moveTrackUp')}
-          >
-            <ChevronUp className="w-3 h-3" />
-          </button>
-          <button
-            type="button"
-            onClick={() => reorderTrack(track.id, trackIndex + 1)}
-            disabled={isLast}
-            className="p-0.5 text-gray-600 hover:text-gray-300 disabled:opacity-30 disabled:hover:text-gray-600 transition-colors leading-none"
-            aria-label={t('timeline.moveTrackDown')}
-            title={t('timeline.moveTrackDown')}
-          >
-            <ChevronDown className="w-3 h-3" />
-          </button>
-        </div>
+        {track.kind!=='bus'&&<button type="button" className={`track-arm shrink-0 p-0.5 text-xs ${track.recordArmed?'text-red-400':'text-gray-500'}`} disabled={recording||track.locked} data-help-command="recording" aria-label={`${track.name}: ${t('recording.arm')}`} aria-pressed={track.recordArmed??false} onClick={()=>updateTrack(track.id,{recordArmed:!track.recordArmed})}>R</button>}
         <span className={`track-compact-status hidden shrink-0 w-2 h-2 rounded-full ${audible?'bg-emerald-400':'bg-gray-600'}`}
           role="status" aria-label={`${track.name}: ${t(audible?'editor.audible':'editor.silent')}`} title={t(audible?'editor.audible':'editor.silent')}/>
         <input
           type="text"
           data-help="trackName" aria-label={t('timeline.trackName')}
-          value={track.name}
+          value={track.name} disabled={recording}
           title={track.name}
           onChange={(e) => updateTrack(track.id, { name: e.target.value })}
           className="flex-1 min-w-0 bg-transparent text-xs font-medium text-gray-200 focus:outline-none focus:bg-gray-700 rounded px-1 py-0.5"
         />
-        <button
-          type="button"
-          disabled={!!track.locked} onClick={() => removeTrack(track.id)}
-          className="track-remove p-0.5 text-gray-600 hover:text-red-400 transition-colors"
-          data-help="remove" aria-label={t('timeline.removeTrack')}
-          title={t('timeline.removeTrack')}
-        >
-          <Trash2 className="w-3 h-3" />
-        </button>
+        <TrackHeaderMenu trackId={track.id}/>
       </div>
 
       <div className={`track-mixer flex items-center gap-1 ${trackHeight<56?'hidden':''}`}>
+        {track.kind!=='bus'&&<button type="button" className={`track-arm-mixer hidden items-center justify-center shrink-0 w-8 h-8 rounded text-xs ${track.recordArmed?'text-red-400':'text-gray-500'}`} disabled={recording||track.locked} data-help-command="recording" aria-label={`${track.name}: ${t('recording.arm')}`} aria-pressed={track.recordArmed??false} onClick={()=>updateTrack(track.id,{recordArmed:!track.recordArmed})}>R</button>}
         {/* Mute */}
-        <button
+        <button disabled={recording||track.locked}
           type="button"
           onClick={() => updateTrack(track.id, { muted: !track.muted })}
           className={`flex items-center justify-center shrink-0 w-8 h-8 rounded text-xs font-bold transition-colors ${
@@ -217,7 +182,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
         </button>
 
         {/* Solo */}
-        <button
+        <button disabled={recording||track.locked}
           type="button"
           onClick={() => updateTrack(track.id, { solo: !track.solo })}
           className={`flex items-center justify-center shrink-0 w-8 h-8 rounded text-xs font-bold transition-colors ${

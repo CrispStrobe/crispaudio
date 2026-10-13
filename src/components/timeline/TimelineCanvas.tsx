@@ -93,6 +93,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
+  const [activeTrimId,setActiveTrimId]=useState<string|null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     visible: false,
     x: 0,
@@ -519,6 +520,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         for (const seg of track.segments) {
           if (time >= seg.startTime && time <= seg.startTime + seg.duration) {
             segmentId = seg.id;
+            setActiveTrimId(seg.id);
             break;
           }
         }
@@ -560,9 +562,10 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       } catch {
         /* setPointerCapture can throw if the pointer is already gone */
       }
+      const rect = e.currentTarget.getBoundingClientRect();
+      const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
+      if('segment' in hit)setActiveTrimId(hit.segment.id);
       if (!touchArrange) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
         const state = useProjectStore.getState();
         if ('segment' in hit) state.selectSegment(hit.segment.id, false);
         else { state.setPlayheadPosition(hit.time); state.setSelection(null); }
@@ -755,7 +758,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       <TrimSourceFeedback feedback={trimFeedback}/>
       {hasContent&&<PlayheadHandle width={width} />}
 
-      {touchArrange&&<ClipTrimHandles tracks={tracks} selection={store.selection} zoom={store.zoomLevel} scroll={store.scrollOffset} width={width} height={trackHeight} onBegin={(e,seg,row,side)=>{e.preventDefault();e.stopPropagation();const canvas=canvasRef.current;if(!canvas)return;e.currentTarget.setPointerCapture(e.pointerId);onMouseDown({clientX:e.clientX,clientY:e.clientY,shiftKey:e.shiftKey,currentTarget:canvas} as React.MouseEvent<HTMLCanvasElement>,{type:side==='left'?'trim-left':'trim-right',segment:seg,trackIndex:row});}} onMove={e=>{if(!e.currentTarget.hasPointerCapture(e.pointerId)||!canvasRef.current)return;onMouseMove({clientX:e.clientX,clientY:e.clientY,currentTarget:canvasRef.current} as React.MouseEvent<HTMLCanvasElement>);}} onEnd={e=>{onMouseUp();if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);}} onCancel={cancelDrag}/>}
+      {touchArrange&&<ClipTrimHandles tracks={tracks} selection={store.selection} activeSegmentId={activeTrimId} zoom={store.zoomLevel} scroll={store.scrollOffset} width={width} height={trackHeight} onBegin={(e,seg,row,side)=>{e.preventDefault();e.stopPropagation();const canvas=canvasRef.current;if(!canvas)return;e.currentTarget.setPointerCapture(e.pointerId);onMouseDown({clientX:e.clientX,clientY:e.clientY,shiftKey:e.shiftKey,currentTarget:canvas} as React.MouseEvent<HTMLCanvasElement>,{type:side==='left'?'trim-left':'trim-right',segment:seg,trackIndex:row});}} onMove={e=>{if(!e.currentTarget.hasPointerCapture(e.pointerId)||!canvasRef.current)return;onMouseMove({clientX:e.clientX,clientY:e.clientY,currentTarget:canvasRef.current} as React.MouseEvent<HTMLCanvasElement>);}} onEnd={e=>{onMouseUp();if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);}} onCancel={cancelDrag}/>}
       {/* Context menu */}
       {contextMenu.visible && (
         <div

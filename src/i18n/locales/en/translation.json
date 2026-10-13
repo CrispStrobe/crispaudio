@@ -581,7 +581,9 @@
     "startTitle": "Start with your audio",
     "startHelp": "Import a recording, or select several aligned microphone files to create separate tracks. You can also open a saved project.",
     "addEffect": "Add effect",
-    "startInfo": "Getting started"
+    "startInfo": "Getting started",
+    "trackActions": "Track actions",
+    "selectTrackClips": "Select track clips"
   },
   "common": {
     "slotA": "A",
@@ -988,7 +990,9 @@
     "help_record_title": "Record",
     "help_record": "Start capture directly with the chosen input. If no track is armed, an eligible audio track is armed or created. Press again to stop and save. The arrow opens setup.",
     "help_inputLevel_title": "Input level",
-    "help_inputLevel": "Shows the actual microphone input before track gain and effects. Red means near full scale. Levels are measured during capture or an explicitly connected input preview."
+    "help_inputLevel": "Shows the actual microphone input before track gain and effects. Red means near full scale. Levels are measured during capture or an explicitly connected input preview.",
+    "help_trackActions_title": "Track actions",
+    "help_trackActions": "Opens mute, solo, arm, recording setup, clip selection, reorder, lock and remove actions. Right-click the track header also opens this menu. Changes are disabled during capture."
   },
   "analysis": {
     "outputSpectrogram": "Output spectrogram",
