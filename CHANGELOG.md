@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.9.7 — 2026-10-13
+
+- Add All armed tracks recording for one to eight audio tracks, preserving each
+  track's input, channel, monitoring and latency settings.
+- Prepare streams before recording; use common capture/stop clocks and the
+  longest count-in, with shared punch/loop placement and per-track takes.
+- Persist originals and publish the entire group as one undo. Reject failed,
+  stale or locked captures without a partial project update.
+- Share the recording memory budget and retain the recording audio session
+  until all input owners release it. Preserve selected-track recording.
+
 ## 0.9.6 — 2026-10-13
 
 - Add compact clip/master supported FX automation inspectors inside expanded

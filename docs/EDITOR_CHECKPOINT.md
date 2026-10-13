@@ -119,3 +119,24 @@ The local Mac build is ad-hoc signed, not an Apple distribution. No release tag 
 Apple upload belongs to this checkpoint. Browser/390px touch checks cover responsive
 controls and history; they are not physical iOS/Android acceptance. Existing DSP
 precision/abrupt chorus-tail limits remain documented in the release status.
+
+
+### Coordinated armed-track recording (0.9.7)
+
+Open Record / Takes. Select each audio track in turn and configure its input,
+channel, latency and arming. Enable All armed tracks to record one to eight
+armed audio tracks; the selected-track mode remains the default. Locked armed
+tracks reject the session rather than disappearing from the group.
+
+All streams connect and become ready before the longest configured count-in.
+They use the same AudioContext capture and stop frame, with per-track latency
+compensation and common punch/loop pass anchors. Each track retains its own
+original source and takes. Successful captures publish together as one undo;
+a failed connection/persistence/comp or changed project publishes none of the
+group. Already saved originals remain durable and their paths appear on errors.
+
+The group shares a 240 MiB incoming PCM budget. Monitoring follows each track's
+setting and ends after capture; disconnecting one input does not reset the audio
+session while another still owns it. Different physical devices may have drift
+and different hardware latency. Chrome/WebKit generated-stream checks validate
+the workflow, not physical multi-device synchronization or mobile capture.

@@ -18,6 +18,31 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.9.7 — coordinated armed-track recording
+
+Record / Takes adds All armed tracks for one to eight audio tracks. Each target
+retains its device/channel/monitor/latency settings; streams prepare before a
+shared capture clock and the longest count-in. Punch/loop anchors are shared,
+and all originals/takes/comps publish as one undo. A connection, persistence,
+validation or stale-project failure cannot publish a partial group. The input
+PCM budget is shared; audio-session ownership survives individual disconnects.
+
+Validation: 1,579 unit tests in 149 files pass, with ESLint, TypeScript/Vite,
+Tauri app build and locked iOS simulator library check. Chrome and Playwright
+WebKit real-worklet/generated-stream audits pass two inputs, per-track settings,
+one undo, retained originals, save/reopen, punch/loop, connection cleanup,
+persistence failure and German 390px layout. The existing single-track Chrome
+capture audit also passes count-in cancellation, right channel and interruption.
+No physical microphone was requested. Independent-device latency/drift and
+physical mobile capture remain acceptance work.
+
+Local 0.9.7 is installed, signed, verified and relaunched with one autosave
+preserved and a fresh recovery backup. The optimized media CLI is unchanged.
+The exact previous checkpoint's
+[iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38343082043)
+and [general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38343082332)
+both succeeded. New checkpoint remote checks remain separate. No release tag or Apple upload.
+
 ## Local 0.9.6 — clip/master supported FX automation inspectors
 
 Expanded clip and master effects now open a focused automation inspector.

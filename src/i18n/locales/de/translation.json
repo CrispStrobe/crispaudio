@@ -1545,7 +1545,10 @@
     "unlink": "Kameraton vor dem Ersetzen durch eine Aufnahme-Comp von Bild lösen.",
     "overlap": "Separate Aufnahmespur wählen oder überlappende Basisclips vor dem Comping auflösen.",
     "inactive": "Position entfernt; Original erhalten",
-    "restorePass": "Originaldurchgang am Abspielkopf wiederherstellen"
+    "restorePass": "Originaldurchgang am Abspielkopf wiederherstellen",
+    "allArmed": "Alle vorbereiteten Spuren ({{count}})",
+    "groupCount": "Bereite eine bis acht Audiospuren vor.",
+    "groupHelp": "Alle vorbereiteten Spuren nutzen ihre eigenen Eingangs-, Kanal-, Monitoring- und Latenzeinstellungen, den längsten Vorlauf und eine gemeinsame Projektuhr. Aufnahmen werden zusammen in einem Rückgängig-Schritt übernommen. Unterschiedliche Geräte können Taktdrift haben; prüfe die Ausrichtung mit deiner Hardware."
   },
   "retime": {
     "title": "Tempo / Tonhöhe",

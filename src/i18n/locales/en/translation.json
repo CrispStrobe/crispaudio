@@ -1545,7 +1545,10 @@
     "unlink": "Unlink camera sound before replacing it with a recorded comp.",
     "overlap": "Choose a separate recording track or resolve overlapping base clips before comping.",
     "inactive": "Removed placement; original retained",
-    "restorePass": "Restore original pass at playhead"
+    "restorePass": "Restore original pass at playhead",
+    "allArmed": "All armed tracks ({{count}})",
+    "groupCount": "Arm between one and eight audio tracks.",
+    "groupHelp": "All armed tracks uses each track’s input, channel, monitoring and latency settings, with the longest count-in and a shared project clock. Captures publish together as one undo step. Different physical devices may have clock drift; verify alignment for your hardware."
   },
   "retime": {
     "title": "Speed / pitch",

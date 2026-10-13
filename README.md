@@ -16,6 +16,8 @@ browser.
 The timeline uses compact icon controls. On macOS, File, Edit, View, Playback
 and Tools menus open the secondary tools; other platforms show in-window menus.
 Find command (⌘/Ctrl K) searches the same tools. Longer explanations open under Help.
+Record / Takes also supports All armed tracks, with separate inputs/channels
+and one undo for the group. Physical device alignment requires hardware checks.
 Clip and master racks have compact inspectors for supported FX envelopes; expand
 an effect and choose FX automation. See [effects and automation](docs/DAW_EFFECTS.md).
 

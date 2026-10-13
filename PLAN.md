@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.9.6. This section is the current plan.
+Updated 2026-10-13, for local 0.9.7. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -20,10 +20,15 @@ save/reopen. Live commits retain the running graph; offline/native comparisons
 pass the existing moving-delay tolerance. Track lane/pass tools remain separate.
 Arbitrary FX parameters and clip/master recording passes are still broader work.
 
-Next: recording and take/comp workflow improvements, then track organization
+Coordinated recording of one to eight armed audio tracks is implemented in
+0.9.7, using per-track device/channel/latency and a shared capture clock. Captures
+are published together as one undo. Synthetic browser streams pass; physical
+multi-device synchronization/drift remains an acceptance check.
+
+Next: take audition and comp-region removal/reset, then track organization
 and grouped editing. Audit existing punch/loop/take/comp and bus/send tools before
-selecting each concrete addition. Multiple simultaneous recording inputs remain
-a meaningful gap. Track folders and grouped controls are distinct from routing.
+selecting each concrete addition. Shared frame scheduling does not remove independent-device drift. Track folders
+and grouped controls are distinct from routing.
 Keep secondary controls in menus or focused inspectors, with concise labels.
 
 Playback remains fixed per user confirmation. M9 paging/codecs remains deferred.
@@ -52,7 +57,7 @@ following the user's audible installed-app test. No Apple release is authorized.
   transcript mapping/search/correction, reviewed multiword lift/extract and sections.
 
 [Checkpoint workflow and limits](docs/EDITOR_CHECKPOINT.md) defines the working
-platform boundary: Apple layered/graphic export, nearest-frame retiming, one input,
+platform boundary: Apple layered/graphic export, nearest-frame retiming, physical capture acceptance,
 external CrispASR and device acceptance still required for physical mobile capture.
 Browser responsive tests are not physical iOS/Android validation. Existing DSP
 precision/tail limits remain explicit. Wider paging/codec rewrites stay deferred.

@@ -16,14 +16,14 @@ import {waitForPreviewFrame} from '../../lib/videoTransport';
 import {encodeAudioBufferWav} from '../../lib/wavExport';
 import {computeWaveformPeaks} from '../../audio/utils/audioBufferUtils';
 import {capturedTakes,type CapturePass} from '../../lib/capturedTakes';
-import {chooseTake} from '../../lib/recordingTakes';
+import {recordingTargets,publishRecordingGroup,defaultRecordingInput,type PreparedRecording} from '../../lib/recordingGroup';
 import {Modal} from '../common/Modal';
 import {NumberField} from './NumberField';
 import type {RecordingInput,TimelineProject,AudioSource} from '../../types/audio';
-const defaultInput:RecordingInput={deviceId:'',channel:'mono',monitor:false,countIn:3,latencyMs:0};
-interface Session {snapshot:TimelineProject;trackId:string;input:RecordingInput;passes:CapturePass[];window?:{start:number;end:number};loop:boolean;controller:AbortController;stopping:boolean;frame:number}
+const defaultInput=defaultRecordingInput;
+interface Session {snapshot:TimelineProject;targets:{trackId:string;input:RecordingInput;capture:TimelineCapture}[];passes:CapturePass[];window?:{start:number;end:number};loop:boolean;controller:AbortController;stopping:boolean;frame:number}
 export function TimelineRecording({engine,audio,launcher=true}:{launcher?:boolean;engine:RefObject<TimelineEngine|null>;audio:AudioEngineHandle}){
- const {t}=useTranslation(),project=useProjectStore(s=>s.project),recording=useUIStore(s=>s.timelineRecording),[open,setOpen]=useState(false),[trackId,setTrackId]=useState(''),[devices,setDevices]=useState<MediaDeviceInfo[]>([]),[connected,setConnected]=useState(false),[monitoring,setMonitoring]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[peak,setPeak]=useState(0),[channels,setChannels]=useState(0),[remaining,setRemaining]=useState(0),[punch,setPunch]=useState(false),[loop,setLoop]=useState(false),[crossfade,setCrossfade]=useState(.04),[calibration,setCalibration]=useState<{milliseconds:number;confidence:number}>();
+ const {t}=useTranslation(),project=useProjectStore(s=>s.project),recording=useUIStore(s=>s.timelineRecording),[open,setOpen]=useState(false),[trackId,setTrackId]=useState(''),[devices,setDevices]=useState<MediaDeviceInfo[]>([]),[connected,setConnected]=useState(false),[monitoring,setMonitoring]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[peak,setPeak]=useState(0),[channels,setChannels]=useState(0),[remaining,setRemaining]=useState(0),[allArmed,setAllArmed]=useState(false),[punch,setPunch]=useState(false),[loop,setLoop]=useState(false),[crossfade,setCrossfade]=useState(.04),[calibration,setCalibration]=useState<{milliseconds:number;confidence:number}>();
  const capture=useRef<TimelineCapture|null>(null),session=useRef<Session|null>(null),mounted=useRef(true),finish=useRef<()=>Promise<void>>(async()=>{}),calibrationController=useRef<AbortController|null>(null);
  const track=project.tracks.find(t=>t.id===trackId)??project.tracks.find(t=>t.kind!=='bus'&&t.recordArmed)??project.tracks.find(t=>t.kind!=='bus'),input=track?.recordingInput??defaultInput;
  const refresh=async()=>{const devices=await navigator.mediaDevices.enumerateDevices();if(mounted.current)setDevices(devices.filter(d=>d.kind==='audioinput'));};
@@ -31,24 +31,32 @@ export function TimelineRecording({engine,audio,launcher=true}:{launcher?:boolea
  const configure=(patch:Partial<RecordingInput>)=>{if(!track||recording)return;disconnect();useProjectStore.getState().updateTrack(track.id,{recordingInput:{...input,...patch}});};
  const connect=async()=>{if(!track||track.locked||track.kind==='bus')throw new Error('recording.locked');capture.current?.disconnect();const recorder=new TimelineCapture(audio.getContext(),audio.masterGain,(peak,channels)=>{if(mounted.current){setPeak(peak);setChannels(channels);}},reason=>{if(mounted.current)setError(t(reason));void finish.current();});capture.current=recorder;await recorder.connect(input.deviceId,input.channel);if(capture.current!==recorder)return;recorder.monitoring(input.monitor);if(mounted.current){setConnected(true);setMonitoring(input.monitor);await refresh();}};
  const stopRecording=useCallback(async()=>{
-  const active=session.current;if(!active||active.stopping)return;active.stopping=true;active.controller.abort();cancelAnimationFrame(active.frame);if(!active.passes.length){capture.current?.disconnect();if(mounted.current){setConnected(false);setMonitoring(false);}}useProjectStore.getState().setIsPlaying(false);engine.current?.stop();
+  const active=session.current;if(!active||active.stopping)return;active.stopping=true;active.controller.abort();cancelAnimationFrame(active.frame);useProjectStore.getState().setIsPlaying(false);engine.current?.stop();
+  const savedPaths:string[]=[];
   try{
-   const captured=await capture.current?.stop();if(!captured)return;
-   const raw=captured.buffer,sourceId=crypto.randomUUID();let buffer=raw;
-   if(raw.sampleRate!==active.snapshot.sampleRate){const offline=new OfflineAudioContext(raw.numberOfChannels,Math.round(raw.duration*active.snapshot.sampleRate),active.snapshot.sampleRate),node=offline.createBufferSource();node.buffer=raw;node.connect(offline.destination);node.start();buffer=await offline.startRendering();}
-   let filePath:string|undefined,originalPath:string|undefined;
-   if('__TAURI_INTERNALS__' in window){const wav=await encodeAudioBufferWav(raw,32);originalPath=await invoke<string>('persist_recording',new Uint8Array(await wav.arrayBuffer()));filePath=originalPath;if(buffer!==raw){const derived=await encodeAudioBufferWav(buffer,32);filePath=await invoke<string>('persist_recording',new Uint8Array(await derived.arrayBuffer()));}window.dispatchEvent(new CustomEvent('crispaudio-recording-original',{detail:{path:originalPath}}));}
-   const state=useProjectStore.getState();if(state.project!==active.snapshot){if(mounted.current)setError(`${t('recording.projectChanged')}${filePath?' '+filePath:''}`);return;}
-   const takes=capturedTakes({firstFrame:captured.firstFrame,frames:raw.length,sampleRate:raw.sampleRate,passes:active.passes,sourceId,name:t('recording.take'),latencyMs:active.input.latencyMs,window:active.window,notes:captured.notes,droppedFrames:captured.droppedFrames}).map(take=>({...take,duration:Math.min(take.duration,buffer.duration-take.sourceOffset)})).filter(take=>take.duration>=.01);if(!takes.length)throw new Error('recording.empty');
-   const source:AudioSource={id:sourceId,name:t('recording.captured'),buffer,duration:buffer.duration,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels,filePath,...(originalPath&&buffer!==raw?{provenance:{path:originalPath,offset:0,rate:1}}:{}),peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))};
-   const sources=new Map(state.sources);sources.set(sourceId,source);
-   let next={...state.project,tracks:state.project.tracks.map(t=>t.id===active.trackId?{...t,takes:[...(t.takes??[]),...takes]}:t)};
-   const chosen=active.window?[...takes].reverse().find(t=>t.duration>=active.window!.end-active.window!.start-.05)??takes.at(-1)!:takes.at(-1)!;
-   next=chooseTake(next,active.trackId,chosen.id,chosen.startTime,chosen.startTime+chosen.duration,crossfade,sources);useProjectStore.setState({project:next,sources,isPlaying:false});
-   if(captured.droppedFrames||captured.notes.length){if(mounted.current)setError(`${t('recording.captureNotes')}: ${captured.droppedFrames} · ${captured.notes.map(n=>t(n)).join(', ')}`);}
-  }catch(e){if(mounted.current)setError(t(e instanceof Error?e.message:String(e)));}
-  finally{session.current=null;useUIStore.setState({timelineRecording:false});if(mounted.current){setBusy(false);setRemaining(0);}capture.current?.monitoring(false);if(mounted.current)setMonitoring(false);}
- },[engine,crossfade,t]);
+   if(!active.passes.length)return;
+   const stopFrame=Math.ceil(audio.getContext().currentTime*audio.getContext().sampleRate);
+   const captured=await Promise.all(active.targets.map(target=>target.capture.stop(stopFrame)));
+   if(captured.some(value=>!value))throw new Error('recording.empty');
+   const prepared:PreparedRecording[]=[];const notes:string[]=[];
+   for(let i=0;i<active.targets.length;i++){
+    const target=active.targets[i],value=captured[i]!,raw=value.buffer,sourceId=crypto.randomUUID();let buffer=raw;
+    if(raw.sampleRate!==active.snapshot.sampleRate){const offline=new OfflineAudioContext(raw.numberOfChannels,Math.round(raw.duration*active.snapshot.sampleRate),active.snapshot.sampleRate),node=offline.createBufferSource();node.buffer=raw;node.connect(offline.destination);node.start();buffer=await offline.startRendering();}
+    let filePath:string|undefined,originalPath:string|undefined;
+    if('__TAURI_INTERNALS__' in window){const wav=await encodeAudioBufferWav(raw,32);originalPath=await invoke<string>('persist_recording',new Uint8Array(await wav.arrayBuffer()));savedPaths.push(originalPath);filePath=originalPath;if(buffer!==raw){const derived=await encodeAudioBufferWav(buffer,32);filePath=await invoke<string>('persist_recording',new Uint8Array(await derived.arrayBuffer()));}window.dispatchEvent(new CustomEvent('crispaudio-recording-original',{detail:{path:originalPath,trackId:target.trackId}}));}
+    const takes=capturedTakes({firstFrame:value.firstFrame,frames:raw.length,sampleRate:raw.sampleRate,passes:active.passes,sourceId,name:t('recording.take'),latencyMs:target.input.latencyMs,window:active.window,notes:value.notes,droppedFrames:value.droppedFrames}).map(take=>({...take,duration:Math.min(take.duration,buffer.duration-take.sourceOffset)})).filter(take=>take.duration>=.01);
+    const source:AudioSource={id:sourceId,name:t('recording.captured'),buffer,duration:buffer.duration,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels,filePath,...(originalPath&&buffer!==raw?{provenance:{path:originalPath,offset:0,rate:1}}:{}),peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))};
+    prepared.push({trackId:target.trackId,source,takes});if(value.droppedFrames||value.notes.length)notes.push(`${active.snapshot.tracks.find(t=>t.id===target.trackId)?.name}: ${value.droppedFrames} · ${value.notes.map(n=>t(n)).join(', ')}`);
+   }
+   const state=useProjectStore.getState(),next=publishRecordingGroup(active.snapshot,state.project,state.sources,prepared,crossfade,active.window);useProjectStore.setState({...next,isPlaying:false});
+   if(notes.length&&mounted.current)setError(`${t('recording.captureNotes')}: ${notes.join('; ')}`);
+  }catch(e){if(mounted.current)setError(t(e instanceof Error?e.message:String(e))+(savedPaths.length?' '+savedPaths.join(' · '):''));}
+  finally{
+   for(const target of active.targets){target.capture.monitoring(false);if(target.capture!==capture.current||!active.passes.length||!mounted.current)target.capture.disconnect();}
+   if(!active.passes.length){capture.current=null;if(mounted.current)setConnected(false);}
+   session.current=null;useUIStore.setState({timelineRecording:false});if(mounted.current){setBusy(false);setRemaining(0);setMonitoring(false);}
+  }
+ },[engine,audio,crossfade,t]);
  useEffect(()=>{finish.current=stopRecording;},[stopRecording]);
  const calibrate=async()=>{
   if(recording||!track)return;setBusy(true);setError('');setCalibration(undefined);const controller=new AbortController();calibrationController.current=controller;let tone:AudioBufferSourceNode|undefined;const snapshot=project;
@@ -62,17 +70,22 @@ export function TimelineRecording({engine,audio,launcher=true}:{launcher?:boolea
   finally{try{tone?.stop();}catch{/* Tone may have ended. */}tone?.disconnect();if(calibrationController.current===controller)calibrationController.current=null;if(mounted.current)setBusy(false);}
  };
  const record=async()=>{
-  if(recording){await finish.current();return;}if(!track||!track.recordArmed||track.locked||!engine.current)return;
+  if(recording){await finish.current();return;}if(!track||!engine.current)return;
+  let targets:ReturnType<typeof recordingTargets>;try{targets=recordingTargets(project,track.id,allArmed);}catch(e){setError(t(e instanceof Error?e.message:String(e)));return;}
   setError('');setBusy(true);useProjectStore.getState().setIsPlaying(false);useUIStore.setState({timelineRecording:true});
-  const controller=new AbortController();const active:Session={snapshot:project,trackId:track.id,input:{...input},passes:[],window:(punch||loop)?project.editRange:undefined,loop,controller,stopping:false,frame:0};session.current=active;
+  const controller=new AbortController();const active:Session={snapshot:project,targets:targets.map(target=>({...target,capture:target.trackId===track.id&&capture.current?.connected()?capture.current:new TimelineCapture(audio.getContext(),audio.masterGain,(peak,channels)=>{if(target.trackId===track.id&&mounted.current){setPeak(peak);setChannels(channels);}},reason=>{if(mounted.current)setError(t(reason));void finish.current();})})),passes:[],window:(punch||loop)?project.editRange:undefined,loop,controller,stopping:false,frame:0};session.current=active;
   try{
    if((punch||loop)&&!active.window)throw new Error('recording.rangeRequired');
-   await audio.resume();if(!capture.current?.connected())await connect();controller.signal.throwIfAborted();
-   active.snapshot=useProjectStore.getState().project;await engine.current.prepare(active.snapshot);await waitForPreviewFrame(controller.signal);
-   const ctx=audio.getContext(),deadline=ctx.currentTime+input.countIn;
+   await audio.resume();
+   if(capture.current&&!active.targets.some(target=>target.capture===capture.current))disconnect();
+   for(const target of active.targets){controller.signal.throwIfAborted();if(!target.capture.connected())await target.capture.connect(target.input.deviceId,target.input.channel);target.capture.budget(240*1024*1024/active.targets.length);if(target.trackId===track.id){capture.current=target.capture;if(mounted.current)setConnected(true);}}
+   controller.signal.throwIfAborted();if(useProjectStore.getState().project!==active.snapshot)throw new Error('recording.projectChanged');await engine.current.prepare(active.snapshot);await waitForPreviewFrame(controller.signal);
+   const ctx=audio.getContext(),deadline=ctx.currentTime+Math.max(...active.targets.map(target=>target.input.countIn));
    while(ctx.currentTime<deadline){controller.signal.throwIfAborted();if(mounted.current)setRemaining(Math.ceil(deadline-ctx.currentTime));await new Promise(resolve=>setTimeout(resolve,50));}
    controller.signal.throwIfAborted();if(mounted.current){setRemaining(0);setBusy(false);}const start=loop?active.window!.start:useProjectStore.getState().playheadPosition;
-   capture.current!.monitoring(input.monitor);if(mounted.current)setMonitoring(input.monitor);capture.current!.start();engine.current.setSources(useProjectStore.getState().sources);engine.current.play(active.snapshot,start);active.passes.push(engine.current.playbackAnchor()!);useProjectStore.getState().setIsPlaying(true);
+   for(const target of active.targets){target.capture.monitoring(target.input.monitor);}
+   if(mounted.current)setMonitoring(active.targets.some(target=>target.trackId===track.id&&target.input.monitor));
+   const frame=Math.ceil(ctx.currentTime*ctx.sampleRate);for(const target of active.targets)target.capture.start(frame);engine.current.setSources(useProjectStore.getState().sources);engine.current.play(active.snapshot,start);active.passes.push(engine.current.playbackAnchor()!);useProjectStore.getState().setIsPlaying(true);
    const tick=()=>{
     if(session.current!==active||active.stopping)return;const state=useProjectStore.getState(),pass=active.passes.at(-1)!,position=pass.timeline+(ctx.currentTime*ctx.sampleRate-pass.frame)/ctx.sampleRate;
     if(!state.isPlaying||state.project!==active.snapshot||ctx.state!=='running'){void finish.current();return;}
@@ -95,10 +108,11 @@ export function TimelineRecording({engine,audio,launcher=true}:{launcher?:boolea
     {(['countIn','latencyMs'] as const).map(key=><label key={key} className="flex items-center justify-between gap-2">{t(`recording.${key}`)}<NumberField disabled={recording||busy} label={t(`recording.${key}`)} min={key==='latencyMs'?-500:0} value={input[key]} step={key==='latencyMs'?1:1} onCommit={v=>{if(v>(key==='latencyMs'?2000:10))return false;configure({[key]:v});return true;}}/></label>)}
     <button className="timeline-tool" disabled={recording||busy} onClick={()=>void calibrate()}>{t('recording.calibrate')}</button>{calibration&&<div className="space-y-2 text-xs"><p>{calibration.milliseconds.toFixed(2)} ms · {Math.round(calibration.confidence*100)}%</p><button className="timeline-tool" onClick={()=>{configure({latencyMs:calibration.milliseconds});setCalibration(undefined);}}>{t('recording.applyCalibration')}</button></div>}<HelpDetails><p className="text-xs text-gray-400">{t('recording.calibrationHelp')}</p></HelpDetails>
     <div className="flex flex-wrap gap-3">{([['punch',punch,setPunch],['loop',loop,setLoop]] as const).map(([key,value,set])=><label key={key} className="flex gap-2 min-h-11 items-center"><input type="checkbox" disabled={recording||busy} checked={value} onChange={e=>set(e.target.checked)}/>{t(`recording.${key}`)}</label>)}</div>
-    <button className="timeline-tool w-full text-red-400" disabled={!recording&&(!track.recordArmed||track.locked||busy)} onClick={()=>void record()}>{remaining?`${t('recording.countdown')} ${remaining}`:t(recording?'recording.stop':'recording.start')}</button>
+    <label className="flex gap-2 min-h-11 items-center"><input type="checkbox" disabled={recording||busy} checked={allArmed} onChange={e=>setAllArmed(e.target.checked)}/>{t('recording.allArmed',{count:project.tracks.filter(t=>t.kind!=='bus'&&t.recordArmed).length})}</label>
+    <button className="timeline-tool w-full text-red-400" disabled={!recording&&(busy||(!allArmed&&(!track.recordArmed||track.locked)))} onClick={()=>void record()}>{remaining?`${t('recording.countdown')} ${remaining}`:t(recording?'recording.stop':'recording.start')}</button>
     <label className="flex items-center justify-between gap-2">{t('recording.crossfade')}<NumberField disabled={recording||busy} value={crossfade} label={t('recording.crossfade')} min={0} step={.005} onCommit={v=>{if(v>1)return false;setCrossfade(v);return true;}}/></label>
     <TakeLanes trackId={track.id} crossfade={crossfade} disabled={recording||busy} onError={setError}/>
-   </>}{error&&<p role="alert" className="text-amber-300 break-words">{error}</p>}<HelpDetails><p>{t('recording.help')}</p></HelpDetails>
+   </>}{error&&<p role="alert" className="text-amber-300 break-words">{error}</p>}<HelpDetails><p>{t('recording.help')}</p><p>{t('recording.groupHelp')}</p></HelpDetails>
   </div>
  </Modal></>;
 }
