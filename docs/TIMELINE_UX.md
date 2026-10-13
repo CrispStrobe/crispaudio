@@ -96,3 +96,9 @@ Layer settings and output format open collapsed; capture disables changes.
 Titles/captions and picture/output tools use icons. Safe-area guides use an icon
 toggle and an information button explaining the 90%/80% guides and preview-only
 behavior. No guides are included in exports.
+
+Video body clicks follow the same rule: plain click selects one clip and its
+linked audio, Shift-click extends the selection, and dragging retains the group.
+Escape abandons the pending click as well as the drag; opening the touch/context
+menu retains its existing selection. Track Shift ranges start at the clicked
+track if their previous anchor no longer exists.

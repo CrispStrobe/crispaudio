@@ -7,10 +7,10 @@ export function selectTimelineTrack(trackId:string,extend=false){
  const state=useProjectStore.getState(),tracks=state.project.tracks,index=tracks.findIndex(t=>t.id===trackId);
  if(index<0)return;
  const previous=state.selection,anchor=extend?(previous?.trackAnchorId??tracks.find(t=>t.segments.some(c=>previous?.segmentIds.includes(c.id)))?.id??trackId):trackId;
- const anchorIndex=Math.max(0,tracks.findIndex(t=>t.id===anchor));
- const selected=extend?tracks.slice(Math.min(index,anchorIndex),Math.max(index,anchorIndex)+1):[tracks[index]];
+ const anchorIndex=tracks.findIndex(t=>t.id===anchor);
+ const selected=extend&&anchorIndex>=0?tracks.slice(Math.min(index,anchorIndex),Math.max(index,anchorIndex)+1):[tracks[index]];
  const ids=linkedIds(state.project,selected.flatMap(t=>t.segments.map(c=>c.id)));
- state.setSelection({...projectSelection(state.project,ids)??{startTime:0,endTime:0,segmentIds:[]},trackIds:selected.map(t=>t.id),trackAnchorId:anchor});
+ state.setSelection({...projectSelection(state.project,ids)??{startTime:0,endTime:0,segmentIds:[]},trackIds:selected.map(t=>t.id),trackAnchorId:anchorIndex>=0?anchor:trackId});
 }
 
 export function selectPictureTimelineTrack(trackId:string,extend=false){

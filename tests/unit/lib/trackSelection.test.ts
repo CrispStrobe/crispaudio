@@ -13,6 +13,7 @@ describe('track header selection',()=>{
   expect(useProjectStore.getState().selection?.trackIds).toEqual([tracks[1].id]);
   expect(useProjectStore.temporal.getState().pastStates).toHaveLength(0);
  });
+ it('starts a new range when its previous anchor was removed',()=>{const tracks=useProjectStore.getState().project.tracks;useProjectStore.setState({selection:{startTime:0,endTime:0,segmentIds:[],trackIds:['removed'],trackAnchorId:'removed'}});selectTimelineTrack(tracks[2].id,true);expect(useProjectStore.getState().selection?.trackIds).toEqual([tracks[2].id]);expect(useProjectStore.getState().selection?.trackAnchorId).toBe(tracks[2].id);});
  it('ignores a removed target and uses the new project for a fresh selection',()=>{
   const tracks=useProjectStore.getState().project.tracks;selectTimelineTrack(tracks[0].id);
   const selection=useProjectStore.getState().selection;selectTimelineTrack('missing',true);expect(useProjectStore.getState().selection).toBe(selection);

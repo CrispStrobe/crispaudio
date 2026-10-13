@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.9 — 2026-10-13
+
+- Match video selection to audio: a plain click selects one clip with its linked audio, Shift-click extends selection, and dragging retains the group. Escape and touch context menus preserve the selection.
+- Start a fresh track range when its previous header selection anchor has been removed.
+
 ## 0.10.8 — 2026-10-13
 
 - Highlight selected tracks in their headers and rows, with clear clip outlines. Remove the selection wash across unrelated tracks; support Shift-click ranges in headers and clips. Plain clicks replace selection; group dragging retains it.

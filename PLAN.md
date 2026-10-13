@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.8. This section is the current plan.
+Updated 2026-10-13, for local 0.10.9. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -72,6 +72,8 @@ during capture. Trim handles follow the focused selected clip to avoid collision
 context actions, retaining linked audio/video edits and protected cancellation.
 0.10.8 adds explicit track selection highlights, modeless live fade/clip inspectors,
 optional navigation and master loudness, and compact picture track/preview tools.
+0.10.9 makes video plain-click/Shift-click selection consistent with audio and
+protects track ranges from removed anchors.
 Window movement remains working per the latest user confirmation.
 Keep secondary controls in menus or focused inspectors, with concise labels.
 
