@@ -259,6 +259,13 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
     edit.append_items(&[
         &sep()?,
         &item(
+            "source-editor",
+            "Source Editor…",
+            "Quelleneditor…",
+            enabled && context.timeline && context.selection,
+            None,
+        )?,
+        &item(
             "clip-settings",
             "Clip Settings…",
             "Clip-Einstellungen…",

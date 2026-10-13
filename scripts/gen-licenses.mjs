@@ -95,6 +95,7 @@ entries.push(...[
 ]);
 entries.push({name:'WebKit dynamics compressor (Rust adaptation)',version:'ae88abe108bc',license:'BSD-3-Clause',repository:'https://github.com/WebKit/WebKit/blob/ae88abe108bcccf28bd309adeed1d0522595e901/Source/WebCore/platform/audio/DynamicsCompressorKernel.cpp'});
 entries.push({name:'WebKit oversampling filters (Rust adaptation)',version:'ae88abe108bc',license:'BSD-3-Clause',repository:'https://github.com/WebKit/WebKit/tree/ae88abe108bcccf28bd309adeed1d0522595e901/Source/WebCore/platform/audio'});
+entries.push({name:'Steinberg VST3 SDK hosting subset',version:'3.8 / pinned 586dc5e6c801',license:'MIT',repository:'https://github.com/steinbergmedia/vst3sdk'});
 entries.push({name:'hound (Rust WAV I/O)',version:'3.5.1',license:'Apache-2.0',repository:'https://github.com/ruuda/hound'});
 entries.push({name:'midir (native MIDI input)',version:'0.11.1',license:'MIT',repository:'https://github.com/Boddlnagg/midir'});
 entries.push({name:'coremidi (MIDI dependency)',version:'0.9.2',license:'MIT',repository:'https://github.com/chris-zen/coremidi'});

@@ -80,7 +80,7 @@ export function serializeProject(
     duration: src.duration,
     ...(mode === 'linked' && src.filePath
       ? { path: src.filePath }
-      : { wav: arrayBufferToBase64(encodeAudioBufferToWav(src.buffer, 32)) }),
+      : { wav: arrayBufferToBase64(encodeAudioBufferToWav(src.buffer, 32,true)) }),
     provenance: src.provenance,
   }));
 
@@ -140,6 +140,7 @@ export async function deserializeProject(
   if(!validSourceTranscripts(doc.project,new Set(doc.sources.map(s=>s.id))))throw new Error('Invalid source transcript or sections');
   if(!validMulticam(doc.project))throw new Error('Invalid multicam groups');
   if(!validRetime(doc.project,new Set(doc.sources.map(s=>s.id))))throw new Error('Invalid retime settings or original source');
+  if(doc.project.tracks.some(t=>(t.segments??[]).some(c=>c.sourceEdit&&(!doc.sources!.some(s=>s.id===c.sourceEdit!.sourceId)||!Number.isFinite(c.sourceEdit.offset)||c.sourceEdit.offset<0||!Array.isArray(c.sourceEdit.operations)||c.sourceEdit.operations.length>64))))throw new Error('Invalid retained source edit');
   if(!validRecording(doc.project,new Set(doc.sources.map(s=>s.id))))throw new Error('Invalid recording takes or inputs');
   routingOrder(doc.project.tracks);
 
@@ -215,6 +216,6 @@ export async function deserializeProject(
 /** Include alternate takes and originals, without importing another project's source map. */
 export function projectSourceIds(project:TimelineProject):Set<string>{
  const ids=new Set<string>();
- for(const track of project.tracks){for(const clip of [...track.segments,...(track.compBaseSegments??[])]){ids.add(clip.sourceId);if(clip.retime?.original.sourceId)ids.add(clip.retime.original.sourceId);}for(const take of track.takes??[])ids.add(take.sourceId);}
+ for(const track of project.tracks){for(const clip of [...track.segments,...(track.compBaseSegments??[])]){ids.add(clip.sourceId);if(clip.sourceEdit){ids.add(clip.sourceEdit.sourceId);if(clip.sourceEdit.retime?.original.sourceId)ids.add(clip.sourceEdit.retime.original.sourceId);}if(clip.retime?.original.sourceId)ids.add(clip.retime.original.sourceId);}for(const take of track.takes??[])ids.add(take.sourceId);}
  for(const record of project.sourceTranscripts??[])ids.add(record.sourceId);return ids;
 }

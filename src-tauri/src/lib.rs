@@ -49,6 +49,8 @@ pub fn run() {
             commands::delivery::resolve_project_media,
             commands::delivery::collect_project_media,
             commands::delivery::publish_delivery_stage,
+            commands::delivery::annotate_delivery_wav,
+            commands::plugins::audio_unit_plugin,
             project::load_project,
             native_files::take_opened_files,
             native_files::read_opened_file,

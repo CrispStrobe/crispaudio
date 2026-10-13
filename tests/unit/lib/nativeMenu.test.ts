@@ -27,6 +27,7 @@ describe('native menu routing',()=>{
   expect(nativeMenuContext().textEditing).toBe(true);dispatchNativeMenu('cut');await settle();expect(action).not.toHaveBeenCalled();
   input.blur();dispatchNativeMenu('cut');await settle();expect(action).toHaveBeenCalledWith('cut');
  });
+ it('opens source editing from a focused name field without changing its text',async()=>{const action=vi.fn();stop=registerTimelineMenu(action);const input=document.createElement('input');input.value='Track name';document.body.append(input);input.focus();dispatchNativeMenu('source-editor');await settle();expect(action).toHaveBeenCalledWith('source-editor');expect(input.value).toBe('Track name');});
  it('clears an empty-track selection while preserving text input and clip-command availability',async()=>{
   useProjectStore.getState().addTrack('Empty');const id=useProjectStore.getState().project.tracks[0].id;useProjectStore.setState({selection:{startTime:0,endTime:0,segmentIds:[],trackIds:[id]}});
   const deselect=timelineCommands.Edit.find(c=>c.id==='deselect')!,copy=timelineCommands.Edit.find(c=>c.id==='copy')!;

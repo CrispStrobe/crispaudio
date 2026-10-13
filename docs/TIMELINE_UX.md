@@ -133,3 +133,46 @@ gesture and restores its redo history; a click creates no undo step.
 
 Title/caption headers precede picture headers consistently, including sessions
 with a single legacy video lane, so every name aligns with its clips.
+
+## Source editing (local 0.11.0)
+
+Select an audio clip and use **Edit → Source Editor…**, Find command, the touch
+ribbon's Source command or the audio clip menu. The editor displays the visible
+source window of that clip. Its ranges use half-open sample boundaries. Drag to
+replace a range; Shift or the + toggle adds separate ranges. Zero-crossing snapping
+can be disabled for exact numeric sample boundaries. Zoom centres the selection;
+Fit restores the window. The channel selector scopes processing and audition.
+Play joins the selected portions without their gaps. Loop repeats that audition
+through the configured playback device. Closing or starting capture stops audition.
+
+Ranges, Cleanup, Analysis and desktop External effects start collapsed. Additional
+explanations live in the information button. Normalize, Silence, Remove DC and
+Edge fades create a local preview; Original compares it with the source. Apply
+creates a new source in one undo step. Original sources remain referenced by the
+clip, portable/linked saves and recovery. Source PCM is stored as IEEE float32
+with a WAV fact chunk, retaining exact samples and headroom above full scale;
+delivery retains the selected integer depth. Restore original returns the source
+window before that processing group; later retiming must first be reverted through
+Speed / Pitch. Keep range trims one interval using linked audio/video protections;
+locked linked pictures reject the entire edit. Save regions publishes named
+project sections for Delivery. Source-editor Undo/Redo operate on project history.
+
+Analysis follows the source ranges. Spectrum/spectrogram identify the channel
+shown; all-channel statistics include both channels. FFT size, Hann/Hamming and
+display floor are configurable. Long spectra remain bounded sampled overviews,
+not spectral-repair tools. Measure loudness analyzes the concatenated selection;
+short or silent material can lack a valid integrated reading. Clip, track and
+master effects apply when playing the arrangement, separately from raw source
+processing and source audition.
+
+Desktop macOS plugin controls scan installed Audio Unit/VST3 effects; VST3 folder
+adds a remembered custom folder. Generic parameters, exact values, bypass and
+optional refreshed audition are available. Each render runs in a cancellable
+isolated helper. Apply saves the processed audio and plugin state/parameters;
+normal project playback and exports use the saved audio. Reprocessing requires
+the installed plugin. Reported latency is compensated; a VST3 latency change
+mid-render rejects the preview. Visible windows are limited to 120 seconds and
+retain their duration; extend a clip first for an effect tail. Continuous timeline
+insert hosting, native plugin windows, instruments and non-macOS hosts are further
+work. Validation uses Apple effects and the temporary Steinberg ADelay fixture;
+no test plugin is installed in the user's plugin directories.

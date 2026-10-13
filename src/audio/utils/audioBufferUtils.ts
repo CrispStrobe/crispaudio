@@ -127,14 +127,17 @@ export function encodeWav(
 export function encodeAudioBufferToWav(
   buffer: AudioBuffer,
   bitDepth: BitDepth = 16,
+  float32 = false,
 ): ArrayBuffer {
+  if(float32&&bitDepth!==32)throw new Error('IEEE float requires 32 bits');
   const numChannels = buffer.numberOfChannels;
   const numFrames = buffer.length;
   const sampleRate = buffer.sampleRate;
   const bytesPerSample = bitDepth / 8;
   const dataLength = numFrames * numChannels * bytesPerSample;
 
-  const out = new ArrayBuffer(44 + dataLength);
+  const headerLength=float32?56:44;
+  const out = new ArrayBuffer(headerLength + dataLength);
   const view = new DataView(out);
 
   function writeStr(offset: number, str: string): void {
@@ -144,25 +147,27 @@ export function encodeAudioBufferToWav(
   }
 
   writeStr(0, 'RIFF');
-  view.setUint32(4, 36 + dataLength, true);
+  view.setUint32(4, headerLength - 8 + dataLength, true);
   writeStr(8, 'WAVE');
   writeStr(12, 'fmt ');
   view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
+  view.setUint16(20, float32?3:1, true);
   view.setUint16(22, numChannels, true);
   view.setUint32(24, sampleRate, true);
   view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
   view.setUint16(32, numChannels * bytesPerSample, true);
   view.setUint16(34, bitDepth, true);
-  writeStr(36, 'data');
-  view.setUint32(40, dataLength, true);
+  if(float32){writeStr(36,'fact');view.setUint32(40,4,true);view.setUint32(44,numFrames,true);}
+  writeStr(headerLength-8, 'data');
+  view.setUint32(headerLength-4, dataLength, true);
 
   const channels: Float32Array[] = [];
   for (let c = 0; c < numChannels; c++) channels.push(buffer.getChannelData(c));
 
-  let offset = 44;
+  let offset = headerLength;
   for (let i = 0; i < numFrames; i++) {
     for (let c = 0; c < numChannels; c++) {
+      if(float32){const value=channels[c][i];if(!Number.isFinite(value))throw new Error('Non-finite source PCM');view.setFloat32(offset,value,true);offset+=4;continue;}
       const s = Math.max(-1, Math.min(1, channels[c][i]));
       switch (bitDepth) {
         case 8:

@@ -1,5 +1,6 @@
+import {projectSourceIds} from './projectFile';
 import type { AudioSource, TimelineProject } from '../types/audio';
-import { encodeAudioBufferWav } from './wavExport';
+import { encodeSourceBufferWav } from './wavExport';
 import { computeWaveformPeaks } from '../audio/utils/audioBufferUtils';
 interface RecoverySource {id:string;name:string;path?:string;sampleRate:number;channels:number;provenance?:AudioSource['provenance']}
 interface Snapshot {project:TimelineProject;sources:RecoverySource[];savedAt:string}
@@ -8,7 +9,7 @@ function request<T>(store:IDBObjectStore,key:IDBValidKey):Promise<T>{return new 
 function transactionDone(tx:IDBTransaction):Promise<void>{return new Promise((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error??new Error('Recovery transaction aborted'));});}
 export async function cacheRecovery(project:TimelineProject,sources:Map<string,AudioSource>):Promise<void>{
   const db=await database();try{
-    const used=new Set(project.tracks.flatMap(t=>t.segments).map(c=>c.sourceId)),metadata:RecoverySource[]=[];
+    const used=projectSourceIds(project),metadata:RecoverySource[]=[];
     for(const id of used){
       const source=sources.get(id);if(!source)throw new Error('Recovery: missing audio source');
       const path='__TAURI_INTERNALS__' in window?source.filePath:undefined;
@@ -17,7 +18,7 @@ export async function cacheRecovery(project:TimelineProject,sources:Map<string,A
       const cached=await request<Blob|undefined>(db.transaction('audio').objectStore('audio'),id);
       if(cached)continue;
       if(source.buffer.length*source.channels*4>256*1024*1024)throw new Error('Recovery cache: save long recordings as a linked desktop project');
-      const blob=await encodeAudioBufferWav(source.buffer,32);
+      const blob=await encodeSourceBufferWav(source.buffer);
       const tx=db.transaction('audio','readwrite');tx.objectStore('audio').put(blob,id);await transactionDone(tx);
     }
     // Publish the metadata only after all media is durable. A failed save retains

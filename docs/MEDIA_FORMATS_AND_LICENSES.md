@@ -228,3 +228,9 @@ phase conventions adapt WebKit UpSampler/DownSampler under BSD-3-Clause. Their
 copyright and complete licence are bundled in About. Source revision
 `ae88abe108bcccf28bd309adeed1d0522595e901` is recorded in the source and notice.
 This adds no codec or GPL dependency.
+
+The macOS source-effect host includes a pinned subset of Steinberg's MIT VST3 SDK
+(see media/vst3/vendor/UPSTREAM.json and included notices). Its helper is built and
+embedded at compile time and uses Apple system frameworks at runtime. Audio Unit
+and VST3 source processing produces ordinary saved PCM; export does not require
+loading the plugin again. Temporary SDK test plugins are not distributed.

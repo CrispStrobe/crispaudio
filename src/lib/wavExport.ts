@@ -96,7 +96,7 @@ export async function downloadWavFile(blob: Blob, filename: string): Promise<boo
   return true;
 }
 
-async function encodeWavWorker(channels: Float32Array[], sampleRate: number, bitDepth: number, mode: 'mono-float' | 'multichannel-pcm', signal?: AbortSignal): Promise<Blob> {
+async function encodeWavWorker(channels: Float32Array[], sampleRate: number, bitDepth: number, mode: 'mono-float' | 'multichannel-pcm' | 'ieee-float', signal?: AbortSignal): Promise<Blob> {
   signal?.throwIfAborted();
   const channelData = channels.map(channel => new Float32Array(channel).buffer);
   const result = await runCodec({ type: 'wav', channelData, sampleRate, bitDepth, mode }, channelData, signal);
@@ -108,4 +108,10 @@ export async function encodeAudioBufferWav(buffer: AudioBuffer, bitDepth: number
   signal?.throwIfAborted();
   const channels = Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c));
   return encodeWavWorker(channels, buffer.sampleRate, bitDepth, 'multichannel-pcm', signal);
+}
+
+/** Immutable source storage preserves float headroom; delivery PCM keeps its chosen depth. */
+export async function encodeSourceBufferWav(buffer:AudioBuffer,signal?:AbortSignal):Promise<Blob>{
+ const channels=Array.from({length:buffer.numberOfChannels},(_,c)=>buffer.getChannelData(c));
+ return encodeWavWorker(channels,buffer.sampleRate,32,'ieee-float',signal);
 }

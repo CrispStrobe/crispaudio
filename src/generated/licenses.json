@@ -149,6 +149,12 @@
     "repository": "https://github.com/WebKit/WebKit/tree/ae88abe108bcccf28bd309adeed1d0522595e901/Source/WebCore/platform/audio"
   },
   {
+    "name": "Steinberg VST3 SDK hosting subset",
+    "version": "3.8 / pinned 586dc5e6c801",
+    "license": "MIT",
+    "repository": "https://github.com/steinbergmedia/vst3sdk"
+  },
+  {
     "name": "hound (Rust WAV I/O)",
     "version": "3.5.1",
     "license": "Apache-2.0",

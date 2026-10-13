@@ -1,8 +1,35 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.12. This section is the current plan.
+Updated 2026-10-13, for local 0.11.0. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
+
+## Accepted ocenaudio comparison stack (2026-10-13)
+
+The user authorized all six steps in the recommended order after local 0.10.12:
+
+1. Complete import/edit/FX/mix/save-reopen/export workflow and compact GUI consolidation.
+2. Focused source waveform editor: precise ranges, channel selection, loop audition, sample detail and zero-crossing snapping.
+3. Multiple separate ranges and cleanup: audition, silence trim, normalization and protective fades, retaining originals and undo.
+4. Timeline-linked analysis: spectrum/spectrogram and selected-range peak/RMS/loudness/clipping statistics in optional panels.
+5. Finishing: region exports, naming, metadata, restartable queue and pre-master summing stems.
+6. Desktop external audio effect hosting: scanning, bypass, saved state and latency compensation. Audio effects do not require MIDI expansion.
+
+Local 0.11.0 implements the first scope of all six steps: edited sample workflow,
+clip FX audition, source-window editing, separate sample ranges/channel processing,
+cleanup preview/commit with retained originals, optional spectral/statistical analysis,
+named-region delivery, WAV metadata/naming, recovered export snapshots and summing
+stems. The initial desktop plugin host supports Audio Unit and VST3 source effects
+with generic controls, state, bypass and reported-latency compensation on macOS.
+It renders visible source windows up to two minutes and refreshes audition after
+parameter edits. Continuous timeline inserts, custom plugin windows, wider plugin
+compatibility and Windows/Linux hosting are subsequent extensions, not implemented
+by this source-processing host. Native third-party commercial plugins and physical
+iPad/interface acceptance remain separate hardware/software acceptance checks.
+Record scope and remaining requirements honestly; these are initial complete
+workflows, not full commercial-editor parity. Large-file
+paging remains deferred unless actual project measurements justify it. MIDI remains
+deferred. Built-in microphone, playback and window movement are user-confirmed fixed.
 
 ## Accepted next stack (in order)
 

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.11.0 — 2026-10-13
+
+- Add a focused source editor in Edit, command search, the touch ribbon and audio clip menus: sample ranges, channels, zero-crossing snapping, zoom, loop audition and local undo/redo.
+- Preview and apply normalization, silence, DC removal and edge fades to separate ranges/channels. Retain original source references through save/reopen/recovery, restore processing, trim linked clips safely and save named regions.
+- Preserve exact float32 source samples and headroom through derived files, portable saves and recovery; integer export depths remain unchanged.
+- Add optional source-selection spectrum, configurable FFT spectrogram, peak/RMS/DC/clipping statistics and loudness/true-peak measurement.
+- Keep clip effect editing audible during timeline playback.
+- Add named-region exports, filename templates, WAV title/artist/comment metadata, saved export-queue snapshots and pre-master summing stems that preserve upstream routing.
+- Add isolated macOS Audio Unit and VST3 source-effect hosting with generic parameters, saved state, bypass, refreshed audition and reported-latency compensation. Preview windows are limited to two minutes; continuous timeline inserts and native plugin windows remain future extensions.
+- Bundle the pinned MIT VST3 hosting SDK subset and notices; no SDK tools or test plugins are needed at runtime.
+
 ## 0.10.12 — 2026-10-13
 
 - Align title/caption and single-video headers with their timeline lanes.

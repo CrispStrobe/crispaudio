@@ -16,7 +16,7 @@ scope.onmessage = async ({ data }) => {
       const bytes = data.mode === 'mono-float'
         ? await encodeWavJS(channels[0], data.sampleRate, data.bitDepth).arrayBuffer()
         : encodeAudioBufferToWav({ numberOfChannels: channels.length, length: channels[0].length,
-          sampleRate: data.sampleRate, getChannelData: (c: number) => channels[c] } as AudioBuffer, data.bitDepth as BitDepth);
+          sampleRate: data.sampleRate, getChannelData: (c: number) => channels[c] } as AudioBuffer, data.bitDepth as BitDepth, data.mode==='ieee-float');
       scope.postMessage({ id: data.id, type: 'encoded', bytes }, [bytes]);
     } else if (data.type === 'encode') {
       const bytes = await encodeCompressed(new Float32Array(data.pcm), data.channels, data.sampleRate, data.format, data.bitrateKbps);

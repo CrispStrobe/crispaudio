@@ -300,3 +300,4 @@ describe('resampleNearest', () => {
     expect(result.length).toBe(1000);
   });
 });
+it('stores exact floating-point source headroom while integer delivery remains clipped',async()=>{const {encodeAudioBufferToWav}=await import('../../../src/audio/utils/audioBufferUtils');const channels=[Float32Array.from([1.5,-1.25,.1234567]),Float32Array.from([.25,.5,-2])],buffer={numberOfChannels:2,length:3,sampleRate:48000,getChannelData:(c:number)=>channels[c]} as AudioBuffer;const view=new DataView(encodeAudioBufferToWav(buffer,32,true));expect(view.getUint16(20,true)).toBe(3);expect(view.getUint32(44,true)).toBe(3);expect(view.getFloat32(56,true)).toBe(1.5);expect(view.getFloat32(64,true)).toBe(-1.25);expect(view.getFloat32(76,true)).toBe(-2);const integer=new DataView(encodeAudioBufferToWav(buffer,32));expect(integer.getUint16(20,true)).toBe(1);expect(integer.getInt32(44,true)).toBe(2147483647);});

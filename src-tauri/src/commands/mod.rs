@@ -7,3 +7,5 @@ pub mod project;
 pub mod delivery;
 
 pub mod midi;
+
+pub mod plugins;

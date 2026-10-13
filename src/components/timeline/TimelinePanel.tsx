@@ -22,6 +22,7 @@ import {useTimelineMetronome} from '../../hooks/useTimelineMetronome';
 import {DeliveryControls} from './DeliveryControls';
 import {SourceTranscriptControls} from './SourceTranscriptControls';
 import {MulticamControls} from './MulticamControls';
+import {SourceEditor} from './SourceEditor';
 import {ClipRetimeControls} from './ClipRetimeControls';
 import {TimelineRecording} from './TimelineRecording';
 import {GraphicHeaders,GraphicLanes} from './GraphicLanes';
@@ -637,6 +638,7 @@ export const TimelinePanel: React.FC = () => {
         <DeliveryControls launcher={false}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} launcher={false}/>
         <AutoSyncTracks onError={setProjectError} launcher={false}/>
+        <SourceEditor/>
         <ClipRetimeControls launcher={false}/>
         <MulticamControls launcher={false}/>
         <SourceTranscriptControls launcher={false}/>

@@ -30,3 +30,4 @@ describe('calibrated spectrogram', () => {
     expect(computeSpectrogram(new Float32Array(), 44100).columns).toBe(0);
   });
 });
+it('keeps frequency and amplitude calibration with configurable FFT/window and floor',()=>{const rate=8192,pcm=Float32Array.from({length:rate},(_,i)=>.5*Math.sin(2*Math.PI*1024*i/rate));const result=computeSpectrogram(pcm,rate,{fftSize:2048,windowType:'hamming',floor:-120}),middle=Math.floor(result.columns/2),bin=1024*result.fftSize/rate;expect(result.fftSize).toBe(2048);expect(result.db[middle*result.bins+bin]).toBeCloseTo(-6.0206,2);expect(computeSpectrogram(new Float32Array(4096),rate,{floor:-120}).db.every(v=>v===-120)).toBe(true);});

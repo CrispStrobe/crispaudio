@@ -1,0 +1,3 @@
+
+# Preserve the pinned upstream SDK text without whitespace normalization.
+media/vst3/vendor/** -whitespace

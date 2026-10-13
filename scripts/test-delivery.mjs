@@ -9,6 +9,7 @@ try{
  await page.exposeFunction('deliveryNative',async(command,args,options)=>{
   if(command==='plugin:dialog|open')return root;
   if(command==='plugin:fs|write_file'){writeFileSync(decodeURIComponent(options.headers.path),Buffer.from(args));return;}
+  if(command==='plugin:fs|read_file')return [...readFileSync(args.path)];
   if(command==='plugin:fs|remove'){unlinkSync(args.path);return;}
   if(command==='publish_delivery_stage'){linkSync(args.staged,args.output);return;}
   if(command==='export_linked_project_wav'){const input=join(root,`render-${++serial}.json`);writeFileSync(input,JSON.stringify(args.document));execFileSync(cli,['render-project','--backend','apple','--input',input,'--output',args.output,'--wav-bit-depth',String(args.bitDepth)]);return;}

@@ -3,7 +3,7 @@ use serde_json::{json, Value};
 use std::{
     collections::{BTreeSet, HashMap},
     fs::{self, OpenOptions},
-    io::{Read, Write},
+    io::{Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
 };
 fn paths(value: &Value, result: &mut BTreeSet<String>) {
@@ -213,14 +213,163 @@ pub fn publish_delivery_stage(staged: String, output: String) -> Result<(), Stri
     }
     // FlushFileBuffers requires write access on Windows. Open the owned stage
     // without truncation; close the handle before publishing its hard link.
-    OpenOptions::new().write(true).open(staged)
+    OpenOptions::new()
+        .write(true)
+        .open(staged)
         .and_then(|f| f.sync_all())
         .map_err(|e| e.to_string())?;
     fs::hard_link(staged, output).map_err(|e| e.to_string())
 }
+/// Add RIFF INFO to an unpublished WAV stage without buffering the audio data.
+#[tauri::command]
+pub fn annotate_delivery_wav(staged: String, metadata: Value) -> Result<(), String> {
+    let mut info = b"INFO".to_vec();
+    for (key, tag) in [
+        ("title", b"INAM"),
+        ("artist", b"IART"),
+        ("comment", b"ICMT"),
+    ] {
+        if let Some(value) = metadata.get(key) {
+            let text = value.as_str().ok_or("Invalid metadata")?;
+            if text.len() > 4000 || text.contains('\0') {
+                return Err("Invalid metadata".into());
+            }
+            if text.is_empty() {
+                continue;
+            }
+            let bytes = text.as_bytes();
+            info.extend(tag);
+            info.extend(((bytes.len() + 1) as u32).to_le_bytes());
+            info.extend(bytes);
+            info.push(0);
+            if (bytes.len() + 1) % 2 != 0 {
+                info.push(0);
+            }
+        }
+    }
+    if info.len() == 4 {
+        return Ok(());
+    }
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(staged)
+        .map_err(|e| e.to_string())?;
+    let length = file.metadata().map_err(|e| e.to_string())?.len();
+    let mut header = [0u8; 12];
+    file.read_exact(&mut header).map_err(|e| e.to_string())?;
+    if &header[0..4] != b"RIFF"
+        || &header[8..12] != b"WAVE"
+        || u32::from_le_bytes(header[4..8].try_into().unwrap()) as u64 + 8 != length
+    {
+        return Err("Invalid WAV stage".into());
+    }
+    let padding = length % 2;
+    let final_size = length + padding + 8 + info.len() as u64 - 8;
+    if final_size > u32::MAX as u64 {
+        return Err("WAV metadata requires RIFF below 4 GiB".into());
+    }
+    file.seek(SeekFrom::End(0)).map_err(|e| e.to_string())?;
+    if padding != 0 {
+        file.write_all(&[0]).map_err(|e| e.to_string())?;
+    }
+    file.write_all(b"LIST")
+        .and_then(|_| file.write_all(&(info.len() as u32).to_le_bytes()))
+        .and_then(|_| file.write_all(&info))
+        .map_err(|e| e.to_string())?;
+    file.seek(SeekFrom::Start(4))
+        .and_then(|_| file.write_all(&(final_size as u32).to_le_bytes()))
+        .and_then(|_| file.sync_all())
+        .map_err(|e| e.to_string())
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn wav_metadata_preserves_audio_and_publishes_without_overwrite() {
+        let folder = root();
+        let stage = folder.join("tagged.partial.wav");
+        let output = folder.join("finished.wav");
+        let mut writer = hound::WavWriter::create(
+            &stage,
+            hound::WavSpec {
+                channels: 1,
+                sample_rate: 48000,
+                bits_per_sample: 16,
+                sample_format: hound::SampleFormat::Int,
+            },
+        )
+        .unwrap();
+        for sample in [0i16, 1000, -1000, 1234] {
+            writer.write_sample(sample).unwrap();
+        }
+        writer.finalize().unwrap();
+        annotate_delivery_wav(
+            stage.to_string_lossy().into(),
+            json!({"title":"Title","artist":"Artist","comment":"Comment"}),
+        )
+        .unwrap();
+        let pcm = hound::WavReader::open(&stage)
+            .unwrap()
+            .samples::<i16>()
+            .map(Result::unwrap)
+            .collect::<Vec<_>>();
+        assert_eq!(pcm, vec![0, 1000, -1000, 1234]);
+        let bytes = fs::read(&stage).unwrap();
+        assert!(bytes.windows(5).any(|s| s == b"Title"));
+        assert_eq!(
+            u32::from_le_bytes(bytes[4..8].try_into().unwrap()) as usize + 8,
+            bytes.len()
+        );
+        publish_delivery_stage(
+            stage.to_string_lossy().into(),
+            output.to_string_lossy().into(),
+        )
+        .unwrap();
+        assert!(publish_delivery_stage(
+            stage.to_string_lossy().into(),
+            output.to_string_lossy().into()
+        )
+        .is_err());
+        assert!(annotate_delivery_wav(
+            stage.to_string_lossy().into(),
+            json!({"title":"bad\0value"})
+        )
+        .is_err());
+        fs::remove_dir_all(folder).unwrap();
+    }
+    #[test]
+    fn wav_metadata_pads_odd_mono24_data() {
+        let folder = root();
+        let stage = folder.join("odd.wav");
+        let mut bytes = vec![0u8; 47];
+        bytes[..4].copy_from_slice(b"RIFF");
+        bytes[4..8].copy_from_slice(&39u32.to_le_bytes());
+        bytes[8..12].copy_from_slice(b"WAVE");
+        bytes[12..16].copy_from_slice(b"fmt ");
+        bytes[16..20].copy_from_slice(&16u32.to_le_bytes());
+        bytes[20..22].copy_from_slice(&1u16.to_le_bytes());
+        bytes[22..24].copy_from_slice(&1u16.to_le_bytes());
+        bytes[24..28].copy_from_slice(&48000u32.to_le_bytes());
+        bytes[28..32].copy_from_slice(&144000u32.to_le_bytes());
+        bytes[32..34].copy_from_slice(&3u16.to_le_bytes());
+        bytes[34..36].copy_from_slice(&24u16.to_le_bytes());
+        bytes[36..40].copy_from_slice(b"data");
+        bytes[40..44].copy_from_slice(&3u32.to_le_bytes());
+        bytes[44..].copy_from_slice(&[0x33, 0x22, 0x11]);
+        fs::write(&stage, bytes).unwrap();
+        annotate_delivery_wav(stage.to_string_lossy().into(), json!({"title":"Odd"})).unwrap();
+        let bytes = fs::read(&stage).unwrap();
+        assert_eq!(bytes[47], 0);
+        assert_eq!(&bytes[48..52], b"LIST");
+        let pcm = hound::WavReader::open(&stage)
+            .unwrap()
+            .samples::<i32>()
+            .map(Result::unwrap)
+            .collect::<Vec<_>>();
+        assert_eq!(pcm, vec![0x112233]);
+        fs::remove_dir_all(folder).unwrap();
+    }
     fn root() -> PathBuf {
         static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let p = std::env::temp_dir().join(format!(

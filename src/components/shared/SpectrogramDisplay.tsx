@@ -2,12 +2,12 @@ import { memo, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { computeSpectrogram } from '../../audio/utils/spectrogram';
 
-export const SpectrogramDisplay = memo(function SpectrogramDisplay({ buffer, sampleRate, title }: {
-  buffer: Float32Array | null; sampleRate: number; title: string;
+export const SpectrogramDisplay = memo(function SpectrogramDisplay({ buffer, sampleRate, title,fftSize=1024,windowType='hann',floor=-90 }: {
+  buffer: Float32Array | null; sampleRate: number; title: string;fftSize?:number;windowType?:'hann'|'hamming';floor?:number;
 }) {
   const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const analysis = useMemo(() => buffer ? computeSpectrogram(buffer, sampleRate) : null, [buffer, sampleRate]);
+  const analysis = useMemo(() => buffer ? computeSpectrogram(buffer, sampleRate,{fftSize,windowType,floor}) : null, [buffer, sampleRate,fftSize,windowType,floor]);
   useEffect(() => {
     const canvas = canvasRef.current, ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
@@ -19,9 +19,9 @@ export const SpectrogramDisplay = memo(function SpectrogramDisplay({ buffer, sam
       // Peak aggregation retains narrow spectral lines when shrinking bins.
       const lo = Math.floor((canvas.height - y - 1) * bins / canvas.height);
       const hi = Math.max(lo + 1, Math.ceil((canvas.height - y) * bins / canvas.height));
-      let level = -90;
+      let level = floor;
       for (let k = lo; k < Math.min(hi, bins); k++) level = Math.max(level, db[x * bins + k]);
-      const v = Math.max(0, Math.min(1, (level + 90) / 90));
+      const v = Math.max(0, Math.min(1, (level - floor) / -floor));
       const i = (y * columns + x) * 4;
       pixels.data[i] = Math.round(8 + 247 * Math.max(0, (v - .35) / .65));
       pixels.data[i + 1] = Math.round(15 + 220 * v * v);
@@ -32,7 +32,7 @@ export const SpectrogramDisplay = memo(function SpectrogramDisplay({ buffer, sam
     raster.getContext('2d')?.putImageData(pixels, 0, 0);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(raster, 0, 0, canvas.width, canvas.height);
-  }, [analysis]);
+  }, [analysis,floor]);
   return <figure className="spectrogram min-w-0">
     <figcaption className="text-sm font-semibold mb-2">{title}</figcaption>
     <div className="flex gap-2">

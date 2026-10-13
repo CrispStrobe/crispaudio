@@ -38,8 +38,11 @@ jobs; an active native job must finish cancellation before the next starts. Retr
 uses the retained snapshot and a new output filename. Output publication does not
 overwrite existing files. If a sidecar/settings write fails after the media completes,
 the completed media remains at the displayed path. Closing the Delivery dialog
-keeps the queue; leaving the timeline/unmounting it cancels the session queue. The
-queue does not resume after app restart. Delivery/copy operations require desktop;
+keeps the queue; leaving the timeline/unmounting it cancels the session queue. Queue snapshots now survive app restart. Interrupted jobs return as failed
+with their original session/settings/source references, ready for **Retry to new
+file**. They are not silently re-exported. Completed entries do not decode their
+audio on restoration. Missing sources report their retained output path and remain
+in storage rather than being silently replaced. Delivery/copy operations require desktop;
 existing browser/mobile quick exports remain available separately.
 
 ## Collect a portable project
@@ -78,3 +81,28 @@ schema and are checked with the official OpenTimelineIO reader.
 
 Schema reference: [OpenTimelineIO serialized data](https://github.com/AcademySoftwareFoundation/OpenTimelineIO/blob/main/docs/tutorials/otio-serialized-schema.md).
 Apple codec preset: [ProRes 422/LPCM](https://developer.apple.com/documentation/avfoundation/avassetexportpresetappleprores422lpcm).
+
+## Regions, naming and summing stems (local 0.11.0)
+
+Save source selections as named regions in Source Editor → Ranges, or reuse the
+project's existing named sections. Delivery → Named regions creates an independent
+export for each interval, clipping caption sidecars to that interval. Names and
+metadata is collapsed initially. Filename templates accept {project}, {region},
+{track} and {index}; the unique suffix protects existing files. Title, artist and
+comment are embedded as RIFF INFO in WAV, including odd-length mono PCM, and saved
+in every delivery manifest. Other formats currently retain these fields in the
+manifest, not embedded container tags.
+
+Solo stems preserve the existing solo/master behavior. Pre-master summing stems
+instead export individual contributions to the master input, including complete
+upstream sends/buses/ducking and track processing. Other master contributions route
+to a silent export-only sink. Master gain, master inserts and output limiter are
+excluded. Sum every contribution to reconstruct the pre-master mix; apply master
+processing once afterward. Only tracks/buses with a direct output or send to the
+master are eligible. The open project and routing remain unchanged.
+
+Queue snapshots use a separate IndexedDB database. Media with linked paths stays
+linked; generated audio is embedded for recovery. Every runner persists its job
+before publishing output. Cancellation and app closure retain retryable snapshots;
+retry always chooses a fresh output name. Large unlinked sources above the existing
+256 MiB recovery bound require a linked project first.
