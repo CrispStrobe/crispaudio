@@ -2,7 +2,6 @@ mod commands;
 mod native_menu;
 
 use commands::{audio_export, media, native_files, project};
-#[cfg(any(target_os = "macos", target_os = "ios"))]
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -14,6 +13,14 @@ pub fn run() {
         .plugin(tauri_plugin_crispaudio_native::init())
         .manage(native_files::OpenedFiles::default())
         .manage(commands::midi::MidiState::default())
+        .manage(commands::plugins::PluginStreams::default())
+        .on_window_event(|window, event| {
+            if matches!(event, tauri::WindowEvent::Destroyed) {
+                window
+                    .state::<commands::plugins::PluginStreams>()
+                    .close_owner(window.label());
+            }
+        })
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -51,6 +58,10 @@ pub fn run() {
             commands::delivery::publish_delivery_stage,
             commands::delivery::annotate_delivery_wav,
             commands::plugins::audio_unit_plugin,
+            commands::plugins::plugin_stream_open,
+            commands::plugins::plugin_stream_process,
+            commands::plugins::plugin_stream_snapshot,
+            commands::plugins::plugin_stream_close,
             project::load_project,
             native_files::take_opened_files,
             native_files::read_opened_file,
@@ -79,6 +90,9 @@ pub fn run() {
         .expect("error while building tauri application");
 
     app.run(|app, event| {
+        if matches!(event, tauri::RunEvent::Exit) {
+            app.state::<commands::plugins::PluginStreams>().shutdown();
+        }
         #[cfg(any(target_os = "macos", target_os = "ios"))]
         if let tauri::RunEvent::Opened { urls } = &event {
             let paths = urls

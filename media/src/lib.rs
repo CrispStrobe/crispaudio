@@ -10,6 +10,7 @@ mod graphics;
 pub mod jobs;
 mod limiter;
 pub mod project_edit;
+pub mod plugin_stream;
 pub mod retime;
 mod reverb;
 mod routing;

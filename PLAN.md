@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.11.2. This section is the current plan.
+Updated 2026-10-13, for local 0.11.3. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -32,6 +32,11 @@ Local 0.11.2 stores export audio snapshots once, restores queue metadata without
 media decoding, supports saved-job media relinking and cleans completed history
 without deleting output files. Continuous native inserts remain a larger engine
 extension: the current Web Audio playback path needs a streaming DSP bridge.
+Local 0.11.3 adds the internal persistent native block transport and bounded frontend
+session API. Real AU/VST3 tests compare variable-sized streaming blocks against
+whole-file renders and exercise state, bypass, cancellation and hung-child cleanup.
+Timeline inserts are still pending AudioWorklet scheduling, graph-wide latency
+compensation, seek/loop integration, compact track controls and export parity.
 Record scope and remaining requirements honestly; these are initial complete
 workflows, not full commercial-editor parity. Large-file
 paging remains deferred unless actual project measurements justify it. MIDI remains

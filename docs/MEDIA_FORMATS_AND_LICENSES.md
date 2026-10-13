@@ -239,3 +239,33 @@ VST3 discovery enumerates bundles without loading their code, then scans each bu
 in a separate cancellable helper with a ten-second deadline. A crash, timeout or
 invalid bundle leaves healthy AU/VST3 effects available; skipped paths and failure
 details are shown in a collapsed section. Re-scan retries failed bundles.
+
+### Internal streaming transport (0.11.3)
+
+Persistent macOS AU/VST3 helper sessions process mono/stereo float32 blocks of
+1–4096 frames at 8–192 kHz. DSP state carries across blocks; parameters update at
+block boundaries, and a state snapshot captures the current plugin document.
+Bypass returns exact dry samples while continuing the effect's processing state.
+Reported plugin latency stays in metadata; this transport does not compensate it.
+AU rendering uses Core Audio's input callback and AudioUnitRender with explicit
+sample timestamps ([Apple's rendering API](https://developer.apple.com/documentation/audiotoolbox/audiounitrender(_:_:_:_:_:_:))).
+VST3 uses a persistent processor with offline ProcessContext and sample position.
+Both transports currently begin their processing clock at sample zero.
+
+The helper pipe uses bounded little-endian headers and planar float32 payloads.
+The current Tauri-facing API exchanges sample arrays; optimizing that boundary and
+AudioWorklet scheduling are subsequent work. Initialisation has a ten-second
+response deadline; each block/state reply has a two-second failure deadline.
+These are process-failure bounds, not realtime audio latency guarantees. Helpers
+also expire after sixty seconds without requests. At most eight owned sessions
+may be opening or running; destroyed windows and app exit stop their sessions.
+Frontend requests are ordered, with at most four queued/in-flight operations.
+Closing discards late responses and faults close the session. Seek/loop resets
+will create a fresh processor from saved state so old audio cannot leak through.
+
+The transport is internal and does not add timeline rack controls yet. Continuous
+track inserts need worklet buffering, underrun policy, latency compensation across
+routing paths, seek/loop resets and equivalent export processing. Existing source
+preview/render commands keep their documented two-minute limit. AU v3/commercial
+plugin coverage, native plugin windows and other desktop platforms remain future
+acceptance work; current tests use Apple AUBandpass and Steinberg ADelay fixtures.

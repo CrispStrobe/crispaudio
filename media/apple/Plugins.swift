@@ -8,7 +8,7 @@ func protectPluginOutput(){_ = pluginProtocolOutput;dup2(STDERR_FILENO,STDOUT_FI
 
 struct PluginRequest:Decodable {
  var id:String;var path:String?;var offset:Double?;var duration:Double?;var output:String?
- var parameters:[String:Double]?;var state:String?;var bypass:Bool?
+ var parameters:[String:Double]?;var state:String?;var bypass:Bool?;var sampleRate:Double?;var channels:UInt32?
 }
 func pluginDescription(_ id:String)throws->AudioComponentDescription {
  let parts=id.split(separator:":").compactMap{UInt32($0)}
@@ -61,4 +61,45 @@ func processPlugin(_ operation:String,_ json:String)async throws {
   rendered+=AVAudioFramePosition(block.frameLength)
  }
  pluginProtocolOutput.write(try JSONSerialization.data(withJSONObject:["parameters":parameters,"state":try encodedState(),"latency":latency,"path":output,"frames":frames,"sampleRate":rate]))
+}
+
+
+// Persistent AU renderer: processing state spans packets, no temporary WAVs.
+func streamRead(_ count:Int,allowEOF:Bool=false)throws->Data? {
+ var data=Data();while data.count<count {guard let chunk=try FileHandle.standardInput.read(upToCount:count-data.count),!chunk.isEmpty else {if allowEOF && data.isEmpty{return nil};try fail("Plugin stream input closed")};data.append(chunk)};return data
+}
+func streamU32(_ data:Data,_ offset:Int)->UInt32 {(0..<4).reduce(UInt32(0)){$0 | UInt32(data[offset+$1]) << ($1*8)}}
+func streamReply(_ metadata:[String:Any],_ pcm:AVAudioPCMBuffer?=nil)throws {
+ let json=try JSONSerialization.data(withJSONObject:metadata);guard json.count<=16_000_000 else{try fail("Invalid stream response")};var count=UInt32(json.count).littleEndian;try pluginProtocolOutput.write(contentsOf:withUnsafeBytes(of:&count){Data($0)});try pluginProtocolOutput.write(contentsOf:json)
+ if let pcm=pcm,let samples=pcm.floatChannelData {for ch in 0..<Int(pcm.format.channelCount){try pluginProtocolOutput.write(contentsOf:Data(bytes:samples[ch],count:Int(pcm.frameLength)*4))}}
+}
+final class PluginStreamInput {
+ var buffer:AVAudioPCMBuffer?;var sampleTime:Double=0
+ func fill(_ stamp:UnsafePointer<AudioTimeStamp>,_ frames:UInt32,_ bus:UInt32,_ data:UnsafeMutablePointer<AudioBufferList>?)->OSStatus {guard let input=buffer,let samples=input.floatChannelData,let data=data else{return kAudioUnitErr_NoConnection};let offset=Int(stamp.pointee.mSampleTime-sampleTime),buffers=UnsafeMutableAudioBufferListPointer(data);guard bus==0,offset>=0,offset+Int(frames)<=Int(input.frameLength),buffers.count==Int(input.format.channelCount) else{return kAudioUnitErr_InvalidParameter};for ch in 0..<buffers.count{buffers[ch].mData=UnsafeMutableRawPointer(samples[ch].advanced(by:offset));buffers[ch].mDataByteSize=frames*4;buffers[ch].mNumberChannels=1};return noErr}
+}
+func streamPlugin(_ json:String)async throws {
+ let data=json.hasPrefix("{") ? Data(json.utf8):try Data(contentsOf:URL(fileURLWithPath:json)),request=try JSONDecoder().decode(PluginRequest.self,from:data)
+ guard let rate=request.sampleRate,let channels=request.channels,rate.isFinite,rate>=8000,rate<=192000,channels==1 || channels==2,let format=AVAudioFormat(standardFormatWithSampleRate:rate,channels:channels) else{try fail("Invalid stream format")}
+ let unit=try await AVAudioUnit.instantiate(with:pluginDescription(request.id),options:[]),au=unit.auAudioUnit
+ if let state=request.state,!state.isEmpty {guard state.count<=8_000_000,let bytes=Data(base64Encoded:state),let restored=try PropertyListSerialization.propertyList(from:bytes,format:nil) as? [String:Any] else{try fail("Invalid Audio Unit state")};au.fullStateForDocument=restored}
+ func parameters(_ values:[String:Double])throws {for (key,value) in values {guard value.isFinite,let address=UInt64(key),let p=au.parameterTree?.parameter(withAddress:address),value>=Double(p.minValue),value<=Double(p.maxValue) else{try fail("Invalid stream parameter")};p.value=Float(value)}}
+ try parameters(request.parameters ?? [:]);let audioUnit=unit.audioUnit,context=PluginStreamInput();var description=format.streamDescription.pointee,maximum:UInt32=4096
+ func checked(_ status:OSStatus)throws {guard status==noErr else{try fail("Cannot configure plugin stream: \(status)")}}
+ try checked(AudioUnitSetProperty(audioUnit,kAudioUnitProperty_StreamFormat,kAudioUnitScope_Input,0,&description,UInt32(MemoryLayout<AudioStreamBasicDescription>.size)));try checked(AudioUnitSetProperty(audioUnit,kAudioUnitProperty_StreamFormat,kAudioUnitScope_Output,0,&description,UInt32(MemoryLayout<AudioStreamBasicDescription>.size)));try checked(AudioUnitSetProperty(audioUnit,kAudioUnitProperty_MaximumFramesPerSlice,kAudioUnitScope_Global,0,&maximum,4))
+ var callback=AURenderCallbackStruct(inputProc:{ref,_,stamp,bus,frames,data in return Unmanaged<PluginStreamInput>.fromOpaque(ref).takeUnretainedValue().fill(stamp,frames,bus,data)},inputProcRefCon:Unmanaged.passUnretained(context).toOpaque());try checked(AudioUnitSetProperty(audioUnit,kAudioUnitProperty_SetRenderCallback,kAudioUnitScope_Input,0,&callback,UInt32(MemoryLayout<AURenderCallbackStruct>.size)));try checked(AudioUnitInitialize(audioUnit));defer{AudioUnitUninitialize(audioUnit)};var sampleTime:Double=0
+
+ func metadata(_ frames:UInt32,_ sequence:UInt32,_ state:Bool)throws->[String:Any] {let latency=au.latency;guard latency.isFinite,latency>=0,latency<=10 else{try fail("Invalid stream latency")};var value:[String:Any]=["frames":frames,"sequence":sequence,"channels":channels,"sampleRate":rate,"latencySamples":Int((latency*rate).rounded())];if state {value["parameters"]=(au.parameterTree?.allParameters ?? []).map{p->[String:Any] in ["address":String(p.address),"name":p.displayName,"min":p.minValue,"max":p.maxValue,"value":p.value,"unit":p.unitName ?? ""]};value["state"]=try PropertyListSerialization.data(fromPropertyList:au.fullStateForDocument ?? au.fullState ?? [:],format:.binary,options:0).base64EncodedString()};return value}
+ try streamReply(metadata(0,0,true));var expected:UInt32=1
+ while true {
+  alarm(60);guard let header=try streamRead(16,allowEOF:true) else{return};alarm(5);let kind=streamU32(header,0),frames=streamU32(header,4),sequence=streamU32(header,8),length=streamU32(header,12)
+  guard (kind==1 || kind==2),sequence==expected,length<=8192,frames<=4096,(kind==2 ? frames==0:frames>0) else{try fail("Invalid stream packet")};expected &+= 1
+  let json=try streamRead(Int(length))!,settings=length==0 ? [:]:try JSONSerialization.jsonObject(with:json) as? [String:Any];guard let settings=settings else{try fail("Invalid stream settings")}
+  if kind==2 {try streamReply(metadata(0,sequence,true));continue}
+  guard let input=AVAudioPCMBuffer(pcmFormat:format,frameCapacity:frames),let output=AVAudioPCMBuffer(pcmFormat:format,frameCapacity:frames),let samples=input.floatChannelData else{try fail("Stream allocation failed")};input.frameLength=frames
+  for ch in 0..<Int(channels){let data=try streamRead(Int(frames)*4)!;for i in 0..<Int(frames){let value=Float(bitPattern:streamU32(data,i*4));guard value.isFinite else{try fail("Invalid stream samples")};samples[ch][i]=value}}
+  try parameters(settings["parameters"] as? [String:Double] ?? [:]);let bypass=settings["bypass"] as? Bool ?? false;let dry=bypass ? (0..<Int(channels)).map{Data(bytes:samples[$0],count:Int(frames)*4)}:[];output.frameLength=frames;var flags=AudioUnitRenderActionFlags(rawValue:0),stamp=AudioTimeStamp();stamp.mSampleTime=sampleTime;stamp.mFlags=AudioTimeStampFlags.sampleTimeValid
+  context.buffer=input;context.sampleTime=sampleTime;let status=AudioUnitRender(audioUnit,&flags,&stamp,0,frames,output.mutableAudioBufferList);context.buffer=nil;guard status==noErr else{try fail("Plugin stream DSP failed: \(status)")};sampleTime+=Double(frames)
+  for ch in 0..<Int(channels){for i in 0..<Int(frames){if bypass{output.floatChannelData![ch][i]=Float(bitPattern:streamU32(dry[ch],i*4))};guard output.floatChannelData![ch][i].isFinite else{try fail("Invalid stream output")}}}
+  try withExtendedLifetime(input){try streamReply(metadata(frames,sequence,false),output)}
+ }
 }

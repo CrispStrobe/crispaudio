@@ -20,6 +20,14 @@ impl Backend {
     }
 }
 #[cfg(target_os = "macos")]
+pub(crate) fn helper_bytes(vst: bool) -> &'static [u8] {
+    if vst {
+        include_bytes!(concat!(env!("OUT_DIR"), "/crispaudio-vst3-host"))
+    } else {
+        include_bytes!(concat!(env!("OUT_DIR"), "/crispaudio-apple-media"))
+    }
+}
+#[cfg(target_os = "macos")]
 fn invoke(args: &[String], edit: Option<&VideoEdit>) -> Result<Vec<u8>> {
     use std::{io::Write, os::unix::fs::PermissionsExt, process::Command};
     let directory = tempfile::tempdir().map_err(|e| e.to_string())?;
@@ -30,12 +38,8 @@ fn invoke(args: &[String], edit: Option<&VideoEdit>) -> Result<Vec<u8>> {
         .create_new(true)
         .open(&helper)
         .map_err(|e| e.to_string())?;
-    file.write_all(if vst {
-        include_bytes!(concat!(env!("OUT_DIR"), "/crispaudio-vst3-host"))
-    } else {
-        include_bytes!(concat!(env!("OUT_DIR"), "/crispaudio-apple-media"))
-    })
-    .map_err(|e| e.to_string())?;
+    file.write_all(helper_bytes(vst))
+        .map_err(|e| e.to_string())?;
     file.set_permissions(std::fs::Permissions::from_mode(0o700))
         .map_err(|e| e.to_string())?;
     drop(file);

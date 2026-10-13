@@ -175,6 +175,7 @@ func validateM4a(_ path:String) throws {
   let args=CommandLine.arguments
   guard args.count>=3 else {try fail("Expected operation and input")}
   if args[1]=="plugin-scan" {protectPluginOutput();try scanPlugins();return}
+  if args[1]=="plugin-stream" {protectPluginOutput();alarm(10);try await streamPlugin(args[2]);return}
   if ["plugin-info","plugin-render"].contains(args[1]) {protectPluginOutput();DispatchQueue.global().asyncAfter(deadline:.now()+60){FileHandle.standardError.write(Data("Audio Unit operation timed out\n".utf8));exit(1)};try await processPlugin(args[1],args[2]);return}
   let operation=args[1],asset=AVURLAsset(url:URL(fileURLWithPath:args[2]))
   if operation=="probe" {

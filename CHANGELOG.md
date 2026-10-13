@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.11.3 — 2026-10-13
+
+- Add an internal persistent AU/VST3 block-processing transport with continuous DSP state, block parameter updates, saved state, bypass, reported latency and float32 headroom.
+- Bound stream queues and response deadlines; isolate plugin faults and stop sessions on window closure or application exit.
+- Reject late frontend output after close and clean up a session that finishes opening after cancellation.
+- Accept optional null VST3 state without crashing the isolated helper.
+- This is the native foundation for timeline inserts. AudioWorklet scheduling, graph latency compensation, track UI and export integration remain pending; existing playback continues through the current engine.
+
 ## 0.11.2 — 2026-10-13
 
 - Store export audio snapshots once and persist only changed queue entries. Upgrade existing saved queues without dropping history.
