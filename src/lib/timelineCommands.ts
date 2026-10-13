@@ -3,6 +3,7 @@ import { nativeMenuContext } from './nativeMenu';
 export interface TimelineCommand { id: string; label: string; key?: string; requires?: 'selection' | 'content' | 'editRange' | 'clipboard' | 'canUndo' | 'canRedo' }
 export const timelineCommands: Record<string, TimelineCommand[]> = {
     File: [
+        { id: 'samples', label: 'Sample Sessions…' },
         { id: 'new', label: 'New Project…', key: '⌘/Ctrl N' }, { id: 'open', label: 'Open Project…', key: '⌘/Ctrl O' }, { id: 'save', label: 'Save Project…', key: '⌘/Ctrl S' },
         { id: 'import', label: 'Import Audio…', key: '⌘/Ctrl I' }, { id: 'load-tracks', label: 'Import Tracks…' }, { id: 'save-tracks', label: 'Save Tracks…' },
         { id: 'export', label: 'Export Audio Mix…', requires: 'content', key: '⌘/Ctrl Shift E' }, { id: 'export-range', label: 'Export Selected Audio Range…', requires: 'editRange' },

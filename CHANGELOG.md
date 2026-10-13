@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.9.8 — 2026-10-13
+
+- Add Audio mix, Picture edit and Take workshop sample sessions through File
+  and command search, with real generated audio, FX, automation and comp regions.
+- Bundle an original H.264 motion graphic and editable title. Desktop samples
+  persist their media for linked save/export; browser samples preview the asset.
+- Keep the previous session and source buffers in Undo. Prepare the sample
+  before replacing the project; cancel and failed media writes leave it intact.
+
 ## 0.9.7 — 2026-10-13
 
 - Add All armed tracks recording for one to eight audio tracks, preserving each

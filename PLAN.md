@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.9.7. This section is the current plan.
+Updated 2026-10-13, for local 0.9.8. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -24,6 +24,11 @@ Coordinated recording of one to eight armed audio tracks is implemented in
 0.9.7, using per-track device/channel/latency and a shared capture clock. Captures
 are published together as one undo. Synthetic browser streams pass; physical
 multi-device synchronization/drift remains an acceptance check.
+
+The requested sample sessions ship in 0.9.8: audio mix, picture edit with sound
+and titles, and alternate-take/comp practice. They open through File/command
+search, retain the previous session in Undo and use original bundled/generated
+media. Playback, save/open and native audio/video export are locally checked.
 
 Next: take audition and comp-region removal/reset, then track organization
 and grouped editing. Audit existing punch/loop/take/comp and bus/send tools before

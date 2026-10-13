@@ -96,7 +96,8 @@
     "Recover Media…": "Medien wiederherstellen…",
     "Multicam…": "Mehrkamera…",
     "Musical Time…": "Musikalische Zeit…",
-    "MIDI…": "MIDI…"
+    "MIDI…": "MIDI…",
+    "Sample Sessions…": "Beispielsitzungen…"
   },
   "app": {
     "name": "CrispAudio",
@@ -1771,5 +1772,28 @@
     "protected": "Aufnahme oder Spursperre schützt diesen Effekt.",
     "invalid": "Ungültige Automation.",
     "help": "Klicke auf die Kurve, um Punkte hinzuzufügen oder auszuwählen, oder nutze Punktauswahl und Zahlenfelder. Zeiten gelten in Projektsekunden; die schattierte Fläche markiert den Clip. Anwenden erzeugt einen Rückgängig-Schritt. Leeren stellt den statischen Wert wieder her. Andere Hüllkurven und Punkte außerhalb des Clips bleiben erhalten."
+  },
+  "samples": {
+    "title": "Beispielsitzungen",
+    "session": "Sitzung",
+    "mix": "Audiomischung",
+    "picture": "Videoschnitt",
+    "takes": "Take-Werkstatt",
+    "mixInfo": "Drei Spuren · FX · Automation",
+    "pictureInfo": "Video · Musik · Titel · FX",
+    "takesInfo": "Alternative Takes · Comp · Blenden",
+    "rhythm": "Rhythmus",
+    "keys": "Tasten",
+    "pad": "Atmosphäre",
+    "alternate": "Alternative Tasten",
+    "takeA": "Take A",
+    "takeB": "Take B",
+    "titles": "Titel",
+    "variation": "Variation",
+    "undo": "Die aktuelle Sitzung bleibt in Rückgängig.",
+    "open": "Öffnen",
+    "loading": "Vorbereitung…",
+    "failed": "Beispielmedien konnten nicht geladen werden.",
+    "changed": "Die Sitzung wurde geändert. Versuche es erneut."
   }
 }

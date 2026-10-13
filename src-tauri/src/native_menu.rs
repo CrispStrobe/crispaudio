@@ -127,6 +127,8 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
             &item("delivery", "Delivery…", "Ausgabe…", timeline, None)?,
             &item("export-video", "Export Video…", "Video exportieren…", timeline && context.content, None)?,
             &sep()?,
+            &item("samples", "Sample Sessions…", "Beispielsitzungen…", enabled, None)?,
+            &sep()?,
             &Native::close_window(app, None)?,
         ],
     )?;

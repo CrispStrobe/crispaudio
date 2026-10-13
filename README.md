@@ -21,6 +21,10 @@ and one undo for the group. Physical device alignment requires hardware checks.
 Clip and master racks have compact inspectors for supported FX envelopes; expand
 an effect and choose FX automation. See [effects and automation](docs/DAW_EFFECTS.md).
 
+Try **File → Sample sessions…** for an audio mix, picture edit or take workshop,
+with actual generated audio, bundled video, FX and automation.
+[Sample session guide](docs/SAMPLE_SESSIONS.md) describes how to edit and save them.
+
 Delivery adds per-export presets, range/clip/stem jobs, a cancellable queue,
 caption sidecars, portable media collection and reviewed cut-only OTIO export.
 See [Delivery workflows and limits](docs/DELIVERY.md).

@@ -18,6 +18,30 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.9.8 — playable sample sessions
+
+File/command search opens Audio mix, Picture edit and Take workshop. They use
+original deterministic PCM, supported FX and automation; the picture session
+bundles a 12-second H.264 graphic and editable title, while Take workshop has
+two preserved alternates and a comp region. Loading retains the previous project
+and its source buffers in Undo. Desktop media paths are persisted before load.
+
+Validation: 1,583 unit tests in 150 files, ESLint, TypeScript/Vite, Tauri app build
+and locked iOS simulator library check pass. Chrome/WebKit exercise all three
+sessions, playback, audible offline mixes, save/reopen, previous-session undo,
+cancel, video decoding and German 390px layout. A mocked native bridge validates
+media persistence calls, app-data video writes and failure without replacement.
+The real optimized Apple CLI renders all three audio sessions and the picture
+session's MP4, with 14-second output, audible sound and both audio/video streams.
+This does not establish new physical-device acceptance or renderer bit parity.
+
+Local 0.9.8 is installed, signed, verified and relaunched with one autosave
+preserved and a fresh recovery backup. Media is bundled/generated for offline
+macOS use; the CLI and native DSP remain unchanged. Both exact 0.9.7
+[general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38344461369) and
+[iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38344461360) succeeded.
+New checkpoint remote checks remain separate. No release tag or Apple upload.
+
 ## Local 0.9.7 — coordinated armed-track recording
 
 Record / Takes adds All armed tracks for one to eight audio tracks. Each target

@@ -1,3 +1,4 @@
+import {SampleSessions} from './SampleSessions';
 import {runTimelineTool} from '../../hooks/useTimelineTool';
 import {TimelineCommandMenus} from './TimelineCommandMenus';
 import {MidiControls} from './MidiControls';
@@ -642,7 +643,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Activity} label={t('automation.openTitle')} aria-pressed={automation} onClick={()=>setAutomation(value=>!value)}/>
         <ToolButton icon={SlidersHorizontal} label={t('mixer.title')} aria-pressed={mixer} onClick={()=>setMixer(value=>!value)}/>
         <CommandSearch/>
-        <MusicalControls launcher={false}/>
+        <SampleSessions/><MusicalControls launcher={false}/>
         <MidiControls audio={audioEngine} launcher={false}/>
         <DeliveryControls launcher={false}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} launcher={false}/>

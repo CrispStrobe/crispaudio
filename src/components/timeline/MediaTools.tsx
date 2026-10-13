@@ -1,3 +1,4 @@
+import {sampleVideoUrl} from '../../lib/sampleSessions';
 import {HelpDetails} from '../common/HelpDetails';
 import {useTimelineTool} from '../../hooks/useTimelineTool';
 import { createPortal } from 'react-dom';
@@ -142,7 +143,7 @@ export function MediaTools({ engine, panelTarget, launcher=true }: Props) {
   useTimelineTool('open-session',loadSession,available&&!busy&&!playing);
   useTimelineTool('recover-media',recover,available&&recoverable&&!busy&&!playing);
   useTimelineTool('detach-video',()=>{const state=useProjectStore.getState(),project={...state.project,video:undefined};useProjectStore.setState({project:{...project,duration:timelineDuration(project)},isPlaying:false});},available&&!!video&&!busy&&!playing);
-  if (!available) return null;
+  if (!available&&video?.path!==sampleVideoUrl) return null;
   return <>
     {launcher && controls}
     {panelTarget && (video || busy || error || notice) && createPortal(<section className="relative z-30 shrink-0 border-b border-gray-800 bg-gray-900/70 px-3 py-1" aria-label={t('interview.title')}>

@@ -96,7 +96,8 @@
     "Recover Media…": "Recover Media…",
     "Multicam…": "Multicam…",
     "Musical Time…": "Musical Time…",
-    "MIDI…": "MIDI…"
+    "MIDI…": "MIDI…",
+    "Sample Sessions…": "Sample sessions…"
   },
   "app": {
     "name": "CrispAudio",
@@ -1771,5 +1772,28 @@
     "protected": "Recording or a track lock protects this effect.",
     "invalid": "Invalid automation.",
     "help": "Click the curve to add/select points, or use the point selector and numeric fields. Times are absolute project seconds; the shaded band marks the clip. Apply creates one undo step; clearing restores the static parameter. Other envelopes and points outside the clip remain intact."
+  },
+  "samples": {
+    "title": "Sample sessions",
+    "session": "Session",
+    "mix": "Audio mix",
+    "picture": "Picture edit",
+    "takes": "Take workshop",
+    "mixInfo": "Three tracks · FX · automation",
+    "pictureInfo": "Video · music · titles · FX",
+    "takesInfo": "Alternate takes · comp · crossfades",
+    "rhythm": "Rhythm",
+    "keys": "Keys",
+    "pad": "Atmosphere",
+    "alternate": "Alternate keys",
+    "takeA": "Take A",
+    "takeB": "Take B",
+    "titles": "Titles",
+    "variation": "Variation",
+    "undo": "Current session stays in Undo.",
+    "open": "Open",
+    "loading": "Preparing…",
+    "failed": "Sample media could not be loaded.",
+    "changed": "The session changed. Try again."
   }
 }

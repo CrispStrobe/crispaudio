@@ -1,7 +1,9 @@
+import {isTauri} from './native';
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 // Bounded URL cache. Native preparation checks file existence on explicit retry.
 const urls=new Map<string,Promise<string>>();
 export function previewUrl(path:string,retry=false):Promise<string>{
+  if(!isTauri()){const url=new URL(path,location.href);if(url.origin===location.origin&&(url.pathname.startsWith('/assets/')||url.pathname.startsWith('/src/assets/samples/')))return Promise.resolve(url.href);}
   if(retry)urls.delete(path);
   let pending=urls.get(path);
   if(!pending){pending=invoke<string>('prepare_video_preview',{path:proxies.get(path)??path}).then(convertFileSrc).catch(error=>{urls.delete(path);throw error;});urls.set(path,pending);if(urls.size>32)urls.delete(urls.keys().next().value!);}
