@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.11.2 — 2026-10-13
+
+- Store export audio snapshots once and persist only changed queue entries. Upgrade existing saved queues without dropping history.
+- Restore export history without loading linked files or decoding audio; Retry loads the saved snapshot when needed and rejects missing audio.
+- Review and relink media belonging to a failed export without changing the open session.
+- Remove individual queue entries or clear finished entries, retaining active/failed jobs and exported files. Reclaim snapshots after their last queue reference is removed.
+
 ## 0.11.1 — 2026-10-13
 
 - Scan each VST3 bundle in its own cancellable process with a ten-second deadline. Crashed, timed-out or invalid plugins no longer hide healthy effects.

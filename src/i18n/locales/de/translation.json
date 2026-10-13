@@ -1705,6 +1705,14 @@
     "import": "Quell-JSON / SRT / VTT importieren"
   },
   "delivery": {
+    "clearFinished": "Abgeschlossene Exporte entfernen",
+    "removeJob": "Aus Warteschlange entfernen",
+    "reviewJobMedia": "Medien des gespeicherten Exports prüfen",
+    "savedJobMedia": "Medien des gespeicherten Exports",
+    "recoveryMissing": "Der gespeicherte Export ist nicht verfügbar.",
+    "recoveryBlocked": "Andere CrispAudio-Fenster schließen, um die gespeicherte Exportwarteschlange zu aktualisieren.",
+    "recoveryFailed": "Die Exportwarteschlange konnte nicht gespeichert werden.",
+
     "title": "Ausgabe",
     "archive": "Archiv-WAV",
     "landscape": "Querformat",

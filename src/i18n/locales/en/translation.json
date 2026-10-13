@@ -1692,6 +1692,14 @@
     "import": "Import source JSON / SRT / VTT"
   },
   "delivery": {
+    "clearFinished": "Clear finished exports",
+    "removeJob": "Remove from queue",
+    "reviewJobMedia": "Review saved export media",
+    "savedJobMedia": "Saved export media",
+    "recoveryMissing": "The saved export snapshot is unavailable.",
+    "recoveryBlocked": "Close other CrispAudio windows to upgrade the saved export queue.",
+    "recoveryFailed": "Could not save the export queue.",
+
     "title": "Delivery",
     "archive": "Archive WAV",
     "landscape": "Landscape",

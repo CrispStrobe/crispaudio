@@ -106,3 +106,18 @@ linked; generated audio is embedded for recovery. Every runner persists its job
 before publishing output. Cancellation and app closure retain retryable snapshots;
 retry always chooses a fresh output name. Large unlinked sources above the existing
 256 MiB recovery bound require a linked project first.
+
+### Saved queue recovery (0.11.2)
+
+Queue entries and immutable audio snapshots are separate IndexedDB records. Existing
+0.11.0–0.11.1 records migrate in one transaction. Phase updates write only changed
+entries; retries share the original snapshot. Opening the application restores
+history without loading linked files or decoding audio. Interrupted jobs await an
+explicit Retry, which loads the saved session and chooses a fresh output filename.
+
+Failed/cancelled entries have a media-review action. Locate missing media there to
+update that saved export's snapshot; the current editing session stays unchanged.
+Retry rejects unavailable required audio before writing an export. Queue entries
+can be removed individually; Clear finished exports removes done/cancelled entries,
+retaining failed and active work. These actions remove saved queue data, never
+output files. Snapshots are collected only when no remaining entry references them.
