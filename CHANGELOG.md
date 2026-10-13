@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.12 — 2026-10-13
+
+- Align title/caption and single-video headers with their timeline lanes.
+- Compact title/caption headers use eye and lock icons that fit every row height.
+- Recording freezes title/caption timeline edits and their settings, matching other tracks.
+- Title/caption drags retain one undo step; Escape, cancellation, lost capture and focus loss restore position and redo history. Simple clicks add no undo step.
+
 ## 0.10.11 — 2026-10-13
 
 - Enable Deselect All for selected empty tracks, with accurate track/clip selection counts. Clip editing still requires selected clips.

@@ -122,3 +122,14 @@ a hidden anchor starts a fresh range at the clicked visible track.
 Without a configured or armed recording target, direct Record uses the selected
 empty audio track as well as tracks containing selected clips. Existing target
 priorities, lock protection and recording ownership remain in place.
+
+Title and caption headers use compact eye/lock icons with accessible names. Their
+buttons and clips fit 24-pixel rows. Locked lanes retain navigation and settings
+access while blocking movement and visibility changes. During recording, lane
+buttons, dragging and the titles/captions settings are disabled. Title/caption
+movement is frame snapped, retains caption duration and creates one undo step.
+Escape, pointer cancellation, lost capture or window focus loss cancels an active
+gesture and restores its redo history; a click creates no undo step.
+
+Title/caption headers precede picture headers consistently, including sessions
+with a single legacy video lane, so every name aligns with its clips.

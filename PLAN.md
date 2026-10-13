@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.11. This section is the current plan.
+Updated 2026-10-13, for local 0.10.12. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -78,6 +78,8 @@ protects track ranges from removed anchors.
 picture header ranges from a selected clip.
 0.10.11 completes empty-track deselection/counts, collapsed-folder and legacy
 video markers, displayed-order Shift ranges and selected empty recording targets.
+0.10.12 keeps title/caption headers inside compact rows and protects timeline
+and dialog changes during recording, with cancellable one-undo drags.
 Window movement remains working per the latest user confirmation.
 Keep secondary controls in menus or focused inspectors, with concise labels.
 

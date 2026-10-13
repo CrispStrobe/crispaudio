@@ -718,6 +718,7 @@ export const TimelinePanel: React.FC = () => {
             </span>
           </div>
 
+          <GraphicHeaders/>
           {store.project.video&&!store.project.video.tracks && <div data-track-header data-picture-header="picture" data-selected={!!store.selection?.trackIds?.includes('picture')||videoClips(store.project.video).some(c=>store.selection?.segmentIds.includes(c.id))} onClick={e=>{if(e.target instanceof Element&&e.target.closest('button'))return;if(!recording)selectPictureTimelineTrack('picture',e.shiftKey);}} data-compact={store.trackHeight<56} data-touch-compact={store.trackHeight<96} className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
             <div className="track-heading flex items-center justify-between gap-2"><span data-picture-track-name className="text-sm font-medium text-violet-200">{t('video.track')}</span>
               <button type="button" disabled={recording} data-help="lock" aria-pressed={!!store.project.video.locked}
@@ -732,7 +733,6 @@ export const TimelinePanel: React.FC = () => {
               }}><Trash2 size={14}/></button></div>
             {store.trackHeight>=56&&<span className="track-subtitle text-xs text-gray-400">{t('editing.alignedVideoTrack')}</span>}
           </div>}
-          <GraphicHeaders/>
           <PictureTrackHeaders/>
           {/* Per-track headers — scroll locked to canvas */}
           <div className="flex-1">

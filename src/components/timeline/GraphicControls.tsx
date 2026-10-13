@@ -7,6 +7,7 @@ import {readTextFile} from '@tauri-apps/plugin-fs';
 import {Modal} from '../common/Modal';
 import {NumberField} from './NumberField';
 import {useProjectStore} from '../../stores/projectStore';
+import {useUIStore} from '../../stores/uiStore';
 import {DEFAULT_TITLE,TITLE_PRESETS,TITLE_FONTS,titlePose,validGraphics,validTitle,captionVtt} from '../../lib/graphics';
 import {pictureAt,pictureTracks} from '../../lib/pictureComposition';
 import {graphicAsVideo} from '../../lib/graphics';
@@ -41,18 +42,18 @@ function CaptionEditor({caption,update}:{caption:CaptionTrack;update:(caption:Ca
  </fieldset>;
 }
 export function GraphicControls(){
- const {t}=useTranslation(),project=useProjectStore(s=>s.project),time=useProjectStore(s=>s.playheadPosition),[opened,setOpened]=useState(false),[tab,setTab]=useState<'graphics'|'captions'>('graphics'),[selected,setSelected]=useState(''),[error,setError]=useState('');
- useEffect(()=>{const edit=(e:Event)=>{const {id,caption}=(e as CustomEvent<{id:string;caption:boolean}>).detail;setSelected(id);setTab(caption?'captions':'graphics');setOpened(true);};window.addEventListener('crispaudio-graphic-edit',edit);return()=>window.removeEventListener('crispaudio-graphic-edit',edit);},[]);
+ const {t}=useTranslation(),project=useProjectStore(s=>s.project),recording=useUIStore(s=>s.timelineRecording),time=useProjectStore(s=>s.playheadPosition),[opened,setOpened]=useState(false),[tab,setTab]=useState<'graphics'|'captions'>('graphics'),[selected,setSelected]=useState(''),[error,setError]=useState('');
+ useEffect(()=>{const edit=(e:Event)=>{const {id,caption}=(e as CustomEvent<{id:string;caption:boolean}>).detail;if(useUIStore.getState().timelineRecording)return;setSelected(id);setTab(caption?'captions':'graphics');setOpened(true);};window.addEventListener('crispaudio-graphic-edit',edit);return()=>window.removeEventListener('crispaudio-graphic-edit',edit);},[]);
  const video=project.video;if(!video)return null;
  const tracks=video.graphics??[],track=tracks.find(t=>t.clips.some(c=>c.id===selected)),clip=track?.clips.find(c=>c.id===selected);
- const update=(patch:Partial<NonNullable<TimelineProject['video']>>)=>{const state=useProjectStore.getState();if(state.project!==project)return false;const next={...state.project,video:{...video,tracks:pictureTracks(video),...patch}};if(!validGraphics(next.video))return false;useProjectStore.setState({project:{...next,duration:timelineDuration(next)}});return true;};
+ const update=(patch:Partial<NonNullable<TimelineProject['video']>>)=>{const state=useProjectStore.getState();if(state.project!==project||useUIStore.getState().timelineRecording)return false;const next={...state.project,video:{...video,tracks:pictureTracks(video),...patch}};if(!validGraphics(next.video))return false;useProjectStore.setState({project:{...next,duration:timelineDuration(next)}});return true;};
  const patchClip=(patch:Partial<GraphicClip>)=>track&&!track.locked&&update({graphics:tracks.map(t=>t.id===track.id?{...t,clips:t.clips.map(c=>c.id===selected?{...c,...patch}:c)}:t)});
  const add=(type:'title'|'image',preset:keyof typeof TITLE_PRESETS='title',path?:string,saved?:TitlePreset)=>{const id=crypto.randomUUID(),clip:GraphicClip={id,type,name:type==='image'?path!.split(/[\\/]/).pop()!:t(`graphics.${preset}`),startTime:time,duration:4,...(type==='image'?{path}:{text:t('graphics.newTitle'),style:TITLE_PRESETS[preset]}),composition:titlePose(type==='image'?'title':preset),...(saved?{name:saved.name,text:saved.text,style:saved.style,duration:saved.duration,composition:saved.composition}:{})};
   const target=track&&!track.locked?track:tracks.find(t=>!t.locked);const next=target?tracks.map(t=>t.id===target.id?{...t,clips:[...t.clips,clip]}:t):[{id:crypto.randomUUID(),name:t('graphics.track'),visible:true,locked:false,rippleEnabled:true,clips:[clip]},...tracks];if(update({graphics:next}))setSelected(id);
  };
  const caption=video.captions;
- return <><ToolButton icon={Captions} label={t('graphics.tools')} onClick={()=>setOpened(true)}/><Modal isOpen={opened} onClose={()=>setOpened(false)} title={t('graphics.tools')}>
-  <div className="space-y-3 text-sm"><div className="flex gap-2">{(['graphics','captions'] as const).map(key=><button key={key} className="timeline-tool" aria-pressed={tab===key} onClick={()=>setTab(key)}>{t(`graphics.${key}`)}</button>)}</div>
+ return <><ToolButton icon={Captions} label={t('graphics.tools')} disabled={recording} onClick={()=>setOpened(true)}/><Modal isOpen={opened} onClose={()=>setOpened(false)} title={t('graphics.tools')}>
+  <fieldset disabled={recording} className="space-y-3 text-sm"><div className="flex gap-2">{(['graphics','captions'] as const).map(key=><button key={key} className="timeline-tool" aria-pressed={tab===key} onClick={()=>setTab(key)}>{t(`graphics.${key}`)}</button>)}</div>
   {tab==='captions'?caption?<><div className="flex gap-3">{(['visible','locked','rippleEnabled'] as const).map(key=><label className="flex min-h-11 items-center gap-1" key={key}><input type="checkbox" checked={caption[key]} onChange={e=>update({captions:{...caption,[key]:e.target.checked}})}/>{t(`picture.${key}`)}</label>)}</div><CaptionEditor caption={caption} update={captions=>update({captions})}/></>:<button className="timeline-tool" onClick={()=>update({captions:{id:crypto.randomUUID(),name:t('graphics.captions'),visible:true,locked:false,rippleEnabled:true,burnIn:false,style:TITLE_PRESETS.caption,cues:[]}})}>{t('graphics.addCaptions')}</button>:<>
    <div className="flex gap-2 flex-wrap">{(['title','lowerThird'] as const).map(preset=><button key={preset} className="timeline-tool" onClick={()=>add('title',preset)}>{t(`graphics.${preset}`)}</button>)}<button className="timeline-tool" onClick={()=>void (async()=>{try{const path=await open({filters:[{name:'Image',extensions:['png','jpg','jpeg','tif','tiff']}]});if(typeof path==='string')add('image','title',path);}catch(e){setError(String(e));}})()}>{t('graphics.image')}</button></div>
    {(video.titlePresets??[]).map(preset=><div className="flex gap-2" key={preset.id}><button className="timeline-tool flex-1" onClick={()=>add('title','title',undefined,preset)}>{preset.name}</button><button className="timeline-tool" aria-label={`${t('timeline.delete')}: ${preset.name}`} onClick={()=>update({titlePresets:video.titlePresets?.filter(p=>p.id!==preset.id)})}>×</button></div>)}
@@ -65,6 +66,6 @@ export function GraphicControls(){
     {(clip.composition.keyframes??[]).map(p=><div className="flex gap-2 items-center text-xs" key={p.time}><button className="min-h-11" onClick={()=>useProjectStore.getState().setPlayheadPosition(clip.startTime+p.time-(clip.composition.keyframeOffset??0))}>{p.time.toFixed(3)} s</button><button className="min-h-11" onClick={()=>patchClip({composition:{...clip.composition,keyframes:clip.composition.keyframes?.filter(k=>k.time!==p.time)}})}>{t('timeline.delete')}</button></div>)}
     <button className="timeline-tool" onClick={()=>update({graphics:tracks.map(t=>({...t,clips:t.clips.filter(c=>c.id!==clip.id)}))})}>{t('timeline.delete')}</button>
    </fieldset>}
-  </>}{error&&<p role="alert" className="text-amber-300">{error}</p>}</div>
+  </>}{error&&<p role="alert" className="text-amber-300">{error}</p>}</fieldset>
  </Modal></>;
 }
