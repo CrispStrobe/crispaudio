@@ -3,7 +3,7 @@ import type {LoudnessReading} from '../dsp/loudness';
 import {prepareDucking,createDucking} from '../effects/Ducking';
 import {routingOrder} from '../../lib/audioRouting';
 import type {AutomationTarget} from '../../lib/automationRecording';
-import {scheduleMix,scheduleChorusDepth,scheduleChorusRate,scheduleFeedback,scheduleDelayTime,effectParameterDefault,supportsEffectParameter} from '../../lib/effectAutomation';
+import {scheduleMix,scheduleRingFrequency,type DelayParameter,scheduleChorusDepth,scheduleChorusRate,scheduleFeedback,scheduleDelayTime,effectParameterDefault,supportsEffectParameter} from '../../lib/effectAutomation';
 import {prepareOutputLimiter,createOutputLimiter} from '../effects/OutputLimiter';
 import {limiterParameters} from '../dsp/samplePeakLimiter';
 import {eqParameters,isEQ} from '../../lib/equalizer';
@@ -53,7 +53,7 @@ export class TimelineEngine {
   private eqNodes = new Map<string, BiquadFilterNode>();
   private mixerNodes = new Map<string, {gain: GainNode; pan: StereoPannerNode; meter: AnalyserNode[]; points:TimelineTrack['panAutomation']; staticPan:number}>();
   private automationNodes = new Map<string, {node:GainNode; points:TimelineTrack['automation']}>();
-  private mixNodes=new Map<string,{wet:AudioParam;dry:AudioParam;dryScale?:number;feedback?:AudioParam;time?:AudioParam;depth?:[AudioParam,AudioParam];staticDepth?:number;rate?:[AudioParam,AudioParam];staticRate?:number;points:EffectConfig['automation'];mix:number;staticFeedback:number;staticTime:number}>();
+  private mixNodes=new Map<string,{wet:AudioParam;dry:AudioParam;dryScale?:number;feedback?:AudioParam;time?:AudioParam;depth?:[AudioParam,AudioParam];staticDepth?:number;rate?:[AudioParam,AudioParam];staticRate?:number;freq?:AudioParam;staticFreq?:number;points:EffectConfig['automation'];mix:number;staticFeedback:number;staticTime:number}>();
   private duckingNodes=new Map<string,AudioWorkletNode>();
   private routingGains=new Map<string,GainNode>();
   private clockListeners=new Set<()=>void>();
@@ -112,13 +112,14 @@ export class TimelineEngine {
     for (const [scope,effects] of racks) effects.forEach((effect,index)=>{
       const node=this.eqNodes.get(`${scope}:${index}`);
       const mix=this.mixNodes.get(`${scope}:${index}`);
-      if(mix&&(mix.points!==effect.automation||(!effect.automation?.mix?.length&&mix.mix!==(effect.params.mix??effectParameterDefault(effect.type,'mix')))||(mix.feedback&&!effect.automation?.feedback?.length&&mix.staticFeedback!==(effect.params.feedback??.4))||(mix.time&&!effect.automation?.time?.length&&mix.staticTime!==(effect.params.time??.3))||(mix.depth&&!effect.automation?.depth?.length&&mix.staticDepth!==(effect.params.depth??.5))||(mix.rate&&!effect.automation?.rate?.length&&mix.staticRate!==(effect.params.rate??1.5)))){
+      if(mix&&(mix.points!==effect.automation||(!effect.automation?.mix?.length&&mix.mix!==(effect.params.mix??effectParameterDefault(effect.type,'mix')))||(mix.feedback&&!effect.automation?.feedback?.length&&mix.staticFeedback!==(effect.params.feedback??.4))||(mix.time&&!effect.automation?.time?.length&&mix.staticTime!==(effect.params.time??.3))||(mix.depth&&!effect.automation?.depth?.length&&mix.staticDepth!==(effect.params.depth??.5))||(mix.freq&&!effect.automation?.freq?.length&&mix.staticFreq!==(effect.params.freq??200))||(mix.rate&&!effect.automation?.rate?.length&&mix.staticRate!==(effect.params.rate??1.5)))){
         mix.wet.cancelScheduledValues(now);mix.dry.cancelScheduledValues(now);
         scheduleMix(mix.wet,mix.dry,effect.automation?.mix,now,this.playbackStart+now-this.playbackClock,effect.params.mix??effectParameterDefault(effect.type,'mix'),mix.dryScale);
         if(mix.feedback){mix.feedback.cancelScheduledValues(now);scheduleFeedback(mix.feedback,effect.automation?.feedback,now,this.playbackStart+now-this.playbackClock,effect.params.feedback??.4);}
         if(mix.time){mix.time.cancelScheduledValues(now);scheduleDelayTime(mix.time,effect.automation?.time,now,this.playbackStart+now-this.playbackClock,effect.params.time??.3);}
         if(mix.depth){for(const param of mix.depth)param.cancelScheduledValues(now);scheduleChorusDepth(mix.depth,effect.automation?.depth,now,this.playbackStart+now-this.playbackClock,effect.params.depth??.5);mix.staticDepth=effect.params.depth??.5;}
         if(mix.rate){for(const param of mix.rate)param.cancelScheduledValues(now);scheduleChorusRate(mix.rate,effect.automation?.rate,now,this.playbackStart+now-this.playbackClock,effect.params.rate??1.5);mix.staticRate=effect.params.rate??1.5;}
+        if(mix.freq){mix.freq.cancelScheduledValues(now);scheduleRingFrequency(mix.freq,effect.automation?.freq,now,this.playbackStart+now-this.playbackClock,effect.params.freq??200);mix.staticFreq=effect.params.freq??200;}
         mix.staticTime=effect.params.time??.3;mix.points=effect.automation;mix.mix=effect.params.mix??effectParameterDefault(effect.type,'mix');mix.staticFeedback=effect.params.feedback??.4;
       }
       if(!node||!isEQ(effect.type))return;
@@ -149,16 +150,23 @@ export class TimelineEngine {
       const param=this.mixerNodes.get(track.id)?.pan.pan;if(!param)return false;
       param.cancelScheduledValues(now);if(value===undefined)schedulePan(param,track.panAutomation,now,time,track.pan);else param.setValueAtTime(value,now);return true;
     }
-    const nodes=this.mixNodes.get(`track:${track.id}:${target.effectIndex}`),effect=track.effects?.[target.effectIndex??-1];if(!nodes||!effect||!supportsEffectParameter(effect.type,target.parameter))return false;
-    if(target.parameter==='mix'){
+    return this.previewEffectAutomation(project,`track:${track.id}`,target.effectIndex??-1,target.parameter,value);
+  }
+  /** Preview a real rack scope, retaining every DSP node and oscillator phase. */
+  previewEffectAutomation(project:TimelineProject,scope:string,index:number,parameter:DelayParameter,value?:number):boolean{
+    const effect=(scope==='master'?project.masterEffects:scope.startsWith('track:')?project.tracks.find(t=>t.id===scope.slice(6))?.effects:project.tracks.flatMap(t=>t.segments).find(c=>scope===`clip:${c.id}`)?.effects)?.[index];
+    const nodes=this.mixNodes.get(`${scope}:${index}`);if(!nodes||!effect||!supportsEffectParameter(effect.type,parameter))return false;
+    const now=this.ctx.currentTime,time=this.playbackStart+now-this.playbackClock;
+    if(parameter==='mix'){
       nodes.wet.cancelScheduledValues(now);nodes.dry.cancelScheduledValues(now);
       scheduleMix(nodes.wet,nodes.dry,value===undefined?effect.automation?.mix:[],now,time,value??effect.params.mix??effectParameterDefault(effect.type,'mix'),nodes.dryScale);
-    }else if(target.parameter==='time'&&nodes.time){
+    }else if(parameter==='time'&&nodes.time){
       nodes.time.cancelScheduledValues(now);scheduleDelayTime(nodes.time,value===undefined?effect.automation?.time:[],now,time,value??effect.params.time??.3);
-    }else if(target.parameter==='rate'&&nodes.rate){
+    }else if(parameter==='rate'&&nodes.rate){
       for(const param of nodes.rate)param.cancelScheduledValues(now);scheduleChorusRate(nodes.rate,value===undefined?effect.automation?.rate:[],now,time,value??effect.params.rate??1.5);
-    }else if(target.parameter==='depth'&&nodes.depth){
+    }else if(parameter==='depth'&&nodes.depth){
       for(const param of nodes.depth)param.cancelScheduledValues(now);scheduleChorusDepth(nodes.depth,value===undefined?effect.automation?.depth:[],now,time,value??effect.params.depth??.5);
+    }else if(parameter==='freq'&&nodes.freq){nodes.freq.cancelScheduledValues(now);if(value===undefined)scheduleRingFrequency(nodes.freq,effect.automation?.freq,now,time,effect.params.freq??200);else nodes.freq.setValueAtTime(value,now);
     }else if(nodes.feedback){
       nodes.feedback.cancelScheduledValues(now);scheduleFeedback(nodes.feedback,value===undefined?effect.automation?.feedback:[],now,time,value??effect.params.feedback??.4);
     }
@@ -546,6 +554,7 @@ export class TimelineEngine {
             p.freq ?? 200,
             p.mix ?? 0.5,
             (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.5);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.5,staticFeedback:0,staticTime:0});},
+            frequency=>{scheduleRingFrequency(frequency,fx.automation?.freq,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.freq??200);if(scope){const nodes=this.mixNodes.get(`${scope}:${index}`)!;nodes.freq=frequency;nodes.staticFreq=p.freq??200;}},
           );
           break;
         case 'distortion':

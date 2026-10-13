@@ -17,6 +17,7 @@ export function createRingModulator(
   freq: number,
   mix: number,
   onMix?: (wet:AudioParam,dry:AudioParam)=>void,
+  onFrequency?:(frequency:AudioParam)=>void,
 ): AudioNode {
   // The modulator oscillator acts as a multiplier via a GainNode
   const carrier = ctx.createOscillator();
@@ -51,5 +52,6 @@ export function createRingModulator(
   carrier.start();
 
   onMix?.(carrierGain.gain,dryGain.gain);
+  onFrequency?.(carrier.frequency);
   return output;
 }

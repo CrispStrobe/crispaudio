@@ -1,7 +1,7 @@
 import type { EffectConfig, TimelineProject } from '../types/audio';
 import { supportsEffectParameter, validEffectAutomation, type DelayParameter } from './effectAutomation';
 import { normalizeGainPoints } from './mixAutomation';
-export const effectParameters: DelayParameter[] = ['mix', 'feedback', 'time', 'depth', 'rate'];
+export const effectParameters: DelayParameter[] = ['mix', 'feedback', 'time', 'depth', 'rate', 'freq'];
 export function scopedEffect(project: TimelineProject, scope: string, index: number) {
   if (!Number.isInteger(index) || index < 0) throw new Error('fxInspector.missing');
   if (scope === 'master') {

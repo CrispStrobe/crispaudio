@@ -1397,7 +1397,13 @@
     "chorusRateCopy": "Chorusrate kopieren / ausgewählter Bereich",
     "chorusRatePaste": "Chorus-Ratenhüllkurve einfügen",
     "chorusRatePasteHelp": "Ersetzt nur dieses Chorus-Ratenintervall mit Schutzpunkten außen. Strecken ändert Zeiten; Hz-Werte und Kurven bleiben. Die spätere Modulationsphase folgt dem geänderten Frequenzverlauf.",
-    "chorusRateShapeHelp": "Chorus-Ratenübergang in Hz prüfen. Anwenden ersetzt den Abschnitt mit {{count}} editierbaren Punkten; Mix und Tiefe bleiben unabhängig."
+    "chorusRateShapeHelp": "Chorus-Ratenübergang in Hz prüfen. Anwenden ersetzt den Abschnitt mit {{count}} editierbaren Punkten; Mix und Tiefe bleiben unabhängig.",
+    "ringmodFrequency": "Ringträger-Frequenz",
+    "ringmodFreqGraph": "Automation der Ringträger-Frequenz",
+    "ringmodFreqHelp": "Trägerfrequenz in Hz auf der Projektzeit. Null hält die Oszillatorphase an; leere Spuren behalten den festen Träger.",
+    "ringmodFreqValue": "Frequenz (Hz)",
+    "ringmodFreqPasteHelp": "Frequenzbereich begrenzt einfügen und zeitlich anpassen. Die übrige Hüllkurve bleibt erhalten; Frequenzänderungen können die spätere Phase ändern.",
+    "ringmodFreqPoint": "Frequenz (Hz)"
   },
   "routing": {
     "title": "Routing und Sends",
@@ -1818,7 +1824,10 @@
     "stale": "Das Projekt wurde geändert. Öffne den Inspector erneut.",
     "protected": "Aufnahme oder Spursperre schützt diesen Effekt.",
     "invalid": "Ungültige Automation.",
-    "help": "Klicke auf die Kurve, um Punkte hinzuzufügen oder auszuwählen, oder nutze Punktauswahl und Zahlenfelder. Zeiten gelten in Projektsekunden; die schattierte Fläche markiert den Clip. Anwenden erzeugt einen Rückgängig-Schritt. Leeren stellt den statischen Wert wieder her. Andere Hüllkurven und Punkte außerhalb des Clips bleiben erhalten."
+    "help": "Klicke auf die Kurve, um Punkte hinzuzufügen oder auszuwählen, oder nutze Punktauswahl und Zahlenfelder. Zeiten gelten in Projektsekunden; die schattierte Fläche markiert den Clip. Anwenden erzeugt einen Rückgängig-Schritt. Leeren stellt den statischen Wert wieder her. Andere Hüllkurven und Punkte außerhalb des Clips bleiben erhalten.",
+    "recordPass": "Durchgang aufnehmen",
+    "usePass": "Durchgang übernehmen",
+    "passHelp": "Der Durchgang bleibt bis Anwenden im Entwurf. Schließen oder Abbrechen verwirft ihn; Zeiten gelten auf der Projektzeit."
   },
   "samples": {
     "title": "Beispielsitzungen",

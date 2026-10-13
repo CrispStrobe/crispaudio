@@ -111,6 +111,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
         "feedback" => 0.95,
         "time" => 2.0,
         "rate" => 8.0,
+        "freq" => 2000.0,
         _ => return Err("Unsupported automation parameter".into()),
     };
     let shape = op["shape"].as_str().ok_or("Missing shape")?;

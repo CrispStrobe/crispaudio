@@ -361,6 +361,9 @@ enum Effect {
     },
     RingMod {
         frequency: f64,
+        frequency_automation: Automation,
+        phase_frame: u32,
+        phase_cycles: f64,
         mix: f64,
         automation: Automation,
     },
@@ -415,6 +418,9 @@ impl Effect {
             }),
             Self::RingMod {
                 frequency,
+                frequency_automation,
+                phase_frame,
+                phase_cycles,
                 mix,
                 automation,
             } => {
@@ -423,7 +429,17 @@ impl Effect {
                 // phase. Power-of-two table sizes share the same normalized step.
                 let cycles_per_frame =
                     ((*frequency as f32) * (4096.0 / RATE) as f32) as f64 / 4096.0;
-                let phase = std::f64::consts::TAU * cycles_per_frame * frame as f64;
+                let phase = if frequency_automation.points.is_empty() {
+                    std::f64::consts::TAU * cycles_per_frame * frame as f64
+                } else {
+                    while *phase_frame < frame {
+                        let value = frequency_automation.at(*phase_frame as f64 / RATE);
+                        let increment = ((value as f32) * (4096.0 / RATE) as f32) as f64 / 4096.0;
+                        *phase_cycles = (*phase_cycles + increment).rem_euclid(1.0);
+                        *phase_frame += 1;
+                    }
+                    std::f64::consts::TAU * *phase_cycles
+                };
                 if automation.points.is_empty() {
                     input.map(|v| v * (1.0 - *mix + *mix * phase.sin()))
                 } else {
@@ -579,6 +595,10 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
             if automation.points.iter().any(|p| p.1 > 1.0) {
                 return Err("Effect mix automation outside 0..1".into());
             }
+            let frequency_automation = Automation::parse(&effect["automation"]["freq"])?;
+            if frequency_automation.points.iter().any(|p| p.1 > 2000.0) {
+                return Err("Ring carrier automation outside 0..2000 Hz".into());
+            }
             out.push(if kind == "bitcrush" {
                 let bits = finite(params, "bits", Some(8.0))?.round().clamp(1.0, 16.0);
                 Effect::BitCrush {
@@ -588,6 +608,9 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
                 }
             } else {
                 Effect::RingMod {
+                    frequency_automation,
+                    phase_frame: 0,
+                    phase_cycles: 0.0,
                     frequency: finite(params, "freq", Some(200.0))?.clamp(0.1, RATE / 2.0) as f32
                         as f64,
                     mix,
@@ -1309,6 +1332,62 @@ mod tests {
         let mut bad = effect;
         bad[0]["automation"]["rate"][0]["value"] = json!(8.01);
         assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+    }
+    #[test]
+    fn ring_frequency_integrates_silent_time_and_zero_holds_phase() {
+        let effect = json!([{"type":"ringmod","enabled":true,"params":{"freq":200,"mix":1},"automation":{"freq":[{"time":0,"value":1},{"time":0.1,"value":3,"curve":"step"},{"time":0.2,"value":0}]}}]);
+        let mut sequential = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        let mut late = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+        for frame in 0..=12000 {
+            process(&mut sequential, [0.2, -0.1], frame);
+        }
+        process(&mut late, [0.2, -0.1], 12000);
+        let Effect::RingMod {
+            phase_cycles: a, ..
+        } = &sequential[0]
+        else {
+            panic!()
+        };
+        let Effect::RingMod {
+            phase_cycles: b, ..
+        } = &late[0]
+        else {
+            panic!()
+        };
+        assert_eq!(a, b);
+        assert!((*a - (0.5 - 1.0 / RATE)).abs() < 1e-7);
+        let saved = *a;
+        for frame in 12001..14400 {
+            process(&mut sequential, [0.2, -0.1], frame);
+        }
+        let Effect::RingMod {
+            phase_cycles: phase,
+            ..
+        } = &sequential[0]
+        else {
+            panic!()
+        };
+        assert_eq!(*phase, saved);
+        let mut bad = effect;
+        bad[0]["automation"]["freq"][0]["value"] = json!(2000.01);
+        assert!(filters(&bad, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+    }
+    #[test]
+    fn ring_empty_frequency_keeps_legacy_samples_exactly() {
+        for freq in [0.1, 37.0, 200.0, 20000.0] {
+            let effect =
+                json!([{"type":"ringmod","enabled":true,"params":{"freq":freq,"mix":0.5}}]);
+            let mut empty = effect.clone();
+            empty[0]["automation"] = json!({"freq":[]});
+            let mut a = filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+            let mut b = filters(&empty, &mut EffectBudget { bytes: 0, count: 0 }).unwrap();
+            for frame in 0..12000 {
+                assert_eq!(
+                    process(&mut a, [0.2, -0.1], frame),
+                    process(&mut b, [0.2, -0.1], frame)
+                );
+            }
+        }
     }
     #[test]
     fn chorus_empty_rate_keeps_legacy_static_samples() {

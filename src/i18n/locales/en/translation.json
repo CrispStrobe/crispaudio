@@ -1384,7 +1384,13 @@
     "chorusRateCopy": "Copy chorus rate envelope / selected range",
     "chorusRatePaste": "Paste chorus rate envelope",
     "chorusRatePasteHelp": "Replaces only this chorus rate interval with outside guards. Stretch changes times, keeping Hz values and curves. Later modulation phase follows the edited frequency history.",
-    "chorusRateShapeHelp": "Preview the chorus rate transition in Hz. Apply replaces this span with {{count}} editable points; mix and depth stay independent."
+    "chorusRateShapeHelp": "Preview the chorus rate transition in Hz. Apply replaces this span with {{count}} editable points; mix and depth stay independent.",
+    "ringmodFrequency": "Ring carrier frequency",
+    "ringmodFreqGraph": "Ring carrier frequency automation",
+    "ringmodFreqHelp": "Carrier frequency in Hz on the project clock. Zero holds the oscillator phase; empty lanes keep the static carrier.",
+    "ringmodFreqValue": "Frequency (Hz)",
+    "ringmodFreqPasteHelp": "Paste and retime a bounded frequency interval; the original envelope survives outside it. Oscillator phase can differ after frequency edits.",
+    "ringmodFreqPoint": "Frequency (Hz)"
   },
   "routing": {
     "title": "Routing and sends",
@@ -1805,7 +1811,10 @@
     "stale": "The project changed. Reopen this inspector.",
     "protected": "Recording or a track lock protects this effect.",
     "invalid": "Invalid automation.",
-    "help": "Click the curve to add/select points, or use the point selector and numeric fields. Times are absolute project seconds; the shaded band marks the clip. Apply creates one undo step; clearing restores the static parameter. Other envelopes and points outside the clip remain intact."
+    "help": "Click the curve to add/select points, or use the point selector and numeric fields. Times are absolute project seconds; the shaded band marks the clip. Apply creates one undo step; clearing restores the static parameter. Other envelopes and points outside the clip remain intact.",
+    "recordPass": "Record pass",
+    "usePass": "Use pass",
+    "passHelp": "The pass stays in this draft until Apply. Closing or cancelling discards it; recorded times use the project clock."
   },
   "samples": {
     "title": "Sample sessions",

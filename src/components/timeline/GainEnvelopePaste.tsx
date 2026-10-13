@@ -28,14 +28,14 @@ export function GainEnvelopePaste({project,trackId,envelope,effectIndex,onClose}
       if(preview!==project)useProjectStore.setState({project:preview});onClose();
     }}>
       <p className="text-gray-300 break-words">{envelope.sourceName??t('automation.title')} → {track?.name}</p>
-      {isFx&&<p className="text-xs text-gray-400">{(effectIndex??-1)+1} · {t(envelope.parameter==='rate'?'automation.chorusRate':envelope.parameter==='depth'?'automation.chorusDepth':envelope.effectType!=='delay'?`automation.${envelope.effectType}Mix`:`automation.delay${envelope.parameter![0].toUpperCase()+envelope.parameter!.slice(1)}`)}</p>}
+      {isFx&&<p className="text-xs text-gray-400">{(effectIndex??-1)+1} · {t(envelope.parameter==='freq'?'automation.ringmodFrequency':envelope.parameter==='rate'?'automation.chorusRate':envelope.parameter==='depth'?'automation.chorusDepth':envelope.effectType!=='delay'?`automation.${envelope.effectType}Mix`:`automation.delay${envelope.parameter![0].toUpperCase()+envelope.parameter!.slice(1)}`)}</p>}
       <p className="text-xs text-gray-400">{t('automation.copiedRange',{start:(envelope.sourceStart??0).toFixed(3),end:((envelope.sourceStart??0)+envelope.duration).toFixed(3)})}</p>
       <div className="flex flex-wrap gap-3">
         <label className="flex-1 min-w-28">{t('automation.destination')}<input ref={timeInput} aria-label={t('automation.destination')} type="number" min={0} step="any" value={time} onChange={e=>setTime(e.target.value)} className="block w-full min-h-11 bg-gray-800 rounded p-2"/></label>
         <label className="flex-1 min-w-28">{t('automation.length')}<input aria-label={t('automation.length')} type="number" min={1/project.sampleRate} step="any" value={duration} onChange={e=>setDuration(e.target.value)} className="block w-full min-h-11 bg-gray-800 rounded p-2"/></label>
       </div>
       {error?<p role="alert" className="text-amber-300 text-xs">{error}</p>:<p className="text-xs text-gray-400">{t('automation.replaceReview',{count:replaced,end:(Number(time)+Number(duration)).toFixed(3),factor:(Number(duration)/envelope.duration).toFixed(3)})}</p>}
-      <p className="text-xs text-gray-400">{t(isFx?(envelope.parameter==='rate'?'automation.chorusRatePasteHelp':envelope.parameter==='depth'?'automation.chorusDepthPasteHelp':envelope.effectType!=='delay'?`automation.${envelope.effectType}PasteHelp`:'automation.fxPasteHelp'):isPan?'automation.panPasteHelp':'automation.pasteHelp')}</p>
+      <p className="text-xs text-gray-400">{t(isFx?(envelope.parameter==='freq'?'automation.ringmodFreqPasteHelp':envelope.parameter==='rate'?'automation.chorusRatePasteHelp':envelope.parameter==='depth'?'automation.chorusDepthPasteHelp':envelope.effectType!=='delay'?`automation.${envelope.effectType}PasteHelp`:'automation.fxPasteHelp'):isPan?'automation.panPasteHelp':'automation.pasteHelp')}</p>
       <div className="flex justify-end gap-2"><button type="button" className="timeline-tool" onClick={onClose}>{t('common.cancel')}</button><button type="submit" className="timeline-tool bg-indigo-700" disabled={!preview}>{t('automation.applyPaste')}</button></div>
     </form>
   </Modal>;

@@ -42,12 +42,14 @@ pub(crate) fn paste(project: &Value, op: &Value) -> Result<Value> {
         "time" => (2.0, 0.3),
         "depth" => (1.0, 0.5),
         "rate" => (8.0, 1.5),
+        "freq" => (2000.0, 200.0),
         _ => return Err("Unknown delay parameter".into()),
     };
     let destination = effect(project, &op["trackId"], &op["effectIndex"], parameter)?;
-    let fallback = if destination["type"] == "ringmod"
-        || destination["type"] == "bitcrush"
-        || destination["type"] == "distortion"
+    let fallback = if parameter == "mix"
+        && (destination["type"] == "ringmod"
+            || destination["type"] == "bitcrush"
+            || destination["type"] == "distortion")
     {
         0.5
     } else {
@@ -245,7 +247,8 @@ mod tests {
 }
 
 pub(crate) fn supports(effect: &Value, parameter: &str) -> bool {
-    effect["type"] == "delay" && ["mix", "feedback", "time"].contains(&parameter)
+    (effect["type"] == "ringmod" && parameter == "freq")
+        || effect["type"] == "delay" && ["mix", "feedback", "time"].contains(&parameter)
         || effect["type"] == "chorus" && ["depth", "rate"].contains(&parameter)
         || (effect["type"] == "ringmod"
             || effect["type"] == "bitcrush"

@@ -18,7 +18,7 @@ function effect(project:TimelineProject,trackId:string,index:number,parameter:Ef
 }
 /** Snapshot only the selected parameter; empty lanes capture their static value. */
 export function copyEffectEnvelope(project:TimelineProject,trackId:string,index:number,parameter:EffectParameter,start=0,end=timelineDuration(project)):EffectEnvelope {
- if(parameter!=='mix'&&parameter!=='feedback'&&parameter!=='time'&&parameter!=='depth'&&parameter!=='rate')fail('parameterMismatch');
+ if(parameter!=='mix'&&parameter!=='feedback'&&parameter!=='time'&&parameter!=='depth'&&parameter!=='rate'&&parameter!=='freq')fail('parameterMismatch');
  const {track,insert}=effect(project,trackId,index,parameter);
  if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>timelineDuration(project))fail('bounds');
  const source=points(insert.automation?.[parameter],parameter),fallback=Math.min(delayParameterMaximum(parameter),insert.params[parameter]??effectParameterDefault(insert.type,parameter));
@@ -28,7 +28,7 @@ export function copyEffectEnvelope(project:TimelineProject,trackId:string,index:
 }
 /** Reuse reviewed pass guards/locks/no-op rules after stretching a relative envelope. */
 export function pasteEffectEnvelope(project:TimelineProject,trackId:string,index:number,parameter:EffectParameter,envelope:EffectEnvelope,time:number,duration=envelope.duration):TimelineProject {
- if(envelope.parameter!==parameter||(parameter!=='mix'&&parameter!=='feedback'&&parameter!=='time'&&parameter!=='depth'&&parameter!=='rate'))fail('parameterMismatch');
+ if(envelope.parameter!==parameter||(parameter!=='mix'&&parameter!=='feedback'&&parameter!=='time'&&parameter!=='depth'&&parameter!=='rate'&&parameter!=='freq'))fail('parameterMismatch');
  const {insert}=effect(project,trackId,index,parameter);
  if(envelope.effectType!==insert.type)fail('parameterMismatch');
  if(!Number.isFinite(envelope.duration)||envelope.duration<=0||!Array.isArray(envelope.points))fail('invalidEnvelope');
@@ -44,5 +44,5 @@ export function pasteEffectEnvelope(project:TimelineProject,trackId:string,index
  ]}]);
 }
 
-export type EffectClipboardKey=Exclude<EffectParameter,'depth'|'rate'>|'ringmodMix'|'bitcrushMix'|'distortionMix'|'chorusMix'|'reverbMix'|'chorusDepth'|'chorusRate';
-export const effectClipboardKey=(type:string|undefined,parameter:EffectParameter):EffectClipboardKey=>parameter==='rate'?'chorusRate':parameter==='depth'?'chorusDepth':type==='ringmod'||type==='bitcrush'||type==='distortion'||type==='chorus'||type==='reverb'?`${type}Mix`:parameter;
+export type EffectClipboardKey=Exclude<EffectParameter,'depth'|'rate'|'freq'>|'ringmodMix'|'bitcrushMix'|'distortionMix'|'chorusMix'|'reverbMix'|'chorusDepth'|'chorusRate'|'ringmodFreq';
+export const effectClipboardKey=(type:string|undefined,parameter:EffectParameter):EffectClipboardKey=>parameter==='freq'?'ringmodFreq':parameter==='rate'?'chorusRate':parameter==='depth'?'chorusDepth':type==='ringmod'||type==='bitcrush'||type==='distortion'||type==='chorus'||type==='reverb'?`${type}Mix`:parameter;

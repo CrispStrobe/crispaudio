@@ -29,7 +29,11 @@ fn at(points: &[Value], time: f64, fallback: f64) -> Result<f64> {
 }
 pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     let parameter = op["parameter"].as_str().ok_or("Missing parameter")?;
-    if !["gain", "pan", "mix", "feedback", "time", "depth", "rate"].contains(&parameter) {
+    if ![
+        "gain", "pan", "mix", "feedback", "time", "depth", "rate", "freq",
+    ]
+    .contains(&parameter)
+    {
         return Err("Unsupported parameter".into());
     }
     let tracks = project["tracks"].as_array().ok_or("Missing tracks")?;
@@ -41,7 +45,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
     if track["locked"] == true {
         return Err("Track is locked".into());
     }
-    let index = if ["mix", "feedback", "time", "depth", "rate"].contains(&parameter) {
+    let index = if ["mix", "feedback", "time", "depth", "rate", "freq"].contains(&parameter) {
         Some(op["effectIndex"].as_u64().ok_or("Missing effect index")? as usize)
     } else {
         None
@@ -63,7 +67,9 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
             e["automation"][parameter].clone(),
             e["params"][parameter]
                 .as_f64()
-                .unwrap_or(if parameter == "rate" {
+                .unwrap_or(if parameter == "freq" {
+                    200.0
+                } else if parameter == "rate" {
                     1.5
                 } else if parameter == "depth" {
                     0.5
@@ -82,6 +88,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
                     match parameter {
                         "time" => 2.0,
                         "rate" => 8.0,
+                        "freq" => 2000.0,
                         "feedback" => 0.95,
                         _ => 1.0,
                     },
@@ -108,6 +115,7 @@ pub(crate) fn apply(project: &Value, op: &Value) -> Result<Value> {
         "feedback" => 0.95,
         "time" => 2.0,
         "rate" => 8.0,
+        "freq" => 2000.0,
         _ => f64::INFINITY,
     };
     for p in &before {

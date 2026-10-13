@@ -215,7 +215,7 @@ export const useProjectStore = create<ProjectState>()(
       sources: new Map(),
       selection: null,
       clipboard: { operation: null, segments: [], sourceIds: [] },
-      effectClipboards: {mix:null,feedback:null,time:null,ringmodMix:null,bitcrushMix:null,distortionMix:null,chorusMix:null,reverbMix:null,chorusDepth:null,chorusRate:null},
+      effectClipboards: {mix:null,feedback:null,time:null,ringmodMix:null,bitcrushMix:null,distortionMix:null,chorusMix:null,reverbMix:null,chorusDepth:null,chorusRate:null,ringmodFreq:null},
       copyEffectAutomation: (trackId,index,parameter) => {
         const state=get(),range=state.project.editRange;
         try {const envelope=copyEffectEnvelope(state.project,trackId,index,parameter,range?.start,range?.end);set({effectClipboards:{...state.effectClipboards,[effectClipboardKey(envelope.effectType,parameter)]:envelope}});return true;}

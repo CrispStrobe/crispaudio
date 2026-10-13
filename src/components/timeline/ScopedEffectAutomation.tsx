@@ -1,3 +1,4 @@
+import {ScopedAutomationRecorder} from './ScopedAutomationRecorder';
 import {InspectorTransport} from './InspectorTransport';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,13 +20,13 @@ export function ScopedEffectAutomation({ snapshot, original, scope, index, onClo
   const parameters = effectParameters.filter(key => supportsEffectParameter(original.type, key));
   const [parameter, setParameter] = useState(parameters[0]);
   const [draft, setDraft] = useState<NonNullable<EffectConfig['automation']>>(() => structuredClone(original.automation ?? {}));
-  const [selected, setSelected] = useState<number | null>(null), [error, setError] = useState('');
+  const [selected, setSelected] = useState<number | null>(null), [error, setError] = useState(''),[recordOpen,setRecordOpen]=useState(false),[passBusy,setPassBusy]=useState(false);
   const current = useProjectStore(s => s.project), recording = useUIStore(s => s.timelineRecording);
   const target = scopedEffect(snapshot, scope, index), points = normalizeGainPoints(draft[parameter]), maximum = delayParameterMaximum(parameter);
   const end = Math.max(1, timelineDuration(snapshot), target.end, ...points.map(p => p.time));
   const point = points.find(p => p.time === selected), fallback = original.params[parameter] ?? effectParameterDefault(original.type, parameter);
-  const blocked = recording || target.locked || current !== snapshot;
-  const valueLabel = t('fxInspector.value') + (parameter === 'time' ? ' (s)' : parameter === 'rate' ? ' (Hz)' : '');
+  const blocked = passBusy || recording || target.locked || current !== snapshot;
+  const valueLabel = t('fxInspector.value') + (parameter === 'time' ? ' (s)' : parameter === 'rate' || parameter==='freq' ? ' (Hz)' : '');
   const update = (next: GainPoint[], time: number | null) => { setDraft(old => ({ ...old, [parameter]: next })); setSelected(time); setError(''); };
   const add = (time: number, value: number) => update(editGainPoint(points, null, { time, value }), time);
   const edit = (patch: Partial<GainPoint>) => {
@@ -48,8 +49,9 @@ export function ScopedEffectAutomation({ snapshot, original, scope, index, onClo
   };
   return <Modal isOpen onClose={onClose} title={t('fxInspector.title')} widthClass="max-w-xl"><div className="space-y-3 text-sm"><InspectorTransport/>
     <div className="flex items-center justify-between gap-2"><span className="text-gray-400">{t(scope === 'master' ? 'rack.masterEffects' : 'timeline.effects')} · {t('fxInspector.clock')}</span>
-      <select className="bg-gray-800 rounded min-h-11 p-2" aria-label={t('fxInspector.parameter')} value={parameter} onChange={e => { setParameter(e.target.value as typeof parameter); setSelected(null); }}>{parameters.map(key => <option key={key} value={key}>{t(`timeline.effectParams.${key}`)}</option>)}</select>
+      <select className="bg-gray-800 rounded min-h-11 p-2" aria-label={t('fxInspector.parameter')} disabled={passBusy} value={parameter} onChange={e => { setParameter(e.target.value as typeof parameter); setSelected(null); }}>{parameters.map(key => <option key={key} value={key}>{t(`timeline.effectParams.${key}`)}</option>)}</select>
     </div>
+    <details onToggle={e=>setRecordOpen(e.currentTarget.open)} data-scoped-record-section><summary className="min-h-11 content-center cursor-pointer">{t('fxInspector.recordPass')}</summary>{recordOpen&&<ScopedAutomationRecorder key={`${scope}:${index}:${parameter}`} snapshot={snapshot} scope={scope} index={index} parameter={parameter} points={points} fallback={fallback} onDraft={next=>update(next,null)} onBusy={setPassBusy}/>}</details>
     <svg viewBox="0 0 600 160" className="w-full rounded bg-gray-950 border border-gray-700 touch-none" role="img" aria-label={t('fxInspector.curve')} onPointerDown={e => {
       if (blocked || e.button !== 0) return;
       const rect = e.currentTarget.getBoundingClientRect(), px = (e.clientX - rect.left) / rect.width * 600, py = (e.clientY - rect.top) / rect.height * 160;

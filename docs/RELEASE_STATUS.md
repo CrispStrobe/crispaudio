@@ -2935,3 +2935,15 @@ acceptance remain untested. Picture inspector tab/collapse/precise duration/undo
 passes both browsers. FX live edits keep the graph running; offline/native checks
 retain the existing moving-delay errors (9.06e-6 Chrome / 2.55e-6 WebKit), within
 its established 1e-4 budget. Native media/DSP and the optimized CLI are unchanged.
+
+## Local 0.10.2 — scoped passes and carrier frequency
+
+Frontend: 1,597 tests / 154 files; lint and final web/Tauri build pass. Locked iOS
+simulator library check passes. Media library: 118 tests pass / 10 existing ignored;
+new tests prove silent-time frequency integration, zero-phase hold and exact legacy
+samples with an empty frequency envelope. Optimized CLI rebuilt. Real Chrome/WebKit
+clip Touch, master Latch, gesture-free Write draft, Escape, one Apply/Undo, save/reopen
+and German layout audits pass. Actual native stereo float WAV comparisons with both
+clip and master carrier envelopes differ by 3.13e-7 Chrome / 8.12e-6 WebKit, within
+the existing moving-delay 1e-4 budget; full/range crop error is zero. Physical input
+acceptance remains the user's confirmed built-in microphone; no new device claimed.

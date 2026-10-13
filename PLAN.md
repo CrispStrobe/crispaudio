@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.1. This section is the current plan.
+Updated 2026-10-13, for local 0.10.2. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -34,7 +34,8 @@ Clip/master supported FX automation inspectors are implemented in 0.9.6.
 They use absolute project time, protected local drafts, one undo on Apply and
 save/reopen. Live commits retain the running graph; offline/native comparisons
 pass the existing moving-delay tolerance. Track lane/pass tools remain separate.
-Arbitrary FX parameters and clip/master recording passes are still broader work.
+Supported clip/master recording passes and ring-carrier frequency automation
+are implemented in 0.10.2. Arbitrary FX/plugin parameters remain broader work.
 
 Coordinated recording of one to eight armed audio tracks is implemented in
 0.9.7, using per-track device/channel/latency and a shared capture clock. Captures
@@ -52,8 +53,9 @@ physical inputs can be checked later when connected. Track folders, collapse, sh
 implemented and browser-checked. Faster editing is implemented: visible clip keyboard navigation, exact group
 placement, context trims and multi-selection drag. The requested GUI pass is implemented: actual editing mode, boundary handles,
 expanded context actions, focused clip dialog, information buttons, touch ribbon,
-expanded help and persisted default Fit all. Next: clip/master automation passes
-and additional useful FX parameters, then mix review and sample walkthroughs. Audit existing punch/loop/take/comp and bus/send tools before
+expanded help and persisted default Fit all. Clip/master Touch/Latch/Write passes and ring-carrier frequency automation are
+implemented and checked across GUI/offline/native playback. Next: mix A/B, metering
+and export review, then short sample walkthroughs. Audit existing punch/loop/take/comp and bus/send tools before
 selecting each concrete addition. Shared frame scheduling does not remove independent-device drift. Track folders
 and grouped controls are distinct from routing.
 Keep secondary controls in menus or focused inspectors, with concise labels.

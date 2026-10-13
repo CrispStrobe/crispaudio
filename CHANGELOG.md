@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.2 — 2026-10-13
+
+- Record Touch/Latch/Write passes for supported clip/master FX parameters inside
+  a collapsed inspector section. Review intervals locally, then publish with one Apply.
+- Add ring-carrier frequency automation, including live phase retention, track
+  lane/pass/clipboard tools, clip/master inspectors and native export. Zero holds
+  phase; empty frequency envelopes preserve the previous static DSP exactly.
+- Share protected interval replacement between track and scoped pass review.
+
 ## 0.10.1 — 2026-10-13
 
 - Make Move & trim control mouse, pen and touch editing. Selected audio clips
