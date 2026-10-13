@@ -1,0 +1,6 @@
+import {it,expect} from 'vitest';
+import {projectPluginTransport,validatePluginTransport} from '../../../src/audio/plugins/PluginTransport';
+import {DEFAULT_MUSIC} from '../../../src/lib/musicalTime';
+import {useProjectStore} from '../../../src/stores/projectStore';
+it('uses project seconds at the playback rate and preserves meter/origin before musical bar one',()=>{const p={...useProjectStore.getInitialState().project,music:{...DEFAULT_MUSIC,tempo:90,numerator:7,denominator:8 as const,origin:3}};expect(projectPluginTransport(p,2,48000)).toEqual({samplePosition:96000,tempo:90,numerator:7,denominator:8,originSeconds:3,playing:true});expect(projectPluginTransport({...p,music:undefined},2,44100).samplePosition).toBe(88200);});
+it('rejects unsafe positions and malformed tempo or musical settings',()=>{const value={samplePosition:0,tempo:120,numerator:4,denominator:4,originSeconds:0,playing:true};for(const invalid of [{samplePosition:-1},{samplePosition:Number.MAX_SAFE_INTEGER},{samplePosition:1.2},{tempo:NaN},{tempo:0},{numerator:33},{denominator:3},{originSeconds:Infinity}])expect(()=>validatePluginTransport({...value,...invalid})).toThrow(/transport/);const p={...useProjectStore.getInitialState().project,music:{...DEFAULT_MUSIC,tempo:0}};expect(()=>projectPluginTransport(p,0,48000)).toThrow(/musical/);});

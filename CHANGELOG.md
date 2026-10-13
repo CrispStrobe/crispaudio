@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.11.7 — 2026-10-13
+
+- Provide native timeline effects with project sample position, tempo, meter and musical origin for every block.
+- Set VST3 realtime process context and AU host callbacks, including musical positions before bar one.
+- Validate native transport acknowledgements and require fresh DSP sessions for seeks rather than accepting position jumps.
+- Require paused playback for native state queries, including after queued audio drains.
+- Keep native rack UI and equivalent export processing pending; ordinary playback continues through the existing path.
+
 ## 0.11.6 — 2026-10-13
 
 - Add an internal TimelineEngine native playback path for clip, track, bus and master inserts with shared preparation and compensated routes.

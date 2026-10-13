@@ -48,7 +48,7 @@ pub async fn audio_unit_plugin(
     .map_err(|e| e.to_string())?
 }
 
-use crispaudio_media::plugin_stream::{PluginStream, StreamReply, StreamStop};
+use crispaudio_media::plugin_stream::{PluginStream, StreamReply, StreamStop, StreamTransport};
 use std::{
     collections::HashMap,
     sync::{
@@ -244,6 +244,7 @@ pub async fn plugin_stream_process(
 }
 #[derive(serde::Deserialize)]
 struct PacketSettings {
+    transport: Option<StreamTransport>,
     session: String,
     channels: usize,
     frames: usize,
@@ -269,6 +270,9 @@ fn decode_stream_packet(body: &[u8]) -> Result<(PacketSettings, Vec<Vec<f32>>), 
         || body.len() != 4 + length + settings.channels * settings.frames * 4
     {
         return Err("Invalid plugin packet format".into());
+    }
+    if let Some(transport) = &settings.transport {
+        transport.validate()?;
     }
     let samples = body[4 + length..]
         .chunks_exact(settings.frames * 4)
@@ -318,7 +322,12 @@ pub async fn plugin_stream_process_binary(
             .processor
             .try_lock()
             .map_err(|_| "Plugin stream unavailable")?
-            .process(&samples, &settings.parameters, settings.bypass);
+            .process_with_transport(
+                &samples,
+                &settings.parameters,
+                settings.bypass,
+                settings.transport.as_ref(),
+            );
         if result.is_err() {
             let _ = state.remove(&owner, &settings.session);
         }
@@ -465,6 +474,11 @@ mod binary_stream_tests {
         assert!(decode_stream_packet(&packet(settings, &[1.0])).is_err());
         assert!(decode_stream_packet(&packet(json!({"session":"owned","channels":18446744073709551615u64,"frames":4096,"parameters":{},"bypass":false}),&[])).is_err());
         assert!(decode_stream_packet(&[255; 4]).is_err());
+    }
+    #[test]
+    fn invalid_transport_is_rejected_before_session_lookup() {
+        let settings = json!({"session":"owned","channels":1,"frames":1,"parameters":{},"bypass":false,"transport":{"samplePosition":96000,"tempo":0.0,"numerator":4,"denominator":4,"originSeconds":0.0,"playing":true}});
+        assert!(decode_stream_packet(&packet(settings, &[0.0])).is_err());
     }
     #[test]
     fn reply_encodes_planar_float32_without_clipping() {

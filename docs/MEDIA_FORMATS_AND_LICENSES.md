@@ -366,7 +366,8 @@ preparation. Stop/replacement abort pending opens, partial failures release earl
 sessions, and a runtime fault stops the complete graph with its rack scope. A
 scheduled silent boundary source disposes the graph at audible range end; stale
 callbacks cannot stop a newer graph. Seeking/restarting opens fresh DSP sessions.
-This does not yet restore pre-seek DSP history or provide native project time/tempo.
+Pre-seek DSP history is not reconstructed. Version 0.11.7 supplies native project
+time/tempo as described below.
 
 Native stream PCM uses Tauri raw request/response bodies: LE u32 JSON-header length,
 UTF-8 metadata, then planar LE float32 samples. The request identifies its owned
@@ -385,5 +386,48 @@ bindings carry encoded binary packets for this test; production Tauri raw IPC is
 not simulated at its runtime implementation level. Silent digital capture does
 not claim physical latency or installed-app native-insert acceptance. Timing under
 background/heavy load remains unqualified. Native racks are still an internal API,
-separate from saved EffectConfig: track controls, persistence, native transport
-context and export parity must be completed before normal UI activation.
+separate from saved EffectConfig: track controls, persistence and native
+export parity must be completed before normal UI activation.
+
+
+### Native project transport and state queries (0.11.7)
+
+Each timeline insert receives an absolute sample position at the playback context's
+rate, tempo in quarter-note BPM, time-signature numerator/denominator, musical
+origin in project seconds and a playing flag. The first position is the selected
+project start rounded to a sample; subsequent block positions add the worklet
+block offset. Compensated stages share project positions even though their context
+activation times differ. Settings are captured at playback preparation; changing
+project tempo/meter/origin requires restarting this internal graph. There is no
+tempo-map or native looping flag support yet. Musical position is
+`(samplePosition / sampleRate - originSeconds) * tempo / 60`; bar position uses
+`numerator * 4 / denominator` quarter notes and floor, allowing negative positions
+before the project's musical origin.
+
+Streaming VST3 uses realtime setup/process mode, supplies valid tempo, meter,
+quarter-note and bar fields through ProcessContext, and sets its playing bit from
+the requested state. Source-window rendering retains its offline mode. AU streaming
+provides both AUAudioUnit musical/transport blocks and AUv2 HostCallbackInfo, with
+absolute render timestamps and sample position, tempo, meter, next-beat offset,
+bar position and initial transport-change notification. Cycling/recording flags
+are not asserted. Native replies acknowledge the applied transport; Rust and the
+frontend reject mismatches. Frames, tempo, signature and origin are bounded and
+validated at their respective IPC boundaries.
+
+A session rejects missing transport after explicit context begins, or a position
+other than the next expected sample. Invalid context is checked before DSP and
+cannot advance it. Seek/restart uses newly initialized plugin sessions with saved
+program state; prior processing audio is discarded. Existing AU and SDK VST3
+fixtures verify this at 44.1 and 48 kHz. This does not reconstruct processing
+history before a seek or promise that every third-party state blob excludes audio
+history. Loop wiring into normal playback remains pending.
+
+Attached native nodes allow state queries only while AudioContext is suspended.
+They drain queued audio and recheck suspension before requesting state; resuming
+while the queue drains rejects the query. Closing wakes/rejects pending queries.
+Prepared, unattached nodes can be queried
+without pausing. Saved DSP state reflects processed blocks, which may be ahead of
+the audible cursor because of bridge buffering. The low-level stream snapshot API
+still supports sequential non-worklet clients; bridge users must use the node's
+pause policy. Normal GUI native racks, persistence and matching graph exports are
+still pending, along with actual Tauri runtime/background/load qualification.

@@ -7,6 +7,31 @@ pub struct StreamReply {
     pub metadata: Value,
     pub samples: Vec<Vec<f32>>,
 }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct StreamTransport {
+    pub sample_position: u64,
+    pub tempo: f64,
+    pub numerator: u32,
+    pub denominator: u32,
+    pub origin_seconds: f64,
+    pub playing: bool,
+}
+impl StreamTransport {
+    pub fn validate(&self) -> Result<()> {
+        if self.sample_position > 9_007_199_254_740_991 - 4096
+            || !self.tempo.is_finite()
+            || !(20.0..=300.0).contains(&self.tempo)
+            || !(1..=32).contains(&self.numerator)
+            || ![1, 2, 4, 8, 16].contains(&self.denominator)
+            || !self.origin_seconds.is_finite()
+            || !(0.0..=86400.0).contains(&self.origin_seconds)
+        {
+            return Err("Invalid plugin transport".into());
+        }
+        Ok(())
+    }
+}
 #[cfg(target_os = "macos")]
 mod native {
     use super::*;
@@ -45,6 +70,7 @@ mod native {
         channels: usize,
         rate: f64,
         sequence: u32,
+        transport_position: Option<u64>,
         closed: bool,
         pub info: Value,
     }
@@ -158,6 +184,7 @@ mod native {
                 channels,
                 rate,
                 sequence: 0,
+                transport_position: None,
                 closed: false,
                 info: Value::Null,
             };
@@ -256,15 +283,47 @@ mod native {
             parameters: &Value,
             bypass: bool,
         ) -> Result<StreamReply> {
+            self.process_with_transport(samples, parameters, bypass, None)
+        }
+        pub fn process_with_transport(
+            &mut self,
+            samples: &[Vec<f32>],
+            parameters: &Value,
+            bypass: bool,
+            transport: Option<&StreamTransport>,
+        ) -> Result<StreamReply> {
             if !parameters.is_object() {
                 return Err("Invalid stream parameters".into());
             }
-            self.exchange(
-                1,
-                samples,
-                &serde_json::json!({"parameters":parameters,"bypass":bypass}),
-            )
+            if let Some(value) = transport {
+                value.validate()?;
+                if self
+                    .transport_position
+                    .is_some_and(|position| position != value.sample_position)
+                {
+                    return Err("Plugin transport discontinuity requires a new session".into());
+                }
+            } else if self.transport_position.is_some() {
+                return Err("Missing plugin transport".into());
+            }
+            let mut settings = serde_json::json!({"parameters":parameters,"bypass":bypass});
+            if let Some(value) = transport {
+                settings["transport"] = serde_json::to_value(value).map_err(|e| e.to_string())?;
+            }
+            let reply = self.exchange(1, samples, &settings)?;
+            if let Some(value) = transport {
+                let applied =
+                    serde_json::from_value::<StreamTransport>(reply.metadata["transport"].clone());
+                if applied.as_ref().ok() != Some(value) {
+                    self.closed = true;
+                    self.child.stop();
+                    return Err("Invalid native transport acknowledgement".into());
+                }
+                self.transport_position = Some(value.sample_position + samples[0].len() as u64);
+            }
+            Ok(reply)
         }
+
         pub fn snapshot(&mut self) -> Result<StreamReply> {
             self.exchange(2, &[], &serde_json::json!({}))
         }
@@ -306,6 +365,15 @@ mod unsupported {
             StreamStop
         }
         pub fn process(&mut self, _: &[Vec<f32>], _: &Value, _: bool) -> Result<StreamReply> {
+            Err("Plugin streams require macOS".into())
+        }
+        pub fn process_with_transport(
+            &mut self,
+            _: &[Vec<f32>],
+            _: &Value,
+            _: bool,
+            _: Option<&StreamTransport>,
+        ) -> Result<StreamReply> {
             Err("Plugin streams require macOS".into())
         }
         pub fn snapshot(&mut self) -> Result<StreamReply> {
@@ -379,6 +447,153 @@ mod tests {
         }
         assert_eq!(cursor, input[0].len());
         output
+    }
+    fn context_requests() -> Vec<Value> {
+        let mut requests = vec![au()];
+        if let Ok(folder) = std::env::var("CRISPAUDIO_TEST_PLUGIN_FOLDER") {
+            let plugins =
+                crate::apple::plugin("plugin-scan", &json!({"folders":[folder]}).to_string())
+                    .unwrap();
+            let plugin = plugins
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|p| p["name"] == "ADelay")
+                .expect("ADelay fixture");
+            requests.push(json!({"id":plugin["id"],"sampleRate":48000,"channels":2,"parameters":{"100":0.002,"101":0.0}}));
+        }
+        let alternate = requests
+            .iter()
+            .cloned()
+            .map(|mut request| {
+                request["sampleRate"] = json!(44100);
+                request
+            })
+            .collect::<Vec<_>>();
+        requests.extend(alternate);
+        requests
+    }
+    #[test]
+    fn project_transport_reaches_native_render_context_and_advances_without_drift() {
+        for request in context_requests() {
+            let rate = request["sampleRate"].as_f64().unwrap();
+            let mut stream = PluginStream::open(&request).unwrap();
+            let mut transport = StreamTransport {
+                sample_position: (rate * 2.0) as u64,
+                tempo: 90.0,
+                numerator: 7,
+                denominator: 8,
+                origin_seconds: 3.0,
+                playing: true,
+            };
+            for frames in [128, 17, 4096] {
+                let reply = stream
+                    .process_with_transport(
+                        &[vec![0.25; frames], vec![-0.25; frames]],
+                        &json!({}),
+                        false,
+                        Some(&transport),
+                    )
+                    .unwrap();
+                assert_eq!(
+                    serde_json::from_value::<StreamTransport>(reply.metadata["transport"].clone())
+                        .unwrap(),
+                    transport
+                );
+                let beat = (transport.sample_position as f64 / rate - transport.origin_seconds)
+                    * transport.tempo
+                    / 60.0;
+                let bar = transport.numerator as f64 * 4.0 / transport.denominator as f64;
+                assert!((reply.metadata["musicalPosition"].as_f64().unwrap() - beat).abs() < 1e-12);
+                assert!(
+                    (reply.metadata["barPosition"].as_f64().unwrap() - (beat / bar).floor() * bar)
+                        .abs()
+                        < 1e-12
+                );
+                if request["id"].as_str().unwrap().starts_with("vst3:") {
+                    assert_eq!(reply.metadata["processMode"], "realtime");
+                }
+                transport.sample_position += frames as u64;
+                transport.tempo = 150.0;
+                transport.playing = false;
+            }
+            let state = stream.snapshot().unwrap();
+            assert_eq!(
+                state.metadata["transport"]["samplePosition"],
+                transport.sample_position
+            );
+        }
+    }
+    #[test]
+    fn seeks_require_fresh_sessions_and_invalid_context_does_not_advance_dsp() {
+        for request in context_requests() {
+            let rate = request["sampleRate"].as_f64().unwrap();
+            let mut stream = PluginStream::open(&request).unwrap();
+            let mut transport = StreamTransport {
+                sample_position: (rate * 10.0) as u64,
+                tempo: 120.0,
+                numerator: 4,
+                denominator: 4,
+                origin_seconds: 0.0,
+                playing: true,
+            };
+            stream
+                .process_with_transport(
+                    &[vec![1.0; 128], vec![1.0; 128]],
+                    &json!({}),
+                    false,
+                    Some(&transport),
+                )
+                .unwrap();
+            assert!(stream
+                .process_with_transport(
+                    &[vec![0.0; 128], vec![0.0; 128]],
+                    &json!({}),
+                    false,
+                    Some(&transport)
+                )
+                .unwrap_err()
+                .contains("discontinuity"));
+            assert!(stream
+                .process(&[vec![0.0; 128], vec![0.0; 128]], &json!({}), false)
+                .unwrap_err()
+                .contains("Missing"));
+            transport.sample_position += 128;
+            let valid = transport.clone();
+            transport.tempo = 0.0;
+            assert!(stream
+                .process_with_transport(
+                    &[vec![0.0; 128], vec![0.0; 128]],
+                    &json!({}),
+                    false,
+                    Some(&transport)
+                )
+                .is_err());
+            stream
+                .process_with_transport(
+                    &[vec![0.0; 128], vec![0.0; 128]],
+                    &json!({}),
+                    false,
+                    Some(&valid),
+                )
+                .unwrap();
+            let state = stream.snapshot().unwrap();
+            drop(stream);
+            let mut restored = request.clone();
+            restored["state"] = state.metadata["state"].clone();
+            let mut fresh = PluginStream::open(&restored).unwrap();
+            transport.sample_position = (rate * 0.5) as u64;
+            transport.tempo = 120.0;
+            let reply = fresh
+                .process_with_transport(
+                    &[vec![0.0; 128], vec![0.0; 128]],
+                    &json!({}),
+                    false,
+                    Some(&transport),
+                )
+                .unwrap();
+            assert!(reply.samples.iter().flatten().all(|v| v.abs() < 1e-6));
+        }
     }
     #[test]
     fn au_variable_blocks_match_whole_render_and_bypass_preserves_headroom() {

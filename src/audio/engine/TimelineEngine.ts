@@ -1,3 +1,4 @@
+import {projectPluginTransport} from '../plugins/PluginTransport';
 import {prepareNativeTimelineGraph,type NativeTimelineGraph,type NativeTimelineRacks} from '../plugins/NativeTimelineGraph';
 import {compensatedConnection,disposeCompensation} from '../plugins/GraphCompensation';
 import {graphClock,outputRoute,sendRoute,type GraphLatency} from '../../lib/graphLatency';
@@ -188,14 +189,14 @@ export class TimelineEngine {
   async playNative(project:TimelineProject,startTime:number,endTime:number,racks:NativeTimelineRacks,onFault:(reason:string)=>void):Promise<void>{
     routingOrder(project.tracks);
     if(!Number.isFinite(startTime)||startTime<0||!Number.isFinite(endTime)||endTime<=startTime||endTime>project.duration)throw new Error('Invalid native playback range');
-    project=structuredClone(project);const sources=new Map(this.sources);
+    project=structuredClone(project);const sources=new Map(this.sources),transport=projectPluginTransport(project,startTime,this.ctx.sampleRate);
     racks=new Map([...racks].map(([scope,entries])=>[scope,entries.map(entry=>({...entry,parameters:{...entry.parameters}}))]));
     this.stop();const generation=this.playbackGeneration,controller=new AbortController();this.nativePreparation=controller;
     let graph:NativeTimelineGraph|undefined;
     try{
       await this.nativeClosing;controller.signal.throwIfAborted();
       await this.prepare(project);controller.signal.throwIfAborted();
-      graph=await prepareNativeTimelineGraph(this.ctx,project,racks,controller.signal,reason=>{if(this.playbackGeneration===generation){this.stop();onFault(reason);}});
+      graph=await prepareNativeTimelineGraph(this.ctx,project,racks,controller.signal,reason=>{if(this.playbackGeneration===generation){this.stop();onFault(reason);}},transport);
       controller.signal.throwIfAborted();
       this.nativeGraph=graph;
       this.buildPlayback(project,startTime,endTime,graph,sources);

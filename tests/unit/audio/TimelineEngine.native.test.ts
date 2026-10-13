@@ -26,6 +26,7 @@ it('aligns clip fades, track automation, bus racks and the audible recording clo
  const {ctx,nodes}=context(),engine=new TimelineEngine(ctx),a=bridge(128),track=bridge(256),bus=bridge(512);prepare.mockResolvedValueOnce(a).mockResolvedValueOnce(track).mockResolvedValueOnce(bus);
  engine.setSources(new Map([['s',{buffer:{}} as AudioSource]]));
  await engine.playNative(project(),2,3,new Map([['clip:ca',[request]],['track:a',[request]],['track:bus',[request]]]),()=>{});
+ expect(prepare.mock.calls.map(c=>c[1].transport)).toEqual(Array(3).fill({samplePosition:96000,tempo:120,numerator:4,denominator:4,originSeconds:0,playing:true}));
  const input=48000+4096,audible=input+896;
  expect(a.attach).toHaveBeenCalledWith(input);expect(track.attach).toHaveBeenCalledWith(input+128);expect(bus.attach).toHaveBeenCalledWith(input+384);
  expect(engine.playbackAnchor()).toEqual({frame:audible,timeline:2});expect(engine.automationClock()?.time).toBe(2);

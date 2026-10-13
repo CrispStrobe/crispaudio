@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.11.6. This section is the current plan.
+Updated 2026-10-13, for local 0.11.7. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -49,8 +49,12 @@ Local 0.11.6 connects the planner to an internal TimelineEngine native playback
 entry point: scope clocks, compensated clip/bus/send/sidechain paths, audible capture
 anchor, cancellable loading and range-end disposal. Streaming IPC now carries binary
 float32 packets. The ordinary UI playback command still uses the existing path;
-native rack controls/persistence and export remain pending. Absolute project/tempo
-context and background/load qualification still need work before enabling controls.
+native rack controls/persistence and export remain pending.
+Local 0.11.7 supplies per-block project position, tempo, meter and musical origin
+to VST3 realtime context and AU host callbacks. State queries require paused audio;
+seeks/restarts use new sessions and discontinuous block positions are rejected.
+Background/load qualification, equivalent native exports and compact rack UI with
+persistence remain pending before ordinary playback activation.
 Record scope and remaining requirements honestly; these are initial complete
 workflows, not full commercial-editor parity. Large-file
 paging remains deferred unless actual project measurements justify it. MIDI remains
