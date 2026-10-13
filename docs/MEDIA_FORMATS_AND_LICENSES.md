@@ -296,3 +296,54 @@ timeline graph or physical output latency. Tauri still exchanges sample arrays.
 The bridge is internal: TimelineEngine keeps its existing playback path. Enabling
 track inserts still requires graph-wide compensation, synchronized graph origins,
 seek/loop reset, saved rack state, compact track controls and offline-export parity.
+
+### Compensation planning (0.11.5)
+
+planGraphLatency consumes declared integer-frame latencies for clip/track/master
+racks and validates the existing routing graph. It aligns clip merges, bus feeds,
+pre/post sends, master contributions and both ducking program/detector inputs.
+Muted paths retain their declared latency, so live fader changes do not shift the
+clock. Unknown identities, invalid frame counts and routing cycles reject the plan.
+Intrinsic processing latency is compensated; intentional musical effect delays are
+preserved. The planner does not estimate unknown DSP latency from effect settings.
+
+FrameDelay implements exact integer-sample buffering without fractional AudioParam
+interpolation. Compensated connections support a selected target input, including
+sidechains, and are disposed with their owning graph. NativePluginNode preparation
+opens the processor before activation; callers choose a shared future frame only
+after all resources are ready. graphClock distinguishes input and audible origins,
+holds the playhead at the requested start during pre-roll and supplies an audible
+recording anchor/end gate. This clock is not yet installed in TimelineEngine.
+
+Bridge bypass maintains a dry delay line equal to reported native latency while
+continuing wet processing, so bypass retains the same path arrival time. The raw
+native block transport still exposes its original uncompensated bypass contract.
+New instances/reset graphs have fresh delay buffers and native state.
+
+Browser routing tests combine native VST3 and AU bridges with dry bus/master paths.
+With both inserts bypassed, opposing contributions cancel exactly; an independent
+bus tap verifies the nonzero stereo impulse rather than accepting an empty graph.
+Wet VST3 intentional delay is checked separately. Real native DSP uses simulated
+Tauri IPC. A simultaneous Chromium/WebKit run exceeded a block deadline in Chromium;
+load/performance acceptance remains pending, and missed deadlines still mute/fault.
+Production graph integration, automated absolute project/tempo context, seek/loop
+reset, rack UI/save/recovery and equivalent exports remain required before activation.
+
+Native stream initialization now renders a short silent block before its ready
+response, then resets rendering state (and restores VST3 document/parameters).
+This prepares lazy DSP resources without shifting the first audible block. The
+bridge sends parameters when changed rather than repeating them on every block.
+
+For this internal sample-array transport, the default native block size is now
+4096 with four blocks of fixed buffering (341.33 ms at 48 kHz per insert). This
+reduces IPC frequency and provides a larger scheduling budget. Callers can select
+128–4096 frames in multiples of 128; each graph plans the chosen delay explicitly.
+The conservative default is not a low-latency monitoring mode. Smaller buffers and
+installed Tauri performance need separate qualification before production activation.
+
+The compensated null-mix test ends at its declared source duration and suspends
+the test clock before cleanup/snapshots. Additional idle/silent-tail timing runs
+also exceeded deadlines; long gaps and background playback remain unqualified.
+State snapshots wait for queued audio requests to drain, and tests freeze their
+audio clock before querying state. Production save/preset handling still needs an
+explicit policy for state queries during playback.

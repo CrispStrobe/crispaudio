@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.11.5 — 2026-10-13
+
+- Add graph latency planning for clip merges, track/bus racks, pre/post sends, master paths and ducking detectors.
+- Add exact integer-frame compensation worklets and an audible clock/recording-anchor model that holds through pre-roll.
+- Separate native plugin initialization from activation so all graph nodes can share an origin chosen after preparation.
+- Preserve reported plugin latency when bypassing, while continuing wet DSP state.
+- Warm native DSP before activation and send parameter changes only when updated.
+- Use a conservative, configurable bridge buffer for the current sample-array transport.
+- Validate compensated native/dry bus routing in the browser. Production TimelineEngine integration, track controls and export remain pending.
+
 ## 0.11.4 — 2026-10-13
 
 - Add an internal AudioWorklet bridge to persistent AU/VST3 processing, with pooled transferable buffers and fixed sample-clock scheduling.
