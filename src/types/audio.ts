@@ -2,7 +2,10 @@
 // CrispAudio — Timeline data model types
 // ---------------------------------------------------------------------------
 
+export interface TrackFolder {id:string;name:string;trackIds:string[];collapsed:boolean}
+
 export interface TimelineProject {
+  trackFolders?:TrackFolder[];
   music?: import('../lib/musicalTime').MusicalSettings;
   groupEditingEnabled?: boolean;
   id: string;

@@ -1805,5 +1805,21 @@
     "loading": "Preparing…",
     "failed": "Sample media could not be loaded.",
     "changed": "The session changed. Try again."
+  },
+  "folders": {
+    "title": "Track folders",
+    "folder": "Folder",
+    "new": "New folder",
+    "name": "Folder name",
+    "settings": "Folder settings",
+    "expand": "Expand folder",
+    "collapse": "Collapse folder",
+    "mute": "Mute folder",
+    "solo": "Solo folder",
+    "select": "Select folder clips",
+    "moveInfo": "Selected tracks move into this folder. Audio routing stays unchanged.",
+    "dissolve": "Dissolve",
+    "invalid": "Choose a name and at least one track.",
+    "apply": "Apply"
   }
 }

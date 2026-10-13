@@ -1,3 +1,4 @@
+import {visibleTrackRows} from '../../lib/trackFolders';
 import { gainAt } from '../../lib/mixAutomation';
 // ---------------------------------------------------------------------------
 // CrispAudio — TimelineCanvas
@@ -96,7 +97,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
   });
 
   const trackHeight = useProjectStore((s) => s.trackHeight);
-  const tracks = useProjectStore((s) => s.project.tracks);
+  const tracks = useProjectStore((s) => visibleTrackRows(s.project));
   const store = useProjectStore(useShallow((s) => ({
     sources: s.sources, selection: s.selection, zoomLevel: s.zoomLevel,
     scrollOffset: s.scrollOffset, snapEnabled: s.snapEnabled,

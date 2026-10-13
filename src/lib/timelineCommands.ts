@@ -21,6 +21,7 @@ export const timelineCommands: Record<string, TimelineCommand[]> = {
         { id: 'add-track', label: 'Add Audio Track', key: '⌘/Ctrl Shift N' },
     ],
     View: [
+        { id: 'track-folders', label: 'Track Folders…' },
         { id: 'mixer', label: 'Mixer' }, { id: 'track-settings', label: 'Track Settings…' }, { id: 'automation', label: 'Automation' }, { id: 'workspace', label: 'Show / Hide Workspace' },
         { id: 'fit', label: 'Fit All Tracks', requires: 'content', key: '⌘/Ctrl 0' }, { id: 'zoom-in', label: 'Zoom In Timeline' }, { id: 'zoom-out', label: 'Zoom Out Timeline' },
         { id: 'height-up', label: 'Taller Tracks' }, { id: 'height-down', label: 'Shorter Tracks' }, { id: 'waveform-mode', label: 'Waveform Display' },

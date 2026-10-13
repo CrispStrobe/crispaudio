@@ -1805,5 +1805,21 @@
     "loading": "Vorbereitung…",
     "failed": "Beispielmedien konnten nicht geladen werden.",
     "changed": "Die Sitzung wurde geändert. Versuche es erneut."
+  },
+  "folders": {
+    "title": "Spurordner",
+    "folder": "Ordner",
+    "new": "Neuer Ordner",
+    "name": "Ordnername",
+    "settings": "Ordnereinstellungen",
+    "expand": "Ordner aufklappen",
+    "collapse": "Ordner einklappen",
+    "mute": "Ordner stummschalten",
+    "solo": "Ordner solo",
+    "select": "Ordnerclips auswählen",
+    "moveInfo": "Gewählte Spuren werden diesem Ordner zugeordnet. Die Audiorouten bleiben erhalten.",
+    "dissolve": "Auflösen",
+    "invalid": "Name und mindestens eine Spur wählen.",
+    "apply": "Anwenden"
   }
 }

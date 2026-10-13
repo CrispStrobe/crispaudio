@@ -1,3 +1,4 @@
+import {validTrackFolders} from './trackFolders';
 import {validProjectMidi} from './midiPattern';
 import {validMusic} from './musicalTime';
 import {validSourceTranscripts} from './sourceTranscript';
@@ -126,6 +127,7 @@ export async function deserializeProject(
     throw new Error('Unsupported CrispAudio project version');
   }
 
+  if(!validTrackFolders(doc.project))throw new Error('Invalid track folders');
   if(!validProjectMidi(doc.project))throw new Error('Invalid MIDI pattern');
   if(doc.project.music!==undefined&&!validMusic(doc.project.music))throw new Error('Invalid musical clock');
   if(doc.project.video&&(!validPictureTracks(doc.project.video)||doc.project.video.clips?.some(c=>!validPicture(c.composition))))throw new Error('Invalid picture tracks or composition');

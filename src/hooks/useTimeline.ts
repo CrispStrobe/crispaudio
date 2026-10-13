@@ -1,3 +1,4 @@
+import {visibleTrackRows} from '../lib/trackFolders';
 import {snapProjectTime} from '../lib/musicalTime';
 import {capturePointerHistory,restorePointerHistory} from '../stores/pointerHistory';
 import {pointerTrim,type TrimFeedback} from '../lib/trimFeedback';
@@ -134,7 +135,7 @@ export function useTimeline() {
     (canvasX: number, canvasY: number): HitZone => {
       const time = canvasXToTime(canvasX);
       const trackIndex = canvasYToTrackIndex(canvasY);
-      const { tracks } = useProjectStore.getState().project;
+      const tracks = visibleTrackRows(useProjectStore.getState().project);
 
       if (trackIndex < 0 || trackIndex >= tracks.length) {
         return { type: 'empty', trackIndex, time };
@@ -279,11 +280,12 @@ export function useTimeline() {
         const newTrackIndex = Math.max(
           0,
           Math.min(
-            store.project.tracks.length - 1,
+            visibleTrackRows(store.project).length - 1,
             ds.originalTrackIndex + Math.round((canvasY - ds.startY) / useProjectStore.getState().trackHeight),
           ),
         );
-        const newTrackId = store.project.tracks[newTrackIndex]?.id;
+        const newTrackId = visibleTrackRows(store.project)[newTrackIndex]?.id;
+        if(!store.project.tracks.some(t=>t.id===newTrackId))return;
         try{store.moveSegment(ds.segmentId, newStart, newTrackId);}catch{/* Retain the last valid linked placement. */}
       } else if (ds.kind === 'trim-left'||ds.kind === 'trim-right') {
         const side=ds.kind==='trim-left'?'left':'right',requested=dx/zoomLevel;

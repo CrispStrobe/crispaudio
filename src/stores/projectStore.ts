@@ -298,6 +298,7 @@ export const useProjectStore = create<ProjectState>()(
             project: {
               ...state.project,
               tracks,
+              trackFolders:state.project.trackFolders?.map(f=>({...f,trackIds:f.trackIds.filter(id=>id!==trackId)})).filter(f=>f.trackIds.length),
               duration: Math.max(state.project.minimumDuration ?? 0, videoTimelineDuration(state.project.video), computeProjectDuration(tracks)),
             },
           };

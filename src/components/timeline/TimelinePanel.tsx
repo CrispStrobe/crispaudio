@@ -1,3 +1,5 @@
+import {TrackFolders,FolderHeader} from './TrackFolders';
+import {visibleTrackRows} from '../../lib/trackFolders';
 import {SampleSessions} from './SampleSessions';
 import {runTimelineTool} from '../../hooks/useTimelineTool';
 import {TimelineCommandMenus} from './TimelineCommandMenus';
@@ -643,7 +645,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Activity} label={t('automation.openTitle')} aria-pressed={automation} onClick={()=>setAutomation(value=>!value)}/>
         <ToolButton icon={SlidersHorizontal} label={t('mixer.title')} aria-pressed={mixer} onClick={()=>setMixer(value=>!value)}/>
         <CommandSearch/>
-        <SampleSessions/><MusicalControls launcher={false}/>
+        <TrackFolders/><SampleSessions/><MusicalControls launcher={false}/>
         <MidiControls audio={audioEngine} launcher={false}/>
         <DeliveryControls launcher={false}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} launcher={false}/>
@@ -746,15 +748,15 @@ export const TimelinePanel: React.FC = () => {
           <PictureTrackHeaders/>
           {/* Per-track headers — scroll locked to canvas */}
           <div className="flex-1">
-            {store.project.tracks.map((t, i) => (
+            {visibleTrackRows(store.project).map(t => store.project.trackFolders?.some(f=>f.id===t.id)?<FolderHeader key={t.id} id={t.id}/>:(
               <TrackHeader
                 key={t.id}
-                trackIndex={i}
+                trackIndex={store.project.tracks.findIndex(track=>track.id===t.id)}
                 onDragStart={handleTrackDragStart}
                 onDragOver={handleTrackDragOver}
                 onDrop={handleTrackDrop}
                 onDragEnd={handleTrackDragEnd}
-                isDragOver={dropTargetIndex === i && draggedTrackId !== t.id}
+                isDragOver={dropTargetIndex === store.project.tracks.findIndex(track=>track.id===t.id) && draggedTrackId !== t.id}
               />
             ))}
             {store.project.tracks.length === 0 && (
