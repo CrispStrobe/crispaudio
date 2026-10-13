@@ -49,6 +49,7 @@ export interface TimelineTrack {
   recordingInput?:RecordingInput;
   takes?:RecordingTake[];
   compRegions?:CompRegion[];
+  compVersions?:{id:string;name:string;regions:CompRegion[]}[];
   compBaseSegments?:AudioSegment[];
   kind?: 'audio' | 'bus';
   output?: string; // absent or 'master' preserves legacy direct routing

@@ -14,9 +14,23 @@ export function chooseTake(project:TimelineProject,trackId:string,takeId:string,
  const retained=(track.compRegions??[]).filter(r=>r.id!==replaceRegionId);
  const regions:CompRegion[]=retained.flatMap(r=>r.end<=start||r.start>=end?[r]:[{...r,end:Math.min(r.end,start)},{...r,id:crypto.randomUUID(),start:Math.max(r.start,end)}].filter(p=>p.end>p.start));
  regions.push({id:replaceRegionId??crypto.randomUUID(),takeId,start,end,crossfade});regions.sort((a,b)=>a.start-b.start);
+ return rebuildComp(project,trackId,regions,sources);
+}
+/** Rebuild from the original arrangement, so removal also removes crossfade handles. */
+export function rebuildComp(project:TimelineProject,trackId:string,regions:CompRegion[],sources:Map<string,AudioSource>):TimelineProject{
+ const track=project.tracks.find(t=>t.id===trackId);
+ if(!track||track.locked||track.kind==='bus')throw new Error('recording.locked');
+ const base=track.compBaseSegments??track.segments;
+ for(const region of regions){
+  const take=track.takes?.find(t=>t.id===region.takeId),source=take&&sources.get(take.sourceId);
+  if(!take||take.inactive||!source)throw new Error('recording.missingSource');
+  const offset=take.sourceOffset+region.start-take.startTime;
+  if(![region.start,region.end,region.crossfade].every(Number.isFinite)||region.start<take.startTime||region.end>take.startTime+take.duration+1e-6||region.end<=region.start||region.crossfade<0||region.crossfade>1||offset<0||offset+region.end-region.start>source.duration+1e-6)throw new Error('recording.invalidComp');
+ }
+ if(regions.some((r,i)=>i>0&&regions[i-1].end>r.start+1e-6))throw new Error('recording.invalidComp');
  // Rebuild nominal intervals from the preserved pre-comp arrangement. Applying
  // a new choice cannot retain an old crossfade tail underneath the new choice.
- let segments=base.map(c=>({...c}));
+ let segments=regions.length?base.map(c=>({...c})):base;
  const regionFor=new Map<string,CompRegion>();
  for(const region of regions){
   const chosen=track.takes!.find(t=>t.id===region.takeId)!;
@@ -33,8 +47,29 @@ export function chooseTake(project:TimelineProject,trackId:string,takeId:string,
   if(after){const fade=Math.min(width,right.sourceOffset,right.duration/4,left.duration/4);if(fade>0){right.startTime-=fade;right.sourceOffset-=fade;right.duration+=fade;right.fadeInDuration=fade;left.fadeOutDuration=fade;}}
   else {const bound=sources.get(left.sourceId)?.duration??0,fade=Math.min(width,bound-left.sourceOffset-left.duration,left.duration/4,right.duration/4);if(fade>0){left.duration+=fade;left.fadeOutDuration=fade;right.fadeInDuration=fade;}}
  }
- const next={...project,tracks:project.tracks.map(t=>t.id===trackId?{...t,segments,compBaseSegments:base,compRegions:regions}:t)};
+ const next={...project,tracks:project.tracks.map(t=>t.id===trackId?{...t,segments,compBaseSegments:regions.length?base:undefined,compRegions:regions.length?regions:undefined}:t)};
  return {...next,duration:timelineDuration(next)};
+}
+export function removeCompRegion(project:TimelineProject,trackId:string,regionId:string,sources:Map<string,AudioSource>){
+ const track=project.tracks.find(t=>t.id===trackId);
+ if(!track?.compRegions?.some(r=>r.id===regionId))return project;
+ return rebuildComp(project,trackId,track.compRegions.filter(r=>r.id!==regionId),sources);
+}
+export function resetComp(project:TimelineProject,trackId:string,sources:Map<string,AudioSource>){
+ const track=project.tracks.find(t=>t.id===trackId);if(!track?.compRegions?.length)return project;
+ return rebuildComp(project,trackId,[],sources);
+}
+export function saveCompVersion(project:TimelineProject,trackId:string,name:string){
+ const track=project.tracks.find(t=>t.id===trackId);if(!track||track.locked||track.kind==='bus')throw new Error('recording.locked');
+ name=name.trim();if(!name||name.length>80||(track.compVersions?.length??0)>=32)throw new Error('recording.invalidComp');
+ const version={id:crypto.randomUUID(),name,regions:(track.compRegions??[]).map(r=>({...r}))};
+ return {...project,tracks:project.tracks.map(t=>t.id===trackId?{...t,compVersions:[...(t.compVersions??[]),version]}:t)};
+}
+export function recallCompVersion(project:TimelineProject,trackId:string,versionId:string,sources:Map<string,AudioSource>){
+ const track=project.tracks.find(t=>t.id===trackId),version=track?.compVersions?.find(v=>v.id===versionId);
+ if(!version)throw new Error('recording.invalidComp');
+ if(JSON.stringify(track?.compRegions??[])===JSON.stringify(version.regions))return project;
+ return rebuildComp(project,trackId,version.regions.map(r=>({...r})),sources);
 }
 export function validRecording(project:TimelineProject,sourceIds?:Set<string>):boolean{
  return project.tracks.every(track=>{
@@ -44,6 +79,7 @@ export function validRecording(project:TimelineProject,sourceIds?:Set<string>):b
   const takes=track.takes??[],ids=new Set(takes.map(t=>t.id));
   if(takes.length>10000||ids.size!==takes.length||takes.some(t=>!t.id||typeof t.name!=='string'||typeof t.sourceId!=='string'||(sourceIds&&!sourceIds.has(t.sourceId))||![t.startTime,t.sourceOffset,t.duration,t.pass,t.droppedFrames,t.latencyMs].every(Number.isFinite)||t.startTime<0||t.sourceOffset<0||t.duration<=0||t.pass<1||!Number.isInteger(t.pass)||t.droppedFrames<0||!Number.isInteger(t.droppedFrames)||typeof t.capturedAt!=='string'||!Array.isArray(t.notes)||t.notes.some(n=>typeof n!=='string')||(t.inactive!==undefined&&typeof t.inactive!=='boolean')||(t.originalPlacement!==undefined&&(![t.originalPlacement.startTime,t.originalPlacement.sourceOffset,t.originalPlacement.duration].every(Number.isFinite)||t.originalPlacement.startTime<0||t.originalPlacement.sourceOffset<0||t.originalPlacement.duration<=0))))return false;
   if(track.compBaseSegments?.some(c=>!c||typeof c.sourceId!=='string'||(sourceIds&&!sourceIds.has(c.sourceId))||![c.startTime,c.sourceOffset,c.duration].every(Number.isFinite)||c.startTime<0||c.sourceOffset<0||c.duration<=0))return false;
-  return new Set((track.compRegions??[]).map(r=>r.id)).size===(track.compRegions??[]).length&&(track.compRegions??[]).every(r=>r.id&&ids.has(r.takeId)&&[r.start,r.end,r.crossfade].every(Number.isFinite)&&r.start>=0&&r.end>r.start&&r.crossfade>=0&&r.crossfade<=1);
+  const versions=track.compVersions??[];if(!Array.isArray(versions)||versions.length>32||new Set(versions.map(v=>v?.id)).size!==versions.length||versions.some(v=>!v||typeof v.id!=='string'||!v.id||typeof v.name!=='string'||!v.name.trim()||v.name.length>80||!Array.isArray(v.regions)))return false;
+  return [...versions.map(v=>v.regions),track.compRegions??[]].every(regions=>new Set(regions.map(r=>r?.id)).size===regions.length&&regions.every(r=>r&&r.id&&ids.has(r.takeId)&&[r.start,r.end,r.crossfade].every(Number.isFinite)&&r.start>=0&&r.end>r.start&&r.crossfade>=0&&r.crossfade<=1));
  });
 }

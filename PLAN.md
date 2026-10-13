@@ -1,8 +1,24 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.9.8. This section is the current plan.
+Updated 2026-10-13, for local 0.9.9. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
+
+## Accepted next stack (in order)
+
+The user authorized all seven steps on 2026-10-13:
+
+1. Recording reliability, preview input ownership and physical-device acceptance.
+2. Take audition, comp-region removal/replacement/reset and version comparison.
+3. Track folders, collapse, grouped selection/editing and mute/solo controls.
+4. Keyboard navigation, contextual trim tools and precise clip placement.
+5. Supported clip/master automation passes and additional useful FX parameters.
+6. Mix A/B, metering and export review.
+7. Short sample walkthroughs for recording, comping, mixing and video editing.
+
+Work through these in order and preserve compact menus/inspectors. Hardware
+acceptance can remain pending user/device availability while independent software
+work proceeds; never describe synthetic streams as physical validation.
 
 ## Current priority: audio DAW workflow
 
@@ -30,7 +46,9 @@ and titles, and alternate-take/comp practice. They open through File/command
 search, retain the previous session in Undo and use original bundled/generated
 media. Playback, save/open and native audio/video export are locally checked.
 
-Next: take audition and comp-region removal/reset, then track organization
+Input ownership and take audition/comp removal/reset/version comparison are
+implemented in 0.9.9. Built-in MacBook microphone acceptance is pending; additional
+physical inputs can be checked later when connected. Next: track organization
 and grouped editing. Audit existing punch/loop/take/comp and bus/send tools before
 selecting each concrete addition. Shared frame scheduling does not remove independent-device drift. Track folders
 and grouped controls are distinct from routing.

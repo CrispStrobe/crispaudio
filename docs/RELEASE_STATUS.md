@@ -2896,3 +2896,14 @@ Reverb retains its documented headroom-scaled budget and strict 2e-6 diagnostic
 failures; measured values match the 0.8.32 evidence above. Full/range crops match
 exactly. Other documented precision/tail limits remain unresolved. Physical iOS
 and installed WKWebView interaction were not validated.
+
+## Local 0.9.9 — input ownership and comp review
+
+Installed signed 0.9.9; one autosave preserved in a fresh recovery backup. No
+release tag or Apple upload. Full suite: 1,586 tests / 151 files; lint, production
+web/Tauri build and locked iOS simulator library check pass. Chrome and WebKit
+real-worklet input audits cover warm preview replacement, undo and late input
+results. Coordinated two-input synthetic capture still passes. Comp GUI audits
+cover audition without history, region replacement/removal, reset/undo, named
+versions, save/reopen and German 390 px layout. Physical built-in microphone
+acceptance is requested; additional-device hardware acceptance awaits availability.

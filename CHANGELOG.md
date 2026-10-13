@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.9.9 — 2026-10-13
+
+- Close stale recording previews after project replacement, undo, input changes
+  and delayed permission results; release warm inputs on device changes.
+- Audition raw takes or the effected comp without changing project history.
+- Replace/remove comp regions, reset the original arrangement, and save/recall
+  named comp versions. Versions persist and follow range edits.
+
 ## 0.9.8 — 2026-10-13
 
 - Add Audio mix, Picture edit and Take workshop sample sessions through File

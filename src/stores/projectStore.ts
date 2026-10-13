@@ -88,7 +88,7 @@ interface ProjectState {
   addTrack: (name?: string) => void;
   removeTrack: (trackId: string) => void;
   reorderTrack: (trackId: string, newIndex: number) => void;
-  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'recordArmed' | 'recordingInput' | 'takes' | 'compRegions' | 'compBaseSegments' | 'ducking' | 'output' | 'sends' | 'rippleEnabled' | 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'panAutomation' | 'effects'>>) => void;
+  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'recordArmed' | 'recordingInput' | 'takes' | 'compVersions' | 'compRegions' | 'compBaseSegments' | 'ducking' | 'output' | 'sends' | 'rippleEnabled' | 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'panAutomation' | 'effects'>>) => void;
 
   // Segment actions
   addSegment: (trackId: string, segment: AudioSegment) => void;
@@ -186,7 +186,7 @@ export const useProjectStore = create<ProjectState>()(
             if (!after) return true;
             if (JSON.stringify(track.automation) !== JSON.stringify(after.automation) || JSON.stringify(track.panAutomation) !== JSON.stringify(after.panAutomation)) return true;
             if ([...(track.effects??[]),...(after.effects??[])].some(hasEffectAutomation)&&JSON.stringify(track.effects)!==JSON.stringify(after.effects))return true;
-            if (['output','sends','ducking','takes','compRegions','compBaseSegments'].some(key=>JSON.stringify(track[key as keyof TimelineTrack])!==JSON.stringify(after[key as keyof TimelineTrack])))return true;
+            if (['output','sends','ducking','takes','compVersions','compRegions','compBaseSegments'].some(key=>JSON.stringify(track[key as keyof TimelineTrack])!==JSON.stringify(after[key as keyof TimelineTrack])))return true;
             if (JSON.stringify(track.segments) !== JSON.stringify(after.segments)) return true;
             return !!next.sources && track.segments.some(clip => before.sources.get(clip.sourceId) !== next.sources?.get(clip.sourceId));
           });

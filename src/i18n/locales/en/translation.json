@@ -1549,7 +1549,17 @@
     "restorePass": "Restore original pass at playhead",
     "allArmed": "All armed tracks ({{count}})",
     "groupCount": "Arm between one and eight audio tracks.",
-    "groupHelp": "All armed tracks uses each track’s input, channel, monitoring and latency settings, with the longest count-in and a shared project clock. Captures publish together as one undo step. Different physical devices may have clock drift; verify alignment for your hardware."
+    "groupHelp": "All armed tracks uses each track’s input, channel, monitoring and latency settings, with the longest count-in and a shared project clock. Captures publish together as one undo step. Different physical devices may have clock drift; verify alignment for your hardware.",
+    "auditionTake": "Audition raw take",
+    "stopAudition": "Stop audition",
+    "auditionComp": "Audition comp",
+    "resetComp": "Reset comp",
+    "replaceTake": "Replace take",
+    "removeRegion": "Remove region",
+    "versions": "Comp versions",
+    "versionName": "Version name",
+    "saveVersion": "Save version",
+    "deleteVersion": "Delete version"
   },
   "retime": {
     "title": "Speed / pitch",

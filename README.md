@@ -297,3 +297,5 @@ uploads have separate workflows. Pushing `main` does not submit an Apple release
 MIT. Third-party components retain their own notices; see the app's About view
 and [licensing details](docs/MEDIA_FORMATS_AND_LICENSES.md). External ASR models
 have separate licenses. Optional installed tools are not bundled with the app.
+
+Recording review: [take audition and saved comp versions](docs/RECORDING_REVIEW.md).

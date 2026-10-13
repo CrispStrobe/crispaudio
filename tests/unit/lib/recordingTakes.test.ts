@@ -23,3 +23,18 @@ it('changing comp boundaries/crossfades rebuilds from preserved base rather than
 it('save reachability keeps alternate takes, comp base and original retime sources without unrelated project media',async()=>{
  const {projectSourceIds}=await import('../../../src/lib/projectFile');const p=project();p.tracks[0].segments[0].retime={rate:1,reverse:false,preservePitch:true,semitones:0,original:{sourceId:'original-retime',offset:0,duration:6}};p.sourceTranscripts=[{id:'record',sourceId:'transcript-original',name:'source',cues:[]}];const ids=projectSourceIds(p);expect([...ids].sort()).toEqual(['captured','old-source','original-retime','transcript-original']);
 });
+it('removing a region restores the exact base interval and resetting preserves originals',async()=>{
+ const {removeCompRegion,resetComp}=await import('../../../src/lib/recordingTakes');
+ const p=project(),sources=new Map([['captured',source]]),first=chooseTake(p,'t','take',2,3,.2,sources),next=chooseTake(first,'t','take',3.5,4,.2,sources),id=next.tracks[0].compRegions![0].id;
+ const removed=removeCompRegion(next,'t',id,sources);expect(removed.tracks[0].compRegions).toHaveLength(1);expect(removed.tracks[0].segments[0].sourceId).toBe('old-source');expect(removed.tracks[0].segments[0].duration).toBe(3.5);
+ const reset=resetComp(removed,'t',sources);expect(reset.tracks[0].segments).toBe(p.tracks[0].segments);expect(reset.tracks[0].takes).toBe(p.tracks[0].takes);expect(reset.tracks[0].compBaseSegments).toBeUndefined();expect(resetComp(reset,'t',sources)).toBe(reset);
+ next.tracks[0].locked=true;expect(()=>removeCompRegion(next,'t',id,sources)).toThrow('recording.locked');
+});
+it('saved comp versions recall choices after reset, remain independent and retime with range edits',async()=>{
+ const {saveCompVersion,recallCompVersion,resetComp}=await import('../../../src/lib/recordingTakes'),{recordingRange}=await import('../../../src/lib/recordingRange');
+ const p=project(),sources=new Map([['captured',source]]),first=chooseTake(p,'t','take',2,4,.2,sources),saved=saveCompVersion(first,'t','A'),version=saved.tracks[0].compVersions![0];
+ expect(version.regions).not.toBe(first.tracks[0].compRegions);expect(recallCompVersion(saved,'t',version.id,sources)).toBe(saved);
+ const reset=resetComp(saved,'t',sources),recalled=recallCompVersion(reset,'t',version.id,sources);expect(recalled.tracks[0].segments.map(c=>[c.sourceId,c.startTime,c.duration])).toEqual(first.tracks[0].segments.map(c=>[c.sourceId,c.startTime,c.duration]));
+ const shifted=recordingRange(saved.tracks[0],0,1,'insert');expect(shifted.compVersions![0].regions[0].start).toBe(3);expect(shifted.compVersions![0].regions[0].end).toBe(5);
+ expect(validRecording(saved)).toBe(true);version.regions[0].takeId='missing';expect(validRecording(saved)).toBe(false);
+});
