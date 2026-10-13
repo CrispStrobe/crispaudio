@@ -1,3 +1,4 @@
+import {HelpDetails} from '../common/HelpDetails';
 import {ClipPlacement} from './ClipPlacement';
 import {navigateClip} from '../../lib/clipNavigation';
 import {trimToPlayhead} from '../../lib/trimEdits';
@@ -31,7 +32,7 @@ import { prepareAudioImport, type AudioImportInput, type ImportPhase } from '../
 import { TimelineHelp } from './TimelineHelp';
 import { TimelineWorkspace, type WorkspaceTab } from './TimelineWorkspace';
 import { ToolButton } from '../common/ToolButton';
-import { Scan, AudioLines } from 'lucide-react';
+import { Scan } from 'lucide-react';
 import { timelineDuration } from '../../lib/timelineView';
 import { TimelineNavigation } from './TimelineNavigation';
 import { TrackFiles } from './TrackFiles';
@@ -148,7 +149,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
         <button type="button" aria-label={t(track.locked?'ranges.unlock':'ranges.lock')} title={t(track.locked?'ranges.unlock':'ranges.lock')}
           data-help="lock" aria-pressed={!!track.locked} className={`shrink-0 p-0.5 ${track.locked?'text-amber-300':'text-gray-500'}`}
           onClick={()=>updateTrack(track.id,{locked:!track.locked})}>{track.locked?<Lock className="w-3 h-3"/>:<Unlock className="w-3 h-3"/>}</button>
-        {track.kind!=='bus'&&<button type="button" className={`shrink-0 p-0.5 text-xs ${track.recordArmed?'text-red-400':'text-gray-500'}`} disabled={track.locked} aria-label={`${track.name}: ${t('recording.arm')}`} aria-pressed={track.recordArmed??false} onClick={()=>updateTrack(track.id,{recordArmed:!track.recordArmed})}>R</button>}
+        {track.kind!=='bus'&&<button type="button" className={`shrink-0 p-0.5 text-xs ${track.recordArmed?'text-red-400':'text-gray-500'}`} disabled={track.locked} data-help-command="recording" aria-label={`${track.name}: ${t('recording.arm')}`} aria-pressed={track.recordArmed??false} onClick={()=>updateTrack(track.id,{recordArmed:!track.recordArmed})}>R</button>}
         {/* Up/down reorder — works with touch and keyboard everywhere */}
         <div className={`track-reorder flex-shrink-0 flex flex-col -my-0.5 ${trackHeight<56?'hidden':''}`}>
           <button
@@ -176,7 +177,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
           role="status" aria-label={`${track.name}: ${t(audible?'editor.audible':'editor.silent')}`} title={t(audible?'editor.audible':'editor.silent')}/>
         <input
           type="text"
-          aria-label={t('timeline.trackName')}
+          data-help="trackName" aria-label={t('timeline.trackName')}
           value={track.name}
           title={track.name}
           onChange={(e) => updateTrack(track.id, { name: e.target.value })}
@@ -257,10 +258,10 @@ export const TimelinePanel: React.FC = () => {
   const [resetOpen, setResetOpen] = useState(false);
   const [canvasWidth, setCanvasWidth] = useState(800);
   const [projectError, setProjectError] = useState('');
-  const [touchArrange, setTouchArrange] = useState(false);
+  const [touchArrange, setTouchArrange] = useState(()=>!window.matchMedia?.('(pointer:coarse)').matches&&(navigator.maxTouchPoints??0)===0);
   const [helpOpen,setHelpOpen]=useState(false);
   const [alignmentOpen, setAlignmentOpen] = useState(false);
-  const [waveformMode, setWaveformMode] = useState<'normalized' | 'level'>('normalized');
+  const [waveformMode, setWaveformMode] = useState<'normalized' | 'level'>('normalized'),[waveformOpen,setWaveformOpen]=useState(false);
 
   // Keep engine in sync with sources
   useEffect(() => {
@@ -486,15 +487,16 @@ export const TimelinePanel: React.FC = () => {
     if (tracksAreaRef.current) {
       tracksAreaRef.current.scrollTop = 0;
       const room = tracksAreaRef.current.clientHeight - RULER_HEIGHT;
-      state.setTrackHeight(Math.max(24, Math.min(120, room / Math.max(1, state.project.tracks.length + (state.project.video ? 1 : 0)))));
+      state.setTrackHeight(Math.max(24, Math.min(120, room / Math.max(1, visibleTrackRows(state.project).length+(state.project.video?(state.project.video.tracks?.length??1)+(state.project.video.graphics?.length??0)+(state.project.video.captions?1:0):0)))));
     }
   }, [canvasWidth]);
+  const autoFit=useSettingsStore(s=>s.timelineAutoFit);
   const fittedProject = useRef('');
   useEffect(() => {
-    if (canvasWidth > 0 && timelineDuration(store.project) > 0 && fittedProject.current !== store.project.id) {
-      fittedProject.current = store.project.id; fitAll();
-    }
-  }, [store.project, canvasWidth, fitAll]);
+    const key=JSON.stringify([canvasWidth,store.project.id,visibleTrackRows(store.project).length,store.project.video?.tracks?.length,store.project.video?.graphics?.length,!!store.project.video?.captions,[...new Set(store.project.tracks.flatMap(t=>t.segments.map(c=>c.sourceId)))],store.project.video?.path]);
+    if(!autoFit){fittedProject.current='';return;}
+    if(canvasWidth>0&&timelineDuration(store.project)>0&&fittedProject.current!==key){fittedProject.current=key;fitAll();}
+  }, [store.project, canvasWidth, fitAll,autoFit]);
   useEffect(() => {
     const area = tracksAreaRef.current; if (!area) return;
     const wheel = (event: WheelEvent) => {
@@ -584,6 +586,7 @@ export const TimelinePanel: React.FC = () => {
   useEffect(()=>registerTimelineMenu(async action=>{
     const state=useProjectStore.getState();
     switch(action){
+      case 'view-settings':useUIStore.getState().openModal('settings');break;
       case 'new':setResetOpen(true);break;
       case 'open':await handleOpenProject();break;
       case 'save':await handleSaveProject();break;
@@ -615,9 +618,8 @@ export const TimelinePanel: React.FC = () => {
       case 'workspace':setWorkspace(old=>old?null:'media');break;
       case 'mixer':setMixer(value=>!value);break;
       case 'automation':setAutomation(value=>!value);break;
-      case 'clip-settings':setWorkspace('edit');break;
       case 'tts':useUIStore.getState().openModal('tts');break;
-      case 'waveform-mode':setWaveformMode(mode=>mode==='normalized'?'level':'normalized');break;
+      case 'waveform-mode':setWaveformOpen(true);break;
       case 'align':if(state.project.tracks.length>=2){state.setIsPlaying(false);setAlignmentOpen(true);}break;
       case 'snap':state.setSnapEnabled(!state.snapEnabled);break;
       case 'play':state.setIsPlaying(!state.isPlaying);break;
@@ -642,7 +644,7 @@ export const TimelinePanel: React.FC = () => {
       <div className="timeline-main-tools flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900 shrink-0">
         <input ref={fileInputRef} type="file" accept="audio/*" multiple className="hidden"
           onChange={(e) => { void handleImportFiles(fileInputs(Array.from(e.target.files??[]))); e.target.value = ''; }} />
-        <TimelineCommandMenus/>
+
         <ToolButton data-help="import" icon={Upload} label={t('timeline.import')} onClick={() => askImport()}/>
         <ToolButton data-help="files" icon={Save} label={t('timeline.saveProject')} onClick={() => void handleSaveProject()}/>
         <ToolButton icon={Undo2} label={t('timeline.undo')} onClick={handleUndo}/>
@@ -668,6 +670,8 @@ export const TimelinePanel: React.FC = () => {
         {exportError != null && <span role="alert" className="text-sm text-red-400">{t('audioExport.failed')}: {String(exportError)}</span>}
       </div>
 
+      <TimelineCommandMenus/>
+      <Modal isOpen={waveformOpen} onClose={()=>setWaveformOpen(false)} title={t('nativeMenu.Waveform Display')}><div className="space-y-2 text-sm">{(['normalized','level'] as const).map(mode=><label className="flex gap-2 items-center min-h-11" key={mode}><input type="radio" name="waveform-display" checked={waveformMode===mode} onChange={()=>setWaveformMode(mode)}/>{t(mode==='normalized'?'alignment.normalized':'alignment.atMixLevel')}</label>)}<HelpDetails><p>{t('alignment.normalizedHelp')}</p><p>{t('alignment.levelHelp')}</p></HelpDetails></div></Modal>
       {helpOpen&&<TimelineHelp open onClose={()=>setHelpOpen(false)}/>}
       <Modal isOpen={importOpen} onClose={()=>setImportOpen(false)} title={t('timeline.importAudio')}>
         <p className="text-sm text-gray-300 mb-3">{t('usability.importDestinationHelp')}</p>
@@ -702,10 +706,10 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton data-help="navigation" icon={ZoomIn} label={t('timeline.zoomIn')} onClick={handleZoomIn}/>
         <ToolButton data-help="snap" icon={Magnet} label={t('timeline.snap')} aria-pressed={store.snapEnabled} onClick={()=>store.setSnapEnabled(!store.snapEnabled)}/>
 
-        <ToolButton data-help="waveform" icon={AudioLines} label={t(waveformMode === 'normalized' ? 'alignment.normalizedHelp' : 'alignment.levelHelp')} aria-pressed={waveformMode === 'normalized'} onClick={()=>setWaveformMode(mode=>mode==='normalized'?'level':'normalized')}/>
+
 
       </div>
-      <TimelineActions onInspector={()=>setWorkspace('edit')} touchArrange={touchArrange} onTouchArrange={() => setTouchArrange((old) => !old)} />
+      <TimelineActions touchArrange={touchArrange} onTouchArrange={() => setTouchArrange((old) => !old)} />
       </div>
 
       {/* Main area: headers + canvas */}
@@ -799,7 +803,7 @@ export const TimelinePanel: React.FC = () => {
             <TimelineRuler width={canvasWidth} />
           </div>
 
-          <GraphicLanes width={canvasWidth}/>
+          <GraphicLanes touchArrange={touchArrange} width={canvasWidth}/>
           {store.project.video&&(store.project.video.tracks?<div data-picture-track-scroll className="shrink-0 overflow-y-auto" style={{maxHeight:Math.min(240,store.trackHeight*store.project.video.tracks.length)}} onScroll={e=>syncPictureScroll(e.currentTarget)}>{store.project.video.tracks.map(track=><VideoLane key={track.id} trackId={track.id} width={canvasWidth} touchArrange={touchArrange}/>)}</div>:<VideoLane width={canvasWidth} touchArrange={touchArrange} />)}
 
           {/* Canvas (internally virtual-scrolled via store.scrollOffset) */}

@@ -2921,3 +2921,17 @@ drag, context trims and German 390 px layout. Simplified recording/comp audits p
 single-input Chrome and coordinated-input WebKit capture/punch/loop remain checked.
 User confirmed physical MacBook microphone capture and audible speech in 0.9.9.
 Additional physical inputs remain unavailable; no new Apple distribution occurred.
+
+## Local 0.10.1 — timeline interaction and touch controls
+
+Full frontend suite: 1,594 tests / 153 files. Picture-inspector follow-up tests:
+11 pass; lint, production web/Tauri build and locked iOS simulator library check
+pass. Chrome/WebKit GUI audits cover the mouse editing toggle, both boundary
+handles, one undo/Escape restoration, expanded context actions, focused inspectors,
+information buttons, help cards, fit preferences and narrow German layouts.
+Touch contexts render every shared menu command and open clip settings with taps;
+Chrome touch events also drag a boundary. WebKit touch dragging and physical iPad
+acceptance remain untested. Picture inspector tab/collapse/precise duration/undo
+passes both browsers. FX live edits keep the graph running; offline/native checks
+retain the existing moving-delay errors (9.06e-6 Chrome / 2.55e-6 WebKit), within
+its established 1e-4 budget. Native media/DSP and the optimized CLI are unchanged.

@@ -1,3 +1,4 @@
+import {InspectorTransport} from './InspectorTransport';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, RotateCcw } from 'lucide-react';
@@ -45,7 +46,7 @@ export function ScopedEffectAutomation({ snapshot, original, scope, index, onClo
       onClose();
     } catch (e) { setError(t(e instanceof Error ? e.message : String(e))); }
   };
-  return <Modal isOpen onClose={onClose} title={t('fxInspector.title')} widthClass="max-w-xl"><div className="space-y-3 text-sm">
+  return <Modal isOpen onClose={onClose} title={t('fxInspector.title')} widthClass="max-w-xl"><div className="space-y-3 text-sm"><InspectorTransport/>
     <div className="flex items-center justify-between gap-2"><span className="text-gray-400">{t(scope === 'master' ? 'rack.masterEffects' : 'timeline.effects')} · {t('fxInspector.clock')}</span>
       <select className="bg-gray-800 rounded min-h-11 p-2" aria-label={t('fxInspector.parameter')} value={parameter} onChange={e => { setParameter(e.target.value as typeof parameter); setSelected(null); }}>{parameters.map(key => <option key={key} value={key}>{t(`timeline.effectParams.${key}`)}</option>)}</select>
     </div>

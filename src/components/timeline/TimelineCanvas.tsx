@@ -1,7 +1,9 @@
+import {flushSync} from 'react-dom';
+import {timelineCommands} from '../../lib/timelineCommandCatalog';
 import {projectSelection,linkedIds} from '../../lib/projectEdits';
 import {trimToPlayhead} from '../../lib/trimEdits';
-import {runTimelineTool} from '../../hooks/useTimelineTool';
 import {visibleTrackRows} from '../../lib/trackFolders';
+import {ClipTrimHandles} from './ClipTrimHandles';
 import { gainAt } from '../../lib/mixAutomation';
 // ---------------------------------------------------------------------------
 // CrispAudio — TimelineCanvas
@@ -535,12 +537,12 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
         if (dx > LONG_PRESS_MOVE_TOL || dy > LONG_PRESS_MOVE_TOL) clearLongPress();
       }
 
-      if (!('pointerType' in e && e.pointerType === 'touch' && !touchArrange)) onMouseMove(e);
+      if(touchArrange)onMouseMove(e);
 
       const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
-      setCursor(getCursor(cx, cy));
+      setCursor(touchArrange?getCursor(cx, cy):'pointer');
     },
     [onMouseMove, getCursor, clearLongPress, touchArrange],
   );
@@ -557,7 +559,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       } catch {
         /* setPointerCapture can throw if the pointer is already gone */
       }
-      if (e.pointerType === 'touch' && !touchArrange) {
+      if (!touchArrange) {
         const rect = e.currentTarget.getBoundingClientRect();
         const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
         const state = useProjectStore.getState();
@@ -665,6 +667,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
   }, [contextMenu.visible, closeMenu]);
 
   // Focus first menu item when context menu opens
+  useEffect(()=>cancelDrag,[touchArrange,cancelDrag]);
   useEffect(() => {
     if (!contextMenu.visible) return;
     // Use rAF so the DOM has rendered the menu items
@@ -672,9 +675,9 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       const firstItem = ctxMenuRef.current?.querySelector<HTMLButtonElement>(
         'button[role="menuitem"]',
       );
-      firstItem?.focus();
+      const menu=ctxMenuRef.current;if(menu){const rect=menu.getBoundingClientRect();menu.style.left=`${Math.max(8,Math.min(contextMenu.x,innerWidth-rect.width-8))}px`;menu.style.top=`${Math.max(8,Math.min(contextMenu.y,innerHeight-rect.height-8))}px`;}firstItem?.focus();
     });
-  }, [contextMenu.visible]);
+  }, [contextMenu.visible,contextMenu.x,contextMenu.y]);
 
   // Keyboard navigation for the context menu
   const handleMenuKeyDown = useCallback(
@@ -751,6 +754,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       <TrimSourceFeedback feedback={trimFeedback}/>
       <PlayheadHandle width={width} />
 
+      {touchArrange&&<ClipTrimHandles tracks={tracks} selection={store.selection} zoom={store.zoomLevel} scroll={store.scrollOffset} width={width} height={trackHeight} onBegin={(e,seg,row,side)=>{e.preventDefault();e.stopPropagation();const canvas=canvasRef.current;if(!canvas)return;e.currentTarget.setPointerCapture(e.pointerId);onMouseDown({clientX:e.clientX,clientY:e.clientY,shiftKey:e.shiftKey,currentTarget:canvas} as React.MouseEvent<HTMLCanvasElement>,{type:side==='left'?'trim-left':'trim-right',segment:seg,trackIndex:row});}} onMove={e=>{if(!e.currentTarget.hasPointerCapture(e.pointerId)||!canvasRef.current)return;onMouseMove({clientX:e.clientX,clientY:e.clientY,currentTarget:canvasRef.current} as React.MouseEvent<HTMLCanvasElement>);}} onEnd={e=>{onMouseUp();if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);}} onCancel={cancelDrag}/>}
       {/* Context menu */}
       {contextMenu.visible && (
         <div
@@ -758,19 +762,20 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
           data-timeline-menu
           role="menu"
           aria-label="Context menu"
-          className="fixed z-50 bg-gray-800 border border-gray-600 rounded shadow-xl py-1 min-w-[160px] text-sm"
+          className="fixed z-50 bg-gray-800 border border-gray-600 rounded shadow-xl py-1 min-w-[160px] max-w-[calc(100vw-16px)] text-sm max-h-[70dvh] overflow-y-auto"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onKeyDown={handleMenuKeyDown}
         >
           {contextMenu.segmentId ? (
             <>
-              {(['left','right'] as const).map(side=><button key={side} role="menuitem" tabIndex={-1} className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700" onClick={()=>{if(!contextMenu.segmentId||useUIStore.getState().timelineRecording)return;try{const state=useProjectStore.getState(),next=trimToPlayhead(state.project,[contextMenu.segmentId],side,state.playheadPosition,state.sources);useProjectStore.setState({project:next,selection:projectSelection(next,linkedIds(next,[contextMenu.segmentId])),isPlaying:false});}catch(e){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:t(e instanceof Error?e.message:String(e))}));}closeMenu();}}>{t(side==='left'?'placement.trimStart':'placement.trimEnd')}</button>)}
-              <button role="menuitem" tabIndex={-1} className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700" onClick={()=>{if(contextMenu.segmentId){store.selectSegment(contextMenu.segmentId);closeMenu();void runTimelineTool('place-clips');}}}>{t('placement.title')}</button>
+              {['clip-settings','place-clips','trim-tools','fades','retime','edit-groups'].map(id=>{const command=Object.values(timelineCommands).flat().find(c=>c.id===id)!;return <button key={id} type="button" role="menuitem" tabIndex={-1} className="w-full min-h-11 text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700" onClick={()=>{flushSync(()=>{if(contextMenu.segmentId&&!store.selection?.segmentIds.includes(contextMenu.segmentId))store.selectSegment(contextMenu.segmentId);closeMenu();});void import('../../lib/nativeMenu').then(({dispatchNativeMenu})=>dispatchNativeMenu(id));}}>{t(`nativeMenu.${command.label}`,command.label)}</button>;})}<hr className="border-gray-700"/>
+              {(['left','right'] as const).map(side=><button key={side} role="menuitem" tabIndex={-1} className="w-full min-h-11 text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700" onClick={()=>{if(!contextMenu.segmentId||useUIStore.getState().timelineRecording)return;try{const state=useProjectStore.getState(),next=trimToPlayhead(state.project,[contextMenu.segmentId],side,state.playheadPosition,state.sources);useProjectStore.setState({project:next,selection:projectSelection(next,linkedIds(next,[contextMenu.segmentId])),isPlaying:false});}catch(e){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:t(e instanceof Error?e.message:String(e))}));}closeMenu();}}>{t(side==='left'?'placement.trimStart':'placement.trimEnd')}</button>)}
+
               <button
                 type="button"
                 role="menuitem"
                 tabIndex={-1}
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
+                className="w-full min-h-11 text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
                 onClick={handleSplit}
               >
                 {t('timeline.split')}
@@ -779,7 +784,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
                 type="button"
                 role="menuitem"
                 tabIndex={-1}
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
+                className="w-full min-h-11 text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
                 onClick={handleCopySeg}
               >
                 {t('timeline.copy')}
@@ -788,7 +793,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
                 type="button"
                 role="menuitem"
                 tabIndex={-1}
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
+                className="w-full min-h-11 text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
                 onClick={handleCutSeg}
               >
                 {t('timeline.cut')}
@@ -798,7 +803,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
                 type="button"
                 role="menuitem"
                 tabIndex={-1}
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-violet-400"
+                className="w-full min-h-11 text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-violet-400"
                 onClick={handleApplyVoiceEffects}
               >
                 {t('timeline.applyVoiceEffects')}
@@ -808,7 +813,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
                 type="button"
                 role="menuitem"
                 tabIndex={-1}
-                className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-red-400"
+                className="w-full min-h-11 text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-red-400"
                 onClick={handleDeleteSeg}
               >
                 {t('timeline.delete')}
@@ -819,7 +824,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
               type="button"
               role="menuitem"
               tabIndex={-1}
-              className="w-full text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
+              className="w-full min-h-11 text-left px-3 py-1.5 hover:bg-gray-700 focus:bg-gray-700 focus:outline-none text-gray-200"
               onClick={handlePasteHere}
             >
               {t('timeline.paste')}

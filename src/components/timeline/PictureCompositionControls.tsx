@@ -1,3 +1,4 @@
+import {HelpDetails} from '../common/HelpDetails';
 import {useTranslation} from 'react-i18next';
 import {useProjectStore} from '../../stores/projectStore';
 import {NumberField} from './NumberField';
@@ -27,6 +28,6 @@ export function PictureCompositionControls({id}:{id:string}){
     {(stored.keyframes??[]).map(p=><div key={p.time} className="flex items-center gap-2 text-xs"><button className="min-h-11 flex-1 text-left" onClick={()=>useProjectStore.getState().setPlayheadPosition(Math.max(0,clip.startTime+p.time-(stored.keyframeOffset??0)))}>{p.time.toFixed(3)} s · {Math.round(p.opacity*100)}%</button><select className="bg-gray-800 min-h-11 max-w-28" aria-label={t('picture.easing')} value={p.easing??'linear'} onChange={e=>{const state=useProjectStore.getState();const composition={...stored,keyframes:stored.keyframes?.map(other=>other.time===p.time?{...other,easing:e.target.value as PictureKeyframe['easing']}:other)};useProjectStore.setState({project:{...state.project,video:{...video,clips:videoClips(video).map(c=>c.id===id?{...c,composition}:c)}}});}}>{(['linear','step','ease-in','ease-out','ease-in-out'] as const).map(kind=><option key={kind} value={kind}>{t(`picture.curve.${kind}`)}</option>)}</select><button className="min-h-11" onClick={()=>{
       const state=useProjectStore.getState();const composition={...stored,keyframes:stored.keyframes?.filter(other=>other.time!==p.time)};useProjectStore.setState({project:{...state.project,video:{...video,clips:videoClips(video).map(c=>c.id===id?{...c,composition}:c)}}});
     }}>{t('timeline.delete')}</button></div>)}
-    <p className="text-xs text-gray-400">{t('picture.keyframeHelp')}</p>
+    <HelpDetails><p>{t('picture.keyframeHelp')}</p></HelpDetails>
   </fieldset>;
 }

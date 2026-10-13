@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.1 — 2026-10-13
+
+- Make Move & trim control mouse, pen and touch editing. Selected audio clips
+  show visible boundary handles, with source checks, one undo and Escape cancel.
+- Expand clip context actions and replace the broad Clip Settings workspace
+  with a focused dialog. Fades, FX and appearance open separately; descriptions
+  use information buttons. Dialog transport remains usable and nested inspectors
+  keep independent titles/focus/Escape behavior.
+- Move waveform display into View. Add a shared File/Edit/View/Playback/Tools
+  touch ribbon with short labels; every timeline menu command is available there.
+- Expand explanation mode to menu commands, fields, handles and other timeline
+  controls. Add persisted Fit all default and ribbon visibility settings.
+
 ## 0.10.0 — 2026-10-13
 
 - Simplify Record / takes: basic track/arm/meter/record controls, with input setup,

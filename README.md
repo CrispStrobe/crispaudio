@@ -299,3 +299,5 @@ and [licensing details](docs/MEDIA_FORMATS_AND_LICENSES.md). External ASR models
 have separate licenses. Optional installed tools are not bundled with the app.
 
 Recording review: [take audition and saved comp versions](docs/RECORDING_REVIEW.md).
+
+Timeline interaction: [compact inspectors, boundary handles and touch ribbon](docs/TIMELINE_UX.md).

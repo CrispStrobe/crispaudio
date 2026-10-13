@@ -59,7 +59,7 @@ export function TimelineWorkspace({tab,onTab,onClose}:{tab:WorkspaceTab;onTab:(t
       </>}
       {tab==='edit'&&<>
         <div className="flex flex-wrap gap-2"><ToolButton icon={Link2} label={t('workspace.link')} disabled={ids.length<2} onClick={()=>void run(()=>commit(linkClips(project,ids)))}/><ToolButton icon={Unlink} label={t('workspace.unlink')} disabled={!ids.length} onClick={()=>void run(()=>commit(linkClips(project,ids,true)))}/></div>
-        <p className="text-gray-400">{t('workspace.linkHelp')}</p>
+        <HelpDetails><p>{t('workspace.linkHelp')}</p></HelpDetails>
         {ids.length>0&&<div className="flex flex-wrap gap-2">{[-1,1].map(direction=><button key={direction} className="timeline-tool" onClick={()=>void run(()=>commit(slipClips(project,ids,direction*step,sources)))}>{t('workspace.slip')} {direction<0?'−':'+'}1 {t('workspace.frame')}</button>)}</div>}
         {video&&audio&&<div className="flex gap-2"><button className="timeline-tool" aria-pressed={!inspectAudio} onClick={()=>setInspectAudio(false)}>{t('interview.video')}</button><button className="timeline-tool" aria-pressed={inspectAudio} onClick={()=>setInspectAudio(true)}>{t('interview.audio')}</button></div>}
         {video&&(!audio||!inspectAudio)?<VideoClipSettings id={video.id}/>:audio?<SegmentEffectsPanel onClose={onClose}/>:<p>{t('workspace.selectClip')}</p>}

@@ -34,3 +34,7 @@ it('keeps fast paste-bound edits focused and applies the displayed retimed inter
  const result=useProjectStore.getState().project,target={trackId:'t',effectIndex:0,parameter:'rate' as const};
  expect(automationValue(result,target,4)).toBeCloseTo(.58,12);expect(automationValue(result,target,7)).toBeCloseTo(.46,12);expect(automationValue(result,target,8)).toBeCloseTo(automationValue(project,target,8),12);
 });
+it('nested inspectors keep unique titles, focus only the top dialog and close one level on Escape',()=>{
+ vi.useFakeTimers();const outer=vi.fn(),inner=vi.fn();render(<><Modal isOpen title="Clip inspector" onClose={outer}><p>Clip</p></Modal><Modal isOpen title="FX inspector" onClose={inner}><p>FX</p></Modal></>);
+ const dialogs=screen.getAllByRole('dialog');expect(dialogs[0].getAttribute('aria-labelledby')).not.toBe(dialogs[1].getAttribute('aria-labelledby'));expect(screen.getByRole('dialog',{name:'FX inspector'})).toBe(dialogs[1]);act(()=>vi.advanceTimersByTime(60));expect(dialogs[1].contains(document.activeElement)).toBe(true);fireEvent.keyDown(document,{key:'Escape'});expect(inner).toHaveBeenCalledOnce();expect(outer).not.toHaveBeenCalled();
+});

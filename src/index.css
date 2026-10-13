@@ -598,3 +598,5 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
 .sfx-actions [aria-pressed="true"] { background:#312e81; border-color:#a5b4fc; color:#c7d2fe; }
 .sfx-editor .sfx-header button { flex-shrink:0; }
 @media (max-width:480px) { .sfx-preset { padding-left:9px; gap:7px; font-size:12px; } }
+
+[data-timeline-help="true"] :is(button,input,select,summary,canvas,[role="slider"]) {outline:1px dashed #818cf8;outline-offset:2px;cursor:help;}

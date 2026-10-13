@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TimelineHelp } from '../../../src/components/timeline/TimelineHelp';
-vi.mock('react-i18next',()=>({useTranslation:()=>({t:(key:string)=>key})}));
+vi.mock('react-i18next',()=>({useTranslation:()=>({t:(key:string)=>key,i18n:{exists:()=>true}})}));
 beforeEach(()=>vi.stubGlobal('ResizeObserver',class {observe(){} disconnect(){}}));
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 function Editor({action}:{action:()=>void}){
@@ -12,6 +12,8 @@ function Editor({action}:{action:()=>void}){
   <button data-help="move" onClick={action}>Move</button>
   <input data-help="height" aria-label="Height" type="range"/>
   <button data-help="remove" disabled>Delete</button>
+  <button data-help-command="save" onClick={action}>Save</button>
+  <input aria-label="Project name"/>
   {open&&<TimelineHelp open onClose={()=>setOpen(false)}/>}
  </div>;
 }
@@ -26,6 +28,9 @@ describe('contextual timeline help',()=>{
   expect(screen.getAllByRole('note')).toHaveLength(1);
   expect(screen.getByRole('note')).toHaveTextContent('usability.help_height');
   expect(screen.getByRole('button',{name:'Move'})).not.toHaveAttribute('data-help-target');
+ });
+ it('covers shared menu commands and unannotated input controls',()=>{
+  render(<Editor action={vi.fn()}/>);fireEvent.pointerOver(screen.getByRole('button',{name:'Save'}));expect(screen.getByRole('note')).toHaveTextContent('commandHelp.save');fireEvent.pointerOver(screen.getByRole('textbox',{name:'Project name'}));expect(screen.getByRole('note')).toHaveTextContent('usability.help_value');
  });
  it('lets touch/click inspect without executing actions; Escape restores normal editing',()=>{
   const action=vi.fn();render(<Editor action={action}/>);

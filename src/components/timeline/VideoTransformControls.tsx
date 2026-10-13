@@ -1,3 +1,4 @@
+import {HelpDetails} from '../common/HelpDetails';
 import { useTranslation } from 'react-i18next';
 import { RotateCw, RotateCcw, FlipHorizontal2, FlipVertical2, Copy, Undo2 } from 'lucide-react';
 import { ToolButton } from '../common/ToolButton';
@@ -26,6 +27,6 @@ export function VideoTransformControls({id}:{id:string}) {
       <ToolButton icon={Undo2} label={t('videoTransform.reset')} onClick={()=>change(undefined)}/>
       <ToolButton icon={Copy} label={t('videoTransform.copy')} disabled={videoClips(useProjectStore.getState().project.video).filter(c=>selected?.includes(c.id)).length<2} onClick={()=>change({...value},selected)}/>
     </div>
-    <p className="text-xs text-gray-400">{t('videoTransform.help')}</p>
+    <HelpDetails><p>{t('videoTransform.help')}</p></HelpDetails>
   </section>;
 }

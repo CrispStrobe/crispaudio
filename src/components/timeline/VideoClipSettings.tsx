@@ -1,3 +1,4 @@
+import {HelpDetails} from '../common/HelpDetails';
 import {PictureCompositionControls} from './PictureCompositionControls';
 import {pictureTrackId} from '../../lib/pictureComposition';
 import { VideoTransformControls } from './VideoTransformControls';
@@ -47,25 +48,26 @@ export function VideoClipSettings({id}: {id:string}) {
     }catch{setError(t(type!=='cut'&&!previous?'editing.needPrevious':'editing.invalidVideo'));return false;}
   };
   return <div className="space-y-4">
+    <HelpDetails><p>{t('editing.videoHelp')}</p></HelpDetails>
+    {(['startTime','duration'] as const).map(key=><label key={key} className="flex items-center justify-between gap-3 text-sm text-gray-200">{t(`editing.${key}`)}<NumberField key={`${id}-${key}`} value={clip[key]} step={1/fps} label={t(`editing.${key}`)} onCommit={value=>change({[key]:frameTime(value,fps)})} onCancel={()=>setError('')}/></label>)}
+    <details data-picture-section="source"><summary className="min-h-11 content-center cursor-pointer border-t border-gray-800">{t('workspace.media')}</summary><div className="space-y-3">
     <label className="block text-sm text-gray-200">{t('workspace.media')}<select disabled={!!clip.linkGroup} aria-label={t('workspace.media')} className="w-full bg-gray-800 rounded p-2" value={clip.sourceId??'legacy-video'} onChange={event=>{
       const source=videoSources(video).find(candidate=>candidate.id===event.target.value)!;
       change({sourceId:source.id==='legacy-video'?undefined:source.id,sourceOffset:0,duration:Math.min(clip.duration,source.duration)});
     }}>{videoSources(video).map(source=><option key={source.id} value={source.id}>{source.name}</option>)}</select></label>
-    <p className="text-sm text-gray-400">{t('editing.videoHelp')}</p>
-    {(['startTime','sourceOffset','duration','fadeIn','fadeOut'] as const).map(key=><label key={key} className="flex items-center justify-between gap-3 text-sm text-gray-200">{t(`editing.${key}`)}
-      <NumberField key={`${id}-${key}`} value={clip[key]} step={1/fps} label={t(`editing.${key}`)} onCommit={value=>change({[key]:frameTime(value,fps)})} onCancel={()=>setError('')}/>
-    </label>)}
+    <label className="flex items-center justify-between gap-3 text-sm text-gray-200">{t('editing.sourceOffset')}<NumberField value={clip.sourceOffset} step={1/fps} label={t('editing.sourceOffset')} onCommit={value=>change({sourceOffset:frameTime(value,fps)})} onCancel={()=>setError('')}/></label></div></details>
+    <details data-picture-section="fades"><summary className="min-h-11 content-center cursor-pointer border-t border-gray-800">{t('fades.title')}</summary><div className="space-y-3">{(['fadeIn','fadeOut'] as const).map(key=><label key={key} className="flex items-center justify-between gap-3 text-sm text-gray-200">{t(`editing.${key}`)}<NumberField value={clip[key]} step={1/fps} label={t(`editing.${key}`)} onCommit={value=>change({[key]:frameTime(value,fps)})} onCancel={()=>setError('')}/></label>)}</div></details>
+    <details data-picture-section="transitions"><summary className="min-h-11 content-center cursor-pointer border-t border-gray-800">{t('editing.transition')}</summary><div className="space-y-3">
     <label className="flex items-center justify-between gap-3 text-sm text-gray-200">{t('editing.transition')}<select disabled={!!clip.linkGroup&&overlap<=1e-6} value={clip.transition} className="bg-gray-800 p-2 rounded max-w-52" aria-label={t('editing.transition')} onChange={event=>transition(event.target.value as VideoClip['transition'])}>
       {VIDEO_TRANSITIONS.map(type=><option key={type} value={type} disabled={type==='cut'&&!!clip.linkGroup&&overlap>1e-6}>{t(`editing.transition_${type}`)}</option>)}
     </select></label>
     <label className="flex items-center justify-between gap-3 text-sm text-gray-200">{t('editing.transitionDuration')}
       <NumberField key={`${id}-transition`} value={clip.transitionDuration} min={1/fps} step={1/fps} disabled={clip.transition==='cut'||!!clip.linkGroup} label={t('editing.transitionDuration')} onCommit={value=>transition(clip.transition,frameTime(value,fps))} onCancel={()=>setError('')}/>
     </label>
-    <PictureCompositionControls id={id}/>
-    <VideoTransformControls id={id}/>
-    <VideoColorControls id={id}/>
-    <p className="text-xs text-gray-400">{t('editing.transitionTiming')}</p>
-    <p className="text-xs text-gray-400">{t('editing.advancedTransitions')}</p>
+    <HelpDetails><p>{t('editing.transitionTiming')}</p><p>{t('editing.advancedTransitions')}</p></HelpDetails></div></details>
+    <details data-picture-section="composition"><summary className="min-h-11 content-center cursor-pointer border-t border-gray-800">{t('picture.composition')}</summary><PictureCompositionControls id={id}/></details>
+    <details data-picture-section="transform"><summary className="min-h-11 content-center cursor-pointer border-t border-gray-800">{t('videoTransform.title')}</summary><VideoTransformControls id={id}/></details>
+    <details data-picture-section="color"><summary className="min-h-11 content-center cursor-pointer border-t border-gray-800">{t('videoColor.title')}</summary><VideoColorControls id={id}/></details>
     {error&&<p role="alert" className="text-amber-300 text-sm">{error}</p>}
   </div>;
 }

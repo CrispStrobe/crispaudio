@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +22,7 @@ export const Modal: React.FC<ModalProps> = ({
   initialFocusRef,
   children,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(),titleId=useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -30,7 +30,7 @@ export const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if(e.key==='Escape'&&Array.from(document.querySelectorAll('[role=dialog]')).at(-1)===panelRef.current?.closest('[role=dialog]')){e.preventDefault();onClose();}
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
@@ -42,7 +42,7 @@ export const Modal: React.FC<ModalProps> = ({
       const previousFocus = document.activeElement as HTMLElement | null;
       // Small delay so portal has mounted
       const id = initialFocusRef?.current ? undefined : setTimeout(() => {
-        if (!panelRef.current?.contains(document.activeElement)) closeBtnRef.current?.focus();
+        if(Array.from(document.querySelectorAll('[role=dialog]')).at(-1)===panelRef.current?.closest('[role=dialog]')&&!panelRef.current?.contains(document.activeElement))closeBtnRef.current?.focus();
       }, 50);
       initialFocusRef?.current?.focus();
       return () => { if (id !== undefined) clearTimeout(id); if (previousFocus?.isConnected) previousFocus.focus(); };
@@ -93,7 +93,7 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={handleBackdropClick}
       aria-modal="true"
       role="dialog"
-      aria-labelledby={title ? 'modal-title' : undefined}
+      aria-labelledby={title ? titleId : undefined}
     >
       {/* Blur backdrop */}
       <div
@@ -117,7 +117,7 @@ export const Modal: React.FC<ModalProps> = ({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-700/70 flex-shrink-0">
           {title ? (
             <h2
-              id="modal-title"
+              id={titleId}
               className="text-sm font-semibold text-gray-100 leading-none"
             >
               {title}

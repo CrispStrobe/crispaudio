@@ -20,6 +20,10 @@ export type BitDepth = (typeof BIT_DEPTHS)[number];
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 interface SettingsState {
+  timelineAutoFit:boolean;
+  timelineRibbon:'auto'|'always'|'never';
+  setTimelineAutoFit:(enabled:boolean)=>void;
+  setTimelineRibbon:(mode:'auto'|'always'|'never')=>void;
   language: Language;
   theme: Theme;
   defaultSampleRate: SampleRate;
@@ -57,6 +61,10 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       language: (i18n.language?.startsWith('de') ? 'de' : 'en') as Language,
       theme: 'dark' as Theme,
+      timelineAutoFit:true,
+      timelineRibbon:'auto',
+      setTimelineAutoFit:(timelineAutoFit)=>set({timelineAutoFit}),
+      setTimelineRibbon:(timelineRibbon)=>set({timelineRibbon}),
       defaultSampleRate: 44100,
       defaultBitDepth: 16,
       defaultExportFormat: 'wav' as ExportFormat,

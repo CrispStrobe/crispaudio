@@ -1,3 +1,4 @@
+import {HelpDetails} from '../common/HelpDetails';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RotateCcw, Copy, Power } from 'lucide-react';
@@ -40,6 +41,6 @@ export function VideoColorControls({id}:{id:string}) {
         onPointerUp={end} onPointerCancel={end} onBlur={end}
         onChange={event=>change({...color,[key]:Number(event.target.value)})}/>
     </label>)}
-    <p className="text-xs text-gray-400">{t('videoColor.help')}</p>
+    <HelpDetails><p>{t('videoColor.help')}</p></HelpDetails>
   </section>;
 }

@@ -1,3 +1,5 @@
+import {InspectorTransport} from './InspectorTransport';
+import {HelpDetails} from '../common/HelpDetails';
 import {useTimelineTool} from '../../hooks/useTimelineTool';
 import {NumberField} from './NumberField';
 import { ClipFadeTools } from './ClipFadeTools';
@@ -17,13 +19,13 @@ import { Modal } from '../common/Modal';
 import { SegmentEffectsPanel } from './SegmentEffectsPanel';
 
 /** Actions are visible and keyboard/touch accessible; no right-click required. */
-export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: { touchArrange: boolean; onTouchArrange: () => void; onInspector?:()=>void }) {
+export function TimelineActions({ touchArrange, onTouchArrange }: { touchArrange: boolean; onTouchArrange: () => void }) {
   const { t } = useTranslation();
   const [fades, setFades] = useState(false);
   const [trim,setTrim]=useState(false);
   useEffect(()=>{const open=()=>setTrim(true);window.addEventListener('crispaudio-trim-tools',open);return()=>window.removeEventListener('crispaudio-trim-tools',open);},[]);
   const [mixer,setMixer] = useState(false);
-  const [inspector, setInspector] = useState(false);
+  const [inspector, setInspector] = useState(false),[inspectPicture,setInspectPicture]=useState(false);
   const video = useProjectStore(s=>s.project.video);
   const masterEffects = useProjectStore(s=>s.project.masterEffects);
   const [nudge,setNudge]=useState(.001);
@@ -35,6 +37,7 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
   const allSelected=[...selected,...selectedVideo];
   const splittable = allSelected.filter((clip) => position > clip.startTime && position < clip.startTime + clip.duration);
   const [nudgeOpen,setNudgeOpen]=useState(false);
+  useTimelineTool('clip-settings',()=>setInspector(true),!!allSelected.length);
   useTimelineTool('track-settings',()=>setMixer(true),!!tracks.length);
   useTimelineTool('fades',()=>setFades(true),!!allSelected.length);
   useTimelineTool('split-all',()=>{const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,projectClips(state.project).map(c=>c.id),state.playheadPosition),selection:null});},!!tracks.length||!!video);
@@ -53,7 +56,7 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
         const state=useProjectStore.getState();useProjectStore.setState({project:splitClips(state.project,selection?.segmentIds??[],position),selection:null});
       }}/>
 
-      <ToolButton data-help="inspector" icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>onInspector?onInspector():setInspector(true)}/>
+      <ToolButton data-help="inspector" icon={Settings2} label={t('timeline.clipSettings')} disabled={!allSelected.length} onClick={()=>setInspector(true)}/>
 
 
 
@@ -64,12 +67,13 @@ export function TimelineActions({ touchArrange, onTouchArrange, onInspector }: {
     <Modal isOpen={fades && allSelected.length > 0} onClose={() => setFades(false)} title={t('fades.title')}>
       <ClipFadeTools/>
     </Modal>
-    <Modal isOpen={inspector && allSelected.length > 0} onClose={() => setInspector(false)} title={t('timeline.clipSettings')}>
-      {selectedVideo.length ? <VideoClipSettings id={selectedVideo[0].id}/> : <SegmentEffectsPanel onClose={() => setInspector(false)} />}
+    <Modal isOpen={inspector && allSelected.length > 0} onClose={() => setInspector(false)} title={t('timeline.clipSettings')}><InspectorTransport/>
+      {!!selected.length&&!!selectedVideo.length&&<div className="flex gap-2 mb-3" role="tablist" aria-label={t('timeline.clipSettings')}><button className="timeline-tool" role="tab" aria-selected={!inspectPicture} onClick={()=>setInspectPicture(false)}>{t('interview.audio')}</button><button className="timeline-tool" role="tab" aria-selected={inspectPicture} onClick={()=>setInspectPicture(true)}>{t('interview.video')}</button></div>}
+      {selectedVideo.length&&(!selected.length||inspectPicture)?<VideoClipSettings id={selectedVideo[0].id}/>:<SegmentEffectsPanel onClose={()=>setInspector(false)}/>}
     </Modal>
     <Modal isOpen={mixer} onClose={() => setMixer(false)} title={t('nativeMenu.Track Settings…')} widthClass="max-w-2xl">
       <button className="timeline-tool mb-3" onClick={()=>{const state=useProjectStore.getState();tracks.forEach(track=>state.updateTrack(track.id,{solo:false}));}}>{t('editor.clearSolos')}</button>
-      <p className="text-sm text-gray-400 mb-4">{t('timeline.mixerHelp')}</p>
+      <HelpDetails><p>{t('timeline.mixerHelp')}</p></HelpDetails>
       <div className="space-y-4">
         {mixer && tracks.map((track, i) => <section key={track.id} className="p-3 rounded-xl bg-gray-950 border border-gray-700 space-y-2">
           <input className="w-full min-h-11 bg-gray-900 rounded px-3 text-gray-100" aria-label={`${t('timeline.trackName')} ${i + 1}`} value={track.name}

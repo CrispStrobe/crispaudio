@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.0. This section is the current plan.
+Updated 2026-10-13, for local 0.10.1. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -50,8 +50,10 @@ Input ownership and take audition/comp removal/reset/version comparison are
 implemented in 0.9.9. Built-in MacBook microphone capture and audible speech playback are user-confirmed; additional
 physical inputs can be checked later when connected. Track folders, collapse, shared mute/solo and linked clip selection are now
 implemented and browser-checked. Faster editing is implemented: visible clip keyboard navigation, exact group
-placement, context trims and multi-selection drag. Next: clip/master automation
-passes and additional useful FX parameters. Audit existing punch/loop/take/comp and bus/send tools before
+placement, context trims and multi-selection drag. The requested GUI pass is implemented: actual editing mode, boundary handles,
+expanded context actions, focused clip dialog, information buttons, touch ribbon,
+expanded help and persisted default Fit all. Next: clip/master automation passes
+and additional useful FX parameters, then mix review and sample walkthroughs. Audit existing punch/loop/take/comp and bus/send tools before
 selecting each concrete addition. Shared frame scheduling does not remove independent-device drift. Track folders
 and grouped controls are distinct from routing.
 Keep secondary controls in menus or focused inspectors, with concise labels.

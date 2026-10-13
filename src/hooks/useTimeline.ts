@@ -189,12 +189,12 @@ export function useTimeline() {
   // ── Mouse event handlers (to attach to the canvas) ────────────────────────
 
   const onMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e: React.MouseEvent<HTMLCanvasElement>, forcedHit?:HitZone) => {
       const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
       const canvasX = e.clientX - rect.left;
       const canvasY = e.clientY - rect.top;
 
-      const hit = hitTest(canvasX, canvasY);
+      const hit = forcedHit??hitTest(canvasX, canvasY);
       const store = useProjectStore.getState();
 
       if (hit.type === 'empty') {
