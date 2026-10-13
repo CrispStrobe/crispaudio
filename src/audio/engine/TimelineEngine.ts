@@ -1,3 +1,6 @@
+import {prepareNativeTimelineGraph,type NativeTimelineGraph,type NativeTimelineRacks} from '../plugins/NativeTimelineGraph';
+import {compensatedConnection,disposeCompensation} from '../plugins/GraphCompensation';
+import {graphClock,outputRoute,sendRoute,type GraphLatency} from '../../lib/graphLatency';
 import {prepareLoudness,createLoudness} from '../effects/Loudness';
 import type {LoudnessReading} from '../dsp/loudness';
 import {prepareDucking,createDucking} from '../effects/Ducking';
@@ -87,12 +90,12 @@ export class TimelineEngine {
       const automation=this.automationNodes.get(track.id);
       if(automation&&automation.points!==track.automation){
         automation.node.gain.cancelScheduledValues(now);
-        scheduleGain(automation.node.gain,track.automation,now,this.playbackStart+now-this.playbackClock);
+        scheduleGain(automation.node.gain,track.automation,now,this.playbackStart+now-this.scopeClock(`gain:${track.id}`));
         automation.points=track.automation;
       }
       if(nodes.points!==track.panAutomation || (!track.panAutomation?.length && nodes.staticPan!==track.pan)){
         nodes.pan.pan.cancelScheduledValues(now);
-        if(track.panAutomation?.length || nodes.points?.length)schedulePan(nodes.pan.pan,track.panAutomation,now,this.playbackStart+now-this.playbackClock,track.pan);
+        if(track.panAutomation?.length || nodes.points?.length)schedulePan(nodes.pan.pan,track.panAutomation,now,this.playbackStart+now-this.scopeClock(`pan:${track.id}`),track.pan);
         else nodes.pan.pan.setTargetAtTime(Math.max(-1,Math.min(1,track.pan)),now,.005);
         nodes.points=track.panAutomation;nodes.staticPan=track.pan;
       }
@@ -114,12 +117,12 @@ export class TimelineEngine {
       const mix=this.mixNodes.get(`${scope}:${index}`);
       if(mix&&(mix.points!==effect.automation||(!effect.automation?.mix?.length&&mix.mix!==(effect.params.mix??effectParameterDefault(effect.type,'mix')))||(mix.feedback&&!effect.automation?.feedback?.length&&mix.staticFeedback!==(effect.params.feedback??.4))||(mix.time&&!effect.automation?.time?.length&&mix.staticTime!==(effect.params.time??.3))||(mix.depth&&!effect.automation?.depth?.length&&mix.staticDepth!==(effect.params.depth??.5))||(mix.freq&&!effect.automation?.freq?.length&&mix.staticFreq!==(effect.params.freq??200))||(mix.rate&&!effect.automation?.rate?.length&&mix.staticRate!==(effect.params.rate??1.5)))){
         mix.wet.cancelScheduledValues(now);mix.dry.cancelScheduledValues(now);
-        scheduleMix(mix.wet,mix.dry,effect.automation?.mix,now,this.playbackStart+now-this.playbackClock,effect.params.mix??effectParameterDefault(effect.type,'mix'),mix.dryScale);
-        if(mix.feedback){mix.feedback.cancelScheduledValues(now);scheduleFeedback(mix.feedback,effect.automation?.feedback,now,this.playbackStart+now-this.playbackClock,effect.params.feedback??.4);}
-        if(mix.time){mix.time.cancelScheduledValues(now);scheduleDelayTime(mix.time,effect.automation?.time,now,this.playbackStart+now-this.playbackClock,effect.params.time??.3);}
-        if(mix.depth){for(const param of mix.depth)param.cancelScheduledValues(now);scheduleChorusDepth(mix.depth,effect.automation?.depth,now,this.playbackStart+now-this.playbackClock,effect.params.depth??.5);mix.staticDepth=effect.params.depth??.5;}
-        if(mix.rate){for(const param of mix.rate)param.cancelScheduledValues(now);scheduleChorusRate(mix.rate,effect.automation?.rate,now,this.playbackStart+now-this.playbackClock,effect.params.rate??1.5);mix.staticRate=effect.params.rate??1.5;}
-        if(mix.freq){mix.freq.cancelScheduledValues(now);scheduleRingFrequency(mix.freq,effect.automation?.freq,now,this.playbackStart+now-this.playbackClock,effect.params.freq??200);mix.staticFreq=effect.params.freq??200;}
+        scheduleMix(mix.wet,mix.dry,effect.automation?.mix,now,this.playbackStart+now-this.scopeClock(scope),effect.params.mix??effectParameterDefault(effect.type,'mix'),mix.dryScale);
+        if(mix.feedback){mix.feedback.cancelScheduledValues(now);scheduleFeedback(mix.feedback,effect.automation?.feedback,now,this.playbackStart+now-this.scopeClock(scope),effect.params.feedback??.4);}
+        if(mix.time){mix.time.cancelScheduledValues(now);scheduleDelayTime(mix.time,effect.automation?.time,now,this.playbackStart+now-this.scopeClock(scope),effect.params.time??.3);}
+        if(mix.depth){for(const param of mix.depth)param.cancelScheduledValues(now);scheduleChorusDepth(mix.depth,effect.automation?.depth,now,this.playbackStart+now-this.scopeClock(scope),effect.params.depth??.5);mix.staticDepth=effect.params.depth??.5;}
+        if(mix.rate){for(const param of mix.rate)param.cancelScheduledValues(now);scheduleChorusRate(mix.rate,effect.automation?.rate,now,this.playbackStart+now-this.scopeClock(scope),effect.params.rate??1.5);mix.staticRate=effect.params.rate??1.5;}
+        if(mix.freq){mix.freq.cancelScheduledValues(now);scheduleRingFrequency(mix.freq,effect.automation?.freq,now,this.playbackStart+now-this.scopeClock(scope),effect.params.freq??200);mix.staticFreq=effect.params.freq??200;}
         mix.staticTime=effect.params.time??.3;mix.points=effect.automation;mix.mix=effect.params.mix??effectParameterDefault(effect.type,'mix');mix.staticFeedback=effect.params.feedback??.4;
       }
       if(!node||!isEQ(effect.type))return;
@@ -131,7 +134,7 @@ export class TimelineEngine {
   /** Audio-clock position and generation let a local pass reject seeks/loops/restarts. */
   automationClock():{time:number;start:number;generation:number}|undefined {
     if(!this.outputGain)return;
-    return {time:Math.min(this.playbackEnd,this.playbackStart+this.ctx.currentTime-this.playbackClock),start:this.playbackStart,generation:this.playbackGeneration};
+    return {time:Math.max(this.playbackStart,Math.min(this.playbackEnd,this.playbackStart+this.ctx.currentTime-this.playbackClock)),start:this.playbackStart,generation:this.playbackGeneration};
   }
   /** Exact graph origin for capture placement; read after play(), not before graph creation. */
   playbackAnchor():{frame:number;timeline:number}|undefined {
@@ -141,7 +144,7 @@ export class TimelineEngine {
   /** Audition one lane without changing the project or rebuilding DSP. Undefined restores Read. */
   previewAutomation(project:TimelineProject,target:AutomationTarget,value?:number):boolean {
     const track=project.tracks.find(t=>t.id===target.trackId);if(!track)return false;
-    const now=this.ctx.currentTime,time=this.playbackStart+now-this.playbackClock;
+    const now=this.ctx.currentTime,time=this.playbackStart+now-this.scopeClock(`${target.parameter}:${track.id}`);
     if(target.parameter==='gain'){
       const param=this.automationNodes.get(track.id)?.node.gain;if(!param)return false;
       param.cancelScheduledValues(now);if(value===undefined)scheduleGain(param,track.automation,now,time);else param.setValueAtTime(value,now);return true;
@@ -156,7 +159,7 @@ export class TimelineEngine {
   previewEffectAutomation(project:TimelineProject,scope:string,index:number,parameter:DelayParameter,value?:number):boolean{
     const effect=(scope==='master'?project.masterEffects:scope.startsWith('track:')?project.tracks.find(t=>t.id===scope.slice(6))?.effects:project.tracks.flatMap(t=>t.segments).find(c=>scope===`clip:${c.id}`)?.effects)?.[index];
     const nodes=this.mixNodes.get(`${scope}:${index}`);if(!nodes||!effect||!supportsEffectParameter(effect.type,parameter))return false;
-    const now=this.ctx.currentTime,time=this.playbackStart+now-this.playbackClock;
+    const now=this.ctx.currentTime,time=this.playbackStart+now-this.scopeClock(scope);
     if(parameter==='mix'){
       nodes.wet.cancelScheduledValues(now);nodes.dry.cancelScheduledValues(now);
       scheduleMix(nodes.wet,nodes.dry,value===undefined?effect.automation?.mix:[],now,time,value??effect.params.mix??effectParameterDefault(effect.type,'mix'),nodes.dryScale);
@@ -174,6 +177,31 @@ export class TimelineEngine {
   }
 
   private playbackNodes = new Set<AudioNode>();
+  private compensationNodes=new Set<AudioWorkletNode>();
+  private nativeGraph?:NativeTimelineGraph;
+  private nativeClosing:Promise<void>=Promise.resolve();
+  private nativePreparation?:AbortController;
+  private scopeClocks=new Map<string,number>();
+  private scopeClock(scope:string){return this.scopeClocks.get(scope)??this.playbackClock;}
+
+  /** Internal native playback entry point. Track UI/export activation remains separate. */
+  async playNative(project:TimelineProject,startTime:number,endTime:number,racks:NativeTimelineRacks,onFault:(reason:string)=>void):Promise<void>{
+    routingOrder(project.tracks);
+    if(!Number.isFinite(startTime)||startTime<0||!Number.isFinite(endTime)||endTime<=startTime||endTime>project.duration)throw new Error('Invalid native playback range');
+    project=structuredClone(project);const sources=new Map(this.sources);
+    racks=new Map([...racks].map(([scope,entries])=>[scope,entries.map(entry=>({...entry,parameters:{...entry.parameters}}))]));
+    this.stop();const generation=this.playbackGeneration,controller=new AbortController();this.nativePreparation=controller;
+    let graph:NativeTimelineGraph|undefined;
+    try{
+      await this.nativeClosing;controller.signal.throwIfAborted();
+      await this.prepare(project);controller.signal.throwIfAborted();
+      graph=await prepareNativeTimelineGraph(this.ctx,project,racks,controller.signal,reason=>{if(this.playbackGeneration===generation){this.stop();onFault(reason);}});
+      controller.signal.throwIfAborted();
+      this.nativeGraph=graph;
+      this.buildPlayback(project,startTime,endTime,graph,sources);
+    }catch(error){await graph?.close();if(this.playbackGeneration===generation)this.stop();throw error;}
+  }
+
 
   constructor(ctx: AudioContext, masterGain?: GainNode) {
     this.ctx = ctx;
@@ -201,7 +229,10 @@ export class TimelineEngine {
   play(project: TimelineProject, startTime: number, endTime = project.duration): void {
     routingOrder(project.tracks);
     this.stop();
+    try{this.buildPlayback(project,startTime,endTime);}catch(error){this.stop();throw error;}
+  }
 
+  private buildPlayback(project:TimelineProject,startTime:number,endTime:number,native?:NativeTimelineGraph,sources=this.sources):void{
     // Capture all nodes created by this graph, including effect oscillators and
     // feedback loops, so repeated play/stop cannot leave a live processing graph.
     const nodes = this.playbackNodes;
@@ -217,8 +248,16 @@ export class TimelineEngine {
       },
     });
     const masterInput = ctx.createGain();
-    const now = ctx.currentTime;
-    this.playbackClock=now;this.playbackStart=startTime;this.playbackEnd=endTime;
+    const clock=native?graphClock(ctx.currentTime,ctx.sampleRate,native.plan.output,startTime,endTime,4096):undefined;
+    const now=clock?clock.input/ctx.sampleRate:ctx.currentTime;
+    const audibleTime=clock?clock.audible/ctx.sampleRate:now;
+    const connect=(input:AudioNode,output:AudioNode,frames:number,port=0)=>compensatedConnection(this.ctx,input,output,frames,this.compensationNodes,port);
+    const rack=(scope:string,input:AudioNode,effects:EffectConfig[],arrival:number)=>{
+      this.scopeClocks.set(scope,now+arrival/ctx.sampleRate);
+      const built=this.applyEffects(ctx,input,effects,scope);
+      return native?native.connect(scope,built,clock!.input+arrival,this.playbackNodes):built;
+    };
+    this.playbackClock=audibleTime;this.playbackStart=startTime;this.playbackEnd=endTime;
     const rangeGate = ctx.createGain();
     const outputGain = ctx.createGain();
     outputGain.gain.value = project.masterVolume ?? 1;
@@ -234,42 +273,47 @@ export class TimelineEngine {
     this.outputMeter = this.meterTap(ctx, output);
     rangeGate.connect(outputGain);
     output.connect(this.masterGain);
-    rangeGate.gain.setValueAtTime(1, now);
-    rangeGate.gain.setValueAtTime(0, now + Math.max(0, endTime - startTime));
-    this.applyEffects(ctx, masterInput, project.masterEffects, 'master').connect(rangeGate);
+    rangeGate.gain.setValueAtTime(clock?0:1,ctx.currentTime);
+    rangeGate.gain.setValueAtTime(1,audibleTime);
+    rangeGate.gain.setValueAtTime(0,audibleTime+Math.max(0,endTime-startTime));
+    rack('master',masterInput,project.masterEffects,native?.plan.masterInput??0).connect(rangeGate);
+    if(clock){const boundary=ctx.createBufferSource();boundary.buffer=ctx.createBuffer(1,1,ctx.sampleRate);boundary.connect(rangeGate);const generation=this.playbackGeneration;boundary.onended=()=>{if(this.playbackGeneration===generation)this.stop();};boundary.start(clock.endFrame/ctx.sampleRate);this.activeSources.push(boundary);}
     const audible = new Set(audibleTracks(project.tracks).map(track => track.id));
     const busInputs=new Map(project.tracks.filter(t=>t.kind==='bus').map(t=>[t.id,ctx.createGain()]));
     const posts=new Map(project.tracks.map(t=>[t.id,ctx.createGain()]));
-    const ducks=this.buildDucking(this.ctx,project.tracks,posts,true);
+    const ducks=this.buildDucking(this.ctx,project.tracks,posts,true,native?.plan);
     const tracksToPlay = project.tracks;
 
     for (const track of tracksToPlay) {
-      if (!track.segments.length&&track.kind!=='bus') continue;
+      if (!track.segments.length&&track.kind!=='bus'&&!native) continue;
+      const latency=native?.plan.tracks.get(track.id);
+      const inputTime=now+(latency?.input??0)/ctx.sampleRate;
+      const postTime=now+(latency?.output??0)/ctx.sampleRate;
+      this.scopeClocks.set(`gain:${track.id}`,inputTime);this.scopeClocks.set(`pan:${track.id}`,postTime);
       const trackGain = ctx.createGain();
       const trackStart=Math.min(...track.segments.map(clip=>clip.startTime));
       const trackEnd=Math.max(0,...track.segments.map(clip=>clip.startTime+clip.duration));
       const trackFade=ctx.createGain();
-      if(track.kind!=='bus')scheduleEnvelope(trackFade.gain,now+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
-      const automated=ctx.createGain();scheduleGain(automated.gain,track.automation,now,startTime);
-      this.playbackClock=now;this.playbackStart=startTime;this.playbackEnd=endTime;
+      if(track.kind!=='bus'&&track.segments.length)scheduleEnvelope(trackFade.gain,inputTime+Math.max(0,trackStart-startTime),Math.max(0,startTime-trackStart),trackEnd-trackStart,track.fadeInDuration??0,track.fadeOutDuration??0,track.fadeInCurve??'linear',track.fadeOutCurve??'linear');
+      const automated=ctx.createGain();scheduleGain(automated.gain,track.automation,inputTime,startTime);
       this.automationNodes.set(track.id,{node:automated,points:track.automation});
       busInputs.get(track.id)?.connect(trackFade);
-      trackFade.connect(automated);const inserted=this.applyEffects(ctx,automated,track.effects??[],`track:${track.id}`);const duck=ducks.get(track.id);if(duck)inserted.connect(duck);const processed=duck??inserted;processed.connect(trackGain);
+      trackFade.connect(automated);const inserted=rack(`track:${track.id}`,automated,track.effects??[],latency?.input??0);const duck=ducks.get(track.id);if(duck)connect(inserted,duck,latency?.ducking?.program??0);const processed=duck??inserted;processed.connect(trackGain);
       const pre=ctx.createGain();pre.gain.value=audible.has(track.id)?1:0;processed.connect(pre);this.routingGains.set(`pre:${track.id}`,pre);
       trackGain.gain.value = audible.has(track.id) ? track.volume : 0;
 
       const panner = ctx.createStereoPanner();
-      schedulePan(panner.pan,track.panAutomation,now,startTime,track.pan);
+      schedulePan(panner.pan,track.panAutomation,postTime,startTime,track.pan);
       const meter = this.meterTap(ctx, panner);
       trackGain.connect(panner);
-      panner.connect(posts.get(track.id)!);this.connectRouting(ctx,track,pre,posts.get(track.id)!,busInputs,masterInput,true);
+      panner.connect(posts.get(track.id)!);this.connectRouting(ctx,track,pre,posts.get(track.id)!,busInputs,masterInput,true,native?.plan);
       this.mixerNodes.set(track.id, {gain: trackGain, pan: panner, meter,points:track.panAutomation,staticPan:track.pan});
 
       for (const segment of track.segments) {
         const segEnd = segment.startTime + segment.duration;
         if (segEnd <= startTime) continue; // already past
 
-        const source = this.sources.get(segment.sourceId);
+        const source = sources.get(segment.sourceId);
         if (!source) continue;
 
         // How far into the segment do we start?
@@ -292,14 +336,14 @@ export class TimelineEngine {
 
         // Apply effects chain
         let currentNode: AudioNode = segGain;
-        currentNode = this.applyEffects(ctx, currentNode, segment.effects, `clip:${segment.id}`);
+        currentNode = rack(`clip:${segment.id}`,currentNode,segment.effects,0);
 
         // Apply fades via gain automation
         const fadeGain = ctx.createGain();
         currentNode.connect(fadeGain);
-        this.applyFade(fadeGain, segment, contextStartTime, segPlayStart);
+        this.applyFade(fadeGain, segment, contextStartTime+(native?.latencies.clips.get(segment.id)??0)/ctx.sampleRate, segPlayStart);
 
-        fadeGain.connect(trackFade);
+        connect(fadeGain,trackFade,latency?.clips.get(segment.id)??0);
 
         bufSrc.start(contextStartTime, bufferOffset, playDuration);
         this.activeSources.push(bufSrc);
@@ -310,6 +354,9 @@ export class TimelineEngine {
   /** Stop all active playback immediately. */
   stop(): void {
     this.playbackGeneration++;
+    this.nativePreparation?.abort();this.nativePreparation=undefined;
+    const native=this.nativeGraph;this.nativeGraph=undefined;if(native)this.nativeClosing=Promise.allSettled([this.nativeClosing,native.close()]).then(()=>{});
+    disposeCompensation(this.compensationNodes);this.scopeClocks.clear();
     for (const src of this.activeSources) {
       try {
         src.stop();
@@ -486,16 +533,17 @@ export class TimelineEngine {
     });
   }
 
-  private buildDucking(ctx:BaseAudioContext,tracks:TimelineTrack[],posts:Map<string,GainNode>,live:boolean){
+  private buildDucking(ctx:BaseAudioContext,tracks:TimelineTrack[],posts:Map<string,GainNode>,live:boolean,plan?:GraphLatency){
     const nodes=new Map<string,AudioWorkletNode>();
-    for(const track of tracks)if(track.ducking){const node=createDucking(ctx,track.ducking);posts.get(track.ducking.source)!.connect(node,0,1);nodes.set(track.id,node);if(live){this.duckingNodes.set(track.id,node);this.playbackNodes.add(node);}}
+    for(const track of tracks)if(track.ducking){const node=createDucking(ctx,track.ducking);if(plan)compensatedConnection(ctx,posts.get(track.ducking.source)!,node,plan.tracks.get(track.id)!.ducking!.detector,this.compensationNodes,1);else posts.get(track.ducking.source)!.connect(node,0,1);nodes.set(track.id,node);if(live){this.duckingNodes.set(track.id,node);this.playbackNodes.add(node);}}
     return nodes;
   }
 
-  private connectRouting(ctx:BaseAudioContext,track:TimelineTrack,pre:AudioNode,post:AudioNode,inputs:Map<string,GainNode>,master:AudioNode,live:boolean){
+  private connectRouting(ctx:BaseAudioContext,track:TimelineTrack,pre:AudioNode,post:AudioNode,inputs:Map<string,GainNode>,master:AudioNode,live:boolean,plan?:GraphLatency){
     const destination=(id:string)=>id==='master'?master:inputs.get(id)!;
-    post.connect(destination(track.output??'master'));
-    for(const send of track.sends??[]){const gain=ctx.createGain();gain.gain.value=send.gain;(send.preFader?pre:post).connect(gain);gain.connect(destination(send.target));if(live)this.routingGains.set(`${track.id}:${send.id}`,gain);}
+    const connect=(input:AudioNode,output:AudioNode,frames:number)=>compensatedConnection(live?this.ctx:ctx,input,output,frames,this.compensationNodes);
+    connect(post,destination(track.output??'master'),plan?.routes.get(outputRoute(track.id))??0);
+    for(const send of track.sends??[]){const gain=ctx.createGain();gain.gain.value=send.gain;(send.preFader?pre:post).connect(gain);connect(gain,destination(send.target),plan?.routes.get(sendRoute(track.id,send.id))??0);if(live)this.routingGains.set(`${track.id}:${send.id}`,gain);}
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────
@@ -520,7 +568,7 @@ export class TimelineEngine {
             p.size ?? 0.5,
             p.decay ?? 1.5,
             p.mix ?? 0.3,
-            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.3,.7);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,dryScale:.7,points:fx.automation,mix:p.mix??.3,staticFeedback:0,staticTime:0});},
+            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.3,.7);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,dryScale:.7,points:fx.automation,mix:p.mix??.3,staticFeedback:0,staticTime:0});},
           );
           break;
         case 'delay':
@@ -530,9 +578,9 @@ export class TimelineEngine {
             p.feedback ?? 0.4,
             p.mix ?? 0.3,
             (wet,dry,feedback,time)=>{
-              scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.3);
-              scheduleFeedback(feedback,fx.automation?.feedback,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.feedback??.4);
-              scheduleDelayTime(time,fx.automation?.time,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.time??.3);
+              scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.3);
+              scheduleFeedback(feedback,fx.automation?.feedback,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.feedback??.4);
+              scheduleDelayTime(time,fx.automation?.time,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.time??.3);
               if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,feedback,time,points:fx.automation,mix:p.mix??.3,staticFeedback:p.feedback??.4,staticTime:p.time??.3});
             },
           );
@@ -543,9 +591,9 @@ export class TimelineEngine {
             p.rate ?? 1.5,
             p.depth ?? 0.5,
             p.mix ?? 0.3,
-            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.3);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.3,staticFeedback:0,staticTime:0});},
-            (first,second)=>{scheduleChorusDepth([first,second],fx.automation?.depth,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.depth??.5);if(scope){const nodes=this.mixNodes.get(`${scope}:${index}`)!;nodes.depth=[first,second];nodes.staticDepth=p.depth??.5;}},
-            (first,second)=>{scheduleChorusRate([first,second],fx.automation?.rate,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.rate??1.5);if(scope){const nodes=this.mixNodes.get(`${scope}:${index}`)!;nodes.rate=[first,second];nodes.staticRate=p.rate??1.5;}},
+            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.3);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.3,staticFeedback:0,staticTime:0});},
+            (first,second)=>{scheduleChorusDepth([first,second],fx.automation?.depth,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.depth??.5);if(scope){const nodes=this.mixNodes.get(`${scope}:${index}`)!;nodes.depth=[first,second];nodes.staticDepth=p.depth??.5;}},
+            (first,second)=>{scheduleChorusRate([first,second],fx.automation?.rate,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.rate??1.5);if(scope){const nodes=this.mixNodes.get(`${scope}:${index}`)!;nodes.rate=[first,second];nodes.staticRate=p.rate??1.5;}},
           );
           break;
         case 'ringmod':
@@ -553,8 +601,8 @@ export class TimelineEngine {
             ctx, node,
             p.freq ?? 200,
             p.mix ?? 0.5,
-            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.5);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.5,staticFeedback:0,staticTime:0});},
-            frequency=>{scheduleRingFrequency(frequency,fx.automation?.freq,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.freq??200);if(scope){const nodes=this.mixNodes.get(`${scope}:${index}`)!;nodes.freq=frequency;nodes.staticFreq=p.freq??200;}},
+            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.5);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.5,staticFeedback:0,staticTime:0});},
+            frequency=>{scheduleRingFrequency(frequency,fx.automation?.freq,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.freq??200);if(scope){const nodes=this.mixNodes.get(`${scope}:${index}`)!;nodes.freq=frequency;nodes.staticFreq=p.freq??200;}},
           );
           break;
         case 'distortion':
@@ -563,7 +611,7 @@ export class TimelineEngine {
             p.drive ?? 0.5,
             p.mix ?? 0.5,
             'tanh',
-            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.5);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.5,staticFeedback:0,staticTime:0});},
+            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.5);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.5,staticFeedback:0,staticTime:0});},
           );
           break;
         case 'bitcrush':
@@ -571,7 +619,7 @@ export class TimelineEngine {
             ctx, node,
             p.bits ?? 8,
             p.mix ?? 0.5,
-            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.playbackClock:0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.5);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.5,staticFeedback:0,staticTime:0});},
+            (wet,dry)=>{scheduleMix(wet,dry,fx.automation?.mix,scope!==undefined?this.scopeClock(scope):0,scope!==undefined?this.playbackStart:timelineStart,p.mix??.5);if(scope)this.mixNodes.set(`${scope}:${index}`,{wet,dry,points:fx.automation,mix:p.mix??.5,staticFeedback:0,staticTime:0});},
           );
           break;
         case 'lowpass':

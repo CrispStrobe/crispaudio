@@ -242,6 +242,92 @@ pub async fn plugin_stream_process(
     .await
     .map_err(|e| e.to_string())?
 }
+#[derive(serde::Deserialize)]
+struct PacketSettings {
+    session: String,
+    channels: usize,
+    frames: usize,
+    parameters: Value,
+    bypass: bool,
+}
+fn decode_stream_packet(body: &[u8]) -> Result<(PacketSettings, Vec<Vec<f32>>), String> {
+    if body.len() < 4 || body.len() > 16388 + 32768 {
+        return Err("Invalid plugin packet size".into());
+    }
+    let length = u32::from_le_bytes(body[..4].try_into().unwrap()) as usize;
+    if length > 16384 || length > body.len() - 4 {
+        return Err("Invalid plugin packet header".into());
+    }
+    let settings: PacketSettings = serde_json::from_slice(&body[4..4 + length])
+        .map_err(|_| "Invalid plugin packet settings")?;
+    if settings.session.is_empty()
+        || settings.session.len() > 128
+        || !(1..=2).contains(&settings.channels)
+        || !(1..=4096).contains(&settings.frames)
+        || !settings.parameters.is_object()
+        || settings.parameters.to_string().len() > 8192
+        || body.len() != 4 + length + settings.channels * settings.frames * 4
+    {
+        return Err("Invalid plugin packet format".into());
+    }
+    let samples = body[4 + length..]
+        .chunks_exact(settings.frames * 4)
+        .map(|channel| {
+            channel
+                .chunks_exact(4)
+                .map(|b| f32::from_le_bytes(b.try_into().unwrap()))
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    if samples.iter().flatten().any(|v| !v.is_finite()) {
+        return Err("Invalid plugin packet PCM".into());
+    }
+    Ok((settings, samples))
+}
+fn encode_stream_reply(reply: StreamReply) -> Result<Vec<u8>, String> {
+    let header = serde_json::to_vec(&reply.metadata).map_err(|e| e.to_string())?;
+    if header.len() > 1048576 {
+        return Err("Plugin reply metadata too large".into());
+    }
+    let mut bytes = Vec::with_capacity(
+        4 + header.len() + reply.samples.iter().map(|ch| ch.len() * 4).sum::<usize>(),
+    );
+    bytes.extend_from_slice(&(header.len() as u32).to_le_bytes());
+    bytes.extend_from_slice(&header);
+    for sample in reply.samples.iter().flatten() {
+        bytes.extend_from_slice(&sample.to_le_bytes());
+    }
+    Ok(bytes)
+}
+#[tauri::command]
+pub async fn plugin_stream_process_binary(
+    window: tauri::WebviewWindow,
+    streams: tauri::State<'_, PluginStreams>,
+    request: tauri::ipc::Request<'_>,
+) -> Result<tauri::ipc::Response, String> {
+    let body = match request.body() {
+        tauri::ipc::InvokeBody::Raw(bytes) => bytes,
+        _ => return Err("Binary plugin packet required".into()),
+    };
+    let (settings, samples) = decode_stream_packet(body)?;
+    let owner = window.label().to_string();
+    let state = streams.inner().clone();
+    let entry = state.entry(&owner, &settings.session)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = entry
+            .processor
+            .try_lock()
+            .map_err(|_| "Plugin stream unavailable")?
+            .process(&samples, &settings.parameters, settings.bypass);
+        if result.is_err() {
+            let _ = state.remove(&owner, &settings.session);
+        }
+        encode_stream_reply(result?).map(tauri::ipc::Response::new)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 pub async fn plugin_stream_snapshot(
     window: tauri::WebviewWindow,
@@ -351,5 +437,56 @@ mod stream_registry_tests {
         state.shutdown();
         assert!(!second_stop.is_alive());
         assert!(state.remove("two", "second").is_ok());
+    }
+}
+
+#[cfg(test)]
+mod binary_stream_tests {
+    use super::*;
+    fn packet(settings: Value, pcm: &[f32]) -> Vec<u8> {
+        let header = serde_json::to_vec(&settings).unwrap();
+        let mut bytes = (header.len() as u32).to_le_bytes().to_vec();
+        bytes.extend(header);
+        for v in pcm {
+            bytes.extend(v.to_le_bytes());
+        }
+        bytes
+    }
+    #[test]
+    fn exact_pcm_and_bounded_settings() {
+        let settings =
+            json!({"session":"owned","channels":2,"frames":2,"parameters":{},"bypass":false});
+        let (_, samples) =
+            decode_stream_packet(&packet(settings.clone(), &[1.5, -2.0, 0.0, 3.0])).unwrap();
+        assert_eq!(samples, vec![vec![1.5, -2.0], vec![0.0, 3.0]]);
+        assert!(
+            decode_stream_packet(&packet(settings.clone(), &[f32::NAN, 0.0, 0.0, 0.0])).is_err()
+        );
+        assert!(decode_stream_packet(&packet(settings, &[1.0])).is_err());
+        assert!(decode_stream_packet(&packet(json!({"session":"owned","channels":18446744073709551615u64,"frames":4096,"parameters":{},"bypass":false}),&[])).is_err());
+        assert!(decode_stream_packet(&[255; 4]).is_err());
+    }
+    #[test]
+    fn reply_encodes_planar_float32_without_clipping() {
+        let metadata =
+            json!({"frames":2,"channels":1,"sampleRate":48000,"sequence":1,"latencySamples":0});
+        let bytes = encode_stream_reply(StreamReply {
+            metadata: metadata.clone(),
+            samples: vec![vec![1.5, -2.0]],
+        })
+        .unwrap();
+        let n = u32::from_le_bytes(bytes[..4].try_into().unwrap()) as usize;
+        assert_eq!(
+            serde_json::from_slice::<Value>(&bytes[4..4 + n]).unwrap(),
+            metadata
+        );
+        assert_eq!(
+            f32::from_le_bytes(bytes[4 + n..8 + n].try_into().unwrap()),
+            1.5
+        );
+        assert_eq!(
+            f32::from_le_bytes(bytes[8 + n..12 + n].try_into().unwrap()),
+            -2.0
+        );
     }
 }

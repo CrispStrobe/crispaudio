@@ -1,6 +1,7 @@
 import {invoke} from '@tauri-apps/api/core';
+import {encodePluginPacket,decodePluginPacket} from './PluginStreamPacket';
 export interface PluginStreamRequest {id:string;sampleRate:number;channels:1|2;parameters?:Record<string,number>;state?:string}
-export interface PluginStreamReply {metadata:{sequence:number;frames:number;channels:number;sampleRate:number;latencySamples:number;state?:string;parameters?:{address:string;value:number}[]};samples:number[][]}
+export interface PluginStreamReply {metadata:{sequence:number;frames:number;channels:number;sampleRate:number;latencySamples:number;state?:string;parameters?:{address:string;value:number}[]};samples:number[][]|Float32Array[]}
 interface OpenReply {session:string;info:PluginStreamReply['metadata']}
 const interrupted=()=>new DOMException('Plugin stream closed or superseded','AbortError');
 /** Internal ordered transport. AudioWorklet scheduling and timeline inserts are separate. */
@@ -11,7 +12,7 @@ export class NativePluginStream {
  process(samples:Float32Array[],parameters:Record<string,number>={},bypass=false):Promise<PluginStreamReply>{
   if(this.closed)return Promise.reject(interrupted());if(this.pending>=4)return Promise.reject(new Error('Plugin stream backpressure'));
   const frames=samples[0]?.length;if(samples.length!==this.info.channels||!frames||frames>4096||samples.some(s=>s.length!==frames||s.some(v=>!Number.isFinite(v))))return Promise.reject(new Error('Invalid plugin stream audio'));
-  const pcm=samples.map(s=>Array.from(s)),values={...parameters};return this.enqueue(()=>invoke<PluginStreamReply>('plugin_stream_process',{session:this.session,samples:pcm,parameters:values,bypass}));
+  let packet:ArrayBuffer;try{packet=encodePluginPacket({session:this.session,channels:this.info.channels,frames,parameters:{...parameters},bypass},samples);}catch(error){return Promise.reject(error);}return this.enqueue(async()=>decodePluginPacket(await invoke<ArrayBuffer>('plugin_stream_process_binary',packet),this.info.channels,frames,this.info.sampleRate));
  }
  snapshot():Promise<PluginStreamReply>{return this.enqueue(()=>invoke<PluginStreamReply>('plugin_stream_snapshot',{session:this.session}));}
  private enqueue(task:()=>Promise<PluginStreamReply>){if(this.closed)return Promise.reject(interrupted());if(this.pending>=4)return Promise.reject(new Error('Plugin stream backpressure'));const generation=this.generation;this.pending++;

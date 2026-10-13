@@ -347,3 +347,43 @@ also exceeded deadlines; long gaps and background playback remain unqualified.
 State snapshots wait for queued audio requests to drain, and tests freeze their
 audio clock before querying state. Production save/preset handling still needs an
 explicit policy for state queries during playback.
+
+
+### Internal native timeline playback (0.11.6)
+
+`TimelineEngine.playNative` prepares up to eight stereo inserts at the actual
+playback sample rate. Clip, track/bus and master chains append after their existing
+built-in racks. All sessions prepare before the engine chooses a common future
+origin; successive inserts activate at the preceding insert's output arrival.
+The graph compensates clip merges, output routes, sends and both ducking inputs.
+Clip fades run at clip-rack output time; track fades/gain automation run at track
+input time, and pan automation at track output time. Existing effect automation
+uses its rack input clock. The public playback clock and recording anchor use the
+master's audible origin and hold at the selected start during pre-roll.
+
+The engine captures project, source registry and request settings before awaiting
+preparation. Stop/replacement abort pending opens, partial failures release earlier
+sessions, and a runtime fault stops the complete graph with its rack scope. A
+scheduled silent boundary source disposes the graph at audible range end; stale
+callbacks cannot stop a newer graph. Seeking/restarting opens fresh DSP sessions.
+This does not yet restore pre-seek DSP history or provide native project time/tempo.
+
+Native stream PCM uses Tauri raw request/response bodies: LE u32 JSON-header length,
+UTF-8 metadata, then planar LE float32 samples. The request identifies its owned
+session and carries dimensions, parameter changes and bypass. Headers, channels,
+frame counts and payload lengths are bounded; non-finite PCM is rejected. Replies
+validate format and preserve float32 headroom. Open/state/close still use JSON.
+The legacy JSON processing command remains available; the streaming frontend uses
+binary processing. The conservative 16384-frame bridge delay remains unchanged.
+
+Browser acceptance uses actual native helpers and an AudioWorklet capture of the
+TimelineEngine output, with a separate bus tap to prove signal presence. Foreground
+checks in Chromium and WebKit include a fade inside a native clip and a 50000-frame
+(1.04-second at 48 kHz) silent gap before an impulse. Native/dry cancellation is
+exact; the float32 fade amplitude check allows two millionths absolute error. Playwright
+bindings carry encoded binary packets for this test; production Tauri raw IPC is
+not simulated at its runtime implementation level. Silent digital capture does
+not claim physical latency or installed-app native-insert acceptance. Timing under
+background/heavy load remains unqualified. Native racks are still an internal API,
+separate from saved EffectConfig: track controls, persistence, native transport
+context and export parity must be completed before normal UI activation.

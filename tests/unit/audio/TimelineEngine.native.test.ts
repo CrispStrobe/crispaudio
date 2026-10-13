@@ -1,0 +1,66 @@
+import {beforeEach,it,expect,vi} from 'vitest';
+import type {AudioSegment,AudioSource,TimelineProject} from '../../../src/types/audio';
+const prepare=vi.hoisted(()=>vi.fn());
+vi.mock('../../../src/audio/plugins/NativePluginNode',()=>({prepareNativePluginNode:prepare}));
+vi.mock('../../../src/audio/plugins/GraphCompensation',async importOriginal=>({...await importOriginal<object>(),prepareGraphCompensation:vi.fn().mockResolvedValue(undefined)}));
+import {TimelineEngine} from '../../../src/audio/engine/TimelineEngine';
+import {useProjectStore} from '../../../src/stores/projectStore';
+class Node {
+ connect=vi.fn();disconnect=vi.fn();start=vi.fn();stop=vi.fn();onended?:()=>void;
+ port={postMessage:vi.fn(),close:vi.fn()};buffer?:AudioBuffer;
+ gain=parameter();pan=parameter();
+ constructor(public kind:string,public options?:{processorOptions:{frames:number}}){}
+}
+function parameter(){return {value:1,setValueAtTime:vi.fn(),setTargetAtTime:vi.fn(),linearRampToValueAtTime:vi.fn(),cancelScheduledValues:vi.fn()};}
+function context(){const nodes:Node[]=[];const make=(kind:string)=>{const node=new Node(kind);nodes.push(node);return node;};
+ vi.stubGlobal('AudioWorkletNode',class extends Node{constructor(_ctx:unknown,kind:string,options:Node['options']){super(kind,options);nodes.push(this);}});
+ const ctx={currentTime:1,sampleRate:48000,destination:{},createGain:()=>make('gain'),createStereoPanner:()=>make('pan'),createBufferSource:()=>make('source'),createChannelSplitter:()=>make('split'),createAnalyser:()=>make('meter'),createBuffer:()=>({})};
+ return {ctx:ctx as unknown as AudioContext,nodes};
+}
+const clip=(id:string,trackId:string):AudioSegment=>({id,trackId,sourceId:'s',startTime:2,sourceOffset:0,duration:1,gain:1,effects:[],fadeInDuration:.1,fadeOutDuration:.1,fadeInCurve:'linear',fadeOutCurve:'linear'});
+function project():TimelineProject{return {...useProjectStore.getInitialState().project,duration:3,tracks:[{id:'a',name:'A',volume:1,pan:0,muted:false,solo:false,output:'bus',segments:[clip('ca','a')]},{id:'b',name:'B',volume:1,pan:0,muted:false,solo:false,output:'bus',segments:[clip('cb','b')]},{id:'bus',kind:'bus',name:'Bus',volume:1,pan:0,muted:false,solo:false,segments:[]}]};}
+const request={id:'vst3:test',sampleRate:48000,channels:2 as const,bypass:true};
+function bridge(delayFrames:number){return {delayFrames,attach:vi.fn(()=>new Node('native')),update:vi.fn(),close:vi.fn().mockResolvedValue(undefined)};}
+beforeEach(()=>{prepare.mockReset();});
+it('aligns clip fades, track automation, bus racks and the audible recording clock, then disposes at range end',async()=>{
+ const {ctx,nodes}=context(),engine=new TimelineEngine(ctx),a=bridge(128),track=bridge(256),bus=bridge(512);prepare.mockResolvedValueOnce(a).mockResolvedValueOnce(track).mockResolvedValueOnce(bus);
+ engine.setSources(new Map([['s',{buffer:{}} as AudioSource]]));
+ await engine.playNative(project(),2,3,new Map([['clip:ca',[request]],['track:a',[request]],['track:bus',[request]]]),()=>{});
+ const input=48000+4096,audible=input+896;
+ expect(a.attach).toHaveBeenCalledWith(input);expect(track.attach).toHaveBeenCalledWith(input+128);expect(bus.attach).toHaveBeenCalledWith(input+384);
+ expect(engine.playbackAnchor()).toEqual({frame:audible,timeline:2});expect(engine.automationClock()?.time).toBe(2);
+ const compensation=nodes.filter(n=>n.kind==='crispaudio-frame-delay');expect(compensation.map(n=>n.options!.processorOptions.frames)).toEqual([384]);
+ const sources=nodes.filter(n=>n.kind==='source');expect(sources.slice(1).map(n=>n.start.mock.calls[0])).toEqual([[input/48000,0,1],[input/48000,0,1]]);
+ expect(nodes.some(n=>n.gain.linearRampToValueAtTime.mock.calls.some(c=>Math.abs(c[1]-((input+128)/48000+.1))<1e-9))).toBe(true);
+ Object.assign(ctx,{currentTime:(audible+24000)/48000});expect(engine.automationClock()?.time).toBe(2.5);
+ sources[0].onended?.();expect(engine.playbackAnchor()).toBeUndefined();expect(a.close).toHaveBeenCalledOnce();expect(track.close).toHaveBeenCalledOnce();expect(bus.close).toHaveBeenCalledOnce();expect(compensation.every(n=>n.port.postMessage.mock.calls.some(c=>c[0].type==='dispose'))).toBe(true);
+});
+it('stopped preparation cannot replace a newer ordinary playback graph',async()=>{
+ const {ctx}=context(),engine=new TimelineEngine(ctx),late=bridge(128);let resolve!:(value:ReturnType<typeof bridge>)=>void;prepare.mockImplementation(()=>new Promise(r=>{resolve=r;}));
+ const pending=engine.playNative(project(),2,3,new Map([['track:a',[request]]]),()=>{});await vi.waitFor(()=>expect(prepare).toHaveBeenCalledOnce());
+ engine.play(project(),2);const anchor=engine.playbackAnchor();resolve(late);await expect(pending).rejects.toMatchObject({name:'AbortError'});expect(late.attach).not.toHaveBeenCalled();expect(late.close).toHaveBeenCalledOnce();expect(engine.playbackAnchor()).toEqual(anchor);engine.stop();
+});
+it('closes earlier inserts if later preparation fails and stops the whole graph on a runtime fault',async()=>{
+ const {ctx}=context(),engine=new TimelineEngine(ctx),first=bridge(128);prepare.mockResolvedValueOnce(first).mockRejectedValueOnce(new Error('Unavailable plugin'));
+ await expect(engine.playNative(project(),2,3,new Map([['track:a',[request,request]]]),()=>{})).rejects.toThrow('Unavailable plugin');expect(first.close).toHaveBeenCalledOnce();expect(engine.playbackAnchor()).toBeUndefined();
+ const active=bridge(128),fault=vi.fn();prepare.mockResolvedValueOnce(active);await engine.playNative(project(),2,3,new Map([['track:a',[request]]]),fault);
+ prepare.mock.calls.at(-1)![2].onFault('underrun');expect(fault).toHaveBeenCalledWith('track:a: underrun');expect(active.close).toHaveBeenCalledOnce();expect(engine.playbackAnchor()).toBeUndefined();
+});
+it('rejects unknown racks and unsupported native channel layouts before opening sessions',async()=>{
+ const {ctx}=context(),engine=new TimelineEngine(ctx);
+ await expect(engine.playNative(project(),2,3,new Map([['track:missing',[request]]]),()=>{})).rejects.toThrow(/scope/);
+ await expect(engine.playNative(project(),2,3,new Map([['master',[{...request,channels:1}]]]),()=>{})).rejects.toThrow(/stereo/);expect(prepare).not.toHaveBeenCalled();
+});
+it('activates serial master inserts at successive arrivals and ignores the old range-end callback after a restart',async()=>{
+ const {ctx,nodes}=context(),engine=new TimelineEngine(ctx),first=bridge(128),second=bridge(256);prepare.mockResolvedValueOnce(first).mockResolvedValueOnce(second);
+ const p=project();p.tracks.push({id:'empty',name:'Empty',volume:1,pan:0,solo:false,muted:false,segments:[]});
+ await engine.playNative(p,2,3,new Map([['master',[request,request]]]),()=>{});
+ expect(first.attach).toHaveBeenCalledWith(52096);expect(second.attach).toHaveBeenCalledWith(52224);expect(engine.playbackAnchor()?.frame).toBe(52480);
+ const oldEnd=nodes.find(n=>n.kind==='source')!.onended;engine.play(p,2);const anchor=engine.playbackAnchor();oldEnd?.();expect(engine.playbackAnchor()).toEqual(anchor);expect(first.close).toHaveBeenCalledOnce();expect(second.close).toHaveBeenCalledOnce();engine.stop();
+});
+it('retains request, project and source snapshots while native preparation awaits',async()=>{
+ const {ctx,nodes}=context(),engine=new TimelineEngine(ctx),insert=bridge(128),original={} as AudioBuffer;prepare.mockResolvedValue(insert);
+ engine.setSources(new Map([['s',{buffer:original} as AudioSource]]));const p=project(),parameters={gain:.5},racks=new Map([['track:a',[{...request,parameters}]]]);
+ const pending=engine.playNative(p,2,3,racks,()=>{});parameters.gain=0;racks.clear();p.tracks[0].segments[0].sourceOffset=99;engine.setSources(new Map());await pending;
+ expect(prepare.mock.calls[0][1].parameters).toEqual({gain:.5});expect(nodes.filter(n=>n.kind==='source').slice(1).every(n=>n.buffer===original&&n.start.mock.calls[0][1]===0)).toBe(true);engine.stop();
+});

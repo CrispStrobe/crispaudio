@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.11.6 — 2026-10-13
+
+- Add an internal TimelineEngine native playback path for clip, track, bus and master inserts with shared preparation and compensated routes.
+- Align clip fades, track automation, sidechains, range gates and recording anchors to each signal's arrival time.
+- Cancel superseded preparation, close partial graphs on failure and dispose native processing at range end.
+- Replace streaming sample-array JSON IPC with bounded binary float32 packets, retaining headroom and strict deadline handling.
+- Keep native timeline controls separate from saved project FX until transport context, wider timing validation and export parity are ready.
+
 ## 0.11.5 — 2026-10-13
 
 - Add graph latency planning for clip merges, track/bus racks, pre/post sends, master paths and ducking detectors.

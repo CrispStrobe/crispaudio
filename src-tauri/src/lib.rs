@@ -60,6 +60,7 @@ pub fn run() {
             commands::plugins::audio_unit_plugin,
             commands::plugins::plugin_stream_open,
             commands::plugins::plugin_stream_process,
+            commands::plugins::plugin_stream_process_binary,
             commands::plugins::plugin_stream_snapshot,
             commands::plugins::plugin_stream_close,
             project::load_project,
