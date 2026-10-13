@@ -97,7 +97,9 @@
     "Multicam…": "Multicam…",
     "Musical Time…": "Musical Time…",
     "MIDI…": "MIDI…",
-    "Sample Sessions…": "Sample sessions…"
+    "Sample Sessions…": "Sample sessions…",
+    "Review Export…": "Review Export…",
+    "Sample Walkthroughs…": "Sample walkthroughs…"
   },
   "app": {
     "name": "CrispAudio",
@@ -1941,7 +1943,10 @@
     "clear-range": "Clear range",
     "snap": "Snap",
     "commands": "Find command",
-    "collapse": "Collapse ribbon"
+    "collapse": "Collapse ribbon",
+    "mix-review": "Mix A/B",
+    "review-export": "Review export",
+    "walkthroughs": "Sample walkthroughs"
   },
   "commandHelp": {
     "samples": "Open Sample Sessions for the current project or selection.",
@@ -2025,6 +2030,77 @@
     "menu:Edit": "Shows all edit commands in the touch ribbon.",
     "menu:View": "Shows all view commands in the touch ribbon.",
     "menu:Playback": "Shows all playback commands in the touch ribbon.",
-    "menu:Tools": "Shows all tools commands in the touch ribbon."
+    "menu:Tools": "Shows all tools commands in the touch ribbon.",
+    "mix-review": "Capture A, change the mix, then capture B. Prepare the range and switch A/B during playback. Apply restores one mix as one undo. Arrangement changes require recapture.",
+    "review-export": "Audition and measure the actual saved audio file. For video, audio is measured here and Open file opens the complete movie.",
+    "walkthroughs": "Load opens Sample Sessions for confirmation. The sample is one undo and keeps existing sources. Follow one step at a time; opening a tool never records or changes a mix automatically. You can keep working with the guide open."
+  },
+  "mixReview": {
+    "title": "Mix A/B",
+    "capture": "Capture {{slot}}",
+    "apply": "Apply {{slot}}",
+    "start": "From (s)",
+    "end": "To (s)",
+    "info": "Mix comparison information",
+    "prepare": "Prepare comparison",
+    "match": "Match loudness",
+    "loop": "Loop",
+    "peak": "Peak",
+    "preparing": "Preparing comparison…",
+    "invalid": "Capture both versions and choose a valid range.",
+    "changed": "The arrangement changed. Capture this version again.",
+    "locked": "A locked track protects its mix settings.",
+    "largePreview": "This full-history browser preview is too large. Use linked media in the Mac app or an earlier range.",
+    "help": "Capture A, change the mix, then capture B. Prepare the range and switch A/B during playback. Apply restores one mix as one undo. Arrangement changes require recapture.",
+    "meterHelp": "LUFS and true peak are estimates for this range. Peak and RMS use dBFS. Loudness matching attenuates only the monitor; saved mixes and exports stay unchanged."
+  },
+  "exportReview": {
+    "title": "Review export",
+    "choose": "Choose an exported file",
+    "media": "Exported media",
+    "openFile": "Open file",
+    "info": "Export review information",
+    "help": "Audition and measure the actual saved audio file. For video, audio is measured here and Open file opens the complete movie.",
+    "loading": "Reading exported media…",
+    "large": "This file exceeds the decoded review limit. Open file plays it in the system player."
+  },
+  "walkthroughs": {
+    "title": "Sample walkthroughs",
+    "recording": "Recording",
+    "comp": "Takes & comp",
+    "mix": "Mixing",
+    "video": "Video & audio",
+    "start": "Load sample",
+    "next": "Next step",
+    "previous": "Previous step",
+    "close": "Close guide",
+    "open": "Open tool",
+    "info": "About this guide",
+    "help": "Load opens Sample Sessions for confirmation. The sample is one undo and keeps existing sources. Follow one step at a time; opening a tool never records or changes a mix automatically. You can keep working with the guide open.",
+    "done": "Done",
+    "recordingSteps": [
+      "Load the mixing sample, then open Record / Takes.",
+      "Add an audio track, arm it and choose your microphone under Input setup. Leave monitoring off for speakers.",
+      "Record five seconds of speech, then stop. Check that the input meter moves.",
+      "Close the recording dialog and play your new clip. Undo restores the previous arrangement."
+    ],
+    "compSteps": [
+      "Load the takes sample, then open Record / Takes.",
+      "Select the Keys track and expand Takes & comp. Listen to take A, take B and the comp.",
+      "Select a region in a take lane and use that take for the selected range. Compare the comp again.",
+      "Try replacing or removing a comp region. Expand Versions to save and recall a named comp; Undo restores the preceding edit."
+    ],
+    "mixSteps": [
+      "Load the mixing sample. Play it and explore the mixer.",
+      "Open Mix A/B and capture A. Close the dialog, change a track level or its effects, then capture B.",
+      "Prepare the comparison. Play and switch A/B; matching attenuates the louder version. Compare LUFS and peaks.",
+      "Apply the preferred mix, then export it. Review the actual saved file from File or the completed delivery job."
+    ],
+    "videoSteps": [
+      "Load the video sample and play the picture with its three audio tracks.",
+      "Select a picture segment and open Clip Settings. Switch between Video and Audio for linked media.",
+      "Try a fade or color adjustment in a collapsed section. Use the segment boundaries to trim with Move & Trim enabled.",
+      "Open Export Video, check the output range and export. Review the saved audio and open the movie to check picture sync."
+    ]
   }
 }

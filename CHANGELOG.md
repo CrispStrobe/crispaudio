@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.3 — DAW checkpoint
+
+- Mix A/B snapshots with synchronized audition, optional loudness matching, LUFS/peak/RMS measurements, protected restore and save/reopen.
+- Review the actual exported audio from File or completed delivery jobs; open video externally for picture/sync review.
+- Four compact, modeless sample walkthroughs for recording, comping, mixing and video/audio. Native desktop menus and the shared touch ribbon expose each tool.
+- Completes the seven-step DAW stack following the simplified recording/clip inspectors, functional move/trim handles and default Fit all view in 0.10.0–0.10.2.
+
 ## 0.10.2 — 2026-10-13
 
 - Record Touch/Latch/Write passes for supported clip/master FX parameters inside

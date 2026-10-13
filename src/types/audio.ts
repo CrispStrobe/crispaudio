@@ -6,6 +6,7 @@ export interface TrackFolder {id:string;name:string;trackIds:string[];collapsed:
 
 export interface TimelineProject {
   trackFolders?:TrackFolder[];
+  mixVersions?:Partial<Record<import('../lib/mixVersions').MixSlot,import('../lib/mixVersions').MixVersion>>;
   music?: import('../lib/musicalTime').MusicalSettings;
   groupEditingEnabled?: boolean;
   id: string;

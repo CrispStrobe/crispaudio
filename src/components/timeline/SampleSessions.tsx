@@ -12,6 +12,7 @@ export function SampleSessions(){
  const {t}=useTranslation(),[open,setOpen]=useState(false),[kind,setKind]=useState<SampleSession>('mix'),[busy,setBusy]=useState(false),[error,setError]=useState(''),recording=useUIStore(s=>s.timelineRecording),controller=useRef<AbortController|null>(null),mounted=useRef(false);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;controller.current?.abort();};},[]);
  useTimelineTool('samples',()=>{setError('');setOpen(true);},!recording);
+ useEffect(()=>{const request=(e:Event)=>{const kind=(e as CustomEvent<SampleSession>).detail;if(!useUIStore.getState().timelineRecording&&['mix','picture','takes'].includes(kind)){setKind(kind);setError('');setOpen(true);}};window.addEventListener('crispaudio-sample-request',request);return()=>window.removeEventListener('crispaudio-sample-request',request);},[]);
  const close=()=>{controller.current?.abort();setOpen(false);};
  const load=async()=>{
   if(busy||recording)return;const active=new AbortController();controller.current=active;const snapshot=useProjectStore.getState().project;useProjectStore.getState().setIsPlaying(false);setBusy(true);setError('');
@@ -23,7 +24,7 @@ export function SampleSessions(){
     if(built.project.video){const {appDataDir,join}=await import('@tauri-apps/api/path');const {writeFile}=await import('@tauri-apps/plugin-fs');const path=await join(await appDataDir(),`sample-${crypto.randomUUID()}.mp4`);await writeFile(path,videoBytes!);built.project.video.path=path;built.project.video.session.video.path=path;}
    }
    active.signal.throwIfAborted();const state=useProjectStore.getState();if(state.project!==snapshot||useUIStore.getState().timelineRecording)throw new Error('samples.changed');
-   state.loadProjectState(built.project,new Map([...state.sources,...built.sources]));state.setScrollOffset(0);setOpen(false);
+   state.loadProjectState(built.project,new Map([...state.sources,...built.sources]));state.setScrollOffset(0);setOpen(false);window.dispatchEvent(new CustomEvent('crispaudio-sample-loaded',{detail:{kind,projectId:built.project.id}}));
   }catch(e){if(!active.signal.aborted&&mounted.current)setError(t(e instanceof Error?e.message:String(e)));}
   finally{if(controller.current===active){controller.current=null;if(mounted.current)setBusy(false);}}
  };

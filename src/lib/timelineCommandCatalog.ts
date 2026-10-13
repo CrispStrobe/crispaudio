@@ -1,6 +1,8 @@
 export interface TimelineCommand { id: string; label: string; key?: string; requires?: 'selection' | 'content' | 'editRange' | 'clipboard' | 'canUndo' | 'canRedo' }
 export const timelineCommands: Record<string, TimelineCommand[]> = {
     File: [
+        {id:'review-export',label:'Review Export…'},
+        {id:'walkthroughs',label:'Sample Walkthroughs…'},
         { id: 'samples', label: 'Sample Sessions…' },
         { id: 'new', label: 'New Project…', key: '⌘/Ctrl N' }, { id: 'open', label: 'Open Project…', key: '⌘/Ctrl O' }, { id: 'save', label: 'Save Project…', key: '⌘/Ctrl S' },
         { id: 'import', label: 'Import Audio…', key: '⌘/Ctrl I' }, { id: 'load-tracks', label: 'Import Tracks…' }, { id: 'save-tracks', label: 'Save Tracks…' },
@@ -32,6 +34,7 @@ export const timelineCommands: Record<string, TimelineCommand[]> = {
     ],
     Playback:[{id:'play',label:'Play / Pause',key:'Space'},{id:'stop',label:'Stop',requires:'content'},{id:'start',label:'Go to Start'},{id:'end',label:'Go to End',requires:'content'},{id:'loop',label:'Loop Playback'},{id:'range-mode',label:'Range Selection'},{id:'play-range',label:'Play Selected Range',requires:'editRange'},{id:'clear-range',label:'Clear Range',requires:'editRange'},{id:'snap',label:'Snap to Clip Edges'}],
     Tools: [
+        {id:'mix-review',label:'Mix A/B…',requires:'content'},
         { id: 'recording', label: 'Record / Takes…', key: '⌘/Ctrl Shift R' }, { id: 'align', label: 'Alignment…', requires: 'content' }, { id: 'auto-sync', label: 'Synchronize Tracks…', requires: 'content' },
         { id: 'source-speech', label: 'Source Transcripts…', requires: 'content' }, { id: 'tts', label: 'Text to Speech…' },
         { id: 'video-setup', label: 'Video Setup…' }, { id: 'open-session', label: 'Open Media Session…' }, { id: 'detach-video', label: 'Detach Video' }, { id: 'recover-media', label: 'Recover Media…' }, { id: 'multicam', label: 'Multicam…' },

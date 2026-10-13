@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.2. This section is the current plan.
+Updated 2026-10-13, for local 0.10.3. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -54,9 +54,13 @@ implemented and browser-checked. Faster editing is implemented: visible clip key
 placement, context trims and multi-selection drag. The requested GUI pass is implemented: actual editing mode, boundary handles,
 expanded context actions, focused clip dialog, information buttons, touch ribbon,
 expanded help and persisted default Fit all. Clip/master Touch/Latch/Write passes and ring-carrier frequency automation are
-implemented and checked across GUI/offline/native playback. Next: mix A/B, metering
-and export review, then short sample walkthroughs. Audit existing punch/loop/take/comp and bus/send tools before
-selecting each concrete addition. Shared frame scheduling does not remove independent-device drift. Track folders
+implemented and checked across GUI/offline/native playback. Mix A/B with synchronized
+audition, optional loudness matching, saved mix snapshots and one-undo restore is
+implemented in 0.10.3. Actual exported-file audio review and meters are available
+from File and completed delivery jobs. Four short modeless walkthroughs use the
+original recording, comp, mixing and picture samples. All seven software steps
+are complete at this checkpoint. See [mix review](docs/MIX_REVIEW.md) and
+[sample walkthroughs](docs/SAMPLE_WALKTHROUGHS.md). Shared frame scheduling does not remove independent-device drift. Track folders
 and grouped controls are distinct from routing.
 Keep secondary controls in menus or focused inspectors, with concise labels.
 

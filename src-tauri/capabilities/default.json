@@ -51,10 +51,24 @@
       "allow": [
         {
           "path": "$TEMP/crispaudio-share/**"
+        },
+        {
+          "path": "$APPDATA/mix-preview-*.wav"
         }
       ]
     },
     "core:window:allow-is-fullscreen",
-    "core:window:allow-set-fullscreen"
+    "core:window:allow-set-fullscreen",
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
+    }
   ]
 }

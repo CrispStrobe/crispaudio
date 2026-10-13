@@ -110,7 +110,9 @@
     "Go to Start": "Zum Anfang",
     "Loop Playback": "Wiedergabeschleife",
     "Range Selection": "Bereichsauswahl",
-    "Clear Range": "Bereich entfernen"
+    "Clear Range": "Bereich entfernen",
+    "Review Export…": "Export prüfen…",
+    "Sample Walkthroughs…": "Beispielanleitungen…"
   },
   "app": {
     "name": "CrispAudio",
@@ -1954,7 +1956,10 @@
     "clear-range": "Bereich entfernen",
     "snap": "Einrasten",
     "commands": "Befehl suchen",
-    "collapse": "Menüband einklappen"
+    "collapse": "Menüband einklappen",
+    "mix-review": "Mix A/B",
+    "review-export": "Export prüfen",
+    "walkthroughs": "Beispielanleitungen"
   },
   "commandHelp": {
     "samples": "Öffnet Beispielsitzungen für das aktuelle Projekt oder die Auswahl.",
@@ -2038,6 +2043,77 @@
     "menu:Edit": "Zeigt die Befehle für Bearbeiten im Touch-Menüband.",
     "menu:View": "Zeigt die Befehle für Darstellung im Touch-Menüband.",
     "menu:Playback": "Zeigt die Befehle für Wiedergabe im Touch-Menüband.",
-    "menu:Tools": "Zeigt die Befehle für Werkzeuge im Touch-Menüband."
+    "menu:Tools": "Zeigt die Befehle für Werkzeuge im Touch-Menüband.",
+    "mix-review": "A erfassen, Mischung ändern, dann B erfassen. Bereich vorbereiten und während der Wiedergabe zwischen A/B wechseln. Anwenden stellt einen Mix mit einem Rückgängig-Schritt her. Neue Anordnungen benötigen neue Aufnahmen des Mixes.",
+    "review-export": "Die tatsächlich gespeicherte Audiodatei anhören und messen. Bei Video wird hier der Ton gemessen; Datei öffnen zeigt den vollständigen Film.",
+    "walkthroughs": "Laden öffnet die Beispielsitzungen zur Bestätigung. Ein Rückgängig stellt das vorige Projekt wieder her; vorhandene Quellen bleiben erhalten. Die Anleitung bleibt beim Arbeiten offen. Werkzeuge starten weder Aufnahme noch Mixänderungen automatisch."
+  },
+  "mixReview": {
+    "title": "Mix A/B",
+    "capture": "{{slot}} erfassen",
+    "apply": "{{slot}} anwenden",
+    "start": "Von (s)",
+    "end": "Bis (s)",
+    "info": "Hinweise zum Mischvergleich",
+    "prepare": "Vergleich vorbereiten",
+    "match": "Lautheit angleichen",
+    "loop": "Schleife",
+    "peak": "Spitze",
+    "preparing": "Vergleich wird vorbereitet…",
+    "invalid": "Beide Versionen erfassen und gültigen Bereich wählen.",
+    "changed": "Die Anordnung hat sich geändert. Diese Version erneut erfassen.",
+    "locked": "Eine gesperrte Spur schützt ihre Mischeinstellungen.",
+    "largePreview": "Diese Browser-Vorschau mit voller Vorgeschichte ist zu groß. Verknüpfte Medien in der Mac-App oder einen früheren Bereich verwenden.",
+    "help": "A erfassen, Mischung ändern, dann B erfassen. Bereich vorbereiten und während der Wiedergabe zwischen A/B wechseln. Anwenden stellt einen Mix mit einem Rückgängig-Schritt her. Neue Anordnungen benötigen neue Aufnahmen des Mixes.",
+    "meterHelp": "LUFS und True Peak sind Schätzungen für diesen Bereich. Spitze und RMS gelten in dBFS. Die Angleichung senkt nur den Abhörpegel; gespeicherte Mischungen und Exporte bleiben unverändert."
+  },
+  "exportReview": {
+    "title": "Export prüfen",
+    "choose": "Exportierte Datei wählen",
+    "media": "Exportierte Medien",
+    "openFile": "Datei öffnen",
+    "info": "Hinweise zur Exportprüfung",
+    "help": "Die tatsächlich gespeicherte Audiodatei anhören und messen. Bei Video wird hier der Ton gemessen; Datei öffnen zeigt den vollständigen Film.",
+    "loading": "Exportierte Medien werden gelesen…",
+    "large": "Diese Datei überschreitet die Grenze der dekodierten Vorschau. Datei öffnen spielt sie im Systemplayer."
+  },
+  "walkthroughs": {
+    "title": "Beispielanleitungen",
+    "recording": "Aufnahme",
+    "comp": "Takes & Comp",
+    "mix": "Mischen",
+    "video": "Video & Audio",
+    "start": "Beispiel laden",
+    "next": "Nächster Schritt",
+    "previous": "Vorheriger Schritt",
+    "close": "Anleitung schließen",
+    "open": "Werkzeug öffnen",
+    "info": "Zur Anleitung",
+    "help": "Laden öffnet die Beispielsitzungen zur Bestätigung. Ein Rückgängig stellt das vorige Projekt wieder her; vorhandene Quellen bleiben erhalten. Die Anleitung bleibt beim Arbeiten offen. Werkzeuge starten weder Aufnahme noch Mixänderungen automatisch.",
+    "done": "Fertig",
+    "recordingSteps": [
+      "Mischbeispiel laden und Aufnahme / Takes öffnen.",
+      "Audiospur hinzufügen, scharf schalten und unter Eingangsoptionen das Mikrofon wählen. Bei Lautsprechern Monitoring ausgeschaltet lassen.",
+      "Fünf Sekunden sprechen und aufnehmen, dann stoppen. Der Eingangspegel muss ausschlagen.",
+      "Aufnahmedialog schließen und den neuen Clip abspielen. Rückgängig stellt den vorherigen Zustand wieder her."
+    ],
+    "compSteps": [
+      "Take-Beispiel laden und Aufnahme / Takes öffnen.",
+      "Die Keys-Spur auswählen und Takes & Comp aufklappen. Take A, Take B und den Comp anhören.",
+      "Einen Bereich in einer Take-Lane wählen und diesen Take für den Bereich verwenden. Den Comp erneut vergleichen.",
+      "Einen Comp-Bereich ersetzen oder entfernen. Unter Versionen den Comp benennen, speichern und wiederherstellen; Rückgängig stellt die vorige Bearbeitung wieder her."
+    ],
+    "mixSteps": [
+      "Mischbeispiel laden, abspielen und den Mixer ausprobieren.",
+      "In Mix A/B A erfassen. Dialog schließen, Spurpegel oder Effekte ändern und dann B erfassen.",
+      "Vergleich vorbereiten, abspielen und zwischen A/B wechseln. Pegelabgleich senkt die lautere Version. LUFS und Spitzen vergleichen.",
+      "Den gewünschten Mix übernehmen und exportieren. Die gespeicherte Datei über Datei oder den fertigen Ausgabeauftrag prüfen."
+    ],
+    "videoSteps": [
+      "Videobeispiel laden und das Bild mit seinen drei Audiospuren abspielen.",
+      "Bildsegment auswählen und Clip-Einstellungen öffnen. Bei verknüpften Medien zwischen Video und Audio wechseln.",
+      "In einem eingeklappten Abschnitt Blende oder Farbe ändern. Bei aktiviertem Verschieben & Kürzen an den Segmentgrenzen kürzen.",
+      "Video exportieren öffnen, Ausgabebereich prüfen und exportieren. Gespeichertes Audio prüfen und den Film zur Kontrolle der Bildsynchronität öffnen."
+    ]
   }
 }

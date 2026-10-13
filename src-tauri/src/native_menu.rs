@@ -158,6 +158,20 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
             )?,
             &sep()?,
             &item(
+                "walkthroughs",
+                "Sample Walkthroughs…",
+                "Beispielanleitungen…",
+                enabled,
+                None,
+            )?,
+            &item(
+                "review-export",
+                "Review Export…",
+                "Export prüfen…",
+                timeline,
+                None,
+            )?,
+            &item(
                 "samples",
                 "Sample Sessions…",
                 "Beispielsitzungen…",
@@ -576,6 +590,7 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
         label("Tools", "Werkzeuge"),
         true,
         &[
+            &item("mix-review", "Mix A/B…", "Mix A/B…", timeline, None)?,
             &item(
                 "align",
                 "Alignment…",

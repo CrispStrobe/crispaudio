@@ -1,3 +1,6 @@
+import {SampleWalkthroughs} from './SampleWalkthroughs';
+import {ExportReview} from './ExportReview';
+import {MixReview} from './MixReview';
 import {HelpDetails} from '../common/HelpDetails';
 import {ClipPlacement} from './ClipPlacement';
 import {navigateClip} from '../../lib/clipNavigation';
@@ -652,7 +655,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Activity} label={t('automation.openTitle')} aria-pressed={automation} onClick={()=>setAutomation(value=>!value)}/>
         <ToolButton icon={SlidersHorizontal} label={t('mixer.title')} aria-pressed={mixer} onClick={()=>setMixer(value=>!value)}/>
         <CommandSearch/>
-        <ClipPlacement/><TrackFolders/><SampleSessions/><MusicalControls launcher={false}/>
+        <SampleWalkthroughs/><ExportReview/><MixReview/><ClipPlacement/><TrackFolders/><SampleSessions/><MusicalControls launcher={false}/>
         <MidiControls audio={audioEngine} launcher={false}/>
         <DeliveryControls launcher={false}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} launcher={false}/>
