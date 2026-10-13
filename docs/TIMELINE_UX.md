@@ -60,3 +60,16 @@ With multiple selected audio clips, the boundary buttons follow the focused clip
 (last touched or right-clicked). The other clips remain selected. If it is outside
 the viewport, the first visible selected clip supplies the buttons. Linked trim
 rules and one-undo/Escape behavior are unchanged.
+
+Video clips use the same focused start/end boundary handles in Move & Trim mode.
+The two touch targets remain separate on very short clips. Relative motion trims
+linked audio and video together, supports source extension and frame-sized edits,
+and records one undo step. Escape restores the gesture; loading another project
+abandons it without restoring the old project. The video lane playhead is visual;
+the ruler retains seeking and dragging.
+
+Right-click or touch-and-hold a video clip for its twelve context actions:
+settings, placement, trim tools, trim to playhead, fades, retiming, edit groups,
+split, copy, cut and delete. The same commands remain in desktop menus and the
+touch ribbon. Locked picture and recording protect mutations. Menus stay inside
+the viewport, support keyboard navigation and close on Escape or an outside tap.

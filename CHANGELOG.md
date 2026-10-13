@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.7 — 2026-10-13
+
+- Give selected video clips distinct start/end trim handles, including very short clips, with linked audio/video trimming and one-step undo.
+- Share twelve video clip actions through right-click and touch long-press, using the compact inspector and existing desktop/ribbon commands.
+- Keep the video lane playhead visual so it does not cover short clips; seek with the ruler. Protect cancelled gestures when another project loads.
+
 ## 0.10.6 — 2026-10-13
 
 - Keep track names readable by consolidating secondary actions into a shared desktop context and touch menu, including per-track recording setup.

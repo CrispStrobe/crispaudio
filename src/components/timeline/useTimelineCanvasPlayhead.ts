@@ -10,8 +10,7 @@ export function useTimelineCanvasPlayhead(width: number, overviewDuration?: numb
       if (document.visibilityState === 'hidden' || !ref.current) return;
       const { playheadPosition, zoomLevel, scrollOffset } = useProjectStore.getState();
       const x = overviewDuration ? playheadPosition / overviewDuration * width : (playheadPosition - scrollOffset) * zoomLevel;
-      ref.current.setAttribute('aria-valuenow', String(playheadPosition));
-      ref.current.setAttribute('aria-valuemax', String(timelineDuration(useProjectStore.getState().project)));
+      if(ref.current.getAttribute('role')==='slider'){ref.current.setAttribute('aria-valuenow', String(playheadPosition));ref.current.setAttribute('aria-valuemax', String(timelineDuration(useProjectStore.getState().project)));}
       ref.current.style.transform = `translateX(${x}px)`;
       // The broad cursor target must not cover neighbouring track controls
       // when the red line is at either viewport edge.

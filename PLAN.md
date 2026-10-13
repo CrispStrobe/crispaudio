@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.6. This section is the current plan.
+Updated 2026-10-13, for local 0.10.7. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -68,6 +68,8 @@ is zero. Short-clip trim hit targets stay separate and above the playhead.
 0.10.6 consolidates track headers with a shared right-click/touch action menu,
 readable names at compact heights, per-track recording setup and protected actions
 during capture. Trim handles follow the focused selected clip to avoid collisions.
+0.10.7 brings video clips the same focused boundary handles and desktop/touch
+context actions, retaining linked audio/video edits and protected cancellation.
 Keep secondary controls in menus or focused inspectors, with concise labels.
 
 Playback remains fixed per user confirmation. M9 paging/codecs remains deferred.

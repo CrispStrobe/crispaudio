@@ -842,7 +842,8 @@
     "trimStartHandle": "Drag start to trim",
     "trimEndHandle": "Drag end to trim",
     "precisionInfo": "Placement information",
-    "appearance": "Appearance"
+    "appearance": "Appearance",
+    "videoClipActions": "Video clip actions"
   },
   "workspace": {
     "title": "Workspace",
@@ -992,7 +993,9 @@
     "help_inputLevel_title": "Input level",
     "help_inputLevel": "Shows the actual microphone input before track gain and effects. Red means near full scale. Levels are measured during capture or an explicitly connected input preview.",
     "help_trackActions_title": "Track actions",
-    "help_trackActions": "Opens mute, solo, arm, recording setup, clip selection, reorder, lock and remove actions. Right-click the track header also opens this menu. Changes are disabled during capture."
+    "help_trackActions": "Opens mute, solo, arm, recording setup, clip selection, reorder, lock and remove actions. Right-click the track header also opens this menu. Changes are disabled during capture.",
+    "help_videoClip_title": "Video segment",
+    "help_videoClip": "Select, then drag the start or end with Move & Trim enabled. Linked audio stays synchronized. Right-click or long-press opens settings, trim, fades, speed/pitch, copy and other actions. Escape cancels a drag."
   },
   "analysis": {
     "outputSpectrogram": "Output spectrogram",

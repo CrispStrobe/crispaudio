@@ -1,8 +1,8 @@
 import type {PointerEvent} from 'react';
 import {PanelLeft,PanelRight} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
-import type {TimelineTrack,AudioSegment,TimelineSelection} from '../../types/audio';
-export function ClipTrimHandles({tracks,selection,activeSegmentId,zoom,scroll,width,height,onBegin,onMove,onEnd,onCancel}:{tracks:TimelineTrack[];selection:TimelineSelection|null;activeSegmentId?:string|null;zoom:number;scroll:number;width:number;height:number;onBegin:(e:PointerEvent<HTMLButtonElement>,seg:AudioSegment,row:number,side:'left'|'right')=>void;onMove:(e:PointerEvent<HTMLButtonElement>)=>void;onEnd:(e:PointerEvent<HTMLButtonElement>)=>void;onCancel:()=>void}){
+import type {TimelineSelection} from '../../types/audio';
+export function ClipTrimHandles<T extends {id:string;name:string;startTime:number;duration:number}>({tracks,selection,activeSegmentId,zoom,scroll,width,height,onBegin,onMove,onEnd,onCancel}:{tracks:{locked?:boolean;segments:T[]}[];selection:TimelineSelection|null;activeSegmentId?:string|null;zoom:number;scroll:number;width:number;height:number;onBegin:(e:PointerEvent<HTMLButtonElement>,seg:T,row:number,side:'left'|'right')=>void;onMove:(e:PointerEvent<HTMLButtonElement>)=>void;onEnd:(e:PointerEvent<HTMLButtonElement>)=>void;onCancel:()=>void}){
  const {t}=useTranslation();
  if(width<=0)return null;
  const size=Math.min(44,width/2),clamp=(x:number,max:number)=>Math.max(0,Math.min(max,x));

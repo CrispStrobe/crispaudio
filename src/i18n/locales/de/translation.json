@@ -855,7 +855,8 @@
     "trimStartHandle": "Anfang zum Kürzen ziehen",
     "trimEndHandle": "Ende zum Kürzen ziehen",
     "precisionInfo": "Hinweise zur Platzierung",
-    "appearance": "Darstellung"
+    "appearance": "Darstellung",
+    "videoClipActions": "Videoclip-Aktionen"
   },
   "workspace": {
     "title": "Arbeitsbereich",
@@ -1005,7 +1006,9 @@
     "help_inputLevel_title": "Eingangspegel",
     "help_inputLevel": "Zeigt den tatsächlichen Mikrofoneingang vor Spurpegel und Effekten. Rot bedeutet nahe Vollaussteuerung. Eingang wird beim Aufnehmen oder einer ausdrücklich verbundenen Vorschau gemessen.",
     "help_trackActions_title": "Spuraktionen",
-    "help_trackActions": "Öffnet Spuraktionen: Mute, Solo, Scharfschalten, Aufnahmeeinstellungen, Clipauswahl, Reihenfolge, Sperren und Entfernen. Auch per Rechtsklick auf den Spurkopf erreichbar. Während der Aufnahme sind Änderungen gesperrt."
+    "help_trackActions": "Öffnet Spuraktionen: Mute, Solo, Scharfschalten, Aufnahmeeinstellungen, Clipauswahl, Reihenfolge, Sperren und Entfernen. Auch per Rechtsklick auf den Spurkopf erreichbar. Während der Aufnahme sind Änderungen gesperrt.",
+    "help_videoClip_title": "Videosegment",
+    "help_videoClip": "Auswählen, dann bei aktiviertem Verschieben & Kürzen am Anfang oder Ende ziehen. Verknüpftes Audio bleibt synchron. Rechtsklick oder langes Drücken öffnet Einstellungen, Kürzen, Blenden, Tempo/Tonhöhe, Kopieren und weitere Aktionen. Escape bricht eine Bearbeitung ab."
   },
   "analysis": {
     "outputSpectrogram": "Ausgabe-Spektrogramm",
