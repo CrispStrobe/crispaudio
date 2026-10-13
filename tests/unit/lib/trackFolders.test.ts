@@ -19,3 +19,5 @@ it('folder clip selection includes linked partners and dissolving/removing track
  const clip={id:'clip',trackId:'a',sourceId:'src',startTime:0,duration:1,linkGroup:'linked'};const p=project() as TimelineProject;p.tracks[0].segments=[clip as never];p.tracks[1].segments=[{...clip,id:'partner',trackId:'b'} as never];const next=saveTrackFolder(p,'Group',['a'],'folder');expect(folderSelection(next,'folder')?.segmentIds.sort()).toEqual(['clip','partner']);useProjectStore.getState().loadProjectState(next,new Map());useProjectStore.getState().removeTrack('a');expect(useProjectStore.getState().project.trackFolders).toEqual([]);expect(useProjectStore.getState().project.tracks[0].segments).toHaveLength(1);
 });
 
+
+it('selects empty folder members without adding a project edit',()=>{const p=saveTrackFolder(project(),'Empty',['a','c'],'empty'),s=folderSelection(p,'empty');expect(s?.trackIds).toEqual(['a','c']);expect(s?.segmentIds).toEqual([]);expect(s?.startTime).toBe(0);expect(folderSelection(p,'missing')).toBeNull();});

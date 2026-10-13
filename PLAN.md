@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.10.10. This section is the current plan.
+Updated 2026-10-13, for local 0.10.11. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -76,6 +76,8 @@ optional navigation and master loudness, and compact picture track/preview tools
 protects track ranges from removed anchors.
 0.10.10 preserves compact inspector geometry after dragging/rotation and starts
 picture header ranges from a selected clip.
+0.10.11 completes empty-track deselection/counts, collapsed-folder and legacy
+video markers, displayed-order Shift ranges and selected empty recording targets.
 Window movement remains working per the latest user confirmation.
 Keep secondary controls in menus or focused inspectors, with concise labels.
 

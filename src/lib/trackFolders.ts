@@ -35,6 +35,8 @@ export function folderControl(project:TimelineProject,id:string,key:'muted'|'sol
  const value=!members.every(t=>t[key]);return {...project,tracks:project.tracks.map(t=>folder.trackIds.includes(t.id)?{...t,[key]:value}:t)};
 }
 export function folderSelection(project:TimelineProject,id:string){
- const ids=project.tracks.filter(t=>project.trackFolders?.find(f=>f.id===id)?.trackIds.includes(t.id)).flatMap(t=>t.segments.map(c=>c.id));
- return projectSelection(project,linkedIds(project,ids));
+ const members=project.tracks.filter(t=>project.trackFolders?.find(f=>f.id===id)?.trackIds.includes(t.id));
+ if(!members.length)return null;
+ const ids=members.flatMap(t=>t.segments.map(c=>c.id));
+ return {...projectSelection(project,linkedIds(project,ids))??{startTime:0,endTime:0,segmentIds:[]},trackIds:members.map(t=>t.id),trackAnchorId:members[0].id};
 }

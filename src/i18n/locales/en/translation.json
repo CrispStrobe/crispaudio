@@ -584,7 +584,13 @@
     "addEffect": "Add effect",
     "startInfo": "Getting started",
     "trackActions": "Track actions",
-    "selectTrackClips": "Select track clips"
+    "selectTrackClips": "Select track clips",
+    "selectionLabel": "Selection",
+    "selectionRange": "Range selected",
+    "selectedTracks_one": "{{count}} track",
+    "selectedTracks_other": "{{count}} tracks",
+    "selectedClips_one": "{{count}} clip",
+    "selectedClips_other": "{{count}} clips"
   },
   "common": {
     "slotA": "A",
@@ -1882,7 +1888,8 @@
     "moveInfo": "Selected tracks move into this folder. Audio routing stays unchanged.",
     "dissolve": "Dissolve",
     "invalid": "Choose a name and at least one track.",
-    "apply": "Apply"
+    "apply": "Apply",
+    "selectionSummary": "Selected: {{selected}} / {{total}}"
   },
   "placement": {
     "title": "Place clips at time",

@@ -16,7 +16,7 @@ let handler:Handler|undefined,pending:string|undefined,busy=false;
 export const nativeMenuBusy=()=>busy;
 const notify=()=>window.dispatchEvent(new Event('crispaudio-menu-state'));
 async function run(action:string){
- if(!handler||busy||menuBlocked()||(editActions.has(action)&&textEditing()))return;
+ if(!handler||busy||menuBlocked()||(editActions.has(action)&&action!=='deselect'&&textEditing()))return;
  busy=true;notify();
  try{await handler(action);}catch(error){window.dispatchEvent(new CustomEvent('crispaudio-edit-error',{detail:String(error)}));}
  finally{busy=false;notify();}
@@ -37,7 +37,7 @@ export function dispatchNativeMenu(action:string){
   const history=ui.activePanel==='sfx'?useSynthStore.temporal.getState():useVoiceStore.temporal.getState();
   history[action]();if(ui.activePanel==='sfx')useSynthStore.getState().generate();return;
  }
- if(editActions.has(action)&&(textEditing()||ui.activePanel!=='timeline'))return;
+ if(editActions.has(action)&&((action!=='deselect'&&textEditing())||ui.activePanel!=='timeline'))return;
  if(handler&&ui.activePanel==='timeline')void run(action);
  else {pending=action;ui.setActivePanel('timeline');}
 }
@@ -49,7 +49,7 @@ export function nativeMenuContext(){
   language:i18n.language,labels,disabledTools:disabledTimelineTools(),ready:true,timeline:useUIStore.getState().activePanel==='timeline',
   textEditing:textEditing(),blocked:menuBlocked()||busy,helpMode:!!document.querySelector('[data-timeline-help="true"]'),
   canUndo:history.pastStates.length>0,canRedo:history.futureStates.length>0,
-  selection:!!state.selection?.segmentIds.length,
+  selection:!!state.selection?.segmentIds.length,anySelection:state.selection!==null,
   clipboard:!!(state.clipboard.segments.length||state.clipboard.videos?.length),
   editRange:!!state.project.editRange,rangeMode:state.selectionMode==='range',content:timelineDuration(state.project)>0,loopEnabled:state.loopEnabled,snapEnabled:state.snapEnabled,
  };

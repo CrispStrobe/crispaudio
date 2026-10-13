@@ -1,4 +1,5 @@
-import {selectTimelineTrack} from '../../lib/trackSelection';
+import {videoClips} from '../../lib/videoEditing';
+import {selectTimelineTrack,selectPictureTimelineTrack,selectionTrackIds} from '../../lib/trackSelection';
 import {TrackHeaderMenu} from './TrackHeaderMenu';
 import {openTrackMenu} from '../../lib/trackHeaderMenu';
 import {RecordingInputMeter} from './RecordingInputMeter';
@@ -222,6 +223,7 @@ export const TimelinePanel: React.FC = () => {
     trackHeight: s.trackHeight, setTrackHeight: s.setTrackHeight, setZoomLevel: s.setZoomLevel, setSnapEnabled: s.setSnapEnabled,
     importAudioSource: s.importAudioSource, loadProjectState: s.loadProjectState,
   })));
+  const selectionTracks=React.useMemo(()=>selectionTrackIds(store.project,store.selection).length,[store.project,store.selection]);
   const audioEngine = useAudioEngine();
   const engineRef = useRef<TimelineEngine | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -716,8 +718,8 @@ export const TimelinePanel: React.FC = () => {
             </span>
           </div>
 
-          {store.project.video&&!store.project.video.tracks && <div data-track-header data-compact={store.trackHeight<56} data-touch-compact={store.trackHeight<96} className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
-            <div className="track-heading flex items-center justify-between gap-2"><span className="text-sm font-medium text-violet-200">{t('video.track')}</span>
+          {store.project.video&&!store.project.video.tracks && <div data-track-header data-picture-header="picture" data-selected={!!store.selection?.trackIds?.includes('picture')||videoClips(store.project.video).some(c=>store.selection?.segmentIds.includes(c.id))} onClick={e=>{if(e.target instanceof Element&&e.target.closest('button'))return;if(!recording)selectPictureTimelineTrack('picture',e.shiftKey);}} data-compact={store.trackHeight<56} data-touch-compact={store.trackHeight<96} className="shrink-0 px-3 flex flex-col justify-center overflow-hidden gap-1 border-b border-gray-700 bg-violet-950/30" style={{ height: store.trackHeight }}>
+            <div className="track-heading flex items-center justify-between gap-2"><span data-picture-track-name className="text-sm font-medium text-violet-200">{t('video.track')}</span>
               <button type="button" disabled={recording} data-help="lock" aria-pressed={!!store.project.video.locked}
                 aria-label={t(store.project.video.locked?'ranges.unlock':'ranges.lock')} title={t(store.project.video.locked?'ranges.unlock':'ranges.lock')}
                 className={`shrink-0 p-1 ${store.project.video.locked?'text-amber-300':'text-gray-500'}`}
@@ -822,19 +824,19 @@ export const TimelinePanel: React.FC = () => {
       {mixer&&<TrackMixer engine={engineRef} onClose={()=>setMixer(false)}/>}
       {navigationVisible&&<TimelineNavigation width={canvasWidth} />}
       {/* Status bar */}
-      <div className="flex items-center gap-4 px-4 py-1 bg-gray-900 border-t border-gray-800 text-xs text-gray-500 flex-shrink-0 select-none">
+      <div className="flex items-center gap-2 md:gap-4 px-2 md:px-4 py-1 bg-gray-900 border-t border-gray-800 text-xs text-gray-500 flex-shrink-0 min-w-0 select-none">
         <span>
-          {t('timeline.trackCount', { count: store.project.tracks.length })}
+          {t('timeline.trackCount', { count: store.project.tracks.length+(store.project.video?(store.project.video.tracks?.length??1)+(store.project.video.graphics?.length??0)+(store.project.video.captions?1:0):0) })}
         </span>
         <span>
-          {t('timeline.segmentCount', { count: store.project.tracks.reduce((n, tr) => n + tr.segments.length, 0) })}
+          {t('timeline.segmentCount', { count: store.project.tracks.reduce((n, tr) => n + tr.segments.length, 0)+videoClips(store.project.video).length+(store.project.video?.graphics?.reduce((n,tr)=>n+tr.clips.length,0)??0)+(store.project.video?.captions?.cues.length??0) })}
         </span>
         {store.selection && (
-          <span className="text-indigo-400">
-            {t('timeline.selectedCount', { count: store.selection.segmentIds.length })}
+          <span data-selection-status data-selected-tracks={selectionTracks} data-selected-clips={store.selection.segmentIds.length} className="text-indigo-400 shrink-0" aria-label={`${t('timeline.selectionLabel')}: ${t('timeline.selectedTracks',{count:selectionTracks})}, ${t('timeline.selectedClips',{count:store.selection.segmentIds.length})}`}>
+            <span aria-hidden="true">✓ </span>{selectionTracks>0&&t('timeline.selectedTracks',{count:selectionTracks})}{selectionTracks>0&&store.selection.segmentIds.length>0&&' · '}{store.selection.segmentIds.length>0&&t('timeline.selectedClips',{count:store.selection.segmentIds.length})}{!selectionTracks&&!store.selection.segmentIds.length&&t('timeline.selectionRange')}
           </span>
         )}
-        <span className="ml-auto">{store.project.name}</span>
+        <span className="ml-auto min-w-0 truncate" title={store.project.name}>{store.project.name}</span>
       </div>
     </div></TimelineEngineContext.Provider>
   );

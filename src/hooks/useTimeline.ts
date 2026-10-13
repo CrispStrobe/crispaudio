@@ -363,6 +363,8 @@ export function useTimeline() {
       const target = e.target as HTMLElement;
       if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable=true], [role=dialog]')) return;
 
+      if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&target instanceof HTMLElement&&target.closest('button:not([data-video-clip]):not([data-clip-trim-handle]),summary,[role=button]')&&['Space','Enter'].includes(e.code))return;
+
       // Native menu accelerators own these commands on macOS: never apply twice.
       if(isNativeMac()&&((e.metaKey&&['KeyZ','KeyC','KeyX','KeyV','KeyA'].includes(e.code))||e.code==='Backspace'))return;
       const store = useProjectStore.getState();

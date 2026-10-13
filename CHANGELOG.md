@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.10.11 — 2026-10-13
+
+- Enable Deselect All for selected empty tracks, with accurate track/clip selection counts. Clip editing still requires selected clips.
+- Keep selection visible on collapsed folders and the legacy video header. Select empty folder members by name or keyboard; focused buttons own Space/Enter.
+- Follow the displayed folder order for header Shift-click ranges, excluding hidden members.
+- Let direct recording use the selected empty audio track when no configured or armed target takes priority.
+
 ## 0.10.10 — 2026-10-13
 
 - Keep floating inspectors compact after touch dragging, collapse and viewport rotation; release stale drags when capture or window focus is lost.

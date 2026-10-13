@@ -1,6 +1,6 @@
 import {beforeEach,describe,it,expect} from 'vitest';
 import {useProjectStore} from '../../../src/stores/projectStore';
-import {selectTimelineTrack,selectPictureTimelineTrack} from '../../../src/lib/trackSelection';
+import {selectTimelineTrack,selectPictureTimelineTrack,selectionTrackIds} from '../../../src/lib/trackSelection';
 beforeEach(()=>{useProjectStore.setState({...useProjectStore.getInitialState()});for(let i=0;i<4;i++)useProjectStore.getState().addTrack(`Track ${i}`);useProjectStore.temporal.getState().clear();});
 describe('track header selection',()=>{
  it('selects empty tracks through an anchored range and replaces it on plain click',()=>{
@@ -14,6 +14,13 @@ describe('track header selection',()=>{
   expect(useProjectStore.temporal.getState().pastStates).toHaveLength(0);
  });
  it('starts a new range when its previous anchor was removed',()=>{const tracks=useProjectStore.getState().project.tracks;useProjectStore.setState({selection:{startTime:0,endTime:0,segmentIds:[],trackIds:['removed'],trackAnchorId:'removed'}});selectTimelineTrack(tracks[2].id,true);expect(useProjectStore.getState().selection?.trackIds).toEqual([tracks[2].id]);expect(useProjectStore.getState().selection?.trackAnchorId).toBe(tracks[2].id);});
+ it('follows the displayed order of expanded folders and skips hidden members',()=>{
+  const s=useProjectStore.getState(),tracks=s.project.tracks;useProjectStore.setState({project:{...s.project,trackFolders:[{id:'folder',name:'Group',trackIds:[tracks[0].id,tracks[2].id],collapsed:false}]}});
+  selectTimelineTrack(tracks[0].id);selectTimelineTrack(tracks[2].id,true);expect(useProjectStore.getState().selection?.trackIds).toEqual([tracks[0].id,tracks[2].id]);
+  useProjectStore.setState({project:{...useProjectStore.getState().project,trackFolders:[{id:'folder',name:'Group',trackIds:[tracks[0].id,tracks[2].id],collapsed:true}]}});
+  selectTimelineTrack(tracks[1].id,true);expect(useProjectStore.getState().selection?.trackIds).toEqual([tracks[1].id]);
+ });
+ it('counts real selected empty tracks once and ignores removed track IDs',()=>{const s=useProjectStore.getState(),id=s.project.tracks[0].id;expect(selectionTrackIds(s.project,{startTime:0,endTime:0,segmentIds:[],trackIds:[id,id,'removed']})).toEqual([id]);});
  it('starts a picture range from the selected clip and retains linked audio',()=>{
   const state=useProjectStore.getState(),track=state.project.tracks[0],clip={id:'movie',videoTrackId:'middle',startTime:1,duration:2,sourceOffset:0,fadeIn:0,fadeOut:0,transition:'cut' as const,transitionDuration:0,linkGroup:'pair'};
   const audio={id:'audio',trackId:track.id,sourceId:'s',startTime:1,duration:2,sourceOffset:0,fadeInDuration:0,fadeOutDuration:0,fadeInCurve:'linear' as const,fadeOutCurve:'linear' as const,gain:1,effects:[],name:'A',color:'#fff',linkGroup:'pair'};

@@ -597,7 +597,13 @@
     "addEffect": "Effekt hinzufügen",
     "startInfo": "Erste Schritte",
     "trackActions": "Spuraktionen",
-    "selectTrackClips": "Clips der Spur auswählen"
+    "selectTrackClips": "Clips der Spur auswählen",
+    "selectionLabel": "Auswahl",
+    "selectionRange": "Bereich ausgewählt",
+    "selectedTracks_one": "{{count}} Spur",
+    "selectedTracks_other": "{{count}} Spuren",
+    "selectedClips_one": "{{count}} Clip",
+    "selectedClips_other": "{{count}} Clips"
   },
   "common": {
     "slotA": "A",
@@ -1895,7 +1901,8 @@
     "moveInfo": "Gewählte Spuren werden diesem Ordner zugeordnet. Die Audiorouten bleiben erhalten.",
     "dissolve": "Auflösen",
     "invalid": "Name und mindestens eine Spur wählen.",
-    "apply": "Anwenden"
+    "apply": "Anwenden",
+    "selectionSummary": "Ausgewählt: {{selected}} / {{total}}"
   },
   "placement": {
     "title": "Clips zeitlich platzieren",

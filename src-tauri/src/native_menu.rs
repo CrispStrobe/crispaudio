@@ -16,6 +16,7 @@ pub struct MenuContext {
     can_undo: bool,
     can_redo: bool,
     selection: bool,
+    any_selection: bool,
     clipboard: bool,
     content: bool,
     loop_enabled: bool,
@@ -250,7 +251,7 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
                 "deselect",
                 "Deselect All",
                 "Auswahl aufheben",
-                timeline && context.selection,
+                timeline && (context.any_selection || context.selection),
                 Some("CmdOrCtrl+Shift+A"),
             )?,
         ])?;

@@ -624,7 +624,8 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
   box-shadow:inset 4px 0 #fde047;
 }
 .timeline-editor [data-track-header][data-selected="true"] .track-heading input,
-.timeline-editor [data-track-header][data-selected="true"] [data-picture-track-name] {
+.timeline-editor [data-track-header][data-selected="true"] [data-picture-track-name],
+.timeline-editor [data-track-header][data-selected="true"] [data-folder-name] {
   color:#fef08a;
   font-weight:700;
 }

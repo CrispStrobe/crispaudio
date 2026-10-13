@@ -108,3 +108,17 @@ moved panel leaves just its header; rotating or resizing keeps the panel inside
 the viewport. Losing pointer capture or window focus ends panel dragging.
 Picture header Shift-click can start its range from an already selected video
 clip, retaining linked audio and highlighting every selected track.
+
+Deselect All clears empty-track selections through desktop menus, command search
+and the touch ribbon. Selecting an empty track leaves clip editing disabled.
+The status reports selected tracks and clips separately and includes picture,
+graphics and captions in the project totals. Legacy video headers show selection
+along with linked audio. Folder rows keep a selection marker when collapsed,
+with selected/total member counts. Clicking the folder name, Enter on its row or
+the Select button includes empty members. Space/Enter activate focused controls
+without starting playback. Header Shift ranges follow displayed folder order;
+a hidden anchor starts a fresh range at the clicked visible track.
+
+Without a configured or armed recording target, direct Record uses the selected
+empty audio track as well as tracks containing selected clips. Existing target
+priorities, lock protection and recording ownership remain in place.

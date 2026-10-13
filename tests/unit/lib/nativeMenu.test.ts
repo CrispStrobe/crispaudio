@@ -1,3 +1,4 @@
+import {commandEnabled,timelineCommands} from '../../../src/lib/timelineCommands';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dispatchNativeMenu, registerTimelineMenu, nativeMenuContext, nativeMenuBusy } from '../../../src/lib/nativeMenu';
 import { useSynthStore } from '../../../src/stores/synthStore';
@@ -25,6 +26,14 @@ describe('native menu routing',()=>{
   const action=vi.fn();stop=registerTimelineMenu(action);const input=document.createElement('input');document.body.append(input);input.focus();
   expect(nativeMenuContext().textEditing).toBe(true);dispatchNativeMenu('cut');await settle();expect(action).not.toHaveBeenCalled();
   input.blur();dispatchNativeMenu('cut');await settle();expect(action).toHaveBeenCalledWith('cut');
+ });
+ it('clears an empty-track selection while preserving text input and clip-command availability',async()=>{
+  useProjectStore.getState().addTrack('Empty');const id=useProjectStore.getState().project.tracks[0].id;useProjectStore.setState({selection:{startTime:0,endTime:0,segmentIds:[],trackIds:[id]}});
+  const deselect=timelineCommands.Edit.find(c=>c.id==='deselect')!,copy=timelineCommands.Edit.find(c=>c.id==='copy')!;
+  expect(nativeMenuContext().anySelection).toBe(true);expect(nativeMenuContext().selection).toBe(false);expect(commandEnabled(deselect)).toBe(true);expect(commandEnabled(copy)).toBe(false);
+  const input=document.createElement('input');input.value='Unchanged';document.body.append(input);input.focus();
+  const action=vi.fn((id:string)=>{if(id==='deselect')useProjectStore.getState().setSelection(null);});stop=registerTimelineMenu(action);dispatchNativeMenu('deselect');await settle();
+  expect(action).toHaveBeenCalledWith('deselect');expect(useProjectStore.getState().selection).toBeNull();expect(input.value).toBe('Unchanged');expect(commandEnabled(deselect)).toBe(false);
  });
  it('blocks menu edits behind modal and contextual-help overlays',async()=>{
   const action=vi.fn();stop=registerTimelineMenu(action);const dialog=document.createElement('div');dialog.setAttribute('role','dialog');document.body.append(dialog);

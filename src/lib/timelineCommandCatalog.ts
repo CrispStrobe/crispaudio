@@ -1,4 +1,4 @@
-export interface TimelineCommand { id: string; label: string; key?: string; requires?: 'selection' | 'content' | 'editRange' | 'clipboard' | 'canUndo' | 'canRedo' }
+export interface TimelineCommand { id: string; label: string; key?: string; requires?: 'selection' | 'anySelection' | 'content' | 'editRange' | 'clipboard' | 'canUndo' | 'canRedo' }
 export const timelineCommands: Record<string, TimelineCommand[]> = {
     File: [
         {id:'review-export',label:'Review Export…'},
@@ -15,7 +15,7 @@ export const timelineCommands: Record<string, TimelineCommand[]> = {
         {id:'previous-clip',label:'Select Previous Clip',key:'['}, {id:'next-clip',label:'Select Next Clip',key:']'}, {id:'clip-above',label:'Select Clip Above',key:'Alt ↑'}, {id:'clip-below',label:'Select Clip Below',key:'Alt ↓'},
         { id: 'undo', label: 'Undo', key: '⌘/Ctrl Z', requires: 'canUndo' }, { id: 'redo', label: 'Redo', key: '⌘/Ctrl Shift Z', requires: 'canRedo' },
         { id: 'cut', label: 'Cut', key: '⌘/Ctrl X', requires: 'selection' }, { id: 'copy', label: 'Copy', key: '⌘/Ctrl C', requires: 'selection' }, { id: 'paste', label: 'Paste at Playhead', key: '⌘/Ctrl V', requires: 'clipboard' },
-        { id: 'select-all', label: 'Select All Clips', requires: 'content', key: '⌘/Ctrl A' }, { id: 'deselect', label: 'Deselect All', requires: 'selection' },
+        { id: 'select-all', label: 'Select All Clips', requires: 'content', key: '⌘/Ctrl A' }, { id: 'deselect', label: 'Deselect All', requires: 'anySelection' },
         { id: 'delete', label: 'Delete Selected Clips', key: 'Backspace', requires: 'selection' }, { id: 'split', label: 'Split Selected at Playhead', key: '⌘/Ctrl B', requires: 'selection' }, { id: 'split-all', label: 'Split All at Playhead', requires: 'content' },
         { id: 'clip-settings', label: 'Clip Settings…', requires: 'selection' }, { id: 'trim-tools', label: 'Trim Tools…', requires: 'selection' }, { id: 'fades', label: 'Fades…', requires: 'selection' }, { id: 'blend', label: 'Crossfade Overlaps', requires: 'selection' },
         { id: 'retime', label: 'Speed / Pitch…', requires: 'selection' }, { id: 'range-tools', label: 'Range Edits…', requires: 'editRange' }, { id: 'edit-groups', label: 'Named Edit Groups…', requires: 'content' },
