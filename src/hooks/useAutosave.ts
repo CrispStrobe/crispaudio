@@ -1,3 +1,5 @@
+import {validProjectNativeEffects} from '../lib/nativeEffects';
+import {validMixVersions} from '../lib/mixVersions';
 import { cacheRecovery, loadRecovery } from '../lib/recovery';
 // ---------------------------------------------------------------------------
 // useAutosave — periodically saves timeline project structure to localStorage.
@@ -88,6 +90,7 @@ export function restoreAutosave(): boolean {
     const raw = localStorage.getItem(AUTOSAVE_KEY);
     if (!raw) return false;
     const data: AutosaveData = JSON.parse(raw);
+    if(!validProjectNativeEffects(data.project)||!validMixVersions(data.project))return false;
     useProjectStore.getState().loadProjectState(data.project, new Map());
     return true;
   } catch {

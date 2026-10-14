@@ -823,7 +823,34 @@ fn pcm_sample(value: f32, bit_depth: u16) -> i32 {
         (value * ((1u64 << (bit_depth - 1)) - 1) as f64 + 0.5).floor() as i32
     }
 }
+/// Native plug-ins require the coordinated GUI renderer; never omit active inserts.
+pub fn reject_native_effects(doc: &Value) -> Result<()> {
+    fn rack(owner: &Value) -> Result<()> {
+        if let Some(value) = owner.get("nativeEffects") {
+            if !value.is_null() {
+                let effects = value.as_array().ok_or("Invalid native effect rack")?;
+                if effects
+                    .iter()
+                    .any(|effect| effect["enabled"].as_bool() != Some(false))
+                {
+                    return Err("Native plug-in effects require GUI export".into());
+                }
+            }
+        }
+        Ok(())
+    }
+    let project = &doc["project"];
+    rack(project)?;
+    for track in project["tracks"].as_array().into_iter().flatten() {
+        rack(track)?;
+        for clip in track["segments"].as_array().into_iter().flatten() {
+            rack(clip)?;
+        }
+    }
+    Ok(())
+}
 fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
+    reject_native_effects(doc)?;
     if Path::new(output).exists() {
         return Err("Output already exists".into());
     }
@@ -2179,5 +2206,39 @@ mod native_integration {
         }
         effect[0]["automation"]["time"][0]["value"] = json!(2.001);
         assert!(filters(&effect, &mut EffectBudget { bytes: 0, count: 0 }).is_err());
+    }
+}
+
+#[cfg(test)]
+mod native_rack_tests {
+    use super::*;
+    use serde_json::json;
+    #[test]
+    fn refuses_active_native_inserts_before_creating_an_output() {
+        for owner in 0..3 {
+            let mut doc = json!({"project":{"tracks":[{"segments":[{}]}]}});
+            let target = match owner {
+                0 => &mut doc["project"],
+                1 => &mut doc["project"]["tracks"][0],
+                _ => &mut doc["project"]["tracks"][0]["segments"][0],
+            };
+            target["nativeEffects"] = json!([{"enabled":true,"bypass":true}]);
+            assert!(render(&doc, "unused-native.wav")
+                .unwrap_err()
+                .contains("Native plug-in"));
+            assert!(crate::project_edit::render_audio(&doc, "unused-native.m4a")
+                .unwrap_err()
+                .contains("Native plug-in"));
+            target_reset(&mut doc, owner);
+            assert!(reject_native_effects(&doc).is_ok());
+        }
+    }
+    fn target_reset(doc: &mut Value, owner: i32) {
+        let target = match owner {
+            0 => &mut doc["project"],
+            1 => &mut doc["project"]["tracks"][0],
+            _ => &mut doc["project"]["tracks"][0]["segments"][0],
+        };
+        target["nativeEffects"][0]["enabled"] = json!(false);
     }
 }

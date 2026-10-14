@@ -1,3 +1,4 @@
+import {replaceNativeEffects} from '../lib/nativeEffects';
 import {pictureTrackId} from '../lib/pictureComposition';
 import {routingOrder,removeRoutingTrack} from '../lib/audioRouting';
 import {copyEffectEnvelope,pasteEffectEnvelope,type EffectEnvelope,effectClipboardKey,type EffectClipboardKey,type EffectParameter} from '../lib/effectEnvelope';
@@ -97,6 +98,7 @@ interface ProjectState {
   trimSegment: (segmentId: string, side: 'left' | 'right', newDuration: number, newOffset?: number) => void;
   splitSegment: (segmentId: string, splitTime: number) => void;
   setSegmentFade: (segmentId: string, side: 'in' | 'out', duration: number, curve?: FadeCurve) => void;
+  setNativeEffects: (scope:string,effects:import('../types/audio').NativeEffect[]) => void;
   setSegmentEffects: (segmentId: string, effects: EffectConfig[]) => void;
   setSegmentGain: (segmentId: string, gain: number) => void;
   setSegmentName: (segmentId: string, name: string) => void;
@@ -186,7 +188,7 @@ export const useProjectStore = create<ProjectState>()(
             if (!after) return true;
             if (JSON.stringify(track.automation) !== JSON.stringify(after.automation) || JSON.stringify(track.panAutomation) !== JSON.stringify(after.panAutomation)) return true;
             if ([...(track.effects??[]),...(after.effects??[])].some(hasEffectAutomation)&&JSON.stringify(track.effects)!==JSON.stringify(after.effects))return true;
-            if (['output','sends','ducking','takes','compVersions','compRegions','compBaseSegments'].some(key=>JSON.stringify(track[key as keyof TimelineTrack])!==JSON.stringify(after[key as keyof TimelineTrack])))return true;
+            if (['nativeEffects','output','sends','ducking','takes','compVersions','compRegions','compBaseSegments'].some(key=>JSON.stringify(track[key as keyof TimelineTrack])!==JSON.stringify(after[key as keyof TimelineTrack])))return true;
             if (JSON.stringify(track.segments) !== JSON.stringify(after.segments)) return true;
             return !!next.sources && track.segments.some(clip => before.sources.get(clip.sourceId) !== next.sources?.get(clip.sourceId));
           });
@@ -526,6 +528,7 @@ export const useProjectStore = create<ProjectState>()(
         });
       },
 
+      setNativeEffects: (scope,effects) => {set(state=>({project:replaceNativeEffects(state.project,scope,effects)}));},
       setSegmentEffects: (segmentId, effects) => {
         set((state) => ({
           project: {

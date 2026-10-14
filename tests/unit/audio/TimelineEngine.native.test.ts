@@ -84,3 +84,10 @@ it('rejects native state captures changed by live edits, resumed playback or gra
  captured=engine.snapshotNativeRacks();rejected=expect(captured).rejects.toThrow(/changed/);Object.assign(ctx,{state:'running'});release({metadata:{state:'stale'}});await rejected;
  Object.assign(ctx,{state:'suspended'});captured=engine.snapshotNativeRacks();const closed=expect(captured).rejects.toMatchObject({name:'AbortError'});engine.stop();release({metadata:{state:'stale'}});await closed;
 });
+
+it('keeps normal playback gated but routes saved native racks into the coordinated offline renderer',async()=>{
+ const {ctx}=context(),engine=new TimelineEngine(ctx),p=project();p.nativeEffects=[{instanceId:'m',pluginId:'au:test',name:'Test',format:'AU',enabled:true,bypass:false,state:'program',parameters:{'0':440}}];
+ expect(()=>engine.play(p,2)).toThrow(/awaiting validation/);expect(prepare).not.toHaveBeenCalled();
+ const output={} as AudioBuffer,render=vi.spyOn(engine,'renderNativeToBuffer').mockResolvedValue(output),sources=new Map<string,AudioSource>();expect(await engine.renderToBuffer(p,2,3,undefined,sources)).toBe(output);expect(render.mock.calls[0][3].get('master')![0]).toMatchObject({instanceId:'m',id:'au:test',sampleRate:p.sampleRate,state:'program'});expect(render.mock.calls[0][5]).toBe(sources);
+ const range=vi.spyOn(engine,'renderNativeMixRange').mockResolvedValue(output);expect(await engine.renderMixRange(p,2,3,undefined,sources)).toBe(output);expect(range).toHaveBeenCalledOnce();
+});

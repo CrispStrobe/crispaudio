@@ -927,7 +927,7 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
         .as_array()
         .ok_or("Recipe must be an array of operations")?;
     let mut out = doc.clone();
-    out["version"] = json!(3);
+    out["version"] = json!(doc["version"].as_u64().unwrap_or(3).max(3));
     for op in operations {
         let all = clips(&out["project"]);
         let requested: HashSet<&str> = op["ids"]
@@ -1463,6 +1463,7 @@ fn automation(points: &Value, time: &str) -> Result<String> {
 /// Linked-media CLI mix. Unsupported DSP fails explicitly instead of producing
 /// a plausible export with effects silently omitted.
 pub fn render_audio(doc: &Value, output: &str) -> Result<()> {
+    crate::audio_mix::reject_native_effects(doc)?;
     if std::path::Path::new(output).extension().is_some_and(|e| {
         ["aac", "m4a"]
             .iter()
@@ -2428,5 +2429,20 @@ mod tests {
             .get("transform")
             .is_none());
         assert!(apply(&original,&json!([{"op":"orientation","ids":["v"],"settings":{"rotation":45,"flipHorizontal":false,"flipVertical":false}}])).is_err());
+    }
+}
+
+#[cfg(test)]
+mod native_project_version_tests {
+    use super::*;
+    #[test]
+    fn recipe_preserves_native_project_version_and_program_metadata() {
+        let doc = json!({"format":"crispaudio-project","version":4,"project":{"tracks":[],"nativeEffects":[{"instanceId":"m","state":"program","enabled":false}]},"sources":[]});
+        let out = apply(&doc, &json!([])).unwrap();
+        assert_eq!(out["version"], json!(4));
+        assert_eq!(
+            out["project"]["nativeEffects"],
+            doc["project"]["nativeEffects"]
+        );
     }
 }

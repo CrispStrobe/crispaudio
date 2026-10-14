@@ -4,7 +4,10 @@
 
 export interface TrackFolder {id:string;name:string;trackIds:string[];collapsed:boolean}
 
+export interface NativeEffect {instanceId:string;pluginId:string;name:string;format:'AU'|'VST3';enabled:boolean;bypass:boolean;parameters:Record<string,number>;state:string}
+
 export interface TimelineProject {
+  nativeEffects?:NativeEffect[];
   trackFolders?:TrackFolder[];
   mixVersions?:Partial<Record<import('../lib/mixVersions').MixSlot,import('../lib/mixVersions').MixVersion>>;
   music?: import('../lib/musicalTime').MusicalSettings;
@@ -49,6 +52,7 @@ export interface TimelineProject {
 }
 
 export interface TimelineTrack {
+  nativeEffects?:NativeEffect[];
   recordArmed?:boolean;
   recordingInput?:RecordingInput;
   takes?:RecordingTake[];
@@ -86,6 +90,7 @@ export interface PluginRecipe {id:string;name:string;parameters:Record<string,nu
 export interface SourceEdit {sourceId:string;offset:number;retime?:Retime;operations:{type:string;channel:number;ranges:{start:number;end:number}[];targetDb:number;plugin?:PluginRecipe}[]}
 
 export interface AudioSegment {
+  nativeEffects?:NativeEffect[];
   sourceEdit?:SourceEdit;
   midi?:import('../lib/midiPattern').MidiPattern;
   retime?:Retime;

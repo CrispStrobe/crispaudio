@@ -1,3 +1,4 @@
+import {hasNativeEffects,hasStoredNativeEffects,validProjectNativeEffects} from './nativeEffects';
 import {validMixVersions} from './mixVersions';
 import {validTrackFolders} from './trackFolders';
 import {validProjectMidi} from './midiPattern';
@@ -27,7 +28,7 @@ import {
 } from '../audio/utils/audioBufferUtils';
 
 const FORMAT = 'crispaudio-project';
-const VERSION = 3;
+const VERSION = 4;
 
 interface SerializedSource {
   id: string;
@@ -70,6 +71,7 @@ export function serializeProject(
   sources: Map<string, AudioSource>,
   mode: 'portable' | 'linked' = 'portable',
 ): string {
+  if(!validProjectNativeEffects(project))throw new Error('Invalid native effect rack');
   const serializedSources: SerializedSource[] = Array.from(
     sources.values(),
   ).map((src) => ({
@@ -86,7 +88,7 @@ export function serializeProject(
 
   const doc: SerializedProject = {
     format: FORMAT,
-    version: VERSION,
+    version: hasStoredNativeEffects(project)?VERSION:3,
     project,
     sources: serializedSources,
   };
@@ -98,7 +100,7 @@ export function serializeProject(
  * Muted/unreferenced sources need no files; solo overrides stored mute state.
  */
 export function linkedRenderDocument(project: TimelineProject, sources: Map<string, AudioSource>): SerializedProject | null {
-  if (project.sampleRate !== 48000) return null;
+  if (hasNativeEffects(project)||project.sampleRate !== 48000) return null;
   const ids = new Set(audibleTracks(project.tracks).flatMap(track => track.segments.map(clip => clip.sourceId)));
   const linked: SerializedSource[] = [];
   for (const id of ids) {
@@ -107,7 +109,7 @@ export function linkedRenderDocument(project: TimelineProject, sources: Map<stri
     linked.push({ id, name: source.name, path: source.filePath, duration: source.duration,
       channels: source.channels, sampleRate: source.sampleRate, provenance: source.provenance });
   }
-  return { format: FORMAT, version: VERSION,
+  return { format: FORMAT, version: hasStoredNativeEffects(project)?VERSION:3,
     project: { ...project, duration: Math.max(project.duration, timelineDuration(project)) }, sources: linked };
 }
 
@@ -124,11 +126,13 @@ export async function deserializeProject(
   if (doc.format !== FORMAT || !doc.project || !Array.isArray(doc.sources)) {
     throw new Error('Not a valid CrispAudio project file');
   }
-  if (doc.version !== 1 && doc.version !== 2 && doc.version !== VERSION) {
+  if (doc.version !== 1 && doc.version !== 2 && doc.version !== 3 && doc.version !== VERSION) {
     throw new Error('Unsupported CrispAudio project version');
   }
 
   if(!validMixVersions(doc.project))throw new Error('Invalid mix versions');
+  if(!validProjectNativeEffects(doc.project))throw new Error('Invalid native effect rack');
+  if(doc.version!==VERSION&&hasStoredNativeEffects(doc.project))throw new Error('Native effect racks require project version 4');
   if(!validTrackFolders(doc.project))throw new Error('Invalid track folders');
   if(!validProjectMidi(doc.project))throw new Error('Invalid MIDI pattern');
   if(doc.project.music!==undefined&&!validMusic(doc.project.music))throw new Error('Invalid musical clock');

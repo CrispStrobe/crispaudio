@@ -1,3 +1,5 @@
+import {nativeEffectScopes} from '../../lib/nativeEffects';
+import {NativeEffectRack} from './NativeEffectRack';
 import {ScopedEffectAutomation} from './ScopedEffectAutomation';
 import {scopedEffect, effectParameters} from '../../lib/scopedEffectAutomation';
 import {supportsEffectParameter} from '../../lib/effectAutomation';
@@ -221,6 +223,8 @@ export function EffectChainEditor({effects, onChange, label, scope}: {
 }) {
   const {t} = useTranslation();
   const clipboard = useEffectClipboard(s => s.effects);
+  const nativePresent=useProjectStore(state=>!!scope&&nativeEffectScopes(state.project).some(([key,entries])=>key===scope&&!!entries?.length));
+  const actionLabel=(action:'copy'|'paste'|'bypass'|'enable')=>t(nativePresent?`nativeRack.${action}Builtin`:`rack.${action}`);
   const update = (index: number, patch: Partial<EffectConfig>) => onChange(effects.map((e, i) => i === index ? {...e, ...patch} : e));
   const move = (index: number, direction: number) => {
     const next = clone(effects), target = index + direction;
@@ -234,15 +238,16 @@ export function EffectChainEditor({effects, onChange, label, scope}: {
         <option value="">{t('timeline.addEffect')}</option>
         {ALL_EFFECT_TYPES.map(type => <option key={type} value={type}>{t(`timeline.effectNames.${type}`, EFFECT_LABELS[type])}</option>)}
       </select>
-      <ToolButton icon={Copy} label={t('rack.copy')} disabled={!effects.length} onClick={() => useEffectClipboard.setState({effects: clone(effects)})}/>
-      <ToolButton icon={ClipboardPaste} label={t('rack.paste')} disabled={!clipboard} onClick={() => clipboard && onChange(clone(clipboard))}/>
-      <ToolButton icon={Power} label={t(effects.some(e => e.enabled) ? 'rack.bypass' : 'rack.enable')} disabled={!effects.length}
+      <ToolButton icon={Copy} label={actionLabel('copy')} disabled={!effects.length} onClick={() => useEffectClipboard.setState({effects: clone(effects)})}/>
+      <ToolButton icon={ClipboardPaste} label={actionLabel('paste')} disabled={!clipboard} onClick={() => clipboard && onChange(clone(clipboard))}/>
+      <ToolButton icon={Power} label={actionLabel(effects.some(e=>e.enabled)?'bypass':'enable')} disabled={!effects.length}
         onClick={() => {const enabled = !effects.some(e => e.enabled); onChange(effects.map(e => ({...e, enabled})));}}/>
     </div>
     <EqualizerGraph effects={effects} onChange={onChange}/>
     <HelpDetails><p className="text-xs text-gray-400">{t('rack.orderHelp')}</p></HelpDetails>
-    {!effects.length && <p className="text-xs text-gray-500 py-2">{t('timeline.noEffects')}</p>}
+    {!effects.length && !nativePresent && <p className="text-xs text-gray-500 py-2">{t('timeline.noEffects')}</p>}
     {effects.map((effect, i) => <EffectRow scope={scope} key={`${i}-${effect.type}`} effect={effect} index={i} count={effects.length} onUpdate={update}
       onRemove={index => onChange(effects.filter((_, j) => j !== index))} onMove={move}/>)}
+    {scope&&<NativeEffectRack scope={scope}/>}
   </section>;
 }

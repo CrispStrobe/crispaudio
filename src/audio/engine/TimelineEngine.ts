@@ -1,3 +1,4 @@
+import {hasNativeEffects,projectNativeRacks} from '../../lib/nativeEffects';
 import {projectPluginTransport} from '../plugins/PluginTransport';
 import {prepareNativeTimelineGraph,type NativeTimelineGraph,type NativeTimelineRacks,type NativeInsertUpdate} from '../plugins/NativeTimelineGraph';
 import {compensatedConnection,disposeCompensation} from '../plugins/GraphCompensation';
@@ -233,6 +234,7 @@ export class TimelineEngine {
    * Schedules all segments that overlap [startTime, project.duration].
    */
   play(project: TimelineProject, startTime: number, endTime = project.duration): void {
+    if(hasNativeEffects(project))throw new Error('Native plug-in playback is awaiting validation');
     routingOrder(project.tracks);
     this.stop();
     try{this.buildPlayback(project,startTime,endTime);}catch(error){this.stop();throw error;}
@@ -429,6 +431,7 @@ export class TimelineEngine {
     if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>project.duration)throw new Error('Invalid audio export range');
     const first=Math.round(start*project.sampleRate),last=Math.round(end*project.sampleRate);
     if(last<=first)throw new Error('Empty audio export range');
+    if(hasNativeEffects(project))return this.renderNativeMixRange(project,start,end,projectNativeRacks(project),signal,sourceSnapshot);
     const full=await this.renderToBuffer(project,0,last/project.sampleRate,signal,sourceSnapshot);
     signal?.throwIfAborted();
     const result=this.ctx.createBuffer(full.numberOfChannels,last-first,project.sampleRate);
@@ -453,6 +456,7 @@ export class TimelineEngine {
     const sources = new Map(sourceSnapshot??this.sources);
     let sliceStarted = performance.now();
     const renderEnd = endTime ?? project.duration;
+    if(hasNativeEffects(project))return this.renderNativeToBuffer(project,startTime,renderEnd,projectNativeRacks(project),signal,sourceSnapshot);
     const renderDuration = Math.max(0.01, renderEnd - startTime);
     const sampleRate = project.sampleRate;
     const frames = Math.ceil(renderDuration * sampleRate);

@@ -84,7 +84,7 @@ function Strip({track, engine, onInserts}: {track?: TimelineTrack; engine: RefOb
       <div className="flex gap-1">{(['muted','solo'] as const).map(key=><button key={key} disabled={track.locked} aria-label={`${track.name}: ${t(key==='solo'?'timeline.solo':'timeline.mute')}`} aria-pressed={track[key]} className={`flex-1 min-h-11 rounded ${track[key]?'bg-indigo-600':'bg-gray-800'}`} onClick={()=>useProjectStore.getState().updateTrack(track.id,{[key]:!track[key]})}>{key==='solo'?'S':'M'}</button>)}</div>
       <RoutingControls track={track}/>
     </>}
-    <div className="flex gap-1"><button className="min-w-11 min-h-11 rounded bg-gray-800 text-xs" disabled={track?.locked} onClick={()=>update(1)} title={t('mixer.unity')} aria-label={t('mixer.unity')}>0 dB</button><button className="flex-1 min-h-11 rounded bg-gray-800 text-xs" onClick={()=>onInserts(id)}>{t('mixer.inserts')} · {(track ? track.effects ?? [] : useProjectStore.getState().project.masterEffects).length}</button></div>
+    <div className="flex gap-1"><button className="min-w-11 min-h-11 rounded bg-gray-800 text-xs" disabled={track?.locked} onClick={()=>update(1)} title={t('mixer.unity')} aria-label={t('mixer.unity')}>0 dB</button><button className="flex-1 min-h-11 rounded bg-gray-800 text-xs" onClick={()=>onInserts(id)}>{t('mixer.inserts')} · {(track ? track.effects ?? [] : useProjectStore.getState().project.masterEffects).length+(track?track.nativeEffects?.length??0:useProjectStore.getState().project.nativeEffects?.length??0)}</button></div>
   </section>;
 }
 

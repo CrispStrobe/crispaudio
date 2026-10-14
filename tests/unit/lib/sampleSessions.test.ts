@@ -1,3 +1,4 @@
+import {hasNativeEffects,validProjectNativeEffects} from '../../../src/lib/nativeEffects';
 import {expect,it} from 'vitest';
 import {sampleAudio,buildSampleSession} from '../../../src/lib/sampleSessions';
 import {validGraphics} from '../../../src/lib/graphics';
@@ -14,4 +15,8 @@ for(const kind of ['mix','picture','takes'] as const)it(`builds a valid independ
  expect(validRecording(p,new Set(sources.keys()))).toBe(true);expect(validGraphics(p.video)).toBe(true);
  if(kind==='picture'){expect(p.video!.clips).toHaveLength(2);expect(p.video!.graphics![0].clips[0].type).toBe('title');}
  if(kind==='takes'){expect(p.tracks[0].takes).toHaveLength(2);expect(p.tracks[0].compRegions).toHaveLength(1);expect(p.tracks[0].compBaseSegments).toHaveLength(1);}
+});
+
+it('native rack sample is ready for ordinary playback and retains an inspectable disabled AU insert',()=>{
+ const {project}=buildSampleSession('native',ctx,key=>key);expect(project.nativeEffects).toHaveLength(1);expect(project.nativeEffects![0]).toMatchObject({format:'AU',name:'AUBandpass',enabled:false});expect(hasNativeEffects(project)).toBe(false);expect(validProjectNativeEffects(project)).toBe(true);
 });

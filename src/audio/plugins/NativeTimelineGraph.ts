@@ -6,7 +6,7 @@ import type {PluginTransport} from './PluginTransport';
 import type {PluginStreamRequest} from './NativePluginStream';
 
 /** Internal insert configuration, deliberately separate from persisted project FX until normal rack integration is ready. */
-export type NativeTimelineInsert=PluginStreamRequest & {bypass?:boolean};
+export type NativeTimelineInsert=PluginStreamRequest & {bypass?:boolean;instanceId?:string};
 export type NativeTimelineRacks=ReadonlyMap<string,readonly NativeTimelineInsert[]>;
 export interface NativeInsertUpdate {parameters?:Record<string,number>;bypass?:boolean}
 export async function prepareNativeTimelineGraph(ctx:BaseAudioContext,project:TimelineProject,racks:NativeTimelineRacks,signal:AbortSignal,onFault:(reason:string)=>void,transport?:PluginTransport,processMode:'realtime'|'offline'='realtime'){
@@ -22,7 +22,7 @@ export async function prepareNativeTimelineGraph(ctx:BaseAudioContext,project:Ti
  try{
   await prepareGraphCompensation(ctx);signal.throwIfAborted();
   for(const [scope,entries] of requests){const chain:Awaited<ReturnType<typeof prepareNativePluginNode>>[]=[];chains.set(scope,chain);
-   for(const request of entries){signal.throwIfAborted();const node=await prepareNativePluginNode(ctx,{...request,transport,processMode},{signal,onFault:reason=>onFault(`${scope}: ${reason}`)});chain.push(node);node.update(request.parameters??{},request.bypass??false);}
+   for(const request of entries){signal.throwIfAborted();const node=await prepareNativePluginNode(ctx,{id:request.id,sampleRate:request.sampleRate,channels:request.channels,parameters:request.parameters,state:request.state,transport,processMode},{signal,onFault:reason=>onFault(`${scope}: ${reason}`)});chain.push(node);node.update(request.parameters??{},request.bypass??false);}
   }
   signal.throwIfAborted();
   const delay=(scope:string)=>(chains.get(scope)??[]).reduce((n,node)=>n+node.delayFrames,0);

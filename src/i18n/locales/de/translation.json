@@ -1712,7 +1712,6 @@
     "recoveryMissing": "Der gespeicherte Export ist nicht verfügbar.",
     "recoveryBlocked": "Andere CrispAudio-Fenster schließen, um die gespeicherte Exportwarteschlange zu aktualisieren.",
     "recoveryFailed": "Die Exportwarteschlange konnte nicht gespeichert werden.",
-
     "title": "Ausgabe",
     "archive": "Archiv-WAV",
     "landscape": "Querformat",
@@ -1912,7 +1911,9 @@
     "open": "Öffnen",
     "loading": "Vorbereitung…",
     "failed": "Beispielmedien konnten nicht geladen werden.",
-    "changed": "Die Sitzung wurde geändert. Versuche es erneut."
+    "changed": "Die Sitzung wurde geändert. Versuche es erneut.",
+    "native": "Native Plug-ins (Mac)",
+    "nativeInfo": "Ein Musikmix mit einem gespeicherten AUBandpass-Insert im Master-Rack. Er startet deaktiviert, damit die Wiedergabe funktioniert. Aktiviere ihn für den Offline-Export auf dem Mac; die native Echtzeit-Wiedergabe wird noch geprüft."
   },
   "folders": {
     "title": "Spurordner",
@@ -2250,5 +2251,14 @@
     "value": "Wert",
     "folder": "VST3-Ordner…",
     "skipped": "{{count}} Plug-ins übersprungen"
+  },
+  "nativeRack": {
+    "title": "Native Plug-ins",
+    "macOnly": "Native Plug-in-Parameter benötigen die Mac-App.",
+    "help": "Diese Inserts folgen den eingebauten Effekten. Der Offline-Export auf dem Mac berücksichtigt sie. Die Echtzeit-Wiedergabe wird noch geprüft; deaktiviere native Inserts für die normale Wiedergabe. Bypass behält den Insert und seinen Zustand.",
+    "copyBuiltin": "Eingebaute Effekte kopieren",
+    "pasteBuiltin": "Eingebaute Effekte einfügen",
+    "bypassBuiltin": "Eingebaute Effekte umgehen",
+    "enableBuiltin": "Eingebaute Effekte aktivieren"
   }
 }

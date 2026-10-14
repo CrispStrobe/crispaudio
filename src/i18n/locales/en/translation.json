@@ -1699,7 +1699,6 @@
     "recoveryMissing": "The saved export snapshot is unavailable.",
     "recoveryBlocked": "Close other CrispAudio windows to upgrade the saved export queue.",
     "recoveryFailed": "Could not save the export queue.",
-
     "title": "Delivery",
     "archive": "Archive WAV",
     "landscape": "Landscape",
@@ -1899,7 +1898,9 @@
     "open": "Open",
     "loading": "Preparing…",
     "failed": "Sample media could not be loaded.",
-    "changed": "The session changed. Try again."
+    "changed": "The session changed. Try again.",
+    "native": "Native plug-ins (Mac)",
+    "nativeInfo": "A music mix with a saved AUBandpass insert in the master rack. It starts disabled so playback works. Enable it for Mac offline export; native realtime playback is still being validated."
   },
   "folders": {
     "title": "Track folders",
@@ -2237,5 +2238,14 @@
     "value": "value",
     "folder": "VST3 folder…",
     "skipped": "{{count}} plugins skipped"
+  },
+  "nativeRack": {
+    "title": "Native plug-ins",
+    "macOnly": "Native plug-in parameters require the Mac app.",
+    "help": "These inserts run after built-in effects. Mac offline export includes them. Realtime playback is still being validated; disable native inserts to use regular playback. Bypass retains the insert and its state.",
+    "copyBuiltin": "Copy built-in effects",
+    "pasteBuiltin": "Paste built-in effects",
+    "bypassBuiltin": "Bypass built-in effects",
+    "enableBuiltin": "Enable built-in effects"
   }
 }
