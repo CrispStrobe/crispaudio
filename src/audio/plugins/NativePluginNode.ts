@@ -4,7 +4,7 @@ import {NativePluginStream,type PluginStreamRequest} from './NativePluginStream'
 import {validatePluginTransport,type PluginTransport} from './PluginTransport';
 import type {PluginBlock} from './PluginBlockBuffer';
 export type PluginNodeRequest=PluginStreamRequest & {transport?:PluginTransport};
-export interface NativePluginDiagnostic {stage:'input'|'reply'|'accepted'|'fault';id:string;instance:number;offset?:number;frame:number;mainFrame:number;reason?:string}
+export interface NativePluginDiagnostic {stage:'input'|'reply'|'posted'|'accepted'|'fault';id:string;instance:number;offset?:number;frame:number;mainFrame:number;reason?:string}
 let diagnosticInstance=0;
 const diagnostics=new WeakMap<BaseAudioContext,(event:NativePluginDiagnostic)=>void>();
 /** Opt-in validation telemetry. Normal playback sends no diagnostic messages. */
@@ -36,7 +36,7 @@ export async function prepareNativePluginNode(ctx:BaseAudioContext,request:Plugi
  node.onprocessorerror=()=>fault('processor-error');
  node.port.onmessage=e=>{if(closed)return;if(e.data?.type==='fault'){trace('fault',e.data.frame,e.data.offset,String(e.data.reason));fault(String(e.data.reason));return;}if(e.data?.type==='barrier'){const waiter=barriers.get(e.data.id);barriers.delete(e.data.id);if(e.data.active)waiter?.resolve();else waiter?.reject(new Error('Native processor fault'));return;}if(e.data?.type==='diagnostic-accepted'){trace('accepted',e.data.frame,e.data.offset);return;}if(e.data?.type==='block-accepted'){awaiting.delete(e.data.offset);notifyIdle();return;}if(e.data?.type!=='block')return;
   const block=e.data as PluginBlock;trace('input',e.data.frame,block.offset);if(offline)awaiting.add(block.offset);if(++pending>4){fault('backpressure');return;}const values=dirty?{...parameters}:{},dry=bypass,drySamples=dry?Array.from({length:request.channels},()=>new Float32Array(blockFrames)):dryScratch;if(dry||stream.info.latencySamples)dryDelay.process(block.samples,drySamples);dirty=false;
-  void (transport?stream.process(block.samples,values,false,{...transport,samplePosition:transport.samplePosition+block.offset}):stream.process(block.samples,values,false)).then(reply=>{if(closed)return;if(reply.metadata.latencySamples!==stream.info.latencySamples){fault('latency-changed');return;}trace('reply',Math.round(ctx.currentTime*ctx.sampleRate),block.offset);const samples=dry?drySamples:reply.samples.map(s=>s instanceof Float32Array?s:Float32Array.from(s));active.port.postMessage({type:'block',offset:block.offset,samples,recycle:block.samples},[...samples,...block.samples].map(s=>s.buffer));}).catch(error=>{if(!closed)fault(String(error));}).finally(()=>{pending--;notifyIdle();});
+  void (transport?stream.process(block.samples,values,false,{...transport,samplePosition:transport.samplePosition+block.offset}):stream.process(block.samples,values,false)).then(reply=>{if(closed)return;if(reply.metadata.latencySamples!==stream.info.latencySamples){fault('latency-changed');return;}trace('reply',Math.round(ctx.currentTime*ctx.sampleRate),block.offset);const samples=dry?drySamples:reply.samples.map(s=>s instanceof Float32Array?s:Float32Array.from(s));active.port.postMessage({type:'block',offset:block.offset,samples,recycle:block.samples},[...samples,...block.samples].map(s=>s.buffer));if(instance)trace('posted',Math.round(ctx.currentTime*ctx.sampleRate),block.offset);}).catch(error=>{if(!closed)fault(String(error));}).finally(()=>{pending--;notifyIdle();});
  };
  return active;
  };

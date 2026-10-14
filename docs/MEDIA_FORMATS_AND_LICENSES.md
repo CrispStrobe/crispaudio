@@ -481,3 +481,40 @@ increase buffering merely to hide it. `CRISPAUDIO_NATIVE_VALIDATION_MODES` selec
 explicit visible/hidden/load subsets for focused export checks; the default still
 runs all three and fails on underrun. Physical output latency, eight simultaneous
 inserts, commercial/AUv3 compatibility and seamless looping remain unqualified.
+
+The validation executable now adds backend timing to binary replies only when
+compiled with `native-validation`. Queue timing covers packet decoding and dispatch
+to the blocking pool; processing timing covers the locked helper pipe round trip,
+including native processing and response validation. The fixture measures total
+frontend round-trip time and its residual after those backend intervals. That
+residual includes frontend stream queueing, IPC, reply decoding and JavaScript
+scheduling; it is not a measurement of native DSP time. Per-session identity and
+project sample position disambiguate serial inserts. The report retains the last
+32 calls, whole-run maxima and worklet input/reply/acceptance traces, including
+failures before the paused-state snapshot completes. Ordinary builds add no timing
+metadata. The runner always uses this repository's Cargo target directory to avoid
+an unrelated inherited shell target.
+
+On 2026-10-14, a focused foreground/modest-load check passed with maximum helper
+round-trip time 2.825 ms and maximum complete round-trip time 11 ms. A separate
+deliberate 500 ms main-thread stall failed with a bus underrun: the missing input
+block reached JavaScript 21,888 frames (456 ms at 48 kHz) after worklet emission,
+after its deadline. Completed helper calls stayed below 1.4 ms in that run. This
+isolates input delivery as the failure stage for this controlled stall; it does
+not explain the earlier foreground output-delivery failure under heavy system
+load. Native realtime remains gated. `CRISPAUDIO_NATIVE_VALIDATION_STALL_MS=500`
+reproduces the stall; `CRISPAUDIO_NATIVE_VALIDATION_SKIP_EXPORTS=1` selects a focused
+playback investigation and explicitly reports export/state-restoration checks as
+skipped, never as a full-suite pass.
+
+The full eight-insert run in the same investigation failed in the load case.
+Its maximum dispatch, helper-round-trip and residual durations were 20.3, 47.4
+and 61.2 ms respectively. The failed AU block had a frontend reply event about
+155 ms before its deadline but no worklet acceptance event. Reply events occur
+before preparing/transferring the outgoing packet, so that trace alone cannot
+attribute the whole gap to worklet delivery. Diagnostics now separately record
+`posted` immediately after `postMessage` returns; output-delivery timing starts
+there and packet preparation/posting gets its own sample-clock interval. The last
+256 trace events are retained. A later focused eight-insert load run passed with
+the new timestamp, which does not erase the earlier full-suite failure or qualify
+realtime playback.

@@ -315,6 +315,8 @@ pub async fn plugin_stream_process_binary(
     streams: tauri::State<'_, PluginStreams>,
     request: tauri::ipc::Request<'_>,
 ) -> Result<tauri::ipc::Response, String> {
+    #[cfg(feature = "native-validation")]
+    let received = std::time::Instant::now();
     let body = match request.body() {
         tauri::ipc::InvokeBody::Raw(bytes) => bytes,
         _ => return Err("Binary plugin packet required".into()),
@@ -324,6 +326,8 @@ pub async fn plugin_stream_process_binary(
     let state = streams.inner().clone();
     let entry = state.entry(&owner, &settings.session)?;
     tauri::async_runtime::spawn_blocking(move || {
+        #[cfg(feature = "native-validation")]
+        let started = std::time::Instant::now();
         let result = entry
             .processor
             .try_lock()
@@ -337,7 +341,18 @@ pub async fn plugin_stream_process_binary(
         if result.is_err() {
             let _ = state.remove(&owner, &settings.session);
         }
-        encode_stream_reply(result?).map(tauri::ipc::Response::new)
+        let reply = result?;
+        #[cfg(feature = "native-validation")]
+        let reply = {
+            let mut reply = reply;
+            reply.metadata["validationTiming"] = json!({
+                "queueMs": started.duration_since(received).as_secs_f64() * 1000.0,
+                "processMs": started.elapsed().as_secs_f64() * 1000.0,
+                "session": settings.session,
+            });
+            reply
+        };
+        encode_stream_reply(reply).map(tauri::ipc::Response::new)
     })
     .await
     .map_err(|e| e.to_string())?

@@ -1,11 +1,25 @@
 import {beforeEach,it,expect,vi} from 'vitest';
 const open=vi.hoisted(()=>vi.fn());vi.mock('../../../src/audio/plugins/NativePluginStream',()=>({NativePluginStream:{open}}));
-import {createNativePluginNode} from '../../../src/audio/plugins/NativePluginNode';
+import {createNativePluginNode,observeNativePluginBridge,type NativePluginDiagnostic} from '../../../src/audio/plugins/NativePluginNode';
 class Node {port={postMessage:vi.fn(),onmessage:null as ((e:{data:unknown})=>void)|null};disconnect=vi.fn();onprocessorerror:(()=>void)|null=null;constructor(_ctx:unknown,_name:string,options:{processorOptions:{acknowledge:boolean}}){if(!options.processorOptions.acknowledge)this.port.postMessage.mockImplementation(message=>{if(message.type==='barrier')queueMicrotask(()=>this.port.onmessage?.({data:{type:'barrier',id:message.id,active:true}}));});}}
 const request={id:'test',sampleRate:48000,channels:1 as const};
 beforeEach(()=>{vi.stubGlobal('AudioWorkletNode',Node);open.mockReset();});
 const context=()=>({sampleRate:48000,currentTime:1,state:'suspended',audioWorklet:{addModule:vi.fn().mockResolvedValue(undefined)}} as unknown as AudioContext);
 const stream=()=>({info:{latencySamples:0},close:vi.fn().mockResolvedValue(undefined),process:vi.fn(),snapshot:vi.fn()});
+it('distinguishes completed output posting from actual worklet acceptance',async()=>{
+ const ctx=context(),events:NativePluginDiagnostic[]=[],s=stream();
+ s.process.mockResolvedValue({metadata:{latencySamples:0},samples:[new Float32Array(4096)]});open.mockResolvedValue(s);
+ const unobserve=observeNativePluginBridge(ctx,event=>events.push(event));
+ const bridge=await createNativePluginNode(ctx,request,{startFrame:96000,onFault:()=>{}}),port=(bridge.node as unknown as Node).port;
+ try{
+  port.onmessage?.({data:{type:'block',offset:0,frame:100096,samples:[new Float32Array(4096)]}});
+  await vi.waitFor(()=>expect(events.map(event=>event.stage)).toEqual(['input','reply','posted']));
+  expect(port.postMessage.mock.calls.some(call=>call[0].type==='block')).toBe(true);
+  port.onmessage?.({data:{type:'diagnostic-accepted',offset:0,frame:100224}});
+  expect(events.at(-1)).toMatchObject({stage:'accepted',offset:0,frame:100224});
+  expect(new Set(events.map(event=>event.instance)).size).toBe(1);
+ }finally{unobserve();await bridge.close();}
+});
 it('rejects invalid clocks before opening and closes a processor whose origin expired during initialization',async()=>{const s=stream();open.mockResolvedValue(s);await expect(createNativePluginNode(context(),{...request,sampleRate:44100},{startFrame:96000,onFault:()=>{}})).rejects.toThrow(/clock/);expect(open).not.toHaveBeenCalled();await expect(createNativePluginNode(context(),request,{startFrame:0,onFault:()=>{}})).rejects.toThrow(/expired/);expect(s.close).toHaveBeenCalledOnce();});
 it('processor errors always close the owned stream, even if the fault callback throws',async()=>{const s=stream();open.mockResolvedValue(s);const bridge=await createNativePluginNode(context(),request,{startFrame:96000,onFault:()=>{throw new Error('caller fault');}});expect(()=>bridge.node.onprocessorerror?.(new Event('processorerror'))).toThrow('caller fault');expect(s.close).toHaveBeenCalledOnce();await bridge.close();expect(s.close).toHaveBeenCalledOnce();});
 it('aborts immediately after native opening without returning a silent disposed node',async()=>{const abort=new AbortController(),s=stream();open.mockImplementation(async()=>{abort.abort();return s;});await expect(createNativePluginNode(context(),request,{startFrame:96000,signal:abort.signal,onFault:()=>{}})).rejects.toMatchObject({name:'AbortError'});expect(s.close).toHaveBeenCalledOnce();});

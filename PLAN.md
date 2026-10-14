@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-13, for local 0.11.8. This section is the current plan.
+Updated 2026-10-14, for local 0.11.10. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -63,6 +63,20 @@ windows. UI-load stress is intermittently failing with underruns and remains a
 blocker for normal native rack activation. Wider graph/export qualification,
 compact controls, persisted state/recovery and ordinary transport/loop wiring are
 still pending. The new export API is not yet connected to delivery queue controls.
+Local 0.11.9 persists clip/track/master native racks, program state and parameters
+in version-4 projects and migrated recovery storage, with compact controls and
+automatic native offline rendering from saved racks. Local 0.11.10 adds inline
+AU/VST3 discovery and independent native rack copy/paste. New inserts are disabled;
+ordinary native realtime playback remains gated on deadline qualification.
+Validation-only backend timing now separates dispatch/helper round trips from
+frontend residual delay and retains diagnostics on early failures. A controlled
+500 ms UI stall reproduces missed worklet-input delivery despite fast completed
+helper calls. Earlier output-delivery failure under heavy system load remains
+unexplained. Next: measure worker input, backend completion and worklet acceptance
+independently before choosing an off-main transport; then qualify graph-wide fault
+handling, normal transport/loops, playback/export session ownership and remaining
+FLAC/AAC native-rack delivery. Do not activate native playback or increase buffering
+based on an isolated passing run.
 Record scope and remaining requirements honestly; these are initial complete
 workflows, not full commercial-editor parity. Large-file
 paging remains deferred unless actual project measurements justify it. MIDI remains
