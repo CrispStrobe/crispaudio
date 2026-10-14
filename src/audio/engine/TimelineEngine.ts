@@ -1,5 +1,5 @@
 import {projectPluginTransport} from '../plugins/PluginTransport';
-import {prepareNativeTimelineGraph,type NativeTimelineGraph,type NativeTimelineRacks} from '../plugins/NativeTimelineGraph';
+import {prepareNativeTimelineGraph,type NativeTimelineGraph,type NativeTimelineRacks,type NativeInsertUpdate} from '../plugins/NativeTimelineGraph';
 import {compensatedConnection,disposeCompensation} from '../plugins/GraphCompensation';
 import {graphClock,outputRoute,sendRoute,type GraphLatency} from '../../lib/graphLatency';
 import {prepareLoudness,createLoudness} from '../effects/Loudness';
@@ -203,6 +203,11 @@ export class TimelineEngine {
     }catch(error){await graph?.close();if(this.playbackGeneration===generation)this.stop();throw error;}
   }
 
+
+  /** Internal live controls retain native DSP, clocks and latency compensation. */
+  updateNativeInsert(scope:string,index:number,change:NativeInsertUpdate):boolean{return this.nativeGraph?.update(scope,index,change)??false;}
+  /** Query owned native state only while the playback context is suspended. */
+  async snapshotNativeRacks():Promise<NativeTimelineRacks>{if(!this.nativeGraph)throw new Error('No active native rack');return this.nativeGraph.snapshot();}
 
   constructor(ctx: BaseAudioContext, masterGain?: GainNode) {
     this.ctx = ctx;
