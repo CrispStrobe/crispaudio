@@ -1,10 +1,11 @@
+import {observeNativePluginBridge,type NativePluginDiagnostic} from '../../src/audio/plugins/NativePluginNode';
 import {NativePluginStream} from '../../src/audio/plugins/NativePluginStream';
 import {invoke} from '@tauri-apps/api/core';
 import {TimelineEngine} from '../../src/audio/engine/TimelineEngine';
 import type {AudioSegment,AudioSource,TimelineProject,TimelineTrack} from '../../src/types/audio';
 import {DEFAULT_MUSIC} from '../../src/lib/musicalTime';
 import captureUrl from './nativeCapture.ts?worker&url';
-interface Options {vst:string;au:string;modes:('foreground'|'hidden'|'load')[]}
+interface Options {vst:string;au:string;diagnostic:boolean;loadWorkMs:number;modes:('foreground'|'hidden'|'load')[]}
 const options=(window as unknown as {nativeValidationOptions:Options}).nativeValidationOptions;
 const assert=(value:unknown,message:string)=>{if(!value)throw new Error(message);};
 async function waitClosed(){const deadline=performance.now()+3000;while(performance.now()<deadline){const status=await invoke<{active:number;opening:number}>('native_validation_status');if(!status.active&&!status.opening)return;await new Promise(resolve=>setTimeout(resolve,25));}throw new Error('Owned native sessions did not close');}
@@ -13,10 +14,12 @@ async function run(mode:'foreground'|'hidden'|'load',frames:number,impulse:numbe
  const ctx=new AudioContext({sampleRate:48000});await ctx.resume();await ctx.audioWorklet.addModule(captureUrl);
  const output=ctx.createGain(),capture=new AudioWorkletNode(ctx,'crispaudio-native-validation-capture',{numberOfInputs:2,outputChannelCount:[2],processorOptions:{frames}}),silent=ctx.createGain();silent.gain.value=0;output.connect(capture);capture.connect(silent);silent.connect(ctx.destination);
  const engine=new TimelineEngine(ctx,output),faults:string[]=[],start=2,duration=frames/ctx.sampleRate,metrics:{start:number;end:number;ms:number;position:number}[]=[];
+ const trace:NativePluginDiagnostic[]=[],blocks=new Map<string,{input:NativePluginDiagnostic;reply?:NativePluginDiagnostic}>(),delivery={inputFrames:0,processingFrames:0,outputFrames:0};
+ const unobserve=options.diagnostic?observeNativePluginBridge(ctx,event=>{trace.push(event);if(trace.length>80)trace.shift();const key=`${event.id}:${event.offset}`,block=blocks.get(key);if(event.stage==='input'){blocks.set(key,{input:event});delivery.inputFrames=Math.max(delivery.inputFrames,event.mainFrame-event.frame);}else if(event.stage==='reply'&&block){block.reply=event;delivery.processingFrames=Math.max(delivery.processingFrames,event.mainFrame-block.input.mainFrame);}else if(event.stage==='accepted'&&block?.reply){delivery.outputFrames=Math.max(delivery.outputFrames,event.frame-block.reply.mainFrame);blocks.delete(key);}}):()=>{};
  const original=NativePluginStream.prototype.process;
  NativePluginStream.prototype.process=function(samples,parameters,bypass,transport){const time=ctx.currentTime,wall=performance.now();return original.call(this,samples,parameters,bypass,transport).then(result=>{metrics.push({start:time,end:ctx.currentTime,ms:performance.now()-wall,position:transport?.samplePosition??0});return result;});};
 
- let loadTimer:ReturnType<typeof setInterval>|undefined;
+ let loadTimer:ReturnType<typeof setInterval>|undefined,lastTick=performance.now();const loadTiming={maxTickGapMs:0,maxWorkMs:0};
  try{
   const buffer=ctx.createBuffer(2,frames,ctx.sampleRate);buffer.getChannelData(0)[impulse]=1.5;buffer.getChannelData(1)[impulse]=-1.25;const dry=ctx.createBuffer(2,frames,ctx.sampleRate);dry.getChannelData(0)[impulse+96]=1.5;dry.getChannelData(1)[impulse+96]=-1.25;engine.setSources(new Map([['s',{id:'s',buffer} as AudioSource],['dry',{id:'dry',buffer:dry} as AudioSource]]));
   const clip=(id:string):AudioSegment=>({id,trackId:id,sourceId:id==='native'?'s':'dry',startTime:start,sourceOffset:0,duration,gain:1,effects:[],fadeInDuration:.125,fadeOutDuration:0,fadeInCurve:'linear',fadeOutCurve:'linear'});
@@ -25,10 +28,10 @@ async function run(mode:'foreground'|'hidden'|'load',frames:number,impulse:numbe
   const done=new Promise<{peak:number;index:number}[]>(resolve=>{capture.port.onmessage=event=>resolve(event.data);});
   await engine.playNative(project,start,start+duration,new Map([['clip:native',[{id:options.vst,sampleRate:48000,channels:2,parameters:{'100':.002,'101':0},bypass:false}]],['track:bus',[{id:options.au,sampleRate:48000,channels:2,parameters:{'0':440},bypass:true}]]]),reason=>faults.push(reason));
   const anchor=engine.playbackAnchor();assert(anchor?.timeline===2,'Invalid recording anchor');assert(engine.automationClock()?.time===2,'Clock did not hold during pre-roll');capture.port.postMessage(anchor!.frame);engine.getMeter('bus')![0].connect(capture,0,1);
-  if(mode==='load')loadTimer=setInterval(()=>{const end=performance.now()+8;while(performance.now()<end){Math.sqrt(performance.now());}},16);
-  const peaks=await done;assert(!faults.length,`${mode}: ${faults.join(', ')}; ${JSON.stringify({anchor,metrics:metrics.slice(-12)})}`);assert(peaks[0].peak===0&&peaks[1].peak===0,`${mode}: routes not aligned: ${JSON.stringify(peaks)}`);assert(peaks[2].index===impulse+96&&Math.abs(peaks[2].peak-3*Math.min(1,impulse/6000))<2e-6,`${mode}: missing or shifted bus signal: ${JSON.stringify(peaks)}`);
-  return {mode,frames,impulse,peaks,maxRoundtripMs:Math.max(...metrics.map(m=>m.ms))};
- }finally{NativePluginStream.prototype.process=original;if(loadTimer)clearInterval(loadTimer);engine.stop();await ctx.close();await waitClosed();}
+  if(mode==='load'){lastTick=performance.now();loadTimer=setInterval(()=>{const now=performance.now();loadTiming.maxTickGapMs=Math.max(loadTiming.maxTickGapMs,now-lastTick);lastTick=now;const end=now+options.loadWorkMs;while(performance.now()<end){Math.sqrt(performance.now());}loadTiming.maxWorkMs=Math.max(loadTiming.maxWorkMs,performance.now()-now);},16);}
+  const peaks=await done;assert(!faults.length,`${mode}: ${faults.join(', ')}; ${JSON.stringify({anchor,metrics:metrics.slice(-12),delivery,loadTiming,trace})}`);assert(peaks[0].peak===0&&peaks[1].peak===0,`${mode}: routes not aligned: ${JSON.stringify(peaks)}`);assert(peaks[2].index===impulse+96&&Math.abs(peaks[2].peak-3*Math.min(1,impulse/6000))<2e-6,`${mode}: missing or shifted bus signal: ${JSON.stringify(peaks)}`);
+  return {mode,frames,impulse,peaks,maxRoundtripMs:Math.max(...metrics.map(m=>m.ms)),delivery,loadTiming,trace};
+ }finally{unobserve();NativePluginStream.prototype.process=original;if(loadTimer)clearInterval(loadTimer);engine.stop();await ctx.close();await waitClosed();}
 }
 async function exportProbe(){
  const ctx=new AudioContext({sampleRate:48000}),engine=new TimelineEngine(ctx),frames=16384,start=2,duration=frames/48000,impulse=4090,buffer=ctx.createBuffer(2,frames,48000),dry=ctx.createBuffer(2,frames,48000);
