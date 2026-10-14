@@ -1,3 +1,4 @@
+import {isTauri,isIOSApp} from '../../lib/native';
 import {nativeEffectScopes} from '../../lib/nativeEffects';
 import {NativeEffectRack} from './NativeEffectRack';
 import {ScopedEffectAutomation} from './ScopedEffectAutomation';
@@ -221,7 +222,8 @@ const clone = (effects: EffectConfig[]) => structuredClone(effects);
 export function EffectChainEditor({effects, onChange, label, scope}: {
   effects: EffectConfig[]; onChange: (effects: EffectConfig[]) => void; label: string; scope?: string;
 }) {
-  const {t} = useTranslation();
+  const {t} = useTranslation(),[nativePicker,setNativePicker]=useState(false);
+  const nativeSupported=!!scope&&isTauri()&&!isIOSApp()&&navigator.userAgent.includes('Mac');
   const clipboard = useEffectClipboard(s => s.effects);
   const nativePresent=useProjectStore(state=>!!scope&&nativeEffectScopes(state.project).some(([key,entries])=>key===scope&&!!entries?.length));
   const actionLabel=(action:'copy'|'paste'|'bypass'|'enable')=>t(nativePresent?`nativeRack.${action}Builtin`:`rack.${action}`);
@@ -234,8 +236,9 @@ export function EffectChainEditor({effects, onChange, label, scope}: {
   return <section aria-label={label} className="space-y-2 effect-rack">
     <div className="flex flex-wrap gap-2 items-center">
       <select className="min-h-11 bg-gray-800 rounded p-2 text-sm min-w-0 max-w-full" aria-label={t('timeline.addEffect')} value=""
-        onChange={e => {if(e.target.value) onChange([...effects, defaultEffect(e.target.value as EffectType)]);}}>
+        onChange={e => {if(e.target.value==='native'){setNativePicker(true);return;}if(e.target.value) onChange([...effects, defaultEffect(e.target.value as EffectType)]);}}>
         <option value="">{t('timeline.addEffect')}</option>
+        {nativeSupported&&<option value="native">{t('nativeRack.add')}</option>}
         {ALL_EFFECT_TYPES.map(type => <option key={type} value={type}>{t(`timeline.effectNames.${type}`, EFFECT_LABELS[type])}</option>)}
       </select>
       <ToolButton icon={Copy} label={actionLabel('copy')} disabled={!effects.length} onClick={() => useEffectClipboard.setState({effects: clone(effects)})}/>
@@ -248,6 +251,6 @@ export function EffectChainEditor({effects, onChange, label, scope}: {
     {!effects.length && !nativePresent && <p className="text-xs text-gray-500 py-2">{t('timeline.noEffects')}</p>}
     {effects.map((effect, i) => <EffectRow scope={scope} key={`${i}-${effect.type}`} effect={effect} index={i} count={effects.length} onUpdate={update}
       onRemove={index => onChange(effects.filter((_, j) => j !== index))} onMove={move}/>)}
-    {scope&&<NativeEffectRack scope={scope}/>}
+    {scope&&<NativeEffectRack scope={scope} pickerOpen={nativePicker} onPickerClose={()=>setNativePicker(false)}/>}
   </section>;
 }

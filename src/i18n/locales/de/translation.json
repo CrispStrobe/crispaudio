@@ -2259,6 +2259,11 @@
     "copyBuiltin": "Eingebaute Effekte kopieren",
     "pasteBuiltin": "Eingebaute Effekte einfügen",
     "bypassBuiltin": "Eingebaute Effekte umgehen",
-    "enableBuiltin": "Eingebaute Effekte aktivieren"
+    "enableBuiltin": "Eingebaute Effekte aktivieren",
+    "add": "Natives Plug-in…",
+    "addHelp": "Wähle einen AU- oder VST3-Effekt. Neue Inserts starten deaktiviert. Aktiviere sie für den Offline-Export auf dem Mac; die Echtzeit-Wiedergabe wird noch geprüft. Mit der Ordnerauswahl ergänzt du einen VST3-Suchpfad.",
+    "copy": "Natives Rack kopieren",
+    "paste": "Natives Rack einfügen",
+    "changed": "Das Rack wurde geändert. Wähle das Plug-in erneut."
   }
 }

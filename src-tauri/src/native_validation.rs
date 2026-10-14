@@ -8,6 +8,36 @@ struct ValidationState {
     finished: AtomicBool,
 }
 #[tauri::command]
+fn native_validation_progress(stage: String) {
+    if [
+        "loaded",
+        "key-ready",
+        "worker-created",
+        "worker-ping",
+        "worker-ipc",
+        "worker-finished",
+        "export",
+        "decode",
+        "recovery",
+        "render",
+        "render-done",
+        "playback",
+        "native-start",
+        "native-ready",
+        "pause-start",
+        "pause-done",
+        "capture-done",
+    ]
+    .contains(&stage.as_str())
+    {
+        println!("CRISPAUDIO_NATIVE_PHASE {stage}");
+    }
+}
+#[tauri::command]
+fn native_validation_worker_key(app: tauri::AppHandle) -> String {
+    app.invoke_key().to_string()
+}
+#[tauri::command]
 fn native_validation_status(streams: tauri::State<'_, PluginStreams>) -> Value {
     let (active, opening) = streams.validation_counts();
     json!({"active":active,"opening":opening})
@@ -45,6 +75,8 @@ pub fn run() {
             plugins::plugin_stream_close,
             native_validation_report,
             native_validation_status,
+            native_validation_worker_key,
+            native_validation_progress,
             native_validation_window
         ])
         .setup(move |app| {

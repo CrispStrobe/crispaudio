@@ -2246,6 +2246,11 @@
     "copyBuiltin": "Copy built-in effects",
     "pasteBuiltin": "Paste built-in effects",
     "bypassBuiltin": "Bypass built-in effects",
-    "enableBuiltin": "Enable built-in effects"
+    "enableBuiltin": "Enable built-in effects",
+    "add": "Native plug-in…",
+    "addHelp": "Choose an AU or VST3 effect. New inserts start disabled. Enable them for Mac offline export; realtime playback is still being validated. Folder selection adds a VST3 search location.",
+    "copy": "Copy native rack",
+    "paste": "Paste native rack",
+    "changed": "The rack changed. Choose the plug-in again."
   }
 }

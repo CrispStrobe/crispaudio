@@ -1,0 +1,24 @@
+import {useEffect,useRef,useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {RefreshCw,FolderOpen,Plus,X} from 'lucide-react';
+import {open} from '@tauri-apps/plugin-dialog';
+import {useUIStore} from '../../stores/uiStore';
+import {useProjectStore} from '../../stores/projectStore';
+import {nativeEffectScopes} from '../../lib/nativeEffects';
+import {mediaJob} from '../../lib/mediaJob';
+import {ToolButton} from '../common/ToolButton';
+import {InfoButton} from '../common/InfoButton';
+interface Plugin {id:string;name:string;manufacturer:string;format:'AU'|'VST3'}
+interface Report {plugins:Plugin[];warnings:{path:string;reason:string}[]}
+export function NativePluginPicker({scope,onClose,disabled}:{scope:string;onClose:()=>void;disabled:boolean}){
+ const {t}=useTranslation(),[folders,setFolders]=useState<string[]>(()=>{try{const paths=JSON.parse(localStorage.getItem('crispaudio-plugin-folders')??'[]');return Array.isArray(paths)?paths.filter(path=>typeof path==='string').slice(-8):[];}catch{return [];}}),[revision,setRevision]=useState(0),[report,setReport]=useState<{key:string;data?:Report;error?:string}>(),[id,setId]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),job=useRef<AbortController|null>(null),alive=useRef(true);
+ const key=JSON.stringify([folders,revision]),current=report?.key===key?report:undefined,scanning=!current,plugins=current?.data?.plugins??[];
+ useEffect(()=>{const controller=new AbortController();void mediaJob<Report>('audio_unit_plugin',{operation:'plugin-scan',request:{folders,report:true}},controller.signal).then(data=>{if(!controller.signal.aborted)setReport({key,data});}).catch(reason=>{if(!controller.signal.aborted)setReport({key,error:String(reason)});});return ()=>controller.abort();},[folders,key]);
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;job.current?.abort();};},[]);
+ const add=async()=>{if(disabled||busy||scanning)return;const plugin=plugins.find(plugin=>plugin.id===id);if(!plugin)return;const controller=new AbortController();job.current=controller;setBusy(true);setError('');const snapshot=useProjectStore.getState().project;
+  try{const info=await mediaJob<{state:string;parameters:{address:string;value:number}[]}>('audio_unit_plugin',{operation:'plugin-info',request:{id}},controller.signal);controller.signal.throwIfAborted();if(useProjectStore.getState().project!==snapshot||useProjectStore.getState().isPlaying||useUIStore.getState().timelineRecording)throw new Error(t('nativeRack.changed'));const existing=nativeEffectScopes(snapshot).find(([key])=>key===scope)?.[1]??[];useProjectStore.getState().setNativeEffects(scope,[...existing,{instanceId:crypto.randomUUID(),pluginId:id,name:plugin.name,format:plugin.format??(id.startsWith('vst3:')?'VST3':'AU'),enabled:false,bypass:false,parameters:{},state:info.state}]);onClose();}
+  catch(reason){if(!controller.signal.aborted)setError(String(reason));}finally{if(!controller.signal.aborted)setBusy(false);}
+ };
+ const folder=async()=>{const picked=await open({directory:true,multiple:false,title:t('sourcePlugins.folder')});if(alive.current&&typeof picked==='string'){const next=[...new Set([...folders,picked])].slice(-8);localStorage.setItem('crispaudio-plugin-folders',JSON.stringify(next));setFolders(next);}};
+ return <div className="space-y-2 rounded border border-indigo-500 p-2" role="region" aria-label={t('nativeRack.add')}><select className="w-full min-h-11 min-w-0 rounded bg-gray-800 px-2" aria-label={t('sourcePlugins.plugin')} value={plugins.some(plugin=>plugin.id===id)?id:''} disabled={disabled||busy||scanning} onChange={event=>setId(event.target.value)}><option value="">{t('sourcePlugins.choose')}</option>{plugins.map(plugin=><option key={plugin.id} value={plugin.id}>{plugin.name} · {plugin.format??'AU'}</option>)}</select><div className="flex flex-wrap gap-1 items-center"><ToolButton icon={RefreshCw} label={t('sourcePlugins.scan')} disabled={disabled||busy} onClick={()=>setRevision(value=>value+1)}/><ToolButton icon={FolderOpen} label={t('sourcePlugins.folder')} disabled={disabled||busy} onClick={()=>void folder().catch(reason=>{if(alive.current)setError(String(reason));})}/><InfoButton><p>{t('nativeRack.addHelp')}</p>{current?.data?.warnings.map((warning,index)=><p key={index} className="break-words">{warning.path}: {warning.reason}</p>)}</InfoButton><span className="flex-1"/><ToolButton icon={Plus} label={t('nativeRack.add')} disabled={disabled||busy||scanning||!id} onClick={()=>void add()}/><ToolButton icon={X} label={t('common.close')} onClick={()=>{job.current?.abort();onClose();}}/></div>{(scanning||busy)&&<p role="status" className="text-sm">{t('sourcePlugins.processing')}</p>}{(error||current?.error)&&<p role="alert" className="break-words text-sm text-amber-300">{error||current?.error}</p>}</div>;
+}

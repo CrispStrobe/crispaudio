@@ -19,3 +19,8 @@ it('keeps parameters collapsed, exposes touch buttons, and persists ordered rack
 it('prevents rack edits during playback and recording and leaves ordinary racks empty',()=>{
  useProjectStore.setState({isPlaying:true});const view=render(<NativeEffectRack scope="master"/>);expect(screen.getAllByRole('button',{name:'timeline.disableEffect'})[0]).toBeDisabled();act(()=>useProjectStore.setState({isPlaying:false}));expect(screen.getAllByRole('button',{name:'sourcePlugins.bypass'})[0]).not.toBeDisabled();act(()=>useUIStore.setState({timelineRecording:true}));expect(screen.getAllByRole('button',{name:'sourcePlugins.bypass'})[0]).toBeDisabled();view.unmount();const empty=render(<NativeEffectRack scope="track:missing"/>);expect(empty.container.textContent).toBe('');
 });
+
+it('copies native program state and pastes independent instances at another scope',()=>{
+ const first=render(<NativeEffectRack scope="master"/>);fireEvent.click(screen.getByRole('button',{name:'nativeRack.copy'}));const original=useProjectStore.getState().project.nativeEffects!;first.unmount();useProjectStore.setState({project:{...useProjectStore.getState().project,tracks:[{id:'t',name:'Target',muted:false,solo:false,pan:0,volume:1,segments:[]}]}});
+ render(<NativeEffectRack scope="track:t"/>);fireEvent.click(screen.getByRole('button',{name:'nativeRack.paste'}));const pasted=useProjectStore.getState().project.tracks[0].nativeEffects!;expect(pasted.map(effect=>effect.state)).toEqual(original.map(effect=>effect.state));expect(pasted[0].instanceId).not.toBe(original[0].instanceId);expect(pasted[0].parameters).not.toBe(original[0].parameters);
+});
