@@ -77,6 +77,13 @@ independently before choosing an off-main transport; then qualify graph-wide fau
 handling, normal transport/loops, playback/export session ownership and remaining
 FLAC/AAC native-rack delivery. Do not activate native playback or increase buffering
 based on an isolated passing run.
+The isolated worker probe now demonstrates that transferred worklet messages and
+direct custom-protocol fetch both stall with the UI, while worker heartbeat tasks
+continue. An independent worker native call waited about 489 ms before Rust receipt
+during a controlled 500 ms UI stall; helper processing then took under 1 ms.
+Worker-only relocation of the current bridge is rejected. Next: prototype a bounded
+transport that bypasses both UI-dependent delivery paths, then repeat the native
+graph qualification and lifecycle checks before activation.
 Record scope and remaining requirements honestly; these are initial complete
 workflows, not full commercial-editor parity. Large-file
 paging remains deferred unless actual project measurements justify it. MIDI remains

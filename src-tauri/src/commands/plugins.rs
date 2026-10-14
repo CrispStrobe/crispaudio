@@ -317,6 +317,12 @@ pub async fn plugin_stream_process_binary(
 ) -> Result<tauri::ipc::Response, String> {
     #[cfg(feature = "native-validation")]
     let received = std::time::Instant::now();
+    #[cfg(feature = "native-validation")]
+    let received_at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_secs_f64()
+        * 1000.0;
     let body = match request.body() {
         tauri::ipc::InvokeBody::Raw(bytes) => bytes,
         _ => return Err("Binary plugin packet required".into()),
@@ -349,6 +355,11 @@ pub async fn plugin_stream_process_binary(
                 "queueMs": started.duration_since(received).as_secs_f64() * 1000.0,
                 "processMs": started.elapsed().as_secs_f64() * 1000.0,
                 "session": settings.session,
+                "receivedAt": received_at,
+                "finishedAt": std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_err(|e| e.to_string())?
+                    .as_secs_f64() * 1000.0,
             });
             reply
         };

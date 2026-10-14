@@ -518,3 +518,32 @@ there and packet preparation/posting gets its own sample-clock interval. The las
 256 trace events are retained. A later focused eight-insert load run passed with
 the new timestamp, which does not erase the earlier full-suite failure or qualify
 realtime playback.
+
+`CRISPAUDIO_NATIVE_VALIDATION_WORKER_AUDIO_ONLY=1` runs a separate worker isolation
+probe, with a 500 ms UI stall by default (`...STALL_MS=0` selects unstalled controls).
+It transfers the production worklet port to a module worker, processes real VST3
+PCM through direct custom-protocol fetch, and captures the wet stereo impulse
+silently. An independent second VST3 session submits 128-frame zero blocks from
+the worker every 40 ms. This separates worklet-message delivery from worker-to-Rust
+IPC. Bounded traces include a 20 ms worker heartbeat, input emission frames, worker
+arrival/reply/post timestamps, actual worklet acceptance frames, and backend
+receipt/completion epoch timestamps. Epoch/frame calibration is approximate;
+sample-accurate impulse positions and worklet deadlines remain authoritative.
+The fixture checks that both sessions close after each run. It has no rack
+controls, native timeline state/transport, multi-insert graph or export coverage
+and is never imported by the installed app.
+
+On 2026-10-14 the unstalled worker passed at stereo impulse index 192096, retaining
+1.5/-1.25 float32 peaks. During a 500 ms UI stall, 22 worker heartbeat ticks ran,
+but no worklet inputs arrived and the native rack underrun muted the output. The
+independent native call sent 16 ms into the stall reached Rust 504.9 ms after the
+stall began and completed native processing in 0.471 ms. Thus this experiment
+shows that both transferred worklet messages and custom-protocol fetch dispatch
+depend on UI progress in this WebKit/Tauri setup, despite a running worker.
+Moving the existing bridge into a worker is insufficient. The next transport
+experiment must bypass both delivery paths, retain bounded session ownership,
+and prove whole-graph fault handling before normal playback activation.
+
+The runner type-checks its fixtures before building; the wrapper also stops only
+its owned process group if validation exceeds its hard deadline. Validation
+commands, invoke credentials and diagnostic epoch metadata remain feature-only.
