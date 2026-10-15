@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-15, for local 0.13.1. This section is the current plan.
+Updated 2026-10-15, for local 0.13.2. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -46,8 +46,17 @@ selection outside Downloads and a separate relaunch both pass the isolated harde
 sandbox probe, including external VST3 streaming and Swift helper input reads.
 [Folder-access evidence](docs/evidence/macos-folder-bookmarks.json).
 
-Next: restore access to general project/media files, collect beta feedback, check
-physical iOS devices, commercial plugins and external interfaces.
+Local 0.13.2 extends persistence to selected media/project files and writable
+media/output folders, including helper access and native-export staging. File →
+Media Folder Access… supports grouped source folders. Dropped/Finder-opened projects
+resolve relative media and accept saved format 4. Real sandbox tests pass file reads,
+read-only source boundaries, writable project reopening and native AAC output across
+five launches; unselected neighboring input remains inaccessible.
+[Resource-access evidence](docs/evidence/macos-resource-bookmarks.json).
+
+Next: collect beta feedback, check physical iOS devices and Finder gestures,
+commercial plugins and external interfaces. Moved/missing sources retain the
+existing relink workflow; automatic migration of moved file paths is not implemented.
 Continuous native input DSP and native automation recording remain future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 

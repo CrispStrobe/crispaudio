@@ -55,7 +55,7 @@ fn document(json: &str) -> Result<Value, String> {
     if doc["format"] != "crispaudio-project"
         || !doc["version"]
             .as_u64()
-            .is_some_and(|version| (1..=3).contains(&version))
+            .is_some_and(|version| (1..=4).contains(&version))
     {
         return Err("Unsupported project".into());
     }
@@ -413,8 +413,8 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
     #[test]
-    fn legacy_project_paths_still_resolve_on_open() {
-        for version in 1..=3 {
+    fn current_and_legacy_project_paths_resolve_on_open() {
+        for version in 1..=4 {
             let json=json!({"format":"crispaudio-project","version":version,"sources":[{"path":"media/source.wav"}]}).to_string();
             let root = root();
             let project = root.join("project.crispaudio.json");

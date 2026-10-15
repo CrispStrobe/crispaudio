@@ -9,10 +9,16 @@ pub fn run(options: Value, mut context: tauri::Context<tauri::Wry>) {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(move |app| {
+            // A windowless probe still needs a foreground application for its
+            // native file picker; launch it through macOS Launch Services.
+            app.set_activation_policy(tauri::ActivationPolicy::Regular);
+
+
             let expected = options["folder"].as_str().ok_or("Expected owned fixture folder")?.to_string();
             let mode = options["folderProbe"].as_str().ok_or("Expected probe mode")?.to_string();
             let denied = std::fs::read_dir(&expected).is_err();
             let handle = app.handle().clone();
+            let picker_directory=std::path::PathBuf::from(&expected);
             let finish = move |selected: Option<String>| {
                 let handle = handle.clone(); let expected = expected.clone(); let mode = mode.clone();
                 tauri::async_runtime::spawn(async move {
@@ -56,7 +62,7 @@ pub fn run(options: Value, mut context: tauri::Context<tauri::Wry>) {
                 std::thread::spawn(move || {
                     // NSApplication must finish launching before NSOpenPanel runs.
                     std::thread::sleep(std::time::Duration::from_millis(300));
-                    picker.dialog().file().set_title("CrispAudio sandbox fixture — select the test folder").pick_folder(move |folder| finish(folder.and_then(|v|v.into_path().ok()).map(|v|v.to_string_lossy().into_owned())));
+                    picker.dialog().file().set_directory(picker_directory).set_title("CrispAudio sandbox fixture — select the test folder").pick_folder(move |folder| finish(folder.and_then(|v|v.into_path().ok()).map(|v|v.to_string_lossy().into_owned())));
                 });
             } else {finish(None);}
             Ok(())

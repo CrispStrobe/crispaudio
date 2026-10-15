@@ -317,6 +317,10 @@ pub fn run() {
         std::env::var("CRISPAUDIO_NATIVE_VALIDATION_OPTIONS").expect("Validation options required");
     let options: Value = serde_json::from_str(&options).expect("Invalid validation options");
     let context = crate::app_context();
+    if options["resourceProbe"].is_string() {
+        crate::resource_validation::run(options, context);
+        return;
+    }
     if options["folderProbe"].is_string() {
         crate::folder_validation::run(options, context);
         return;

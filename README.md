@@ -117,6 +117,12 @@ Use **VST3 folder…** to add effects from another location. The Mac app remembe
 up to eight selected folders across launches. If an older selection or an external
 drive is unavailable, select its folder again.
 
+The Mac app also remembers selected media and project files. Use **File → Media
+Folder Access…** for a folder of linked recordings. Native exports and saves with
+separate audio assets may ask for their output folder once; later work in that
+folder reuses the selection. If files move or a drive is unavailable, relink them
+when opening the project.
+
 Native inserts include generic parameter controls, saved state and rack copy/paste.
 Structural or built-in effect edits restart live playback. To record a microphone
 with native effects in the session, CrispAudio first prepares a fixed wet backing

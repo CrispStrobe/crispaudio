@@ -141,10 +141,9 @@ mod native {
             let json = directory.path().join("request.json");
             std::fs::write(&json, request.to_string()).map_err(|e| e.to_string())?;
             let mut command = Command::new(&helper.path);
+            command.arg("plugin-stream").arg(json);
             crate::security_scope::configure_helper(&mut command, directory.path())?;
             let mut child = command
-                .arg("plugin-stream")
-                .arg(json)
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::null())

@@ -19,6 +19,7 @@
     "noSignal": "No test signal reached the output. Retry or reopen the app."
   },
   "nativeMenu": {
+    "Media Folder Access…": "Media Folder Access…",
     "About CrispAudio": "About CrispAudio",
     "Add Audio Track": "Add Audio Track",
     "Copy": "Copy",
@@ -770,6 +771,10 @@
     "previewError": "Picture preview failed"
   },
   "editor": {
+    "nativeExportFolder": "Choose the output folder for native export",
+    "mediaFolderAccess": "Choose a folder for linked media and native exports",
+    "projectMediaFolder": "Choose the project folder to keep its audio assets",
+    "projectMediaFolderMismatch": "Choose the same folder as the saved project.",
     "panLeft": "Scroll earlier",
     "panRight": "Scroll later",
     "browse": "Browse timeline",
@@ -1935,6 +1940,7 @@
     "trimEnd": "Trim end to playhead"
   },
   "ribbon": {
+    "media-folder": "Media folder",
     "samples": "Samples",
     "new": "New",
     "open": "Open",

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.2 — 2026-10-15
+
+- Remember selected Mac media files, saved projects and output folders across launches; pass matching resource access to native helpers.
+- Add File → Media Folder Access… and request output-folder access when native renders or project audio assets need it.
+- Resolve relative media paths when projects are dropped or opened from Finder, including `.crispaudio.json` files.
+- Accept saved project version 4 in native media resolution and collection, preserving projects with native effects.
+- Keep desktop paths for files opened by other apps and avoid transferring full MP4 files through byte IPC; retain the mobile byte-import route.
+- Verify selected-file reads, read-only boundaries, project writes and native output in real sandboxed relaunch tests.
+
 ## 0.13.1 — 2026-10-15
 
 - Remember selected Mac plug-in folders across app launches using macOS bookmarks.

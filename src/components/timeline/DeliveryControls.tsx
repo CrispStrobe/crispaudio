@@ -7,7 +7,7 @@ import {ToolButton} from '../common/ToolButton';
 import {useTimelineTool} from '../../hooks/useTimelineTool';
 import {useContext,useEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {open} from '@tauri-apps/plugin-dialog';
+import {open} from '../../lib/nativeDialog';
 import {invoke} from '@tauri-apps/api/core';
 import {Modal} from '../common/Modal';
 import {NumberField} from './NumberField';

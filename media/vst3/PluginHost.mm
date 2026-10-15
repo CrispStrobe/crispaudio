@@ -32,10 +32,10 @@ public:
         NSString *path=NSProcessInfo.processInfo.environment[@"CRISPAUDIO_RESOURCE_BOOKMARKS"];
         if(!path)return;
         NSNumber *size=[[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil][NSFileSize];
-        require(size!=nil && size.unsignedLongLongValue<=3000000,"Invalid folder access transfer file");
+        require(size!=nil && size.unsignedLongLongValue<=72*1024*1024,"Invalid folder access transfer file");
         NSData *data=[NSData dataWithContentsOfFile:path];
         id records=data?[NSJSONSerialization JSONObjectWithData:data options:0 error:nil]:nil;
-        require([records isKindOfClass:NSArray.class] && [records count]<=8,"Invalid folder access transfers");
+        require([records isKindOfClass:NSArray.class] && [records count]<=264,"Invalid folder access transfers");
         try { for(id record in records){
             require([record isKindOfClass:NSArray.class] && [record count]>0 && [record count]<=65536,"Invalid folder bookmark");
             std::vector<uint8_t> bytes;for(id value in record){require([value isKindOfClass:NSNumber.class] && [value doubleValue]==[value unsignedCharValue],"Invalid folder bookmark byte");bytes.push_back([value unsignedCharValue]);}

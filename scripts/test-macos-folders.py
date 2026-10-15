@@ -26,6 +26,13 @@ def command(*args):
     return subprocess.run([str(v) for v in args], check=True, capture_output=True).stdout
 
 
+def pathlib_same(value, expected):
+    try:
+        return Path(value).resolve() == expected.resolve()
+    except OSError:
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--automate-picker', action='store_true')
@@ -49,7 +56,7 @@ def main():
         audio.setparams((2, 2, 48000, 0, 'NONE', 'not compressed'))
         audio.writeframes(b''.join(struct.pack('<hh', *([round(5000 * math.sin(i * 2 * math.pi * 440 / 48000))] * 2)) for i in range(4800)))
     identifier = f'com.crispstrobe.crispaudio.folder-probe-{token}'
-    info = {'CFBundleIdentifier': identifier, 'CFBundleName': 'CrispAudio Folder Probe', 'CFBundleExecutable': exe.name, 'CFBundlePackageType': 'APPL', 'CFBundleVersion': '1', 'CFBundleShortVersionString': '0.13.0'}
+    info = {'CFBundleIdentifier': identifier, 'CFBundleName': 'CrispAudio Folder Probe', 'CFBundleExecutable': exe.name, 'CFBundlePackageType': 'APPL', 'CFBundleVersion': '1', 'CFBundleShortVersionString': json.loads((REPO / 'package.json').read_text())['version']}
     (app / 'Contents/Info.plist').write_bytes(plistlib.dumps(info))
     for name in NAMES:
         command('codesign', '--force', '--options', 'runtime', '--entitlements', REPO / 'src-tauri/helper-entitlements.plist', '--sign', '-', mac / name)
@@ -62,41 +69,89 @@ def main():
         log = root / f'{mode}.log'
         env = dict(os.environ, CRISPAUDIO_NATIVE_VALIDATION_OPTIONS=json.dumps({'folderProbe': mode, 'folder': str(fixture)}))
         with log.open('w') as output:
-            process = subprocess.Popen([str(exe)], env=env, stdout=output, stderr=subprocess.STDOUT)
+            process = subprocess.Popen(['open', '-n', '-W', '--env', 'CRISPAUDIO_NATIVE_VALIDATION_OPTIONS=' + env['CRISPAUDIO_NATIVE_VALIDATION_OPTIONS'], '--stdout', str(log), '--stderr', str(root / f'{mode}-stderr.log'), str(app)], stdout=output, stderr=subprocess.STDOUT)
+            app_pid = None
             try:
+                for _ in range(150):
+                    for row in command('ps', '-axo', 'pid=,comm=').decode().splitlines():
+                        fields = row.strip().split(None, 1)
+                        if len(fields) == 2 and pathlib_same(fields[1], exe):
+                            app_pid = int(fields[0])
+                            break
+                    if app_pid is not None:
+                        break
+                    if process.poll() is not None:
+                        raise RuntimeError(f'Probe app did not launch; see {root}')
+                    time.sleep(.1)
+                if app_pid is None:
+                    raise RuntimeError(f'Probe app launch timed out; see {root}')
                 if mode == 'select' and args.automate_picker:
-                    # Focus ONLY our process and send a Go to Folder path to its panel.
-                    # The user still gets a real PowerBox panel and OS authorization.
+                    # Select only an owned fixture through AX; never send keys to
+                    # whichever application happens to have keyboard focus.
                     script = '''on run argv
  tell application "System Events"
-  repeat 100 times
-   set matches to application processes whose unix id is (item 1 of argv as integer)
-   if (count matches) > 0 then
-    tell item 1 of matches
-     if exists button "Open" of splitter group 1 of window 1 then exit repeat
-    end tell
-   end if
-   delay 0.1
-  end repeat
-  tell item 1 of matches
-   set frontmost to true
-   keystroke "g" using {command down, shift down}
-   delay 0.5
-   keystroke item 2 of argv
-   key code 36
-   delay 0.5
-   repeat 50 times
-    if not (exists sheet 1 of window 1) then exit repeat
+  tell first application process whose unix id is (item 1 of argv as integer)
+   repeat 150 times
+    if exists button "Open" of splitter group 1 of window 1 then exit repeat
     delay 0.1
    end repeat
-   click button "Open" of splitter group 1 of window 1
+   if (item 2 of argv) is not "" then
+    set candidates to entire contents of window 1
+    repeat with entry in candidates
+     set matches to false
+     try
+      set matches to (name of entry is (item 2 of argv))
+     end try
+     if not matches then
+      try
+       set matches to (value of entry is (item 2 of argv))
+      end try
+     end if
+     if matches then
+      set currentNode to contents of entry
+      repeat 8 times
+       try
+        set value of attribute "AXSelected" of currentNode to true
+        exit repeat
+       end try
+       try
+        set currentNode to value of attribute "AXParent" of currentNode
+       on error
+        exit repeat
+       end try
+      end repeat
+      try
+       perform action "AXPress" of entry
+      end try
+      exit repeat
+     end if
+    end repeat
+   end if
+   repeat 100 times
+    if exists button "Open" of splitter group 1 of window 1 then
+     if enabled of button "Open" of splitter group 1 of window 1 then
+      perform action "AXPress" of button "Open" of splitter group 1 of window 1
+      return
+     end if
+    end if
+    delay 0.1
+   end repeat
+   error "Owned fixture is not selected; use the manual picker mode"
   end tell
  end tell
 end run'''
-                    subprocess.run(['osascript', '-', str(process.pid), str(fixture)], input=script, text=True, check=True, capture_output=True, timeout=20)
+                    automation = subprocess.run(['osascript', '-', str(app_pid), ''], input=script, text=True, capture_output=True, timeout=40)
+                    (root / f"{mode}-picker.log").write_text(automation.stderr)
+                    if automation.returncode:
+                        raise RuntimeError(f"Picker selection failed: {automation.stderr}; evidence: {root}")
                 process.wait(timeout=90)
             finally:
                 if process.poll() is None:
+                    if app_pid is not None:
+                        try:
+                            os.kill(app_pid, 15)
+                        except ProcessLookupError:
+                            pass
                     process.kill()
                     process.wait()
         lines = log.read_text().splitlines()

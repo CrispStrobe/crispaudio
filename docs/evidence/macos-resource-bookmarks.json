@@ -1,0 +1,90 @@
+{
+  "sandbox": true,
+  "hardenedRuntime": true,
+  "signing": "ad-hoc local test",
+  "outsideDownloads": true,
+  "runs": [
+    {
+      "deniedBeforeGrant": true,
+      "helperOutput": false,
+      "mode": "select-media",
+      "neighborDenied": true,
+      "projectWritable": false,
+      "readOnlySource": false,
+      "success": true,
+      "swiftRead": true,
+      "version4Project": false
+    },
+    {
+      "deniedBeforeGrant": true,
+      "helperOutput": false,
+      "mode": "select-project",
+      "neighborDenied": true,
+      "projectWritable": true,
+      "readOnlySource": false,
+      "success": true,
+      "swiftRead": true,
+      "version4Project": true
+    },
+    {
+      "deniedBeforeGrant": true,
+      "helperOutput": false,
+      "mode": "restore-files",
+      "neighborDenied": true,
+      "projectWritable": true,
+      "readOnlySource": true,
+      "success": true,
+      "swiftRead": true,
+      "version4Project": true
+    },
+    {
+      "deniedBeforeGrant": true,
+      "helperOutput": true,
+      "mode": "select-folder",
+      "neighborDenied": true,
+      "projectWritable": true,
+      "readOnlySource": false,
+      "success": true,
+      "swiftRead": true,
+      "version4Project": true
+    },
+    {
+      "deniedBeforeGrant": true,
+      "helperOutput": true,
+      "mode": "restore-folder",
+      "neighborDenied": true,
+      "projectWritable": true,
+      "readOnlySource": true,
+      "success": true,
+      "swiftRead": true,
+      "version4Project": true
+    }
+  ],
+  "appleStoreAcceptance": "not established",
+  "date": "2026-10-15",
+  "version": "0.13.2",
+  "scope": "Selected media files, existing project files and explicitly selected writable media/output folders.",
+  "readOnlyCheck": "readOnlySource is asserted on restore-only launches; initial picker grants can also allow writes until that process exits.",
+  "finderDrop": "Registration and project-relative-path resolution are wired; no physical Finder gesture was performed in this probe.",
+  "iosHardware": "not tested",
+  "sourceVersion": "0.13.2",
+  "testBundleVersion": "0.13.0",
+  "regressionChecks": {
+    "frontendPassed": 1738,
+    "frontendFiles": 180,
+    "mediaPassed": 136,
+    "mediaIgnored": 10,
+    "tauriPassed": 40,
+    "tauriIgnored": 1,
+    "iosSimulatorLockedCheck": "passed",
+    "releaseChecksPassed": 21,
+    "typescript": "passed",
+    "eslint": "passed",
+    "localMacBuild": "passed",
+    "localInstall": "0.13.2; strict signature verified; one autosave retained"
+  },
+  "latestGuiReplay": {
+    "status": "blocked",
+    "reason": "macOS denied osascript Assistive Access (-25211). Earlier five-launch resource and two-launch plug-in sandbox runs passed; no system permissions were changed."
+  }
+}

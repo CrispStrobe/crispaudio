@@ -1,3 +1,4 @@
+import {rememberResources,usesMacResourceAccess} from '../../lib/resourceAccess';
 import {videoClips} from '../../lib/videoEditing';
 import {selectTimelineTrack,selectPictureTimelineTrack,selectionTrackIds} from '../../lib/trackSelection';
 import {TrackHeaderMenu} from './TrackHeaderMenu';
@@ -389,7 +390,7 @@ export const TimelinePanel: React.FC = () => {
     if(pendingImport){void handleImportFiles(fileInputs(pendingImport),importTarget);setPendingImport(null);return;}
     if('__TAURI_INTERNALS__' in window&&!isIOSApp()){
       try{
-        const {open}=await import('@tauri-apps/plugin-dialog');const {readFile}=await import('@tauri-apps/plugin-fs');
+        const {open}=await import('../../lib/nativeDialog');const {readFile}=await import('@tauri-apps/plugin-fs');
         const paths=await open({multiple:true,filters:[{name:t('timeline.importAudio'),extensions:['wav','mp3','m4a','aac','flac','ogg','opus','aif','aiff','caf']}]});
         if(!paths)return;const list=typeof paths==='string'?[paths]:paths;
         void handleImportFiles(list.map(path=>({name:path.split(/[\\/]/).pop()??path,filePath:path,read:async()=>{const bytes=await readFile(path);return bytes.byteOffset===0&&bytes.byteLength===bytes.buffer.byteLength?bytes.buffer as ArrayBuffer:bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer;}})),importTarget);
@@ -410,15 +411,18 @@ export const TimelinePanel: React.FC = () => {
     void (async()=>{
       setProjectError('');
       try{
+        await rememberResources(paths);
         for(const [index,path] of paths.entries()){
           abort.signal.throwIfAborted();
           if(useProjectStore.getState().project.id!==projectId)throw new Error(t('usability.importProjectChanged'));
           const name=path.split(/[\\/]/).pop()??path;
           setImportProgress({name,phase:'decoding',index:index+1,total:paths.length});
           if(/\.(mp4|mov|m4v|mkv|webm|avi|ogv|mpeg|mpg)$/i.test(path))await importVideo(path,true,abort.signal);
-          else if(/\.crispaudio$/i.test(path)){
+          else if(/(?:\.crispaudio(?:\.json)?|\.json)$/i.test(path)){
             const {readTextFile}=await import('@tauri-apps/plugin-fs');
-            const {project,sources}=await deserializeProject(await readTextFile(path),audioEngine.getContext());
+            const {invoke}=await import('@tauri-apps/api/core');
+            const json=await invoke<string>('resolve_project_media',{json:await readTextFile(path),projectPath:path});
+            const {project,sources}=await deserializeProject(json,audioEngine.getContext());
             abort.signal.throwIfAborted();useProjectStore.getState().loadProjectState(project,sources);projectId=project.id;
           }else{
             const {readFile}=await import('@tauri-apps/plugin-fs');
@@ -445,7 +449,8 @@ export const TimelinePanel: React.FC = () => {
     (async () => {
       for (const file of opened.filter((f) => isProject(f.name))) {
         try {
-          const json = new TextDecoder().decode(file.bytes);
+          let json = new TextDecoder().decode(file.bytes);
+          if(file.filePath){const {invoke}=await import('@tauri-apps/api/core');json=await invoke<string>('resolve_project_media',{json,projectPath:file.filePath});}
           const { project, sources } = await deserializeProject(json, audioEngine.getContext());
           store.loadProjectState(project, new Map([...useProjectStore.getState().sources,...sources]));
         } catch (err) {
@@ -454,8 +459,9 @@ export const TimelinePanel: React.FC = () => {
         }
       }
       const audio = opened.filter((f) => !isProject(f.name));
+      for(const file of audio.filter(f=>f.filePath&&/\.(mp4|mov|m4v|mkv|webm|avi|ogv|mpeg|mpg)$/i.test(f.name))){try{await importVideo(file.filePath!,true);}catch(error){setProjectError(String(error));}}
       if (audio.length > 0) {
-        await handleImportFiles(audio.map(f=>({name:f.name,read:async()=>f.bytes})),'new');
+        await handleImportFiles(audio.filter(f=>!f.filePath||!/\.(mp4|mov|m4v|mkv|webm|avi|ogv|mpeg|mpg)$/i.test(f.name)).map(f=>({name:f.name,filePath:f.filePath,read:async()=>f.bytes})),'new');
       }
     })();
   }, [pendingOpenedCount, audioEngine, store, handleImportFiles]);
@@ -521,7 +527,7 @@ export const TimelinePanel: React.FC = () => {
       if (!json) return;
       const ctx = audioEngine.getContext();
       const { project, sources } = await deserializeProject(json, ctx,async path=>{
-        const {open}=await import('@tauri-apps/plugin-dialog');const replacement=await open({title:`${t('workspace.relink')}: ${path}`,multiple:false});return typeof replacement==='string'?replacement:null;
+        const {open}=await import('../../lib/nativeDialog');const replacement=await open({title:`${t('workspace.relink')}: ${path}`,multiple:false});return typeof replacement==='string'?replacement:null;
       });
       store.loadProjectState(project, new Map([...useProjectStore.getState().sources,...sources]));
     } catch (err) {
@@ -571,6 +577,7 @@ export const TimelinePanel: React.FC = () => {
       case 'open':await handleOpenProject();break;
       case 'save':await handleSaveProject();break;
       case 'import':askImport();break;
+      case 'media-folder':if(usesMacResourceAccess()){const {open}=await import('../../lib/nativeDialog');await open({directory:true,multiple:false,title:t('editor.mediaFolderAccess')});}break;
       case 'export':void handleExportMix();break;
       case 'export-range':void handleExportMix(true);break;
       case 'previous-clip':case 'next-clip':case 'clip-above':case 'clip-below':{const next=navigateClip(state.project,state.selection,state.playheadPosition,['previous-clip','clip-above'].includes(action)?-1:1,action.startsWith('clip-'));if(next){state.setSelection(next.selection);state.setPlayheadPosition(next.time);}break;}

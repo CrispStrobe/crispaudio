@@ -60,8 +60,29 @@ access and stay in the app's private data, outside saved projects.
 Folders selected in earlier versions may need to be selected once again. If a drive
 is disconnected or a folder is unavailable, reconnect it and reselect the folder.
 Moving a plug-in changes its saved identifier; choose it again in affected racks.
-These bookmarks cover selected plug-in folders; general project/media bookmark
-restoration is a separate follow-up.
+Plug-in-folder access remains separate from media and output-folder access below.
+
+## Files and saved projects on Mac
+
+Native file selections and desktop drops retain media access for reopening and
+native processing. Saved project files retain write access. **File → Media Folder
+Access…** grants access to a whole recording or output folder; this also groups
+its files under one saved bookmark. There are up to 256 media/project/folder records,
+separate from the eight plug-in folders. Selecting a containing folder replaces
+covered individual records; existing records are never silently evicted at the limit.
+
+Native renders stage files beside their destination. If its folder has not been
+selected before, the app asks for that output folder once before rendering. Saves
+with audio assets beside the project use the same folder-access step. Cancelling
+leaves the save/render unstarted. Ordinary media-file bookmarks request read access;
+explicitly selected media/output folders and saved project files request write access.
+Helpers receive matching resource bookmarks for their request, alongside plug-in folders.
+
+Project drops include `.crispaudio.json` and resolve media paths relative to the
+project. Desktop files opened by other apps retain their paths; MP4 video goes to
+native preparation without first transferring the whole movie to JavaScript. The
+mobile integration continues importing document-picker bytes. Missing or moved
+sources still use relinking; moved paths are not rewritten automatically.
 
 ## Developer validation
 
@@ -110,6 +131,20 @@ python3 scripts/test-macos-folders.py --automate-picker --keep
 
 The test temporarily opens its own native folder picker. Omit `--automate-picker`
 to select the generated test folder manually; automation needs macOS Accessibility
-access. It verifies denial before selection/restoration, parent access, external VST3
+access. The runner launches via macOS Launch Services and selects only its
+prefilled fixture through AX; it never types into the frontmost application. If
+Assistive Access is denied, use manual picker mode. It verifies denial before selection/restoration, parent access, external VST3
 discovery and streaming, and Swift Audio Unit rendering from generated audio in the
 selected folder. It does not play audio or open a physical microphone.
+
+To check selected media/project files and output folders outside Downloads:
+
+```sh
+python3 scripts/test-macos-resources.py --automate-picker --keep
+```
+
+Five isolated launches select a generated WAV, a format-4 project and its output
+folder, then restore them. The probe checks native reads, project writes, read-only
+source access after relaunch, rejection of an unselected neighboring file in both
+parent and helper, and native encoding into the selected output folder. It does
+not perform a physical Finder drag or validate physical iOS hardware.

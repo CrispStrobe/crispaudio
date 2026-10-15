@@ -6,8 +6,10 @@
 // arbitrary path, which fails on mobile.
 // ---------------------------------------------------------------------------
 
+import {rememberResources} from './resourceAccess';
+import i18n from '../i18n';
 import {isIOSApp} from './native';
-import { save, open } from '@tauri-apps/plugin-dialog';
+import { save, open, ensureWritableFolder } from './nativeDialog';
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 
 const FILTERS = [{ name: 'CrispAudio Project', extensions: ['crispaudio', 'json'] }];
@@ -31,9 +33,11 @@ export async function saveProjectFile(
       let contents=json;
       const sources=(JSON.parse(json) as {sources?:{path?:string}[]}).sources;
       if(sources?.some(source=>source.path&&/[/\\](?:Caches|\.cache|cache|AppData)[/\\]/.test(source.path))){
+        if(!await ensureWritableFolder(path,i18n.t('editor.projectMediaFolder')))return false;
         const {invoke}=await import('@tauri-apps/api/core');contents=await invoke<string>('persist_cached_media',{json,projectPath:path});
       }
       await writeTextFile(path, contents);
+      await rememberResources([path],true);
       return true;
     } catch (err) {
       throw new Error(`Cannot save project: ${String(err)}`, { cause: err });

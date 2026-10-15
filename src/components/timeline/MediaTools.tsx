@@ -11,7 +11,7 @@ import { timelineDuration } from '../../lib/timelineView';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
-import { open, save } from '@tauri-apps/plugin-dialog';
+import {open,saveNative as save} from '../../lib/nativeDialog';
 import { readFile } from '@tauri-apps/plugin-fs';
 import { VideoViewer } from './VideoViewer';
 import { Modal } from '../common/Modal';

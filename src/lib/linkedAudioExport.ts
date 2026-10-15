@@ -1,4 +1,4 @@
-import { save } from '@tauri-apps/plugin-dialog';
+import {saveNative as save} from './nativeDialog';
 import { mediaJob } from './mediaJob';
 import type { linkedRenderDocument } from './projectFile';
 import type { AudioExportStage } from '../hooks/useAudioExport';

@@ -19,6 +19,7 @@
     "noSignal": "Kein Testsignal an der Ausgabe. Erneut versuchen oder App erneut öffnen."
   },
   "nativeMenu": {
+    "Media Folder Access…": "Medienordner freigeben…",
     "About CrispAudio": "Über CrispAudio",
     "Add Audio Track": "Audiospur hinzufügen",
     "Copy": "Kopieren",
@@ -783,6 +784,10 @@
     "previewError": "Bildvorschau fehlgeschlagen"
   },
   "editor": {
+    "nativeExportFolder": "Ausgabeordner für den nativen Export auswählen",
+    "mediaFolderAccess": "Ordner für verknüpfte Medien und native Exporte auswählen",
+    "projectMediaFolder": "Projektordner für die zugehörigen Audiodateien auswählen",
+    "projectMediaFolderMismatch": "Bitte den Ordner der gespeicherten Projektdatei auswählen.",
     "panLeft": "Nach links scrollen",
     "panRight": "Nach rechts scrollen",
     "browse": "Zeitleiste verschieben",
@@ -1948,6 +1953,7 @@
     "trimEnd": "Ende bis Abspielposition kürzen"
   },
   "ribbon": {
+    "media-folder": "Medienordner",
     "samples": "Beispiele",
     "new": "Neu",
     "open": "Öffnen",

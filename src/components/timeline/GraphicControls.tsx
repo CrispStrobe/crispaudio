@@ -2,7 +2,7 @@ import {Captions} from 'lucide-react';
 import {ToolButton} from '../common/ToolButton';
 import {useState,useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import {open} from '@tauri-apps/plugin-dialog';
+import {open} from '../../lib/nativeDialog';
 import {readTextFile} from '@tauri-apps/plugin-fs';
 import {Modal} from '../common/Modal';
 import {NumberField} from './NumberField';

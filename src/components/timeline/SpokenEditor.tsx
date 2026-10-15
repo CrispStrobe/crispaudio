@@ -2,7 +2,7 @@ import {NumberField} from './NumberField';
 import {KeepSpeechEditor} from './KeepSpeechEditor';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { open } from '@tauri-apps/plugin-dialog';
+import { open } from '../../lib/nativeDialog';
 import { Mic, Trash2, Play } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
 import { linkedRenderDocument } from '../../lib/projectFile';

@@ -67,12 +67,22 @@ pub fn take_opened_files(state: State<'_, OpenedFiles>) -> Vec<String> {
 
 #[tauri::command]
 pub async fn read_opened_file(
+    app: AppHandle,
     path: String,
+    path_only: Option<bool>,
     state: State<'_, OpenedFiles>,
 ) -> Result<Response, String> {
     let path = PathBuf::from(path);
     if !state.claim(&path) {
         return Err("File was not opened with CrispAudio".into());
+    }
+    #[cfg(target_os = "macos")]
+    super::resources::remember_resources(app, vec![path.to_string_lossy().into_owned()], false)
+        .await?;
+    #[cfg(not(target_os = "macos"))]
+    let _ = app;
+    if path_only.unwrap_or(false) && cfg!(target_os = "macos") {
+        return Ok(Response::new(Vec::new()));
     }
     let bytes = std::fs::read(&path).map_err(|e| format!("Failed to read opened file: {e}"))?;
     // iOS copies documents opened from other apps into Documents/Inbox; once

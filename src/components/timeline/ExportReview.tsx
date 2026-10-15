@@ -2,7 +2,7 @@ import {useProjectStore} from '../../stores/projectStore';
 import {useEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Play,Square,ExternalLink} from 'lucide-react';
-import {open} from '@tauri-apps/plugin-dialog';
+import {open} from '../../lib/nativeDialog';
 import {openPath} from '@tauri-apps/plugin-opener';
 import {useTimelineTool} from '../../hooks/useTimelineTool';
 import {useMixAudition} from '../../hooks/useMixAudition';

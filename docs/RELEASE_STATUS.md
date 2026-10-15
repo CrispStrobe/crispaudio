@@ -5,6 +5,33 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.2 — project, media and output access
+
+Mac media/project selections and explicit media/output folder grants now persist
+across launches. Helpers receive matching file access for native reads and output.
+File → Media Folder Access… groups linked sources. Native renders and saves with
+sidecar audio request output-folder access when necessary, before starting work.
+Saved-project format 4 is accepted by native resolution/collection, and dropped or
+Finder-opened projects resolve relative media. Desktop opened MP4 files retain
+paths instead of transferring the whole movie through byte IPC.
+
+Five real hardened-sandbox launches pass file selection/restoration, parent/helper
+reads, read-only source boundaries, version-4 project reopening/writing and native
+AAC output. An unselected neighboring input remains denied. The earlier external
+VST3 folder/stream probe also passes with the extended transport.
+[Resource evidence](evidence/macos-resource-bookmarks.json).
+
+The 0.13.2 local app is installed and signature-verified with one autosave retained
+and the prior app/session backed up. All 1,738 frontend tests, 136 media tests,
+40 app tests, the locked iOS simulator compile and 21 release checks pass. A later
+picker replay was blocked when macOS denied `osascript` Assistive Access; earlier
+five-launch resource and two-launch plug-in sandbox runs passed. The checked probe
+source now uses direct AX selection instead of global keyboard typing and supports
+manual picker selection. System permissions were not changed.
+
+This local checkpoint does not upload another Apple build. Physical Finder gestures,
+iOS hardware, commercial plugins and external interfaces remain acceptance work.
+
 ## Local 0.13.1 — selected plug-in folders
 
 Selected Mac plug-in folders now use persistent app-scoped bookmarks. Native
@@ -62,7 +89,7 @@ DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaud
 | iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
 | Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. Native 0.13.0/build 14 is now available for internal TestFlight. |
 | Provisioning | Active `IOS_APP_STORE` and newly created `MAC_APP_STORE` profiles, bound to the existing Distribution certificate. Existing account/API credentials work. |
-| Local native macOS app | Installed 0.13.1 ad-hoc signed app, separate from the public iOS release. |
+| Local native macOS app | Installed 0.13.2 ad-hoc signed app, separate from the public iOS release. |
 | Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
 
 [Public App Store listing](https://apps.apple.com/de/app/crispaudio/id6791876962) ·

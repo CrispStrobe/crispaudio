@@ -175,9 +175,9 @@ final class ResourceAccess {
   guard let path=ProcessInfo.processInfo.environment["CRISPAUDIO_RESOURCE_BOOKMARKS"] else{return}
   let file=URL(fileURLWithPath:path)
   let size=try file.resourceValues(forKeys:[.fileSizeKey]).fileSize ?? 0
-  guard size<=3_000_000 else{try fail("Folder access transfer is too large")}
+  guard size<=72*1024*1024 else{try fail("Folder access transfer is too large")}
   let records=try JSONDecoder().decode([[UInt8]].self,from:Data(contentsOf:file))
-  guard records.count<=8 else{try fail("Too many folder access transfers")}
+  guard records.count<=264 else{try fail("Too many folder access transfers")}
   do {
    for bytes in records {
     guard !bytes.isEmpty && bytes.count<=65536 else{try fail("Invalid folder access transfer")}

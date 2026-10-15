@@ -9,7 +9,7 @@ import { hasRecoverableAutosave, restoreAutosaveAudio } from '../../hooks/useAut
 import { setPreviewProxy } from '../../lib/previewCache';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { open } from '@tauri-apps/plugin-dialog';
+import { open } from '../../lib/nativeDialog';
 import { readTextFile } from '@tauri-apps/plugin-fs';
 import { Library, Settings2, Captions, SlidersHorizontal, X, Film, Link2, Unlink, BookmarkPlus, Trash2, Scissors, Upload, Download } from 'lucide-react';
 import { ToolButton } from '../common/ToolButton';

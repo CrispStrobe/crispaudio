@@ -211,3 +211,15 @@ describe('subscribeOpenedFiles', () => {
     expect(unlisten).toHaveBeenCalled();
   });
 });
+
+it('retains desktop source paths and avoids sending an opened MP4 through byte IPC',async()=>{
+ setPlatform({tauri:true,ua:MAC_UA});const onFiles=vi.fn();listen.mockResolvedValue(vi.fn());
+ invoke.mockImplementation(async(cmd:string)=>{
+  if(cmd==='take_opened_files')return ['/outside/movie.mp4','/outside/project.crispaudio.json'];
+  if(cmd==='read_opened_file')return new ArrayBuffer(0);
+ });
+ const stop=await subscribeOpenedFiles(onFiles);
+ expect(invoke).toHaveBeenCalledWith('read_opened_file',{path:'/outside/movie.mp4',pathOnly:true});
+ expect(invoke).toHaveBeenCalledWith('read_opened_file',{path:'/outside/project.crispaudio.json'});
+ expect(onFiles.mock.calls[0][0]).toEqual(expect.arrayContaining([expect.objectContaining({filePath:'/outside/movie.mp4'}),expect.objectContaining({filePath:'/outside/project.crispaudio.json'})]));stop();
+});

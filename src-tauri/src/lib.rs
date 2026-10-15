@@ -7,6 +7,8 @@ mod native_validation;
 #[cfg(all(feature = "native-validation", target_os = "macos"))]
 mod native_validation_loopback;
 #[cfg(all(feature = "native-validation", target_os = "macos"))]
+mod resource_validation;
+#[cfg(all(feature = "native-validation", target_os = "macos"))]
 pub use native_validation::run as run_native_validation;
 mod commands;
 mod native_menu;
@@ -55,7 +57,18 @@ pub fn run() {
             }
             #[cfg(target_os = "macos")]
             {
-                let file = app.path().app_data_dir()?.join("plugin-folders.json");
+                let data = app.path().app_data_dir()?;
+                match crispaudio_media::security_scope::restore_resources(
+                    &data.join("resource-bookmarks.json"),
+                ) {
+                    Ok(unavailable) if !unavailable.is_empty() => log::warn!(
+                        "{} selected resources unavailable; reselect them",
+                        unavailable.len()
+                    ),
+                    Err(error) => log::warn!("Could not restore selected resource access: {error}"),
+                    _ => {}
+                }
+                let file = data.join("plugin-folders.json");
                 match crispaudio_media::security_scope::restore(&file) {
                     Ok(unavailable) if !unavailable.is_empty() => log::warn!(
                         "{} saved plug-in folders unavailable; reselect them",
@@ -120,6 +133,8 @@ pub fn run() {
             commands::delivery::collect_project_media,
             commands::delivery::publish_delivery_stage,
             commands::delivery::annotate_delivery_wav,
+            commands::resources::remember_resources,
+            commands::resources::resource_folder_writable,
             commands::plugins::remember_plugin_folder,
             commands::plugins::audio_unit_plugin,
             commands::plugins::plugin_stream_open,

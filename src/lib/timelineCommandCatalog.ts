@@ -1,6 +1,7 @@
 export interface TimelineCommand { id: string; label: string; key?: string; requires?: 'selection' | 'anySelection' | 'content' | 'editRange' | 'clipboard' | 'canUndo' | 'canRedo' }
 export const timelineCommands: Record<string, TimelineCommand[]> = {
     File: [
+        {id:'media-folder',label:'Media Folder Access…'},
         {id:'review-export',label:'Review Export…'},
         {id:'walkthroughs',label:'Sample Walkthroughs…'},
         { id: 'samples', label: 'Sample Sessions…' },

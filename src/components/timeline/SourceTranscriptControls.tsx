@@ -3,7 +3,7 @@ import {useTimelineTool} from '../../hooks/useTimelineTool';
 import {invoke} from '@tauri-apps/api/core';
 import {useEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {open} from '@tauri-apps/plugin-dialog';
+import {open} from '../../lib/nativeDialog';
 import {readTextFile} from '@tauri-apps/plugin-fs';
 import {useProjectStore} from '../../stores/projectStore';
 import {Modal} from '../common/Modal';

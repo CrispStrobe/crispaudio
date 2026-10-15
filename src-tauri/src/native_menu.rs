@@ -114,6 +114,13 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
             )?,
             &sep()?,
             &item(
+                "media-folder",
+                "Media Folder Access…",
+                "Medienordner freigeben…",
+                enabled,
+                None,
+            )?,
+            &item(
                 "import",
                 "Import Audio…",
                 "Audio importieren…",

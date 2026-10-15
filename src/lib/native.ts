@@ -130,6 +130,7 @@ export function setAudioSessionType(type: 'playback' | 'play-and-record'): void 
 // --- Files opened from other apps ----------------------------------------
 
 export interface OpenedFile {
+  filePath?: string;
   name: string;
   bytes: ArrayBuffer;
 }
@@ -151,8 +152,9 @@ export async function subscribeOpenedFiles(
     const files: OpenedFile[] = [];
     for (const path of paths) {
       try {
-        const bytes = await invoke<ArrayBuffer>('read_opened_file', { path });
-        files.push({ name: path.split(/[\\/]/).pop() || 'audio', bytes });
+        const video=!isIOSApp()&&/\.(mp4|mov|m4v|mkv|webm|avi|ogv|mpeg|mpg)$/i.test(path);
+        const bytes = await invoke<ArrayBuffer>('read_opened_file', video?{path,pathOnly:true}:{path});
+        files.push({ name: path.split(/[\\/]/).pop() || 'audio', bytes, ...(!isIOSApp()?{filePath:path}:{}) });
       } catch (err) {
         console.error(`Failed to read opened file ${path}:`, err);
       }
