@@ -180,7 +180,7 @@
   },
   {
     "name": "glint (vendored codec WASM)",
-    "version": "import 2391d4b; upstream revision unresolved",
+    "version": "source ce488b4c7e2e (verified WASM rebuild)",
     "license": "MIT; extracted Opus tables: BSD-3-Clause AND BSD-2-Clause",
     "repository": "https://github.com/CrispStrobe/glint"
   },

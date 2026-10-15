@@ -101,7 +101,7 @@ entries.push({name:'midir (native MIDI input)',version:'0.11.1',license:'MIT',re
 entries.push({name:'coremidi (MIDI dependency)',version:'0.9.2',license:'MIT',repository:'https://github.com/chris-zen/coremidi'});
 entries.push({name:'coremidi-sys (MIDI dependency)',version:'3.2.1',license:'MIT',repository:'https://github.com/jonas-k/coremidi-sys'});
 const outDir = join(root, 'src', 'generated');
-entries.push({name:'glint (vendored codec WASM)',version:'import 2391d4b; upstream revision unresolved',license:'MIT; extracted Opus tables: BSD-3-Clause AND BSD-2-Clause',repository:'https://github.com/CrispStrobe/glint'});
+entries.push({name:'glint (vendored codec WASM)',version:'source ce488b4c7e2e (verified WASM rebuild)',license:'MIT; extracted Opus tables: BSD-3-Clause AND BSD-2-Clause',repository:'https://github.com/CrispStrobe/glint'});
 entries.push({name:'libopus tables (via Glint)',version:'1.5.2 (upstream table attribution)',license:'BSD-3-Clause AND BSD-2-Clause',repository:'https://github.com/xiph/opus/tree/v1.5.2'});
 entries.push({name:'libFLAC (via libflacjs)',version:'1.3.4 (libflacjs 5.6.0 build)',license:'BSD-3-Clause',repository:'https://github.com/xiph/flac'});
 await mkdir(outDir, { recursive: true });

@@ -3,10 +3,16 @@
 - Upstream: https://github.com/CrispStrobe/glint
 - Imported into CrispAudio in commit `2391d4b` (2026-07-17).
 - `glint.wasm` SHA-256: `9eff0a5fef6bf2157dc5dabbcaff4911f3e0967850f6ee11a1df0932a4a3001d`.
-- Original upstream revision, compiler version and build flags: **unresolved**.
-  The current upstream checkout does not reproduce this binary; do not label it
-  as the original source revision. Rebuild from a reviewed, pinned revision before
-  claiming reproducible provenance.
+- **Verified reproducing source revision:** `ce488b4c7e2edf25fdaf8631b71ea599ba87ee18`.
+  An isolated build on 2026-10-15 reproduced **both** shipped `glint.wasm` and
+  `glint.mjs` byte for byte. The developer also confirms the binary came from Glint.
+- Toolchain: Homebrew Emscripten 6.0.2 (`emcc --version`: 6.0.2-git).
+  Full arguments and output checksums are recorded in
+  [the rebuild evidence](../../../docs/evidence/glint-rebuild-2026-10-15.json).
+  Archive `src`, `include` and `CMakeLists.txt` from that revision into an isolated
+  directory, create `bindings/wasm`, then run `emcc` with the recorded arguments.
+  This verifies a source/build combination; it does not recover the original
+  invocation log or distinguish commits with identical build inputs.
 - Glint's own license is in `LICENSE`. Extracted libopus table notices are in
   `../licenses/opus.txt` and included in the app's About dialog.
 
@@ -29,5 +35,5 @@ The [deeper AAC-LC review](../../../docs/AAC_LC_PATENT_REVIEW.md) records actual
 binary capability probes, comparison with Fedora's stripped codec and scoped
 patent-claim checks. `node scripts/audit-aac-wasm.mjs` reruns the offline probe
 from the repository root. It establishes AAC-LC output and PNS decoding in this
-exact binary; it does not establish its original source revision or worldwide
-patent clearance.
+exact binary. The separate rebuild establishes matching source/build inputs;
+neither check establishes worldwide patent clearance.

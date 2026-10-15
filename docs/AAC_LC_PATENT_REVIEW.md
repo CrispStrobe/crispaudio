@@ -25,8 +25,10 @@ Two independent workstreams examined the codec implementation and patent records
 - The exact vendored WASM was executed without rebuilding it. Its bytes and
   output headers were recorded, and a constructed PNS stream was decoded.
 - Glint source at `77738f3ed9b15f627196cc5bbd7f6406814ba2fb` was inspected for
-  AAC tools and quantization behavior. **This revision is not established as the
-  source of the shipped WASM.**
+  AAC tools and quantization behavior. Follow-up reproduced the shipped WASM
+  and glue exactly from historical revision `ce488b4c7e2edf25fdaf8631b71ea599ba87ee18`.
+  The AAC encoder implementation and its AAC headers are unchanged between that
+  historical revision and the inspected source; the newer decoder has fixes.
 - Fedora's original 2017 stripped source and current 2.0.3 source were inspected,
   together with its public legal decision and packaging manifest.
 - The 2026 Q3 pool list was parsed: 645 US entries, including reissues. A screen
@@ -160,7 +162,9 @@ At the inspected Glint revision:
 
 Thus this candidate did **not** establish that Glint implements its full claimed
 sequence. This is an engineering comparison, not a legal non-infringement opinion
-or a proof that the unidentified shipped source was identical.
+or blanket patent clearance. A subsequent isolated rebuild reproduced the exact
+shipped binary from historical source; the relevant AAC encoder files match the
+source inspected for this comparison.
 
 ## Why the repeated 2028 date is not established here
 
@@ -173,12 +177,25 @@ secondary calculation behind that claim. Do not repeat it as an established date
 
 ## Remaining limits and useful follow-up
 
-The concrete unresolved engineering issue is **binary provenance**: the original
-Glint revision/compiler/build flags remain unknown. Keep the
-[provenance record](../src/lib/glint/UPSTREAM.md), pin reviewed source and build
-inputs for the next codec update, and rerun the capability probe. Changing the
-codec merely to create provenance is outside this audit; codec updates need
-quality and compatibility checks.
+**Source traceability was resolved in follow-up.** On 2026-10-15 an isolated
+Emscripten 6.0.2 build of Glint revision
+`ce488b4c7e2edf25fdaf8631b71ea599ba87ee18` reproduced both the shipped WASM and
+JavaScript glue byte for byte. The AAC encoder files and AAC encoder headers are
+unchanged from that revision to the inspected current source. The decoder has
+later KBD-window/short-window TNS fixes. See the
+[rebuild record](evidence/glint-rebuild-2026-10-15.json) and
+[provenance record](../src/lib/glint/UPSTREAM.md). No codec replacement is needed
+to resolve this documentation question.
+
+**Free versus paid:** an expired patent cannot be infringed by either free or
+paid distribution. Conversely, free public distribution is not a general patent
+exemption: Germany's exception requires private, noncommercial acts, and §9 also
+covers making, offering and placing products on the market. A future applicable
+license could distinguish distribution models; we have not established that one
+is needed for this AAC-LC implementation. Donations do not change an expired
+patent's status. [WIPO patent FAQ](https://www.wipo.int/en/web/patents/faq_patents),
+[PatG §9](https://www.gesetze-im-internet.de/patg/__9.html),
+[PatG §11](https://www.gesetze-im-internet.de/patg/__11.html).
 
 For any specific live candidate, compare all relevant claim elements with the
 actual shipped implementation and verify national status. That focused work is
