@@ -2,11 +2,11 @@
 
 CrispAudio **0.3.0 is already released for iPhone/iPad**. Its public listing also
 allows the iOS app on compatible Apple Silicon Macs. This document concerns the
-separate native desktop build. As checked through the VPS on 2026-10-15, that
-Mac App Store version is a draft with no build, and the bundle ID has an active
-iOS profile but no Mac App Store profile. The existing API credentials are usable;
-creating a Mac profile does not require a new account or replacing the shared
-certificate. See [verified distribution status](RELEASE_STATUS.md).
+separate native desktop build. Native **0.13.0/build 14** is now `VALID` and in
+internal TestFlight; its external submission is waiting for Beta App Review.
+The native Mac public App Store version remains a draft. Its new active Mac App
+Store profile uses the existing canonical Distribution certificate. No new
+certificate or account was needed. See [verified distribution status](RELEASE_STATUS.md).
 
 The Mac bundle contains `crispaudio-apple-media` and `crispaudio-vst3-host` beside
 the main executable. Both helpers use the same compiler recipe as the development
@@ -27,7 +27,7 @@ embedded profile. It also requires hardened runtime, rejects debugging rights,
 and compares the final app identifier, team entitlements and actual leaf signing
 certificate against the embedded profile. The workflow separately validates
 the profile's integrity,
-expiry, platform, app identifier and certificate. An Apple-issued Mac App Store profile is needed for that native desktop route; local ad-hoc signing does not replace it. The Store
+expiry, platform, app identifier and certificate. The native Mac profile is active; local ad-hoc signing does not replace it. The Store
 workflow derives the app/team identity entitlements from that validated profile;
 local builds retain their independent signing setup. See Apple's
 [provisioning profile reference](https://developer.apple.com/documentation/technotes/tn3125-inside-code-signing-provisioning-profiles).
@@ -58,10 +58,12 @@ python3 tests/release/test_macos_signing_actual.py # macOS, real disposable sign
 
 The first suite runs in frontend CI; the real-signature suite runs in Mac CI.
 
-Remaining acceptance needs a Store-signed build, selected external media and
-plugins, commercial plugin installations and external audio interfaces. Child
+Remaining beta acceptance covers selected external media and plugin folders,
+commercial plugin installations and external audio interfaces. Child
 processes do not automatically inherit dynamic PowerBox access; external resource
 access must be checked through the actual file-selection workflow. See Apple's
 [file access guidance](https://developer.apple.com/documentation/security/accessing-files-from-the-macos-app-sandbox).
-No Apple upload, release tag or release-workflow dispatch accompanies this local
-checkpoint.
+The 0.13.0/build 14 TestFlight upload was explicitly authorized and completed.
+Public App Store review was not submitted. Future release workflows default to
+dry runs unless explicitly requested. CI build numbers start above 100 and include
+the run attempt, advancing beyond local build 14 and avoiding retry collisions.

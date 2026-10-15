@@ -2,7 +2,7 @@
 
 CrispAudio-specific companion to the general playbook (`~/code/appstore.md`).
 It records the concrete values, what's already automated in this repo, and the
-historical setup notes. The current release status above supersedes the July
+historical setup notes. The current release status below supersedes the July
 checklist; TestFlight submission is API-driven.
 
 ## Current status (2026-10-15)
@@ -10,8 +10,9 @@ checklist; TestFlight submission is API-driven.
 Public iOS **0.3.0 / build 13** is released. Apple status was checked through the
 VPS API and public listings; see [verified distribution status](RELEASE_STATUS.md).
 
-The user authorized submitting current **0.13.0** to internal and external
-TestFlight on both iOS and native macOS. Release preparation reuses the active
+Current **0.13.0/build 14** is now valid and in internal TestFlight on both iOS
+and native macOS. Both external Beta App Review submissions are waiting for review.
+[Submission evidence](evidence/testflight-0.13.0-build14.json). This release reuses the active
 `CrispAudio AppStore CI` iOS profile, canonical Distribution certificate and
 existing tester groups. This is beta distribution, not a new public App Store
 release. The native Mac route has a separate Mac App Store profile.
@@ -20,6 +21,10 @@ Automatic video synchronization/export and AU/VST3 hosting are desktop-only;
 iOS keeps supported audio editing and built-in effects. Physical iOS acceptance
 remains part of beta testing. No new physical microphone test is implied by a
 successful archive or upload.
+
+CI uses build numbers `(100 + workflow run number).attempt` so future uploads
+advance beyond local build 14 and retries get a unique number. Always read back
+versions from the signed artifact before uploading.
 
 ## Constants
 

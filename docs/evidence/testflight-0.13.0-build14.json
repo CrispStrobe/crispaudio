@@ -1,0 +1,122 @@
+{
+  "version": "0.13.0",
+  "build": "14",
+  "checkedAt": "2026-10-15T17:58:29.217249+00:00",
+  "appId": "6791876962",
+  "bundleId": "com.crispstrobe.crispaudio",
+  "runtimeSourceCommit": "22e929a",
+  "packagingCommits": [
+    "bba08e8",
+    "bf5047c",
+    "42676af"
+  ],
+  "testflight": [
+    {
+      "platform": "IOS",
+      "version": "0.13.0",
+      "build": "14",
+      "buildId": "5316ce41-c8bf-449f-899e-dd1dad96ddbb",
+      "processingState": "VALID",
+      "groups": {
+        "internal": true,
+        "external": true
+      },
+      "betaReview": {
+        "betaReviewState": "WAITING_FOR_REVIEW",
+        "submittedDate": "2026-10-15T10:40:02-07:00"
+      },
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "IN_BETA_TESTING",
+        "externalBuildState": "WAITING_FOR_BETA_REVIEW"
+      },
+      "publicLink": "https://testflight.apple.com/join/YpRwC6wF"
+    },
+    {
+      "platform": "MAC_OS",
+      "version": "0.13.0",
+      "build": "14",
+      "buildId": "4a8db643-5432-4498-b4b5-108f0c2bf380",
+      "processingState": "VALID",
+      "groups": {
+        "internal": true,
+        "external": true
+      },
+      "betaReview": {
+        "betaReviewState": "WAITING_FOR_REVIEW",
+        "submittedDate": "2026-10-15T10:57:31-07:00"
+      },
+      "betaDetail": {
+        "autoNotifyEnabled": true,
+        "internalBuildState": "IN_BETA_TESTING",
+        "externalBuildState": "WAITING_FOR_BETA_REVIEW"
+      },
+      "publicLink": "https://testflight.apple.com/join/YpRwC6wF"
+    }
+  ],
+  "appStoreVersions": [
+    {
+      "platform": "MAC_OS",
+      "version": "1.0",
+      "state": "PREPARE_FOR_SUBMISSION"
+    },
+    {
+      "platform": "IOS",
+      "version": "0.3.0",
+      "state": "READY_FOR_DISTRIBUTION"
+    }
+  ],
+  "macProfile": {
+    "name": "CrispAudio Mac AppStore CI",
+    "state": "ACTIVE",
+    "certificate": "existing canonical Distribution certificate; none created or revoked"
+  },
+  "artifactVerification": {
+    "ios": {
+      "platform": "IOS",
+      "version": "0.13.0",
+      "build": "14",
+      "minimumSystemVersion": "15.0",
+      "architecture": "arm64",
+      "privacyManifest": true,
+      "microphonePurpose": true,
+      "icon": "AppIcon",
+      "signature": "deep strict verified",
+      "profile": "CMS integrity and app/certificate verified",
+      "encryptionExempt": true,
+      "sha256": "cc2420d6c06082d0928c0710d6462571bf35a8fbece1aa2f1dd59160a79fdb79"
+    },
+    "mac": {
+      "signature": "deep strict verified",
+      "profileAndCertificate": "verified",
+      "helperSignaturesTeamsArchitecturesAndSandbox": "verified",
+      "privacyManifest": true,
+      "regularUserReadPermissions": "verified",
+      "packageSignature": "verified",
+      "sha256": "66242b91f8af1eb882ca54ccf50301cbc4078900c6331b1d9992be8770d9ab4f"
+    }
+  },
+  "macStartup": {
+    "version": "0.13.0",
+    "build": "14",
+    "launch": "passed",
+    "sandbox": true,
+    "hardenedRuntime": true,
+    "signing": "ad-hoc copy, without Store identity entitlements",
+    "rendering": "passed; screenshot visually reviewed",
+    "audio": "not played",
+    "installedApp": "unchanged"
+  },
+  "regressionTests": {
+    "profileCmsSignature": 10,
+    "actualMacSignatures": 9,
+    "uploadResult": 2
+  },
+  "resolvedUploadIssue": "First Mac package rejected for root-only permissions on embedded profile; normalized staged bundle permissions, re-signed/repackaged, and Apple accepted the retry. No recompilation or duplicate accepted build.",
+  "notChecked": [
+    "physical iOS device UX/audio",
+    "external audio interfaces",
+    "commercial plugins and PowerBox-selected plugin/media folders outside Downloads"
+  ],
+  "publicAppStoreReleaseChanged": false
+}

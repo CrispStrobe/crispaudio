@@ -31,19 +31,19 @@ exports pass desktop/touch browser checks. See [checkpoint evidence](docs/eviden
 
 Distribution follow-up: the hardened sandbox test also passes a VST3 fixture in
 Downloads through the existing static entitlement. Final signature/profile identity
-and certificate checks, profile-derived Store entitlements and 16 release gate
+and certificate checks, profile-derived Store entitlements and 21 release gate
 regressions are implemented; real Mac signature checks run in CI.
 
-Next native Mac distribution steps: create/restore its Mac App Store profile using
-the existing API account, then Store-signed testing
-of user-selected external files/plugins, commercial plugins and external interfaces.
-Local ad-hoc sandbox success does not establish those results. Continuous native
-input DSP and native automation recording remain future work.
+TestFlight submission is complete for **iOS and native macOS 0.13.0/build 14**:
+Apple processing is valid, internal testing is enabled, and both external Beta
+App Review submissions are waiting for review. Both existing groups contain the
+correct platform build. A Mac profile was created using the existing account
+and canonical certificate. [Submission evidence](docs/evidence/testflight-0.13.0-build14.json).
 
-Apple status verified 2026-10-15: iOS 0.3.0/build13 is released publicly, including
-compatibility on Apple Silicon Macs. The separate native Mac 1.0 record remains a
-draft with no build attached. Do not describe the whole app as blocked on provisioning.
-See [live status evidence](docs/evidence/apple-store-status-2026-10-15.json).
+Next: collect beta feedback, check physical iOS devices, qualify selected external
+files/plugins beyond Downloads, commercial plugins and external interfaces.
+Continuous native input DSP and native automation recording remain future work.
+Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 
 Audio troubleshooting interrupted the start: distortion persisted after quitting
 CrispAudio. A reversible built-in-speaker format change from 96 to 48 kHz helped;

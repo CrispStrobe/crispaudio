@@ -76,7 +76,9 @@ jobs:
           
           cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
           chmod -R a+rX "$APP"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$APP/Contents/Info.plist"
+          # Reserve CI numbers above local TestFlight build 14; attempts stay unique.
+          BUILD_NO="$((100 + ${{ github.run_number }})).${{ github.run_attempt }}"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NO" "$APP/Contents/Info.plist"
           
           while IFS= read -r -d '' f; do
             codesign --force --timestamp --options runtime --keychain "$KC" --sign "$APP_CERT" "$f"

@@ -5,6 +5,37 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## TestFlight 0.13.0 / build 14 — submitted 2026-10-15
+
+| Platform | Apple processing | Internal TestFlight | External TestFlight |
+|---|---|---|---|
+| iOS / iPadOS | `VALID` | `IN_BETA_TESTING` | `WAITING_FOR_BETA_REVIEW` |
+| Native macOS, Apple Silicon, macOS 13+ | `VALID` | `IN_BETA_TESTING` | `WAITING_FOR_BETA_REVIEW` |
+
+Both builds are assigned to the existing Internal Testers and External Testers
+groups, verified from the group side. The account owner is attached to the internal
+group. Per-platform test notes and export compliance are set; automatic external
+notification is enabled. Both Beta App Review submissions report `WAITING_FOR_REVIEW`.
+
+[Public TestFlight invitation](https://testflight.apple.com/join/YpRwC6wF) ·
+[App Store Connect](https://appstoreconnect.apple.com/apps/6791876962/testflight) ·
+[Build and API evidence](evidence/testflight-0.13.0-build14.json).
+
+The existing iOS profile and canonical signing identities were reused. A matching
+Mac App Store profile was created without changing capabilities or revoking any
+certificate. The native Mac release copy launches and renders under hardened
+App Sandbox. Its separately signed helpers, app/profile/certificate identity,
+architectures, privacy manifest, package signature and regular-user file access
+pass verification. Apple rejected the first Mac package because its embedded
+profile had owner-only read permissions; the normalized, re-signed package was
+accepted. A regression check now catches that condition before upload.
+
+The IPA and PKG are retained with hashes and signed-artifact checks. All 21 release
+regression checks pass. No new physical microphone/audibility or iOS hardware test
+was performed. External interfaces, commercial plugins and selected resource
+folders outside Downloads remain beta acceptance work. The local installed app
+and autosave are unchanged. No public App Store release was submitted or changed.
+
 ## Verified Apple distribution status
 
 Checked 2026-10-15 using the App Store Connect API from the VPS and Apple's public
@@ -14,8 +45,8 @@ DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaud
 |---|---|
 | Public iPhone/iPad app | **0.3.0 released**, `READY_FOR_DISTRIBUTION` / legacy `READY_FOR_SALE`; attached build 13 is `VALID`. Public DE and US listings confirm 0.3.0, released 2026-10-01. |
 | iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
-| Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. No native Mac build appeared in the app's build list. |
-| Provisioning | One `ACTIVE` CrispAudio `IOS_APP_STORE` profile, expiring 2027-07-12. No `MAC_APP_STORE` profile returned for this bundle ID. Existing VPS API credentials work; native Mac profile setup can use that account/API path. |
+| Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. Native 0.13.0/build 14 is now available for internal TestFlight. |
+| Provisioning | Active `IOS_APP_STORE` and newly created `MAC_APP_STORE` profiles, bound to the existing Distribution certificate. Existing account/API credentials work. |
 | Local native macOS app | Installed 0.13.0 ad-hoc signed app, separate from the public iOS release. |
 | Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
 
@@ -28,8 +59,9 @@ release status is superseded by this live check. The September 13
 [failed native Mac upload](https://github.com/CrispStrobe/crispaudio/actions/runs/34760697731)
 is historical evidence about that desktop pipeline, not a problem with the live
 iOS listing. It does not establish that every distribution route needs a fresh
-profile. No account, certificate, profile, listing or release was changed by this
-read-only verification.
+profile. The initial read-only verification made no account changes. The later
+explicitly authorized TestFlight work created the Mac profile and submitted the
+beta builds described above.
 
 A generic `v*` release tag also triggers iOS upload; `mac-v*` triggers the separate
 native Mac workflow. Neither is part of the local software checkpoint.

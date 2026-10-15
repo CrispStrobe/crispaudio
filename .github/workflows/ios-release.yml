@@ -132,7 +132,8 @@ jobs:
       - name: Set unique build number
         run: |
           set -euo pipefail
-          BUILD_NO="${{ github.run_number }}"
+          # Reserve CI numbers above local TestFlight build 14; attempts stay unique.
+          BUILD_NO="$((100 + ${{ github.run_number }})).${{ github.run_attempt }}"
           sed -i '' "s/CFBundleVersion: \"[^\"]*\"/CFBundleVersion: \"${BUILD_NO}\"/" src-tauri/gen/apple/project.yml
           echo "BUILD_NO=$BUILD_NO" >> "$GITHUB_ENV"
           echo "SHORT_VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
