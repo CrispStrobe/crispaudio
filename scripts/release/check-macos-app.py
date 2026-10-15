@@ -71,6 +71,12 @@ def check(app, expected_team, allow_ad_hoc=False, expected_bundle=None):
         raise ValueError('Main app signing team does not match the distribution team.')
     if not allow_ad_hoc:
         check_profile(app, expected_team, info['CFBundleIdentifier'], rights)
+        manifest = contents / 'Resources/PrivacyInfo.xcprivacy'
+        if not manifest.is_file():
+            raise ValueError('Store bundle is missing its privacy manifest.')
+        privacy = plistlib.loads(manifest.read_bytes())
+        if privacy.get('NSPrivacyTracking') is not False or not privacy.get('NSPrivacyAccessedAPITypes'):
+            raise ValueError('Store privacy manifest must declare tracking and required-reason API use.')
     architecture = set(run('lipo', '-archs', str(main)).decode().split())
     for name in ['crispaudio-apple-media', 'crispaudio-vst3-host']:
         helper = contents / 'MacOS' / name

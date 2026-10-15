@@ -20,7 +20,8 @@ See Apple's [sandbox inheritance rules](https://developer.apple.com/library/arch
 and [library-validation entitlement](https://developer.apple.com/documentation/BundleResources/Entitlements/com.apple.security.cs.disable-library-validation).
 
 Before packaging, `scripts/release/check-macos-app.py APP --team TEAM_ID` checks
-deep signatures, matching helper teams/architectures, sandbox entitlements and an
+deep signatures, matching helper teams/architectures, sandbox entitlements, a
+privacy manifest in `Contents/Resources`, and an
 embedded profile. It also requires hardened runtime, rejects debugging rights,
 and compares the final app identifier, team entitlements and actual leaf signing
 certificate against the embedded profile. The workflow separately validates

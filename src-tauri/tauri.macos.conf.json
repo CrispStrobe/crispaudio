@@ -6,7 +6,10 @@
       "generated/native-helpers/crispaudio-vst3-host"
     ],
     "macOS": {
-      "minimumSystemVersion": "13.0"
+      "minimumSystemVersion": "13.0",
+      "files": {
+        "Resources/PrivacyInfo.xcprivacy": "gen/apple/crispaudio_iOS/PrivacyInfo.xcprivacy"
+      }
     }
   }
 }

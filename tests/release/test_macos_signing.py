@@ -125,6 +125,22 @@ class SignatureGate(unittest.TestCase):
                     APP.check(app, TEAM)
 
 
+    def test_store_gate_requires_a_privacy_manifest(self):
+        with tempfile.TemporaryDirectory() as folder:
+            app = pathlib.Path(folder) / 'Probe.app'
+            (app / 'Contents').mkdir(parents=True)
+            (app / 'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier': BUNDLE, 'CFBundleExecutable': 'probe'}))
+            (app / 'Contents/embedded.provisionprofile').write_bytes(b'verified separately')
+            rights = {'com.apple.security.app-sandbox': True, 'com.apple.security.device.audio-input': True}
+            with patch.object(APP, 'run'), patch.object(APP, 'entitlements', return_value=rights), patch.object(APP, 'signing', return_value=TEAM), patch.object(APP, 'check_profile'):
+                with self.assertRaisesRegex(ValueError, 'missing its privacy manifest'):
+                    APP.check(app, TEAM)
+                (app / 'Contents/Resources').mkdir()
+                (app / 'Contents/Resources/PrivacyInfo.xcprivacy').write_bytes(plistlib.dumps({'NSPrivacyTracking': False}))
+                with self.assertRaisesRegex(ValueError, 'required-reason API'):
+                    APP.check(app, TEAM)
+
+
 class ActualCmsGate(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix='crispaudio-cms-test-')
