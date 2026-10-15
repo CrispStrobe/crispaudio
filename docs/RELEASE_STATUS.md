@@ -35,9 +35,15 @@ injected failures and recovery pass. AU/VST3 retain clock and DSP history across
 65 seconds paused. Independent wet-file decoding verifies WAV/FLAC frame counts,
 AAC signal/priming and cancellation without output publication. These are muted
 digital checks, not new physical speaker or commercial-plugin acceptance. The final
-preview retest verifies its real audio clock and German controls while the macOS
-console is locked; visible playhead redraw was not rechecked in that run.
+preview retest with the Mac unlocked verifies visible playhead movement, German
+controls, cached pause/resume, seek/loop capture and cancellation.
 [Machine-readable evidence](evidence/native-playback-0.12.0.json) records the scope.
+
+The exact source checkpoint `94fa848` passes [general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38751671025)
+(frontend, media CLI, Windows/Linux/macOS Rust checks) and
+[iOS simulator CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38751671010).
+The iOS launch screenshot was also reviewed; this establishes simulator launch,
+not physical-device or App Store acceptance.
 
 The normal Mac bundle and locked iOS simulator compile pass. The ad-hoc-signed
 0.12.0 app is installed and relaunched after a fresh full WebKit/application-data

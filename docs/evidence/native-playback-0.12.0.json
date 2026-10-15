@@ -161,6 +161,18 @@
     ],
     "nativeDSPCallsDuringPlayback": 0,
     "germanControls": "passed",
-    "foregroundRedraw": "not rechecked: macOS console locked; actual engine clock checked"
+    "foregroundRedraw": "passed: visible playhead advances with macOS console unlocked"
+  },
+  "remoteCI": {
+    "sourceCommit": "94fa848c9865226469a362f69a698ec152917984",
+    "general": {
+      "result": "passed",
+      "url": "https://github.com/CrispStrobe/crispaudio/actions/runs/38751671025"
+    },
+    "iosSimulator": {
+      "result": "passed",
+      "url": "https://github.com/CrispStrobe/crispaudio/actions/runs/38751671010",
+      "launchScreenshotReviewed": true
+    }
   }
 }
