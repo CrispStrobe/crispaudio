@@ -51,6 +51,11 @@
         ],
         "mimeType": "application/x-crispaudio"
       }
-    ]
+    ],
+    "iOS": {
+      "developmentTeam": "N9XSJ4M3GT",
+      "minimumSystemVersion": "15.0"
+    },
+    "category": "Music"
   }
 }

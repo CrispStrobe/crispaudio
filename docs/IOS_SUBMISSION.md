@@ -2,18 +2,24 @@
 
 CrispAudio-specific companion to the general playbook (`~/code/appstore.md`).
 It records the concrete values, what's already automated in this repo, and the
-steps that only a human (browser/Apple account) can do.
+historical setup notes. The current release status above supersedes the July
+checklist; TestFlight submission is API-driven.
 
-## Current status (2026-10-08)
+## Current status (2026-10-15)
 
-The signing/setup notes below are historical. The Aug 17 iOS release workflow
-completed its upload step, so the July checklist must not be read as current
-proof that no app record exists. This audit did not verify present ASC processing,
-TestFlight, or public store availability. No October feature build has been
-submitted. See [current distribution status and release gates](RELEASE_STATUS.md).
-Automatic video synchronization/export is desktop-only; iOS currently edits
-aligned audio prepared on desktop. Device UX and audio validation are required
-before the next mobile release.
+Public iOS **0.3.0 / build 13** is released. Apple status was checked through the
+VPS API and public listings; see [verified distribution status](RELEASE_STATUS.md).
+
+The user authorized submitting current **0.13.0** to internal and external
+TestFlight on both iOS and native macOS. Release preparation reuses the active
+`CrispAudio AppStore CI` iOS profile, canonical Distribution certificate and
+existing tester groups. This is beta distribution, not a new public App Store
+release. The native Mac route has a separate Mac App Store profile.
+
+Automatic video synchronization/export and AU/VST3 hosting are desktop-only;
+iOS keeps supported audio editing and built-in effects. Physical iOS acceptance
+remains part of beta testing. No new physical microphone test is implied by a
+successful archive or upload.
 
 ## Constants
 
@@ -25,7 +31,7 @@ before the next mobile release.
 | ASC API key id | `9RMU3C7422` |
 | ASC issuer id | `5f618ba3-98ef-42ad-835c-fbbef6c76cf5` |
 | Xcode scheme | `crispaudio_iOS` |
-| Provisioning profile (to create) | `CrispAudio AppStore CI` |
+| Active iOS provisioning profile | `CrispAudio AppStore CI` |
 
 ## Already done in this repo (automated / committed)
 
@@ -67,7 +73,7 @@ trigger the signed build, verify via `GET /v1/builds`) the agent does.
 | `ASC_API_KEY_P8_BASE64` | base64 of `AuthKey_9RMU3C7422.p8` | ✅ |
 | `ASC_KEY_ID` | `9RMU3C7422` | ✅ |
 | `ASC_ISSUER_ID` | `5f618ba3-98ef-42ad-835c-fbbef6c76cf5` | ✅ |
-| `ASC_APP_ID` | numeric app id (after app record) | ⬜ |
+| `ASC_APP_ID` | `6791876962` | ✅ |
 | `DIST_CERT_P12_BASE64` | Distribution `.p12` (exported from `brickwright-build.keychain-db`) | ✅ |
 | `DIST_CERT_PASSWORD` | `crispaudio-dist` (throwaway) | ✅ |
 | `ASC_PROFILE_BASE64` | base64 of `CrispAudio AppStore CI.mobileprovision` | ✅ |

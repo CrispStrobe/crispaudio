@@ -145,8 +145,8 @@ jobs:
       # Tauri's export drops the auth flags and yields a Development-signed IPA.)
       - name: Build iOS archive (unsigned)
         run: |
-          PATH="/usr/bin:$PATH" npx tauri ios build --no-sign || \
-            echo "::warning::tauri build/export returned non-zero (expected on --no-sign); checking for the archive next"
+          PATH="/usr/bin:$PATH" npx tauri ios build --no-sign --archive-only \
+            --config "{\"bundle\":{\"iOS\":{\"bundleVersion\":\"$BUILD_NO\"}}}"
 
       - name: Export signed IPA (manual signing)
         id: ipa
@@ -176,6 +176,10 @@ jobs:
           # Fail loud if the signature isn't valid before bothering to upload.
           mkdir -p "$RUNNER_TEMP/ipa_check" && (cd "$RUNNER_TEMP/ipa_check" && unzip -oq "$IPA")
           codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/ipa_check/Payload/"*.app
+          SIGNED_APP="$(find "$RUNNER_TEMP/ipa_check/Payload" -maxdepth 1 -name '*.app' | head -1)"
+          test -f "$SIGNED_APP/PrivacyInfo.xcprivacy"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$SIGNED_APP/Info.plist")" = "$SHORT_VERSION"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$SIGNED_APP/Info.plist")" = "$BUILD_NO"
 
       # Advisory only — --validate-app can flag non-fatal issues; never let it
       # block the upload (playbook: make validate advisory). NOTE: the runner's
@@ -190,20 +194,17 @@ jobs:
       - name: Upload to App Store Connect
         if: ${{ github.event_name == 'push' || github.event.inputs.dry_run == 'false' }}
         run: |
-          set -uo pipefail
-          OUT="$RUNNER_TEMP/altool_upload.log"
-          # altool exits 0 even when the upload fails validation — fail loud by
-          # inspecting its output for the success/failure markers.
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/altool_upload.json"
           xcrun altool --upload-package "${{ steps.ipa.outputs.path }}" --type ios \
             --apple-id "$ASC_APP_ID" \
             --bundle-id "$BUNDLE_ID" \
             --bundle-version "$BUILD_NO" \
             --bundle-short-version-string "$SHORT_VERSION" \
-            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$OUT"
-          if grep -qiE "UPLOAD FAILED|Validation failed" "$OUT"; then
-            echo "::error::altool reported errors — nothing was uploaded"; exit 1
-          fi
-          echo "Uploaded. Verify via the ASC API: GET /v1/builds?filter[app]=$ASC_APP_ID"
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" \
+            --output-format json > "$OUT"
+          python3 scripts/release/check-altool-result.py "$OUT"
+          echo "Verify processing and platform via the ASC API before assigning testers."
 
       - name: Upload IPA artifact
         if: always()

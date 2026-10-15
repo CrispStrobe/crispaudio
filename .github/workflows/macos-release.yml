@@ -122,4 +122,6 @@ jobs:
           xcrun altool --upload-package "$PKG" --type macos \
             --apple-id "$ASC_APP_ID" --bundle-id "$BUNDLE_ID" \
             --bundle-version "$BV" --bundle-short-version-string "$SV" \
-            --apiKey "${{ secrets.ASC_KEY_ID }}" --apiIssuer "${{ secrets.ASC_ISSUER_ID }}" 2>&1 | tail -25
+            --apiKey "${{ secrets.ASC_KEY_ID }}" --apiIssuer "${{ secrets.ASC_ISSUER_ID }}" \
+            --output-format json > "$RUNNER_TEMP/mac-upload.json"
+          python3 scripts/release/check-altool-result.py "$RUNNER_TEMP/mac-upload.json"

@@ -4,6 +4,9 @@
     "externalBin": [
       "generated/native-helpers/crispaudio-apple-media",
       "generated/native-helpers/crispaudio-vst3-host"
-    ]
+    ],
+    "macOS": {
+      "minimumSystemVersion": "13.0"
+    }
   }
 }
