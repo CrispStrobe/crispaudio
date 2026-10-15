@@ -3,7 +3,91 @@ use crate::commands::plugins::{self, PluginStreams};
 use crate::native_validation_loopback::Loopback;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicBool, Ordering};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
+#[derive(Default)]
+struct NativeClockState(
+    std::sync::Mutex<Option<(String, std::sync::Arc<crate::native_audio_clock::Control>)>>,
+);
+impl NativeClockState {
+    fn cancel(&self) {
+        if let Some((_, stop)) = self.0.lock().unwrap().as_ref() {
+            stop.cancel();
+        }
+    }
+    fn shutdown(&self) {
+        let active = self
+            .0
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|(_, control)| control.clone());
+        if let Some(control) = active {
+            control.cancel();
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
+            while !control.finished.load(Ordering::Acquire) && std::time::Instant::now() < deadline
+            {
+                std::thread::sleep(std::time::Duration::from_millis(2));
+            }
+        }
+    }
+}
+#[tauri::command]
+async fn native_validation_audio_clock(
+    window: tauri::WebviewWindow,
+    state: tauri::State<'_, NativeClockState>,
+    plugin: String,
+    starve: bool,
+) -> Result<Value, String> {
+    let stop = std::sync::Arc::new(crate::native_audio_clock::Control::default());
+    {
+        let mut slot = state.0.lock().unwrap();
+        if slot.is_some() {
+            return Err("Native clock already active".into());
+        }
+        *slot = Some((window.label().into(), stop.clone()));
+    }
+    let done = stop.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        struct Finished(std::sync::Arc<crate::native_audio_clock::Control>);
+        impl Drop for Finished {
+            fn drop(&mut self) {
+                self.0.finished.store(true, Ordering::Release);
+            }
+        }
+        let _done = Finished(done);
+        let device = crate::commands::audio_output::list_audio_outputs()?
+            .into_iter()
+            .find(|d| d.is_default)
+            .ok_or("No default output")?;
+        crate::native_audio_clock::probe(plugin, device.id, stop, starve, || {
+            window
+                .emit("native-clock-started", ())
+                .map_err(|e| e.to_string())
+        })
+    })
+    .await
+    .map_err(|e| e.to_string());
+    state.0.lock().unwrap().take();
+    result?
+}
+#[tauri::command]
+fn native_validation_audio_clock_cancel(
+    window: tauri::WebviewWindow,
+    state: tauri::State<NativeClockState>,
+) -> Result<(), String> {
+    if state
+        .0
+        .lock()
+        .unwrap()
+        .as_ref()
+        .is_some_and(|(owner, _)| owner != window.label())
+    {
+        return Err("Native clock owner mismatch".into());
+    }
+    state.cancel();
+    Ok(())
+}
+
 #[derive(Default)]
 struct LoopbackState(std::sync::Mutex<Option<Loopback>>);
 #[tauri::command]
@@ -122,8 +206,10 @@ pub fn run() {
         .manage(PluginStreams::default())
         .manage(ValidationState::default())
         .manage(LoopbackState::default())
+        .manage(NativeClockState::default())
         .on_window_event(|window, event| {
             if matches!(event, tauri::WindowEvent::Destroyed) {
+                window.state::<NativeClockState>().cancel();
                 window.state::<PluginStreams>().close_owner(window.label());
                 window.state::<LoopbackState>().0.lock().unwrap().take();
             }
@@ -133,6 +219,8 @@ pub fn run() {
             plugins::plugin_stream_process_binary,
             plugins::plugin_stream_snapshot,
             plugins::plugin_stream_close,
+            native_validation_audio_clock,
+            native_validation_audio_clock_cancel,
             native_validation_loopback_open,
             native_validation_loopback_close,
             native_validation_report,
@@ -175,6 +263,7 @@ pub fn run() {
         .expect("Native validation startup failed");
     app.run(|app, event| {
         if matches!(event, tauri::RunEvent::Exit) {
+            app.state::<NativeClockState>().shutdown();
             app.state::<PluginStreams>().shutdown();
             app.state::<LoopbackState>().0.lock().unwrap().take();
         }

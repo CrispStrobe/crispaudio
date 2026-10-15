@@ -1,4 +1,6 @@
 #[cfg(all(feature = "native-validation", target_os = "macos"))]
+mod native_audio_clock;
+#[cfg(all(feature = "native-validation", target_os = "macos"))]
 mod native_validation;
 #[cfg(all(feature = "native-validation", target_os = "macos"))]
 mod native_validation_loopback;

@@ -104,7 +104,15 @@ Real Tauri checks capture exact wet stereo PCM during a 500 ms UI stall, seeking
 and repeating loops, with zero native DSP calls during playback and helpers closed
 before it starts. German GUI checks cover cache reuse, mix invalidation, cancellation
 and the recording guard. This does not qualify continuous live native processing.
-Next evaluate a native-owned render/audio clock before committing to live inserts.
+A validation-only native-owned worker/output experiment now passes exact VST3 wet
+PCM through a 500 ms UI stall, with both native DSP and Audio Queue sample-clock
+progress. Fixed bounded PCM slots connect the helper worker directly to the native
+callback; WebKit carries no per-block audio. Deliberate starvation faults silently,
+cancellation closes the helper, and output stays muted during digital capture.
+This is a single-insert foundation, not enabled production timeline processing.
+Next integrate immutable project/source snapshots and the compensated track/bus
+render graph onto the native worker, then transport, live controls and device
+lifecycle. See [native engine foundation](docs/NATIVE_AUDIO_ENGINE.md).
 Graph-wide faults, transport/loops, session ownership and FLAC/AAC native-rack
 delivery remain required before realtime activation.
 Record scope and remaining requirements honestly; these are initial complete
