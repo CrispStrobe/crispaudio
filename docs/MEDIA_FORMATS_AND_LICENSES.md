@@ -547,3 +547,48 @@ and prove whole-graph fault handling before normal playback activation.
 The runner type-checks its fixtures before building; the wrapper also stops only
 its owned process group if validation exceeds its hard deadline. Validation
 commands, invoke credentials and diagnostic epoch metadata remain feature-only.
+
+The 2026-10-15 shared-memory/HTTP experiment is selected with
+`CRISPAUDIO_NATIVE_VALIDATION_TRANSPORT=shared-http`. It starts a disposable local
+HTTP frontend with COOP/COEP headers and a separate, owner-scoped Rust processing
+endpoint. The normal installed frontend, CSP, storage origin and playback stay
+unchanged. `...TRANSPORT=capabilities` measures shared-memory availability;
+`...HTTP_FRONTEND=1` and `...ISOLATED=1` enable the disposable origin/headers for
+that probe. In the measured WebKit, `tauri://` exposes no SharedArrayBuffer even
+with those headers, while the isolated HTTP fixture supports shared memory in its
+window, worker and worklet. Changing production origin would require an explicit
+storage/recovery/resource-policy design; this experiment performs no migration.
+
+The worklet uses the existing PluginBlockBuffer with unchanged 4096-frame blocks
+and four-block delay. Single-producer/consumer rings have four slots in each
+direction, atomic publication counters and a shared fault flag. The worklet never
+waits for the worker. Tests cover sample-exact stereo transfer over multiple slot
+wraps and complete quantum muting at the original missing-block deadline. The
+native endpoint binds only 127.0.0.1 on an ephemeral port, accepts binary processing
+only for its owning window's existing sessions, checks the exact frontend origin
+and a fresh 256-bit token, caps requests/clients and uses absolute read deadlines.
+Shutdown revokes the endpoint and joins its bounded client tasks. Authentication,
+origin, size limits, delayed headers and endpoint shutdown are tested. The delayed
+header test reproduced inherited nonblocking socket behavior on macOS; explicitly
+switching accepted sockets to blocking reads with deadlines fixed the initial
+intermittent load errors. Credentials and raw PCM buffers are omitted from diagnostic reports.
+
+After that fix, the unstalled native impulse passed at index 192096 with stereo
+peaks 1.5/-1.25. The 500 ms UI-stall case still failed. Shared-ring input arrived
+at the worker about 26 ms into the stall, proving that leg advanced without UI
+messages, and 25 worker heartbeats ran. But a worker HTTP pulse sent about 20 ms
+into the stall reached Rust only after UI recovery; no native replies completed
+during the stall. The worklet faulted at its original deadline and muted output.
+This is failed realtime acceptance, not a qualified transport. It has no whole-graph
+or live transport/state/export qualification, and the installed native rack remains
+gated. The new loopback server and shared worklet are validation-only.
+
+This finding is consistent with upstream WebKit's
+[worker loader main-thread bridge](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/loader/WorkerThreadableLoader.cpp)
+reviewed on 2026-10-15. Its
+[worker WebSocket bridge](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/Modules/websockets/WorkerThreadableWebSocketChannel.cpp)
+also forwards binary sends and receives through a main-thread peer. These sources
+describe current upstream code, not proof of the exact installed binary or an
+independent WebSocket benchmark. Further socket variants are not the next step:
+use the existing offline renderer for an explicitly rendered preview, and evaluate
+a native-owned render/audio clock for continuous live native processing.

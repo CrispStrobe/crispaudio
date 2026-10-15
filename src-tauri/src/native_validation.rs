@@ -1,8 +1,56 @@
 //! Opt-in, separate validation executable; never invoked by the installed app.
 use crate::commands::plugins::{self, PluginStreams};
+use crate::native_validation_loopback::Loopback;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::Manager;
+#[derive(Default)]
+struct LoopbackState(std::sync::Mutex<Option<Loopback>>);
+#[tauri::command]
+fn native_validation_loopback_open(
+    window: tauri::WebviewWindow,
+    state: tauri::State<LoopbackState>,
+    streams: tauri::State<PluginStreams>,
+) -> Result<Value, String> {
+    let mut slot = state.0.lock().unwrap();
+    if slot.is_some() {
+        return Err("Validation endpoint already open".into());
+    }
+    let origin = window
+        .url()
+        .map_err(|e| e.to_string())?
+        .origin()
+        .ascii_serialization();
+    if !origin.starts_with("http://127.0.0.1:") {
+        return Err("Loopback fixture origin required".into());
+    }
+    let server = Loopback::start(window.label().into(), origin, streams.inner().clone())?;
+    let descriptor = server.descriptor();
+    *slot = Some(server);
+    Ok(descriptor)
+}
+#[tauri::command]
+async fn native_validation_loopback_close(
+    window: tauri::WebviewWindow,
+    state: tauri::State<'_, LoopbackState>,
+) -> Result<(), String> {
+    let server = {
+        let mut slot = state.0.lock().unwrap();
+        if slot
+            .as_ref()
+            .is_some_and(|server| server.owner != window.label())
+        {
+            return Err("Endpoint owner mismatch".into());
+        }
+        slot.take()
+    };
+    if let Some(server) = server {
+        tauri::async_runtime::spawn_blocking(move || server.stop())
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
 #[derive(Default)]
 struct ValidationState {
     finished: AtomicBool,
@@ -68,9 +116,11 @@ pub fn run() {
     let app = tauri::Builder::default()
         .manage(PluginStreams::default())
         .manage(ValidationState::default())
+        .manage(LoopbackState::default())
         .on_window_event(|window, event| {
             if matches!(event, tauri::WindowEvent::Destroyed) {
                 window.state::<PluginStreams>().close_owner(window.label());
+                window.state::<LoopbackState>().0.lock().unwrap().take();
             }
         })
         .invoke_handler(tauri::generate_handler![
@@ -78,6 +128,8 @@ pub fn run() {
             plugins::plugin_stream_process_binary,
             plugins::plugin_stream_snapshot,
             plugins::plugin_stream_close,
+            native_validation_loopback_open,
+            native_validation_loopback_close,
             native_validation_report,
             native_validation_status,
             native_validation_worker_key,
@@ -119,6 +171,7 @@ pub fn run() {
     app.run(|app, event| {
         if matches!(event, tauri::RunEvent::Exit) {
             app.state::<PluginStreams>().shutdown();
+            app.state::<LoopbackState>().0.lock().unwrap().take();
         }
     });
 }

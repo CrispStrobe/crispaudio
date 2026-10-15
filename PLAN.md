@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-14, for local 0.11.10. This section is the current plan.
+Updated 2026-10-15, for local 0.11.10. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -81,9 +81,24 @@ The isolated worker probe now demonstrates that transferred worklet messages and
 direct custom-protocol fetch both stall with the UI, while worker heartbeat tasks
 continue. An independent worker native call waited about 489 ms before Rust receipt
 during a controlled 500 ms UI stall; helper processing then took under 1 ms.
-Worker-only relocation of the current bridge is rejected. Next: prototype a bounded
-transport that bypasses both UI-dependent delivery paths, then repeat the native
-graph qualification and lifecycle checks before activation.
+Worker-only relocation of the current bridge is rejected. The subsequent isolated
+shared-memory/loopback HTTP experiment fixes worklet-to-worker delivery, but worker
+HTTP dispatch still waits for the UI. Ordinary `tauri://` assets expose no shared
+memory in the measured setup, even with isolation headers; a disposable isolated
+HTTP frontend enables it. This frontend was used only for validation, with no
+installed-app origin/storage migration. Native realtime remains gated. Stop adding
+speculative browser transport variants: native realtime needs a render/audio path
+whose deadlines do not depend on WebKit's document thread. Upstream WebKit also
+routes worker WebSocket traffic through a main-thread peer; this is source evidence,
+not a separately tested WebSocket result on the installed WebKit.
+
+Next usable increment: an explicit rendered preview for saved native racks using
+the verified offline graph, with cancellation, stale-project rejection, seek/loop
+behavior and the existing playback-device selection. Keep rendered preview clearly
+separate from live native processing. In parallel architectural planning, evaluate
+a native-owned render/audio clock before committing to continuous live inserts.
+Graph-wide faults, transport/loops, session ownership and FLAC/AAC native-rack
+delivery remain required before realtime activation.
 Record scope and remaining requirements honestly; these are initial complete
 workflows, not full commercial-editor parity. Large-file
 paging remains deferred unless actual project measurements justify it. MIDI remains

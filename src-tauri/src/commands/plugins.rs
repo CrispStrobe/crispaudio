@@ -309,6 +309,46 @@ fn encode_stream_reply(reply: StreamReply) -> Result<Vec<u8>, String> {
     }
     Ok(bytes)
 }
+// Direct processing for the isolated loopback experiment, never a normal app endpoint.
+#[cfg(all(feature = "native-validation", target_os = "macos"))]
+pub(crate) fn validation_process_packet(
+    streams: &PluginStreams,
+    owner: &str,
+    body: &[u8],
+) -> Result<Vec<u8>, String> {
+    let received = std::time::Instant::now();
+    let epoch = || {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs_f64()
+            * 1000.0
+    };
+    let received_at = epoch();
+    let (settings, samples) = decode_stream_packet(body)?;
+    let entry = streams.entry(owner, &settings.session)?;
+    let started = std::time::Instant::now();
+    let result = entry
+        .processor
+        .try_lock()
+        .map_err(|_| "Plugin stream unavailable")?
+        .process_with_transport(
+            &samples,
+            &settings.parameters,
+            settings.bypass,
+            settings.transport.as_ref(),
+        );
+    if result.is_err() {
+        let _ = streams.remove(owner, &settings.session);
+    }
+    let mut reply = result?;
+    reply.metadata["validationTiming"] = json!({
+        "queueMs": started.duration_since(received).as_secs_f64() * 1000.0,
+        "processMs": started.elapsed().as_secs_f64() * 1000.0,
+        "receivedAt": received_at, "finishedAt": epoch(), "session": settings.session,
+    });
+    encode_stream_reply(reply)
+}
 #[tauri::command]
 pub async fn plugin_stream_process_binary(
     window: tauri::WebviewWindow,
