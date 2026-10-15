@@ -156,15 +156,17 @@ The native mixer uses the [Web Audio filter and pan definitions](https://www.w3.
 ## Licence boundary
 
 CrispAudio and its native helper are MIT. Hound 3.5.1 is Apache-2.0; its copyright
-and full notice are bundled in About. Glint is MIT. The FLAC wrapper is MIT;
+and full notice are bundled in About. Glint's own code is MIT; its extracted libopus tables carry BSD notices,
+included in About and `src/lib/licenses/opus.txt`. The FLAC wrapper is MIT;
 its bundled libFLAC 1.3.4 encoder is BSD-3-Clause. Notices are in `src/lib/glint/`
 and `src/lib/flac/` and listed in About. The vendoring adapter is reproducible with
 `node scripts/vendor-flac.mjs` against pinned libflacjs 5.6.0. It isolates upstream
 fetch configuration instead of modifying the worker's global fetch function.
 
 Apple frameworks are proprietary OS facilities, not codec libraries redistributed
-under MIT. Using them avoids bundling an independent AAC/H.264 encoder but is not
-a blanket statement about every patent obligation of every product/distribution.
+under MIT. Using them for a processing path avoids adding an independent codec for that
+path, but the app still bundles Glint AAC elsewhere. Apple API use is not a
+blanket statement about patent obligations of the finished product.
 
 FFmpeg is **not** permissively licensed: LGPL at minimum, GPL when enabled components
 require it. The Homebrew FFmpeg 9.0.2 inspected here reports GPLv3 and enables
@@ -206,10 +208,57 @@ patent grant would not supply all unrelated codec patents either.
   Compliance and the terms of those commitments matter; this is not an assertion
   that no third party could ever make a claim. FLAC/WAV remain lossless alternatives.
 
-No Glint-specific infringement or copied-code issue was identified in this audit.
-This is a review of source licensing, supported profiles and published licensing
-statements, not a legal opinion or a full patent clearance search. We have not
-removed AAC or introduced a speculative user consent prompt.
+The 2026-10-15 code audit identified extracted libopus tables in the shipped Glint
+WASM and missing corresponding attribution. The repository now includes libopus
+notices in About. Glint's AAC table generator also extracts data from FFmpeg and
+vo-aacenc, claiming normative ISO tables; that rationale needs source-license
+review. Neither a copied-code infringement finding nor full clearance follows
+from this engineering audit. See the [provenance record](../src/lib/glint/UPSTREAM.md).
+
+### Distribution assessment (2026-10-15)
+
+**AAC clearance remains unresolved. No App Store territory changes were made.**
+
+The same frontend Glint WASM ships on web, macOS and iOS. It supplies compressed
+SFX/Voice export and audio-import fallback. Eligible linked Mac timeline exports
+use Apple AAC, but that does not remove Glint. Hiding an AAC export menu would
+also leave the independently bundled codec in the application.
+
+Via LA's published position is that end-user encoder/decoder developers need a
+license and component licensing does not automatically cover the finished app.
+Its current pool list covers multiple AAC profiles; it does not establish which
+currently valid claims apply to this exact AAC-LC implementation in each country.
+Free/open-source distribution and voluntary donations are not an established
+exemption in the reviewed material. Any PC-software category or small-entity
+terms require confirmation for this product. Do not calculate our fees from the
+standard product table alone.
+
+Via's R1/R2 territories are pricing regions, **not patent-free country lists**.
+Germany is in R1. A storefront exclusion alone does not assess development or
+other distribution acts. Apple's review guidelines also require developers to
+have the necessary intellectual-property rights; approval is not patent clearance.
+
+Before a new Store release, obtain a scoped patent/license assessment or written
+licensor clarification for the exact encoder/decoder, free distribution model,
+optional donations, Germany-based developer, platforms and territories. Confirm
+which claims remain applicable to AAC-LC, any existing finished-product coverage,
+and how downloads/updates are counted. The developer's precise commercial details
+belong in that private inquiry, not in public product documentation.
+
+A possible engineering alternative is an Apple-system-codec Store build that
+actually excludes independent AAC code. This requires a deliberate build policy,
+coverage of every fallback/export path, and confirmation of rights for that API
+use. It is a recommendation to assess, not a completed change or legal clearance.
+
+Additional official sources:
+[Via AAC FAQ](https://www.via-la.com/licensing-programs/aac/),
+[2026 Q3 pool patent list](https://www.via-la.com/wp-content/uploads/2026/09/26Q3-AAC-Patent-List-website.pdf),
+[Via pricing regions](https://www.via-la.com/aac-license-fees-structures/),
+[Apple App Review §5.2](https://developer.apple.com/app-store/review/guidelines/#intellectual-property),
+[Apple Developer Program Agreement](https://developer.apple.com/support/terms/apple-developer-program-license-agreement/),
+[Opus licensing](https://opus-codec.org/license/),
+[Glint SILK table provenance](https://github.com/CrispStrobe/glint/blob/main/src/opus_silk_tables.hpp),
+[Glint AAC table generator](https://github.com/CrispStrobe/glint/blob/main/tools/gen_aac_tables.py).
 
 Sources: [Fraunhofer on MP3 patents](https://www.audioblog.iis.fraunhofer.com/mp3-software-patents-licenses),
 [Via LA AAC programme](https://www.via-la.com/licensing-programs/aac/),

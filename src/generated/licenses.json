@@ -180,9 +180,15 @@
   },
   {
     "name": "glint (vendored codec WASM)",
-    "version": "vendored",
-    "license": "MIT",
+    "version": "import 2391d4b; upstream revision unresolved",
+    "license": "MIT; extracted Opus tables: BSD-3-Clause AND BSD-2-Clause",
     "repository": "https://github.com/CrispStrobe/glint"
+  },
+  {
+    "name": "libopus tables (via Glint)",
+    "version": "1.5.2 (upstream table attribution)",
+    "license": "BSD-3-Clause AND BSD-2-Clause",
+    "repository": "https://github.com/xiph/opus/tree/v1.5.2"
   },
   {
     "name": "libFLAC (via libflacjs)",
