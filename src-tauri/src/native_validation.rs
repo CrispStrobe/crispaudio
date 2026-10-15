@@ -97,7 +97,12 @@ fn native_validation_status(streams: tauri::State<'_, PluginStreams>) -> Value {
 }
 #[tauri::command]
 fn native_validation_window(window: tauri::WebviewWindow, hidden: bool) -> Result<(), String> {
-    if hidden { window.hide() } else { window.show() }.map_err(|e| e.to_string())
+    if hidden {
+        window.hide()
+    } else {
+        window.show().and_then(|_| window.set_focus())
+    }
+    .map_err(|e| e.to_string())
 }
 #[tauri::command]
 fn native_validation_report(app: tauri::AppHandle, report: Value) {

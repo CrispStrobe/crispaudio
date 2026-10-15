@@ -1,3 +1,5 @@
+import {useUIStore} from '../../stores/uiStore';
+import {hasNativeEffects} from '../../lib/nativeEffects';
 import {hasPictureComposition} from '../../lib/pictureComposition';
 import {PictureLayers} from './PictureLayers';
 import { videoTransformStyle } from '../../lib/videoTransform';
@@ -65,13 +67,13 @@ export function VideoViewer({children}: {children?:ReactNode}) {
         element.style.filter=[videoColorFilter(clip?.colorCorrection),String(style?.filter??'')].filter(Boolean).join(' ')||'none';
         if(!clip||element.readyState<1||element.error){element.pause();continue;}
         const target=Math.max(0,Math.min(element.duration||Infinity,clip.sourceOffset+state.playheadPosition-clip.startTime));
-        syncVideoElement(element,target,state.isPlaying,setError);
+        syncVideoElement(element,target,state.isPlaying&&(!hasNativeEffects(state.project)||useUIStore.getState().nativePreviewStatus==='playing'),setError);
       }
     };
     const elements=[ref.current,previousRef.current];for(const element of elements){element?.addEventListener('loadedmetadata',sync);element?.addEventListener('canplay',sync);element?.addEventListener('seeked',sync);}
     const observer=new ResizeObserver(sync);if(frameRef.current)observer.observe(frameRef.current);
-    const unsubscribe=useProjectStore.subscribe(sync);sync();
-    return ()=>{observer.disconnect();unsubscribe();for(const element of elements){element?.pause();element?.removeEventListener('loadedmetadata',sync);element?.removeEventListener('canplay',sync);element?.removeEventListener('seeked',sync);}};
+    const unsubscribe=useProjectStore.subscribe(sync),unpreview=useUIStore.subscribe(sync);sync();
+    return ()=>{observer.disconnect();unsubscribe();unpreview();for(const element of elements){element?.pause();element?.removeEventListener('loadedmetadata',sync);element?.removeEventListener('canplay',sync);element?.removeEventListener('seeked',sync);}};
   },[url,previousUrl,visible,attempt,expanded]);
   useEffect(()=>{
     if(!expanded || !hasVideo || !('__TAURI_INTERNALS__' in window))return;

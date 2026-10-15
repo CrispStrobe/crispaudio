@@ -1,3 +1,5 @@
+import {useUIStore} from '../../stores/uiStore';
+import {hasNativeEffects} from '../../lib/nativeEffects';
 import {Scan} from 'lucide-react';
 import {ToolButton} from '../common/ToolButton';
 import {InfoButton} from '../common/InfoButton';
@@ -57,7 +59,7 @@ export function PictureLayers(){
       const active=activeVideoClips(video,state.playheadPosition);
       // Retain the previous complete frame while any visible decoder seeks.
       // Painting only ready lanes would flash the background during WebKit seeks.
-      for(const clip of active){const element=decoders.current.get(clip.id);if(element)syncVideoElement(element,clip.sourceOffset+state.playheadPosition-clip.startTime,state.isPlaying,setError);}
+      for(const clip of active){const element=decoders.current.get(clip.id);if(element)syncVideoElement(element,clip.sourceOffset+state.playheadPosition-clip.startTime,state.isPlaying&&(!hasNativeEffects(state.project)||useUIStore.getState().nativePreviewStatus==='playing'),setError);}
       if(active.some(clip=>{const element=decoders.current.get(clip.id);return !element||element.readyState<2||element.seeking;}))return;
       ctx.clearRect(0,0,width,height);ctx.fillStyle='black';ctx.fillRect(0,0,width,height);
       for(const track of pictureTracks(video).reverse()){

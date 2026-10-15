@@ -18,6 +18,24 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.11.11 — rendered native-effects preview
+
+Enabled native racks can be auditioned on Mac through an explicit rendered
+preview. Play prepares a cached stereo mix; pause, seeking and range loops reuse
+it. Audio edits stop playback and invalidate the cache. Existing playback-device
+routing and master meters remain available. Live native processing, recording over
+this preview and monitor clicks remain outside this mode.
+
+Actual Tauri/VST3 capture checks full playback, seeking and hardware loops with a
+500 ms UI stall, native helper cleanup and zero native DSP calls during playback.
+The real German transport checks cached replay, cancellation and mix invalidation.
+42 targeted unit tests, full ESLint/TypeScript, normal Mac bundle and locked iOS
+simulator library compile pass; German 390px transport layout also passes. This
+is digital capture validation, not a new physical output-device acceptance check.
+The ad-hoc-signed local app is installed and relaunched with one autosave preserved
+and a fresh recovery backup. The independent optimized CLI is unchanged. No release
+tag or Apple upload was triggered; remote CI is separate from these local checks.
+
 ## Local 0.9.8 — playable sample sessions
 
 File/command search opens Audio mix, Picture edit and Take workshop. They use

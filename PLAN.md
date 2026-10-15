@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-15, for local 0.11.10. This section is the current plan.
+Updated 2026-10-15, for local 0.11.11. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -92,11 +92,19 @@ whose deadlines do not depend on WebKit's document thread. Upstream WebKit also
 routes worker WebSocket traffic through a main-thread peer; this is source evidence,
 not a separately tested WebSocket result on the installed WebKit.
 
-Next usable increment: an explicit rendered preview for saved native racks using
-the verified offline graph, with cancellation, stale-project rejection, seek/loop
-behavior and the existing playback-device selection. Keep rendered preview clearly
-separate from live native processing. In parallel architectural planning, evaluate
-a native-owned render/audio clock before committing to continuous live inserts.
+Local 0.11.11 adds explicit rendered preview for saved native racks. Play renders
+the finished stereo mix once, then uses the existing monitor/device path. The
+compact Preview indicator explains this mode; Play cancels a render while busy.
+One memory-only cache serves pause/resume, seeks and source-level range loops.
+Audio edits stop/invalidate it; cancelled or stale output cannot start later, and
+replacement renders wait for earlier helper cleanup. Master output/loudness meters
+remain available; per-track/FX meters, live mixing, microphone recording and monitor
+clicks are unavailable in this mode. Existing ordinary playback remains unchanged.
+Real Tauri checks capture exact wet stereo PCM during a 500 ms UI stall, seeking
+and repeating loops, with zero native DSP calls during playback and helpers closed
+before it starts. German GUI checks cover cache reuse, mix invalidation, cancellation
+and the recording guard. This does not qualify continuous live native processing.
+Next evaluate a native-owned render/audio clock before committing to live inserts.
 Graph-wide faults, transport/loops, session ownership and FLAC/AAC native-rack
 delivery remain required before realtime activation.
 Record scope and remaining requirements honestly; these are initial complete

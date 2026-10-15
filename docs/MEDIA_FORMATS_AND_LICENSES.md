@@ -592,3 +592,39 @@ describe current upstream code, not proof of the exact installed binary or an
 independent WebSocket benchmark. Further socket variants are not the next step:
 use the existing offline renderer for an explicitly rendered preview, and evaluate
 a native-owned render/audio clock for continuous live native processing.
+
+### Rendered native-rack preview (0.11.11)
+
+The normal Mac transport now explicitly labels native sessions as Preview. Play
+renders the complete project through the existing offline graph, including saved
+clip/track/master native racks, routing, envelopes, built-in FX, master level and
+limiter. It then plays that stereo buffer through the existing monitor gain and
+playback device. The player adds output/loudness meters, without applying the
+master rack or level twice. Rendering is cancellable from Play/Pause or Stop.
+Video waits while rendering and joins the transport when the preview starts.
+
+There is one memory-only cached mix. Pause/resume, seeking and selected-range loops
+reuse it; the buffer source loops on its audio clock even while UI frames stall.
+Audio-affecting project edits and replacement media stop playback and invalidate
+the cache. View/picture/range selection and recording setup do not alter rendered
+audio. Snapshots protect rendering from concurrent edits, generation/abort checks
+discard late results, and another render waits for the earlier render's native
+cleanup. Stopping releases the playback graph; unmount/invalidation releases cached
+audio. The cache is never written to project files or recovery storage.
+
+Only master output/loudness meters are supported in this mode. Track/FX reduction
+meters, live mixing, microphone recording with enabled native inserts, and monitor
+metronome clicks are unavailable. Editing baked mix controls stops playback and
+requires a new render on Play. Normal playback without enabled native inserts keeps
+its existing live controls and recording. Continuous live native playback remains
+gated; rendered preview does not activate either experimental streaming transport.
+
+`CRISPAUDIO_NATIVE_VALIDATION_RENDERED_PREVIEW=1` validates this path in the real
+Mac WebView with the normal frontend origin/CSP. Captured wet stereo impulses retain
+0.75/-0.625 after a baked 0.5 master level, including a 500 ms UI stall. Full play,
+seek and repeating range-loop positions are exact; loop capture includes impulses
+during a UI stall. Native helper sessions close before playback, with zero native
+processing calls while the buffer plays. A separate German React transport probe
+checks Play/render, playhead motion, pause-cache reuse, mix invalidation, cancellation
+and the disabled recording control. These are silent digital/GUI checks, not a new
+physical output-device acceptance test.

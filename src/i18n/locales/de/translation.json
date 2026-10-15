@@ -2255,15 +2255,28 @@
   "nativeRack": {
     "title": "Native Plug-ins",
     "macOnly": "Native Plug-in-Parameter benötigen die Mac-App.",
-    "help": "Diese Inserts folgen den eingebauten Effekten. Der Offline-Export auf dem Mac berücksichtigt sie. Die Echtzeit-Wiedergabe wird noch geprüft; deaktiviere native Inserts für die normale Wiedergabe. Bypass behält den Insert und seinen Zustand.",
+    "help": "Diese Inserts folgen den eingebauten Effekten. Mac-Export und gerenderte Vorschau enthalten sie. Live-Wiedergabe nativer Effekte bleibt nicht verfügbar. Bypass erhält Insert und Zustand.",
     "copyBuiltin": "Eingebaute Effekte kopieren",
     "pasteBuiltin": "Eingebaute Effekte einfügen",
     "bypassBuiltin": "Eingebaute Effekte umgehen",
     "enableBuiltin": "Eingebaute Effekte aktivieren",
     "add": "Natives Plug-in…",
-    "addHelp": "Wähle einen AU- oder VST3-Effekt. Neue Inserts starten deaktiviert. Aktiviere sie für den Offline-Export auf dem Mac; die Echtzeit-Wiedergabe wird noch geprüft. Mit der Ordnerauswahl ergänzt du einen VST3-Suchpfad.",
+    "addHelp": "AU- oder VST3-Effekt wählen. Neue Inserts sind deaktiviert. Für Mac-Export und gerenderte Vorschau aktivieren. Die Ordnerwahl ergänzt einen VST3-Suchpfad.",
     "copy": "Natives Rack kopieren",
     "paste": "Natives Rack einfügen",
     "changed": "Das Rack wurde geändert. Wähle das Plug-in erneut."
+  },
+  "nativePreview": {
+    "short": "Vorschau",
+    "info": "Gerenderte Vorschau",
+    "render": "Vorschau rendern",
+    "play": "Vorschau abspielen",
+    "cancel": "Vorschau abbrechen",
+    "rendering": "Rendern…",
+    "menu": "Vorschau / Pause",
+    "macOnly": "Die Vorschau nativer Effekte erfordert die installierte Mac-App.",
+    "recording": "Vor der Aufnahme native Inserts deaktivieren.",
+    "help": "Wiedergabe rendert den fertigen Stereomix samt nativen Effekten einmal. Pause, Springen und Schleife verwenden ihn weiter. Audioänderungen stoppen die Wiedergabe; beim nächsten Start wird neu gerendert.",
+    "limits": "Nur die Master-Anzeigen sind verfügbar. Live-Mischen, Aufnahme und Metronom sind in diesem Modus nicht verfügbar. Die Wiedergabe nutzt das gewählte Ausgabegerät."
   }
 }

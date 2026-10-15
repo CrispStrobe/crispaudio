@@ -25,6 +25,12 @@ Try **File → Sample sessions…** for an audio mix, picture edit or take works
 with actual generated audio, bundled video, FX and automation.
 [Sample session guide](docs/SAMPLE_SESSIONS.md) describes how to edit and save them.
 
+In the Mac app, sessions with enabled native AU/VST3 inserts use **rendered preview**:
+Play prepares the finished mix once, then pause, seek and loop reuse it through
+the selected playback device. Audio edits invalidate the preview. The compact
+Preview indicator explains its limits; continuous live native processing remains
+unavailable. See [native processing and preview](docs/MEDIA_FORMATS_AND_LICENSES.md).
+
 Delivery adds per-export presets, range/clip/stem jobs, a cancellable queue,
 caption sidecars, portable media collection and reviewed cut-only OTIO export.
 See [Delivery workflows and limits](docs/DELIVERY.md).

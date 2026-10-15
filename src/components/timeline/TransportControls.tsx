@@ -1,3 +1,7 @@
+import {hasNativeEffects} from '../../lib/nativeEffects';
+import {useUIStore} from '../../stores/uiStore';
+import {InfoButton} from '../common/InfoButton';
+import {LoaderCircle} from 'lucide-react';
 import { RangeControls } from './RangeControls';
 import { TimeField } from './TimeField';
 import { timelineDuration } from '../../lib/timelineView';
@@ -49,6 +53,9 @@ function TimelineScrubber({width}: {width?: number}) {
 
 export const TransportControls = React.memo(function TransportControls({viewportWidth,recordingControls}: {viewportWidth?:number;recordingControls?:React.ReactNode}) {
   const { t } = useTranslation();
+  const native=useProjectStore(s=>hasNativeEffects(s.project));
+  const previewStatus=useUIStore(s=>s.nativePreviewStatus);
+  const preparing=native&&previewStatus==='rendering';
   const isPlaying = useProjectStore((s) => s.isPlaying);
   const loopEnabled = useProjectStore((s) => s.loopEnabled);
   const duration = useProjectStore((s) => timelineDuration(s.project));
@@ -95,17 +102,18 @@ export const TransportControls = React.memo(function TransportControls({viewport
         type="button"
         data-help="play" onClick={handlePlayPause}
         className="flex items-center justify-center w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow"
-        title={isPlaying ? t('timeline.pauseTooltip') : t('timeline.playTooltip')}
-        aria-label={isPlaying ? t('timeline.pause') : t('timeline.play')}
+        title={native?t(preparing?'nativePreview.cancel':isPlaying?'timeline.pause':previewStatus==='ready'?'nativePreview.play':'nativePreview.render'):isPlaying ? t('timeline.pauseTooltip') : t('timeline.playTooltip')}
+        aria-label={native?t(preparing?'nativePreview.cancel':isPlaying?'timeline.pause':previewStatus==='ready'?'nativePreview.play':'nativePreview.render'):isPlaying ? t('timeline.pause') : t('timeline.play')}
       >
-        {isPlaying ? (
+        {preparing?<LoaderCircle className="w-4 h-4 animate-spin"/>:isPlaying ? (
           <Pause className="w-4 h-4" />
         ) : (
           <Play className="w-4 h-4 ml-0.5" />
         )}
       </button>
 
-      {recordingControls}
+      {native&&<div data-native-preview={previewStatus} className="flex items-center gap-1 text-xs text-indigo-300"><output aria-live="polite">{t(preparing?'nativePreview.rendering':'nativePreview.short')}</output><InfoButton label={t('nativePreview.info')}><p>{t('nativePreview.help')}</p><p>{t('nativePreview.limits')}</p></InfoButton></div>}
+      {native?<div className="hidden">{recordingControls}</div>:recordingControls}
 
       {/* Stop */}
       <button

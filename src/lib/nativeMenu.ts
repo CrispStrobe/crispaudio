@@ -1,3 +1,4 @@
+import {hasNativeEffects} from './nativeEffects';
 export { isNativeMac } from './nativeMenuPlatform';
 import { useUIStore } from '../stores/uiStore';
 import { useSynthStore } from '../stores/synthStore';
@@ -46,7 +47,7 @@ export function nativeMenuContext(){
  if(labelsLanguage!==i18n.language){labelsLanguage=i18n.language;labels=i18n.t('nativeMenu',{returnObjects:true}) as Record<string,string>;}
  const state=useProjectStore.getState(),panel=useUIStore.getState().activePanel,history=panel==='sfx'?useSynthStore.temporal.getState():panel==='voice'?useVoiceStore.temporal.getState():useProjectStore.temporal.getState();
  return {
-  language:i18n.language,labels,disabledTools:disabledTimelineTools(),ready:true,timeline:useUIStore.getState().activePanel==='timeline',
+  language:i18n.language,labels:hasNativeEffects(state.project)?{...labels,'Play / Pause':i18n.t('nativePreview.menu')}:labels,disabledTools:disabledTimelineTools(),ready:true,timeline:useUIStore.getState().activePanel==='timeline',
   textEditing:textEditing(),blocked:menuBlocked()||busy,helpMode:!!document.querySelector('[data-timeline-help="true"]'),
   canUndo:history.pastStates.length>0,canRedo:history.futureStates.length>0,
   selection:!!state.selection?.segmentIds.length,anySelection:state.selection!==null,

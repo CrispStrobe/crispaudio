@@ -13,6 +13,7 @@ export type ActiveModal = 'settings' | 'about' | 'shortcuts' | 'voiceEffects' | 
 
 interface UIState {
   timelineRecording:boolean;
+  nativePreviewStatus:'idle'|'rendering'|'ready'|'playing';
   activePanel: ActivePanel;
   activeModal: ActiveModal;
   sidebarCollapsed: boolean;
@@ -49,6 +50,7 @@ const INITIAL_PANEL: ActivePanel =
 
 export const useUIStore = create<UIState>()((set, get) => ({
   timelineRecording:false,
+  nativePreviewStatus:'idle',
   activePanel: INITIAL_PANEL,
   activeModal: null,
   sidebarCollapsed: false,

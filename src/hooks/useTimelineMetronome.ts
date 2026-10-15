@@ -1,3 +1,4 @@
+import {hasNativeEffects} from '../lib/nativeEffects';
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
 import { useProjectStore } from '../stores/projectStore';
@@ -5,10 +6,11 @@ import type { TimelineEngine } from '../audio/engine/TimelineEngine';
 import { TimelineMetronome } from '../audio/engine/TimelineMetronome';
 import type { AudioEngineHandle } from './useAudioEngine';
 export function useTimelineMetronome(engineRef: RefObject<TimelineEngine | null>, audio: AudioEngineHandle) {
+    const native=useProjectStore(s=>hasNativeEffects(s.project));
     const playing = useProjectStore(s => s.isPlaying), music = useProjectStore(s => s.project.music);
     useEffect(() => {
         const engine = engineRef.current;
-        if (!engine || !playing || !music?.metronome || music.clickLevel === 0)
+        if (!engine || !playing || native || !music?.metronome || music.clickLevel === 0)
             return;
         let metronome: TimelineMetronome | undefined;
         const restart = () => { metronome?.stop(); metronome = undefined; const state = useProjectStore.getState(), anchor = engine.playbackAnchor(); if (!anchor || !state.isPlaying)
@@ -16,5 +18,5 @@ export function useTimelineMetronome(engineRef: RefObject<TimelineEngine | null>
         const unsubscribe = engine.onPlaybackClock(restart);
         restart();
         return () => { unsubscribe(); metronome?.stop(); };
-    }, [engineRef, audio, playing, music]);
+    }, [engineRef, audio, playing, music, native]);
 }

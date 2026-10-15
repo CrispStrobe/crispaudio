@@ -2242,15 +2242,28 @@
   "nativeRack": {
     "title": "Native plug-ins",
     "macOnly": "Native plug-in parameters require the Mac app.",
-    "help": "These inserts run after built-in effects. Mac offline export includes them. Realtime playback is still being validated; disable native inserts to use regular playback. Bypass retains the insert and its state.",
+    "help": "These inserts run after built-in effects. Mac export and rendered preview include them. Live native playback remains unavailable. Bypass retains the insert and its state.",
     "copyBuiltin": "Copy built-in effects",
     "pasteBuiltin": "Paste built-in effects",
     "bypassBuiltin": "Bypass built-in effects",
     "enableBuiltin": "Enable built-in effects",
     "add": "Native plug-in…",
-    "addHelp": "Choose an AU or VST3 effect. New inserts start disabled. Enable them for Mac offline export; realtime playback is still being validated. Folder selection adds a VST3 search location.",
+    "addHelp": "Choose an AU or VST3 effect. New inserts start disabled. Enable them for Mac export and rendered preview. Folder selection adds a VST3 search location.",
     "copy": "Copy native rack",
     "paste": "Paste native rack",
     "changed": "The rack changed. Choose the plug-in again."
+  },
+  "nativePreview": {
+    "short": "Preview",
+    "info": "Rendered preview",
+    "render": "Render preview",
+    "play": "Play preview",
+    "cancel": "Cancel preview",
+    "rendering": "Rendering…",
+    "menu": "Preview / Pause",
+    "macOnly": "Native effects preview requires the installed Mac app.",
+    "recording": "Disable native inserts before recording.",
+    "help": "Play renders the finished stereo mix once, including native effects. Pause, seek and loop reuse it. Audio edits stop playback and rebuild the preview on the next Play.",
+    "limits": "Only master meters are available. Live mixing, recording and monitor clicks are unavailable in this mode. Playback uses your selected output device."
   }
 }

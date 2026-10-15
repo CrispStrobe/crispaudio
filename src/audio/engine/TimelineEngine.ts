@@ -68,21 +68,25 @@ export class TimelineEngine {
   private playbackClock=0;
   private playbackStart=0;
   private outputGain?: GainNode;
+  private renderedPlayback=false;
+  private renderedLoop?:{start:number;end:number};
+  isRenderedPreview(){return this.renderedPlayback;}
   private outputMeter?: AnalyserNode[];
 
   getMeter(id: string): AnalyserNode[] | undefined { return id === 'master' ? this.outputMeter : this.mixerNodes.get(id)?.meter; }
 
   private meterTap(ctx: BaseAudioContext, input: AudioNode): AnalyserNode[] {
     const splitter = ctx.createChannelSplitter(2);
-    input.connect(splitter);
+    this.playbackNodes.add(splitter);input.connect(splitter);
     return [0, 1].map(channel => {
       const analyser = ctx.createAnalyser(); analyser.fftSize = 2048;
-      splitter.connect(analyser, channel); return analyser;
+      this.playbackNodes.add(analyser);splitter.connect(analyser, channel); return analyser;
     });
   }
 
   /** Faders and audition switches update the running graph without rescheduling clips. */
   updateMix(project: TimelineProject): void {
+    if(this.renderedPlayback)return;
     const audible = new Set(audibleTracks(project.tracks).map(track => track.id));
     const now = this.ctx.currentTime;
     for (const track of project.tracks) {
@@ -136,7 +140,9 @@ export class TimelineEngine {
   /** Audio-clock position and generation let a local pass reject seeks/loops/restarts. */
   automationClock():{time:number;start:number;generation:number}|undefined {
     if(!this.outputGain)return;
-    return {time:Math.max(this.playbackStart,Math.min(this.playbackEnd,this.playbackStart+this.ctx.currentTime-this.playbackClock)),start:this.playbackStart,generation:this.playbackGeneration};
+    const elapsed=this.playbackStart+Math.max(0,this.ctx.currentTime-this.playbackClock),loop=this.renderedLoop;
+    const time=loop&&elapsed>=loop.end?loop.start+(elapsed-loop.start)%(loop.end-loop.start):Math.min(this.playbackEnd,elapsed);
+    return {time,start:this.playbackStart,generation:this.playbackGeneration};
   }
   /** Exact graph origin for capture placement; read after play(), not before graph creation. */
   playbackAnchor():{frame:number;timeline:number}|undefined {
@@ -145,6 +151,7 @@ export class TimelineEngine {
   }
   /** Audition one lane without changing the project or rebuilding DSP. Undefined restores Read. */
   previewAutomation(project:TimelineProject,target:AutomationTarget,value?:number):boolean {
+    if(this.renderedPlayback)return false;
     const track=project.tracks.find(t=>t.id===target.trackId);if(!track)return false;
     const now=this.ctx.currentTime,time=this.playbackStart+now-this.scopeClock(`${target.parameter}:${track.id}`);
     if(target.parameter==='gain'){
@@ -159,6 +166,7 @@ export class TimelineEngine {
   }
   /** Preview a real rack scope, retaining every DSP node and oscillator phase. */
   previewEffectAutomation(project:TimelineProject,scope:string,index:number,parameter:DelayParameter,value?:number):boolean{
+    if(this.renderedPlayback)return false;
     const effect=(scope==='master'?project.masterEffects:scope.startsWith('track:')?project.tracks.find(t=>t.id===scope.slice(6))?.effects:project.tracks.flatMap(t=>t.segments).find(c=>scope===`clip:${c.id}`)?.effects)?.[index];
     const nodes=this.mixNodes.get(`${scope}:${index}`);if(!nodes||!effect||!supportsEffectParameter(effect.type,parameter))return false;
     const now=this.ctx.currentTime,time=this.playbackStart+now-this.scopeClock(scope);
@@ -238,6 +246,25 @@ export class TimelineEngine {
     routingOrder(project.tracks);
     this.stop();
     try{this.buildPlayback(project,startTime,endTime);}catch(error){this.stop();throw error;}
+  }
+
+  /** Audition an already rendered stereo mix through the normal monitor/device path.
+   * Master FX, limiter and level are baked; only meters are added here. */
+  playRenderedPreview(buffer:AudioBuffer,start:number,end=buffer.duration,loopStart?:number):void{
+    if(buffer.numberOfChannels!==2||!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>buffer.duration+1/buffer.sampleRate||loopStart!==undefined&&(!Number.isFinite(loopStart)||loopStart<0||loopStart>=end||start<loopStart))throw new Error('Invalid rendered playback range');
+    this.stop();
+    try{
+      const ctx=this.ctx,source=ctx.createBufferSource(),gain=ctx.createGain();
+      gain.gain.value=1;this.outputGain=gain;this.playbackNodes.add(gain);this.activeSources.push(source);
+      this.renderedPlayback=true;this.playbackStart=start;this.playbackEnd=Math.min(end,buffer.duration);
+      source.buffer=buffer;source.connect(gain);let output:AudioNode=gain;
+      if(this.loudnessReady){const meter=createLoudness(ctx);this.playbackNodes.add(meter);meter.port.onmessage=e=>{this.loudnessReading=e.data;};gain.connect(meter);output=meter;this.loudnessNode=meter;this.loudnessReading=undefined;}
+      this.outputMeter=this.meterTap(ctx,output);output.connect(this.masterGain);
+      const now=Math.ceil((ctx.currentTime*ctx.sampleRate+256)/128)*128/ctx.sampleRate;this.playbackClock=now;
+      if(loopStart!==undefined){this.renderedLoop={start:loopStart,end:this.playbackEnd};source.loop=true;source.loopStart=loopStart;source.loopEnd=this.playbackEnd;source.start(now,start);}
+      else{source.start(now,start,this.playbackEnd-start);const generation=this.playbackGeneration;source.onended=()=>{if(this.playbackGeneration===generation)this.stop();};}
+      for(const listener of this.clockListeners)listener();
+    }catch(error){this.stop();throw error;}
   }
 
   private buildPlayback(project:TimelineProject,startTime:number,endTime:number,native?:NativeTimelineGraph,sources=this.sources,autoStop=true):void{
@@ -361,7 +388,7 @@ export class TimelineEngine {
 
   /** Stop all active playback immediately. */
   stop(): void {
-    this.playbackGeneration++;
+    this.playbackGeneration++;this.renderedPlayback=false;this.renderedLoop=undefined;
     this.nativePreparation?.abort();this.nativePreparation=undefined;
     const native=this.nativeGraph;this.nativeGraph=undefined;if(native)this.nativeClosing=Promise.allSettled([this.nativeClosing,native.close()]).then(()=>{});
     disposeCompensation(this.compensationNodes);this.scopeClocks.clear();
