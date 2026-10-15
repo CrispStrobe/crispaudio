@@ -47,7 +47,7 @@ def check_profile(app, expected_team, bundle, rights):
     # Check the certificate actually used to sign the app, not just a named keychain entry.
     with tempfile.TemporaryDirectory(prefix='crispaudio-signature-') as directory:
         prefix = pathlib.Path(directory) / 'certificate'
-        run('codesign', '--display', '--extract-certificates', str(prefix), str(app))
+        run('codesign', '--display', '--extract-certificates=' + str(prefix), str(app))
         if pathlib.Path(str(prefix) + '0').read_bytes() not in profile.get('DeveloperCertificates', []):
             raise ValueError('App signing certificate is not authorized by the embedded profile.')
 

@@ -100,13 +100,15 @@ class SignatureGate(unittest.TestCase):
                 with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'does not match embedded profile'):
                     APP.check_profile(pathlib.Path('app'), TEAM, BUNDLE, wrong)
             def extract(*args):
-                if '--extract-certificates' in args:
-                    pathlib.Path(str(args[-2]) + '0').write_bytes(b'unauthorized certificate')
+                if any(arg.startswith('--extract-certificates=') for arg in args):
+                    prefix = next(arg.split('=', 1)[1] for arg in args if arg.startswith('--extract-certificates='))
+                    pathlib.Path(prefix + '0').write_bytes(b'unauthorized certificate')
                 return b''
             with patch.object(APP, 'run', side_effect=extract), self.assertRaisesRegex(ValueError, 'not authorized'):
                 APP.check_profile(pathlib.Path('app'), TEAM, BUNDLE, rights)
             def authorized(*args):
-                pathlib.Path(str(args[-2]) + '0').write_bytes(b'authorized certificate')
+                prefix = next(arg.split('=', 1)[1] for arg in args if arg.startswith('--extract-certificates='))
+                pathlib.Path(prefix + '0').write_bytes(b'authorized certificate')
                 return b''
             with patch.object(APP, 'run', side_effect=authorized):
                 APP.check_profile(pathlib.Path('app'), TEAM, BUNDLE, rights)
