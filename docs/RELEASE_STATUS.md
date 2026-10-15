@@ -67,7 +67,7 @@ sandbox rights. Store packaging checks their presence, signatures, team,
 architectures and entitlements. The Store preflight rejects missing or mismatched
 profiles, final app/team entitlements or signing certificates, missing hardened runtime and invalid helper
 sandbox rights. The Store workflow derives identity entitlements from the validated
-profile. Ten profile/CMS/signature boundary tests, seven actual Mac signature
+profile. Ten profile/CMS/signature boundary tests, nine actual Mac signature
 regressions and two uploader-result checks pass. See [Mac distribution preparation](MACOS_SIGNING.md) and
 [sanitized evidence](evidence/interaction-recording-0.13.0.json).
 

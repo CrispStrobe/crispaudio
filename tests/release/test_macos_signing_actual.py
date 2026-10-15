@@ -80,6 +80,22 @@ class ActualSignatureGate(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'permit debugging'):
             self.check()
 
+    def test_reject_profile_readable_only_by_owner(self):
+        profile = self.app / 'Contents/embedded.provisionprofile'
+        profile.write_bytes(b'public profile payload')
+        profile.chmod(0o600)
+        self.sign(self.app, self.main_rights)
+        with self.assertRaisesRegex(ValueError, 'not readable/searchable by all users'):
+            self.check()
+
+    def test_reject_bundle_directory_searchable_only_by_owner(self):
+        folder = self.app / 'Contents/Restricted'
+        folder.mkdir(mode=0o700)
+        (folder / 'resource').write_bytes(b'resource')
+        self.sign(self.app, self.main_rights)
+        with self.assertRaisesRegex(ValueError, 'not readable/searchable by all users'):
+            self.check()
+
     def test_reject_tampered_helper(self):
         with (self.mac / self.helpers[0]).open('ab') as file:
             file.write(b'tampered')

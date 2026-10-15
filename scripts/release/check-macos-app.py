@@ -58,6 +58,12 @@ def check(app, expected_team, allow_ad_hoc=False, expected_bundle=None):
     if expected_bundle and info['CFBundleIdentifier'] != expected_bundle:
         raise ValueError('App bundle identifier does not match the distribution identifier.')
     main = contents / 'MacOS' / info['CFBundleExecutable']
+    for path in [app, *app.rglob('*')]:
+        if path.is_symlink():
+            continue
+        required = 0o005 if path.is_dir() else 0o004
+        if path.stat().st_mode & required != required:
+            raise ValueError(f'Bundle file is not readable/searchable by all users: {path.relative_to(app)}')
     run('codesign', '--verify', '--deep', '--strict', str(app))
     rights = entitlements(app)
     if not rights.get('com.apple.security.app-sandbox') or not rights.get('com.apple.security.device.audio-input'):

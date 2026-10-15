@@ -13,7 +13,8 @@ the main executable. Both helpers use the same compiler recipe as the developmen
 and CLI helpers. A Store bundle missing a helper fails instead of extracting an
 unsigned replacement. Development/CLI execution retains the embedded fallback.
 
-The Store workflow signs helpers first, then the main app. Helpers inherit the
+The Store workflow makes the staged bundle readable/searchable by regular users,
+then signs helpers first and the main app last. Helpers inherit the
 parent sandbox and carry the public library-validation exception for independently
 signed plugins. The main app retains its microphone and user-selected-file rights.
 See Apple's [sandbox inheritance rules](https://developer.apple.com/library/archive/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html)
@@ -21,7 +22,7 @@ and [library-validation entitlement](https://developer.apple.com/documentation/B
 
 Before packaging, `scripts/release/check-macos-app.py APP --team TEAM_ID` checks
 deep signatures, matching helper teams/architectures, sandbox entitlements, a
-privacy manifest in `Contents/Resources`, and an
+privacy manifest in `Contents/Resources`, regular-user file permissions, and an
 embedded profile. It also requires hardened runtime, rejects debugging rights,
 and compares the final app identifier, team entitlements and actual leaf signing
 certificate against the embedded profile. The workflow separately validates
