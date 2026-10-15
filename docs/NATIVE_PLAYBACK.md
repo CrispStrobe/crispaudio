@@ -49,6 +49,20 @@ clicks, custom plugin windows and MIDI instruments remain outside this mode.
 The sample uses an Apple effect supplied with macOS and generated original audio.
 No third-party plugin installation or external recording is required.
 
+## Selected plug-in folders on Mac
+
+Choose **VST3 folder…** in the plug-in picker to add effects outside the standard
+locations. CrispAudio remembers up to eight selected folders using macOS bookmarks
+and restores access when it opens again. Native scan, preview and playback helpers
+receive their own access to these folders. Plug-in-folder bookmarks request read-only
+access and stay in the app's private data, outside saved projects.
+
+Folders selected in earlier versions may need to be selected once again. If a drive
+is disconnected or a folder is unavailable, reconnect it and reselect the folder.
+Moving a plug-in changes its saved identifier; choose it again in affected racks.
+These bookmarks cover selected plug-in folders; general project/media bookmark
+restoration is a separate follow-up.
+
 ## Developer validation
 
 The silent native runner uses a real selected Core Audio device with queue volume
@@ -86,3 +100,16 @@ preparation. The pipe threads are part of the audio deadline too; ordinary QoS
 there can delay the entire graph. See Apple's [Mach scheduling documentation](https://developer.apple.com/library/archive/documentation/Darwin/Conceptual/KernelProgramming/scheduler/scheduler.html).
 Pauses have no helper idle timeout; command watchdogs and owner-EOF cleanup remain
 active. Audio Unit temporary Objective-C objects are released per packet.
+
+To check a real selected folder outside Downloads and restore it in a second launch:
+
+```sh
+# Build the separate native-validation executable first. Requires the ADelay fixture.
+python3 scripts/test-macos-folders.py --automate-picker --keep
+```
+
+The test temporarily opens its own native folder picker. Omit `--automate-picker`
+to select the generated test folder manually; automation needs macOS Accessibility
+access. It verifies denial before selection/restoration, parent access, external VST3
+discovery and streaming, and Swift Audio Unit rendering from generated audio in the
+selected folder. It does not play audio or open a physical microphone.

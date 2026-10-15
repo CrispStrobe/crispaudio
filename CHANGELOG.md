@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.1 — 2026-10-15
+
+- Remember selected Mac plug-in folders across app launches using macOS bookmarks.
+- Transfer selected-folder access to native scan, render and streaming helpers, including folders outside Downloads.
+- Report unavailable folders so they can be selected again; retain their saved bookmarks when a drive is offline.
+- Add a real sandbox folder-selection/relaunch probe using generated audio and an external VST3 fixture.
+
 ## 0.13.0 — 2026-10-15
 
 - Use compact modeless recording and single-track inspectors with collapsed advanced controls.

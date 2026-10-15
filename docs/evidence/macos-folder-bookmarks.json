@@ -1,0 +1,48 @@
+{
+  "sandbox": true,
+  "hardenedRuntime": true,
+  "signing": "ad-hoc local test",
+  "outsideDownloads": true,
+  "runs": [
+    {
+      "deniedBeforeGrant": true,
+      "externalVstScan": true,
+      "externalVstStream": true,
+      "mode": "select",
+      "parentRead": true,
+      "success": true,
+      "swiftHelperRead": true
+    },
+    {
+      "deniedBeforeGrant": true,
+      "externalVstScan": true,
+      "externalVstStream": true,
+      "mode": "restore",
+      "parentRead": true,
+      "success": true,
+      "swiftHelperRead": true
+    }
+  ],
+  "appleStoreAcceptance": "not established",
+  "date": "2026-10-15",
+  "scope": "Selected plug-in folders; general media bookmark restoration remains separate.",
+  "regressionChecks": {
+    "mediaLibrary": {
+      "passed": 135,
+      "ignored": 10
+    },
+    "tauriNativeValidationLibrary": {
+      "passed": 40,
+      "ignored": 1
+    },
+    "frontend": {
+      "passed": 1728,
+      "files": 179,
+      "note": "1694 passed in the reduced-worker suite; five worker startup timeouts were retried separately, all 34 remaining tests passed. Initial default-worker run also hit test time limits."
+    },
+    "releaseChecks": 21,
+    "iosSimulatorLockedCheck": "passed",
+    "typescript": "passed",
+    "eslint": "passed"
+  }
+}

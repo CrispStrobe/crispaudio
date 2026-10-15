@@ -140,7 +140,9 @@ mod native {
             let helper = crate::apple::helper_executable(id.starts_with("vst3:"))?;
             let json = directory.path().join("request.json");
             std::fs::write(&json, request.to_string()).map_err(|e| e.to_string())?;
-            let mut child = Command::new(&helper.path)
+            let mut command = Command::new(&helper.path);
+            crate::security_scope::configure_helper(&mut command, directory.path())?;
+            let mut child = command
                 .arg("plugin-stream")
                 .arg(json)
                 .stdin(Stdio::piped())

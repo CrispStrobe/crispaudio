@@ -316,6 +316,11 @@ pub fn run() {
     let options =
         std::env::var("CRISPAUDIO_NATIVE_VALIDATION_OPTIONS").expect("Validation options required");
     let options: Value = serde_json::from_str(&options).expect("Invalid validation options");
+    let context = crate::app_context();
+    if options["folderProbe"].is_string() {
+        crate::folder_validation::run(options, context);
+        return;
+    }
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .manage(PluginStreams::default())
@@ -402,7 +407,7 @@ pub fn run() {
             });
             Ok(())
         })
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("Native validation startup failed");
     app.run(|app, event| {
         if matches!(event, tauri::RunEvent::Exit) {

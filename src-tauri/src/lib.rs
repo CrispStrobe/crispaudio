@@ -1,3 +1,5 @@
+#[cfg(all(feature = "native-validation", target_os = "macos"))]
+mod folder_validation;
 #[cfg(target_os = "macos")]
 mod native_audio_clock;
 #[cfg(all(feature = "native-validation", target_os = "macos"))]
@@ -11,6 +13,11 @@ mod native_menu;
 
 use commands::{audio_export, media, native_files, project};
 use tauri::Manager;
+
+// One context expansion also embeds the Mac Info.plist exactly once.
+pub(crate) fn app_context() -> tauri::Context<tauri::Wry> {
+    tauri::generate_context!()
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -47,7 +54,18 @@ pub fn run() {
                 )?;
             }
             #[cfg(target_os = "macos")]
-            native_menu::install(app.handle(), &native_menu::MenuContext::default())?;
+            {
+                let file = app.path().app_data_dir()?.join("plugin-folders.json");
+                match crispaudio_media::security_scope::restore(&file) {
+                    Ok(unavailable) if !unavailable.is_empty() => log::warn!(
+                        "{} saved plug-in folders unavailable; reselect them",
+                        unavailable.len()
+                    ),
+                    Err(error) => log::warn!("Could not restore plug-in folder access: {error}"),
+                    _ => {}
+                }
+                native_menu::install(app.handle(), &native_menu::MenuContext::default())?;
+            }
             Ok(())
         });
     #[cfg(target_os = "macos")]
@@ -102,6 +120,7 @@ pub fn run() {
             commands::delivery::collect_project_media,
             commands::delivery::publish_delivery_stage,
             commands::delivery::annotate_delivery_wav,
+            commands::plugins::remember_plugin_folder,
             commands::plugins::audio_unit_plugin,
             commands::plugins::plugin_stream_open,
             commands::plugins::plugin_stream_process,
@@ -132,7 +151,7 @@ pub fn run() {
             media::prepare_video_preview,
             media::estimate_track_sync,
         ])
-        .build(tauri::generate_context!())
+        .build(app_context())
         .expect("error while building tauri application");
 
     app.run(|app, event| {

@@ -1,6 +1,28 @@
 //! Cancellable macOS Audio Unit effect discovery and isolated source processing.
 use serde_json::{json, Value};
 use tauri::Manager;
+/// Called only after the native folder picker has granted access to the path.
+#[tauri::command]
+pub async fn remember_plugin_folder(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let file = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| e.to_string())?
+            .join("plugin-folders.json");
+        tauri::async_runtime::spawn_blocking(move || {
+            crispaudio_media::security_scope::remember_folder(&path, &file)
+        })
+        .await
+        .map_err(|e| e.to_string())?
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (app, path);
+        Ok(())
+    }
+}
 #[tauri::command]
 pub async fn audio_unit_plugin(
     app: tauri::AppHandle,

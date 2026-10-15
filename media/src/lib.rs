@@ -20,6 +20,8 @@ pub mod project_edit;
 pub mod retime;
 mod reverb;
 mod routing;
+#[cfg(target_os = "macos")]
+pub mod security_scope;
 pub mod spoken_edit;
 pub mod video_edit;
 use rustfft::{num_complex::Complex, FftPlanner};

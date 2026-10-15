@@ -100,7 +100,10 @@ fn invoke(args: &[String], edit: Option<&VideoEdit>) -> Result<Vec<u8>> {
             .map_err(|e| e.to_string())?;
         args[1] = path.to_string_lossy().into_owned();
     }
-    let result = crate::run_command(Command::new(&helper.path).args(args))?;
+    let mut command = Command::new(&helper.path);
+    command.args(args);
+    crate::security_scope::configure_helper(&mut command, directory.path())?;
+    let result = crate::run_command(&mut command)?;
     if !result.status.success() {
         return Err(format!(
             "Apple media backend ({}): {}",
@@ -220,6 +223,15 @@ pub fn plugin(operation: &str, request: &str) -> Result<serde_json::Value> {
         }
         let mut plugins = Vec::new();
         let mut warnings = Vec::new();
+        // A saved plain path from an older version does not restore PowerBox
+        // access. Report it instead of silently presenting an empty folder scan.
+        if let Some(folders) = value["folders"].as_array() {
+            for folder in folders.iter().filter_map(|folder| folder.as_str()) {
+                if std::fs::read_dir(folder).is_err() {
+                    warnings.push(serde_json::json!({"path":folder,"reason":"Folder unavailable; select it again with VST3 folder…"}));
+                }
+            }
+        }
         let mut collect =
             |label: &str, operation: &str, request_path: &std::path::Path| -> Result<()> {
                 let response = invoke(

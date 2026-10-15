@@ -113,6 +113,10 @@ Adjust faders, pan, mute, solo, sends, plugin parameters and bypass while listen
 track meters and master loudness remain visible. Seeking rebuilds effect history.
 Use the compact **Live / Preview** selector beside Play for a rendered fallback.
 
+Use **VST3 folder…** to add effects from another location. The Mac app remembers
+up to eight selected folders across launches. If an older selection or an external
+drive is unavailable, select its folder again.
+
 Native inserts include generic parameter controls, saved state and rack copy/paste.
 Structural or built-in effect edits restart live playback. To record a microphone
 with native effects in the session, CrispAudio first prepares a fixed wet backing

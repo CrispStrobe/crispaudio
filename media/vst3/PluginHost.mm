@@ -23,6 +23,30 @@ using namespace Steinberg;using namespace Steinberg::Vst;using namespace VST3::H
 static std::string utf8(NSString *s){return s?s.UTF8String:"";}
 static NSString *text(const std::string &s){return [NSString stringWithUTF8String:s.c_str()];}
 static void require(bool ok,const char *message){if(!ok)throw std::runtime_error(message);}
+// Dynamic NSOpenPanel grants are not inherited. Resolve the parent's plain
+// bookmarks and balance explicit access for the lifetime of this helper process.
+class ResourceAccess {
+    NSMutableArray<NSURL *> *urls=[NSMutableArray array];
+public:
+    ResourceAccess(){
+        NSString *path=NSProcessInfo.processInfo.environment[@"CRISPAUDIO_RESOURCE_BOOKMARKS"];
+        if(!path)return;
+        NSNumber *size=[[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil][NSFileSize];
+        require(size!=nil && size.unsignedLongLongValue<=3000000,"Invalid folder access transfer file");
+        NSData *data=[NSData dataWithContentsOfFile:path];
+        id records=data?[NSJSONSerialization JSONObjectWithData:data options:0 error:nil]:nil;
+        require([records isKindOfClass:NSArray.class] && [records count]<=8,"Invalid folder access transfers");
+        try { for(id record in records){
+            require([record isKindOfClass:NSArray.class] && [record count]>0 && [record count]<=65536,"Invalid folder bookmark");
+            std::vector<uint8_t> bytes;for(id value in record){require([value isKindOfClass:NSNumber.class] && [value doubleValue]==[value unsignedCharValue],"Invalid folder bookmark byte");bytes.push_back([value unsignedCharValue]);}
+            BOOL stale=NO;NSError *error=nil;
+            NSURL *url=[NSURL URLByResolvingBookmarkData:[NSData dataWithBytes:bytes.data() length:bytes.size()] options:NSURLBookmarkResolutionWithoutUI|NSURLBookmarkResolutionWithoutMounting|NSURLBookmarkResolutionWithoutImplicitStartAccessing relativeToURL:nil bookmarkDataIsStale:&stale error:&error];
+            require(url!=nil,"Saved folder access is unavailable; select the folder again");
+            if([url startAccessingSecurityScopedResource])[urls addObject:url];
+        }} catch(...){for(NSURL *url in urls)[url stopAccessingSecurityScopedResource];throw;}
+    }
+    ~ResourceAccess(){for(NSURL *url in urls)[url stopAccessingSecurityScopedResource];}
+};
 static int protocolFd=-1;
 static void result(id value){NSError *error=nil;NSData *data=[NSJSONSerialization dataWithJSONObject:value options:0 error:&error];require(data!=nil,"Cannot encode plugin response");FILE *out=fdopen(dup(protocolFd),"w");require(out!=nullptr,"Cannot open plugin response");auto written=fwrite(data.bytes,1,data.length,out);fclose(out);require(written==data.length,"Cannot write plugin response");}
 static bool effect(const ClassInfo &c){return c.category()==kVstAudioEffectClass && c.subCategoriesString().find("Instrument")==std::string::npos;}
@@ -79,4 +103,4 @@ static void run(NSString *operation,NSDictionary *request){if([operation isEqual
  while(rendered<count+delay){require(limit.timeIntervalSinceNow>0,"VST3 render timed out");int32 frames=(int32)std::min<AVAudioFramePosition>(4096,count+delay-rendered);for(int32 ch=0;ch<channels;ch++)for(int32 i=0;i<frames;i++){ins[ch][i]=rendered+i<count?input.floatChannelData[std::min<uint32>(ch,originalChannels-1)][rendered+i]:0;outs[ch][i]=0;}context.projectTimeSamples=rendered;ProcessData data{};data.processMode=kOffline;data.symbolicSampleSize=kSample32;data.numSamples=frames;data.numInputs=1;data.numOutputs=1;data.inputs=&inBus;data.outputs=&outBus;data.inputParameterChanges=first?&changes:nullptr;data.processContext=&context;if(bypass){for(int32 ch=0;ch<channels;ch++)std::copy_n(ins[ch].data(),frames,outs[ch].data());}else require(plugin.processor->process(data)==kResultOk,"VST3 DSP failed");require(bypass||plugin.processor->getLatencySamples()==delay,"VST3 latency changed during rendering");first=false;int32 skip=(int32)std::max<AVAudioFramePosition>(0,std::min<AVAudioFramePosition>(frames,delay-rendered)),kept=frames-skip;if(kept>0){AVAudioPCMBuffer *block=[[AVAudioPCMBuffer alloc]initWithPCMFormat:format frameCapacity:kept];block.frameLength=kept;for(uint32 ch=0;ch<originalChannels;ch++)for(int32 i=0;i<kept;i++){float v=originalChannels==1&&channels==2?(outs[0][i+skip]+outs[1][i+skip])*.5:outs[ch][i+skip];require(std::isfinite(v),"VST3 produced non-finite samples");block.floatChannelData[ch][i]=v;}require([writer writeFromBuffer:block error:&error],"Cannot write VST3 audio");}rendered+=frames;}
  result(@{@"path":output,@"parameters":plugin.parameters(),@"state":plugin.state(),@"latency":@(delay/rate),@"frames":@(count),@"sampleRate":@(rate)});
 }
-int main(int argc,char **argv){@autoreleasepool{try{protocolFd=dup(STDOUT_FILENO);dup2(STDERR_FILENO,STDOUT_FILENO);require(argc>=3,"Expected VST3 operation and JSON file");NSString *operation=text(argv[1]),*arg=text(argv[2]);alarm([operation isEqualToString:@"plugin-scan"]?10:65);NSData *data=[arg hasPrefix:@"{"]?[arg dataUsingEncoding:NSUTF8StringEncoding]:[NSData dataWithContentsOfFile:arg];require(data!=nil,"Cannot read VST3 request");NSDictionary *request=[NSJSONSerialization JSONObjectWithData:data options:0 error:nil];require([request isKindOfClass:NSDictionary.class],"Invalid VST3 request");run(operation,request);return 0;}catch(const std::exception &error){std::cerr<<error.what()<<std::endl;return 1;}}}
+int main(int argc,char **argv){@autoreleasepool{try{ResourceAccess resourceAccess;protocolFd=dup(STDOUT_FILENO);dup2(STDERR_FILENO,STDOUT_FILENO);require(argc>=3,"Expected VST3 operation and JSON file");NSString *operation=text(argv[1]),*arg=text(argv[2]);alarm([operation isEqualToString:@"plugin-scan"]?10:65);NSData *data=[arg hasPrefix:@"{"]?[arg dataUsingEncoding:NSUTF8StringEncoding]:[NSData dataWithContentsOfFile:arg];require(data!=nil,"Cannot read VST3 request");NSDictionary *request=[NSJSONSerialization JSONObjectWithData:data options:0 error:nil];require([request isKindOfClass:NSDictionary.class],"Invalid VST3 request");run(operation,request);return 0;}catch(const std::exception &error){std::cerr<<error.what()<<std::endl;return 1;}}}

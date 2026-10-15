@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-15, for local 0.13.0. This section is the current plan.
+Updated 2026-10-15, for local 0.13.1. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -40,8 +40,14 @@ App Review submissions are waiting for review. Both existing groups contain the
 correct platform build. A Mac profile was created using the existing account
 and canonical certificate. [Submission evidence](docs/evidence/testflight-0.13.0-build14.json).
 
-Next: collect beta feedback, check physical iOS devices, qualify selected external
-files/plugins beyond Downloads, commercial plugins and external interfaces.
+Local 0.13.1 adds persistent macOS bookmarks for selected plug-in folders and
+passes fresh folder access to native scan/render/stream helpers. A real NSOpenPanel
+selection outside Downloads and a separate relaunch both pass the isolated hardened
+sandbox probe, including external VST3 streaming and Swift helper input reads.
+[Folder-access evidence](docs/evidence/macos-folder-bookmarks.json).
+
+Next: restore access to general project/media files, collect beta feedback, check
+physical iOS devices, commercial plugins and external interfaces.
 Continuous native input DSP and native automation recording remain future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 

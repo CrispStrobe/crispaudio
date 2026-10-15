@@ -167,9 +167,32 @@ func validateM4a(_ path:String) throws {
     let result:[String:Any]=["codec":"aac-lc","sampleRate":format.mSampleRate,"channels":format.mChannelsPerFrame,"framesPerPacket":format.mFramesPerPacket,"validFrames":table.mNumberValidFrames,"primingFrames":table.mPrimingFrames,"remainderFrames":table.mRemainderFrames,"packets":packets]
     FileHandle.standardOutput.write(try JSONSerialization.data(withJSONObject:result))
 }
+// Keep transferred user-selected folder scopes alive for the entire helper job,
+// including a stream. Resolution never opens dialogs or mounts absent volumes.
+final class ResourceAccess {
+ private var urls:[URL]=[]
+ init() throws {
+  guard let path=ProcessInfo.processInfo.environment["CRISPAUDIO_RESOURCE_BOOKMARKS"] else{return}
+  let file=URL(fileURLWithPath:path)
+  let size=try file.resourceValues(forKeys:[.fileSizeKey]).fileSize ?? 0
+  guard size<=3_000_000 else{try fail("Folder access transfer is too large")}
+  let records=try JSONDecoder().decode([[UInt8]].self,from:Data(contentsOf:file))
+  guard records.count<=8 else{try fail("Too many folder access transfers")}
+  do {
+   for bytes in records {
+    guard !bytes.isEmpty && bytes.count<=65536 else{try fail("Invalid folder access transfer")}
+    var stale=false
+    let url=try URL(resolvingBookmarkData:Data(bytes),options:[.withoutUI,.withoutMounting,.withoutImplicitStartAccessing],relativeTo:nil,bookmarkDataIsStale:&stale)
+    if url.startAccessingSecurityScopedResource(){urls.append(url)}
+   }
+  } catch {for url in urls{url.stopAccessingSecurityScopedResource()};urls=[];throw error}
+ }
+ deinit {for url in urls{url.stopAccessingSecurityScopedResource()}}
+}
+
 @main struct Main {
  static func main() async {
-  do {try await run()}catch {FileHandle.standardError.write(Data((error.localizedDescription+"\n").utf8));exit(1)}
+  do {let access=try ResourceAccess();defer{withExtendedLifetime(access){}};try await run()}catch {FileHandle.standardError.write(Data((error.localizedDescription+"\n").utf8));exit(1)}
  }
  static func run() async throws {
   let args=CommandLine.arguments

@@ -5,6 +5,21 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.1 — selected plug-in folders
+
+Selected Mac plug-in folders now use persistent app-scoped bookmarks. Native
+helpers resolve per-job transferred bookmarks for scan, preview and streaming.
+An isolated hardened sandbox probe passes real selection outside Downloads and
+restoration in a separate launch; both launches first confirm access is denied.
+It exercises external VST3 discovery/streaming and Swift helper reads of generated
+audio. [Evidence](evidence/macos-folder-bookmarks.json).
+
+The 0.13.1 local app is installed and signature-verified, with the previous app
+and session data backed up and the autosave retained. This is local software work;
+no 0.13.1 Apple build has been uploaded. General
+project/media bookmarks, commercial plug-ins and physical-device checks remain
+separate follow-ups. The TestFlight record below describes the submitted 0.13.0.
+
 ## TestFlight 0.13.0 / build 14 — submitted 2026-10-15
 
 | Platform | Apple processing | Internal TestFlight | External TestFlight |
@@ -47,7 +62,7 @@ DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaud
 | iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
 | Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. Native 0.13.0/build 14 is now available for internal TestFlight. |
 | Provisioning | Active `IOS_APP_STORE` and newly created `MAC_APP_STORE` profiles, bound to the existing Distribution certificate. Existing account/API credentials work. |
-| Local native macOS app | Installed 0.13.0 ad-hoc signed app, separate from the public iOS release. |
+| Local native macOS app | Installed 0.13.1 ad-hoc signed app, separate from the public iOS release. |
 | Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
 
 [Public App Store listing](https://apps.apple.com/de/app/crispaudio/id6791876962) ·
