@@ -6,11 +6,24 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager};
 #[derive(Default)]
 struct NativeClockState(
-    std::sync::Mutex<Option<(String, std::sync::Arc<crate::native_audio_clock::Control>)>>,
+    std::sync::Mutex<
+        Option<(
+            String,
+            std::sync::Arc<crate::native_audio_clock::Control>,
+            Option<String>,
+        )>,
+    >,
 );
 impl NativeClockState {
+    fn cancel_owner(&self, owner: &str) {
+        if let Some((active, control, _)) = self.0.lock().unwrap().as_ref() {
+            if active == owner {
+                control.cancel();
+            }
+        }
+    }
     fn cancel(&self) {
-        if let Some((_, stop)) = self.0.lock().unwrap().as_ref() {
+        if let Some((_, stop, _)) = self.0.lock().unwrap().as_ref() {
             stop.cancel();
         }
     }
@@ -20,7 +33,7 @@ impl NativeClockState {
             .lock()
             .unwrap()
             .as_ref()
-            .map(|(_, control)| control.clone());
+            .map(|(_, control, _)| control.clone());
         if let Some(control) = active {
             control.cancel();
             let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
@@ -45,7 +58,7 @@ async fn native_validation_audio_clock(
         if slot.is_some() {
             return Err("Native clock already active".into());
         }
-        *slot = Some((window.label().into(), stop.clone()));
+        *slot = Some((window.label().into(), stop.clone(), None));
     }
     let done = stop.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
@@ -81,12 +94,124 @@ fn native_validation_audio_clock_cancel(
         .lock()
         .unwrap()
         .as_ref()
-        .is_some_and(|(owner, _)| owner != window.label())
+        .is_some_and(|(owner, _, _)| owner != window.label())
     {
         return Err("Native clock owner mismatch".into());
     }
     state.cancel();
     Ok(())
+}
+
+#[tauri::command]
+async fn native_snapshot_begin(
+    window: tauri::WebviewWindow,
+    snapshots: tauri::State<'_, crispaudio_media::native_snapshot::Snapshots>,
+    project: Value,
+    descriptors: Vec<crispaudio_media::native_snapshot::Descriptor>,
+) -> Result<String, String> {
+    let snapshots = snapshots.inner().clone();
+    let owner = window.label().to_string();
+    tauri::async_runtime::spawn_blocking(move || snapshots.begin(&owner, project, descriptors))
+        .await
+        .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+fn native_snapshot_write(
+    window: tauri::WebviewWindow,
+    snapshots: tauri::State<crispaudio_media::native_snapshot::Snapshots>,
+    request: tauri::ipc::Request<'_>,
+) -> Result<(), String> {
+    match request.body() {
+        tauri::ipc::InvokeBody::Raw(bytes) => snapshots.write(window.label(), bytes),
+        _ => Err("Binary native PCM required".into()),
+    }
+}
+#[tauri::command]
+async fn native_snapshot_seal(
+    window: tauri::WebviewWindow,
+    snapshots: tauri::State<'_, crispaudio_media::native_snapshot::Snapshots>,
+    snapshot: String,
+) -> Result<(), String> {
+    let snapshots = snapshots.inner().clone();
+    let owner = window.label().to_string();
+    tauri::async_runtime::spawn_blocking(move || snapshots.seal(&owner, &snapshot))
+        .await
+        .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+fn native_snapshot_close(
+    window: tauri::WebviewWindow,
+    snapshots: tauri::State<crispaudio_media::native_snapshot::Snapshots>,
+    state: tauri::State<NativeClockState>,
+    snapshot: String,
+) -> Result<(), String> {
+    // Clock lock orders close against capture reservation: a closed snapshot
+    // cannot start later from an already-resolved registry lookup.
+    let slot = state.0.lock().unwrap();
+    snapshots.close(window.label(), &snapshot)?;
+    if let Some((owner, control, active)) = slot.as_ref() {
+        if owner == window.label() && active.as_ref() == Some(&snapshot) {
+            control.cancel();
+        }
+    }
+    Ok(())
+}
+#[tauri::command]
+fn native_snapshot_status(
+    snapshots: tauri::State<crispaudio_media::native_snapshot::Snapshots>,
+) -> Value {
+    let (entries, bytes) = snapshots.counts();
+    json!({"entries":entries,"bytes":bytes})
+}
+#[tauri::command]
+async fn native_snapshot_capture(
+    window: tauri::WebviewWindow,
+    snapshots: tauri::State<'_, crispaudio_media::native_snapshot::Snapshots>,
+    state: tauri::State<'_, NativeClockState>,
+    snapshot: String,
+    start_frame: u32,
+    end_frame: u32,
+) -> Result<Value, String> {
+    let stop = std::sync::Arc::new(crate::native_audio_clock::Control::default());
+    let owned = {
+        let mut slot = state.0.lock().unwrap();
+        if slot.is_some() {
+            return Err("Native clock already active".into());
+        }
+        let owned = snapshots.get(window.label(), &snapshot)?;
+        *slot = Some((window.label().into(), stop.clone(), Some(snapshot)));
+        owned
+    };
+    let done = stop.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        struct Finished(std::sync::Arc<crate::native_audio_clock::Control>);
+        impl Drop for Finished {
+            fn drop(&mut self) {
+                self.0.finished.store(true, Ordering::Release);
+            }
+        }
+        let _done = Finished(done);
+        let device = crate::commands::audio_output::list_audio_outputs()?
+            .into_iter()
+            .find(|d| d.is_default)
+            .ok_or("No default output")?;
+        crate::native_audio_clock::capture_snapshot(
+            owned,
+            device.id,
+            stop,
+            start_frame,
+            end_frame,
+            || {
+                window
+                    .emit("native-clock-started", ())
+                    .map_err(|e| e.to_string())
+            },
+        )
+    })
+    .await
+    .map_err(|e| e.to_string());
+    state.0.lock().unwrap().take();
+    result?
 }
 
 #[derive(Default)]
@@ -208,9 +333,15 @@ pub fn run() {
         .manage(ValidationState::default())
         .manage(LoopbackState::default())
         .manage(NativeClockState::default())
+        .manage(crispaudio_media::native_snapshot::Snapshots::default())
         .on_window_event(|window, event| {
             if matches!(event, tauri::WindowEvent::Destroyed) {
-                window.state::<NativeClockState>().cancel();
+                window
+                    .state::<NativeClockState>()
+                    .cancel_owner(window.label());
+                window
+                    .state::<crispaudio_media::native_snapshot::Snapshots>()
+                    .close_owner(window.label());
                 window.state::<PluginStreams>().close_owner(window.label());
                 window.state::<LoopbackState>().0.lock().unwrap().take();
             }
@@ -220,6 +351,12 @@ pub fn run() {
             plugins::plugin_stream_process_binary,
             plugins::plugin_stream_snapshot,
             plugins::plugin_stream_close,
+            native_snapshot_begin,
+            native_snapshot_write,
+            native_snapshot_seal,
+            native_snapshot_close,
+            native_snapshot_capture,
+            native_snapshot_status,
             native_validation_audio_clock,
             native_validation_audio_clock_cancel,
             native_validation_loopback_open,
@@ -265,8 +402,28 @@ pub fn run() {
     app.run(|app, event| {
         if matches!(event, tauri::RunEvent::Exit) {
             app.state::<NativeClockState>().shutdown();
+            app.state::<crispaudio_media::native_snapshot::Snapshots>()
+                .shutdown();
             app.state::<PluginStreams>().shutdown();
             app.state::<LoopbackState>().0.lock().unwrap().take();
         }
     });
+}
+
+#[cfg(test)]
+mod snapshot_owner_tests {
+    use super::*;
+    #[test]
+    fn closing_another_window_does_not_cancel_the_active_snapshot() {
+        let control = std::sync::Arc::new(crate::native_audio_clock::Control::default());
+        let state = NativeClockState(std::sync::Mutex::new(Some((
+            "owner".into(),
+            control.clone(),
+            Some("snapshot".into()),
+        ))));
+        state.cancel_owner("other");
+        assert!(!control.is_cancelled());
+        state.cancel_owner("owner");
+        assert!(control.is_cancelled());
+    }
 }

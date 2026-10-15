@@ -11,6 +11,8 @@ pub mod jobs;
 mod limiter;
 #[cfg(feature = "native-engine")]
 pub mod native_graph;
+#[cfg(feature = "native-engine")]
+pub mod native_snapshot;
 pub mod plugin_stream;
 pub mod project_edit;
 pub mod retime;

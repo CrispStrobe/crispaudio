@@ -118,10 +118,14 @@ and changed reported latency latch the entire graph silent. Unit checks cover
 varying block sizes and selected file-export parity; real four-instance AU/VST3
 capture checks the routed mix, UI stall, starvation and collective cancellation.
 These fixtures use generated PCM, with nonzero reported latency exercised by
-synthetic inserts. The GUI project/source transfer and production engine switch
-are not implemented. Next connect owned GUI snapshots and sample-clock transport,
-including scope-specific plugin tempo/position, seek/loop/state, live controls and
-device lifecycle. See [native engine foundation](docs/NATIVE_AUDIO_ENGINE.md).
+synthetic inserts. An internal GUI snapshot client now freezes actual decoded
+AudioBuffers and project values, uploads bounded binary chunks and seals owned
+native snapshots. Cancelled/stale uploads and owner destruction release resources;
+active native capture retains its source memory lease until cleanup. Muted range
+capture reconstructs DSP history before a seek and gates the unaligned end. It is
+not production Play. Next add continuous hardware-clock transport, seek/loop/state
+transitions, scope-specific plugin tempo/position, live controls and device
+lifecycle before switching the production timeline. See [native engine foundation](docs/NATIVE_AUDIO_ENGINE.md).
 Graph-wide faults, transport/loops, session ownership and FLAC/AAC native-rack
 delivery remain required before realtime activation.
 Record scope and remaining requirements honestly; these are initial complete

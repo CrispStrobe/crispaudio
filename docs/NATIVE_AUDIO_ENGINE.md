@@ -94,11 +94,52 @@ starvation and cancellation. The test plugins report zero intrinsic latency;
 nonzero reported-latency compensation is covered by the synthetic insert tests.
 Output remains muted, and capture is still before the device mute.
 
+## GUI snapshot transfer and seek capture
+
+`NativeTimelineSnapshot` freezes project values and the referenced decoded
+AudioBuffers before the first asynchronous call. It uploads planar little-endian
+float PCM in ordered chunks of up to 8,192 frames. The native registry checks
+ownership, packet size/order, channel layout and finite samples before sealing.
+Incomplete or closed snapshots cannot be captured; sealed PCM cannot be replaced.
+Cancelled, failed or superseded client uploads close their native reservations.
+
+The registry allows two snapshots and reserves up to 256 MB in aggregate,
+including staging/conversion headroom. A single snapshot therefore has at most
+128 MB of stereo-frame storage. Native playback retains its memory lease even if
+the registry entry closes. Window destruction revokes that owner and cancels its
+active capture; closing another window leaves the session alone. Allocation and
+finalization run on a blocking worker. The audio callback never acquires a registry
+lock or invokes the frontend.
+
+The finite, muted `captureRange` API prepares a native graph from the uploaded
+snapshot and renders/discards preceding audio through the requested start plus
+graph latency. This preserves FX history at seeks. The final output block is
+zero-padded after the requested end. Captures currently span 2,048–480,000 frames
+at 48 kHz; this is a validation API, not the production Play button or a general
+continuous transport. Loops, live seeking and audible playback are not activated.
+
+```sh
+CRISPAUDIO_NATIVE_VALIDATION_NATIVE_SNAPSHOT=1 node scripts/test-native-timeline-tauri.mjs
+```
+
+The fixture takes real AudioBuffers from the GUI project store, uploads them,
+changes the originals and checks the native result. It also checks stale upload
+cleanup, UI-stall independence, an unaligned range end, retained pre-seek delay
+history and active cancellation with zero remaining source reservations.
+
+## CLAP compatibility
+
+[clap-wrapper](https://github.com/free-audio/clap-wrapper) can expose a CLAP plugin
+through formats including VST3 and AU. It is a candidate for later CLAP compatibility
+through the existing host. It does not supply CrispAudio's project ownership,
+mix graph or transport. No wrapper code or dependency has been added; native
+session and transport work remains the current priority.
+
 ## Integration still required
 
-This remains a validation-only engine. Next connect real GUI project/source
-snapshots to owned native sessions and add sample-clock transport, seeks/loops and
-state restoration. Native plugin musical timing currently uses each helper's
+This remains a validation-only engine. The GUI snapshot boundary and finite
+seek capture are implemented. Next add continuous hardware-clock transport,
+seek/loop transitions and state restoration, then connect the production timeline. Native plugin musical timing currently uses each helper's
 initial clock; scope-compensated tempo/position context is not implemented in the
 graph adapter. Add that context before qualifying tempo-synchronized plugins.
 Live parameter commands, meters and output-device changes/disconnection handling

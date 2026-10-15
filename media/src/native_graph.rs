@@ -20,6 +20,12 @@ pub struct Source {
     mono: bool,
 }
 impl Source {
+    pub(crate) fn uploaded(pcm: Vec<Stereo>, mono: bool) -> Self {
+        Self {
+            pcm: pcm.into(),
+            mono,
+        }
+    }
     pub fn new(channels: Vec<Vec<f32>>) -> Result<Self> {
         let n = channels.first().map_or(0, Vec::len);
         if !(1..=2).contains(&channels.len())

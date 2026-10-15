@@ -23,6 +23,10 @@ pub struct Control {
     pub finished: AtomicBool,
 }
 impl Control {
+    #[cfg(test)]
+    pub(crate) fn is_cancelled(&self) -> bool {
+        self.stop.load(Ordering::Acquire)
+    }
     pub fn cancel(&self) {
         self.stop.store(true, Ordering::Release);
         if let Some(ring) = self.ring.lock().unwrap().as_ref() {
@@ -89,32 +93,39 @@ fn graph_fixture(vst: &str, au: &str, control: &Control) -> Result<Graph, String
         }
         Source::new(pcm)
     };
-    Graph::prepare(
+    prepare_graph(
         &project,
         std::collections::HashMap::from([
             ("source".into(), source(0)?),
             ("dry".into(), source(192)?),
         ]),
-        |entry| {
-            let stream = PluginStream::open_with_stop(
-                &json!({"id":entry["pluginId"],"sampleRate":48000,"channels":2,"processMode":"realtime","parameters":entry["parameters"],"state":entry["state"]}),
-                |helper| control.register(helper),
-            )?;
-            let latency = stream.info["latencySamples"]
-                .as_u64()
-                .ok_or("Missing graph plugin latency")? as usize;
-            if latency > 480000 {
-                return Err("Invalid graph native latency".into());
-            }
-            Ok(Box::new(NativeInsert {
-                stream,
-                latency,
-                bypass: entry["bypass"] == true,
-                dry: vec![[0.; 2]; latency],
-                cursor: 0,
-            }))
-        },
+        control,
     )
+}
+fn prepare_graph(
+    project: &Value,
+    sources: std::collections::HashMap<String, Source>,
+    control: &Control,
+) -> Result<Graph, String> {
+    Graph::prepare(project, sources, |entry| {
+        let stream = PluginStream::open_with_stop(
+            &json!({"id":entry["pluginId"],"sampleRate":48000,"channels":2,"processMode":"realtime","parameters":entry["parameters"],"state":entry["state"]}),
+            |helper| control.register(helper),
+        )?;
+        let latency = stream.info["latencySamples"]
+            .as_u64()
+            .ok_or("Missing graph plugin latency")? as usize;
+        if latency > 480000 {
+            return Err("Invalid graph native latency".into());
+        }
+        Ok(Box::new(NativeInsert {
+            stream,
+            latency,
+            bypass: entry["bypass"] == true,
+            dry: vec![[0.; 2]; latency],
+            cursor: 0,
+        }))
+    })
 }
 
 const FRAMES: usize = 512;
@@ -296,6 +307,8 @@ struct CallbackState {
     callbacks: AtomicU64,
     clock: Instant,
     epoch: f64,
+    blocks: usize,
+    frames: usize,
     ring: Arc<Ring>,
 }
 unsafe extern "C" fn output(user: *mut c_void, queue: Queue, buffer: *mut Buffer) {
@@ -320,8 +333,13 @@ unsafe extern "C" fn output(user: *mut c_void, queue: Queue, buffer: *mut Buffer
         state.ring.fail(3);
     } else {
         let data = &mut *state.data.get();
-        if data.blocks < BLOCKS {
+        if data.blocks < state.blocks {
             data.consumer.fill(out);
+            let valid = state
+                .frames
+                .saturating_sub(data.blocks * FRAMES)
+                .min(FRAMES);
+            out[valid * 2..].fill(0.);
             let begin = data.blocks * SAMPLES;
             data.capture[begin..begin + SAMPLES].copy_from_slice(out);
             data.times[data.blocks] = state.epoch + state.clock.elapsed().as_secs_f64() * 1000.;
@@ -409,10 +427,10 @@ fn play(
     }
     check(unsafe { AudioQueueStart(queue.0, std::ptr::null()) })?;
     started()?;
-    let deadline = Instant::now() + Duration::from_secs(6);
+    let deadline = Instant::now() + Duration::from_secs_f64(state.frames as f64 / 48000. + 3.);
     let mut hardware = Vec::with_capacity(400);
     let mut next_sample = Instant::now();
-    while state.completed.load(Ordering::Acquire) < BLOCKS
+    while state.completed.load(Ordering::Acquire) < state.blocks
         && state.ring.fault.load(Ordering::Acquire) == 0
         && !state.ring.stop.load(Ordering::Acquire)
     {
@@ -458,6 +476,61 @@ pub fn probe(
     graph_au: Option<String>,
     started: impl FnOnce() -> Result<(), String>,
 ) -> Result<Value, String> {
+    run(
+        plugin,
+        device,
+        stop,
+        starve,
+        graph_au,
+        None,
+        0,
+        BLOCKS * FRAMES,
+        started,
+    )
+}
+pub fn capture_snapshot(
+    snapshot: Arc<crispaudio_media::native_snapshot::Snapshot>,
+    device: String,
+    stop: Arc<Control>,
+    start: u32,
+    end: u32,
+    started: impl FnOnce() -> Result<(), String>,
+) -> Result<Value, String> {
+    let duration = snapshot.project["duration"]
+        .as_f64()
+        .ok_or("Invalid native snapshot duration")?;
+    if end <= start
+        || end as f64 > (duration * 48000.).round()
+        || end - start < 2048
+        || end - start > 480000
+    {
+        return Err("Invalid native capture range".into());
+    }
+    run(
+        String::new(),
+        device,
+        stop,
+        false,
+        None,
+        Some(snapshot),
+        start,
+        (end - start) as usize,
+        started,
+    )
+}
+fn run(
+    plugin: String,
+    device: String,
+    stop: Arc<Control>,
+    starve: bool,
+    graph_au: Option<String>,
+    snapshot: Option<Arc<crispaudio_media::native_snapshot::Snapshot>>,
+    start_frame: u32,
+    capture_frames: usize,
+    started: impl FnOnce() -> Result<(), String>,
+) -> Result<Value, String> {
+    let snapshot_mode = snapshot.is_some();
+    let total_blocks = capture_frames.div_ceil(FRAMES);
     let graph_mode = graph_au.is_some();
     let (mut producer, consumer) = ring();
     let shared = producer.ring.clone();
@@ -472,7 +545,14 @@ pub fn probe(
     let worker_stop = stop.clone();
     let (ready_send, ready) = std::sync::mpsc::sync_channel(1);
     let worker = thread::spawn(move || -> Result<Value, String> {
-        let mut graph = if let Some(au) = graph_au {
+        let _snapshot_lease = snapshot.clone();
+        let mut graph = if let Some(snapshot) = snapshot {
+            Some(prepare_graph(
+                &snapshot.project,
+                snapshot.sources.clone(),
+                &worker_stop,
+            )?)
+        } else if let Some(au) = graph_au {
             Some(graph_fixture(&plugin, &au, &worker_stop)?)
         } else {
             None
@@ -485,12 +565,30 @@ pub fn probe(
         } else {
             None
         };
+        let history_frames = if snapshot_mode {
+            start_frame
+                .checked_add(graph.as_ref().unwrap().latency() as u32)
+                .ok_or("Native history clock overflow")?
+        } else {
+            0
+        };
+        let mut warmed = 0;
+        while warmed < history_frames {
+            if worker_stop.stop.load(Ordering::Acquire) || worker_ring.stop.load(Ordering::Acquire)
+            {
+                return Err("Native snapshot preparation cancelled".into());
+            }
+            let length = (history_frames - warmed).min(4096);
+            let mut discard = vec![[0.; 2]; length as usize];
+            graph.as_mut().unwrap().render(&mut discard)?;
+            warmed += length;
+        }
         let handles = worker_stop.helper.lock().unwrap().clone();
         let graph_latency = graph.as_ref().map(|g| g.latency());
-        let mut times = Vec::with_capacity(BLOCKS);
+        let mut times = Vec::with_capacity(total_blocks);
         let mut max_process_ms = 0f64;
         let result = (|| -> Result<(), String> {
-            for block in 0..BLOCKS {
+            for block in 0..total_blocks {
                 if worker_stop.stop.load(Ordering::Acquire)
                     || worker_ring.stop.load(Ordering::Acquire)
                     || worker_ring.fault.load(Ordering::Acquire) != 0
@@ -550,7 +648,7 @@ pub fn probe(
                     }
                     thread::sleep(Duration::from_micros(250));
                 }
-                if block == SLOTS - 1 {
+                if block == total_blocks.min(SLOTS) - 1 {
                     ready_send
                         .send(())
                         .map_err(|_| "Clock preparation cancelled")?;
@@ -567,14 +665,14 @@ pub fn probe(
             result?;
         }
         Ok(
-            json!({"processTimes":times,"maxProcessMs":max_process_ms,"helperClosed":handles.iter().all(|handle|!handle.is_alive()),"helpers":handles.len(),"graphLatency":graph_latency}),
+            json!({"historyFrames":history_frames,"processTimes":times,"maxProcessMs":max_process_ms,"helperClosed":handles.iter().all(|handle|!handle.is_alive()),"helpers":handles.len(),"graphLatency":graph_latency}),
         )
     });
     let state = CallbackState {
         data: UnsafeCell::new(CallbackData {
             consumer,
-            capture: vec![0.; BLOCKS * SAMPLES],
-            times: vec![0.; BLOCKS],
+            capture: vec![0.; total_blocks * SAMPLES],
+            times: vec![0.; total_blocks],
             blocks: 0,
         }),
         entered: AtomicBool::new(false),
@@ -582,6 +680,8 @@ pub fn probe(
         callbacks: AtomicU64::new(0),
         clock,
         epoch,
+        blocks: total_blocks,
+        frames: capture_frames,
         ring: shared.clone(),
     };
     let result = (|| {
@@ -601,11 +701,25 @@ pub fn probe(
     let fault = shared.fault.load(Ordering::Acquire);
     let mut impulses = Vec::new();
     let mut invalid = 0;
-    for i in 0..data.blocks * FRAMES {
+    let mut samples = Vec::new();
+    let mut nonzero = 0usize;
+    let mut hash = 2166136261u32;
+    for i in 0..(data.blocks * FRAMES).min(capture_frames) {
         let l = data.capture[i * 2];
         let r = data.capture[i * 2 + 1];
+        for value in [l, r] {
+            for byte in value.to_le_bytes() {
+                hash = (hash ^ (byte as u32)).wrapping_mul(16777619);
+            }
+        }
         if l.abs() > 1e-6 || r.abs() > 1e-6 {
-            impulses.push(i);
+            if samples.len() < 256 {
+                samples.push(json!({"frame":i,"left":l,"right":r}));
+            }
+            nonzero += 1;
+            if !snapshot_mode || impulses.len() < 256 {
+                impulses.push(i);
+            }
             let gain = if graph_mode {
                 if i >= 4192 && (i - 4192) % 8192 == 0 {
                     0.1875
@@ -632,7 +746,7 @@ pub fn probe(
             .collect::<Vec<_>>()
     };
     Ok(
-        json!({"kind":if graph_mode {"native-graph-clock"}else{"native-clock"},"hardwareTimes":hardware,"fault":fault,"blocks":data.blocks,"frames":data.blocks*FRAMES,"blockFrames":FRAMES,"ringSlots":SLOTS,"queueBuffers":2,"rate":48000,"deviceBound":true,"muted":true,"impulses":impulses,"pcmExact":impulses==expected&&invalid==0,"faultBlockSilent":fault!=0&&data.blocks>0&&data.capture[(data.blocks-1)*SAMPLES..data.blocks*SAMPLES].iter().all(|v|*v==0.),"callbackTimes":&data.times[..data.blocks],"worker":stats,"cancelled":stop.stop.load(Ordering::Acquire)}),
+        json!({"kind":if snapshot_mode {"native-snapshot-clock"}else if graph_mode {"native-graph-clock"}else{"native-clock"},"hardwareTimes":hardware,"fault":fault,"blocks":data.blocks,"frames":(data.blocks*FRAMES).min(capture_frames),"pcmHash":hash,"nonZeroFrames":nonzero,"endPaddingSilent":data.blocks*FRAMES>=capture_frames&&data.capture[capture_frames*2..data.blocks*SAMPLES].iter().all(|v|*v==0.),"samples":samples,"blockFrames":FRAMES,"ringSlots":SLOTS,"queueBuffers":2,"rate":48000,"deviceBound":true,"muted":true,"impulses":impulses,"pcmExact":if snapshot_mode {Value::Null}else{json!(impulses==expected&&invalid==0)},"faultBlockSilent":fault!=0&&data.blocks>0&&data.capture[(data.blocks-1)*SAMPLES..data.blocks*SAMPLES].iter().all(|v|*v==0.),"callbackTimes":&data.times[..data.blocks],"worker":stats,"cancelled":stop.stop.load(Ordering::Acquire)}),
     )
 }
 
