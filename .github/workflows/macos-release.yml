@@ -59,7 +59,9 @@ jobs:
         run: |
           python3 scripts/release/check-macos-profile.py "$PROFILE" \
             --team "$TEAM_ID" --bundle "$BUNDLE_ID" \
-            --identity "Apple Distribution: Christian Ströbele ($TEAM_ID)"
+            --identity "Apple Distribution: Christian Ströbele ($TEAM_ID)" \
+            --entitlements-template src-tauri/entitlements.plist \
+            --entitlements-output "$RUNNER_TEMP/store-entitlements.plist"
       - name: Build .app
         run: |
           npx tauri build --target aarch64-apple-darwin --bundles app
@@ -90,9 +92,11 @@ jobs:
           done
 
           codesign --force --timestamp --options runtime \
-            --entitlements src-tauri/entitlements.plist \
+            --entitlements "$RUNNER_TEMP/store-entitlements.plist" \
             --keychain "$KC" --sign "$APP_CERT" "$APP"
             
+          python3 scripts/release/check-macos-app.py "$APP" --team "$TEAM_ID" --bundle "$BUNDLE_ID"
+
           VERSION=$(node -p "require('./package.json').version")
           productbuild --component "$APP" /Applications --sign "$INST_CERT" "CrispAudio_${VERSION}.pkg"
           echo "PKG=CrispAudio_${VERSION}.pkg" >> "$GITHUB_ENV"
@@ -102,7 +106,6 @@ jobs:
         run: |
           codesign --verify --deep --strict --verbose=2 "$APP"
           pkgutil --check-signature "$PKG"
-          python3 scripts/release/check-macos-app.py "$APP" --team "$TEAM_ID"
       - name: Keep signed package
         uses: actions/upload-artifact@v4
         with:

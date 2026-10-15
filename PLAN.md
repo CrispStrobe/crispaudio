@@ -8,7 +8,7 @@ and test counts do not describe the current application.
 
 The user accepted this order after 0.12.1:
 
-1. Check the preceding checkpoint: iOS CI passed; general CI remains queued.
+1. Check CI: preceding iOS passed; its general run was superseded. Current runs remain queued.
 2. Refine numeric controls: useful touch scales, explicit units/bounds, cancellation,
    one Undo per gesture and live feedback for mixer values.
 3. Consolidate recording, track, clip and FX inspectors: compact rows and dropdowns,
@@ -28,6 +28,11 @@ recording options. Native-rack recording uses a prepared wet backing on the capt
 clock; microphone takes and monitoring remain dry. Actual AU/VST3 and local hardened
 sandbox probes pass with bundled helpers. Sample editing, comping, save/reopen and
 exports pass desktop/touch browser checks. See [checkpoint evidence](docs/evidence/interaction-recording-0.13.0.json).
+
+Distribution follow-up: the hardened sandbox test also passes a VST3 fixture in
+Downloads through the existing static entitlement. Final signature/profile identity
+and certificate checks, profile-derived Store entitlements and 16 release gate
+regressions are implemented; real Mac signature checks run in CI.
 
 Next external gates: replacement Apple provisioning profile, Store-signed testing
 of user-selected external files/plugins, commercial plugins and external interfaces.

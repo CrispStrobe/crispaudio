@@ -43,17 +43,21 @@ shared capture timing, retained original audio, loop takes across a 650 ms UI st
 pre-input cancellation, one Undo and released helpers. An isolated ad-hoc signed,
 hardened App Sandbox probe passes the same workflow and observes three helper
 processes launched from the signed app bundle. It uses generated input and a
-bundled test plugin; external plugin/file access and Apple acceptance remain open.
+bundled test plugin; an additional run passes an external VST3 fixture in Downloads
+via the existing static entitlement. PowerBox-selected folder access and Apple acceptance remain open.
 
 Mac helpers now ship as sidecar executables, signed individually with inherited
 sandbox rights. Store packaging checks their presence, signatures, team,
-architectures and entitlements. The Store preflight rejects a missing provisioning
-profile. See [Mac distribution preparation](MACOS_SIGNING.md) and
+architectures and entitlements. The Store preflight rejects missing or mismatched
+profiles, final app/team entitlements or signing certificates, missing hardened runtime and invalid helper
+sandbox rights. The Store workflow derives identity entitlements from the validated
+profile. Nine profile/CMS/signature boundary tests and seven actual Mac signature
+regression tests pass. See [Mac distribution preparation](MACOS_SIGNING.md) and
 [sanitized evidence](evidence/interaction-recording-0.13.0.json).
 
-The preceding 0.12.1 iOS CI run passed; its general CI run remained queued at this
-checkpoint. The signed local 0.13.0 app is installed with one autosave retained and a fresh
-full-data/previous-app backup; the standalone CLI is unchanged. The source push
+The preceding 0.12.1 iOS CI run passed; its general run was superseded. The
+0.13.0 CI runs remain queued. The signed local app is installed with one autosave
+retained and a fresh full-data/previous-app backup; the standalone CLI is unchanged. The source push
 starts new CI runs; no release workflow or Apple upload was requested.
 
 ## Local 0.12.1 — compact recording and numeric controls

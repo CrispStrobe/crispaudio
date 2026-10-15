@@ -38,6 +38,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: python3 tests/release/test_macos_signing.py
       - run: npm run lint
       - run: npx tsc -b --pretty false
       - run: npm test
@@ -73,6 +74,10 @@ jobs:
             libssl-dev \
             libasound2-dev \
             patchelf
+
+      - name: Mac signature regression checks
+        if: runner.os == 'macOS'
+        run: python3 tests/release/test_macos_signing_actual.py
 
       - name: cargo check
         working-directory: src-tauri

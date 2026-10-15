@@ -96,5 +96,44 @@
     "autosavesRetained": 1,
     "backup": "full WebKit, application data, original autosave JSON and previous app",
     "standaloneCli": "unchanged"
+  },
+  "distributionFollowup": {
+    "externalDownloadsPlugin": {
+      "auHelper": true,
+      "cancelBeforeInput": true,
+      "dryInput": "generated 317 Hz",
+      "helpersReleased": true,
+      "kind": "native-recording",
+      "liveNativeInput": false,
+      "loopTakes": 4,
+      "muted": true,
+      "oneUndo": true,
+      "recordingClock": "shared Web Audio frame clock",
+      "sourceOffsetFrames": 2304,
+      "success": true,
+      "takeStart": 0,
+      "uiStallMs": 650,
+      "wetImpulseFrame": 24096,
+      "wetPeak": 0.375,
+      "sandbox": true,
+      "hardenedRuntime": true,
+      "signing": "ad-hoc local test",
+      "bundledHelperProcessesObserved": 2,
+      "externalPluginAccess": "passed in Downloads via static entitlement",
+      "powerBoxAccess": "not tested",
+      "appleStoreAcceptance": "not established"
+    },
+    "profileCmsAndSignatureTestsPassed": 9,
+    "actualMacSignatureTestsPassed": 7,
+    "gates": [
+      "CMS integrity and expiry, platform, distribution type and app/team identity",
+      "Generate Store identity entitlements from validated profile",
+      "Verify final app entitlements and actual signing certificate against embedded profile",
+      "Require hardened runtime on app and helpers",
+      "Reject invalid inherited sandbox rights, debugging rights, missing or modified helpers"
+    ],
+    "appleUpload": "not performed",
+    "powerBoxFolderAccess": "not qualified",
+    "installedApp": "0.13.0 unchanged"
   }
 }

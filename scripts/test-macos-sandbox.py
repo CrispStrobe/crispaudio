@@ -26,9 +26,11 @@ def main():
     parser.add_argument('--executable', type=pathlib.Path, default=REPO / 'src-tauri/target/debug/crispaudio-native-validation')
     parser.add_argument('--helpers', type=pathlib.Path, default=REPO / 'src-tauri/generated/native-helpers')
     parser.add_argument('--vst3-fixture', type=pathlib.Path, default=pathlib.Path(os.environ.get('CRISPAUDIO_TEST_PLUGIN_FOLDER', '/tmp/crispaudio-vst3-fixture/VST3/Release')) / 'ADelay.vst3')
+    parser.add_argument('--plugin-location', choices=['bundled', 'downloads'], default='bundled', help='Test bundled code or an owned external fixture in Downloads (a static sandbox right).')
     parser.add_argument('--keep', action='store_true')
     args = parser.parse_args()
     root = pathlib.Path(tempfile.mkdtemp(prefix='crispaudio-sandbox-'))
+    external_root = None
     app = root / 'CrispAudioSandboxProbe.app'
     mac = app / 'Contents/MacOS'
     mac.mkdir(parents=True)
@@ -38,7 +40,12 @@ def main():
     command('ditto', args.executable, exe)
     for name in NAMES:
         command('ditto', args.helpers / name, mac / name)
-    fixture = plugins / 'ADelay.vst3'
+    if args.plugin_location == 'downloads':
+        downloads = pathlib.Path.home() / 'Downloads'
+        if not downloads.is_dir():
+            raise ValueError('Downloads folder is required for the external fixture check.')
+        external_root = pathlib.Path(tempfile.mkdtemp(prefix='.crispaudio-sandbox-', dir=downloads))
+    fixture = (external_root or plugins) / 'ADelay.vst3'
     command('ditto', args.vst3_fixture, fixture)
     vst = next(plugin['id'] for plugin in json.loads(command(mac / NAMES[1], 'plugin-scan', json.dumps({'path': str(fixture)}))) if plugin['name'] == 'ADelay')
     au = next(plugin['id'] for plugin in json.loads(command(mac / NAMES[0], 'plugin-scan', '{}')) if plugin['name'] == 'AUBandpass')
@@ -80,12 +87,14 @@ def main():
     report = json.loads(line.split(' ', 1)[1])
     if not report.get('success') or not report.get('auHelper') or not report.get('helpersReleased') or not seen:
         raise AssertionError(f'Incomplete sandbox acceptance; evidence: {root}\n{report}')
-    report.update({'sandbox': True, 'hardenedRuntime': True, 'signing': 'ad-hoc local test', 'bundledHelperProcessesObserved': len(seen), 'externalPluginAccess': 'not tested', 'appleStoreAcceptance': 'not established'})
+    report.update({'sandbox': True, 'hardenedRuntime': True, 'signing': 'ad-hoc local test', 'bundledHelperProcessesObserved': len(seen), 'externalPluginAccess': 'passed in Downloads via static entitlement' if external_root else 'not tested', 'powerBoxAccess': 'not tested', 'appleStoreAcceptance': 'not established'})
     print(json.dumps(report))
     if args.keep:
         print(f'Sandbox evidence: {root}')
     else:
         shutil.rmtree(root)
+    if external_root:
+        shutil.rmtree(external_root)
 
 
 if __name__ == '__main__':

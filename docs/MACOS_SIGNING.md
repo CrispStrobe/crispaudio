@@ -13,9 +13,15 @@ and [library-validation entitlement](https://developer.apple.com/documentation/B
 
 Before packaging, `scripts/release/check-macos-app.py APP --team TEAM_ID` checks
 deep signatures, matching helper teams/architectures, sandbox entitlements and an
-embedded profile. The workflow separately validates the profile's integrity,
+embedded profile. It also requires hardened runtime, rejects debugging rights,
+and compares the final app identifier, team entitlements and actual leaf signing
+certificate against the embedded profile. The workflow separately validates
+the profile's integrity,
 expiry, platform, app identifier and certificate. A fresh Apple-issued matching
-profile is still required; local ad-hoc signing does not replace it.
+profile is still required; local ad-hoc signing does not replace it. The Store
+workflow derives the app/team identity entitlements from that validated profile;
+local builds retain their independent signing setup. See Apple's
+[provisioning profile reference](https://developer.apple.com/documentation/technotes/tn3125-inside-code-signing-provisioning-profiles).
 
 For a local muted sandbox check after building the native-validation executable:
 
@@ -27,6 +33,21 @@ This makes an isolated hardened, ad-hoc signed sandbox app and verifies actual
 bundled helper processes, AU/VST3 wet backing, generated recording, cancellation
 and cleanup. It does not access the physical microphone or establish Store review
 acceptance. The test plugin is copied inside the app's bundle.
+
+Add `--plugin-location downloads` to exercise a generated external VST3 fixture
+in Downloads using the app's existing static folder entitlement. Successful runs
+remove that fixture. Both bundled and Downloads runs pass wet accompaniment,
+generated recording, stalled-UI loops, cancellation and helper cleanup. Downloads
+access does not establish access to folders selected through PowerBox.
+
+Release gate regression tests:
+
+```sh
+python3 tests/release/test_macos_signing.py
+python3 tests/release/test_macos_signing_actual.py # macOS, real disposable signatures
+```
+
+The first suite runs in frontend CI; the real-signature suite runs in Mac CI.
 
 Remaining acceptance needs a Store-signed build, selected external media and
 plugins, commercial plugin installations and external audio interfaces. Child
