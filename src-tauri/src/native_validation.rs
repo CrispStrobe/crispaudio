@@ -37,6 +37,7 @@ async fn native_validation_audio_clock(
     state: tauri::State<'_, NativeClockState>,
     plugin: String,
     starve: bool,
+    graph_au: Option<String>,
 ) -> Result<Value, String> {
     let stop = std::sync::Arc::new(crate::native_audio_clock::Control::default());
     {
@@ -59,7 +60,7 @@ async fn native_validation_audio_clock(
             .into_iter()
             .find(|d| d.is_default)
             .ok_or("No default output")?;
-        crate::native_audio_clock::probe(plugin, device.id, stop, starve, || {
+        crate::native_audio_clock::probe(plugin, device.id, stop, starve, graph_au, || {
             window
                 .emit("native-clock-started", ())
                 .map_err(|e| e.to_string())

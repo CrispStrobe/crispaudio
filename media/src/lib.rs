@@ -9,8 +9,10 @@ mod ducking;
 mod graphics;
 pub mod jobs;
 mod limiter;
-pub mod project_edit;
+#[cfg(feature = "native-engine")]
+pub mod native_graph;
 pub mod plugin_stream;
+pub mod project_edit;
 pub mod retime;
 mod reverb;
 mod routing;

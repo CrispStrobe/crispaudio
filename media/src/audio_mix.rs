@@ -12,7 +12,7 @@ use std::{
 };
 const RATE: f64 = 48000.0;
 const BLOCK: usize = 1024;
-fn finite(v: &Value, key: &str, default: Option<f64>) -> Result<f64> {
+pub(crate) fn finite(v: &Value, key: &str, default: Option<f64>) -> Result<f64> {
     let x = if v.get(key).is_none() {
         default.ok_or_else(|| format!("Missing {key}"))?
     } else {
@@ -23,14 +23,14 @@ fn finite(v: &Value, key: &str, default: Option<f64>) -> Result<f64> {
     }
     Ok(x)
 }
-fn positive(v: &Value, key: &str, default: Option<f64>) -> Result<f64> {
+pub(crate) fn positive(v: &Value, key: &str, default: Option<f64>) -> Result<f64> {
     let x = finite(v, key, default)?;
     if x < 0.0 {
         return Err(format!("Negative {key}"));
     }
     Ok(x)
 }
-fn frames(seconds: f64) -> Result<u32> {
+pub(crate) fn frames(seconds: f64) -> Result<u32> {
     let x = (seconds * RATE).round();
     if x < 0.0 || x > u32::MAX as f64 {
         return Err("Audio position exceeds WAV frame limits".into());
@@ -714,7 +714,7 @@ fn process(filters: &mut [Effect], mut sample: [f64; 2], frame: u32) -> [f64; 2]
     }
     sample
 }
-fn pan(sample: [f64; 2], pan: f64, mono: bool) -> [f64; 2] {
+pub(crate) fn pan(sample: [f64; 2], pan: f64, mono: bool) -> [f64; 2] {
     if pan == 0.0 && !mono {
         return sample;
     }
@@ -2240,5 +2240,52 @@ mod native_rack_tests {
             _ => &mut doc["project"]["tracks"][0]["segments"][0],
         };
         target["nativeEffects"][0]["enabled"] = json!(false);
+    }
+}
+
+/// Shared DSP for the experimental native block graph; the file mixer stays unchanged.
+#[cfg(feature = "native-engine")]
+pub(crate) mod block_dsp {
+    use super::*;
+    pub struct Budget(EffectBudget);
+    impl Default for Budget {
+        fn default() -> Self {
+            Self(EffectBudget { bytes: 0, count: 0 })
+        }
+    }
+    pub struct Rack(Vec<Effect>);
+    impl Rack {
+        pub fn new(value: &Value, budget: &mut Budget) -> Result<Self> {
+            Ok(Self(filters(value, &mut budget.0)?))
+        }
+        pub fn at(&mut self, sample: [f64; 2], frame: u32) -> [f64; 2] {
+            process(&mut self.0, sample, frame)
+        }
+        pub fn stereo(&self) -> bool {
+            self.0
+                .iter()
+                .any(|e| matches!(e, Effect::Reverb { .. } | Effect::Compressor(_)))
+        }
+    }
+    pub struct Fade(Envelope);
+    impl Fade {
+        pub fn new(value: &Value, duration: f64) -> Result<Self> {
+            Ok(Self(Envelope::parse(value, duration)?))
+        }
+        pub fn at(&self, time: f64) -> f64 {
+            self.0.at(time)
+        }
+    }
+    pub struct Curve(Automation);
+    impl Curve {
+        pub fn gain(value: &Value) -> Result<Self> {
+            Ok(Self(Automation::parse(value)?))
+        }
+        pub fn pan(value: &Value, fallback: f64) -> Result<Self> {
+            Ok(Self(Automation::parse_parameter(value, true, fallback)?))
+        }
+        pub fn at(&mut self, time: f64) -> f64 {
+            self.0.at(time)
+        }
     }
 }

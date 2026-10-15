@@ -110,9 +110,18 @@ progress. Fixed bounded PCM slots connect the helper worker directly to the nati
 callback; WebKit carries no per-block audio. Deliberate starvation faults silently,
 cancellation closes the helper, and output stays muted during digital capture.
 This is a single-insert foundation, not enabled production timeline processing.
-Next integrate immutable project/source snapshots and the compensated track/bus
-render graph onto the native worker, then transport, live controls and device
-lifecycle. See [native engine foundation](docs/NATIVE_AUDIO_ENGINE.md).
+The opt-in native-engine graph now compiles owned project/source snapshots and
+renders clip/track/bus/master racks, pre/post sends and sidechains on that worker.
+It reuses the existing native built-in DSP; integer-frame compensation aligns
+merges and both detector/program arrival orders. Insert failures, non-finite output
+and changed reported latency latch the entire graph silent. Unit checks cover
+varying block sizes and selected file-export parity; real four-instance AU/VST3
+capture checks the routed mix, UI stall, starvation and collective cancellation.
+These fixtures use generated PCM, with nonzero reported latency exercised by
+synthetic inserts. The GUI project/source transfer and production engine switch
+are not implemented. Next connect owned GUI snapshots and sample-clock transport,
+including scope-specific plugin tempo/position, seek/loop/state, live controls and
+device lifecycle. See [native engine foundation](docs/NATIVE_AUDIO_ENGINE.md).
 Graph-wide faults, transport/loops, session ownership and FLAC/AAC native-rack
 delivery remain required before realtime activation.
 Record scope and remaining requirements honestly; these are initial complete

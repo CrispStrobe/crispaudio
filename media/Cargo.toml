@@ -22,3 +22,7 @@ debug = 0
 
 [profile.test]
 debug = 0
+
+[features]
+# Internal native worker graph; not enabled in the CLI or ordinary app.
+native-engine = []

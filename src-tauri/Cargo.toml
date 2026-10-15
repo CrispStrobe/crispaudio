@@ -48,7 +48,7 @@ opt-level = 3
 
 
 [features]
-native-validation = []
+native-validation = ["crispaudio-media/native-engine"]
 
 [[bin]]
 name = "crispaudio-native-validation"

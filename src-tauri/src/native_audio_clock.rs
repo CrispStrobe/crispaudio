@@ -18,7 +18,7 @@ use std::{
 #[derive(Default)]
 pub struct Control {
     stop: AtomicBool,
-    helper: Mutex<Option<StreamStop>>,
+    helper: Mutex<Vec<StreamStop>>,
     ring: Mutex<Option<Arc<Ring>>>,
     pub finished: AtomicBool,
 }
@@ -28,16 +28,93 @@ impl Control {
         if let Some(ring) = self.ring.lock().unwrap().as_ref() {
             ring.stop.store(true, Ordering::Release);
         }
-        if let Some(helper) = self.helper.lock().unwrap().as_ref() {
+        for helper in self.helper.lock().unwrap().iter() {
             helper.stop();
         }
     }
     fn register(&self, helper: StreamStop) {
-        *self.helper.lock().unwrap() = Some(helper);
+        self.helper.lock().unwrap().push(helper);
         if self.stop.load(Ordering::Acquire) {
             self.cancel();
         }
     }
+}
+
+use crispaudio_media::native_graph::{Graph, Insert, Source, Stereo};
+struct NativeInsert {
+    stream: PluginStream,
+    latency: usize,
+    bypass: bool,
+    dry: Vec<Stereo>,
+    cursor: usize,
+}
+impl Insert for NativeInsert {
+    fn latency(&self) -> usize {
+        self.latency
+    }
+    fn process(&mut self, pcm: &mut [Stereo], _: u32) -> Result<(), String> {
+        let input = vec![
+            pcm.iter().map(|v| v[0]).collect(),
+            pcm.iter().map(|v| v[1]).collect(),
+        ];
+        // Scope-specific musical transport is a later integration, not guessed here.
+        let reply = self.stream.process(&input, &json!({}), self.bypass)?;
+        if reply.metadata["latencySamples"].as_u64() != Some(self.latency as u64) {
+            return Err("Native graph plugin latency changed".into());
+        }
+        for (i, sample) in pcm.iter_mut().enumerate() {
+            *sample = [reply.samples[0][i], reply.samples[1][i]];
+            if self.bypass && !self.dry.is_empty() {
+                std::mem::swap(sample, &mut self.dry[self.cursor]);
+                self.cursor = (self.cursor + 1) % self.dry.len();
+            }
+        }
+        Ok(())
+    }
+}
+fn graph_fixture(vst: &str, au: &str, control: &Control) -> Result<Graph, String> {
+    let native = |id: &str, bypass: bool, parameters: Value| json!([{"instanceId":"i","pluginId":id,"enabled":true,"bypass":bypass,"parameters":parameters,"state":""}]);
+    let clip = |id: &str, source: &str| json!({"id":id,"sourceId":source,"startTime":0,"sourceOffset":0,"duration":BLOCKS as f64*FRAMES as f64/48000.,"gain":1,"effects":[]});
+    let mut wet = clip("wet", "source");
+    wet["nativeEffects"] = native(vst, false, json!({"100":0.002,"101":0}));
+    let project = json!({"sampleRate":48000,"duration":BLOCKS as f64*FRAMES as f64/48000.,"masterVolume":0.5,"nativeEffects":native(au,true,json!({"0":440})),"tracks":[
+ {"id":"wet","volume":0.5,"pan":0,"segments":[wet],"nativeEffects":native(au,true,json!({"0":440})),"output":"bus","sends":[{"id":"pre","target":"master","gain":0.25,"preFader":true},{"id":"post","target":"master","gain":0.25,"preFader":false}]},
+ {"id":"dry","volume":0.375,"pan":0,"segments":[clip("dry","dry")]},
+ {"id":"bus","kind":"bus","volume":0.5,"pan":0,"segments":[],"nativeEffects":native(vst,false,json!({"100":0.002,"101":0}))}]});
+    let source = |delay: usize| -> Result<Source, String> {
+        let mut pcm = vec![vec![0.; BLOCKS * FRAMES]; 2];
+        for frame in (4096 + delay..BLOCKS * FRAMES).step_by(8192) {
+            pcm[0][frame] = 0.75;
+            pcm[1][frame] = -0.625;
+        }
+        Source::new(pcm)
+    };
+    Graph::prepare(
+        &project,
+        std::collections::HashMap::from([
+            ("source".into(), source(0)?),
+            ("dry".into(), source(192)?),
+        ]),
+        |entry| {
+            let stream = PluginStream::open_with_stop(
+                &json!({"id":entry["pluginId"],"sampleRate":48000,"channels":2,"processMode":"realtime","parameters":entry["parameters"],"state":entry["state"]}),
+                |helper| control.register(helper),
+            )?;
+            let latency = stream.info["latencySamples"]
+                .as_u64()
+                .ok_or("Missing graph plugin latency")? as usize;
+            if latency > 480000 {
+                return Err("Invalid graph native latency".into());
+            }
+            Ok(Box::new(NativeInsert {
+                stream,
+                latency,
+                bypass: entry["bypass"] == true,
+                dry: vec![[0.; 2]; latency],
+                cursor: 0,
+            }))
+        },
+    )
 }
 
 const FRAMES: usize = 512;
@@ -378,8 +455,10 @@ pub fn probe(
     device: String,
     stop: Arc<Control>,
     starve: bool,
+    graph_au: Option<String>,
     started: impl FnOnce() -> Result<(), String>,
 ) -> Result<Value, String> {
+    let graph_mode = graph_au.is_some();
     let (mut producer, consumer) = ring();
     let shared = producer.ring.clone();
     *stop.ring.lock().unwrap() = Some(shared.clone());
@@ -393,11 +472,21 @@ pub fn probe(
     let worker_stop = stop.clone();
     let (ready_send, ready) = std::sync::mpsc::sync_channel(1);
     let worker = thread::spawn(move || -> Result<Value, String> {
-        let mut stream = PluginStream::open_with_stop(
-            &json!({"id":plugin,"sampleRate":48000,"channels":2,"processMode":"realtime","parameters":{"100":0.002,"101":0},"bypass":false}),
-            |helper| worker_stop.register(helper),
-        )?;
-        let handle = stream.stop_handle();
+        let mut graph = if let Some(au) = graph_au {
+            Some(graph_fixture(&plugin, &au, &worker_stop)?)
+        } else {
+            None
+        };
+        let mut stream = if graph.is_none() {
+            Some(PluginStream::open_with_stop(
+                &json!({"id":plugin,"sampleRate":48000,"channels":2,"processMode":"realtime","parameters":{"100":0.002,"101":0},"bypass":false}),
+                |helper| worker_stop.register(helper),
+            )?)
+        } else {
+            None
+        };
+        let handles = worker_stop.helper.lock().unwrap().clone();
+        let graph_latency = graph.as_ref().map(|g| g.latency());
         let mut times = Vec::with_capacity(BLOCKS);
         let mut max_process_ms = 0f64;
         let result = (|| -> Result<(), String> {
@@ -423,26 +512,35 @@ pub fn probe(
                     }
                 }
                 let t = Instant::now();
-                let reply = stream.process_with_transport(
-                    &input,
-                    &json!({}),
-                    false,
-                    Some(&StreamTransport {
-                        sample_position: (block * FRAMES) as u64,
-                        tempo: 120.,
-                        numerator: 4,
-                        denominator: 4,
-                        origin_seconds: 0.,
-                        playing: true,
-                    }),
-                )?;
+                let mut interleaved = [0.; SAMPLES];
+                if let Some(graph) = &mut graph {
+                    let mut pcm = vec![[0.; 2]; FRAMES];
+                    graph.render(&mut pcm)?;
+                    for (i, sample) in pcm.iter().enumerate() {
+                        interleaved[i * 2] = sample[0];
+                        interleaved[i * 2 + 1] = sample[1];
+                    }
+                } else {
+                    let reply = stream.as_mut().unwrap().process_with_transport(
+                        &input,
+                        &json!({}),
+                        false,
+                        Some(&StreamTransport {
+                            sample_position: (block * FRAMES) as u64,
+                            tempo: 120.,
+                            numerator: 4,
+                            denominator: 4,
+                            origin_seconds: 0.,
+                            playing: true,
+                        }),
+                    )?;
+                    for i in 0..FRAMES {
+                        interleaved[i * 2] = reply.samples[0][i];
+                        interleaved[i * 2 + 1] = reply.samples[1][i];
+                    }
+                }
                 max_process_ms = max_process_ms.max(t.elapsed().as_secs_f64() * 1000.);
                 times.push(epoch + clock.elapsed().as_secs_f64() * 1000.);
-                let mut interleaved = [0.; SAMPLES];
-                for i in 0..FRAMES {
-                    interleaved[i * 2] = reply.samples[0][i];
-                    interleaved[i * 2 + 1] = reply.samples[1][i];
-                }
                 while !producer.push(&interleaved) {
                     if worker_stop.stop.load(Ordering::Acquire)
                         || worker_ring.stop.load(Ordering::Acquire)
@@ -463,12 +561,13 @@ pub fn probe(
         if result.is_err() && !worker_stop.stop.load(Ordering::Acquire) {
             worker_ring.fail(6);
         }
+        drop(graph);
         drop(stream);
         if !worker_stop.stop.load(Ordering::Acquire) {
             result?;
         }
         Ok(
-            json!({"processTimes":times,"maxProcessMs":max_process_ms,"helperClosed":!handle.is_alive()}),
+            json!({"processTimes":times,"maxProcessMs":max_process_ms,"helperClosed":handles.iter().all(|handle|!handle.is_alive()),"helpers":handles.len(),"graphLatency":graph_latency}),
         )
     });
     let state = CallbackState {
@@ -507,16 +606,33 @@ pub fn probe(
         let r = data.capture[i * 2 + 1];
         if l.abs() > 1e-6 || r.abs() > 1e-6 {
             impulses.push(i);
-            if (l - 0.75).abs() > 2e-6 || (r + 0.625).abs() > 2e-6 {
+            let gain = if graph_mode {
+                if i >= 4192 && (i - 4192) % 8192 == 0 {
+                    0.1875
+                } else {
+                    0.3125
+                }
+            } else {
+                1.
+            };
+            if (l - 0.75 * gain).abs() > 2e-6 || (r + 0.625 * gain).abs() > 2e-6 {
                 invalid += 1;
             }
         }
     }
-    let expected = (4096 + 96..BLOCKS * FRAMES)
-        .step_by(8192)
-        .collect::<Vec<_>>();
+    let expected = if graph_mode {
+        (4096..BLOCKS * FRAMES)
+            .step_by(8192)
+            .flat_map(|frame| [frame + 96, frame + 192])
+            .filter(|frame| *frame < BLOCKS * FRAMES)
+            .collect::<Vec<_>>()
+    } else {
+        (4096 + 96..BLOCKS * FRAMES)
+            .step_by(8192)
+            .collect::<Vec<_>>()
+    };
     Ok(
-        json!({"kind":"native-clock","hardwareTimes":hardware,"fault":fault,"blocks":data.blocks,"frames":data.blocks*FRAMES,"blockFrames":FRAMES,"ringSlots":SLOTS,"queueBuffers":2,"rate":48000,"deviceBound":true,"muted":true,"impulses":impulses,"pcmExact":impulses==expected&&invalid==0,"faultBlockSilent":fault!=0&&data.blocks>0&&data.capture[(data.blocks-1)*SAMPLES..data.blocks*SAMPLES].iter().all(|v|*v==0.),"callbackTimes":&data.times[..data.blocks],"worker":stats,"cancelled":stop.stop.load(Ordering::Acquire)}),
+        json!({"kind":if graph_mode {"native-graph-clock"}else{"native-clock"},"hardwareTimes":hardware,"fault":fault,"blocks":data.blocks,"frames":data.blocks*FRAMES,"blockFrames":FRAMES,"ringSlots":SLOTS,"queueBuffers":2,"rate":48000,"deviceBound":true,"muted":true,"impulses":impulses,"pcmExact":impulses==expected&&invalid==0,"faultBlockSilent":fault!=0&&data.blocks>0&&data.capture[(data.blocks-1)*SAMPLES..data.blocks*SAMPLES].iter().all(|v|*v==0.),"callbackTimes":&data.times[..data.blocks],"worker":stats,"cancelled":stop.stop.load(Ordering::Acquire)}),
     )
 }
 
