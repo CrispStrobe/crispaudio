@@ -24,3 +24,10 @@ need review; this audit establishes neither LGPL applicability nor clearance.
 
 AAC patent clearance is separate from source licenses. See
 [the codec licensing assessment](../../../docs/MEDIA_FORMATS_AND_LICENSES.md#distribution-assessment-2026-10-15).
+
+The [deeper AAC-LC review](../../../docs/AAC_LC_PATENT_REVIEW.md) records actual
+binary capability probes, comparison with Fedora's stripped codec and scoped
+patent-claim checks. `node scripts/audit-aac-wasm.mjs` reruns the offline probe
+from the repository root. It establishes AAC-LC output and PNS decoding in this
+exact binary; it does not establish its original source revision or worldwide
+patent clearance.

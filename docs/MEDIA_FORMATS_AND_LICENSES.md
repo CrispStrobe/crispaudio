@@ -217,7 +217,12 @@ from this engineering audit. See the [provenance record](../src/lib/glint/UPSTRE
 
 ### Distribution assessment (2026-10-15)
 
-**AAC clearance remains unresolved. No App Store territory changes were made.**
+**The deeper AAC-LC review identified no live claim that baseline AAC-LC
+necessarily uses.** That supports keeping AAC-LC and current territories;
+worldwide clearance of every Glint implementation technique remains unresolved.
+See the [AAC-LC review and reproducible binary probe](AAC_LC_PATENT_REVIEW.md)
+for the Fedora comparison, expired PNS family, specific claim checks and limits.
+No App Store territory changes were made.
 
 The same frontend Glint WASM ships on web, macOS and iOS. It supplies compressed
 SFX/Voice export and audio-import fallback. Eligible linked Mac timeline exports
@@ -226,6 +231,9 @@ also leave the independently bundled codec in the application.
 
 Via LA's published position is that end-user encoder/decoder developers need a
 license and component licensing does not automatically cover the finished app.
+That broad statement is not an implementation-specific finding that Glint uses
+a live patent claim. Fedora Legal's accepted restricted implementation and the
+expired PNS family are substantive contrary evidence to a blanket LC requirement.
 Its current pool list covers multiple AAC profiles; it does not establish which
 currently valid claims apply to this exact AAC-LC implementation in each country.
 Free/open-source distribution and voluntary donations are not an established
@@ -238,17 +246,20 @@ Germany is in R1. A storefront exclusion alone does not assess development or
 other distribution acts. Apple's review guidelines also require developers to
 have the necessary intellectual-property rights; approval is not patent clearance.
 
-Before a new Store release, obtain a scoped patent/license assessment or written
-licensor clarification for the exact encoder/decoder, free distribution model,
-optional donations, Germany-based developer, platforms and territories. Confirm
-which claims remain applicable to AAC-LC, any existing finished-product coverage,
-and how downloads/updates are counted. The developer's precise commercial details
-belong in that private inquiry, not in public product documentation.
+For further assessment, start with a specific live claim and the exact shipped
+algorithm, not an assumption that a pool fee is due. If such a candidate is found,
+verify claim coverage and national status; obtain scoped professional advice as
+needed. Any license inquiry should describe the encoder/decoder, free distribution
+model, platforms and territories, and confirm finished-product coverage and how
+downloads/updates are counted. The developer's precise commercial details belong
+in that private inquiry, not in public product documentation.
 
-A possible engineering alternative is an Apple-system-codec Store build that
+A possible engineering alternative, if supported by a concrete need, is an
+Apple-system-codec Store build that
 actually excludes independent AAC code. This requires a deliberate build policy,
 coverage of every fallback/export path, and confirmation of rights for that API
-use. It is a recommendation to assess, not a completed change or legal clearance.
+use. The continued existence of the broader AAC pool alone does not justify that
+replacement. It is not a completed change or legal clearance.
 
 Additional official sources:
 [Via AAC FAQ](https://www.via-la.com/licensing-programs/aac/),

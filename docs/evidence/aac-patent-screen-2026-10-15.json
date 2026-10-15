@@ -1,0 +1,429 @@
+{
+  "date": "2026-10-15",
+  "purpose": "Title/record screen of 84 older US grants; not claim clearance. Representative claims reviewed separately in AAC_LC_PATENT_REVIEW.md.",
+  "poolPdf": "https://www.via-la.com/wp-content/uploads/2026/09/26Q3-AAC-Patent-List-website.pdf",
+  "poolPdfSha256": "22daba3c12ff47e28f153638cce6636de8848c8bc66067ab4ed64ea29e8e641a",
+  "usEntriesInPool": 645,
+  "screened": [
+    {
+      "number": "US7391870",
+      "title": "Apparatus and method for generating a multi-channel output signal",
+      "document": "https://patents.google.com/patent/US7391870/en"
+    },
+    {
+      "number": "US7577570",
+      "title": "Method for reduction of aliasing introduced by spectral envelope adjustment in real-valued filterbanks",
+      "document": "https://patents.google.com/patent/US7577570/en"
+    },
+    {
+      "number": "US7707034",
+      "title": "Audio codec post-filter",
+      "document": "https://patents.google.com/patent/US7707034/en"
+    },
+    {
+      "number": "US7711552",
+      "title": "Efficient filtering with a complex modulated filterbank",
+      "document": "https://patents.google.com/patent/US7711552/en"
+    },
+    {
+      "number": "US7720230",
+      "title": "Individual channel shaping for BCC schemes and the like",
+      "document": "https://patents.google.com/patent/US7720230/en"
+    },
+    {
+      "number": "US7720677",
+      "title": "Time warped modified transform coding of audio signals",
+      "document": "https://patents.google.com/patent/US7720677/en"
+    },
+    {
+      "number": "US7751572",
+      "title": "Adaptive residual audio coding",
+      "document": "https://patents.google.com/patent/US7751572/en"
+    },
+    {
+      "number": "US7756711",
+      "title": "Sampling rate conversion apparatus, encoding apparatus decoding apparatus and methods thereof",
+      "document": "https://patents.google.com/patent/US7756711/en"
+    },
+    {
+      "number": "US7756713",
+      "title": "Audio signal decoding device which decodes a downmix channel signal and audio signal encoding device which encodes audio channel signals together with spatial audio information",
+      "document": "https://patents.google.com/patent/US7756713/en"
+    },
+    {
+      "number": "US7769584",
+      "title": "Encoder, decoder, encoding method, and decoding method",
+      "document": "https://patents.google.com/patent/US7769584/en"
+    },
+    {
+      "number": "US7788106",
+      "title": "Entropy coding with compact codebooks",
+      "document": "https://patents.google.com/patent/US7788106/en"
+    },
+    {
+      "number": "US7805313",
+      "title": "Frequency-based coding of channels in parametric multi-channel coding systems",
+      "document": "https://patents.google.com/patent/US7805313/en"
+    },
+    {
+      "number": "US7809580",
+      "title": "Encoding and decoding of multi-channel audio signals",
+      "document": "https://patents.google.com/patent/US7809580/en"
+    },
+    {
+      "number": "US7813513",
+      "title": "Multi-channel encoder",
+      "document": "https://patents.google.com/patent/US7813513/en"
+    },
+    {
+      "number": "US7840411",
+      "title": "Audio encoding and decoding",
+      "document": "https://patents.google.com/patent/US7840411/en"
+    },
+    {
+      "number": "US7903824",
+      "title": "Compact side information for parametric coding of spatial audio",
+      "document": "https://patents.google.com/patent/US7903824/en"
+    },
+    {
+      "number": "US7917561",
+      "title": "Partially complex modulated filter bank",
+      "document": "https://patents.google.com/patent/US7917561/en"
+    },
+    {
+      "number": "US7933415",
+      "title": "Signal synthesizing",
+      "document": "https://patents.google.com/patent/US7933415/en"
+    },
+    {
+      "number": "US7933769",
+      "title": "Methods and devices for low-frequency emphasis during audio compression based on ACELP/TCX",
+      "document": "https://patents.google.com/patent/US7933769/en"
+    },
+    {
+      "number": "US7945449",
+      "title": "Temporal envelope shaping for spatial audio coding using frequency domain wiener filtering",
+      "document": "https://patents.google.com/patent/US7945449/en"
+    },
+    {
+      "number": "US7949057",
+      "title": "Spectrum coding apparatus, spectrum decoding apparatus, acoustic signal transmission apparatus, acoustic signal reception apparatus and methods thereof",
+      "document": "https://patents.google.com/patent/US7949057/en"
+    },
+    {
+      "number": "US7961889",
+      "title": "Apparatus and method for processing multi-channel audio signal using space information",
+      "document": "https://patents.google.com/patent/US7961889/en"
+    },
+    {
+      "number": "US7961890",
+      "title": "Multi-channel hierarchical audio coding with compact side information",
+      "document": "https://patents.google.com/patent/US7961890/en"
+    },
+    {
+      "number": "US7966191",
+      "title": "Method and apparatus for generating a number of output audio channels",
+      "document": "https://patents.google.com/patent/US7966191/en"
+    },
+    {
+      "number": "US7974713",
+      "title": "Temporal and spatial shaping of multi-channel audio signals",
+      "document": "https://patents.google.com/patent/US7974713/en"
+    },
+    {
+      "number": "US7974847",
+      "title": "Advanced methods for interpolation and parameter signalling",
+      "document": "https://patents.google.com/patent/US7974847/en"
+    },
+    {
+      "number": "US7978101",
+      "title": "Encoder and decoder using arithmetic stage to compress code space that is not fully utilized",
+      "document": "https://patents.google.com/patent/US7978101/en"
+    },
+    {
+      "number": "US7979271",
+      "title": "Methods and devices for switching between sound signal coding modes at a coder and for producing target signals at a decoder",
+      "document": "https://patents.google.com/patent/US7979271/en"
+    },
+    {
+      "number": "US7983424",
+      "title": "Envelope shaping of decorrelated signals",
+      "document": "https://patents.google.com/patent/US7983424/en"
+    },
+    {
+      "number": "US7983922",
+      "title": "Apparatus and method for generating multi-channel synthesizer control signal and apparatus and method for multi-channel synthesizing",
+      "document": "https://patents.google.com/patent/US7983922/en"
+    },
+    {
+      "number": "US7986789",
+      "title": "Method for representing multi-channel audio signals",
+      "document": "https://patents.google.com/patent/US7986789/en"
+    },
+    {
+      "number": "US7991610",
+      "title": "Adaptive grouping of parameters for enhanced coding efficiency",
+      "document": "https://patents.google.com/patent/US7991610/en"
+    },
+    {
+      "number": "US8015018",
+      "title": "Multichannel decorrelation in spatial audio coding",
+      "document": "https://patents.google.com/patent/US8015018/en"
+    },
+    {
+      "number": "US8019350",
+      "title": "Audio coding using de-correlated signals",
+      "document": "https://patents.google.com/patent/US8019350/en"
+    },
+    {
+      "number": "US8019614",
+      "title": "Energy shaping apparatus and energy shaping method",
+      "document": "https://patents.google.com/patent/US8019614/en"
+    },
+    {
+      "number": "US8027479",
+      "title": "Binaural multi-channel decoder in the context of non-energy conserving upmix rules",
+      "document": "https://patents.google.com/patent/US8027479/en"
+    },
+    {
+      "number": "US8036904",
+      "title": "Audio encoder and method for scalable multi-channel audio coding, and an audio decoder and method for decoding said scalable multi-channel audio coding",
+      "document": "https://patents.google.com/patent/US8036904/en"
+    },
+    {
+      "number": "US8054981",
+      "title": "Energy dependent quantization for efficient coding of spatial audio parameters",
+      "document": "https://patents.google.com/patent/US8054981/en"
+    },
+    {
+      "number": "US8081764",
+      "title": "Audio decoder",
+      "document": "https://patents.google.com/patent/US8081764/en"
+    },
+    {
+      "number": "US8116459",
+      "title": "Enhanced method for signal shaping in multi-channel audio reconstruction",
+      "document": "https://patents.google.com/patent/US8116459/en"
+    },
+    {
+      "number": "US8121831",
+      "title": "Method, apparatus, and medium for bandwidth extension encoding and decoding",
+      "document": "https://patents.google.com/patent/US8121831/en"
+    },
+    {
+      "number": "US8145498",
+      "title": "Device and method for generating a coded multi-channel signal and device and method for decoding a coded multi-channel signal",
+      "document": "https://patents.google.com/patent/US8145498/en"
+    },
+    {
+      "number": "US8150042",
+      "title": "Method, device, encoder apparatus, decoder apparatus and audio system",
+      "document": "https://patents.google.com/patent/US8150042/en"
+    },
+    {
+      "number": "US8160888",
+      "title": "Generation of multi-channel audio signals",
+      "document": "https://patents.google.com/patent/US8160888/en"
+    },
+    {
+      "number": "US8170882",
+      "title": "Multichannel audio coding",
+      "document": "https://patents.google.com/patent/US8170882/en"
+    },
+    {
+      "number": "US8175280",
+      "title": "Generation of spatial downmixes from parametric representations of multi channel signals",
+      "document": "https://patents.google.com/patent/US8175280/en"
+    },
+    {
+      "number": "US8180061",
+      "title": "Concept for bridging the gap between parametric multi-channel audio coding and matrixed-surround multi-channel coding",
+      "document": "https://patents.google.com/patent/US8180061/en"
+    },
+    {
+      "number": "US8180818",
+      "title": "Partially complex modulated filter bank",
+      "document": "https://patents.google.com/patent/US8180818/en"
+    },
+    {
+      "number": "US8180819",
+      "title": "Partially complex modulated filter bank",
+      "document": "https://patents.google.com/patent/US8180819/en"
+    },
+    {
+      "number": "US8190425",
+      "title": "Complex cross-correlation parameters for multi-channel audio",
+      "document": "https://patents.google.com/patent/US8190425/en"
+    },
+    {
+      "number": "US8194861",
+      "title": "Scheme for generating a parametric representation for low-bit rate applications",
+      "document": "https://patents.google.com/patent/US8194861/en"
+    },
+    {
+      "number": "US8204261",
+      "title": "Diffuse sound shaping for BCC schemes and the like",
+      "document": "https://patents.google.com/patent/US8204261/en"
+    },
+    {
+      "number": "US8223976",
+      "title": "Apparatus and method for generating a level parameter and apparatus and method for generating a multi-channel representation",
+      "document": "https://patents.google.com/patent/US8223976/en"
+    },
+    {
+      "number": "US8239193",
+      "title": "Method, apparatus, and medium for bandwidth extension encoding and decoding",
+      "document": "https://patents.google.com/patent/US8239193/en"
+    },
+    {
+      "number": "US8254584",
+      "title": "Method, medium, and system encoding/decoding multi-channel signal",
+      "document": "https://patents.google.com/patent/US8254584/en"
+    },
+    {
+      "number": "US8255211",
+      "title": "Temporal envelope shaping for spatial audio coding using frequency domain wiener filtering",
+      "document": "https://patents.google.com/patent/US8255211/en"
+    },
+    {
+      "number": "US8255212",
+      "title": "Filter compressor and method for manufacturing compressed subband filter impulse responses",
+      "document": "https://patents.google.com/patent/US8255212/en"
+    },
+    {
+      "number": "US8255231",
+      "title": "Encoding and decoding of audio signals using complex-valued filter banks",
+      "document": "https://patents.google.com/patent/US8255231/en"
+    },
+    {
+      "number": "US8258849",
+      "title": "Method and an apparatus for processing a signal",
+      "document": "https://patents.google.com/patent/US8258849/en"
+    },
+    {
+      "number": "US8280538",
+      "title": "System, medium, and method of encoding/decoding multi-channel audio signals",
+      "document": "https://patents.google.com/patent/US8280538/en"
+    },
+    {
+      "number": "US8284946",
+      "title": "Binaural decoder to output spatial stereo sound and a decoding method thereof",
+      "document": "https://patents.google.com/patent/US8284946/en"
+    },
+    {
+      "number": "US8285771",
+      "title": "Partially complex modulated filter bank",
+      "document": "https://patents.google.com/patent/US8285771/en"
+    },
+    {
+      "number": "US8300849",
+      "title": "Perceptually weighted digital audio level compression",
+      "document": "https://patents.google.com/patent/US8300849/en"
+    },
+    {
+      "number": "US8311809",
+      "title": "Converting decoded sub-band signal into a stereo signal",
+      "document": "https://patents.google.com/patent/US8311809/en"
+    },
+    {
+      "number": "US8315859",
+      "title": "Efficient filtering with a complex modulated filterbank",
+      "document": "https://patents.google.com/patent/US8315859/en"
+    },
+    {
+      "number": "US8321210",
+      "title": "Audio encoding/decoding scheme having a switchable bypass",
+      "document": "https://patents.google.com/patent/US8321210/en"
+    },
+    {
+      "number": "US8332213",
+      "title": "Multi-reference LPC filter quantization and inverse quantization device and method",
+      "document": "https://patents.google.com/patent/US8332213/en"
+    },
+    {
+      "number": "US8340302",
+      "title": "Parametric representation of spatial audio",
+      "document": "https://patents.google.com/patent/US8340302/en"
+    },
+    {
+      "number": "US8346379",
+      "title": "Method and an apparatus for processing a signal",
+      "document": "https://patents.google.com/patent/US8346379/en"
+    },
+    {
+      "number": "US8346564",
+      "title": "Multi-channel audio coding",
+      "document": "https://patents.google.com/patent/US8346564/en"
+    },
+    {
+      "number": "US8355509",
+      "title": "Parametric joint-coding of audio sources",
+      "document": "https://patents.google.com/patent/US8355509/en"
+    },
+    {
+      "number": "US8364471",
+      "title": "Apparatus and method for processing a time domain audio signal with a noise filling flag",
+      "document": "https://patents.google.com/patent/US8364471/en"
+    },
+    {
+      "number": "US8386268",
+      "title": "Apparatus and method for generating a synthesis audio signal using a patching control signal",
+      "document": "https://patents.google.com/patent/US8386268/en"
+    },
+    {
+      "number": "US8411731",
+      "title": "Device and method for processing a real subband signal for reducing aliasing effects",
+      "document": "https://patents.google.com/patent/US8411731/en"
+    },
+    {
+      "number": "US8412533",
+      "title": "Context-based arithmetic encoding apparatus and method and context-based arithmetic decoding apparatus and method",
+      "document": "https://patents.google.com/patent/US8412533/en"
+    },
+    {
+      "number": "US8428270",
+      "title": "Audio gain control using specific-loudness-based auditory event detection",
+      "document": "https://patents.google.com/patent/US8428270/en"
+    },
+    {
+      "number": "US8433583",
+      "title": "Audio decoding",
+      "document": "https://patents.google.com/patent/US8433583/en"
+    },
+    {
+      "number": "US8443026",
+      "title": "Partially complex modulated filter bank",
+      "document": "https://patents.google.com/patent/US8443026/en"
+    },
+    {
+      "number": "US8447620",
+      "title": "Multi-resolution switched audio encoding/decoding scheme",
+      "document": "https://patents.google.com/patent/US8447620/en"
+    },
+    {
+      "number": "US8452018",
+      "title": "Apparatus and method for encoding/decoding multichannel signal using phase information",
+      "document": "https://patents.google.com/patent/US8452018/en"
+    },
+    {
+      "number": "US8452605",
+      "title": "Apparatus and method for generating audio subband values and apparatus and method for generating time-domain audio samples",
+      "document": "https://patents.google.com/patent/US8452605/en"
+    },
+    {
+      "number": "US8457975",
+      "title": "Audio decoder, audio encoder, methods for decoding and encoding an audio signal and computer program",
+      "document": "https://patents.google.com/patent/US8457975/en"
+    },
+    {
+      "number": "US8484038",
+      "title": "Audio signal encoder, audio signal decoder, method for encoding or decoding an audio signal using an aliasing-cancellation",
+      "document": "https://patents.google.com/patent/US8484038/en"
+    },
+    {
+      "number": "US8494865",
+      "title": "Audio decoder, audio encoder, method for decoding an audio signal, method for encoding an audio signal, computer program and audio signal",
+      "document": "https://patents.google.com/patent/US8494865/en"
+    }
+  ]
+}

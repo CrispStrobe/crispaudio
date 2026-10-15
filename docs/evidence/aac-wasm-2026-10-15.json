@@ -1,0 +1,47 @@
+{
+  "wasmSha256": "9eff0a5fef6bf2157dc5dabbcaff4911f3e0967850f6ee11a1df0932a4a3001d",
+  "encoder": {
+    "bytes": 16382,
+    "adtsFrames": 49,
+    "audioObjectTypes": [
+      2
+    ],
+    "mpegIDs": [
+      0
+    ]
+  },
+  "pnsDecoder": [
+    {
+      "mpegID": 0,
+      "accepted": true,
+      "rate": 48000,
+      "channels": 1,
+      "frames": 4096,
+      "nonzeroSamples": 4096,
+      "peak": 8.544263607745961e-8
+    },
+    {
+      "mpegID": 1,
+      "accepted": true,
+      "rate": 48000,
+      "channels": 1,
+      "frames": 4096,
+      "nonzeroSamples": 4096,
+      "peak": 9.075369433730884e-8
+    }
+  ],
+  "otherADTSProfiles": [
+    {
+      "profileBits": 0,
+      "accepted": false
+    },
+    {
+      "profileBits": 2,
+      "accepted": false
+    },
+    {
+      "profileBits": 3,
+      "accepted": false
+    }
+  ]
+}
