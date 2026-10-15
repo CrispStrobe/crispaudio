@@ -1,0 +1,39 @@
+{
+  "checkedDate": "2026-10-15",
+  "method": "Read-only App Store Connect GET requests authenticated on VPS; public Apple lookup DE/US; public listing",
+  "appId": "6791876962",
+  "bundleId": "com.crispstrobe.crispaudio",
+  "ios": {
+    "version": "0.3.0",
+    "appVersionState": "READY_FOR_DISTRIBUTION",
+    "legacyAppStoreState": "READY_FOR_SALE",
+    "build": "13",
+    "buildProcessingState": "VALID",
+    "buildUploadedDate": "2026-08-17T07:45:13-07:00",
+    "publicReleaseDate": "2026-10-01T07:00:00Z",
+    "publicLookupCountries": [
+      "de",
+      "us"
+    ],
+    "price": 0,
+    "appleSiliconCompatibility": "iOS app listed for macOS 11+ and M1 or later"
+  },
+  "nativeMac": {
+    "version": "1.0",
+    "appVersionState": "PREPARE_FOR_SUBMISSION",
+    "attachedBuild": null,
+    "buildsFound": 0
+  },
+  "profiles": [
+    {
+      "name": "CrispAudio AppStore CI",
+      "type": "IOS_APP_STORE",
+      "state": "ACTIVE",
+      "expiration": "2027-07-12T18:31:49.000+00:00"
+    }
+  ],
+  "nativeMacAppStoreProfileFound": false,
+  "existingVpsApiCredentials": "authenticated successfully",
+  "publicListing": "https://apps.apple.com/de/app/crispaudio/id6791876962",
+  "externalWritesPerformed": false
+}

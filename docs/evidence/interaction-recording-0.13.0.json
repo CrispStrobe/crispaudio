@@ -135,5 +135,6 @@
     "appleUpload": "not performed",
     "powerBoxFolderAccess": "not qualified",
     "installedApp": "0.13.0 unchanged"
-  }
+  },
+  "appleStoreStatusCorrection": "See apple-store-status-2026-10-15.json: iOS 0.3.0 is released; native Mac draft has no build/profile. Existing VPS API credentials work."
 }

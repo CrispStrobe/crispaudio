@@ -5,18 +5,34 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
-| Route | Trigger | Current evidence |
-|---|---|---|
-| Desktop GitHub bundles | `v*` tag or `release.yml` dispatch | macOS ARM, Windows, Linux jobs configured |
-| iOS App Store Connect upload | `v*` tag or `ios-release.yml` dispatch with dry run off | Last run Aug 17 succeeded, including upload step; not independently checked against ASC processing/review status in this audit |
-| macOS App Store upload | `mac-v*` tag or `macos-release.yml` dispatch | Last Sep 13 run failed: invalid provisioning profile signature |
-| Local macOS testing | local Tauri build | Installed ad-hoc-signed `~/Applications/CrispAudio-local.app`; not an Apple-distributed release |
+## Verified Apple distribution status
 
-Evidence: [iOS workflow run](https://github.com/CrispStrobe/crispaudio/actions/runs/32039732193),
-[macOS failed run](https://github.com/CrispStrobe/crispaudio/actions/runs/34760697731).
-A successful upload step is not proof of Apple processing success, TestFlight
-availability, review approval, or public release. Those states need an ASC check.
-Note that a generic `v*` release tag also triggers the iOS upload workflow.
+Checked 2026-10-15 using the App Store Connect API from the VPS and Apple's public
+DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaudio`.
+
+| Route | Current evidence |
+|---|---|
+| Public iPhone/iPad app | **0.3.0 released**, `READY_FOR_DISTRIBUTION` / legacy `READY_FOR_SALE`; attached build 13 is `VALID`. Public DE and US listings confirm 0.3.0, released 2026-10-01. |
+| iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
+| Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. No native Mac build appeared in the app's build list. |
+| Provisioning | One `ACTIVE` CrispAudio `IOS_APP_STORE` profile, expiring 2027-07-12. No `MAC_APP_STORE` profile returned for this bundle ID. Existing VPS API credentials work; native Mac profile setup can use that account/API path. |
+| Local native macOS app | Installed 0.13.0 ad-hoc signed app, separate from the public iOS release. |
+| Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
+
+[Public App Store listing](https://apps.apple.com/de/app/crispaudio/id6791876962) ·
+[App Store Connect record](https://appstoreconnect.apple.com/apps/6791876962) ·
+[Sanitized API evidence](evidence/apple-store-status-2026-10-15.json).
+
+The previous statement that the iOS upload had not been checked against Apple
+release status is superseded by this live check. The September 13
+[failed native Mac upload](https://github.com/CrispStrobe/crispaudio/actions/runs/34760697731)
+is historical evidence about that desktop pipeline, not a problem with the live
+iOS listing. It does not establish that every distribution route needs a fresh
+profile. No account, certificate, profile, listing or release was changed by this
+read-only verification.
+
+A generic `v*` release tag also triggers iOS upload; `mac-v*` triggers the separate
+native Mac workflow. Neither is part of the local software checkpoint.
 
 ## Local 0.13.0 — inspectors, exact controls and native-rack recording
 
@@ -112,8 +128,8 @@ The normal Mac bundle and locked iOS simulator compile pass. The ad-hoc-signed
 backup; one autosave and the previous app are retained. The independent optimized
 CLI is unchanged. Native microphone/automation-pass recording, monitor clicks,
 custom plugin windows, external-interface and signed/sandboxed Store acceptance
-remain outside this checkpoint. Mac Store signing still needs a fresh profile,
-as detailed below. No release tag, workflow dispatch or Apple upload.
+remain outside this checkpoint. Native Mac profile setup remains separate from the already released iOS app;
+see the verified status above. No release tag, workflow dispatch or Apple upload.
 
 ## Local 0.11.11 — rendered native-effects preview
 

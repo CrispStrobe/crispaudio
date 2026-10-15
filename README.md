@@ -7,12 +7,13 @@ editor, a sound-effect synthesizer and voice-processing tools. Use it for spoken
 recordings, interviews, voiceovers, sound design and videos with several audio
 sources. The interface supports English, German, keyboard shortcuts and touch.
 
-[Try the web app](https://crispaudio-psi.vercel.app) · [Download builds](https://github.com/CrispStrobe/crispaudio/releases) · [Roadmap](PLAN.md)
+[App Store](https://apps.apple.com/app/crispaudio/id6791876962) · [Try the web app](https://crispaudio-psi.vercel.app) · [Download builds](https://github.com/CrispStrobe/crispaudio/releases) · [Roadmap](PLAN.md)
 
 [![CI](https://github.com/CrispStrobe/crispaudio/actions/workflows/ci.yml/badge.svg)](https://github.com/CrispStrobe/crispaudio/actions/workflows/ci.yml)
 
 This guide describes the current source tree. Published builds and the web app
-may have fewer features; see [platform and release status](docs/RELEASE_STATUS.md).
+may have fewer features. The App Store currently carries iOS **0.3.0**; the native
+Mac editor described here is a separate local build. See [platform and release status](docs/RELEASE_STATUS.md).
 
 ## Start a project
 
