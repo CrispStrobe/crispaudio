@@ -813,7 +813,7 @@ dependencies = [
 
 [[package]]
 name = "crispaudio"
-version = "0.11.11"
+version = "0.12.0"
 dependencies = [
  "crispaudio-media",
  "hound",

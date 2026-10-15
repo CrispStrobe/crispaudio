@@ -102,13 +102,18 @@ regions, and save named comp versions. Recorded originals remain available.
 - Compare saved **Mix A/B** versions with optional loudness matching. Measure LUFS
   and estimated true peak, then review a loudness adjustment before applying it.
 
-On macOS, discover AU/VST3 audio effects and add them to native racks, with generic
-parameter controls, saved state, bypass and rack copy/paste. Enabled native inserts
-use **rendered preview**: Play prepares the mix, then pause, seek and loop reuse
-it. Audio edits require a new preview. Live native mixing, recording over that
-preview and custom plugin windows are not yet available.
+On macOS, discover AU/VST3 effects and add them to clip, track, bus or master
+racks. **Live** playback keeps native effects running through pause and loops.
+Adjust faders, pan, mute, solo, sends, plugin parameters and bypass while listening;
+track meters and master loudness remain visible. Seeking rebuilds effect history.
+Use the compact **Live / Preview** selector beside Play for a rendered fallback.
 
-[FX and automation](docs/DAW_EFFECTS.md) · [Clip/master recording passes](docs/SCOPED_AUTOMATION_PASSES.md) · [Mix A/B and export review](docs/MIX_REVIEW.md) · [Native effect support](docs/MEDIA_FORMATS_AND_LICENSES.md)
+Native inserts include generic parameter controls, saved state and rack copy/paste.
+Structural or built-in effect edits restart live playback; microphone/automation-pass
+recording and monitor clicks require disabling native inserts. Custom plugin windows are still pending.
+Native playback processes at 48 kHz and converts other source rates when needed.
+
+[FX and automation](docs/DAW_EFFECTS.md) · [Clip/master recording passes](docs/SCOPED_AUTOMATION_PASSES.md) · [Mix A/B and export review](docs/MIX_REVIEW.md) · [Native playback](docs/NATIVE_PLAYBACK.md) · [Native effect support](docs/MEDIA_FORMATS_AND_LICENSES.md)
 
 ## Work with video
 
@@ -191,8 +196,10 @@ uses macOS 13+; other desktop media paths may require FFmpeg/FFprobe. Some Mac
 transitions require compatible Metal hardware. Codec availability and export scopes
 vary by route; the [format matrix](docs/MEDIA_FORMATS_AND_LICENSES.md) lists the details.
 
-AU/VST3 hosting is currently Mac-only. Native-rack delivery has format restrictions,
-and the standalone CLI rejects enabled native inserts. GUI audio is decoded into
+AU/VST3 hosting is currently Mac-only. Direct and queued WAV, FLAC and AAC exports
+include enabled native racks; video export uses the finished audio mix. Export
+stops live native playback before opening offline plugin instances. The standalone
+CLI rejects enabled native inserts. GUI audio is decoded into
 memory, so long recordings can need substantial RAM. iOS does not yet have desktop
 feature parity; newer touch, device and multi-input workflows need device-specific
 checks. See [platform status](docs/RELEASE_STATUS.md) for availability.

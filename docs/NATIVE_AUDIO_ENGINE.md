@@ -1,9 +1,13 @@
-# Native audio engine foundation
+# Native audio engine foundation (implementation history)
 
 The installed app uses rendered preview for enabled native AU/VST3 racks. The
 continuous Web Audio/native bridge remains gated: measured WebKit UI stalls block
 both worklet messages and native request dispatch. A worker heartbeat alone did
 not establish independent audio delivery.
+
+The continuous production transport is available in local 0.12.0. See
+[native playback](NATIVE_PLAYBACK.md) for current behavior and limits. The
+experiments below record the foundation work that preceded it.
 
 ## Native clock experiment
 
@@ -135,16 +139,17 @@ through the existing host. It does not supply CrispAudio's project ownership,
 mix graph or transport. No wrapper code or dependency has been added; native
 session and transport work remains the current priority.
 
-## Integration still required
+## Production integration (0.12.0)
 
-This remains a validation-only engine. The GUI snapshot boundary and finite
-seek capture are implemented. Next add continuous hardware-clock transport,
-seek/loop transitions and state restoration, then connect the production timeline. Native plugin musical timing currently uses each helper's
-initial clock; scope-compensated tempo/position context is not implemented in the
-graph adapter. Add that context before qualifying tempo-synchronized plugins.
-Live parameter commands, meters and output-device changes/disconnection handling
-also remain pending. Verify export
-parity, cancellation and owner cleanup under load before enabling live inserts.
-The rendered-preview fallback stays available throughout this work. Physical
-output, wider plugin compatibility, recording and other platforms need separate
-acceptance checks.
+The normal Mac timeline now uses a continuous native worker/Core Audio queue for
+enabled AU/VST3 racks, with selectable rendered Preview. Signed, latency-adjusted
+project clocks carry tempo/meter through loops while each helper retains a
+strictly contiguous DSP clock. Live controls, meters, device rebind, visible
+faults, cancellation, owner cleanup and wet queued WAV/FLAC/AAC delivery are
+integrated. See [the active roadmap](../PLAN.md) and [release status](RELEASE_STATUS.md)
+for validation and distribution evidence.
+
+Native microphone and automation-pass recording, monitor clicks, custom plugin
+windows, broader commercial-plugin compatibility, physical external interfaces
+and signed/sandboxed Store-hosting acceptance remain separate work. MIDI and
+large-file paging remain deferred.

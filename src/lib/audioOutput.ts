@@ -28,7 +28,7 @@ export async function playbackOutputs():Promise<PlaybackOutputs> {
  return {mode:'browser',devices:[{id:'',label:'',isDefault:true},...devices.filter(d=>d.id&&d.id!=='default')],selectedId};
 }
 export async function selectPlaybackOutput(id:string):Promise<void> {
- if(macOutput()){const {invoke}=await import('@tauri-apps/api/core');await invoke('select_audio_output',{id});return;}
+ if(macOutput()){const {invoke}=await import('@tauri-apps/api/core');await invoke('select_audio_output',{id});window.dispatchEvent(new Event('crispaudio-output-changed'));return;}
  if(changing)throw new Error('audioOutput.busy');
  const before=selectedId;
  const apply=async()=>{

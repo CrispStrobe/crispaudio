@@ -1,3 +1,4 @@
+import {hasNativeEffects} from '../../lib/nativeEffects';
 import {useContext,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Circle,Square,CircleHelp} from 'lucide-react';
@@ -87,13 +88,14 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
   // Target is keyed by lane/track; the running pass reads mutable control refs.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[review]);
- const blocked=!!track.locked||(target.effectIndex!==undefined&&!track.effects?.[target.effectIndex]?.enabled);
+ const native=hasNativeEffects(project);
+ const blocked=native||!!track.locked||(target.effectIndex!==undefined&&!track.effects?.[target.effectIndex]?.enabled);
  let preview:TimelineProject|undefined;
  let errorPreview='';
  // Compute review errors before rendering; Apply revalidates the snapshot.
  if(review){try{if(project!==review.project||sources!==review.sources)throw new Error('automation.changed');preview=applyAutomationPass(project,target,review.spans);}catch(reason){errorPreview=reason instanceof Error?t(reason.message):String(reason);}}
  return <div data-automation-recorder className="flex flex-wrap items-center gap-1 p-1 text-xs border-t border-gray-800" onKeyDown={e=>e.stopPropagation()}>
-  <select aria-label={t('automation.recordMode')} className="min-h-11 bg-gray-800 rounded" value={mode} disabled={armed||!!review||playing} onChange={e=>{modeRef.current=e.target.value as AutomationMode;setMode(modeRef.current);setError('');}}>{(['read','touch','latch','write'] as const).map(m=><option key={m} value={m}>{t(`automation.mode_${m}`)}</option>)}</select>
+  <select aria-label={t('automation.recordMode')} className="min-h-11 bg-gray-800 rounded" value={mode} disabled={blocked||armed||!!review||playing} onChange={e=>{modeRef.current=e.target.value as AutomationMode;setMode(modeRef.current);setError('');}}>{(['read','touch','latch','write'] as const).map(m=><option key={m} value={m}>{t(`automation.mode_${m}`)}</option>)}</select>
   <ToolButton icon={armed?Square:Circle} aria-pressed={armed} className={armed?'text-red-300 bg-red-950':''} label={t(armed?'automation.discardPass':'automation.armPass')} disabled={!armed&&(mode==='read'||playing||blocked||!!review)} onClick={()=>{
    if(armed){discard();return;}
    const state=useProjectStore.getState(),value=Math.max(minimum,Math.min(maximum,automationValue(state.project,target,state.playheadPosition)));
@@ -105,7 +107,7 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
    onChange={e=>{const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!valid(p))return;if(!p.active)beginTouch();p.value=fromControl(Number(e.target.value));sample(p,clock.time);engine?.current?.previewAutomation(p.project,target,p.value);draw(p.value);}}/>
   <output ref={readout} className="min-w-14" aria-label={t('automation.recordReadout')}/>
   <span className={armed?'text-red-300':'text-gray-400'}>{t(armed?'automation.passArmed':'automation.passSafe')}</span>
-  <ToolButton icon={CircleHelp} label={t(`automation.recordHelp_${mode}`)}/>
+  <ToolButton icon={CircleHelp} label={t(native?'nativePreview.recording':`automation.recordHelp_${mode}`)}/>
   {error&&<p role="alert" className="text-amber-300 w-full">{error}</p>}
   {review&&<Modal isOpen onClose={()=>setReview(null)} title={t('automation.reviewPass')}>
    <div data-automation-review className="space-y-3 text-sm" onKeyDown={e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();setReview(null);}}}>

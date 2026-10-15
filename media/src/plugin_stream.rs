@@ -11,6 +11,10 @@ pub struct StreamReply {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct StreamTransport {
     pub sample_position: u64,
+    /// Musical/project clock, distinct from the strictly contiguous DSP clock.
+    /// Signed positions support latency preroll; wraps support continuous loops.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project_position: Option<i64>,
     pub tempo: f64,
     pub numerator: u32,
     pub denominator: u32,
@@ -19,7 +23,10 @@ pub struct StreamTransport {
 }
 impl StreamTransport {
     pub fn validate(&self) -> Result<()> {
-        if self.sample_position > 9_007_199_254_740_991 - 4096
+        if self
+            .project_position
+            .is_some_and(|p| !(-9_007_199_254_736_895..=9_007_199_254_736_895).contains(&p))
+            || self.sample_position > 9_007_199_254_740_991 - 4096
             || !self.tempo.is_finite()
             || !(20.0..=300.0).contains(&self.tempo)
             || !(1..=32).contains(&self.numerator)
@@ -151,6 +158,7 @@ mod native {
             on_spawn(control.clone());
             let (send, requests) = mpsc::sync_channel::<Vec<u8>>(1);
             let (replies, receive) = mpsc::sync_channel(1);
+            let realtime = request["processMode"] != "offline";
             let worker = thread::spawn(move || {
                 match read_reply(&mut stdout) {
                     Ok(value) => {
@@ -163,7 +171,17 @@ mod native {
                         return;
                     }
                 }
+                let mut scheduled = false;
                 while let Ok(packet) = requests.recv() {
+                    // The caller waits on this pipe thread too. Leaving it at
+                    // ordinary QoS creates a priority inversion in live graphs.
+                    if realtime && !scheduled {
+                        if let Err(error) = crate::realtime_macos::configure(512, rate) {
+                            let _ = replies.send(Err(error));
+                            return;
+                        }
+                        scheduled = true;
+                    }
                     let result = stdin
                         .write_all(&packet)
                         .and_then(|_| stdin.flush())
@@ -497,6 +515,7 @@ mod tests {
                 })
                 .collect::<Vec<_>>();
             let transport = StreamTransport {
+                project_position: None,
                 sample_position: (rate * 2.0) as u64,
                 tempo: 90.0,
                 numerator: 7,
@@ -530,6 +549,7 @@ mod tests {
             let rate = request["sampleRate"].as_f64().unwrap();
             let mut stream = PluginStream::open(&request).unwrap();
             let mut transport = StreamTransport {
+                project_position: None,
                 sample_position: (rate * 2.0) as u64,
                 tempo: 90.0,
                 numerator: 7,
@@ -576,11 +596,47 @@ mod tests {
         }
     }
     #[test]
+    fn project_clock_can_preroll_and_cycle_without_discontinuity_in_dsp_clock() {
+        for request in context_requests() {
+            let mut stream = PluginStream::open(&request).unwrap();
+            for (index, project) in [-48000, 96000, 24000].iter().enumerate() {
+                let transport = StreamTransport {
+                    sample_position: index as u64 * 128,
+                    project_position: Some(*project),
+                    tempo: 90.,
+                    numerator: 7,
+                    denominator: 8,
+                    origin_seconds: 3.,
+                    playing: true,
+                };
+                let reply = stream
+                    .process_with_transport(
+                        &[vec![0.25; 128], vec![-0.25; 128]],
+                        &json!({}),
+                        false,
+                        Some(&transport),
+                    )
+                    .unwrap();
+                assert_eq!(
+                    serde_json::from_value::<StreamTransport>(reply.metadata["transport"].clone())
+                        .unwrap(),
+                    transport
+                );
+                let rate = request["sampleRate"].as_f64().unwrap();
+                let expected = (*project as f64 / rate - 3.) * 1.5;
+                assert!(
+                    (reply.metadata["musicalPosition"].as_f64().unwrap() - expected).abs() < 1e-12
+                );
+            }
+        }
+    }
+    #[test]
     fn seeks_require_fresh_sessions_and_invalid_context_does_not_advance_dsp() {
         for request in context_requests() {
             let rate = request["sampleRate"].as_f64().unwrap();
             let mut stream = PluginStream::open(&request).unwrap();
             let mut transport = StreamTransport {
+                project_position: None,
                 sample_position: (rate * 10.0) as u64,
                 tempo: 120.0,
                 numerator: 4,

@@ -1,3 +1,5 @@
+import {useNativeTimelineTransport} from './useNativeTimelineTransport';
+import {useSettingsStore} from '../stores/settingsStore';
 import {hasNativeEffects} from '../lib/nativeEffects';
 import {isNativeMac} from '../lib/nativeMenuPlatform';
 import {RenderedPreviewCache,renderedPreviewKey,renderedSourcesMatch} from '../audio/plugins/RenderedPreviewCache';
@@ -18,10 +20,14 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
   const playing = useProjectStore((s) => s.isPlaying);
   const project = useProjectStore((s) => s.project);
   const native=hasNativeEffects(project);
+  const mode=useSettingsStore(s=>s.nativePlaybackMode);
+  const live=native&&isNativeMac()&&mode==='live';
+  useNativeTimelineTransport(engineRef,live);
   const playbackKey = useMemo(() => native?renderedPreviewKey(project):playbackGraphKey(project), [project,native]);
   const cache=useMemo(()=>new RenderedPreviewCache(),[]);
   useEffect(()=>()=>{cache.invalidate();useUIStore.setState({nativePreviewStatus:'idle'});},[cache]);
   useEffect(() => useProjectStore.subscribe((next, previous) => {
+    if(live)return;
     const involved=hasNativeEffects(next.project)||hasNativeEffects(previous.project);
     const changed=involved&&(next.project!==previous.project&&renderedPreviewKey(next.project)!==renderedPreviewKey(previous.project)||next.sources!==previous.sources&&!renderedSourcesMatch(next.sources,previous.sources));
     if(changed){
@@ -32,14 +38,14 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
       }
     }
     if(next.project!==previous.project&&next.isPlaying&&!hasNativeEffects(next.project))engineRef.current?.updateMix(next.project);
-  }), [engineRef,cache]);
+  }), [engineRef,cache,live]);
   const rangePlayback = useProjectStore(s=>s.rangePlayback);
   const rangeKey=useProjectStore(s=>s.rangePlayback?JSON.stringify(s.project.editRange):'');
   const sources = useProjectStore((s) => s.sources);
   useEffect(() => {
     const project = useProjectStore.getState().project;
     const engine = engineRef.current;
-    if (!engine || !playing||recording) return;
+    if (live||!engine || !playing||recording) return;
     let cancelled = false;
     const previewAbort=new AbortController();
     let ready = false;
@@ -123,5 +129,5 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
       engine.stop();
       if(native){const state=useProjectStore.getState();useUIStore.setState({nativePreviewStatus:cache.get(state.project,state.sources)?'ready':'idle'});}
     };
-  }, [audio, engineRef, playing, playbackKey, sources, rangePlayback, rangeKey, recording, native, cache]);
+  }, [audio, engineRef, playing, playbackKey, sources, rangePlayback, rangeKey, recording, native, cache, live]);
 }

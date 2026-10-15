@@ -1900,7 +1900,7 @@
     "failed": "Sample media could not be loaded.",
     "changed": "The session changed. Try again.",
     "native": "Native plug-ins (Mac)",
-    "nativeInfo": "A music mix with a saved AUBandpass insert in the master rack. It starts disabled so playback works. Enable it for Mac offline export; native realtime playback is still being validated."
+    "nativeInfo": "A music mix with an enabled Apple AUBandpass insert in the master rack. Play in Live mode, open the mixer and change its frequency or bypass while listening. Compare with Preview, then export WAV, FLAC or AAC."
   },
   "folders": {
     "title": "Track folders",
@@ -2242,13 +2242,13 @@
   "nativeRack": {
     "title": "Native plug-ins",
     "macOnly": "Native plug-in parameters require the Mac app.",
-    "help": "These inserts run after built-in effects. Mac export and rendered preview include them. Live native playback remains unavailable. Bypass retains the insert and its state.",
+    "help": "Inserts run after built-in effects. Mac playback and export include them. Live mode allows parameter and bypass changes during playback.",
     "copyBuiltin": "Copy built-in effects",
     "pasteBuiltin": "Paste built-in effects",
     "bypassBuiltin": "Bypass built-in effects",
     "enableBuiltin": "Enable built-in effects",
     "add": "Native plug-in…",
-    "addHelp": "Choose an AU or VST3 effect. New inserts start disabled. Enable them for Mac export and rendered preview. Folder selection adds a VST3 search location.",
+    "addHelp": "Choose an AU or VST3 effect. New inserts are enabled. Folder selection adds a VST3 search location.",
     "copy": "Copy native rack",
     "paste": "Paste native rack",
     "changed": "The rack changed. Choose the plug-in again."
@@ -2260,10 +2260,15 @@
     "play": "Play preview",
     "cancel": "Cancel preview",
     "rendering": "Rendering…",
-    "menu": "Preview / Pause",
+    "menu": "Play / Pause",
     "macOnly": "Native effects preview requires the installed Mac app.",
     "recording": "Disable native inserts before recording.",
     "help": "Play renders the finished stereo mix once, including native effects. Pause, seek and loop reuse it. Audio edits stop playback and rebuild the preview on the next Play.",
-    "limits": "Only master meters are available. Live mixing, recording and monitor clicks are unavailable in this mode. Playback uses your selected output device."
+    "limits": "Only master meters are available. Live mixing, recording and monitor clicks are unavailable in this mode. Playback uses your selected output device.",
+    "mode": "Playback mode",
+    "live": "Live",
+    "liveHelp": "Live playback runs AU and VST3 effects continuously. Faders, pan, mute, solo, sends, plug-in parameters and bypass update during playback. Pause retains the effect state; seeking rebuilds its history.",
+    "liveLimits": "Structural and built-in effect edits restart playback. Audio is processed at 48 kHz; sources are converted when needed. Recording and monitor clicks require disabling native inserts. Select Preview for a rendered fallback.",
+    "shortLoop": "This loop is too short for Live native effects. Select Preview to audition loops shorter than 43 ms."
   }
 }

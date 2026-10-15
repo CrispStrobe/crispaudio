@@ -10,6 +10,8 @@ mod graphics;
 pub mod jobs;
 mod limiter;
 #[cfg(feature = "native-engine")]
+pub mod loudness_meter;
+#[cfg(feature = "native-engine")]
 pub mod native_graph;
 #[cfg(feature = "native-engine")]
 pub mod native_snapshot;
@@ -1146,3 +1148,6 @@ mod automation_pass;
 mod automation_shape;
 mod effect_envelope;
 mod gain_envelope;
+
+#[cfg(target_os = "macos")]
+pub mod realtime_macos;

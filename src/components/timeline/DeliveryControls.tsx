@@ -15,7 +15,7 @@ import {TimelineEngineContext} from './timelineEngineContext';
 import {useProjectStore} from '../../stores/projectStore';
 import {DELIVERY_DEFAULTS,DELIVERY_PRESETS,DeliveryQueue,planDelivery,masterContribution,type DeliverySettings,type DeliveryJob} from '../../lib/delivery';
 import {deliveryFile,runDelivery} from '../../lib/deliveryRunner';
-import {serializeProject,projectSourceIds,linkedRenderDocument} from '../../lib/projectFile';
+import {serializeProject,projectSourceIds} from '../../lib/projectFile';
 import {cutInterchange} from '../../lib/cutInterchange';
 import {saveText} from '../../lib/transcript';
 import {mediaJob} from '../../lib/mediaJob';
@@ -33,7 +33,7 @@ export function DeliveryControls({launcher=true}:{launcher?:boolean}={}){
  const enqueue=async()=>{
   const state=useProjectStore.getState(),plans=planDelivery(state.project,state.sources,settings,selection?.segmentIds??[],stems);
   if(!desktop)throw new Error('delivery.desktop');if(restoring)throw new Error('delivery.restoring');
-  for(const plan of plans){if(video&&!navigator.userAgent.includes('Mac'))throw new Error('delivery.appleVideo');if(['flac','aac'].includes(plan.settings.format)&&(!navigator.userAgent.includes('Mac')||!linkedRenderDocument(plan.project,plan.sources)))throw new Error('delivery.linkedRequired');}
+  if(video&&!navigator.userAgent.includes('Mac'))throw new Error('delivery.appleVideo');
   let outputDirectory=directory;if(!outputDirectory){const picked=await open({directory:true,multiple:false,title:t('delivery.chooseFolder')});if(typeof picked!=='string')return;outputDirectory=picked;setDirectory(picked);}
   for(const plan of plans)queue.current!.add(plan,deliveryFile(outputDirectory,plan.name,plan.settings.format));
  };

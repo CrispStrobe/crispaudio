@@ -20,6 +20,8 @@ export type BitDepth = (typeof BIT_DEPTHS)[number];
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 interface SettingsState {
+  nativePlaybackMode:'live'|'rendered';
+  setNativePlaybackMode:(mode:'live'|'rendered')=>void;
   timelineAutoFit:boolean;
   timelineNavigation:boolean;
   mixerLoudness:boolean;
@@ -63,6 +65,8 @@ function applyTheme(theme: Theme) {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
+      nativePlaybackMode:'live',
+      setNativePlaybackMode:(nativePlaybackMode)=>set({nativePlaybackMode}),
       language: (i18n.language?.startsWith('de') ? 'de' : 'en') as Language,
       theme: 'dark' as Theme,
       timelineAutoFit:true,

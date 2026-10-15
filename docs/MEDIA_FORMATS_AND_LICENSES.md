@@ -1,4 +1,4 @@
-# Formats and licensing — local 0.7.12
+# Formats and licensing
 
 ## Current GUI
 
@@ -688,3 +688,26 @@ processing calls while the buffer plays. A separate German React transport probe
 checks Play/render, playhead motion, pause-cache reuse, mix invalidation, cancellation
 and the disabled recording control. These are silent digital/GUI checks, not a new
 physical output-device acceptance test.
+
+
+### Continuous native playback and delivery (0.12.0)
+
+This supersedes the 0.11.11 preview-only transport restriction. On Mac, Live mode
+owns the render worker and Core Audio output queue. AU/VST3 effects process through
+loops and retain DSP state on Pause. Live fader/pan/mute/solo/send, plugin parameters
+and bypass changes preserve the running graph; track/master meters and master
+loudness remain available. Seek rebuilds history; structural and built-in FX edits
+restart the graph. Preview remains selectable beside Play.
+
+Queued WAV, FLAC and ADTS AAC now accept native-rack projects using the same wet
+offline render and cancellable codec worker as direct export. Linked eligible
+projects retain the existing native disk-backed route. AAC priming differs by
+encoder; the worker's validation fixture decodes with 2,048 leading frames, while
+the Apple route measured 2,112. Use WAV/FLAC for sample-exact alignment. Video
+export includes the finished native-effect audio mix through its existing staged
+WAV route. The standalone CLI still rejects enabled native inserts.
+
+Playback remains Mac-only, processes at 48 kHz, freezes/resamples source PCM, and
+uses a bounded snapshot. Recording/monitor clicks with enabled native inserts,
+custom plugin windows and signed/sandboxed Store-hosting acceptance remain pending.
+See [native playback workflows and limits](NATIVE_PLAYBACK.md).

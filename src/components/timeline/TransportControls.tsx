@@ -1,3 +1,5 @@
+import {useSettingsStore} from '../../stores/settingsStore';
+import {isNativeMac} from '../../lib/nativeMenuPlatform';
 import {hasNativeEffects} from '../../lib/nativeEffects';
 import {useUIStore} from '../../stores/uiStore';
 import {InfoButton} from '../common/InfoButton';
@@ -54,6 +56,8 @@ function TimelineScrubber({width}: {width?: number}) {
 export const TransportControls = React.memo(function TransportControls({viewportWidth,recordingControls}: {viewportWidth?:number;recordingControls?:React.ReactNode}) {
   const { t } = useTranslation();
   const native=useProjectStore(s=>hasNativeEffects(s.project));
+  const mode=useSettingsStore(s=>s.nativePlaybackMode),setMode=useSettingsStore(s=>s.setNativePlaybackMode);
+  const live=native&&isNativeMac()&&mode==='live';
   const previewStatus=useUIStore(s=>s.nativePreviewStatus);
   const preparing=native&&previewStatus==='rendering';
   const isPlaying = useProjectStore((s) => s.isPlaying);
@@ -70,6 +74,7 @@ export const TransportControls = React.memo(function TransportControls({viewport
   const handleStop = useCallback(() => {
     setIsPlaying(false);
     setPlayheadPosition(0);
+    window.dispatchEvent(new Event('crispaudio-transport-stop'));
   }, [setIsPlaying, setPlayheadPosition]);
 
   const handleSkipStart = useCallback(() => {
@@ -102,8 +107,8 @@ export const TransportControls = React.memo(function TransportControls({viewport
         type="button"
         data-help="play" onClick={handlePlayPause}
         className="flex items-center justify-center w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow"
-        title={native?t(preparing?'nativePreview.cancel':isPlaying?'timeline.pause':previewStatus==='ready'?'nativePreview.play':'nativePreview.render'):isPlaying ? t('timeline.pauseTooltip') : t('timeline.playTooltip')}
-        aria-label={native?t(preparing?'nativePreview.cancel':isPlaying?'timeline.pause':previewStatus==='ready'?'nativePreview.play':'nativePreview.render'):isPlaying ? t('timeline.pause') : t('timeline.play')}
+        title={native&&!live?t(preparing?'nativePreview.cancel':isPlaying?'timeline.pause':previewStatus==='ready'?'nativePreview.play':'nativePreview.render'):isPlaying ? t('timeline.pauseTooltip') : t('timeline.playTooltip')}
+        aria-label={native&&!live?t(preparing?'nativePreview.cancel':isPlaying?'timeline.pause':previewStatus==='ready'?'nativePreview.play':'nativePreview.render'):isPlaying ? t('timeline.pause') : t('timeline.play')}
       >
         {preparing?<LoaderCircle className="w-4 h-4 animate-spin"/>:isPlaying ? (
           <Pause className="w-4 h-4" />
@@ -112,7 +117,7 @@ export const TransportControls = React.memo(function TransportControls({viewport
         )}
       </button>
 
-      {native&&<div data-native-preview={previewStatus} className="flex items-center gap-1 text-xs text-indigo-300"><output aria-live="polite">{t(preparing?'nativePreview.rendering':'nativePreview.short')}</output><InfoButton label={t('nativePreview.info')}><p>{t('nativePreview.help')}</p><p>{t('nativePreview.limits')}</p></InfoButton></div>}
+      {native&&<div data-native-preview={previewStatus} className="flex items-center gap-1 text-xs text-indigo-300">{isNativeMac()?<select aria-label={t('nativePreview.mode')} value={mode} onChange={event=>setMode(event.target.value as 'live'|'rendered')} className="bg-gray-900 rounded min-h-11 max-w-28"><option value="live">{t('nativePreview.live')}</option><option value="rendered">{t('nativePreview.short')}</option></select>:<output aria-live="polite">{t(preparing?'nativePreview.rendering':'nativePreview.short')}</output>}<InfoButton label={t(live?'nativePreview.mode':'nativePreview.info')}><p>{t(live?'nativePreview.liveHelp':'nativePreview.help')}</p><p>{t(live?'nativePreview.liveLimits':'nativePreview.limits')}</p></InfoButton></div>}
       {native?<div className="hidden">{recordingControls}</div>:recordingControls}
 
       {/* Stop */}

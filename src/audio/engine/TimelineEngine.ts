@@ -1,3 +1,4 @@
+import {NativePlaybackController} from '../plugins/NativePlaybackController';
 import {hasNativeEffects,projectNativeRacks} from '../../lib/nativeEffects';
 import {projectPluginTransport} from '../plugins/PluginTransport';
 import {prepareNativeTimelineGraph,type NativeTimelineGraph,type NativeTimelineRacks,type NativeInsertUpdate} from '../plugins/NativeTimelineGraph';
@@ -37,6 +38,19 @@ import { createEQ } from '../effects/Filter';
 // ── TimelineEngine ────────────────────────────────────────────────────────────
 
 export class TimelineEngine {
+  private ownedFault?: (error:unknown)=>void;
+  private owned=new NativePlaybackController(()=>{for(const listener of this.clockListeners)listener();},error=>this.ownedFault?.(error));
+  getNativeStatus(){return this.owned.status;}
+  getNativePosition(){return this.owned.clock();}
+  getSignalLevels(id:string){return this.owned.active?(this.owned.status?.phase==='playing'?this.owned.status.meters?.[id]:{peak:0,rms:0}):undefined;}
+  async playNativeOwned(project:TimelineProject,sources:Map<string,AudioSource>,position:number,start:number,end:number,cycle:boolean,onFault:(error:unknown)=>void,muted=this.masterGain.gain.value===0){
+    if(!this.owned.active)this.stop();this.ownedFault=onFault;
+    this.playbackStart=position;this.playbackGeneration++;
+    await this.owned.play(project,sources,position,start,end,cycle,muted);
+  }
+  pauseNativeOwned(){return this.owned.pause();}
+  pollNativeOwned(){return this.owned.poll();}
+  closeNativeOwned(){return this.owned.stop();}
   private ctx: BaseAudioContext;
   private sources: Map<string, AudioSource>;
   private activeSources: AudioBufferSourceNode[] = [];
@@ -46,8 +60,8 @@ export class TimelineEngine {
   private loudnessReady=false;
   private loudnessNode?:AudioWorkletNode;
   private loudnessReading?:LoudnessReading;
-  getLoudness(){return this.loudnessReading;}
-  resetLoudness(){this.loudnessReading=undefined;this.loudnessNode?.port.postMessage({type:'reset'});}
+  getLoudness(){return this.owned.active?this.owned.status?.loudness:this.loudnessReading;}
+  resetLoudness(){void this.owned.resetLoudness();this.loudnessReading=undefined;this.loudnessNode?.port.postMessage({type:'reset'});}
   private compressorNodes = new Map<string,DynamicsCompressorNode>();
   async prepare(project:TimelineProject):Promise<void> {if(project.outputLimiter?.enabled)await prepareOutputLimiter(this.ctx);if(project.tracks.some(t=>t.ducking))await prepareDucking(this.ctx);if(this.ctx.audioWorklet){await prepareLoudness(this.ctx);this.loudnessReady=true;}}
   getReduction(scope:string,index?:number):number {
@@ -86,6 +100,7 @@ export class TimelineEngine {
 
   /** Faders and audition switches update the running graph without rescheduling clips. */
   updateMix(project: TimelineProject): void {
+    if(this.owned.active){void this.owned.update(project).catch(error=>this.ownedFault?.(error));return;}
     if(this.renderedPlayback)return;
     const audible = new Set(audibleTracks(project.tracks).map(track => track.id));
     const now = this.ctx.currentTime;
@@ -139,6 +154,7 @@ export class TimelineEngine {
 
   /** Audio-clock position and generation let a local pass reject seeks/loops/restarts. */
   automationClock():{time:number;start:number;generation:number}|undefined {
+    const native=this.owned.clock();if(native!==undefined)return {time:native,start:this.playbackStart,generation:this.playbackGeneration};
     if(!this.outputGain)return;
     const elapsed=this.playbackStart+Math.max(0,this.ctx.currentTime-this.playbackClock),loop=this.renderedLoop;
     const time=loop&&elapsed>=loop.end?loop.start+(elapsed-loop.start)%(loop.end-loop.start):Math.min(this.playbackEnd,elapsed);
@@ -388,6 +404,7 @@ export class TimelineEngine {
 
   /** Stop all active playback immediately. */
   stop(): void {
+    void this.owned.stop();
     this.playbackGeneration++;this.renderedPlayback=false;this.renderedLoop=undefined;
     this.nativePreparation?.abort();this.nativePreparation=undefined;
     const native=this.nativeGraph;this.nativeGraph=undefined;if(native)this.nativeClosing=Promise.allSettled([this.nativeClosing,native.close()]).then(()=>{});
@@ -425,6 +442,7 @@ export class TimelineEngine {
   /** Internal native export: reuse the playback graph, pausing offline rendering for native replies. */
   async renderNativeToBuffer(project:TimelineProject,startTime:number,endTime:number,racks:NativeTimelineRacks,signal?:AbortSignal,sourceSnapshot?:Map<string,AudioSource>):Promise<AudioBuffer>{
     signal?.throwIfAborted();routingOrder(project.tracks);
+    if(this.owned.active){window.dispatchEvent(new Event('crispaudio-transport-stop'));await this.owned.stop();signal?.throwIfAborted();}
     if(!Number.isFinite(startTime)||startTime<0||!Number.isFinite(endTime)||endTime<=startTime||(endTime>project.duration&&Math.round(endTime*project.sampleRate)>Math.round(project.duration*project.sampleRate)))throw new Error('Invalid native export range');
     project=structuredClone(project);const sources=new Map(sourceSnapshot??this.sources),rate=project.sampleRate,controller=new AbortController();
     const requests=new Map([...racks].map(([scope,entries])=>[scope,entries.map(entry=>({...entry,sampleRate:rate,parameters:{...entry.parameters}}))]));

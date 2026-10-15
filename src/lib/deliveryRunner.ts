@@ -18,9 +18,9 @@ export async function runDelivery(job:DeliveryJob,engine:TimelineEngine|null,sig
  if(video){if(!nativeMac)throw new Error('delivery.appleVideo');await exportVideoProject({project,sources,engine,output:mediaOutput,backend:'apple',format:s.format,nativeMac,quality:s.quality},signal);}
  else if(document){await mediaJob(`export_linked_project_${s.format}`,{document:{...document,renderRange:range},output:mediaOutput,...(s.format==='wav'?{bitDepth:s.bitDepth}:s.format==='aac'?{bitrateKbps:s.bitrateKbps}:{})},signal);}
  else{
-  if(s.format!=='wav')throw new Error('delivery.linkedRequired');if(!engine)throw new Error('Audio engine is unavailable');let buffer=await engine.renderMixRange(project,range.start,range.end,signal,sources);
+  if(!engine)throw new Error('Audio engine is unavailable');let buffer=await engine.renderMixRange(project,range.start,range.end,signal,sources);
   if(s.layout==='mono'){const mono=new AudioBuffer({length:buffer.length,sampleRate:buffer.sampleRate,numberOfChannels:1}),out=mono.getChannelData(0);for(let ch=0;ch<buffer.numberOfChannels;ch++){const input=buffer.getChannelData(ch);for(let i=0;i<input.length;i++){out[i]+=input[i]/buffer.numberOfChannels;if(i%1048576===0){signal.throwIfAborted();await new Promise(resolve=>setTimeout(resolve,0));}}}buffer=mono;}
-  signal.throwIfAborted();phase('encoding');const wav=await encodeAudioBufferWav(buffer,s.bitDepth,signal);await publishDelivery(mediaOutput,new Uint8Array(await wav.arrayBuffer()),signal);
+  signal.throwIfAborted();phase('encoding');const encoded=s.format==='wav'?await encodeAudioBufferWav(buffer,s.bitDepth,signal):await (await import('./codecs')).encodeAudioBuffer(buffer,s.format as 'flac'|'aac',s.bitrateKbps,signal);signal.throwIfAborted();await publishDelivery(mediaOutput,new Uint8Array(await encoded.arrayBuffer()),signal);
  }
  if(tagged){signal.throwIfAborted();await invoke('annotate_delivery_wav',{staged:mediaOutput,metadata:s.metadata});signal.throwIfAborted();await invoke('publish_delivery_stage',{staged:mediaOutput,output:job.output});}
  }finally{if(tagged)await remove(mediaOutput).catch(()=>{});}

@@ -19,3 +19,20 @@ it('guards stale playback and waits for cancellation cleanup when closing an act
  const f=fixture();let current=true;const snapshot=await NativeTimelineSnapshot.create(f.p,f.sources,{isCurrent:()=>current});current=false;await expect(snapshot.captureRange(0,48000)).rejects.toMatchObject({name:'AbortError'});expect(invoke.mock.calls.some(c=>c[0]==='native_snapshot_capture')).toBe(false);
  const next=await NativeTimelineSnapshot.create(f.p,f.sources);let release!:(r:unknown)=>void;invoke.mockImplementation((cmd:string)=>cmd==='native_snapshot_capture'?new Promise(resolve=>{release=resolve;}):Promise.resolve());const capture=next.captureRange(0,48000);await expect(next.captureRange(0,48000)).rejects.toThrow('already active');let closed=false;const closing=next.close().then(()=>{closed=true;});await Promise.resolve();expect(closed).toBe(false);release({cancelled:true});await capture;await closing;expect(closed).toBe(true);
 });
+
+it('closes a late native playback start and waits for its session cleanup',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create(f.p,f.sources);let release!:(id:string)=>void;
+ invoke.mockImplementation((cmd:string)=>cmd==='native_playback_start'?new Promise(resolve=>{release=resolve;}):Promise.resolve());
+ const task=snapshot.startPlayback({startFrame:0,endFrame:48000,muted:true}),failure=expect(task).rejects.toMatchObject({name:'AbortError'});
+ let done=false;const closing=snapshot.close().then(()=>{done=true;});await Promise.resolve();expect(done).toBe(false);
+ release('late-session');await failure;await closing;expect(invoke).toHaveBeenCalledWith('native_playback_close',{session:'late-session'});expect(done).toBe(true);
+});
+it('owns one playback session, sends explicit live controls and closes it once',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create(f.p,f.sources);
+ invoke.mockImplementation(async(cmd:string)=>cmd==='native_playback_start'?'session':cmd==='native_playback_update'?1:undefined);
+ const playback=await snapshot.startPlayback({startFrame:0,endFrame:48000,muted:true});
+ await expect(snapshot.captureRange(0,48000)).rejects.toThrow(/active/);await expect(snapshot.startPlayback({startFrame:0,endFrame:48000})).rejects.toThrow(/active/);
+ expect(await playback.update({...f.p,masterVolume:.25})).toBe(1);
+ expect(invoke).toHaveBeenCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({masterVolume:.25,tracks:[expect.objectContaining({id:'t',volume:1,sends:[]})]})}));
+ await snapshot.close();await playback.close();expect(invoke.mock.calls.filter(c=>c[0]==='native_playback_close')).toHaveLength(1);await expect(playback.status()).rejects.toMatchObject({name:'AbortError'});
+});

@@ -1,3 +1,4 @@
+import {useSettingsStore} from '../../../src/stores/settingsStore';
 vi.mock('../../../src/lib/nativeMenuPlatform',()=>({isNativeMac:()=>true}));
 import {useUIStore} from '../../../src/stores/uiStore';
 import { act, renderHook } from '@testing-library/react';
@@ -16,6 +17,7 @@ const engineRef = { current: engine as unknown as TimelineEngine };
 const audio = { getContext: () => ({ sampleRate:48000,get currentTime() { return currentTime; } }), resume: async () => {} } as unknown as AudioEngineHandle;
 
 beforeEach(() => {
+  useSettingsStore.setState({nativePlaybackMode:'rendered'});
   vi.clearAllMocks();useUIStore.setState({nativePreviewStatus:'idle',timelineRecording:false}); currentTime = 100; nextId = 0; callbacks = new Map();
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { callbacks.set(++nextId, cb); return nextId; });
   vi.stubGlobal('cancelAnimationFrame', (id: number) => callbacks.delete(id));

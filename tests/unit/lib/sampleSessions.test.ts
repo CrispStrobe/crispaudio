@@ -17,6 +17,6 @@ for(const kind of ['mix','picture','takes'] as const)it(`builds a valid independ
  if(kind==='takes'){expect(p.tracks[0].takes).toHaveLength(2);expect(p.tracks[0].compRegions).toHaveLength(1);expect(p.tracks[0].compBaseSegments).toHaveLength(1);}
 });
 
-it('native rack sample is ready for ordinary playback and retains an inspectable disabled AU insert',()=>{
- const {project}=buildSampleSession('native',ctx,key=>key);expect(project.nativeEffects).toHaveLength(1);expect(project.nativeEffects![0]).toMatchObject({format:'AU',name:'AUBandpass',enabled:false});expect(hasNativeEffects(project)).toBe(false);expect(validProjectNativeEffects(project)).toBe(true);
+it('native rack sample is ready for live playback with an enabled inspectable AU insert',()=>{
+ const {project}=buildSampleSession('native',ctx,key=>key);expect(project.nativeEffects).toHaveLength(1);expect(project.nativeEffects![0]).toMatchObject({format:'AU',name:'AUBandpass',enabled:true});expect(hasNativeEffects(project)).toBe(true);expect(validProjectNativeEffects(project)).toBe(true);
 });

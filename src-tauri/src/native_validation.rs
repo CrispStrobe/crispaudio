@@ -1,11 +1,12 @@
 //! Opt-in, separate validation executable; never invoked by the installed app.
+use crate::commands::native_playback::{self, NativePlayback};
 use crate::commands::plugins::{self, PluginStreams};
 use crate::native_validation_loopback::Loopback;
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, Manager};
 #[derive(Default)]
-struct NativeClockState(
+pub(crate) struct NativeClockState(
     std::sync::Mutex<
         Option<(
             String,
@@ -15,6 +16,14 @@ struct NativeClockState(
     >,
 );
 impl NativeClockState {
+    pub(crate) fn cancel_snapshot(&self, owner: &str, id: &str) {
+        if let Some((label, control, snapshot)) = self.0.lock().unwrap().as_ref() {
+            if label == owner && snapshot.as_deref() == Some(id) {
+                control.cancel();
+            }
+        }
+    }
+
     fn cancel_owner(&self, owner: &str) {
         if let Some((active, control, _)) = self.0.lock().unwrap().as_ref() {
             if active == owner {
@@ -102,67 +111,7 @@ fn native_validation_audio_clock_cancel(
     Ok(())
 }
 
-#[tauri::command]
-async fn native_snapshot_begin(
-    window: tauri::WebviewWindow,
-    snapshots: tauri::State<'_, crispaudio_media::native_snapshot::Snapshots>,
-    project: Value,
-    descriptors: Vec<crispaudio_media::native_snapshot::Descriptor>,
-) -> Result<String, String> {
-    let snapshots = snapshots.inner().clone();
-    let owner = window.label().to_string();
-    tauri::async_runtime::spawn_blocking(move || snapshots.begin(&owner, project, descriptors))
-        .await
-        .map_err(|e| e.to_string())?
-}
-#[tauri::command]
-fn native_snapshot_write(
-    window: tauri::WebviewWindow,
-    snapshots: tauri::State<crispaudio_media::native_snapshot::Snapshots>,
-    request: tauri::ipc::Request<'_>,
-) -> Result<(), String> {
-    match request.body() {
-        tauri::ipc::InvokeBody::Raw(bytes) => snapshots.write(window.label(), bytes),
-        _ => Err("Binary native PCM required".into()),
-    }
-}
-#[tauri::command]
-async fn native_snapshot_seal(
-    window: tauri::WebviewWindow,
-    snapshots: tauri::State<'_, crispaudio_media::native_snapshot::Snapshots>,
-    snapshot: String,
-) -> Result<(), String> {
-    let snapshots = snapshots.inner().clone();
-    let owner = window.label().to_string();
-    tauri::async_runtime::spawn_blocking(move || snapshots.seal(&owner, &snapshot))
-        .await
-        .map_err(|e| e.to_string())?
-}
-#[tauri::command]
-fn native_snapshot_close(
-    window: tauri::WebviewWindow,
-    snapshots: tauri::State<crispaudio_media::native_snapshot::Snapshots>,
-    state: tauri::State<NativeClockState>,
-    snapshot: String,
-) -> Result<(), String> {
-    // Clock lock orders close against capture reservation: a closed snapshot
-    // cannot start later from an already-resolved registry lookup.
-    let slot = state.0.lock().unwrap();
-    snapshots.close(window.label(), &snapshot)?;
-    if let Some((owner, control, active)) = slot.as_ref() {
-        if owner == window.label() && active.as_ref() == Some(&snapshot) {
-            control.cancel();
-        }
-    }
-    Ok(())
-}
-#[tauri::command]
-fn native_snapshot_status(
-    snapshots: tauri::State<crispaudio_media::native_snapshot::Snapshots>,
-) -> Value {
-    let (entries, bytes) = snapshots.counts();
-    json!({"entries":entries,"bytes":bytes})
-}
+use crate::commands::native_snapshot::*;
 #[tauri::command]
 async fn native_snapshot_capture(
     window: tauri::WebviewWindow,
@@ -315,6 +264,18 @@ fn native_validation_window(window: tauri::WebviewWindow, hidden: bool) -> Resul
     .map_err(|e| e.to_string())
 }
 #[tauri::command]
+fn native_validation_delivery_directory() -> Result<String, String> {
+    let folder = std::env::temp_dir().join("crispaudio-share").join(format!(
+        "native-delivery-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
+    Ok(folder.to_string_lossy().into_owned())
+}
+#[tauri::command]
 fn native_validation_report(app: tauri::AppHandle, report: Value) {
     use std::io::Write;
     app.state::<ValidationState>()
@@ -329,13 +290,18 @@ pub fn run() {
         std::env::var("CRISPAUDIO_NATIVE_VALIDATION_OPTIONS").expect("Validation options required");
     let options: Value = serde_json::from_str(&options).expect("Invalid validation options");
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .manage(PluginStreams::default())
         .manage(ValidationState::default())
         .manage(LoopbackState::default())
         .manage(NativeClockState::default())
+        .manage(NativePlayback::default())
         .manage(crispaudio_media::native_snapshot::Snapshots::default())
         .on_window_event(|window, event| {
             if matches!(event, tauri::WindowEvent::Destroyed) {
+                window
+                    .state::<NativePlayback>()
+                    .cancel_owner(window.label());
                 window
                     .state::<NativeClockState>()
                     .cancel_owner(window.label());
@@ -351,6 +317,14 @@ pub fn run() {
             plugins::plugin_stream_process_binary,
             plugins::plugin_stream_snapshot,
             plugins::plugin_stream_close,
+            native_playback::native_playback_validation_fault,
+            native_playback::native_playback_start,
+            native_playback::native_playback_status,
+            native_playback::native_playback_pause,
+            native_playback::native_playback_volume,
+            native_playback::native_playback_update,
+            native_playback::native_playback_reset_loudness,
+            native_playback::native_playback_close,
             native_snapshot_begin,
             native_snapshot_write,
             native_snapshot_seal,
@@ -361,6 +335,8 @@ pub fn run() {
             native_validation_audio_clock_cancel,
             native_validation_loopback_open,
             native_validation_loopback_close,
+            crate::commands::delivery::publish_delivery_stage,
+            native_validation_delivery_directory,
             native_validation_report,
             native_validation_status,
             native_validation_worker_key,
@@ -402,6 +378,7 @@ pub fn run() {
     app.run(|app, event| {
         if matches!(event, tauri::RunEvent::Exit) {
             app.state::<NativeClockState>().shutdown();
+            app.state::<NativePlayback>().shutdown();
             app.state::<crispaudio_media::native_snapshot::Snapshots>()
                 .shutdown();
             app.state::<PluginStreams>().shutdown();

@@ -2,6 +2,11 @@ name: macOS App Store Release
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build and sign a package without uploading to Apple'
+        type: boolean
+        default: true
   push:
     tags:
       - 'mac-v*'
@@ -50,7 +55,12 @@ jobs:
           set -euo pipefail
           echo "$MAC_PROFILE_BASE64" | base64 -d > "$RUNNER_TEMP/cs.provisionprofile"
           echo "PROFILE=$RUNNER_TEMP/cs.provisionprofile" >> "$GITHUB_ENV"
-      - name: Build cloud-only .app
+      - name: Check provisioning profile before building
+        run: |
+          python3 scripts/release/check-macos-profile.py "$PROFILE" \
+            --team "$TEAM_ID" --bundle "$BUNDLE_ID" \
+            --identity "Apple Distribution: Christian Ströbele ($TEAM_ID)"
+      - name: Build .app
         run: |
           npx tauri build --target aarch64-apple-darwin --bundles app
           APP=$(find src-tauri/target -path "*aarch64-apple-darwin/release/bundle/macos/*.app" -type d 2>/dev/null | head -1 || true)
@@ -81,7 +91,17 @@ jobs:
           echo "PKG=CrispAudio_${VERSION}.pkg" >> "$GITHUB_ENV"
           echo "SV=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist")" >> "$GITHUB_ENV"
           echo "BV=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Contents/Info.plist")" >> "$GITHUB_ENV"
+      - name: Verify signed package
+        run: |
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          pkgutil --check-signature "$PKG"
+      - name: Keep signed package
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-appstore-package
+          path: ${{ env.PKG }}
       - name: Validate and Upload
+        if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
         env:
           ASC_APP_ID: 6791876962
         run: |

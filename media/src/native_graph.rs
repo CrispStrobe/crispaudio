@@ -7,7 +7,8 @@ use crate::{
     },
     Result,
 };
-use serde_json::Value;
+use serde::Deserialize;
+use serde_json::{json, Value};
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -50,10 +51,17 @@ impl Source {
 /// keep latency fixed for the prepared lifetime. Errors fault the whole graph.
 pub trait Insert: Send {
     fn latency(&self) -> usize;
+    /// Called before a block with latency-compensated project time. DSP sample
+    /// clocks remain contiguous when project time wraps at a cycle boundary.
+    fn timeline(&mut self, _frame: i64) {}
+    fn update(&mut self, _parameters: &Value, _bypass: bool) -> Result<()> {
+        Err("Insert controls unavailable".into())
+    }
     fn process(&mut self, pcm: &mut [Stereo], frame: u32) -> Result<()>;
 }
 struct NativeRack {
     inserts: Vec<Box<dyn Insert>>,
+    ids: Vec<String>,
     delays: Vec<usize>,
     latency: usize,
 }
@@ -63,6 +71,7 @@ fn native(
     factory: &mut impl FnMut(&Value) -> Result<Box<dyn Insert>>,
 ) -> Result<NativeRack> {
     let mut inserts = Vec::new();
+    let mut identities = Vec::new();
     let mut latency = 0usize;
     let mut ids = HashSet::new();
     if !value.is_null() {
@@ -110,22 +119,33 @@ fn native(
                 .checked_add(delay)
                 .ok_or("Native latency overflow")?;
             inserts.push(insert);
+            identities.push(id.to_string());
         }
     }
     let delays = inserts.iter().map(|insert| insert.latency()).collect();
     Ok(NativeRack {
         inserts,
+        ids: identities,
         delays,
         latency,
     })
 }
 impl NativeRack {
-    fn process(&mut self, pcm: &mut [Stereo], frame: u32) -> Result<()> {
+    fn process(
+        &mut self,
+        pcm: &mut [Stereo],
+        frame: u32,
+        clock: ProjectClock,
+        upstream: usize,
+    ) -> Result<()> {
+        let mut delay = upstream;
         for (i, insert) in self.inserts.iter_mut().enumerate() {
             if insert.latency() != self.delays[i] {
                 return Err("Native insert latency changed".into());
             }
+            insert.timeline(clock.at(frame as i64 - delay as i64));
             insert.process(pcm, frame)?;
+            delay += self.delays[i];
             if insert.latency() != self.delays[i] {
                 return Err("Native insert latency changed".into());
             }
@@ -162,6 +182,7 @@ impl Delay {
     }
 }
 struct Clip {
+    id: String,
     source: Source,
     start: u32,
     end: u32,
@@ -173,12 +194,19 @@ struct Clip {
     align: Delay,
 }
 struct Route {
+    slew: Slew,
     target: Option<usize>,
     gain: f64,
     pre: bool,
     delay: Delay,
 }
 struct Track {
+    id: String,
+    gain_slew: Slew,
+    audible_slew: Slew,
+    pan_slew: Slew,
+    pan_automated: bool,
+    levels: [f64; 2],
     clips: Vec<Clip>,
     builtin: Rack,
     native: NativeRack,
@@ -196,6 +224,86 @@ struct Track {
     detector: Delay,
     routes: Vec<Route>,
 }
+#[derive(Clone, Copy)]
+struct Slew {
+    value: f64,
+    target: f64,
+    left: u32,
+}
+impl Slew {
+    fn new(value: f64) -> Self {
+        Self {
+            value,
+            target: value,
+            left: 0,
+        }
+    }
+    fn set(&mut self, target: f64) {
+        if self.target != target {
+            self.target = target;
+            self.left = 240;
+        }
+    }
+    fn next(&mut self) -> f64 {
+        if self.left > 0 {
+            self.value += (self.target - self.value) / self.left as f64;
+            self.left -= 1;
+        }
+        self.value
+    }
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MixControls {
+    pub master_volume: f64,
+    pub tracks: Vec<TrackControls>,
+    #[serde(default)]
+    pub native: Vec<NativeControls>,
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct TrackControls {
+    pub id: String,
+    pub volume: f64,
+    pub pan: f64,
+    pub muted: bool,
+    pub solo: bool,
+    #[serde(default)]
+    pub automation: Value,
+    #[serde(default)]
+    pub pan_automation: Value,
+    #[serde(default)]
+    pub sends: Vec<f64>,
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativeControls {
+    pub scope: String,
+    pub instance_id: String,
+    pub parameters: Value,
+    pub bypass: bool,
+}
+/// Project time can wrap while the render/processor clock stays monotonic.
+#[derive(Clone, Copy, Default)]
+struct ProjectClock {
+    cycle: Option<(u32, u32)>,
+}
+impl ProjectClock {
+    fn at(self, frame: i64) -> i64 {
+        match self.cycle {
+            Some((start, end)) if frame >= end as i64 => {
+                start as i64 + (frame - start as i64).rem_euclid((end - start) as i64)
+            }
+            _ => frame,
+        }
+    }
+    fn remaining(self, frame: i64) -> usize {
+        match self.cycle {
+            Some((_, end)) => (end as i64 - self.at(frame)) as usize,
+            None => usize::MAX,
+        }
+    }
+}
 /// Prepared immutable snapshot. A processing error latches until dropped/reprepared.
 pub struct Graph {
     tracks: Vec<Track>,
@@ -203,10 +311,15 @@ pub struct Graph {
     native: NativeRack,
     limiter: Option<crate::limiter::Limiter>,
     gain: f64,
+    gain_slew: Slew,
+    levels: [f64; 2],
+    routing_docs: Vec<Value>,
     position: u32,
     latency: usize,
     duration: u32,
     fault: Option<String>,
+    clock: ProjectClock,
+    context_delays: Vec<usize>,
 }
 fn float(x: [f64; 2]) -> Stereo {
     x.map(|v| v as f32)
@@ -305,6 +418,7 @@ impl Graph {
                 start = start.min(position);
                 end = end.max(position + length);
                 clips.push(Clip {
+                    id: clip["id"].as_str().unwrap().into(),
                     source,
                     start: first,
                     end: last,
@@ -369,6 +483,18 @@ impl Graph {
                 return Err("Invalid native pan".into());
             }
             tracks.push(Track {
+                id: doc["id"].as_str().unwrap().into(),
+                gain_slew: Slew::new(positive(doc, "volume", Some(1.))?),
+                audible_slew: Slew::new(if audible.contains(doc["id"].as_str().unwrap()) {
+                    1.
+                } else {
+                    0.
+                }),
+                pan_slew: Slew::new(finite(doc, "pan", Some(0.))?),
+                pan_automated: doc["panAutomation"]
+                    .as_array()
+                    .is_some_and(|v| !v.is_empty()),
+                levels: [0.; 2],
                 clips,
                 builtin,
                 native,
@@ -402,6 +528,7 @@ impl Graph {
                 tracks[i].routes.push(Route {
                     target: *target,
                     gain: *gain,
+                    slew: Slew::new(*gain),
                     pre: *pre,
                     delay,
                 });
@@ -426,17 +553,178 @@ impl Graph {
         } else {
             None
         };
-        Ok(Self {
+        let mut graph = Self {
             tracks,
             master,
             native,
             limiter,
             gain: positive(project, "masterVolume", Some(1.))?,
+            gain_slew: Slew::new(positive(project, "masterVolume", Some(1.))?),
+            levels: [0.; 2],
+            routing_docs: docs.clone(),
             position: 0,
             latency,
             duration,
             fault: None,
-        })
+            clock: ProjectClock::default(),
+            context_delays: vec![0],
+        };
+        let mut collect = |rack: &NativeRack, mut delay: usize| {
+            for insert in &rack.inserts {
+                graph.context_delays.push(delay);
+                delay += insert.latency();
+            }
+        };
+        for track in &graph.tracks {
+            for clip in &track.clips {
+                collect(&clip.native, 0);
+            }
+            collect(&track.native, track.input_latency);
+        }
+        collect(&graph.native, master_input);
+        graph.context_delays.sort_unstable();
+        graph.context_delays.dedup();
+        Ok(graph)
+    }
+    pub fn meters(&self) -> Value {
+        let mut result = serde_json::Map::new();
+        result.insert(
+            "master".into(),
+            json!({"peak":self.levels[0],"rms":self.levels[1]}),
+        );
+        for track in &self.tracks {
+            result.insert(
+                track.id.clone(),
+                json!({"peak":track.levels[0],"rms":track.levels[1]}),
+            );
+        }
+        Value::Object(result)
+    }
+    fn rack_mut(&mut self, scope: &str) -> Option<&mut NativeRack> {
+        if scope == "master" {
+            return Some(&mut self.native);
+        }
+        for track in &mut self.tracks {
+            if scope == format!("track:{}", track.id) {
+                return Some(&mut track.native);
+            }
+            for clip in &mut track.clips {
+                if scope == format!("clip:{}", clip.id) {
+                    return Some(&mut clip.native);
+                }
+            }
+        }
+        None
+    }
+    /// Topology is immutable; this packet can only change existing controls.
+    pub fn update_controls(&mut self, update: MixControls) -> Result<()> {
+        if !update.master_volume.is_finite()
+            || update.master_volume < 0.
+            || update.tracks.len() != self.tracks.len()
+            || update.native.len() > 8
+        {
+            return Err("Invalid native mix controls".into());
+        }
+        let mut ids = HashSet::new();
+        let mut parsed = Vec::new();
+        let mut docs = self.routing_docs.clone();
+        for control in &update.tracks {
+            if !ids.insert(&control.id)
+                || !control.volume.is_finite()
+                || control.volume < 0.
+                || !control.pan.is_finite()
+                || !(-1.0..=1.0).contains(&control.pan)
+                || control.sends.iter().any(|v| !v.is_finite() || *v < 0.)
+            {
+                return Err("Invalid native track controls".into());
+            }
+            let track = self
+                .tracks
+                .iter()
+                .find(|t| t.id == control.id)
+                .ok_or("Unknown native track controls")?;
+            if track.routes.len() != control.sends.len() + 1 {
+                return Err("Native send topology changed".into());
+            }
+            parsed.push((
+                Curve::gain(&control.automation)?,
+                Curve::pan(&control.pan_automation, control.pan)?,
+            ));
+            let doc = docs
+                .iter_mut()
+                .find(|t| t["id"].as_str() == Some(&control.id))
+                .unwrap();
+            doc["muted"] = json!(control.muted);
+            doc["solo"] = json!(control.solo);
+        }
+        let mut native_ids = HashSet::new();
+        for control in &update.native {
+            if !native_ids.insert((&control.scope, &control.instance_id))
+                || !control.parameters.is_object()
+                || control
+                    .parameters
+                    .as_object()
+                    .unwrap()
+                    .values()
+                    .any(|v| v.as_f64().is_none_or(|x| !x.is_finite()))
+                || control.parameters.to_string().len()
+                    + control.parameters.as_object().unwrap().len() * 3
+                    + 512
+                    > 8192
+            {
+                return Err("Invalid native insert controls".into());
+            }
+            let rack = self
+                .rack_mut(&control.scope)
+                .ok_or("Unknown native control scope")?;
+            if !rack.ids.contains(&control.instance_id) {
+                return Err("Unknown native insert controls".into());
+            }
+        }
+        let audible = crate::routing::audible(&docs);
+        for (control, (gain, pan)) in update.tracks.iter().zip(parsed) {
+            let track = self.tracks.iter_mut().find(|t| t.id == control.id).unwrap();
+            track.gain = control.volume;
+            track.gain_slew.set(control.volume);
+            track.audible = audible.contains(control.id.as_str());
+            track.audible_slew.set(if track.audible { 1. } else { 0. });
+            track.automation = gain;
+            track.pan = pan;
+            track.pan_slew.set(control.pan);
+            track.pan_automated = control
+                .pan_automation
+                .as_array()
+                .is_some_and(|v| !v.is_empty());
+            for (route, gain) in track.routes.iter_mut().skip(1).zip(&control.sends) {
+                route.gain = *gain;
+                route.slew.set(*gain);
+            }
+        }
+        self.gain = update.master_volume;
+        self.gain_slew.set(update.master_volume);
+        self.routing_docs = docs;
+        for control in update.native {
+            let rack = self.rack_mut(&control.scope).unwrap();
+            let index = rack
+                .ids
+                .iter()
+                .position(|id| id == &control.instance_id)
+                .unwrap();
+            if let Err(error) = rack.inserts[index].update(&control.parameters, control.bypass) {
+                self.fault = Some(error.clone());
+                return Err(error);
+            }
+        }
+        Ok(())
+    }
+    /// Preserve DSP tails across a cycle. Call before rendering preroll so all
+    /// compensated paths see the same source and musical-time discontinuity.
+    pub fn set_cycle(&mut self, start: u32, end: u32) -> Result<()> {
+        if self.position != 0 || start >= end || end > self.duration {
+            return Err("Invalid native cycle".into());
+        }
+        self.clock.cycle = Some((start, end));
+        Ok(())
     }
     pub fn render(&mut self, output: &mut [Stereo]) -> Result<()> {
         output.fill([0.; 2]);
@@ -446,7 +734,45 @@ impl Graph {
         if output.is_empty() || output.len() > 4096 {
             return Err("Invalid native graph block length".into());
         }
-        let result = self.block(output);
+        let mut offset = 0;
+        let mut track_levels = vec![[0f64; 2]; self.tracks.len()];
+        let mut levels = [0f64; 2];
+        let total = output.len();
+        let result: Result<()> = (|| {
+            while offset < output.len() {
+                let length = self
+                    .context_delays
+                    .iter()
+                    .map(|delay| self.clock.remaining(self.position as i64 - *delay as i64))
+                    .min()
+                    .unwrap_or(usize::MAX)
+                    .min(output.len() - offset);
+                if length == 0 {
+                    return Err("Invalid cycle boundary".into());
+                }
+                self.block(&mut output[offset..offset + length])?;
+                for (sum, track) in track_levels.iter_mut().zip(&self.tracks) {
+                    sum[0] = sum[0].max(track.levels[0]);
+                    sum[1] += track.levels[1] * track.levels[1] * length as f64;
+                }
+                levels[0] = levels[0].max(self.levels[0]);
+                levels[1] += self.levels[1] * self.levels[1] * length as f64;
+                offset += length;
+            }
+            Ok(())
+        })();
+        for (track, sum) in self.tracks.iter_mut().zip(track_levels) {
+            track.levels = if result.is_ok() {
+                [sum[0], (sum[1] / total as f64).sqrt()]
+            } else {
+                [0.; 2]
+            };
+        }
+        self.levels = if result.is_ok() {
+            [levels[0], (levels[1] / total as f64).sqrt()]
+        } else {
+            [0.; 2]
+        };
         if let Err(error) = &result {
             output.fill([0.; 2]);
             self.fault = Some(error.clone());
@@ -456,6 +782,7 @@ impl Graph {
     fn block(&mut self, output: &mut [Stereo]) -> Result<()> {
         let n = output.len();
         let block = self.position;
+        let clock = self.clock;
         self.position = self
             .position
             .checked_add(n as u32)
@@ -467,7 +794,7 @@ impl Graph {
             for clip in &mut track.clips {
                 let mut pcm = vec![[0.; 2]; n];
                 for (i, sample) in pcm.iter_mut().enumerate() {
-                    let frame = block + i as u32;
+                    let frame = clock.at(block as i64 + i as i64) as u32;
                     let raw = if frame >= clip.start && frame < clip.end {
                         double(clip.source.pcm[clip.offset + (frame - clip.start) as usize])
                             .map(|v| v * clip.gain)
@@ -476,10 +803,11 @@ impl Graph {
                     };
                     *sample = float(clip.builtin.at(raw, frame));
                 }
-                clip.native.process(&mut pcm, block)?;
+                clip.native.process(&mut pcm, block, clock, 0)?;
                 for (i, sample) in pcm.iter_mut().enumerate() {
-                    let time =
-                        (block + i as u32) as f64 - clip.native.latency as f64 - clip.start as f64;
+                    let time = clock.at(block as i64 + i as i64 - clip.native.latency as i64)
+                        as f64
+                        - clip.start as f64;
                     let gain = clip.fade.at(time / RATE);
                     let value = clip.align.at(sample.map(|v| (v as f64 * gain) as f32));
                     for (ch, v) in value.iter().enumerate() {
@@ -489,7 +817,9 @@ impl Graph {
             }
             let mut pcm = vec![[0.; 2]; n];
             for (i, sample) in pcm.iter_mut().enumerate() {
-                let frame = (block + i as u32).saturating_sub(track.input_latency as u32);
+                let frame = clock
+                    .at(block as i64 + i as i64 - track.input_latency as i64)
+                    .max(0) as u32;
                 let time = frame as f64 / RATE;
                 let gain = track.fade.at(time - track.start) * track.automation.at(time);
                 *sample = float(track.builtin.at(
@@ -497,7 +827,10 @@ impl Graph {
                     frame,
                 ));
             }
-            track.native.process(&mut pcm, block)?;
+            track
+                .native
+                .process(&mut pcm, block, clock, track.input_latency)?;
+            track.levels = [0.; 2];
             for (i, sample) in pcm.iter().enumerate() {
                 let mut value = double(track.program.at(*sample));
                 if let Some(duck) = &mut track.duck {
@@ -505,43 +838,68 @@ impl Graph {
                     let gain = duck.gain(detector);
                     value = value.map(|v| (v * gain) as f32 as f64);
                 }
-                let pre = if track.audible { value } else { [0.; 2] };
-                let time =
-                    (block + i as u32).saturating_sub(track.output_latency as u32) as f64 / RATE;
-                let post = pan(pre.map(|v| v * track.gain), track.pan.at(time), track.mono);
+                let audible_gain = track.audible_slew.next();
+                let pre = value.map(|v| v * audible_gain);
+                let time = clock
+                    .at(block as i64 + i as i64 - track.output_latency as i64)
+                    .max(0) as f64
+                    / RATE;
+                let gain = track.gain_slew.next();
+                let position = if track.pan_automated {
+                    track.pan.at(time)
+                } else {
+                    track.pan_slew.next()
+                };
+                let post = pan(pre.map(|v| v * gain), position, track.mono);
+                track.levels[0] = track.levels[0].max(post[0].abs()).max(post[1].abs());
+                track.levels[1] += (post[0] * post[0] + post[1] * post[1]) * 0.5;
                 posts[t][i] = post;
                 for route in &mut track.routes {
                     let sample = double(route.delay.at(float(if route.pre { pre } else { post })));
+                    let gain = route.slew.next();
                     let target = if let Some(target) = route.target {
                         &mut inputs[target][i]
                     } else {
                         &mut master[i]
                     };
                     for ch in 0..2 {
-                        target[ch] += sample[ch] * route.gain;
+                        target[ch] += sample[ch] * gain;
                     }
                 }
             }
+            track.levels[1] = (track.levels[1] / n as f64).sqrt();
         }
         let master_input = self.latency - self.native.latency;
         for (i, sample) in output.iter_mut().enumerate() {
-            *sample = float(self.master.at(
-                master[i],
-                (block + i as u32).saturating_sub(master_input as u32),
-            ));
+            *sample = float(
+                self.master.at(
+                    master[i],
+                    clock
+                        .at(block as i64 + i as i64 - master_input as i64)
+                        .max(0) as u32,
+                ),
+            );
         }
-        self.native.process(output, block)?;
+        self.native.process(output, block, clock, master_input)?;
+        self.levels = [0.; 2];
         for sample in output {
-            let value = double(*sample).map(|v| v * self.gain);
+            let gain = self.gain_slew.next();
+            let value = double(*sample).map(|v| v * gain);
             *sample = float(if let Some(limiter) = &mut self.limiter {
                 limiter.at(value)
             } else {
                 value
             });
+            self.levels[0] = self.levels[0]
+                .max(sample[0].abs() as f64)
+                .max(sample[1].abs() as f64);
+            self.levels[1] +=
+                (sample[0] as f64 * sample[0] as f64 + sample[1] as f64 * sample[1] as f64) * 0.5;
             if sample.iter().any(|v| !v.is_finite()) {
                 return Err("Native graph mix exceeded finite float range".into());
             }
         }
+        self.levels[1] = (self.levels[1] / n as f64).sqrt();
         Ok(())
     }
 }
@@ -612,6 +970,105 @@ mod tests {
         // Compiled values survive arbitrary caller-side project edits.
         doc["masterVolume"] = json!(100);
         assert_eq!(a.gain, 0.5);
+    }
+    #[test]
+    fn cycles_keep_delayed_routes_aligned_and_scope_clocks_split_at_wraps() {
+        use std::sync::Mutex;
+        struct ContextInsert {
+            d: Delayed,
+            position: i64,
+            seen: Arc<Mutex<Vec<(usize, u32, i64, usize)>>>,
+        }
+        impl Insert for ContextInsert {
+            fn latency(&self) -> usize {
+                self.d.latency
+            }
+            fn timeline(&mut self, frame: i64) {
+                self.position = frame;
+            }
+            fn process(&mut self, pcm: &mut [Stereo], frame: u32) -> Result<()> {
+                self.seen
+                    .lock()
+                    .unwrap()
+                    .push((self.d.latency, frame, self.position, pcm.len()));
+                self.d.process(pcm, frame)
+            }
+        }
+        let mut doc = project();
+        doc["tracks"][0]["segments"][0]["nativeEffects"] = insert(7);
+        doc["tracks"][0]["nativeEffects"] = insert(11);
+        doc["tracks"][2]["nativeEffects"] = insert(13);
+        doc["nativeEffects"] = insert(3);
+        let seen = Arc::new(Mutex::new(Vec::new()));
+        let mut graph = Graph::prepare(&doc, source(), |entry| {
+            let n = entry["delay"].as_u64().unwrap() as usize;
+            Ok(Box::new(ContextInsert {
+                d: Delayed {
+                    delay: Delay::new(n, &mut 0)?,
+                    latency: n,
+                },
+                position: 0,
+                seen: seen.clone(),
+            }))
+        })
+        .unwrap();
+        graph.set_cycle(10, 41).unwrap();
+        let mut output = vec![[0.; 2]; 4096];
+        graph.render(&mut output).unwrap();
+        for (i, frame) in output.iter().enumerate() {
+            assert_eq!(
+                *frame,
+                if i >= 56 && (i - 56) % 31 == 0 {
+                    [0.5, -0.25]
+                } else {
+                    [0.; 2]
+                },
+                "cycle frame {i}"
+            );
+        }
+        let clock = ProjectClock {
+            cycle: Some((10, 41)),
+        };
+        let log = seen.lock().unwrap();
+        assert!(log.iter().any(|(_, _, position, _)| *position < 0));
+        for (delay, frame, position, length) in log.iter() {
+            let upstream = match delay {
+                7 => 0,
+                11 => 7,
+                13 => 18,
+                3 => 31,
+                _ => panic!(),
+            };
+            assert_eq!(*position, clock.at(*frame as i64 - upstream));
+            assert!(*length <= clock.remaining(*frame as i64 - upstream));
+        }
+        assert!(graph.set_cycle(10, 41).is_err());
+    }
+    #[test]
+    fn live_mix_controls_ramp_without_rebuilding_or_advancing_on_rejection() {
+        let doc = json!({"sampleRate":48000,"duration":4096./48000.,"masterVolume":1,"tracks":[{"id":"a","volume":1,"pan":0,"segments":[clip("c")]}]});
+        let pcm = HashMap::from([("s".into(), Source::new(vec![vec![1.; 4096]; 2]).unwrap())]);
+        let mut graph = Graph::prepare(&doc, pcm, fake).unwrap();
+        let mut out = vec![[0.; 2]; 512];
+        graph.render(&mut out).unwrap();
+        assert!(out.iter().all(|p| *p == [1.; 2]));
+        let controls = |volume: f64, muted: bool| {
+            serde_json::from_value::<MixControls>(json!({"masterVolume":volume,"tracks":[{"id":"a","volume":1,"pan":0,"muted":muted,"solo":false}]})).unwrap()
+        };
+        let mut invalid = controls(0., false);
+        invalid.tracks[0].id = "missing".into();
+        assert!(graph.update_controls(invalid).is_err());
+        graph.render(&mut out).unwrap();
+        assert!(out.iter().all(|p| *p == [1.; 2]));
+        graph.update_controls(controls(0., false)).unwrap();
+        graph.render(&mut out).unwrap();
+        for (i, p) in out.iter().enumerate() {
+            assert!((p[0] - (239usize.saturating_sub(i)) as f32 / 240.).abs() < 1e-6);
+        }
+        assert_eq!(graph.meters()["a"]["peak"], 1.);
+        graph.update_controls(controls(1., true)).unwrap();
+        graph.render(&mut out).unwrap();
+        assert!(out[240..].iter().all(|p| *p == [0.; 2]));
     }
     struct Fail;
     impl Insert for Fail {

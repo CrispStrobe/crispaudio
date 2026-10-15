@@ -1,0 +1,166 @@
+{
+  "version": "0.12.0",
+  "date": "2026-10-15",
+  "muted": true,
+  "configuration": {
+    "blockFrames": 512,
+    "ringSlots": 4,
+    "queueBuffers": 2,
+    "processingSampleRate": 48000
+  },
+  "loopSamples": [
+    {
+      "frame": 46,
+      "left": 0.5,
+      "right": -0.4000000059604645
+    },
+    {
+      "frame": 36096,
+      "left": 0.75,
+      "right": -0.625
+    },
+    {
+      "frame": 48046,
+      "left": 0.4000000059604645,
+      "right": -0.30000001192092896
+    },
+    {
+      "frame": 84096,
+      "left": 0.75,
+      "right": -0.625
+    },
+    {
+      "frame": 96046,
+      "left": 0.4000000059604645,
+      "right": -0.30000001192092896
+    }
+  ],
+  "seekSamples": [
+    {
+      "frame": 96,
+      "left": 0.75,
+      "right": -0.625
+    }
+  ],
+  "callbacksDuringUIStall": 47,
+  "renderedFramesDuringUIStall": 24064,
+  "qualificationRuns": [
+    {
+      "background": "passed",
+      "callbacks": 5667,
+      "durationSeconds": 60,
+      "faults": [
+        "helper",
+        "underrun"
+      ],
+      "instances": 8,
+      "maxProcessMs": 4.496167,
+      "muted": true,
+      "processingRate": 48000,
+      "recovery": "passed",
+      "sourceRate": 44100,
+      "trackMeters": "passed"
+    },
+    {
+      "background": "passed",
+      "callbacks": 5628,
+      "durationSeconds": 60,
+      "faults": [
+        "helper",
+        "underrun"
+      ],
+      "instances": 8,
+      "maxProcessMs": 8.042625,
+      "muted": true,
+      "processingRate": 48000,
+      "recovery": "passed",
+      "sourceRate": 44100,
+      "trackMeters": "passed"
+    },
+    {
+      "background": "passed",
+      "callbacks": 5672,
+      "durationSeconds": 60,
+      "faults": [
+        "helper",
+        "underrun"
+      ],
+      "instances": 8,
+      "maxProcessMs": 7.458125,
+      "muted": true,
+      "processingRate": 48000,
+      "recovery": "passed",
+      "sourceRate": 44100,
+      "trackMeters": "passed"
+    }
+  ],
+  "validationExecutableSha256": "11f5a6f810efa4c8bdc9ff487c5766fcd3ee95a5ab9b1a83a7593c9d0790afd0",
+  "gui": {
+    "cancel": "passed",
+    "deviceRebind": "passed",
+    "fader": "continuous",
+    "language": "de",
+    "muted": true,
+    "pause": "held",
+    "play": "passed",
+    "resume": "passed",
+    "seek": "passed",
+    "stop": "passed"
+  },
+  "longPause": {
+    "seconds": 65,
+    "AU": "passed",
+    "VST3": "passed",
+    "clockHeldAtFrame": 128,
+    "VST3DelayHistoryRetained": true,
+    "script": "scripts/test-native-long-pause.py"
+  },
+  "delivery": {
+    "formats": [
+      "wav",
+      "flac",
+      "aac"
+    ],
+    "queue": "passed",
+    "independentDecoder": "FFmpeg",
+    "wavAndFlacFrames": 48000,
+    "flacMaxDifferenceFrom24bitWav": 1.1920928955078125e-07,
+    "aacPrimingFrames": 2048,
+    "aacCorrelationAfterPriming": 0.9999988753772995,
+    "cancelledOutputAbsent": true
+  },
+  "frontend": {
+    "fullSuitePassed": 1707,
+    "testFiles": 175,
+    "recordingGuardTestsIncluded": 2,
+    "suiteCommand": "npx vitest run --maxWorkers=4 --testTimeout=15000"
+  },
+  "nativeTests": {
+    "mediaLibraryPassed": 144,
+    "mediaCliPassed": 3,
+    "tauriPassed": 40,
+    "actualAUAndVST3StreamTestsIncluded": 8
+  },
+  "limits": [
+    "No new physical speaker audibility claim",
+    "External interfaces and wider commercial-plugin acceptance remain pending",
+    "Mac Store profile and signed/sandboxed plugin hosting acceptance remain pending"
+  ],
+  "renderedPreview": {
+    "actualCapture": "passed",
+    "fullImpulseFrames": [
+      60096
+    ],
+    "seekImpulseFrames": [
+      36096
+    ],
+    "loopImpulseFrames": [
+      12096,
+      36096,
+      60096
+    ],
+    "nativeDSPCallsDuringPlayback": 0,
+    "germanControls": "passed",
+    "foregroundRedraw": "not rechecked: macOS console locked; actual engine clock checked"
+  }
+}

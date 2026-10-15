@@ -1,5 +1,6 @@
-//! Isolated native-owned clock experiment. Compiled only by native-validation.
-//! No production playback route, WebKit PCM messages or process-global device changes.
+//! Native-owned Mac audio clock with bounded callback buffers.
+//! No WebKit PCM deadlines or process-global device changes.
+pub mod live;
 use crispaudio_media::plugin_stream::{PluginStream, StreamStop, StreamTransport};
 use serde_json::{json, Value};
 use std::{
@@ -49,10 +50,54 @@ struct NativeInsert {
     stream: PluginStream,
     latency: usize,
     bypass: bool,
+    bypass_mix: f64,
     dry: Vec<Stereo>,
     cursor: usize,
+    transport: StreamTransport,
+    parameters: Value,
+    restored_parameters: Value,
+    pending: Value,
+}
+fn parameter_update(current: &Value, next: &Value, restored: &Value) -> Result<Value, String> {
+    let mut update = next.as_object().ok_or("Invalid native parameters")?.clone();
+    for key in current
+        .as_object()
+        .ok_or("Invalid current native parameters")?
+        .keys()
+    {
+        if !update.contains_key(key) {
+            update.insert(
+                key.clone(),
+                restored
+                    .get(key)
+                    .cloned()
+                    .ok_or("Cannot restore native parameter")?,
+            );
+        }
+    }
+    Ok(Value::Object(update))
+}
+fn advance_dry(history: &mut [Stereo], cursor: &mut usize, input: Stereo) -> Stereo {
+    if history.is_empty() {
+        return input;
+    }
+    let output = std::mem::replace(&mut history[*cursor], input);
+    *cursor = (*cursor + 1) % history.len();
+    output
 }
 impl Insert for NativeInsert {
+    fn update(&mut self, parameters: &Value, bypass: bool) -> Result<(), String> {
+        if *parameters != self.parameters {
+            self.pending =
+                parameter_update(&self.parameters, parameters, &self.restored_parameters)?;
+            self.parameters = parameters.clone();
+        }
+        self.bypass = bypass;
+        Ok(())
+    }
+    fn timeline(&mut self, frame: i64) {
+        self.transport.project_position = Some(frame);
+    }
     fn latency(&self) -> usize {
         self.latency
     }
@@ -61,16 +106,30 @@ impl Insert for NativeInsert {
             pcm.iter().map(|v| v[0]).collect(),
             pcm.iter().map(|v| v[1]).collect(),
         ];
-        // Scope-specific musical transport is a later integration, not guessed here.
-        let reply = self.stream.process(&input, &json!({}), self.bypass)?;
+        let reply = self.stream.process_with_transport(
+            &input,
+            &self.pending,
+            false,
+            Some(&self.transport),
+        )?;
+        self.pending = json!({});
+        self.transport.sample_position += pcm.len() as u64;
         if reply.metadata["latencySamples"].as_u64() != Some(self.latency as u64) {
             return Err("Native graph plugin latency changed".into());
         }
         for (i, sample) in pcm.iter_mut().enumerate() {
             *sample = [reply.samples[0][i], reply.samples[1][i]];
-            if self.bypass && !self.dry.is_empty() {
-                std::mem::swap(sample, &mut self.dry[self.cursor]);
-                self.cursor = (self.cursor + 1) % self.dry.len();
+            // Dry history advances while wet too, so toggling bypass neither
+            // changes declared latency nor exposes stale/empty delay storage.
+            let dry = advance_dry(&mut self.dry, &mut self.cursor, [input[0][i], input[1][i]]);
+            let target = if self.bypass { 1. } else { 0. };
+            self.bypass_mix += (target - self.bypass_mix).clamp(-1. / 240., 1. / 240.);
+            if self.bypass_mix > 0. {
+                for channel in 0..2 {
+                    sample[channel] = ((sample[channel] as f64) * (1. - self.bypass_mix)
+                        + (dry[channel] as f64) * self.bypass_mix)
+                        as f32;
+                }
             }
         }
         Ok(())
@@ -107,6 +166,11 @@ fn prepare_graph(
     sources: std::collections::HashMap<String, Source>,
     control: &Control,
 ) -> Result<Graph, String> {
+    let music = &project["music"];
+    let transport: StreamTransport=serde_json::from_value(json!({"samplePosition":0,"projectPosition":0,
+        "tempo":music.get("tempo").unwrap_or(&json!(120)),"numerator":music.get("numerator").unwrap_or(&json!(4)),
+        "denominator":music.get("denominator").unwrap_or(&json!(4)),"originSeconds":music.get("origin").unwrap_or(&json!(0)),"playing":true})).map_err(|e|e.to_string())?;
+    transport.validate()?;
     Graph::prepare(project, sources, |entry| {
         let stream = PluginStream::open_with_stop(
             &json!({"id":entry["pluginId"],"sampleRate":48000,"channels":2,"processMode":"realtime","parameters":entry["parameters"],"state":entry["state"]}),
@@ -118,12 +182,18 @@ fn prepare_graph(
         if latency > 480000 {
             return Err("Invalid graph native latency".into());
         }
+        let restored_parameters = stream.info["restoredParameters"].clone();
         Ok(Box::new(NativeInsert {
             stream,
+            restored_parameters,
             latency,
             bypass: entry["bypass"] == true,
+            bypass_mix: if entry["bypass"] == true { 1. } else { 0. },
             dry: vec![[0.; 2]; latency],
             cursor: 0,
+            transport: transport.clone(),
+            parameters: entry["parameters"].clone(),
+            pending: json!({}),
         }))
     })
 }
@@ -624,6 +694,7 @@ fn run(
                         &json!({}),
                         false,
                         Some(&StreamTransport {
+                            project_position: None,
                             sample_position: (block * FRAMES) as u64,
                             tempo: 120.,
                             numerator: 4,
@@ -752,6 +823,50 @@ fn run(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn undoing_first_parameter_edit_restores_saved_program_value() {
+        assert_eq!(
+            super::parameter_update(
+                &serde_json::json!({"100":0.2,"101":0.3}),
+                &serde_json::json!({"101":0.4}),
+                &serde_json::json!({"100":0.5,"101":0.1})
+            )
+            .unwrap(),
+            serde_json::json!({"100":0.5,"101":0.4})
+        );
+        assert!(super::parameter_update(
+            &serde_json::json!({"unknown":1}),
+            &serde_json::json!({}),
+            &serde_json::json!({})
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn live_bypass_uses_continuous_dry_history() {
+        let mut history = vec![[0.; 2]; 4];
+        let mut cursor = 0;
+        let output = (0..12)
+            .map(|frame| {
+                let dry =
+                    super::advance_dry(&mut history, &mut cursor, [frame as f32, -(frame as f32)]);
+                if frame >= 7 {
+                    dry
+                } else {
+                    [99.; 2]
+                }
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            &output[7..],
+            &[[3., -3.], [4., -4.], [5., -5.], [6., -6.], [7., -7.]]
+        );
+        assert_eq!(
+            super::advance_dry(&mut [], &mut 0, [0.5, -0.5]),
+            [0.5, -0.5]
+        );
+    }
+
     use super::*;
     #[test]
     fn bounded_wrap_and_latched_fault_silence() {

@@ -1,8 +1,38 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-15, for local 0.11.11. This section is the current plan.
+Updated 2026-10-15, for local 0.12.0. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
+
+## Current checkpoint: native playback and delivery
+
+The user authorized these six steps in order on 2026-10-15:
+
+1. Repair CI: the legacy sparse-track validation fix passed general and iOS CI.
+2. Continuous native playback: Play/Stop/Pause, history-preserving seek, loops,
+   per-insert project/tempo context and a separate monotonic DSP clock.
+3. Live mixing: fader/pan/mute/solo/send controls, native parameters and bypass,
+   track/master meters, loudness, device rebind and visible fault recovery.
+4. Native-rack delivery: direct and queued wet WAV/FLAC/AAC exports with
+   cancellation and saved-job source/settings ownership.
+5. Qualification: exact loop/seek captures, UI stalls, 44.1 kHz sources,
+   eight AU/VST3 instances for a minute including background playback,
+   injected helper/underrun faults, recovery and German transport controls.
+6. Consolidate the local app, notices, native sample session and documentation;
+   diagnose Mac Store signing and prepare a checked dry-run workflow.
+
+Local 0.12.0 implements this native transport on macOS, with an explicit rendered
+Preview fallback. Native processing stays at 48 kHz; sources are frozen and
+converted when required. Structural/built-in FX changes restart playback.
+Native microphone/automation-pass recording, monitor clicks, custom plugin windows, commercial-plugin and
+external-interface acceptance remain outside this checkpoint. Mac Store submission
+still needs a fresh Apple-issued profile and signed/sandboxed hosting acceptance;
+no upload or release tag is authorized by the local checkpoint.
+
+See [native playback](docs/NATIVE_PLAYBACK.md) and
+[distribution status](docs/RELEASE_STATUS.md). The following implementation
+records describe earlier increments; their then-pending native transport work is
+superseded by this section.
 
 ## Accepted ocenaudio comparison stack (2026-10-13)
 

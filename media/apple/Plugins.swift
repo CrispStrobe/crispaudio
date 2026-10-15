@@ -1,12 +1,12 @@
 // MIT — Audio Unit source-effect hosting in the isolated native media helper.
 import Foundation
-import AVFoundation
+@preconcurrency import AVFoundation
 import AudioToolbox
 
 let pluginProtocolOutput=FileHandle(fileDescriptor:dup(STDOUT_FILENO),closeOnDealloc:true)
 func protectPluginOutput(){_ = pluginProtocolOutput;dup2(STDERR_FILENO,STDOUT_FILENO)}
 
-struct PluginRequest:Decodable {
+struct PluginRequest:Decodable,Sendable {
  var id:String;var path:String?;var offset:Double?;var duration:Double?;var output:String?
  var parameters:[String:Double]?;var state:String?;var bypass:Bool?;var sampleRate:Double?;var channels:UInt32?;var processMode:String?
 }
@@ -79,6 +79,7 @@ final class PluginStreamInput {
 }
 final class PluginStreamTransport {
  var rate:Double=48000
+ var projectPosition:Int64?=nil
  var position:Int64=0,tempo:Double=120,numerator:Double=4,denominator:Int=4,origin:Double=0,playing=true,changed=true,explicit=false
  func update(_ value:Any?)throws {
   guard let value=value else{if explicit{try fail("Missing stream transport")};return}
@@ -87,44 +88,73 @@ final class PluginStreamTransport {
   let p=try number("samplePosition"),t=try number("tempo"),n=try number("numerator"),d=try number("denominator"),o=try number("originSeconds")
   guard p>=0,p<=9007199254740991-4096,p.rounded()==p,t>=20,t<=300,n>=1,n<=32,n.rounded()==n,[1.0,2,4,8,16].contains(d),o>=0,o<=86400,let moving=settings["playing"] as? NSNumber,CFGetTypeID(moving)==CFBooleanGetTypeID() else{try fail("Invalid stream transport")}
   guard !explicit || position==Int64(p) else{try fail("Transport discontinuity requires a new stream")}
-  changed = !explicit || playing != moving.boolValue;explicit=true;position=Int64(p);tempo=t;numerator=n;denominator=Int(d);origin=o;playing=moving.boolValue
+  let project:Double? = settings["projectPosition"] == nil ? nil:try number("projectPosition")
+  if let project=project {guard abs(project)<=9007199254736895,project.rounded()==project else{try fail("Invalid project position")}}
+  changed = !explicit || playing != moving.boolValue || (project.map{Int64($0)} != projectPosition);projectPosition=project.map{Int64($0)};explicit=true;position=Int64(p);tempo=t;numerator=n;denominator=Int(d);origin=o;playing=moving.boolValue
  }
- func beat(_ rate:Double)->Double{(Double(position)/rate-origin)*tempo/60}
+ func beat(_ rate:Double)->Double{(Double(projectPosition ?? position)/rate-origin)*tempo/60}
  func bar(_ rate:Double)->Double{let length=numerator*4/Double(denominator);return floor(beat(rate)/length)*length}
  func nextBeat(_ rate:Double)->Int{let b=beat(rate);return Int(((ceil(b)-b)*rate*60/tempo).rounded())}
- var metadata:[String:Any]{["samplePosition":position,"tempo":tempo,"numerator":Int(numerator),"denominator":denominator,"originSeconds":origin,"playing":playing]}
+ var metadata:[String:Any]{var value:[String:Any]=["samplePosition":position,"tempo":tempo,"numerator":Int(numerator),"denominator":denominator,"originSeconds":origin,"playing":playing];if let projectPosition=projectPosition{value["projectPosition"]=projectPosition};return value}
 }
 func streamPlugin(_ json:String)async throws {
  let data=json.hasPrefix("{") ? Data(json.utf8):try Data(contentsOf:URL(fileURLWithPath:json)),request=try JSONDecoder().decode(PluginRequest.self,from:data)
+ let unit=try await AVAudioUnit.instantiate(with:pluginDescription(request.id),options:[])
+ try await withCheckedThrowingContinuation { (continuation:CheckedContinuation<Void,Error>) in
+  // Pipe/DSP work must not occupy a Swift cooperative executor thread.
+  let worker=Thread {do {try streamPluginBody(request,unit:unit);continuation.resume()}catch{continuation.resume(throwing:error)}}
+  worker.qualityOfService=request.processMode=="offline" ? .userInitiated:.userInteractive
+  worker.start()
+ }
+}
+// Dedicated DSP threads use Mach deadlines, not only interactive QoS.
+func scheduleRealtimePlugin(_ rate:Double)throws {
+ var base=mach_timebase_info_data_t();guard mach_timebase_info(&base)==KERN_SUCCESS,base.numer>0 else{try fail("Cannot read audio scheduling clock")}
+ let period=UInt32((512_000_000_000/rate)*Double(base.denom)/Double(base.numer))
+ var policy=thread_time_constraint_policy_data_t(period:period,computation:period/2,constraint:period,preemptible:1)
+ let count=mach_msg_type_number_t(MemoryLayout<thread_time_constraint_policy_data_t>.size/MemoryLayout<integer_t>.size)
+ let status=withUnsafeMutablePointer(to:&policy){pointer in pointer.withMemoryRebound(to:integer_t.self,capacity:Int(count)){thread_policy_set(pthread_mach_thread_np(pthread_self()),thread_policy_flavor_t(THREAD_TIME_CONSTRAINT_POLICY),$0,count)}}
+ guard status==KERN_SUCCESS else{try fail("Cannot schedule real-time Audio Unit worker")}
+}
+func streamPluginBody(_ request:PluginRequest,unit:AVAudioUnit)throws {
  guard let rate=request.sampleRate,let channels=request.channels,rate.isFinite,rate>=8000,rate<=192000,channels==1 || channels==2,let format=AVAudioFormat(standardFormatWithSampleRate:rate,channels:channels) else{try fail("Invalid stream format")}
  guard request.processMode==nil || request.processMode=="realtime" || request.processMode=="offline" else{try fail("Invalid stream process mode")}
- let unit=try await AVAudioUnit.instantiate(with:pluginDescription(request.id),options:[]),au=unit.auAudioUnit
+ let au=unit.auAudioUnit
+ let activity=request.processMode=="offline" ? nil:ProcessInfo.processInfo.beginActivity(options:[.userInitiatedAllowingIdleSystemSleep,.latencyCritical],reason:"Native audio processing")
+ defer {if let activity=activity {ProcessInfo.processInfo.endActivity(activity)}}
  au.isRenderingOffline=request.processMode=="offline"
  if let state=request.state,!state.isEmpty {guard state.count<=8_000_000,let bytes=Data(base64Encoded:state),let restored=try PropertyListSerialization.propertyList(from:bytes,format:nil) as? [String:Any] else{try fail("Invalid Audio Unit state")};au.fullStateForDocument=restored}
  func parameters(_ values:[String:Double])throws {for (key,value) in values {guard value.isFinite,let address=UInt64(key),let p=au.parameterTree?.parameter(withAddress:address),value>=Double(p.minValue),value<=Double(p.maxValue) else{try fail("Invalid stream parameter")};p.value=Float(value)}}
+ let restoredParameters=Dictionary(uniqueKeysWithValues:(au.parameterTree?.allParameters ?? []).map{(String($0.address),Double($0.value))})
  try parameters(request.parameters ?? [:]);let audioUnit=unit.audioUnit,context=PluginStreamInput(),transport=PluginStreamTransport();transport.rate=rate;var description=format.streamDescription.pointee,maximum:UInt32=4096
  func checked(_ status:OSStatus)throws {guard status==noErr else{try fail("Cannot configure plugin stream: \(status)")}}
  try checked(AudioUnitSetProperty(audioUnit,kAudioUnitProperty_StreamFormat,kAudioUnitScope_Input,0,&description,UInt32(MemoryLayout<AudioStreamBasicDescription>.size)));try checked(AudioUnitSetProperty(audioUnit,kAudioUnitProperty_StreamFormat,kAudioUnitScope_Output,0,&description,UInt32(MemoryLayout<AudioStreamBasicDescription>.size)));try checked(AudioUnitSetProperty(audioUnit,kAudioUnitProperty_MaximumFramesPerSlice,kAudioUnitScope_Global,0,&maximum,4))
  au.musicalContextBlock={tempo,numerator,denominator,beat,next,bar in tempo?.pointee=transport.tempo;numerator?.pointee=transport.numerator;denominator?.pointee=transport.denominator;beat?.pointee=transport.beat(rate);next?.pointee=transport.nextBeat(rate);bar?.pointee=transport.bar(rate);return true}
- au.transportStateBlock={flags,position,start,end in flags?.pointee=AUHostTransportStateFlags(rawValue:(transport.playing ? 2:0)|(transport.changed ? 1:0));position?.pointee=Double(transport.position);start?.pointee=0;end?.pointee=0;return true}
- var host=HostCallbackInfo(hostUserData:Unmanaged.passUnretained(transport).toOpaque(),beatAndTempoProc:{ref,beat,tempo in guard let ref=ref else{return kAudioUnitErr_CannotDoInCurrentContext};let t=Unmanaged<PluginStreamTransport>.fromOpaque(ref).takeUnretainedValue();beat?.pointee=t.beat(t.rate);tempo?.pointee=t.tempo;return noErr},musicalTimeLocationProc:{ref,next,numerator,denominator,bar in guard let ref=ref else{return kAudioUnitErr_CannotDoInCurrentContext};let t=Unmanaged<PluginStreamTransport>.fromOpaque(ref).takeUnretainedValue();next?.pointee=UInt32(t.nextBeat(t.rate));numerator?.pointee=Float(t.numerator);denominator?.pointee=UInt32(t.denominator);bar?.pointee=t.bar(t.rate);return noErr},transportStateProc:{ref,playing,changed,position,cycling,start,end in guard let ref=ref else{return kAudioUnitErr_CannotDoInCurrentContext};let t=Unmanaged<PluginStreamTransport>.fromOpaque(ref).takeUnretainedValue();playing?.pointee=DarwinBoolean(t.playing);changed?.pointee=DarwinBoolean(t.changed);position?.pointee=Double(t.position);cycling?.pointee=false;start?.pointee=0;end?.pointee=0;return noErr},transportStateProc2:nil)
+ au.transportStateBlock={flags,position,start,end in flags?.pointee=AUHostTransportStateFlags(rawValue:(transport.playing ? 2:0)|(transport.changed ? 1:0));position?.pointee=Double(transport.projectPosition ?? transport.position);start?.pointee=0;end?.pointee=0;return true}
+ var host=HostCallbackInfo(hostUserData:Unmanaged.passUnretained(transport).toOpaque(),beatAndTempoProc:{ref,beat,tempo in guard let ref=ref else{return kAudioUnitErr_CannotDoInCurrentContext};let t=Unmanaged<PluginStreamTransport>.fromOpaque(ref).takeUnretainedValue();beat?.pointee=t.beat(t.rate);tempo?.pointee=t.tempo;return noErr},musicalTimeLocationProc:{ref,next,numerator,denominator,bar in guard let ref=ref else{return kAudioUnitErr_CannotDoInCurrentContext};let t=Unmanaged<PluginStreamTransport>.fromOpaque(ref).takeUnretainedValue();next?.pointee=UInt32(t.nextBeat(t.rate));numerator?.pointee=Float(t.numerator);denominator?.pointee=UInt32(t.denominator);bar?.pointee=t.bar(t.rate);return noErr},transportStateProc:{ref,playing,changed,position,cycling,start,end in guard let ref=ref else{return kAudioUnitErr_CannotDoInCurrentContext};let t=Unmanaged<PluginStreamTransport>.fromOpaque(ref).takeUnretainedValue();playing?.pointee=DarwinBoolean(t.playing);changed?.pointee=DarwinBoolean(t.changed);position?.pointee=Double(t.projectPosition ?? t.position);cycling?.pointee=false;start?.pointee=0;end?.pointee=0;return noErr},transportStateProc2:nil)
  try checked(AudioUnitSetProperty(audioUnit,kAudioUnitProperty_HostCallbacks,kAudioUnitScope_Global,0,&host,UInt32(MemoryLayout<HostCallbackInfo>.size)))
  var callback=AURenderCallbackStruct(inputProc:{ref,_,stamp,bus,frames,data in return Unmanaged<PluginStreamInput>.fromOpaque(ref).takeUnretainedValue().fill(stamp,frames,bus,data)},inputProcRefCon:Unmanaged.passUnretained(context).toOpaque());try checked(AudioUnitSetProperty(audioUnit,kAudioUnitProperty_SetRenderCallback,kAudioUnitScope_Input,0,&callback,UInt32(MemoryLayout<AURenderCallbackStruct>.size)));try checked(AudioUnitInitialize(audioUnit));defer{AudioUnitUninitialize(audioUnit)}
  guard let warmInput=AVAudioPCMBuffer(pcmFormat:format,frameCapacity:128),let warmOutput=AVAudioPCMBuffer(pcmFormat:format,frameCapacity:128) else{try fail("Cannot warm plugin stream")};warmInput.frameLength=128;warmOutput.frameLength=128;for ch in 0..<Int(channels){memset(warmInput.floatChannelData![ch],0,128*4)};context.buffer=warmInput;context.sampleTime=0;var warmFlags=AudioUnitRenderActionFlags(rawValue:0),warmStamp=AudioTimeStamp();warmStamp.mSampleTime=0;warmStamp.mFlags=AudioTimeStampFlags.sampleTimeValid;try checked(AudioUnitRender(audioUnit,&warmFlags,&warmStamp,0,128,warmOutput.mutableAudioBufferList));context.buffer=nil;try checked(AudioUnitReset(audioUnit,kAudioUnitScope_Global,0))
 
- func metadata(_ frames:UInt32,_ sequence:UInt32,_ state:Bool)throws->[String:Any] {let latency=au.latency;guard latency.isFinite,latency>=0,latency<=10 else{try fail("Invalid stream latency")};var value:[String:Any]=["frames":frames,"sequence":sequence,"channels":channels,"sampleRate":rate,"latencySamples":Int((latency*rate).rounded()),"transport":transport.metadata,"processMode":request.processMode ?? "realtime","musicalPosition":transport.beat(rate),"barPosition":transport.bar(rate)];if state {value["parameters"]=(au.parameterTree?.allParameters ?? []).map{p->[String:Any] in ["address":String(p.address),"name":p.displayName,"min":p.minValue,"max":p.maxValue,"value":p.value,"unit":p.unitName ?? ""]};value["state"]=try PropertyListSerialization.data(fromPropertyList:au.fullStateForDocument ?? au.fullState ?? [:],format:.binary,options:0).base64EncodedString()};return value}
- try streamReply(metadata(0,0,true));var expected:UInt32=1
- while true {
-  alarm(60);guard let header=try streamRead(16,allowEOF:true) else{return};alarm(5);let kind=streamU32(header,0),frames=streamU32(header,4),sequence=streamU32(header,8),length=streamU32(header,12)
+ func metadata(_ frames:UInt32,_ sequence:UInt32,_ state:Bool)throws->[String:Any] {let latency=au.latency;guard latency.isFinite,latency>=0,latency<=10 else{try fail("Invalid stream latency")};var value:[String:Any]=["frames":frames,"sequence":sequence,"channels":channels,"sampleRate":rate,"latencySamples":Int((latency*rate).rounded()),"transport":transport.metadata,"processMode":request.processMode ?? "realtime","musicalPosition":transport.beat(rate),"barPosition":transport.bar(rate)];if state {value["restoredParameters"]=restoredParameters;value["parameters"]=(au.parameterTree?.allParameters ?? []).map{p->[String:Any] in ["address":String(p.address),"name":p.displayName,"min":p.minValue,"max":p.maxValue,"value":p.value,"unit":p.unitName ?? ""]};value["state"]=try PropertyListSerialization.data(fromPropertyList:au.fullStateForDocument ?? au.fullState ?? [:],format:.binary,options:0).base64EncodedString()};return value}
+ try streamReply(metadata(0,0,true));var expected:UInt32=1;var realtimeScheduled=false
+ func packet()throws->Bool {
+  // Idle pause has no deadline; EOF still cleans up after the owner exits.
+  alarm(0);guard let header=try streamRead(16,allowEOF:true) else{return false};alarm(5);let kind=streamU32(header,0),frames=streamU32(header,4),sequence=streamU32(header,8),length=streamU32(header,12)
   guard (kind==1 || kind==2),sequence==expected,length<=8192,frames<=4096,(kind==2 ? frames==0:frames>0) else{try fail("Invalid stream packet")};expected &+= 1
   let json=try streamRead(Int(length))!,settings=length==0 ? [:]:try JSONSerialization.jsonObject(with:json) as? [String:Any];guard let settings=settings else{try fail("Invalid stream settings")}
-  if kind==2 {try streamReply(metadata(0,sequence,true));continue}
+  if kind==2 {try streamReply(metadata(0,sequence,true));return true}
   try transport.update(settings["transport"])
   guard let input=AVAudioPCMBuffer(pcmFormat:format,frameCapacity:frames),let output=AVAudioPCMBuffer(pcmFormat:format,frameCapacity:frames),let samples=input.floatChannelData else{try fail("Stream allocation failed")};input.frameLength=frames
   for ch in 0..<Int(channels){let data=try streamRead(Int(frames)*4)!;for i in 0..<Int(frames){let value=Float(bitPattern:streamU32(data,i*4));guard value.isFinite else{try fail("Invalid stream samples")};samples[ch][i]=value}}
+  if request.processMode != "offline" && !realtimeScheduled {try scheduleRealtimePlugin(rate);realtimeScheduled=true}
   try parameters(settings["parameters"] as? [String:Double] ?? [:]);let bypass=settings["bypass"] as? Bool ?? false;let dry=bypass ? (0..<Int(channels)).map{Data(bytes:samples[$0],count:Int(frames)*4)}:[];output.frameLength=frames;var flags=AudioUnitRenderActionFlags(rawValue:0),stamp=AudioTimeStamp();stamp.mSampleTime=Double(transport.position);stamp.mFlags=AudioTimeStampFlags.sampleTimeValid
   context.buffer=input;context.sampleTime=Double(transport.position);let status=AudioUnitRender(audioUnit,&flags,&stamp,0,frames,output.mutableAudioBufferList);context.buffer=nil;guard status==noErr else{try fail("Plugin stream DSP failed: \(status)")}
   for ch in 0..<Int(channels){for i in 0..<Int(frames){if bypass{output.floatChannelData![ch][i]=Float(bitPattern:streamU32(dry[ch],i*4))};guard output.floatChannelData![ch][i].isFinite else{try fail("Invalid stream output")}}}
-  try withExtendedLifetime(input){try streamReply(metadata(frames,sequence,false),output)};transport.position+=Int64(frames);transport.changed=false
+  try withExtendedLifetime(input){try streamReply(metadata(frames,sequence,false),output)};transport.position+=Int64(frames);if let p=transport.projectPosition{transport.projectPosition=p+Int64(frames)};transport.changed=false
+
+  return true
  }
+ // Drain Objective-C temporaries for every block, including long sessions.
+ while try autoreleasepool(invoking:packet) {}
 }

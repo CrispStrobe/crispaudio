@@ -31,7 +31,9 @@ function Meter({engine, id}: {engine: RefObject<TimelineEngine | null>; id: stri
         const levels = signalLevels(samples);
         peak = Math.max(peak, levels.peak); power += levels.rms ** 2;
       }
-      const rms = Math.sqrt(power / (node?.length || 1));
+      const native=engine.current?.getSignalLevels(id);
+      peak=native?.peak??peak;
+      const rms = native?.rms??Math.sqrt(power / (node?.length || 1));
       hold.current = Math.max(hold.current, peak); clipped.current ||= peak >= 1;
       const ctx = canvas.current?.getContext('2d');
       const width = 112, height = 38;

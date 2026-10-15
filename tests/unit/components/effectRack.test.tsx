@@ -1,3 +1,4 @@
+vi.mock('../../../src/i18n',()=>({default:{language:'en',changeLanguage:vi.fn()}}));
 import { useState } from 'react';
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { afterEach, describe, it, expect, vi } from 'vitest';

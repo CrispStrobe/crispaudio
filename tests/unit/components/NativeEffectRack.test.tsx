@@ -1,3 +1,4 @@
+vi.mock('../../../src/i18n',()=>({default:{language:'en',changeLanguage:vi.fn()}}));
 import {beforeEach,it,expect,vi} from 'vitest';
 import {act,fireEvent,render,screen} from '@testing-library/react';
 import {NativeEffectRack} from '../../../src/components/timeline/NativeEffectRack';

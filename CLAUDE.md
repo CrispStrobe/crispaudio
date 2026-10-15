@@ -39,7 +39,9 @@ tests/unit/         Unit tests (stores/, audio/, components/, hooks/, lib/)
 
 - Panels are lazy-loaded via React.lazy in App.tsx
 - Visualization components (WaveformDisplay, SpectrumDisplay, etc.) are in shared/ with ResizeObserver for HiDPI
-- Realtime/GUI offline audio uses Web Audio; native linked-project exports use
+- Ordinary realtime/GUI offline audio uses Web Audio. Mac native-insert Live
+  playback uses media/src/native_graph.rs with a native-owned Core Audio clock;
+  rendered Preview remains a fallback. Linked-project exports use
   media/src/audio_mix.rs. Keep supported DSP/routing consistent across paths.
 - Panels must clean up AudioContext and stop playback on unmount
 - CSS uses Tailwind utilities + CSS custom properties for theming (--bg-primary, --text-muted, etc.)

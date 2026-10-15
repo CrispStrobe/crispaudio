@@ -1,4 +1,4 @@
-#[cfg(all(feature = "native-validation", target_os = "macos"))]
+#[cfg(target_os = "macos")]
 mod native_audio_clock;
 #[cfg(all(feature = "native-validation", target_os = "macos"))]
 mod native_validation;
@@ -24,6 +24,15 @@ pub fn run() {
         .manage(commands::plugins::PluginStreams::default())
         .on_window_event(|window, event| {
             if matches!(event, tauri::WindowEvent::Destroyed) {
+                #[cfg(target_os = "macos")]
+                {
+                    window
+                        .state::<commands::native_playback::NativePlayback>()
+                        .close_owner(window.label());
+                    window
+                        .state::<crispaudio_media::native_snapshot::Snapshots>()
+                        .close_owner(window.label());
+                }
                 window
                     .state::<commands::plugins::PluginStreams>()
                     .close_owner(window.label());
@@ -41,6 +50,10 @@ pub fn run() {
             native_menu::install(app.handle(), &native_menu::MenuContext::default())?;
             Ok(())
         });
+    #[cfg(target_os = "macos")]
+    let builder = builder
+        .manage(commands::native_playback::NativePlayback::default())
+        .manage(crispaudio_media::native_snapshot::Snapshots::default());
     #[cfg(desktop)]
     let builder = builder.on_menu_event(|app, event| {
         use tauri::Emitter;
@@ -50,6 +63,30 @@ pub fn run() {
     });
     let app = builder
         .invoke_handler(tauri::generate_handler![
+            #[cfg(target_os = "macos")]
+            commands::native_snapshot::native_snapshot_begin,
+            #[cfg(target_os = "macos")]
+            commands::native_snapshot::native_snapshot_write,
+            #[cfg(target_os = "macos")]
+            commands::native_snapshot::native_snapshot_seal,
+            #[cfg(target_os = "macos")]
+            commands::native_snapshot::native_snapshot_close,
+            #[cfg(target_os = "macos")]
+            commands::native_snapshot::native_snapshot_status,
+            #[cfg(target_os = "macos")]
+            commands::native_playback::native_playback_start,
+            #[cfg(target_os = "macos")]
+            commands::native_playback::native_playback_status,
+            #[cfg(target_os = "macos")]
+            commands::native_playback::native_playback_pause,
+            #[cfg(target_os = "macos")]
+            commands::native_playback::native_playback_update,
+            #[cfg(target_os = "macos")]
+            commands::native_playback::native_playback_reset_loudness,
+            #[cfg(target_os = "macos")]
+            commands::native_playback::native_playback_volume,
+            #[cfg(target_os = "macos")]
+            commands::native_playback::native_playback_close,
             native_menu::configure_native_menu,
             commands::midi::list_midi_inputs,
             commands::midi::connect_midi_input,
@@ -100,6 +137,13 @@ pub fn run() {
 
     app.run(|app, event| {
         if matches!(event, tauri::RunEvent::Exit) {
+            #[cfg(target_os = "macos")]
+            {
+                app.state::<commands::native_playback::NativePlayback>()
+                    .shutdown();
+                app.state::<crispaudio_media::native_snapshot::Snapshots>()
+                    .shutdown();
+            }
             app.state::<commands::plugins::PluginStreams>().shutdown();
         }
         #[cfg(any(target_os = "macos", target_os = "ios"))]

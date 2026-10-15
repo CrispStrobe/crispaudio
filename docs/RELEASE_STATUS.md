@@ -1,9 +1,9 @@
-# Distribution and platform status — 2026-10-13
+# Distribution and platform status — 2026-10-15
 
-Pushing `main` runs CI/web deployment workflows and the unsigned iOS simulator
-check. It does **not** automatically
-submit an iOS or macOS build to Apple. No release tag or Apple upload was triggered
-for the October interview features or touch workflow changes.
+Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
+an iOS or macOS build to Apple. Repository web deployments use their own triggers;
+external hosting integrations may differ. No release tag or Apple upload was
+triggered for this local checkpoint.
 
 | Route | Trigger | Current evidence |
 |---|---|---|
@@ -17,6 +17,35 @@ Evidence: [iOS workflow run](https://github.com/CrispStrobe/crispaudio/actions/r
 A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
+
+## Local 0.12.0 — continuous native effects
+
+Mac AU/VST3 racks offer **Live / Preview** beside Play. Live supports pause/resume,
+history-preserving seek, continuous loops, live fader/pan/mute/solo/send controls,
+plugin parameters/bypass, track/master meters and master loudness. The selected
+output can be rebound; device/DSP faults stop visibly. Direct and queued
+WAV/FLAC/AAC delivery include the native mix. The enabled Apple-effect sample and
+[playback guide](NATIVE_PLAYBACK.md) cover the workflow and limits.
+
+Validation: 1,707 frontend tests in 175 files (including recording guards), full ESLint,
+TypeScript, 144 media-library tests, three CLI tests and 40 Tauri tests pass.
+The media suite includes eight actual AU/VST3 stream tests. Three consecutive
+60-second runs with eight instances, 44.1 kHz sources, UI load/background playback,
+injected failures and recovery pass. AU/VST3 retain clock and DSP history across
+65 seconds paused. Independent wet-file decoding verifies WAV/FLAC frame counts,
+AAC signal/priming and cancellation without output publication. These are muted
+digital checks, not new physical speaker or commercial-plugin acceptance. The final
+preview retest verifies its real audio clock and German controls while the macOS
+console is locked; visible playhead redraw was not rechecked in that run.
+[Machine-readable evidence](evidence/native-playback-0.12.0.json) records the scope.
+
+The normal Mac bundle and locked iOS simulator compile pass. The ad-hoc-signed
+0.12.0 app is installed and relaunched after a fresh full WebKit/application-data
+backup; one autosave and the previous app are retained. The independent optimized
+CLI is unchanged. Native microphone/automation-pass recording, monitor clicks,
+custom plugin windows, external-interface and signed/sandboxed Store acceptance
+remain outside this checkpoint. Mac Store signing still needs a fresh profile,
+as detailed below. No release tag, workflow dispatch or Apple upload.
 
 ## Local 0.11.11 — rendered native-effects preview
 
@@ -2965,3 +2994,25 @@ and German layout audits pass. Actual native stereo float WAV comparisons with b
 clip and master carrier envelopes differ by 3.13e-7 Chrome / 8.12e-6 WebKit, within
 the existing moving-delay 1e-4 budget; full/range crop error is zero. Physical input
 acceptance remains the user's confirmed built-in microphone; no new device claimed.
+
+## Mac Store signing follow-up — 2026-10-15
+
+The last upload failed with Apple's **Invalid Provisioning Profile Signature**
+(HTTP 409), after app signing and package creation succeeded. It was not an AAC
+patent or audio-playback error. The local keychain has an Apple Distribution
+identity; no matching CrispAudio Mac Store profile was found in the standard
+local profile directory. GitHub secret values cannot be retrieved for inspection.
+
+The workflow now checks profile CMS integrity, expiry, macOS platform, exact
+team/application identifier, Store distribution type and matching signing
+certificate before building. Dispatch defaults to a dry run; signing verification
+and package artifacts precede the separately gated upload. These checks do not
+replace Apple's trust/revocation decision. The sandbox entitlements now include
+microphone input, matching the existing usage description and recording feature.
+
+To unblock submission, download/regenerate the Apple-issued Mac App Store
+provisioning profile for this app and current distribution certificate, then
+replace `MAC_PROFILE_BASE64` in GitHub secrets. Run the workflow in dry-run mode
+before authorizing an upload. No workflow was dispatched or Apple upload attempted
+for this checkpoint. Native third-party plugin hosting also needs a signed,
+sandboxed Store-build acceptance pass; local ad-hoc testing does not establish it.

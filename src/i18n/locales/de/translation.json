@@ -1913,7 +1913,7 @@
     "failed": "Beispielmedien konnten nicht geladen werden.",
     "changed": "Die Sitzung wurde geändert. Versuche es erneut.",
     "native": "Native Plug-ins (Mac)",
-    "nativeInfo": "Ein Musikmix mit einem gespeicherten AUBandpass-Insert im Master-Rack. Er startet deaktiviert, damit die Wiedergabe funktioniert. Aktiviere ihn für den Offline-Export auf dem Mac; die native Echtzeit-Wiedergabe wird noch geprüft."
+    "nativeInfo": "Ein Musikmix mit aktiviertem Apple AUBandpass im Master-Rack. Im Live-Modus abspielen, den Mixer öffnen und Frequenz oder Bypass beim Hören ändern. Mit der Vorschau vergleichen und als WAV, FLAC oder AAC exportieren."
   },
   "folders": {
     "title": "Spurordner",
@@ -2255,13 +2255,13 @@
   "nativeRack": {
     "title": "Native Plug-ins",
     "macOnly": "Native Plug-in-Parameter benötigen die Mac-App.",
-    "help": "Diese Inserts folgen den eingebauten Effekten. Mac-Export und gerenderte Vorschau enthalten sie. Live-Wiedergabe nativer Effekte bleibt nicht verfügbar. Bypass erhält Insert und Zustand.",
+    "help": "Inserts laufen nach den eingebauten Effekten. Mac-Wiedergabe und Export berücksichtigen sie. Im Live-Modus lassen sich Parameter und Bypass beim Abspielen ändern.",
     "copyBuiltin": "Eingebaute Effekte kopieren",
     "pasteBuiltin": "Eingebaute Effekte einfügen",
     "bypassBuiltin": "Eingebaute Effekte umgehen",
     "enableBuiltin": "Eingebaute Effekte aktivieren",
     "add": "Natives Plug-in…",
-    "addHelp": "AU- oder VST3-Effekt wählen. Neue Inserts sind deaktiviert. Für Mac-Export und gerenderte Vorschau aktivieren. Die Ordnerwahl ergänzt einen VST3-Suchpfad.",
+    "addHelp": "AU- oder VST3-Effekt wählen. Neue Inserts sind aktiviert. Die Ordnerauswahl ergänzt einen VST3-Suchpfad.",
     "copy": "Natives Rack kopieren",
     "paste": "Natives Rack einfügen",
     "changed": "Das Rack wurde geändert. Wähle das Plug-in erneut."
@@ -2273,10 +2273,15 @@
     "play": "Vorschau abspielen",
     "cancel": "Vorschau abbrechen",
     "rendering": "Rendern…",
-    "menu": "Vorschau / Pause",
+    "menu": "Wiedergabe / Pause",
     "macOnly": "Die Vorschau nativer Effekte erfordert die installierte Mac-App.",
     "recording": "Vor der Aufnahme native Inserts deaktivieren.",
     "help": "Wiedergabe rendert den fertigen Stereomix samt nativen Effekten einmal. Pause, Springen und Schleife verwenden ihn weiter. Audioänderungen stoppen die Wiedergabe; beim nächsten Start wird neu gerendert.",
-    "limits": "Nur die Master-Anzeigen sind verfügbar. Live-Mischen, Aufnahme und Metronom sind in diesem Modus nicht verfügbar. Die Wiedergabe nutzt das gewählte Ausgabegerät."
+    "limits": "Nur die Master-Anzeigen sind verfügbar. Live-Mischen, Aufnahme und Metronom sind in diesem Modus nicht verfügbar. Die Wiedergabe nutzt das gewählte Ausgabegerät.",
+    "mode": "Wiedergabemodus",
+    "live": "Live",
+    "liveHelp": "Live-Wiedergabe verarbeitet AU- und VST3-Effekte fortlaufend. Pegel, Panorama, Stumm, Solo, Sends, Plug-in-Parameter und Bypass lassen sich beim Abspielen ändern. Pause behält den Effektzustand; Springen baut den Verlauf neu auf.",
+    "liveLimits": "Strukturänderungen und Änderungen eingebauter Effekte starten die Wiedergabe neu. Audio wird mit 48 kHz verarbeitet; Quellen werden bei Bedarf umgerechnet. Aufnahme und Metronom erfordern deaktivierte native Inserts. „Vorschau“ bietet die gerenderte Alternative.",
+    "shortLoop": "Diese Schleife ist für native Live-Effekte zu kurz. Für Schleifen unter 43 ms „Vorschau“ wählen."
   }
 }

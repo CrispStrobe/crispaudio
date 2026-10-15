@@ -9,3 +9,9 @@ pub mod delivery;
 pub mod midi;
 
 pub mod plugins;
+
+#[cfg(target_os = "macos")]
+pub mod native_playback;
+
+#[cfg(target_os = "macos")]
+pub mod native_snapshot;
