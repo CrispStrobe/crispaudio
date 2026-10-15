@@ -1,3 +1,4 @@
+import {NumberField} from './NumberField';
 import {KeepSpeechEditor} from './KeepSpeechEditor';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,7 +51,7 @@ export function SpokenEditor(){
     <div className="flex flex-wrap gap-1"><ToolButton icon={Mic} disabled={!native||busy||!project.tracks.length} label={t('spoken.transcribe')} onClick={()=>void transcribe()}/>{busy&&<button className="timeline-tool" onClick={()=>abort.current?.abort()}>{t('common.cancel')}</button>}<ToolButton icon={Play} label={t('spoken.seek')} disabled={!current} onClick={()=>{if(current){useProjectStore.getState().setIsPlaying(false);useProjectStore.getState().setPlayheadPosition(current.start);}}}/><ToolButton icon={Trash2} disabled={!current||busy} label={t('spoken.delete')} onClick={remove}/></div>
     {current&&<div className="space-y-1 text-xs">
       <p>{t('spoken.cut')}: {spokenCutRange(project,current).start.toFixed(3)}–{spokenCutRange(project,current).end.toFixed(3)} s</p>
-      {(['start','end'] as const).map(key=><label key={key} className="flex justify-between items-center">{t(`spoken.${key}`)}<input className="bg-gray-800 rounded p-2 w-28" type="number" step={.01} min={0} aria-label={t(`spoken.${key}`)} value={current[key]} onChange={e=>{const value=Number(e.target.value);if(!Number.isFinite(value)||value<0||(key==='start'?value>=current.end:value<=current.start))return;useProjectStore.setState({project:{...project,transcript:project.transcript?.map(c=>{if(!c.words?.some(w=>w.id===selected))return c;const words=c.words.map(w=>w.id===selected?{...w,[key]:value}:w);return {...c,words,start:Math.min(...words.map(w=>w.start)),end:Math.max(...words.map(w=>w.end))};})}});}}/></label>)}
+      {(['start','end'] as const).map(key=><label key={key} className="flex justify-between items-center">{t(`spoken.${key}`)}<NumberField width="w-28" step={.01} min={0} label={t(`spoken.${key}`)} value={current[key]} onCommit={value=>{if(key==='start'?value>=current.end:value<=current.start)return false;useProjectStore.setState({project:{...project,transcript:project.transcript?.map(c=>{if(!c.words?.some(w=>w.id===selected))return c;const words=c.words.map(w=>w.id===selected?{...w,[key]:value}:w);return {...c,words,start:Math.min(...words.map(w=>w.start)),end:Math.max(...words.map(w=>w.end))};})}});return true;}}/></label>)}
     </div>}
     {busy&&<p role="status">{t('spoken.working')}</p>}{!native&&<p className="text-xs">{t('spoken.desktop')}</p>}{error&&<p role="alert" className="text-amber-300 break-words">{error}</p>}
     <KeepSpeechEditor disabled={busy}/>

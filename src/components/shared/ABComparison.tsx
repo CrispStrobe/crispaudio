@@ -1,3 +1,4 @@
+import {EditableNumber} from './EditableNumber';
 import React, { useCallback } from 'react';
 import { ArrowLeftRight, Copy } from 'lucide-react';
 
@@ -27,7 +28,6 @@ export const ABComparison: React.FC<ABComparisonProps> = ({
     [onMorphChange]
   );
 
-  const morphPercent = Math.round(morphAmount * 100);
   const fillPercent = morphAmount * 100;
 
   return (
@@ -80,17 +80,7 @@ export const ABComparison: React.FC<ABComparisonProps> = ({
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between text-[11px] text-gray-500 font-mono select-none">
           <span>A</span>
-          <span
-            className={`text-gray-200 font-medium ${
-              morphPercent === 0 ? 'text-indigo-400' : morphPercent === 100 ? 'text-violet-400' : ''
-            }`}
-          >
-            {morphPercent === 0
-              ? '100% A'
-              : morphPercent === 100
-              ? '100% B'
-              : `${100 - morphPercent}% / ${morphPercent}%`}
-          </span>
+          <EditableNumber label="A/B" value={morphAmount*100} min={0} max={100} step={.1} unit="% B" onChange={next=>onMorphChange(next/100)}/>
           <span>B</span>
         </div>
 

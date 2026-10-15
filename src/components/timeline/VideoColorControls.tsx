@@ -1,3 +1,4 @@
+import {EditableNumber} from '../shared/EditableNumber';
 import {HelpDetails} from '../common/HelpDetails';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,13 +35,13 @@ export function VideoColorControls({id}:{id:string}) {
       <ToolButton icon={Copy} label={t('videoColor.applySelected')} disabled={videoClips(useProjectStore.getState().project.video).filter(c=>selected?.includes(c.id)).length<2}
         onClick={()=>change({...color},selected)}/>
     </div>
-    {(['exposure','contrast','saturation'] as const).map(key=><label key={key} className="block text-sm text-gray-300">
-      <span className="flex justify-between gap-2 mb-2"><span>{t(`videoColor.${key}`)}</span><output className="tabular-nums">{color[key].toFixed(2)}{key==='exposure'?' EV':''}</output></span>
+    {(['exposure','contrast','saturation'] as const).map(key=><div key={key} className="block text-sm text-gray-300">
+      <span className="flex justify-between gap-2 mb-2"><span>{t(`videoColor.${key}`)}</span><EditableNumber label={t(`videoColor.${key}`)} value={color[key]} min={key==='exposure'?-2:0} max={2} step={.01} unit={key==='exposure'?'EV':undefined} disabled={!color.enabled} onChange={next=>change({...color,[key]:next})}/></span>
       <input type="range" min={key==='exposure'?-2:0} max={2} step={.01} value={color[key]} disabled={!color.enabled} aria-label={t(`videoColor.${key}`)} className="slider-styled w-full"
         onPointerDown={()=>{if(!gesture.current){gesture.current=true;projectHistoryGesture.begin();}}}
         onPointerUp={end} onPointerCancel={end} onBlur={end}
         onChange={event=>change({...color,[key]:Number(event.target.value)})}/>
-    </label>)}
+    </div>)}
     <HelpDetails><p>{t('videoColor.help')}</p></HelpDetails>
   </section>;
 }

@@ -89,7 +89,7 @@ interface ProjectState {
   addTrack: (name?: string) => void;
   removeTrack: (trackId: string) => void;
   reorderTrack: (trackId: string, newIndex: number) => void;
-  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'recordArmed' | 'recordingInput' | 'takes' | 'compVersions' | 'compRegions' | 'compBaseSegments' | 'ducking' | 'output' | 'sends' | 'rippleEnabled' | 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'panAutomation' | 'effects'>>) => void;
+  updateTrack: (trackId: string, patch: Partial<Pick<TimelineTrack, 'waveformMode' | 'recordArmed' | 'recordingInput' | 'takes' | 'compVersions' | 'compRegions' | 'compBaseSegments' | 'ducking' | 'output' | 'sends' | 'rippleEnabled' | 'locked' | 'name' | 'muted' | 'solo' | 'volume' | 'pan' | 'fadeInDuration' | 'fadeOutDuration' | 'fadeInCurve' | 'fadeOutCurve' | 'automation' | 'panAutomation' | 'effects'>>) => void;
 
   // Segment actions
   addSegment: (trackId: string, segment: AudioSegment) => void;

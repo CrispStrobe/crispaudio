@@ -25,3 +25,5 @@ it('snapshots rack parameters and stops a render cancelled by its caller',async(
  p.masterVolume=0;await vi.waitFor(()=>expect(render).toHaveBeenCalledOnce());expect(render.mock.calls[0][0].masterVolume).not.toBe(0);
  controller.abort();release(buffer());await rejected;expect(cache.get(p,new Map())).toBeUndefined();
 });
+
+it('ignores per-track waveform display changes when caching audio',()=>{const p={...project(),tracks:[{id:'t',name:'Track',volume:1,pan:0,muted:false,solo:false,segments:[]}]};expect(renderedPreviewKey({...p,tracks:p.tracks.map(t=>({...t,waveformMode:'level' as const}))})).toBe(renderedPreviewKey(p));});

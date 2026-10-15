@@ -18,6 +18,26 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.12.1 — compact recording and numeric controls
+
+Record and its smaller settings arrow use separate borderless controls, with a
+larger arrow hit area on touch screens. Waveform display uses one dropdown and an
+info button; per-track overrides are available in the track context menu and Track
+Settings and are saved with the project. View sets the default display mode.
+Slider readouts accept exact values in their displayed units. Shared numeric
+fields support vertical touch/pen adjustment, tap-to-type, range validation and
+cancellation. Display-only waveform changes preserve native playback/preview caches.
+
+Validation: ESLint, TypeScript and the normal Mac bundle pass. Chrome and WebKit
+check desktop/390px layouts, per-track waveform settings and exact dB entry;
+Chrome additionally checks real emulated touch swipes. The 1,714-test frontend
+suite passes 1,713 tests before the paste-field focus correction; all 11 focused
+number-field and modal-focus tests pass after that correction. Earlier slider
+animation assertions now check the exact editable value while the track animates.
+The signed local 0.12.1 app is installed, with one autosave retained and a fresh
+backup of app data and the previous app. No new physical microphone or audible
+playback check, release tag, workflow dispatch or Apple upload.
+
 ## Local 0.12.0 — continuous native effects
 
 Mac AU/VST3 racks offer **Live / Preview** beside Play. Live supports pause/resume,

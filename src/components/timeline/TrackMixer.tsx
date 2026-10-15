@@ -1,3 +1,4 @@
+import {EditableNumber} from '../shared/EditableNumber';
 import {useSettingsStore} from '../../stores/settingsStore';
 import {LoudnessControls} from './LoudnessControls';
 import {AddBus,RoutingControls} from './RoutingControls';
@@ -76,13 +77,13 @@ function Strip({track, engine, onInserts}: {track?: TimelineTrack; engine: RefOb
     <p className="truncate text-sm font-medium" title={track?.name}>{track?.name ?? t('mixer.master')}</p>
     <Meter engine={engine} id={id}/>
     <GainReduction scope={track?`track:${track.id}`:'master'}/>
-    <label className="block text-xs">{t('mixer.level')} <span className="float-right">{textDb(gain)}</span>
+    <div className="block text-xs"><div className="flex items-center justify-between gap-1">{t('mixer.level')}<EditableNumber label={`${track?.name??t('mixer.master')}: ${t('mixer.level')}`} value={gain>0?Math.max(-61,db(gain)):-61} min={-61} max={12} step={.1} unit="dB" disabled={track?.locked} onChange={next=>update(next<=-61?0:10**(next/20))}/></div>
       <input type="range" aria-label={`${track?.name ?? t('mixer.master')}: ${t('mixer.level')}`} className="w-full min-h-11" min={-61} max={12} step={.1} value={Math.max(-61, db(gain))} disabled={track?.locked}
         onPointerDown={begin} onPointerUp={end} onPointerCancel={end} onBlur={end} onKeyDown={begin} onKeyUp={end}
-        onChange={e=>update(Number(e.target.value)<=-61?0:10**(Number(e.target.value)/20))}/></label>
+        onChange={e=>update(Number(e.target.value)<=-61?0:10**(Number(e.target.value)/20))}/></div>
     {track&&<>
-      <label className="block text-xs">{t('mixer.pan')} {track.panAutomation?.length?t('automation.automated'):track.pan===0?'C':`${track.pan<0?'L':'R'} ${Math.round(Math.abs(track.pan)*100)}`}
-        <input type="range" className="w-full min-h-11" aria-label={`${track.name}: ${t('mixer.pan')}`} min={-1} max={1} step={.01} value={track.pan} disabled={track.locked||!!track.panAutomation?.length} title={track.panAutomation?.length?t('automation.panHelp'):undefined} onPointerDown={begin} onPointerUp={end} onPointerCancel={end} onBlur={end} onKeyDown={begin} onKeyUp={end} onDoubleClick={()=>{if(!track.locked&&!track.panAutomation?.length)useProjectStore.getState().updateTrack(track.id,{pan:0});}} onChange={e=>useProjectStore.getState().updateTrack(track.id,{pan:Number(e.target.value)})}/></label>
+      <div className="block text-xs"><div className="flex items-center justify-between gap-1">{t('mixer.pan')}<EditableNumber label={`${track.name}: ${t('mixer.pan')}`} value={track.pan*100} min={-100} max={100} step={1} disabled={track.locked||!!track.panAutomation?.length} onChange={next=>useProjectStore.getState().updateTrack(track.id,{pan:next/100})}/></div>
+        <input type="range" className="w-full min-h-11" aria-label={`${track.name}: ${t('mixer.pan')}`} min={-1} max={1} step={.01} value={track.pan} disabled={track.locked||!!track.panAutomation?.length} title={track.panAutomation?.length?t('automation.panHelp'):undefined} onPointerDown={begin} onPointerUp={end} onPointerCancel={end} onBlur={end} onKeyDown={begin} onKeyUp={end} onDoubleClick={()=>{if(!track.locked&&!track.panAutomation?.length)useProjectStore.getState().updateTrack(track.id,{pan:0});}} onChange={e=>useProjectStore.getState().updateTrack(track.id,{pan:Number(e.target.value)})}/></div>
       <div className="flex gap-1">{(['muted','solo'] as const).map(key=><button key={key} disabled={track.locked} aria-label={`${track.name}: ${t(key==='solo'?'timeline.solo':'timeline.mute')}`} aria-pressed={track[key]} className={`flex-1 min-h-11 rounded ${track[key]?'bg-indigo-600':'bg-gray-800'}`} onClick={()=>useProjectStore.getState().updateTrack(track.id,{[key]:!track[key]})}>{key==='solo'?'S':'M'}</button>)}</div>
       <RoutingControls track={track}/>
     </>}

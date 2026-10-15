@@ -1,3 +1,4 @@
+import {EditableNumber} from '../shared/EditableNumber';
 import {createPlaybackContext,resumePlaybackContext} from '../../lib/audioOutput';
 // ---------------------------------------------------------------------------
 // CrispAudio — VoiceEffectsModal
@@ -230,13 +231,7 @@ export function VoiceEffectsModal() {
                 onChange={(e) => handleSettingsChange(key, parseFloat(e.target.value))}
                 className="flex-1 slider-styled"
               />
-              <span className="text-xs text-white bg-gray-800 px-1.5 py-0.5 rounded w-14 text-center font-mono">
-                {typeof settings[key] === 'number'
-                  ? (settings[key] as number) % 1 === 0
-                    ? settings[key]
-                    : (settings[key] as number).toFixed(2)
-                  : settings[key]}
-              </span>
+              <EditableNumber label={label} value={settings[key] as number} min={min} max={max} step={step} onChange={next=>handleSettingsChange(key,next)}/>
             </div>
           ))}
         </div>

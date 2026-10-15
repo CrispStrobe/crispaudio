@@ -342,7 +342,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       // Waveform
       const source = store.sources.get(seg.sourceId);
       if (source && segRight - segLeft > 4) {
-        drawWaveform(ctx, source, seg, segLeft, segRight, segTop + 6, segBottom, baseColor, waveformMode === 'normalized' ? sourceDisplayGain(source) : track.volume * seg.gain);
+        drawWaveform(ctx, source, seg, segLeft, segRight, segTop + 6, segBottom, baseColor, (track.waveformMode ?? waveformMode) === 'normalized' ? sourceDisplayGain(source) : track.volume * seg.gain);
       }
 
       // Fade overlays

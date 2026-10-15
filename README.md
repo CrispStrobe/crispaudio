@@ -47,7 +47,10 @@ output test. On macOS this changes the system output for all apps.
 - Link audio with picture, group clips for shared edits, lock tracks and control
   which tracks participate in ripple edits.
 - Fit the whole project, zoom to samples or frames, adjust track heights and hide
-  optional panels. Normalized and mix-level waveform views change the drawing scale.
+  optional panels. Choose normalized or mix-level waveforms in View, or override
+  the display for one track in its context menu or Track Settings.
+- Edit slider readouts with exact numeric entries. On touch screens, drag a number up or down to adjust
+  it, or tap to type; Enter confirms and Escape cancels a typed draft.
 - Organize tracks in collapsible folders with shared selection, mute and solo.
   Track and clip selection have separate visible highlights.
 - Shape clip/track fades and crossfades with live visual feedback. Floating

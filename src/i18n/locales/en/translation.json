@@ -591,7 +591,10 @@
     "selectedTracks_one": "{{count}} track",
     "selectedTracks_other": "{{count}} tracks",
     "selectedClips_one": "{{count}} clip",
-    "selectedClips_other": "{{count}} clips"
+    "selectedClips_other": "{{count}} clips",
+    "waveformDefault": "Default",
+    "waveformAtMixLevel": "Waveform at mix level",
+    "waveformHelp": "Normalized enlarges quiet waveforms for readability. Mix level shows relative track and clip gain. This changes the display only; fades and effects are not included."
   },
   "common": {
     "slotA": "A",

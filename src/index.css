@@ -636,3 +636,20 @@ input[type="range"].slider-styled.slider-amber::-moz-range-thumb {
   .floating-inspector {--inspector-body-height:22dvh;top:auto;bottom:16px;right:8px;}
   .floating-inspector [data-floating-inspector-body] {max-height:var(--inspector-body-height); }
 }
+
+/* Record is primary; its adjacent settings affordance stays visually quiet.
+   Touch retains a full hit area without enlarging the chevron itself. */
+.recording-actions { display: flex; align-items: center; gap: 2px; }
+.recording-actions .recording-start,
+.recording-actions .recording-settings { border: 0; background: transparent; padding: 0; flex: 0 0 auto; }
+.recording-actions .recording-start { width: 44px; height: 44px; border-radius: 50%; color: #f87171; }
+.recording-actions .recording-start:hover:not(:disabled) { background: #f871711a; }
+.recording-actions .recording-settings { width: 28px; min-width: 28px; min-height: 32px; height: 32px; border-radius: 6px; color: #9ca3af; }
+.recording-actions .recording-settings svg { width: 14px; height: 14px; }
+.recording-actions .recording-settings:hover { background: #374151; color: #f3f4f6; }
+.recording-actions button:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 2px; }
+@media (pointer: coarse) {
+  .recording-actions .recording-settings { width: 44px; min-width: 44px; min-height: 44px; height: 44px; }
+}
+
+@media (pointer: coarse) { .number-field { min-height: 44px; } }

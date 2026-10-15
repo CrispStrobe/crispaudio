@@ -3,7 +3,7 @@ import type {AudioSource,TimelineProject} from '../../types/audio';
 export function renderedPreviewKey(project:TimelineProject):string{
  return JSON.stringify({id:project.id,sampleRate:project.sampleRate,duration:project.duration,masterVolume:project.masterVolume,masterEffects:project.masterEffects,nativeEffects:project.nativeEffects,outputLimiter:project.outputLimiter,
   music:project.music&&{tempo:project.music.tempo,numerator:project.music.numerator,denominator:project.music.denominator,origin:project.music.origin},
-  tracks:project.tracks.map(track=>({...track,name:undefined,color:undefined,locked:undefined,recordArmed:undefined,recordingInput:undefined,takes:undefined,compRegions:undefined,compVersions:undefined,compBaseSegments:undefined,segments:track.segments.map(clip=>({...clip,name:undefined,color:undefined,locked:undefined}))}))});
+  tracks:project.tracks.map(track=>({...track,name:undefined,color:undefined,locked:undefined,waveformMode:undefined,recordArmed:undefined,recordingInput:undefined,takes:undefined,compRegions:undefined,compVersions:undefined,compBaseSegments:undefined,segments:track.segments.map(clip=>({...clip,name:undefined,color:undefined,locked:undefined}))}))});
 }
 const aborted=()=>new DOMException('Rendered preview cancelled','AbortError');
 export function renderedSourcesMatch(a:Map<string,AudioSource>,b:Map<string,AudioSource>){return a.size===b.size&&[...a].every(([id,source])=>source.buffer===b.get(id)?.buffer);}

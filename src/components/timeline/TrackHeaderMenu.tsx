@@ -1,3 +1,4 @@
+import {useSettingsStore} from '../../stores/settingsStore';
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {createPortal,flushSync} from 'react-dom';
 import {Ellipsis} from 'lucide-react';
@@ -9,6 +10,7 @@ import {openTrackMenu,type MenuPoint} from '../../lib/trackHeaderMenu';
 /** The same track actions are reachable through right-click, keyboard and touch. */
 export function TrackHeaderMenu({trackId}:{trackId:string}){
  const {t}=useTranslation(),track=useProjectStore(s=>s.project.tracks.find(track=>track.id===trackId)),index=useProjectStore(s=>s.project.tracks.findIndex(track=>track.id===trackId)),count=useProjectStore(s=>s.project.tracks.length),recording=useUIStore(s=>s.timelineRecording),[point,setPoint]=useState<MenuPoint|null>(null),button=useRef<HTMLButtonElement>(null),panel=useRef<HTMLDivElement>(null),projectId=useRef(useProjectStore.getState().project.id);
+ const waveformMode=useSettingsStore(s=>s.waveformMode);
  const close=()=>{setPoint(null);button.current?.focus();};
  useEffect(()=>{const show=(e:Event)=>{const p=(e as CustomEvent<MenuPoint>).detail;projectId.current=useProjectStore.getState().project.id;setPoint(p.trackId===trackId?p:null);};window.addEventListener('crispaudio-track-menu',show);const unsubscribe=useProjectStore.subscribe(state=>{if(state.project.id!==projectId.current)setPoint(null);});return()=>{window.removeEventListener('crispaudio-track-menu',show);unsubscribe();};},[trackId]);
  useLayoutEffect(()=>{if(!point||!panel.current)return;const p=panel.current,r=p.getBoundingClientRect();p.style.left=`${Math.max(8,Math.min(point.x,innerWidth-r.width-8))}px`;p.style.top=`${Math.max(8,Math.min(point.y,innerHeight-r.height-8))}px`;p.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();},[point]);
@@ -27,6 +29,7 @@ export function TrackHeaderMenu({trackId}:{trackId:string}){
   {(['muted','solo'] as const).map(key=><button role="menuitemcheckbox" aria-checked={track[key]} className={itemClass} disabled={recording||track.locked} key={key} onClick={()=>change(key)}>{t(key==='muted'?'timeline.mute':'timeline.solo')}{track[key]?' ✓':''}</button>)}
   {track.kind!=='bus'&&<><button role="menuitemcheckbox" aria-checked={track.recordArmed??false} className={itemClass} disabled={recording||track.locked} onClick={()=>change('arm')}>{t('recording.arm')}{track.recordArmed?' ✓':''}</button><button role="menuitem" className={itemClass} disabled={recording} onClick={()=>change('recording')}>{t('recording.settings')}</button></>}
   <button role="menuitem" className={itemClass} disabled={recording||!track.segments.length} onClick={()=>change('select')}>{t('timeline.selectTrackClips')}</button>
+  <button role="menuitemcheckbox" aria-checked={(track.waveformMode??waveformMode)==='level'} className={itemClass} disabled={recording} onClick={()=>{useProjectStore.getState().updateTrack(trackId,{waveformMode:(track.waveformMode??waveformMode)==='level'?'normalized':'level'});close();}}>{t('timeline.waveformAtMixLevel')}{(track.waveformMode??waveformMode)==='level'?' ✓':''}</button>
   <hr className="border-gray-700 my-1"/>
   <button role="menuitem" className={itemClass} disabled={recording||index===0} onClick={()=>change('up')}>{t('timeline.moveTrackUp')}</button><button role="menuitem" className={itemClass} disabled={recording||index===count-1} onClick={()=>change('down')}>{t('timeline.moveTrackDown')}</button>
   <button role="menuitemcheckbox" aria-checked={track.locked??false} className={itemClass} disabled={recording} onClick={()=>change('lock')}>{t(track.locked?'ranges.unlock':'ranges.lock')}</button><button role="menuitem" className={`${itemClass} text-red-300`} disabled={recording||track.locked} onClick={()=>change('remove')}>{t('timeline.removeTrack')}</button>

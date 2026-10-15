@@ -1,3 +1,4 @@
+import {NumberField} from './NumberField';
 import {useMemo,useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Modal} from '../common/Modal';
@@ -16,7 +17,7 @@ export function TrimEditDialog({onClose}:{onClose:()=>void}){
  return <Modal isOpen onClose={onClose} title={t('trimEdits.title')} widthClass="max-w-lg"><div className="space-y-3 text-sm text-gray-200">
   <p className="text-gray-400">{t('trimEdits.help')}</p>
   <label className="block">{t('trimEdits.mode')}<select className="block w-full bg-gray-800 rounded p-2" value={mode} onChange={e=>setMode(e.target.value as typeof mode)}>{modes.map(m=><option key={m} value={m}>{t(`trimEdits.${m}`)}</option>)}</select></label>
-  {!mode.startsWith('playhead')&&<label className="block">{t('trimEdits.delta')}<input className="bg-gray-800 p-2 rounded w-32 mx-2" type="number" step={1/(project.frameRate??25)} value={Number.isFinite(delta)?delta:''} onChange={e=>setDelta(e.target.value.trim()?Number(e.target.value):NaN)}/></label>}
+  {!mode.startsWith('playhead')&&<label className="block">{t('trimEdits.delta')}<NumberField label={t('trimEdits.delta')} onDraftChange={text=>setDelta(text.trim()?Number(text):NaN)} width="w-32 mx-2" min={-Infinity} step={1/(project.frameRate??25)} value={Number.isFinite(delta)?delta:0} onCommit={next=>{setDelta(next);return true;}}/></label>}
   {mode==='slide'&&<p className="text-gray-400">{t('trimEdits.slideHelp')}</p>}
   {preview.limits&&<p className="text-xs text-gray-400">{t('trimEdits.slideLimits',{min:preview.limits.min.toFixed(3),max:preview.limits.max.toFixed(3),start:preview.limits.start.toFixed(3),end:preview.limits.end.toFixed(3)})}</p>}
   {mode.startsWith('ripple')&&<p className="text-amber-200">{t('trimEdits.rippleHelp')}</p>}

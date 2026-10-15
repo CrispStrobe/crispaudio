@@ -1,3 +1,5 @@
+import {EditableNumber} from '../shared/EditableNumber';
+import {WaveformModeControl} from './WaveformModeControl';
 import {FloatingInspector} from '../common/FloatingInspector';
 import {InspectorTransport} from './InspectorTransport';
 import {HelpDetails} from '../common/HelpDetails';
@@ -89,9 +91,10 @@ export function TimelineActions({ touchArrange, onTouchArrange }: { touchArrange
             <button className={button} disabled={i === 0} aria-label={`${t('timeline.moveTrackUp')} ${track.name}`} onClick={() => useProjectStore.getState().reorderTrack(track.id, i - 1)}>↑</button>
             <button className={button} disabled={i === tracks.length - 1} aria-label={`${t('timeline.moveTrackDown')} ${track.name}`} onClick={() => useProjectStore.getState().reorderTrack(track.id, i + 1)}>↓</button>
           </div>
+          <WaveformModeControl trackId={track.id}/>
           <div className="flex flex-wrap gap-3">
             {(['in','out'] as const).map(side=><label key={side} className="text-xs text-gray-300">{t(side==='in'?'timeline.fadeIn':'timeline.fadeOut')} (s)
-              <input type="number" min={0} step={.001} value={(side==='in'?track.fadeInDuration:track.fadeOutDuration)??0} aria-label={`${track.name} ${t(side==='in'?'timeline.fadeIn':'timeline.fadeOut')}`} className="bg-gray-800 rounded p-2 w-24 mx-2" onChange={e=>{const duration=Number(e.target.value);if(Number.isFinite(duration)&&duration>=0)useProjectStore.getState().updateTrack(track.id,side==='in'?{fadeInDuration:duration}:{fadeOutDuration:duration});}}/>
+              <NumberField min={0} step={.001} value={(side==='in'?track.fadeInDuration:track.fadeOutDuration)??0} label={`${track.name} ${t(side==='in'?'timeline.fadeIn':'timeline.fadeOut')}`} width="w-24 mx-2" onCommit={duration=>{useProjectStore.getState().updateTrack(track.id,side==='in'?{fadeInDuration:duration}:{fadeOutDuration:duration});return true;}}/>
               <select aria-label={`${track.name} ${t('editing.fadeCurve')} ${side}`} className="bg-gray-800 rounded p-2" value={(side==='in'?track.fadeInCurve:track.fadeOutCurve)??'linear'} onChange={e=>useProjectStore.getState().updateTrack(track.id,side==='in'?{fadeInCurve:e.target.value as 'linear'|'exponential'|'scurve'}:{fadeOutCurve:e.target.value as 'linear'|'exponential'|'scurve'})}>
                 {(['linear','exponential','scurve'] as const).map(curve=><option key={curve} value={curve}>{t(curve==='linear'?'timeline.curveLinear':curve==='exponential'?'timeline.curveExponential':'timeline.curveScurve')}</option>)}
               </select>
@@ -103,11 +106,11 @@ export function TimelineActions({ touchArrange, onTouchArrange }: { touchArrange
               const state = useProjectStore.getState(); state.setIsPlaying(false); state.updateTrack(track.id, {effects});
             }}/>
           </details>
-          <label className="flex items-center gap-3 text-sm text-gray-300">{t('timeline.trackVolume')}
+          <div className="flex items-center gap-3 text-sm text-gray-300">{t('timeline.trackVolume')}
             <input type="range" min={-60} max={40} step={0.5} className="slider-styled min-w-0 flex-1" value={track.volume > 0 ? Math.max(-60, 20 * Math.log10(track.volume)) : -60}
               onChange={(e) => useProjectStore.getState().updateTrack(track.id, { volume: +e.target.value <= -60 ? 0 : 10 ** (+e.target.value / 20) })} />
-            <span className="w-16 text-right tabular-nums">{track.volume > 0 ? `${(20 * Math.log10(track.volume)).toFixed(1)} dB` : '−∞'}</span>
-          </label>
+            <EditableNumber label={`${track.name}: ${t('timeline.trackVolume')}`} value={track.volume>0?Math.max(-60,20*Math.log10(track.volume)):-60} min={-60} max={40} step={.5} unit="dB" onChange={next=>useProjectStore.getState().updateTrack(track.id,{volume:next<=-60?0:10**(next/20)})}/>
+          </div>
         </section>)}
       </div>
       <section className="mt-4 p-3 rounded-xl bg-gray-950 border border-indigo-800">

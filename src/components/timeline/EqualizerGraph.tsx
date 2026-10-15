@@ -1,3 +1,4 @@
+import {NumberField} from './NumberField';
 import {useEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {EffectConfig} from '../../types/audio';
@@ -62,7 +63,7 @@ export function EqualizerGraph({effects,onChange}:{effects:EffectConfig[];onChan
     <div className="flex flex-wrap gap-2 p-2 text-xs">
       {(['freq',...(['peaking','lowshelf','highshelf'].includes(selectedBand.effect.type)?['gain']:[]),...(selectedBand.effect.type==='peaking'?['q']:[])]).map(key=>{
         const p=eqParameters(selectedBand.effect.type as import('../../lib/equalizer').EQType,selectedBand.effect.params,sampleRate),value=key==='freq'?p.freq:key==='gain'?p.gain:p.q;
-        return <label key={key}>{t(`eq.${key}`)}<input aria-label={t(`eq.${key}`)} className="block w-24 min-h-11 bg-gray-800 rounded p-2" type="number" min={key==='freq'?lowerFreq(selectedBand.effect.type):key==='gain'?-24:.1} max={key==='freq'?upperFreq(selectedBand.effect.type):key==='gain'?24:20} step={key==='freq'?1:.1} value={Number(value.toFixed(2))} disabled={!selectedBand.effect.enabled} onFocus={()=>{if(!gesture.current){gesture.current=true;projectHistoryGesture.begin();}}} onBlur={finish} onChange={e=>{const value=Number(e.target.value);if(e.target.value&&Number.isFinite(value))update(selectedBand.index,{[key]:Math.max(key==='freq'?lowerFreq(selectedBand.effect.type):key==='gain'?-24:.1,Math.min(key==='freq'?upperFreq(selectedBand.effect.type):key==='gain'?24:20,value))});}}/></label>;
+        return <label key={key}>{t(`eq.${key}`)}<NumberField label={t(`eq.${key}`)} width="block w-24 min-h-11" min={key==='freq'?lowerFreq(selectedBand.effect.type):key==='gain'?-24:.1} max={key==='freq'?upperFreq(selectedBand.effect.type):key==='gain'?24:20} step={key==='freq'?1:.1} value={Number(value.toFixed(2))} disabled={!selectedBand.effect.enabled} onBegin={()=>{if(!gesture.current){gesture.current=true;projectHistoryGesture.begin();}}} onEnd={finish} onPreview={next=>update(selectedBand.index,{[key]:next})} onCommit={next=>{update(selectedBand.index,{[key]:next});return true;}}/></label>;
       })}
     </div>
   </details>;

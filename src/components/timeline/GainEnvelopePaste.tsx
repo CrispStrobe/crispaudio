@@ -1,3 +1,4 @@
+import {NumberField} from './NumberField';
 import {pasteEffectEnvelope,type EffectEnvelope} from '../../lib/effectEnvelope';
 import {useState,useRef} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -23,7 +24,7 @@ export function GainEnvelopePaste({project,trackId,envelope,effectIndex,onClose}
   } catch(reason) {error=t(reason instanceof Error?reason.message:String(reason));}
   const replaced=((isFx?track?.effects?.[effectIndex??-1]?.automation?.[envelope.parameter]:isPan?track?.panAutomation:track?.automation)??[]).filter(p=>p.time>=Number(time)-1/project.sampleRate&&p.time<=Number(time)+Number(duration)+1/project.sampleRate).length;
   return <Modal isOpen onClose={onClose} title={t(title)} initialFocusRef={timeInput}>
-    <form className="space-y-3 text-sm" onKeyDown={e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();onClose();}}} onSubmit={e=>{
+    <form noValidate className="space-y-3 text-sm" onKeyDown={e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();onClose();}}} onSubmit={e=>{
       e.preventDefault();if(!preview||useProjectStore.getState().project!==project)return;
       if(preview!==project)useProjectStore.setState({project:preview});onClose();
     }}>
@@ -31,8 +32,8 @@ export function GainEnvelopePaste({project,trackId,envelope,effectIndex,onClose}
       {isFx&&<p className="text-xs text-gray-400">{(effectIndex??-1)+1} · {t(envelope.parameter==='freq'?'automation.ringmodFrequency':envelope.parameter==='rate'?'automation.chorusRate':envelope.parameter==='depth'?'automation.chorusDepth':envelope.effectType!=='delay'?`automation.${envelope.effectType}Mix`:`automation.delay${envelope.parameter![0].toUpperCase()+envelope.parameter!.slice(1)}`)}</p>}
       <p className="text-xs text-gray-400">{t('automation.copiedRange',{start:(envelope.sourceStart??0).toFixed(3),end:((envelope.sourceStart??0)+envelope.duration).toFixed(3)})}</p>
       <div className="flex flex-wrap gap-3">
-        <label className="flex-1 min-w-28">{t('automation.destination')}<input ref={timeInput} aria-label={t('automation.destination')} type="number" min={0} step="any" value={time} onChange={e=>setTime(e.target.value)} className="block w-full min-h-11 bg-gray-800 rounded p-2"/></label>
-        <label className="flex-1 min-w-28">{t('automation.length')}<input aria-label={t('automation.length')} type="number" min={1/project.sampleRate} step="any" value={duration} onChange={e=>setDuration(e.target.value)} className="block w-full min-h-11 bg-gray-800 rounded p-2"/></label>
+        <label className="flex-1 min-w-28">{t('automation.destination')}<NumberField inputRef={timeInput} onDraftChange={setTime} onEnter={()=>queueMicrotask(()=>timeInput.current?.form?.requestSubmit())} label={t('automation.destination')} min={0} step={1/project.sampleRate} value={Number(time)} width="block w-full min-h-11" onCommit={next=>{setTime(String(next));return true;}}/></label>
+        <label className="flex-1 min-w-28">{t('automation.length')}<NumberField label={t('automation.length')} onDraftChange={setDuration} onEnter={()=>queueMicrotask(()=>timeInput.current?.form?.requestSubmit())} min={1/project.sampleRate} step={1/project.sampleRate} value={Number(duration)} width="block w-full min-h-11" onCommit={next=>{setDuration(String(next));return true;}}/></label>
       </div>
       {error?<p role="alert" className="text-amber-300 text-xs">{error}</p>:<p className="text-xs text-gray-400">{t('automation.replaceReview',{count:replaced,end:(Number(time)+Number(duration)).toFixed(3),factor:(Number(duration)/envelope.duration).toFixed(3)})}</p>}
       <p className="text-xs text-gray-400">{t(isFx?(envelope.parameter==='freq'?'automation.ringmodFreqPasteHelp':envelope.parameter==='rate'?'automation.chorusRatePasteHelp':envelope.parameter==='depth'?'automation.chorusDepthPasteHelp':envelope.effectType!=='delay'?`automation.${envelope.effectType}PasteHelp`:'automation.fxPasteHelp'):isPan?'automation.panPasteHelp':'automation.pasteHelp')}</p>

@@ -20,6 +20,8 @@ export type BitDepth = (typeof BIT_DEPTHS)[number];
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 interface SettingsState {
+  waveformMode:'normalized'|'level';
+  setWaveformMode:(mode:'normalized'|'level')=>void;
   nativePlaybackMode:'live'|'rendered';
   setNativePlaybackMode:(mode:'live'|'rendered')=>void;
   timelineAutoFit:boolean;
@@ -65,6 +67,8 @@ function applyTheme(theme: Theme) {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
+      waveformMode:'normalized',
+      setWaveformMode:(waveformMode)=>set({waveformMode}),
       nativePlaybackMode:'live',
       setNativePlaybackMode:(nativePlaybackMode)=>set({nativePlaybackMode}),
       language: (i18n.language?.startsWith('de') ? 'de' : 'en') as Language,

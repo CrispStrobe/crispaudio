@@ -1,3 +1,5 @@
+import {NumberField} from '../timeline/NumberField';
+import {EditableNumber} from '../shared/EditableNumber';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
@@ -116,9 +118,7 @@ function ParamSlider({
         </div>
         <div className="flex items-center gap-2">
           {!numeric && (
-            <span className="font-mono text-xs text-gray-400 w-14 text-right">
-              {value.toFixed(3)}
-            </span>
+            <EditableNumber label={label} value={value} min={min} max={max} step={step} disabled={locked} onChange={next=>onChange(paramKey,next)}/>
           )}
           {onToggleLock && (
             <button
@@ -135,20 +135,7 @@ function ParamSlider({
         </div>
       </div>
       {numeric ? (
-        <input
-          type="number"
-          aria-label={label}
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          disabled={locked}
-          onChange={(e) => {
-            const v = parseFloat(e.target.value);
-            if (!isNaN(v)) onChange(paramKey, Math.max(min, Math.min(max, v)));
-          }}
-          className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm font-mono text-gray-200 focus:outline-none focus:border-blue-500 disabled:opacity-40"
-        />
+        <NumberField label={label} min={min} max={max} step={step} value={value} disabled={locked} width="w-full" onCommit={next=>{onChange(paramKey,next);return true;}}/>
       ) : (
         <input
           type="range"

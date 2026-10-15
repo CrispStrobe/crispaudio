@@ -1,3 +1,4 @@
+import {EditableNumber} from '../shared/EditableNumber';
 import {createPlaybackContext} from '../../lib/audioOutput';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { SpectrumDisplay } from '../shared/SpectrumDisplay';
@@ -333,9 +334,7 @@ export function SFXPanel() {
                 onChange={(e) => onChange('sound_vol', parseFloat(e.target.value))}
                 className="w-20 slider-styled"
               />
-              <span className="text-xs text-white bg-gray-800 px-2 py-1 rounded w-12 text-center font-mono">
-                {Math.round(params.sound_vol * 100)}%
-              </span>
+              <EditableNumber label={t('sfx.masterVolume')} value={params.sound_vol*100} min={0} max={100} step={1} unit="%" onChange={next=>onChange('sound_vol',next/100)}/>
             </div>
 
             {/* A/B Slot Selector */}
@@ -387,9 +386,7 @@ export function SFXPanel() {
                 onChange={(e) => setMorphAmount(parseFloat(e.target.value))}
                 className="w-20 slider-styled"
               />
-              <span className="text-xs text-white bg-gray-800 px-2 py-1 rounded w-12 text-center font-mono">
-                {Math.round(morphAmount * 100)}%
-              </span>
+              <EditableNumber label={t('sfx.morph')} value={morphAmount*100} min={0} max={100} step={1} unit="%" onChange={next=>setMorphAmount(next/100)}/>
             </div>
           </div>
 

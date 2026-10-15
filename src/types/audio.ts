@@ -52,6 +52,7 @@ export interface TimelineProject {
 }
 
 export interface TimelineTrack {
+  waveformMode?: 'normalized' | 'level';
   nativeEffects?:NativeEffect[];
   recordArmed?:boolean;
   recordingInput?:RecordingInput;

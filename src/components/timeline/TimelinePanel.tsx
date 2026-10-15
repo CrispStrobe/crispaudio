@@ -7,7 +7,7 @@ import {InfoButton} from '../common/InfoButton';
 import {SampleWalkthroughs} from './SampleWalkthroughs';
 import {ExportReview} from './ExportReview';
 import {MixReview} from './MixReview';
-import {HelpDetails} from '../common/HelpDetails';
+import {WaveformModeControl} from './WaveformModeControl';
 import {ClipPlacement} from './ClipPlacement';
 import {navigateClip} from '../../lib/clipNavigation';
 import {trimToPlayhead} from '../../lib/trimEdits';
@@ -240,7 +240,7 @@ export const TimelinePanel: React.FC = () => {
   const [touchArrange, setTouchArrange] = useState(()=>!window.matchMedia?.('(pointer:coarse)').matches&&(navigator.maxTouchPoints??0)===0);
   const [helpOpen,setHelpOpen]=useState(false);
   const [alignmentOpen, setAlignmentOpen] = useState(false);
-  const [waveformMode, setWaveformMode] = useState<'normalized' | 'level'>('normalized'),[waveformOpen,setWaveformOpen]=useState(false);
+  const waveformMode=useSettingsStore(s=>s.waveformMode),[waveformOpen,setWaveformOpen]=useState(false);
 
   // Keep engine in sync with sources
   useEffect(() => {
@@ -652,7 +652,7 @@ export const TimelinePanel: React.FC = () => {
       </div>
 
       <TimelineCommandMenus/>
-      <Modal isOpen={waveformOpen} onClose={()=>setWaveformOpen(false)} title={t('nativeMenu.Waveform Display')}><div className="space-y-2 text-sm">{(['normalized','level'] as const).map(mode=><label className="flex gap-2 items-center min-h-11" key={mode}><input type="radio" name="waveform-display" checked={waveformMode===mode} onChange={()=>setWaveformMode(mode)}/>{t(mode==='normalized'?'alignment.normalized':'alignment.atMixLevel')}</label>)}<HelpDetails><p>{t('alignment.normalizedHelp')}</p><p>{t('alignment.levelHelp')}</p></HelpDetails></div></Modal>
+      <Modal isOpen={waveformOpen} onClose={()=>setWaveformOpen(false)} title={t('nativeMenu.Waveform Display')} widthClass="max-w-xs"><WaveformModeControl/></Modal>
       {helpOpen&&<TimelineHelp open onClose={()=>setHelpOpen(false)}/>}
       <Modal isOpen={importOpen} onClose={()=>setImportOpen(false)} title={t('timeline.importAudio')}>
         <p className="text-sm text-gray-300 mb-3">{t('usability.importDestinationHelp')}</p>

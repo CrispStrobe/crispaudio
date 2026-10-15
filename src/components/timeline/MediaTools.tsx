@@ -1,3 +1,4 @@
+import {NumberField} from './NumberField';
 import {sampleVideoUrl} from '../../lib/sampleSessions';
 import {HelpDetails} from '../common/HelpDetails';
 import {useTimelineTool} from '../../hooks/useTimelineTool';
@@ -192,15 +193,13 @@ export function MediaTools({ engine, panelTarget, launcher=true }: Props) {
             {' · '}{t('interview.metrics', { score: track.alignment.confidence.toFixed(2), ppm: ((track.alignment.rate - 1) * 1e6).toFixed(1), residual: track.alignment.residual_ms.toFixed(1) })}
           </p>
           <label className="flex flex-wrap items-center gap-2 mt-2 min-h-11">{t('interview.offset')}
-            <input type="number" step="0.001" value={track.alignment.offset} disabled={!!busy}
-              className="bg-gray-900 border border-gray-600 rounded p-2 min-h-11 w-36"
-              onChange={(event) => {
-                const offset = event.currentTarget.valueAsNumber;
-                if (!Number.isFinite(offset)) return;
+            <NumberField label={t('interview.offset')} min={-Infinity} step={.001} value={track.alignment.offset} disabled={!!busy} width="min-h-11 w-36" onCommit={offset=>{
                 setSession((old) => old && ({ ...old, camera_path: null, tracks: old.tracks.map((tr, n) => n === i ? {
                   ...tr, aligned_path: null, alignment: { ...tr.alignment, offset, reliable: false, manual: false },
                 } : { ...tr, aligned_path: null }) }));
-              }} />
+                return true;
+              }}/>
+
           </label>
           <label className="flex flex-wrap items-center gap-2 mt-2 min-h-11"><input type="checkbox" checked={track.alignment.manual} disabled={!!busy}
             onChange={(event) => {

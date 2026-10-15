@@ -1,3 +1,4 @@
+import {NumberField} from './NumberField';
 import {GraphicControls} from './GraphicControls';
 import {PictureTrackControls} from './PictureTrackControls';
 import { timelineDuration } from '../../lib/timelineView';
@@ -41,11 +42,4 @@ export function VideoControls() {
   </Modal></>;
 }
 
-function RangeField({ value, max, label, onCommit }: { value: number; max: number; label: string; onCommit: (value: number) => void }) {
-  const [draft, setDraft] = useState(String(value));
-  const [focused, setFocused] = useState(false);
-  return <input className="bg-gray-800 rounded px-2 min-h-11 w-28" aria-label={label} type="number" min={0} max={max} step={0.001}
-    value={focused ? draft : value} onFocus={() => { setFocused(true); setDraft(String(value)); }}
-    onChange={(e) => setDraft(e.target.value)} onBlur={() => { setFocused(false); onCommit(draft.trim() ? Number(draft) : NaN); }}
-    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} />;
-}
+function RangeField({value,max,label,onCommit}:{value:number;max:number;label:string;onCommit:(value:number)=>void}){return <NumberField value={value} label={label} min={0} max={max} step={.001} width="w-28" onCommit={next=>{onCommit(next);return true;}}/>;}

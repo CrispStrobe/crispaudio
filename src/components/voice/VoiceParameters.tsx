@@ -1,3 +1,4 @@
+import {EditableNumber} from '../shared/EditableNumber';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Settings, Waves, Zap, Activity } from 'lucide-react';
@@ -135,7 +136,8 @@ function ParamSlider({ def, value, onChange }: {
   onChange: (key: keyof VoiceSettings, v: number) => void;
 }) {
   const { t } = useTranslation();
-  const display = def.formatValue ? def.formatValue(value) : value.toFixed(3);
+  const scale=def.key==='delayTime'?1000:1;
+  const unit=def.formatValue?.(value).replace(/^[+-]?[\d.]+/, '').trim();
   return (
     <div className="bg-gray-800/50 rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
@@ -143,7 +145,7 @@ function ParamSlider({ def, value, onChange }: {
           <span className="text-sm font-medium text-gray-200">{t(def.labelKey)}</span>
           <VoiceInfoButton paramKey={def.key} />
         </div>
-        <span className="font-mono text-xs text-gray-400 w-16 text-right">{display}</span>
+        <EditableNumber label={t(def.labelKey)} value={value*scale} min={def.min*scale} max={def.max*scale} step={(def.step??.001)*scale} unit={unit} onChange={next=>onChange(def.key,next/scale)}/>
       </div>
       <input
         type="range"

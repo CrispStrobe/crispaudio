@@ -1,3 +1,4 @@
+import {EditableNumber} from '../shared/EditableNumber';
 import { CollapsibleSection } from '../shared/CollapsibleSection';
 import { SpectrumDisplay } from '../shared/SpectrumDisplay';
 import { ToolButton } from '../common/ToolButton';
@@ -436,9 +437,7 @@ export function VoicePanel() {
                 onChange={(e) => setMorphAmount(parseFloat(e.target.value))}
                 className="w-20 slider-styled"
               />
-              <span className="text-xs text-white bg-gray-800 px-2 py-1 rounded w-12 text-center font-mono">
-                {Math.round(morphAmount * 100)}%
-              </span>
+              <EditableNumber label={t('voice.morph')} value={morphAmount*100} min={0} max={100} step={1} unit="%" onChange={next=>setMorphAmount(next/100)}/>
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import {NumberField} from './NumberField';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
@@ -41,12 +42,11 @@ export function AlignmentView({ close }: { close: () => void }) {
         </select>
       </label>
     </div>
-    <label className="text-sm text-gray-300 flex flex-wrap gap-3 items-center mb-3">{t('alignment.center')}
-      <input className="min-h-11 w-32 bg-gray-800 px-2 rounded" type="number" min={0} max={duration} step={0.001} value={center}
-        onChange={(e) => { const time = e.target.valueAsNumber; if (Number.isFinite(time)) { setCenter(Math.max(0, Math.min(duration, time))); seek(time); } }} />
+    <div className="text-sm text-gray-300 flex flex-wrap gap-3 items-center mb-3">{t('alignment.center')}
+      <NumberField label={t('alignment.center')} value={center} min={0} max={duration} step={.001} onCommit={time=>{setCenter(time);seek(time);return true;}}/>
       <input className="slider-styled flex-1 min-w-32" type="range" min={0} max={duration || 0.01} step={0.001} value={Math.min(center, duration)}
         aria-label={t('alignment.center')} onChange={(e) => { setCenter(+e.target.value); seek(+e.target.value); }} />
-    </label>
+    </div>
     <svg viewBox="0 0 900 250" className="w-full bg-gray-950 rounded-xl border border-gray-700" role="img" aria-label={t('alignment.chart')}
       onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); const time = start + (e.clientX - rect.left) / rect.width * (end - start); setCenter(time); seek(time); }}>
       {Array.from({ length: 11 }, (_, i) => <g key={i}>

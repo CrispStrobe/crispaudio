@@ -1,3 +1,4 @@
+import {EditableNumber} from './EditableNumber';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Lock, Unlock } from 'lucide-react';
 
@@ -56,11 +57,6 @@ function useSmoothParam(targetValue: number, speed = 0.12): number {
   return current;
 }
 
-function formatValue(value: number, step: number, unit?: string): string {
-  const decimals = step < 0.01 ? 3 : step < 0.1 ? 2 : step < 1 ? 1 : 0;
-  const formatted = value.toFixed(decimals);
-  return unit ? `${formatted}${unit}` : formatted;
-}
 
 export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
   label,
@@ -130,9 +126,7 @@ export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="param-slider__value font-mono text-[11px] text-gray-200 bg-gray-800 border border-gray-700 px-1.5 py-0.5 rounded leading-none min-w-[3.5rem] text-right tabular-nums">
-            {formatValue(smoothValue, step, unit)}
-          </span>
+          <EditableNumber label={label} value={value} min={min} max={max} step={step} unit={unit} disabled={isDisabled} onChange={onChange}/>
 
           {onLockToggle && (
             <button

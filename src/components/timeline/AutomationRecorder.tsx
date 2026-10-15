@@ -1,3 +1,4 @@
+import {EditableNumber} from '../shared/EditableNumber';
 import {hasNativeEffects} from '../../lib/nativeEffects';
 import {useContext,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -16,12 +17,12 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
  const project=useProjectStore(s=>s.project),playing=useProjectStore(s=>s.isPlaying),sources=useProjectStore(s=>s.sources);
  const track=project.tracks.find(track=>track.id===target.trackId)!;
  const [mode,setMode]=useState<AutomationMode>('read'),[armed,setArmed]=useState(false),[review,setReview]=useState<Pass|null>(null),[error,setError]=useState('');
- const pass=useRef<Pass|null>(null),slider=useRef<HTMLInputElement>(null),readout=useRef<HTMLOutputElement>(null),modeRef=useRef(mode);
+ const pass=useRef<Pass|null>(null),slider=useRef<HTMLInputElement>(null),modeRef=useRef(mode);
+ const [readoutValue,setReadoutValue]=useState(()=>automationValue(project,target,useProjectStore.getState().playheadPosition));
  const minimum=target.parameter==='pan'?-1:0,maximum=target.parameter==='freq'?2000:target.parameter==='rate'?8:target.parameter==='time'?2:target.parameter==='feedback'?.95:target.parameter==='mix'||target.parameter==='depth'||target.parameter==='pan'?1:10**(.6);
  const toControl=(v:number)=>target.parameter==='gain'?(v<=.001?-60:Math.max(-60,20*Math.log10(v))):target.parameter==='pan'||target.parameter==='rate'||target.parameter==='freq'?v:target.parameter==='time'?v*1000:v*100;
  const fromControl=(v:number)=>target.parameter==='gain'?(v<=-60?0:10**(v/20)):target.parameter==='pan'||target.parameter==='rate'||target.parameter==='freq'?v:target.parameter==='time'?v/1000:v/100;
- const display=(value:number)=>target.parameter==='gain'?`${toControl(value).toFixed(1)} dB`:target.parameter==='pan'?value.toFixed(2):target.parameter==='freq'||target.parameter==='rate'?`${value.toFixed(2)} Hz`:target.parameter==='time'?`${(value*1000).toFixed(1)} ms`:`${(value*100).toFixed(1)}%`;
- const draw=(value:number)=>{if(slider.current)slider.current.value=String(toControl(value));if(readout.current)readout.current.textContent=display(value);};
+ const draw=(value:number)=>{if(slider.current)slider.current.value=String(toControl(value));setReadoutValue(value);};
  const restore=()=>{engine?.current?.previewAutomation(useProjectStore.getState().project,target);};
  const discard=(message='')=>{pass.current=null;restore();setArmed(false);setReview(null);setMode('read');modeRef.current='read';setError(message);};
  const valid=(p:Pass)=>{const state=useProjectStore.getState();return state.project===p.project&&state.sources===p.sources;};
@@ -105,7 +106,7 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
    onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);beginTouch();}} onPointerUp={()=>endTouch()} onPointerCancel={()=>endTouch(true)} onLostPointerCapture={()=>{if(pass.current?.held)endTouch(true);}}
    onKeyDown={e=>{if(e.key.startsWith('Arrow')||['Home','End','PageUp','PageDown'].includes(e.key))beginTouch();}} onKeyUp={()=>endTouch()} onBlur={()=>endTouch()}
    onChange={e=>{const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!valid(p))return;if(!p.active)beginTouch();p.value=fromControl(Number(e.target.value));sample(p,clock.time);engine?.current?.previewAutomation(p.project,target,p.value);draw(p.value);}}/>
-  <output ref={readout} className="min-w-14" aria-label={t('automation.recordReadout')}/>
+  <EditableNumber label={t('automation.recordReadout')} value={toControl(readoutValue)} min={target.parameter==='gain'?-60:target.parameter==='pan'?-1:0} max={toControl(maximum)} step={target.parameter==='pan'?.01:.1} unit={target.parameter==='gain'?'dB':target.parameter==='time'?'ms':target.parameter==='rate'||target.parameter==='freq'?'Hz':target.parameter==='pan'?undefined:'%'} disabled={!armed||!playing||blocked} onCancel={()=>discard()} onBegin={beginTouch} onEnd={()=>endTouch()} onPreview={next=>{const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!valid(p))return;if(!p.active)beginTouch();p.value=fromControl(next);sample(p,clock.time);engine?.current?.previewAutomation(p.project,target,p.value);draw(p.value);}} onChange={next=>{const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!valid(p))return;p.value=fromControl(next);sample(p,clock.time);engine?.current?.previewAutomation(p.project,target,p.value);draw(p.value);}}/>
   <span className={armed?'text-red-300':'text-gray-400'}>{t(armed?'automation.passArmed':'automation.passSafe')}</span>
   <ToolButton icon={CircleHelp} label={t(native?'nativePreview.recording':`automation.recordHelp_${mode}`)}/>
   {error&&<p role="alert" className="text-amber-300 w-full">{error}</p>}

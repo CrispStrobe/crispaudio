@@ -604,7 +604,10 @@
     "selectedTracks_one": "{{count}} Spur",
     "selectedTracks_other": "{{count}} Spuren",
     "selectedClips_one": "{{count}} Clip",
-    "selectedClips_other": "{{count}} Clips"
+    "selectedClips_other": "{{count}} Clips",
+    "waveformDefault": "Standard",
+    "waveformAtMixLevel": "Wellenform mit Mischpegel",
+    "waveformHelp": "Normalisiert vergrößert leise Wellenformen für bessere Lesbarkeit. Mischpegel zeigt die relativen Spur- und Clippegel. Nur die Darstellung ändert sich; Blenden und Effekte sind nicht enthalten."
   },
   "common": {
     "slotA": "A",

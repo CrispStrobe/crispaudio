@@ -47,7 +47,7 @@ describe('ParamSlider animation', () => {
     expect(frames.size).toBe(0);
     hidden = false;
     act(() => document.dispatchEvent(new Event('visibilitychange')));
-    expect(screen.getByText('0.75')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton',{name:'Gain'})).toHaveValue(.75);
     expect(frames.size).toBe(0);
     rerender(slider(0.5));
     expect(frames.size).toBe(1);
@@ -57,9 +57,9 @@ describe('ParamSlider animation', () => {
     rerender(slider(1));
     expect(frames.size).toBe(1);
     frame();
-    expect(screen.getByText('0.12')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton',{name:'Gain'})).toHaveValue(1); // The editable value is exact while the track animates.
     for (let i = 0; i < 100 && frames.size; i++) frame();
-    expect(screen.getByText('1.00')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton',{name:'Gain'})).toHaveValue(1);
     expect(frames.size).toBe(0);
     const calls = vi.mocked(requestAnimationFrame).mock.calls.length;
     frame();
@@ -67,7 +67,7 @@ describe('ParamSlider animation', () => {
     rerender(slider(0.5));
     expect(frames.size).toBe(1);
     for (let i = 0; i < 100 && frames.size; i++) frame();
-    expect(screen.getByText('0.50')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton',{name:'Gain'})).toHaveValue(.5);
     expect(frames.size).toBe(0);
   });
   it('keeps only one pending frame when the target changes mid-animation', () => {
@@ -77,7 +77,7 @@ describe('ParamSlider animation', () => {
     rerender(slider(0.5));
     expect(frames.size).toBe(1);
     for (let i = 0; i < 100 && frames.size; i++) frame();
-    expect(screen.getByText('0.50')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton',{name:'Gain'})).toHaveValue(.5);
     expect(frames.size).toBe(0);
   });
 
@@ -102,7 +102,7 @@ describe('ParamSlider animation', () => {
 
   it('does not schedule animation frames while already at its target', () => {
     render(slider(0.5));
-    expect(screen.getByText('0.50')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton',{name:'Gain'})).toHaveValue(.5);
     expect(requestAnimationFrame).not.toHaveBeenCalled();
     frame();
     expect(frames.size).toBe(0);
