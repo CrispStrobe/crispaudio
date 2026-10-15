@@ -28,21 +28,68 @@ pub(crate) fn helper_bytes(vst: bool) -> &'static [u8] {
     }
 }
 #[cfg(target_os = "macos")]
-fn invoke(args: &[String], edit: Option<&VideoEdit>) -> Result<Vec<u8>> {
-    use std::{io::Write, os::unix::fs::PermissionsExt, process::Command};
+pub(crate) struct HelperExecutable {
+    pub path: std::path::PathBuf,
+    _directory: Option<tempfile::TempDir>,
+}
+#[cfg(target_os = "macos")]
+fn bundled_helper(executable: &std::path::Path, vst: bool) -> Result<Option<std::path::PathBuf>> {
+    let Some(folder) = executable.parent() else {
+        return Ok(None);
+    };
+    let Some(contents) = folder.parent() else {
+        return Ok(None);
+    };
+    if folder.file_name() != Some(std::ffi::OsStr::new("MacOS"))
+        || contents.file_name() != Some(std::ffi::OsStr::new("Contents"))
+    {
+        return Ok(None);
+    }
+    let helper = folder.join(if vst {
+        "crispaudio-vst3-host"
+    } else {
+        "crispaudio-apple-media"
+    });
+    if helper.is_file() {
+        return Ok(Some(helper));
+    }
+    if contents.join("embedded.provisionprofile").exists() {
+        return Err("Signed Store bundle is missing its native helper; reinstall the app".into());
+    }
+    Ok(None)
+}
+#[cfg(target_os = "macos")]
+pub(crate) fn helper_executable(vst: bool) -> Result<HelperExecutable> {
+    use std::{io::Write, os::unix::fs::PermissionsExt};
+    if let Some(path) = bundled_helper(&std::env::current_exe().map_err(|e| e.to_string())?, vst)? {
+        return Ok(HelperExecutable {
+            path,
+            _directory: None,
+        });
+    }
     let directory = tempfile::tempdir().map_err(|e| e.to_string())?;
-    let helper = directory.path().join("media-helper");
-    let vst = args.first().is_some_and(|op| op.starts_with("vst3-"));
+    let path = directory.path().join("native-helper");
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
-        .open(&helper)
+        .open(&path)
         .map_err(|e| e.to_string())?;
     file.write_all(helper_bytes(vst))
         .map_err(|e| e.to_string())?;
     file.set_permissions(std::fs::Permissions::from_mode(0o700))
         .map_err(|e| e.to_string())?;
     drop(file);
+    Ok(HelperExecutable {
+        path,
+        _directory: Some(directory),
+    })
+}
+#[cfg(target_os = "macos")]
+fn invoke(args: &[String], edit: Option<&VideoEdit>) -> Result<Vec<u8>> {
+    use std::process::Command;
+    let directory = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let vst = args.first().is_some_and(|op| op.starts_with("vst3-"));
+    let helper = helper_executable(vst)?;
     let mut args = args.to_vec();
     if vst {
         args[0] = args[0].trim_start_matches("vst3-").to_string();
@@ -53,7 +100,7 @@ fn invoke(args: &[String], edit: Option<&VideoEdit>) -> Result<Vec<u8>> {
             .map_err(|e| e.to_string())?;
         args[1] = path.to_string_lossy().into_owned();
     }
-    let result = crate::run_command(Command::new(helper).args(args))?;
+    let result = crate::run_command(Command::new(&helper.path).args(args))?;
     if !result.status.success() {
         return Err(format!(
             "Apple media backend ({}): {}",
@@ -419,5 +466,28 @@ mod plugin_tests {
             .as_f64()
             .unwrap();
         assert!((delay - 0.002).abs() < 1e-6);
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod bundle_helper_tests {
+    use super::*;
+    #[test]
+    fn signed_bundles_use_sidecars_and_never_extract_a_missing_helper() {
+        let temp = tempfile::tempdir().unwrap();
+        let contents = temp.path().join("Test.app/Contents");
+        let folder = contents.join("MacOS");
+        std::fs::create_dir_all(&folder).unwrap();
+        let exe = folder.join("crispaudio");
+        assert!(bundled_helper(&exe, false).unwrap().is_none());
+        std::fs::write(contents.join("embedded.provisionprofile"), b"fixture").unwrap();
+        assert!(bundled_helper(&exe, false).is_err());
+        let helper = folder.join("crispaudio-apple-media");
+        std::fs::write(&helper, b"fixture").unwrap();
+        assert_eq!(bundled_helper(&exe, false).unwrap(), Some(helper));
+        assert!(bundled_helper(&exe, true).is_err());
+        assert!(bundled_helper(&temp.path().join("cli"), false)
+            .unwrap()
+            .is_none());
     }
 }

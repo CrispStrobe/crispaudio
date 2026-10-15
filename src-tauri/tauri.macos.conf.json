@@ -1,0 +1,9 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "bundle": {
+    "externalBin": [
+      "generated/native-helpers/crispaudio-apple-media",
+      "generated/native-helpers/crispaudio-vst3-host"
+    ]
+  }
+}

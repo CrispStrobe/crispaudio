@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.0 — 2026-10-15
+
+- Use compact modeless recording and single-track inspectors with collapsed advanced controls.
+- Preview exact mixer/FX values live, group gestures into one Undo, and accelerate touch number scrubbing while retaining precise keyboard steps.
+- Record dry microphone takes against prepared AU/VST3 accompaniment on a shared clock, including loop takes across UI stalls.
+- Bundle native Mac helpers for separate signing and inherited sandbox execution; add packaging checks and a muted sandbox validation runner.
+
 ## 0.11.8 — 2026-10-13
 
 - Add internal native whole-graph and range exports using coordinated offline rendering, preserving routing, fades, automation and float32 headroom.

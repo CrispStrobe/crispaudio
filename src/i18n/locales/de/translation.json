@@ -1641,7 +1641,11 @@
     "loopShort": "Loop",
     "monitorShort": "Mithören",
     "settings": "Aufnahmeeinstellungen",
-    "preparing": "Verbinden…"
+    "preparing": "Verbinden…",
+    "timing": "Timing und Kalibrierung",
+    "preparingBacking": "Begleitung vorbereiten",
+    "backingBudget": "Die Begleitung mit nativen Effekten überschreitet das Vorbereitungslimit. Kürze die Sitzung oder exportiere einen Begleitmix in eine neue Sitzung.",
+    "nativeHelp": "Native Effekte werden vor der Aufnahme als fester Begleitmix vorbereitet. Begleitung und Eingang nutzen dieselbe Audiouhr. Takes und Eingangsmonitoring bleiben unbearbeitet; Spureffekte wirken bei der Wiedergabe. Änderungen am Arrangement stoppen die Aufnahme."
   },
   "retime": {
     "title": "Tempo / Tonhöhe",
@@ -2278,7 +2282,7 @@
     "rendering": "Rendern…",
     "menu": "Wiedergabe / Pause",
     "macOnly": "Die Vorschau nativer Effekte erfordert die installierte Mac-App.",
-    "recording": "Vor der Aufnahme native Inserts deaktivieren.",
+    "recording": "Automationsaufnahmen und direktes Eingangsmonitoring durch Plug-ins sind mit nativen Inserts noch nicht verfügbar. Mikrofonaufnahmen auf dem Mac nutzen einen vorbereiteten Begleitmix.",
     "help": "Wiedergabe rendert den fertigen Stereomix samt nativen Effekten einmal. Pause, Springen und Schleife verwenden ihn weiter. Audioänderungen stoppen die Wiedergabe; beim nächsten Start wird neu gerendert.",
     "limits": "Nur die Master-Anzeigen sind verfügbar. Live-Mischen, Aufnahme und Metronom sind in diesem Modus nicht verfügbar. Die Wiedergabe nutzt das gewählte Ausgabegerät.",
     "mode": "Wiedergabemodus",

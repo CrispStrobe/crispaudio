@@ -14,6 +14,7 @@ interface ParamSliderProps {
   onLockToggle?: () => void;
   disabled?: boolean;
   tooltip?: string;
+  onInteractionStart?:()=>void; onInteractionEnd?:()=>void; liveNumber?:boolean;
 }
 
 function useSmoothParam(targetValue: number, speed = 0.12): number {
@@ -69,7 +70,7 @@ export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
   onChange,
   onLockToggle,
   disabled = false,
-  tooltip,
+  tooltip,onInteractionStart,onInteractionEnd,liveNumber=false,
 }) => {
   const smoothValue = useSmoothParam(value);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -126,7 +127,7 @@ export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <EditableNumber label={label} value={value} min={min} max={max} step={step} unit={unit} disabled={isDisabled} onChange={onChange}/>
+          <EditableNumber label={label} value={value} min={min} max={max} step={step} unit={unit} disabled={isDisabled} live={liveNumber} onBegin={onInteractionStart} onEnd={onInteractionEnd} onChange={onChange}/>
 
           {onLockToggle && (
             <button
@@ -170,6 +171,8 @@ export const ParamSlider: React.FC<ParamSliderProps> = React.memo(({
           max={max}
           step={step}
           value={value}
+          onPointerDown={onInteractionStart} onPointerUp={onInteractionEnd} onPointerCancel={onInteractionEnd} onBlur={onInteractionEnd}
+          onKeyDown={e=>{if(e.key.startsWith('Arrow')||['Home','End','PageUp','PageDown'].includes(e.key))onInteractionStart?.();}} onKeyUp={onInteractionEnd}
           onChange={handleChange}
           disabled={isDisabled}
           aria-label={label}

@@ -1,0 +1,10 @@
+import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {afterEach,beforeEach,expect,it} from 'vitest';
+import {useProjectGesture} from '../../../src/hooks/useProjectGesture';
+import {NumberField} from '../../../src/components/timeline/NumberField';
+import {projectHistoryGesture,useProjectStore} from '../../../src/stores/projectStore';
+function Control(){const value=useProjectStore(s=>s.project.tracks[0].volume),gesture=useProjectGesture();return <NumberField label="Gain" value={value} min={0} max={4} step={.1} onBegin={gesture.begin} onEnd={gesture.end} onPreview={volume=>useProjectStore.getState().updateTrack('t',{volume})} onCommit={volume=>{useProjectStore.getState().updateTrack('t',{volume});return true;}}/>;}
+beforeEach(()=>{projectHistoryGesture.end();useProjectStore.setState(useProjectStore.getInitialState());useProjectStore.setState({project:{...useProjectStore.getState().project,tracks:[{id:'t',name:'Track',volume:1,pan:0,muted:false,solo:false,segments:[]}]}});useProjectStore.temporal.getState().clear();});
+afterEach(()=>{cleanup();projectHistoryGesture.end();});
+it('keeps a focused live numeric edit in one Undo after the opening pointer is released',()=>{render(<Control/>);const input=screen.getByRole('spinbutton');fireEvent.focus(input);fireEvent.pointerUp(input);fireEvent.change(input,{target:{value:'1.2'}});fireEvent.change(input,{target:{value:'1.4'}});fireEvent.blur(input);expect(useProjectStore.getState().project.tracks[0].volume).toBe(1.4);expect(useProjectStore.temporal.getState().pastStates).toHaveLength(1);act(()=>useProjectStore.temporal.getState().undo());expect(useProjectStore.getState().project.tracks[0].volume).toBe(1);});
+it('ends an unfinished gesture when its inspector unmounts',()=>{const view=render(<Control/>);const input=screen.getByRole('spinbutton');fireEvent.focus(input);fireEvent.change(input,{target:{value:'1.2'}});view.unmount();useProjectStore.getState().updateTrack('t',{volume:1.5});expect(useProjectStore.temporal.getState().pastStates).toHaveLength(2);});

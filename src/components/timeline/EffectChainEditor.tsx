@@ -1,3 +1,4 @@
+import {useProjectGesture} from '../../hooks/useProjectGesture';
 import {isTauri,isIOSApp} from '../../lib/native';
 import {nativeEffectScopes} from '../../lib/nativeEffects';
 import {NativeEffectRack} from './NativeEffectRack';
@@ -133,6 +134,7 @@ interface EffectRowProps {
 const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove, onMove, count, scope }) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
+  const gesture=useProjectGesture();
   const specs = EFFECT_PARAMS[effect.type] ?? [];
   const [automation, setAutomation] = useState<{snapshot:TimelineProject;original:EffectConfig}>();
   const supported = !!scope && (scope === 'master' || scope.startsWith('clip:')) && effectParameters.some(key => supportsEffectParameter(effect.type, key));
@@ -200,6 +202,7 @@ const EffectRow: React.FC<EffectRowProps> = ({ effect, index, onUpdate, onRemove
               max={spec.max}
               step={spec.step}
               unit={spec.unit}
+              onInteractionStart={gesture.begin} onInteractionEnd={gesture.end}
               disabled={!effect.enabled||(Object.entries(effect.automation??{}).some(([key,points])=>key===spec.key&&points.length>0))}
               onChange={(val) =>
                 onUpdate(index, {

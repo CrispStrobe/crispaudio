@@ -1,10 +1,47 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-15, for local 0.12.0. This section is the current plan.
+Updated 2026-10-15, for local 0.13.0. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
-## Current checkpoint: native playback and delivery
+## Completed local software work: interaction and recording
+
+The user accepted this order after 0.12.1:
+
+1. Check the preceding checkpoint: iOS CI passed; general CI remains queued.
+2. Refine numeric controls: useful touch scales, explicit units/bounds, cancellation,
+   one Undo per gesture and live feedback for mixer values.
+3. Consolidate recording, track, clip and FX inspectors: compact rows and dropdowns,
+   explanations behind info buttons, advanced sections collapsed, timeline visible.
+4. Exercise complete sample-session workflows on desktop/touch: import/drop,
+   selection/trim/fade/mix, generated recording, save/reopen, undo and delivery.
+5. Support microphone recording alongside native-effects playback with a measured
+   clock relationship, safe cancellation and no dry playback substitution.
+6. Prepare distribution: profile/signing checks and signed/sandboxed hosting.
+   A replacement Apple profile and physical external-device/plugin acceptance need
+   the relevant credentials/hardware; do not substitute local ad-hoc checks.
+
+
+Implemented in 0.13.0: accelerated touch scrubbing with precise keyboard steps,
+live editable mixer values with one Undo, one-track modeless settings and collapsed
+recording options. Native-rack recording uses a prepared wet backing on the capture
+clock; microphone takes and monitoring remain dry. Actual AU/VST3 and local hardened
+sandbox probes pass with bundled helpers. Sample editing, comping, save/reopen and
+exports pass desktop/touch browser checks. See [checkpoint evidence](docs/evidence/interaction-recording-0.13.0.json).
+
+Next external gates: replacement Apple provisioning profile, Store-signed testing
+of user-selected external files/plugins, commercial plugins and external interfaces.
+Local ad-hoc sandbox success does not establish those results. Continuous native
+input DSP and native automation recording remain future work.
+
+Audio troubleshooting interrupted the start: distortion persisted after quitting
+CrispAudio. A reversible built-in-speaker format change from 96 to 48 kHz helped;
+quitting Firefox and Amazon Music cleared the reported residual crackling. Their
+individual roles and the initial cause are unproven. The app is reopened idle,
+48 kHz is retained, and the user explicitly requested coding continue. Avoid extra
+speaker/microphone checks unless requested. MIDI/codecs/paging remain deferred.
+
+## Completed checkpoint: native playback and delivery
 
 The user authorized these six steps in order on 2026-10-15:
 

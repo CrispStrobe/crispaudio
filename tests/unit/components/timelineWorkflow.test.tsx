@@ -34,8 +34,9 @@ describe('interview touch workflow', () => {
   it('switches microphone audibly by clearing previous solos and mutes', async () => {
     render(<TimelineActions touchArrange={false} onTouchArrange={() => {}} />);
     await act(async()=>runTimelineTool('track-settings'));
-    const room = screen.getByDisplayValue('Room').closest('section')!;
-    fireEvent.click(within(room).getByText('timeline.listenOnly'));
+    fireEvent.change(screen.getByRole('combobox',{name:'recording.track'}),{target:{value:useProjectStore.getState().project.tracks[1].id}});
+    fireEvent.click(screen.getByText('timeline.trackActions',{selector:'summary'}));
+    fireEvent.click(screen.getByRole('button',{name:'timeline.listenOnly'}));
     expect(useProjectStore.getState().project.tracks.map((track) => [track.muted, track.solo])).toEqual([[true, false], [false, false]]);
   });
   it('seeks without destroying the fitted view', () => {
@@ -84,10 +85,12 @@ it('edits track and master racks independently through track settings',async()=>
   useProjectStore.setState({isPlaying:true});
   render(<TimelineActions touchArrange={false} onTouchArrange={()=>{}}/>);
   await act(async()=>runTimelineTool('track-settings'));
+  fireEvent.click(screen.getByText(/rack.trackEffects/,{selector:'summary'}));
   const rack=within(screen.getByRole('region',{name:'Jacket rack.trackEffects'}));
   fireEvent.change(rack.getByRole('combobox',{name:'timeline.addEffect'}),{target:{value:'highpass'}});
   expect(useProjectStore.getState().project.tracks[0].effects?.[0].type).toBe('highpass');
-  expect(useProjectStore.getState().isPlaying).toBe(false);
+  expect(useProjectStore.getState().isPlaying).toBe(true); // The transport handles graph restarts.
+  fireEvent.click(screen.getByText('rack.masterEffects',{selector:'summary'}));
   const master=within(screen.getByRole('region',{name:'rack.masterEffects'}));
   fireEvent.change(master.getByRole('combobox',{name:'timeline.addEffect'}),{target:{value:'compressor'}});
   expect(useProjectStore.getState().project.masterEffects[0].type).toBe('compressor');

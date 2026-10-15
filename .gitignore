@@ -44,3 +44,6 @@ media/target-cli/
 
 # Local agent handover: machine paths, recovery details and private fixture locations
 /HANDOVER.local.md
+
+# Native Mac sidecars compiled from the shared helper recipe
+/src-tauri/generated/native-helpers/

@@ -1,3 +1,4 @@
+import {useProjectGesture} from '../../hooks/useProjectGesture';
 import {useSettingsStore} from '../../stores/settingsStore';
 import {isNativeMac} from '../../lib/nativeMenuPlatform';
 import {create} from 'zustand';
@@ -17,6 +18,7 @@ import {ParamSlider} from '../shared/ParamSlider';
 const useNativeClipboard=create<{effects:NativeEffect[]|null}>(()=>({effects:null}));
 interface Parameter {address:string;name:string;min:number;max:number;value:number;unit:string}
 function NativeRow({effect,index,count,disabled,controlsDisabled,update,move,remove}:{effect:NativeEffect;index:number;count:number;disabled:boolean;controlsDisabled:boolean;update:(patch:Partial<NativeEffect>)=>void;move:(direction:number)=>void;remove:()=>void}){
+ const gesture=useProjectGesture();
  const {t}=useTranslation(),[expanded,setExpanded]=useState(false),[result,setResult]=useState<{id:string;state:string;parameters:Parameter[];error:string}>();
  const supported=isTauri()&&!isIOSApp()&&navigator.userAgent.includes('Mac'),info=result?.id===effect.pluginId&&result.state===effect.state?result:undefined,parameters=info?.parameters??[],error=supported?info?.error??'':t('nativeRack.macOnly'),busy=expanded&&supported&&!info;
  useEffect(()=>{if(!expanded||!supported)return;const controller=new AbortController();
@@ -25,7 +27,7 @@ function NativeRow({effect,index,count,disabled,controlsDisabled,update,move,rem
  return <div className="border border-gray-700 rounded p-1 space-y-2" data-native-insert={effect.instanceId}>
   <div className="flex items-center gap-1 flex-wrap"><span className="text-xs text-gray-400">{effect.format}</span><button type="button" className="min-h-11 min-w-0 flex-1 truncate text-left px-1" aria-expanded={expanded} onClick={()=>setExpanded(value=>!value)} title={effect.name}>{effect.name}</button><ToolButton icon={SlidersHorizontal} label={t('sourcePlugins.parameters')} aria-expanded={expanded} onClick={()=>setExpanded(value=>!value)}/></div>
   <fieldset disabled={disabled} className="flex flex-wrap gap-1"><ToolButton icon={Power} label={t(effect.enabled?'timeline.disableEffect':'timeline.enableEffect')} aria-pressed={effect.enabled} className={effect.enabled?'text-green-300':''} onClick={()=>update({enabled:!effect.enabled})}/></fieldset><fieldset disabled={controlsDisabled} className="flex gap-1"><ToolButton icon={CircleSlash} label={t('sourcePlugins.bypass')} aria-pressed={effect.bypass} className={effect.bypass?'text-amber-300':''} onClick={()=>update({bypass:!effect.bypass})}/></fieldset><fieldset disabled={disabled} className="flex gap-1"><ToolButton icon={ArrowUp} label={t('rack.moveUp')} disabled={index===0} onClick={()=>move(-1)}/><ToolButton icon={ArrowDown} label={t('rack.moveDown')} disabled={index===count-1} onClick={()=>move(1)}/><ToolButton icon={Trash2} label={t('timeline.removeEffect')} onClick={remove}/></fieldset>
-  {expanded&&<div className="space-y-2 px-1">{busy&&<p role="status">{t('sourcePlugins.processing')}</p>}{error&&<p role="alert" className="text-sm text-amber-300 break-words">{error}</p>}<fieldset disabled={controlsDisabled} className="space-y-2">{parameters.map(parameter=><ParamSlider key={parameter.address} label={parameter.name} value={effect.parameters[parameter.address]??parameter.value} min={parameter.min} max={parameter.max} step={(parameter.max-parameter.min)/1000||1} unit={parameter.unit} onChange={value=>update({parameters:{...effect.parameters,[parameter.address]:value}})}/>)}</fieldset></div>}
+  {expanded&&<div className="space-y-2 px-1">{busy&&<p role="status">{t('sourcePlugins.processing')}</p>}{error&&<p role="alert" className="text-sm text-amber-300 break-words">{error}</p>}<fieldset disabled={controlsDisabled} className="space-y-2">{parameters.map(parameter=><ParamSlider key={parameter.address} label={parameter.name} value={effect.parameters[parameter.address]??parameter.value} min={parameter.min} max={parameter.max} step={(parameter.max-parameter.min)/1000||1} unit={parameter.unit} liveNumber onInteractionStart={gesture.begin} onInteractionEnd={gesture.end} onChange={value=>update({parameters:{...effect.parameters,[parameter.address]:value}})}/>)}</fieldset></div>}
  </div>;
 }
 /** Structural edits wait for Stop; live parameter and bypass changes keep DSP running. */

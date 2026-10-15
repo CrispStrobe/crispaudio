@@ -82,6 +82,13 @@ jobs:
             codesign --force --timestamp --options runtime --keychain "$KC" --sign "$APP_CERT" "$fw"
           done
           
+          for helper in crispaudio-apple-media crispaudio-vst3-host; do
+            test -f "$APP/Contents/MacOS/$helper"
+            codesign --force --timestamp --options runtime \
+              --entitlements src-tauri/helper-entitlements.plist \
+              --keychain "$KC" --sign "$APP_CERT" "$APP/Contents/MacOS/$helper"
+          done
+
           codesign --force --timestamp --options runtime \
             --entitlements src-tauri/entitlements.plist \
             --keychain "$KC" --sign "$APP_CERT" "$APP"
@@ -95,6 +102,7 @@ jobs:
         run: |
           codesign --verify --deep --strict --verbose=2 "$APP"
           pkgutil --check-signature "$PKG"
+          python3 scripts/release/check-macos-app.py "$APP" --team "$TEAM_ID"
       - name: Keep signed package
         uses: actions/upload-artifact@v4
         with:

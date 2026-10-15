@@ -1628,7 +1628,11 @@
     "loopShort": "Loop",
     "monitorShort": "Monitor",
     "settings": "Recording settings",
-    "preparing": "Connecting…"
+    "preparing": "Connecting…",
+    "timing": "Timing and calibration",
+    "preparingBacking": "Preparing accompaniment",
+    "backingBudget": "The native-effects accompaniment exceeds the recording preparation limit. Shorten the session or export a backing mix to a new session.",
+    "nativeHelp": "Native effects are prepared as a fixed wet accompaniment before recording. Accompaniment and input share one audio clock. Takes and input monitoring remain dry; the track effects apply on playback. Editing the arrangement stops recording."
   },
   "retime": {
     "title": "Speed / pitch",
@@ -2265,7 +2269,7 @@
     "rendering": "Rendering…",
     "menu": "Play / Pause",
     "macOnly": "Native effects preview requires the installed Mac app.",
-    "recording": "Disable native inserts before recording.",
+    "recording": "Automation passes and live plugin input monitoring are not available with native inserts. Microphone recording uses a prepared wet accompaniment on Mac.",
     "help": "Play renders the finished stereo mix once, including native effects. Pause, seek and loop reuse it. Audio edits stop playback and rebuild the preview on the next Play.",
     "limits": "Only master meters are available. Live mixing, recording and monitor clicks are unavailable in this mode. Playback uses your selected output device.",
     "mode": "Playback mode",

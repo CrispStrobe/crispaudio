@@ -276,6 +276,33 @@ fn native_validation_delivery_directory() -> Result<String, String> {
     Ok(folder.to_string_lossy().into_owned())
 }
 #[tauri::command]
+fn native_validation_recordings_remove(
+    app: tauri::AppHandle,
+    paths: Vec<String>,
+) -> Result<(), String> {
+    if paths.len() > 16 {
+        return Err("Too many validation recordings".into());
+    }
+    let folder = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("recordings");
+    for path in paths {
+        let path = std::path::PathBuf::from(path);
+        if path.parent() != Some(folder.as_path())
+            || !path
+                .file_name()
+                .is_some_and(|name| name.to_string_lossy().starts_with("recording-"))
+            || path.extension().is_none_or(|extension| extension != "wav")
+        {
+            return Err("Not a validation recording".into());
+        }
+        std::fs::remove_file(path).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+#[tauri::command]
 fn native_validation_report(app: tauri::AppHandle, report: Value) {
     use std::io::Write;
     app.state::<ValidationState>()
@@ -337,6 +364,8 @@ pub fn run() {
             native_validation_loopback_close,
             crate::commands::delivery::publish_delivery_stage,
             native_validation_delivery_directory,
+            crate::commands::native_files::persist_recording,
+            native_validation_recordings_remove,
             native_validation_report,
             native_validation_status,
             native_validation_worker_key,

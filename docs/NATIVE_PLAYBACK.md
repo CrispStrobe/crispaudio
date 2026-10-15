@@ -26,10 +26,15 @@ are bounded to 256 MB. Live loops need at least 2,048 frames (about 43 ms); use
 Preview for shorter loops. Large projects may require Preview. Starting late in a long
 project takes time because plugins must process the earlier history.
 
-Live native playback currently excludes microphone and automation-pass recording,
-and monitor clicks.
-Disable native inserts to record. The generic controls support plugin parameters;
-custom plugin windows and MIDI instruments are outside this checkpoint.
+Microphone recording with native racks prepares a fixed wet accompaniment before
+opening input, then plays it on the same audio clock as capture. Takes and input
+monitoring stay dry; track inserts apply when the take is played back. Loop takes
+remain aligned across delayed UI frames. The accompaniment cannot be changed
+during the take. Preparation is bounded to a 128 MiB stereo buffer and can be
+cancelled with Record/Stop before the microphone opens.
+
+Continuous native input monitoring, native automation-pass recording, monitor
+clicks, custom plugin windows and MIDI instruments remain outside this mode.
 
 ## Try the included session
 
@@ -53,6 +58,16 @@ speaker audibility or qualify every third-party plugin/interface.
 ```sh
 CRISPAUDIO_NATIVE_VALIDATION_NATIVE_LIVE=1 node scripts/test-native-timeline-tauri.mjs
 ```
+
+For generated-input recording with real native effects and muted output:
+
+```sh
+CRISPAUDIO_NATIVE_VALIDATION_RECORDING=1 node scripts/test-native-timeline-tauri.mjs
+```
+
+It checks the wet plugin signal, dry original persistence, shared-clock take
+placement, one Undo, loop capture across a UI stall, cancellation before input
+and stream/helper cleanup. It opens no physical microphone.
 
 For the sustained pause check, run `python3 scripts/test-native-long-pause.py`
 after building the helpers. It opens no audio device and verifies both the held

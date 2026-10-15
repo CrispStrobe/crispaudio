@@ -22,7 +22,7 @@ export async function nativeRenderedUI(plugin:string){
  const click=(key:string)=>{const button=[...host.querySelectorAll<HTMLButtonElement>('button')].find(button=>button.getAttribute('aria-label')===i18n.t(key));if(!button)throw new Error(`Preview control missing: ${key}`);button.click();};
  try{
   root.render(<NativeRenderedHarness/>);await until(()=>!!host.querySelector('[data-native-preview]'),'mount');
-  const record=[...host.querySelectorAll<HTMLButtonElement>('button')].find(button=>button.getAttribute('aria-label')===i18n.t('nativePreview.recording'));if(!record?.disabled)throw new Error('Native preview recording guard missing');
+  const record=[...host.querySelectorAll<HTMLButtonElement>('button')].find(button=>button.getAttribute('aria-label')===i18n.t('recording.start'));if(!record||record.disabled)throw new Error('Native preview recording control unavailable');
   click('nativePreview.render');await until(()=>useUIStore.getState().nativePreviewStatus==='playing','play');const renderedCalls=calls;
   await until(()=>(document.visibilityState==='hidden'?renderedHarness.engine?.automationClock()?.time??0:useProjectStore.getState().playheadPosition)>.1,'clock');const foregroundClock=document.visibilityState!=='hidden';click('timeline.pause');await until(()=>useUIStore.getState().nativePreviewStatus==='ready','pause');
   click('nativePreview.play');await until(()=>useUIStore.getState().nativePreviewStatus==='playing','play');if(calls!==renderedCalls)throw new Error('GUI pause rebuilt native preview');
@@ -31,6 +31,6 @@ export async function nativeRenderedUI(plugin:string){
   const gate=new Promise<void>(resolve=>{releaseOpen=resolve;});NativePluginStream.open=async(request,signal)=>{await gate;return originalOpen.call(NativePluginStream,request,signal);};
   click('nativePreview.render');await until(()=>useUIStore.getState().nativePreviewStatus==='rendering','render');click('nativePreview.cancel');await until(()=>!useProjectStore.getState().isPlaying&&useUIStore.getState().nativePreviewStatus==='idle');
   releaseOpen?.();NativePluginStream.open=originalOpen;
-  return {language:'de',playhead:foregroundClock?'visible playhead advances':'audio clock advances; visible redraw not checked',pauseCache:'reused',mixChange:'invalidated',cancel:'stopped',recording:'guarded'};
+  return {language:'de',playhead:foregroundClock?'visible playhead advances':'audio clock advances; visible redraw not checked',pauseCache:'reused',mixChange:'invalidated',cancel:'stopped',recording:'prepared accompaniment available'};
  }finally{window.removeEventListener('error',failed);window.removeEventListener('crispaudio-edit-error',failed);root.unmount();releaseOpen?.();NativePluginStream.open=originalOpen;host.remove();NativePluginStream.prototype.process=original;await closed();}
 }

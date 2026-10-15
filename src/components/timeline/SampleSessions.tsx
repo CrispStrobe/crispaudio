@@ -32,7 +32,7 @@ export function SampleSessions(){
  };
  return <Modal isOpen={open} onClose={close} title={t('samples.title')}><div className="space-y-3 text-sm">
   <select className="w-full min-h-11 bg-gray-800 rounded p-2" aria-label={t('samples.session')} value={kind} disabled={busy} onChange={e=>setKind(e.target.value as SampleSession)}>{(['mix','picture','takes',...(nativeSupported?['native']:[])] as SampleSession[]).map(key=><option key={key} value={key}>{t(`samples.${key}`)}</option>)}</select>
-  <InfoButton label={t('samples.session')}><p>{t(`samples.${kind}Info`)}</p><p>{t('samples.undo')}</p></InfoButton>
+  <InfoButton label={`${t('common.help')}: ${t('samples.session')}`}><p>{t(`samples.${kind}Info`)}</p><p>{t('samples.undo')}</p></InfoButton>
   {error&&<p role="alert" className="text-red-300 break-words">{error}</p>}{busy&&<p role="status">{t('samples.loading')}</p>}
   <div className="flex justify-end gap-2"><button className="timeline-tool" onClick={close}>{t('common.cancel')}</button><button className="timeline-tool" disabled={busy||recording} onClick={()=>void load()}>{t('samples.open')}</button></div>
  </div></Modal>;

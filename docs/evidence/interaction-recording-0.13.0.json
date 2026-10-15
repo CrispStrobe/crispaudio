@@ -1,0 +1,100 @@
+{
+  "version": "0.13.0",
+  "date": "2026-10-15",
+  "audioTests": "muted, generated input; no new physical microphone or audibility check",
+  "frontend": {
+    "testsPassed": 1726,
+    "filesPassed": 179,
+    "lint": "passed",
+    "applicationTypes": "passed",
+    "fixtureTypes": "passed"
+  },
+  "rust": {
+    "mediaPassed": 145,
+    "cliPassed": 3,
+    "mediaIgnored": 10,
+    "tauriPassed": 37,
+    "tauriIgnored": 1,
+    "lockedIosSimulatorCompile": "passed"
+  },
+  "browser": {
+    "chrome": [
+      "compact desktop and 390px inspectors",
+      "live dB entry, Escape and one Undo",
+      "emulated touch scrubbing and trim handles",
+      "sample sessions/render/save/reopen",
+      "comp audition/versions/reset/undo",
+      "linked extract/roll/undo/range export byte comparison",
+      "generated direct recording"
+    ],
+    "webkit": [
+      "compact desktop and 390px inspectors",
+      "sample sessions/render/save/reopen"
+    ],
+    "physicalTouchDevice": "untested"
+  },
+  "nativeRecording": {
+    "auHelper": true,
+    "vst3WetImpulseFrame": 24096,
+    "wetPeak": 0.375,
+    "captureSourceOffsetFrames": 2304,
+    "clock": "shared Web Audio frame clock",
+    "generatedInputHz": 317,
+    "uiStallMs": 650,
+    "loopTakes": "passed",
+    "oneUndo": true,
+    "cancelBeforeInput": true,
+    "helpersReleased": true,
+    "liveNativeInput": false
+  },
+  "sandbox": {
+    "auHelper": true,
+    "cancelBeforeInput": true,
+    "dryInput": "generated 317 Hz",
+    "helpersReleased": true,
+    "kind": "native-recording",
+    "liveNativeInput": false,
+    "loopTakes": 9,
+    "muted": true,
+    "oneUndo": true,
+    "recordingClock": "shared Web Audio frame clock",
+    "sourceOffsetFrames": 2304,
+    "success": true,
+    "takeStart": 0,
+    "uiStallMs": 650,
+    "wetImpulseFrame": 24096,
+    "wetPeak": 0.375,
+    "sandbox": true,
+    "hardenedRuntime": true,
+    "signing": "ad-hoc local test",
+    "bundledHelperProcessesObserved": 3,
+    "externalPluginAccess": "not tested",
+    "appleStoreAcceptance": "not established"
+  },
+  "limitations": [
+    "128 MiB prepared stereo backing buffer; render intermediates require extra memory",
+    "Accompaniment fixed during capture; dry input monitoring and editable dry takes",
+    "Continuous native input DSP and native automation-pass recording unsupported",
+    "Replacement Apple provisioning profile required",
+    "External files/plugins in Store sandbox, commercial plugins and external interfaces not accepted yet"
+  ],
+  "previousCheckpointCI": {
+    "source": "ceecadd9dd6ba3db180189b66fde0a394abc57c9",
+    "ios": {
+      "run": 38763254000,
+      "result": "success"
+    },
+    "general": {
+      "run": 38763253817,
+      "status": "queued"
+    }
+  },
+  "macBundle": "passed",
+  "localInstall": {
+    "version": "0.13.0",
+    "signature": "ad-hoc deep strict verified",
+    "autosavesRetained": 1,
+    "backup": "full WebKit, application data, original autosave JSON and previous app",
+    "standaloneCli": "unchanged"
+  }
+}

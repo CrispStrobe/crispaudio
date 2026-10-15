@@ -1,21 +1,33 @@
 fn main() {
-    println!("cargo:rerun-if-changed=apple/MediaHelper.swift");
-    println!("cargo:rerun-if-changed=apple/Transitions.swift");
-    println!("cargo:rerun-if-changed=apple/Graphics.swift");
-    println!("cargo:rerun-if-changed=apple/Retime.swift");
-    println!("cargo:rerun-if-changed=apple/Plugins.swift");
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("macos") {
         return;
     }
-    let target = std::env::var("TARGET").unwrap();
+    let root = std::path::PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap());
+    let out = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    build_helpers(&root, &out, &std::env::var("TARGET").unwrap());
+}
+
+/// Both Cargo's embedded development helpers and signed Mac sidecars use this recipe.
+pub fn build_helpers(root: &std::path::Path, out: &std::path::Path, target: &str) {
+    for path in [
+        "build.rs",
+        "apple/MediaHelper.swift",
+        "apple/Transitions.swift",
+        "apple/Graphics.swift",
+        "apple/Retime.swift",
+        "apple/Plugins.swift",
+    ] {
+        println!("cargo:rerun-if-changed={}", root.join(path).display());
+    }
+    std::fs::create_dir_all(out).expect("Cannot create native helper directory");
     let arch = if target.starts_with("aarch64") {
         "arm64"
     } else {
         "x86_64"
     };
-    let output = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap())
-        .join("crispaudio-apple-media");
+    let output = out.join("crispaudio-apple-media");
     let status = std::process::Command::new("xcrun")
+        .current_dir(root)
         .args([
             "swiftc",
             "-parse-as-library",
@@ -35,7 +47,7 @@ fn main() {
         .status()
         .expect("Apple media backend needs Xcode command-line tools at build time");
     assert!(status.success(), "Apple media helper compilation failed");
-    println!("cargo:rerun-if-changed=vst3");
+    println!("cargo:rerun-if-changed={}", root.join("vst3").display());
     let sdk = "vst3/vendor";
     let sources = [
         "vst3/PluginHost.mm",
@@ -56,6 +68,7 @@ fn main() {
         "public.sdk/source/vst/utility/stringconvert.cpp",
     ];
     let mut command = std::process::Command::new("xcrun");
+    command.current_dir(root);
     command.args([
         "clang++",
         "-std=c++17",
@@ -74,8 +87,7 @@ fn main() {
             format!("{sdk}/{source}")
         });
     }
-    let output =
-        std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap()).join("crispaudio-vst3-host");
+    let output = out.join("crispaudio-vst3-host");
     command
         .args([
             "-framework",

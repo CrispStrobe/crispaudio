@@ -18,6 +18,44 @@ A successful upload step is not proof of Apple processing success, TestFlight
 availability, review approval, or public release. Those states need an ASC check.
 Note that a generic `v*` release tag also triggers the iOS upload workflow.
 
+## Local 0.13.0 — inspectors, exact controls and native-rack recording
+
+Track Settings edits one selected track in a modeless inspector. Recording settings
+also leave the timeline accessible; advanced controls stay collapsed. Mixer and FX
+numbers support live entry and accelerated touch scrubbing, with cancellation and
+one Undo per gesture. Keyboard precision and displayed units are retained.
+
+Recording with AU/VST3 racks prepares the wet accompaniment before opening input.
+Playback and dry capture then share one Web Audio frame clock, including loop take
+boundaries across stalled UI frames. Continuous native microphone processing and
+native automation-pass recording remain unsupported.
+
+Validation: 1,726 frontend tests pass; ESLint and application/fixture TypeScript
+checks pass. Media tests pass 145 + 3, including eight real AU/VST3 stream tests;
+10 optional media integrations remain ignored. Tauri tests pass 37 with one ignored,
+and the locked iOS simulator compile passes. Chrome and WebKit verify compact
+inspectors and sample sessions; Chrome additionally checks actual emulated touch
+number scrubbing and trim handles. Comp versions, linked edits, save/reopen and
+range export comparisons pass. Physical touch devices were not checked.
+
+The muted native recording probe verifies a delayed wet impulse at frame 24,096,
+shared capture timing, retained original audio, loop takes across a 650 ms UI stall,
+pre-input cancellation, one Undo and released helpers. An isolated ad-hoc signed,
+hardened App Sandbox probe passes the same workflow and observes three helper
+processes launched from the signed app bundle. It uses generated input and a
+bundled test plugin; external plugin/file access and Apple acceptance remain open.
+
+Mac helpers now ship as sidecar executables, signed individually with inherited
+sandbox rights. Store packaging checks their presence, signatures, team,
+architectures and entitlements. The Store preflight rejects a missing provisioning
+profile. See [Mac distribution preparation](MACOS_SIGNING.md) and
+[sanitized evidence](evidence/interaction-recording-0.13.0.json).
+
+The preceding 0.12.1 iOS CI run passed; its general CI run remained queued at this
+checkpoint. The signed local 0.13.0 app is installed with one autosave retained and a fresh
+full-data/previous-app backup; the standalone CLI is unchanged. The source push
+starts new CI runs; no release workflow or Apple upload was requested.
+
 ## Local 0.12.1 — compact recording and numeric controls
 
 Record and its smaller settings arrow use separate borderless controls, with a

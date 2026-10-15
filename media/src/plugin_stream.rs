@@ -44,7 +44,6 @@ mod native {
     use super::*;
     use std::{
         io::{Read, Write},
-        os::unix::fs::PermissionsExt,
         process::{Child, Command, Stdio},
         sync::{
             mpsc::{self, Receiver, SyncSender},
@@ -74,6 +73,7 @@ mod native {
         reply: Receiver<Result<StreamReply>>,
         worker: Option<JoinHandle<()>>,
         _directory: tempfile::TempDir,
+        _helper: crate::apple::HelperExecutable,
         channels: usize,
         rate: f64,
         sequence: u32,
@@ -137,14 +137,10 @@ mod native {
                 return Err("Invalid plugin stream configuration".into());
             }
             let directory = tempfile::tempdir().map_err(|e| e.to_string())?;
-            let helper = directory.path().join("plugin-stream");
+            let helper = crate::apple::helper_executable(id.starts_with("vst3:"))?;
             let json = directory.path().join("request.json");
-            std::fs::write(&helper, crate::apple::helper_bytes(id.starts_with("vst3:")))
-                .map_err(|e| e.to_string())?;
-            std::fs::set_permissions(&helper, std::fs::Permissions::from_mode(0o700))
-                .map_err(|e| e.to_string())?;
             std::fs::write(&json, request.to_string()).map_err(|e| e.to_string())?;
-            let mut child = Command::new(helper)
+            let mut child = Command::new(&helper.path)
                 .arg("plugin-stream")
                 .arg(json)
                 .stdin(Stdio::piped())
@@ -199,6 +195,7 @@ mod native {
                 reply: receive,
                 worker: Some(worker),
                 _directory: directory,
+                _helper: helper,
                 channels,
                 rate,
                 sequence: 0,

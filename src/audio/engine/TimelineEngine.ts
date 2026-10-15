@@ -266,18 +266,18 @@ export class TimelineEngine {
 
   /** Audition an already rendered stereo mix through the normal monitor/device path.
    * Master FX, limiter and level are baked; only meters are added here. */
-  playRenderedPreview(buffer:AudioBuffer,start:number,end=buffer.duration,loopStart?:number):void{
-    if(buffer.numberOfChannels!==2||!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>buffer.duration+1/buffer.sampleRate||loopStart!==undefined&&(!Number.isFinite(loopStart)||loopStart<0||loopStart>=end||start<loopStart))throw new Error('Invalid rendered playback range');
+  playRenderedPreview(buffer:AudioBuffer,start:number,end=buffer.duration,loopStart?:number,timelineOffset=0):void{
+    if(!Number.isFinite(timelineOffset)||timelineOffset<0||buffer.numberOfChannels!==2||!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>buffer.duration+1/buffer.sampleRate||loopStart!==undefined&&(!Number.isFinite(loopStart)||loopStart<0||loopStart>=end||start<loopStart))throw new Error('Invalid rendered playback range');
     this.stop();
     try{
       const ctx=this.ctx,source=ctx.createBufferSource(),gain=ctx.createGain();
       gain.gain.value=1;this.outputGain=gain;this.playbackNodes.add(gain);this.activeSources.push(source);
-      this.renderedPlayback=true;this.playbackStart=start;this.playbackEnd=Math.min(end,buffer.duration);
+      this.renderedPlayback=true;this.playbackStart=start+timelineOffset;this.playbackEnd=Math.min(end,buffer.duration)+timelineOffset;
       source.buffer=buffer;source.connect(gain);let output:AudioNode=gain;
       if(this.loudnessReady){const meter=createLoudness(ctx);this.playbackNodes.add(meter);meter.port.onmessage=e=>{this.loudnessReading=e.data;};gain.connect(meter);output=meter;this.loudnessNode=meter;this.loudnessReading=undefined;}
       this.outputMeter=this.meterTap(ctx,output);output.connect(this.masterGain);
       const now=Math.ceil((ctx.currentTime*ctx.sampleRate+256)/128)*128/ctx.sampleRate;this.playbackClock=now;
-      if(loopStart!==undefined){this.renderedLoop={start:loopStart,end:this.playbackEnd};source.loop=true;source.loopStart=loopStart;source.loopEnd=this.playbackEnd;source.start(now,start);}
+      if(loopStart!==undefined){this.renderedLoop={start:loopStart+timelineOffset,end:this.playbackEnd};source.loop=true;source.loopStart=loopStart;source.loopEnd=Math.min(end,buffer.duration);source.start(now,start);}
       else{source.start(now,start,this.playbackEnd-start);const generation=this.playbackGeneration;source.onended=()=>{if(this.playbackGeneration===generation)this.stop();};}
       for(const listener of this.clockListeners)listener();
     }catch(error){this.stop();throw error;}

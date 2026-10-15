@@ -1,3 +1,4 @@
+import {useProjectGesture} from '../../hooks/useProjectGesture';
 import {EditableNumber} from '../shared/EditableNumber';
 import {useSettingsStore} from '../../stores/settingsStore';
 import {LoudnessControls} from './LoudnessControls';
@@ -10,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { X, SlidersHorizontal } from 'lucide-react';
 import { ToolButton } from '../common/ToolButton';
 import { EffectChainEditor } from './EffectChainEditor';
-import { projectHistoryGesture, useProjectStore } from '../../stores/projectStore';
+import { useProjectStore } from '../../stores/projectStore';
 import type { TimelineEngine } from '../../audio/engine/TimelineEngine';
 import type { TimelineTrack } from '../../types/audio';
 
@@ -60,14 +61,7 @@ function Strip({track, engine, onInserts}: {track?: TimelineTrack; engine: RefOb
   const {t} = useTranslation();
   const master = useProjectStore(s=>s.project.masterVolume ?? 1);
   const gain = track?.volume ?? master, id = track?.id ?? 'master';
-  const gesture = useRef(false);
-  const begin = () => {if (!gesture.current) {gesture.current=true;projectHistoryGesture.begin();}};
-  const end = () => {if (gesture.current) {gesture.current=false;projectHistoryGesture.end();}};
-  useEffect(()=>{
-    const finish=()=>{if(gesture.current){gesture.current=false;projectHistoryGesture.end();}};
-    window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);window.addEventListener('blur',finish);
-    return ()=>{finish();window.removeEventListener('pointerup',finish);window.removeEventListener('pointercancel',finish);window.removeEventListener('blur',finish);};
-  },[]);
+  const {begin,end}=useProjectGesture();
   const update = (volume:number) => {
     const state = useProjectStore.getState();
     if (track) state.updateTrack(track.id,{volume});
@@ -77,12 +71,12 @@ function Strip({track, engine, onInserts}: {track?: TimelineTrack; engine: RefOb
     <p className="truncate text-sm font-medium" title={track?.name}>{track?.name ?? t('mixer.master')}</p>
     <Meter engine={engine} id={id}/>
     <GainReduction scope={track?`track:${track.id}`:'master'}/>
-    <div className="block text-xs"><div className="flex items-center justify-between gap-1">{t('mixer.level')}<EditableNumber label={`${track?.name??t('mixer.master')}: ${t('mixer.level')}`} value={gain>0?Math.max(-61,db(gain)):-61} min={-61} max={12} step={.1} unit="dB" disabled={track?.locked} onChange={next=>update(next<=-61?0:10**(next/20))}/></div>
+    <div className="block text-xs"><div className="flex items-center justify-between gap-1">{t('mixer.level')}<EditableNumber label={`${track?.name??t('mixer.master')}: ${t('mixer.level')}`} value={gain>0?Math.max(-61,db(gain)):-61} min={-61} max={12} step={.1} unit="dB" live onBegin={begin} onEnd={end} disabled={track?.locked} onChange={next=>update(next<=-61?0:10**(next/20))}/></div>
       <input type="range" aria-label={`${track?.name ?? t('mixer.master')}: ${t('mixer.level')}`} className="w-full min-h-11" min={-61} max={12} step={.1} value={Math.max(-61, db(gain))} disabled={track?.locked}
         onPointerDown={begin} onPointerUp={end} onPointerCancel={end} onBlur={end} onKeyDown={begin} onKeyUp={end}
         onChange={e=>update(Number(e.target.value)<=-61?0:10**(Number(e.target.value)/20))}/></div>
     {track&&<>
-      <div className="block text-xs"><div className="flex items-center justify-between gap-1">{t('mixer.pan')}<EditableNumber label={`${track.name}: ${t('mixer.pan')}`} value={track.pan*100} min={-100} max={100} step={1} disabled={track.locked||!!track.panAutomation?.length} onChange={next=>useProjectStore.getState().updateTrack(track.id,{pan:next/100})}/></div>
+      <div className="block text-xs"><div className="flex items-center justify-between gap-1">{t('mixer.pan')}<EditableNumber label={`${track.name}: ${t('mixer.pan')}`} value={track.pan*100} min={-100} max={100} step={1} live onBegin={begin} onEnd={end} disabled={track.locked||!!track.panAutomation?.length} onChange={next=>useProjectStore.getState().updateTrack(track.id,{pan:next/100})}/></div>
         <input type="range" className="w-full min-h-11" aria-label={`${track.name}: ${t('mixer.pan')}`} min={-1} max={1} step={.01} value={track.pan} disabled={track.locked||!!track.panAutomation?.length} title={track.panAutomation?.length?t('automation.panHelp'):undefined} onPointerDown={begin} onPointerUp={end} onPointerCancel={end} onBlur={end} onKeyDown={begin} onKeyUp={end} onDoubleClick={()=>{if(!track.locked&&!track.panAutomation?.length)useProjectStore.getState().updateTrack(track.id,{pan:0});}} onChange={e=>useProjectStore.getState().updateTrack(track.id,{pan:Number(e.target.value)})}/></div>
       <div className="flex gap-1">{(['muted','solo'] as const).map(key=><button key={key} disabled={track.locked} aria-label={`${track.name}: ${t(key==='solo'?'timeline.solo':'timeline.mute')}`} aria-pressed={track[key]} className={`flex-1 min-h-11 rounded ${track[key]?'bg-indigo-600':'bg-gray-800'}`} onClick={()=>useProjectStore.getState().updateTrack(track.id,{[key]:!track[key]})}>{key==='solo'?'S':'M'}</button>)}</div>
       <RoutingControls track={track}/>

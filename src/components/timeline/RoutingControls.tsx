@@ -1,9 +1,10 @@
+import {useProjectGesture} from '../../hooks/useProjectGesture';
 import {EditableNumber} from '../shared/EditableNumber';
 import {NumberField} from './NumberField';
 import {duckingDefaults} from '../../audio/dsp/ducking';
-import {useState,useEffect,useRef} from 'react';
+import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useProjectStore,projectHistoryGesture} from '../../stores/projectStore';
+import {useProjectStore} from '../../stores/projectStore';
 import type {TimelineTrack} from '../../types/audio';
 
 export function AddBus(){
@@ -16,10 +17,7 @@ export function AddBus(){
 
 export function RoutingControls({track}:{track:TimelineTrack}){
   const {t}=useTranslation(),tracks=useProjectStore(s=>s.project.tracks),buses=tracks.filter(t=>t.kind==='bus'&&t.id!==track.id);
-  const [error,setError]=useState(''),gesture=useRef(false);
-  const begin=()=>{if(!gesture.current){gesture.current=true;projectHistoryGesture.begin();}};
-  const end=()=>{if(gesture.current){gesture.current=false;projectHistoryGesture.end();}};
-  useEffect(()=>{const finish=()=>{if(gesture.current){gesture.current=false;projectHistoryGesture.end();}};window.addEventListener('blur',finish);return()=>{finish();window.removeEventListener('blur',finish);};},[]);
+  const [error,setError]=useState(''),{begin,end}=useProjectGesture();
   const update=(patch:Parameters<ReturnType<typeof useProjectStore.getState>['updateTrack']>[1])=>{
     try{useProjectStore.getState().updateTrack(track.id,patch);setError('');}catch(e){setError(t(e instanceof Error?e.message:'routing.invalid'));}
   };
@@ -30,7 +28,7 @@ export function RoutingControls({track}:{track:TimelineTrack}){
       <label className="block">{t('routing.output')}<select className="w-full min-h-11 bg-gray-800" aria-label={`${track.name}: ${t('routing.output')}`} value={track.output??'master'} onChange={e=>update({output:e.target.value})}>{options}</select></label>
       {(track.sends??[]).map(send=><div key={send.id} className="border border-gray-700 rounded p-1">
         <select className="w-full min-h-11 bg-gray-800" aria-label={t('routing.sendTarget')} value={send.target} onChange={e=>update({sends:track.sends?.map(s=>s.id===send.id?{...s,target:e.target.value}:s)})}>{options}</select>
-        <div className="block"><span className="flex items-center justify-between gap-1">{t('routing.sendLevel')}<EditableNumber label={t('routing.sendLevel')} value={send.gain?Math.max(-61,20*Math.log10(send.gain)):-61} min={-61} max={12} step={.1} unit="dB" onChange={next=>update({sends:track.sends?.map(s=>s.id===send.id?{...s,gain:next<=-61?0:10**(next/20)}:s)})}/></span><input className="w-full min-h-11" aria-label={t('routing.sendLevel')} type="range" onPointerDown={begin} onPointerUp={end} onPointerCancel={end} onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key))begin();}} onKeyUp={end} onBlur={end} min={-61} max={12} step={.1} value={send.gain?20*Math.log10(send.gain):-61} onChange={e=>update({sends:track.sends?.map(s=>s.id===send.id?{...s,gain:Number(e.target.value)<=-61?0:10**(Number(e.target.value)/20)}:s)})}/></div>
+        <div className="block"><span className="flex items-center justify-between gap-1">{t('routing.sendLevel')}<EditableNumber label={t('routing.sendLevel')} value={send.gain?Math.max(-61,20*Math.log10(send.gain)):-61} min={-61} max={12} step={.1} unit="dB" live onBegin={begin} onEnd={end} onChange={next=>update({sends:track.sends?.map(s=>s.id===send.id?{...s,gain:next<=-61?0:10**(next/20)}:s)})}/></span><input className="w-full min-h-11" aria-label={t('routing.sendLevel')} type="range" onPointerDown={begin} onPointerUp={end} onPointerCancel={end} onKeyDown={e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key))begin();}} onKeyUp={end} onBlur={end} min={-61} max={12} step={.1} value={send.gain?20*Math.log10(send.gain):-61} onChange={e=>update({sends:track.sends?.map(s=>s.id===send.id?{...s,gain:Number(e.target.value)<=-61?0:10**(Number(e.target.value)/20)}:s)})}/></div>
         <label className="flex min-h-11 items-center gap-1"><input type="checkbox" checked={send.preFader} onChange={e=>update({sends:track.sends?.map(s=>s.id===send.id?{...s,preFader:e.target.checked}:s)})}/>{t('routing.preFader')}</label>
         <button className="min-h-11" onClick={()=>update({sends:track.sends?.filter(s=>s.id!==send.id)})}>{t('routing.removeSend')}</button>
       </div>)}

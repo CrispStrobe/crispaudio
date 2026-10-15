@@ -69,7 +69,7 @@ export function ScopedEffectAutomation({ snapshot, original, scope, index, onClo
       <ToolButton icon={RotateCcw} label={t('fxInspector.clear')} disabled={blocked || !points.length} onClick={() => update([], null)}/>
     </div>
     {point && <div className="grid grid-cols-2 gap-2 items-end">
-      <label className="text-xs text-gray-400">{t('fxInspector.time')}<NumberField width="w-full block" label={t('fxInspector.time')} value={point.time} min={0} step={1 / snapshot.sampleRate} disabled={blocked} onCommit={time => edit({ time })}/></label>
+      <label className="text-xs text-gray-400">{t('fxInspector.time')}<NumberField width="w-full block" label={t('fxInspector.time')} value={point.time} min={0} step={1 / snapshot.sampleRate} scrubStep={.01} disabled={blocked} onCommit={time => edit({ time })}/></label>
       <label className="text-xs text-gray-400">{valueLabel}<NumberField width="w-full block" label={valueLabel} value={point.value} min={0} step={.001} disabled={blocked} onCommit={value => edit({ value })}/></label>
       <select className="bg-gray-800 rounded min-h-11 p-2" aria-label={t('fxInspector.segment')} disabled={blocked} value={point.curve ?? 'linear'} onChange={e => edit({ curve: e.target.value as 'linear' | 'step' })}><option value="linear">{t('automation.linear')}</option><option value="step">{t('automation.step')}</option></select>
     </div>}

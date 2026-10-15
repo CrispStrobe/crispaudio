@@ -1,0 +1,37 @@
+# Mac distribution preparation
+
+The Mac bundle contains `crispaudio-apple-media` and `crispaudio-vst3-host` beside
+the main executable. Both helpers use the same compiler recipe as the development
+and CLI helpers. A Store bundle missing a helper fails instead of extracting an
+unsigned replacement. Development/CLI execution retains the embedded fallback.
+
+The Store workflow signs helpers first, then the main app. Helpers inherit the
+parent sandbox and carry the public library-validation exception for independently
+signed plugins. The main app retains its microphone and user-selected-file rights.
+See Apple's [sandbox inheritance rules](https://developer.apple.com/library/archive/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html)
+and [library-validation entitlement](https://developer.apple.com/documentation/BundleResources/Entitlements/com.apple.security.cs.disable-library-validation).
+
+Before packaging, `scripts/release/check-macos-app.py APP --team TEAM_ID` checks
+deep signatures, matching helper teams/architectures, sandbox entitlements and an
+embedded profile. The workflow separately validates the profile's integrity,
+expiry, platform, app identifier and certificate. A fresh Apple-issued matching
+profile is still required; local ad-hoc signing does not replace it.
+
+For a local muted sandbox check after building the native-validation executable:
+
+```sh
+python3 scripts/test-macos-sandbox.py --vst3-fixture /path/to/ADelay.vst3
+```
+
+This makes an isolated hardened, ad-hoc signed sandbox app and verifies actual
+bundled helper processes, AU/VST3 wet backing, generated recording, cancellation
+and cleanup. It does not access the physical microphone or establish Store review
+acceptance. The test plugin is copied inside the app's bundle.
+
+Remaining acceptance needs a Store-signed build, selected external media and
+plugins, commercial plugin installations and external audio interfaces. Child
+processes do not automatically inherit dynamic PowerBox access; external resource
+access must be checked through the actual file-selection workflow. See Apple's
+[file access guidance](https://developer.apple.com/documentation/security/accessing-files-from-the-macos-app-sandbox).
+No Apple upload, release tag or release-workflow dispatch accompanies this local
+checkpoint.

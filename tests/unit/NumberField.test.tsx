@@ -1,5 +1,5 @@
 import {afterEach,expect,it,vi} from 'vitest';
-import {cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {NumberField} from '../../src/components/timeline/NumberField';
 afterEach(cleanup);
 function field(onCommit=vi.fn(()=>true)){
@@ -34,3 +34,6 @@ it('restores a live preview when a touch gesture is cancelled',()=>{
  render(<NumberField label="Live" value={1} min={0} max={2} step={.1} onPreview={preview} onEnd={end} onCommit={commit}/>);
  const input=screen.getByRole('spinbutton') as HTMLInputElement;input.setPointerCapture=vi.fn();pointer(input,'pointerdown',100);pointer(input,'pointermove',60);expect(preview).toHaveBeenLastCalledWith(1.5);pointer(input,'pointercancel',60);expect(preview).toHaveBeenLastCalledWith(1);expect(commit).not.toHaveBeenCalled();expect(end).toHaveBeenCalledOnce();
 });
+
+it('uses a practical touch scale without changing exact-entry precision',()=>{const commit=vi.fn(()=>true);render(<NumberField label="Seconds" value={1} min={0} step={1/48000} scrubStep={.01} onCommit={commit}/>);const input=screen.getByRole('spinbutton') as HTMLInputElement;input.setPointerCapture=vi.fn();pointer(input,'pointerdown',100);pointer(input,'pointermove',60);pointer(input,'pointerup',60);expect(commit).toHaveBeenCalledExactlyOnceWith(1.05);expect(input.step).toBe(String(1/48000));});
+it('ends a cancelled focused interaction exactly once',()=>{const end=vi.fn();render(<NumberField label="Value" value={1} step={1} onEnd={end} onCommit={()=>true}/>);const input=screen.getByRole('spinbutton');act(()=>input.focus());fireEvent.keyDown(input,{key:'Escape'});expect(end).toHaveBeenCalledOnce();});
