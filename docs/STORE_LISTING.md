@@ -11,7 +11,8 @@ input to the sound-design workflow, not the product.
 
 The current product boundary is recording, audio editing/restoration, mixing and
 finishing sound for video. CometBeat owns music composition; CrisperWeaver owns
-ASR/TTS creation. The SFX-first listing below needs a broader positioning review
+ASR/TTS creation. TTS creation is removed in 0.13.22 and ASR launch/setup in
+0.13.25; timed-transcript import and editing remain. The SFX-first listing below needs a broader positioning review
 before a new public release. Editing this file does not change live Apple metadata.
 
 ## en-US

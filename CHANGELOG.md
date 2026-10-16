@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.25 — 2026-10-16
+
+- Remove ASR launch/setup controls and their app commands; keep existing aligned projects, word editing and independent CLI compatibility.
+- Share guarded JSON/SRT/VTT import across timeline and source views, including browser/mobile file inputs. Reject late reads after project changes and capture layout guards for imported word timing.
+- Accept genuine JSON word/startTime fields; document the current CrisperWeaver cue-only export and the remaining word-export gap.
+
 ## 0.13.24 — 2026-10-16
 
 - Refresh segment-effect waveforms during continuous slider gestures instead of waiting for movement to stop.

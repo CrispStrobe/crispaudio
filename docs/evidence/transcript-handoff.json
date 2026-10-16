@@ -1,0 +1,158 @@
+{
+  "version": "0.13.25",
+  "date": "2026-10-16",
+  "scope": "Retire app ASR launch/setup; preserve guarded transcript import and speech editing",
+  "removed": [
+    "SpokenEditor ASR settings/model/executable discovery and launch",
+    "SourceTranscriptControls ASR launch",
+    "Tauri transcribe_project and crispasr_defaults app commands"
+  ],
+  "retained": [
+    "Existing aligned project transcripts and word editing",
+    "Source-clock transcript mapping and corrections",
+    "Independent media CLI transcribe-project compatibility"
+  ],
+  "handoff": {
+    "inspectedSource": "CrisperWeaver/lib/utils/file_utils.dart: FileUtils.generateJsonContent",
+    "sourceCommit": "ffa562b",
+    "sourceSHA256": "36894116a30af05c70f014190f2f2433681dee593fc572382cbfa49848346b5a",
+    "cueFields": [
+      "text",
+      "startTime",
+      "endTime",
+      "speaker",
+      "confidence"
+    ],
+    "standardExportIncludesWords": false,
+    "testInput": "Synthetic schema-matched export; not a new recognition/export session in CrisperWeaver",
+    "remainingGap": "Word-preserving CrisperWeaver export; no other repository edited"
+  },
+  "browser": {
+    "cueOnlyExportAccepted": true,
+    "wordSchemaAccepted": true,
+    "legacyControlsRemoved": true,
+    "cut": {
+      "duration": 13,
+      "tracks": [
+        [
+          [
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            2,
+            10
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            2,
+            10
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            1
+          ],
+          [
+            1,
+            2,
+            10
+          ]
+        ]
+      ],
+      "video": [
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          2,
+          4
+        ],
+        [
+          5,
+          6,
+          6
+        ]
+      ],
+      "text": "Welt",
+      "history": 1
+    },
+    "roundtrip": {
+      "projectEqual": true,
+      "sources": 3,
+      "frames": 624000,
+      "sampleRate": 48000,
+      "maxError": 7.450580596923828e-08,
+      "rms": 0.03266788430367143,
+      "videoClips": 3
+    },
+    "source": {
+      "original": [
+        [
+          "Hallo",
+          1
+        ],
+        [
+          "Welt",
+          2.1
+        ]
+      ],
+      "mapped": [
+        [
+          "Welt",
+          1.1
+        ]
+      ],
+      "history": 3
+    },
+    "sourceRoundtrip": true,
+    "germanSmallViewport": {
+      "width": 359,
+      "overflow": false
+    },
+    "physicalIOS": false,
+    "physicalAudio": false
+  },
+  "validation": {
+    "focusedTestsPassed": 24,
+    "focusedFiles": 5,
+    "fullFrontendTestsPassed": 1933,
+    "fullFrontendFiles": 195,
+    "fullSuiteSeconds": 200.65,
+    "desktopAppTestsPassed": 39,
+    "desktopAppTestsIgnored": 1,
+    "iOSRustSimulatorCheck": "pass",
+    "fullXcodeSimulatorBundleRepeated": false,
+    "lint": "pass",
+    "typescript": "pass",
+    "releaseTestsPassed": 21,
+    "listingFieldLimits": "pass",
+    "normalMacBundle": "pass",
+    "finalImportLifecycleTestsPassed": 6,
+    "localInstall": "0.13.25",
+    "strictDeepAdHocSignature": "pass",
+    "autosavesRetained": 1
+  },
+  "limitations": [
+    "Current CrisperWeaver standard JSON, SRT and VTT support cue-level editing; genuine word timing is required for word cuts.",
+    "Import cannot verify that a file was generated from the correct audio recording.",
+    "Browser and Rust checks do not establish physical iOS or new listening acceptance."
+  ],
+  "distribution": {
+    "appleUpload": false
+  }
+}

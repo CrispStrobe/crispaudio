@@ -1,3 +1,5 @@
+import {TranscriptImportButton} from './TranscriptImportButton';
+import {withTimelineTranscript} from '../../lib/importedTranscript';
 import {NumberField} from './NumberField';
 import {HelpDetails} from '../common/HelpDetails';
 import {SourcePicturePreview} from './SourcePicturePreview';
@@ -10,8 +12,7 @@ import { setPreviewProxy } from '../../lib/previewCache';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { open } from '../../lib/nativeDialog';
-import { readTextFile } from '@tauri-apps/plugin-fs';
-import { Library, Settings2, Captions, SlidersHorizontal, X, Film, Link2, Unlink, BookmarkPlus, Trash2, Scissors, Upload, Download } from 'lucide-react';
+import { Library, Settings2, Captions, SlidersHorizontal, X, Film, Link2, Unlink, BookmarkPlus, Trash2, Scissors, Download } from 'lucide-react';
 import { ToolButton } from '../common/ToolButton';
 import { SegmentEffectsPanel } from './SegmentEffectsPanel';
 import { VideoClipSettings } from './VideoClipSettings';
@@ -19,7 +20,7 @@ import { useProjectStore } from '../../stores/projectStore';
 import { videoSources, videoClips, frameTime } from '../../lib/videoEditing';
 import { linkClips, slipClips, trimClips, rippleRange, projectClips } from '../../lib/projectEdits';
 import { importVideo } from '../../lib/mediaBin';
-import { parseTranscript, transcriptSrt, saveText } from '../../lib/transcript';
+import { transcriptSrt, saveText } from '../../lib/transcript';
 import { suggestMicSections, micAutomation, type MicSection } from '../../lib/mixAutomation';
 import { isIOSApp } from '../../lib/native';
 export type WorkspaceTab='media'|'edit'|'mix'|'text';
@@ -29,7 +30,7 @@ export function TimelineWorkspace({tab,onTab,onClose}:{tab:WorkspaceTab;onTab:(t
   const [range,setRange]=useState({start:0,end:1}),[micIds,setMicIds]=useState<string[]>([]),[sections,setSections]=useState<MicSection[]>([]),[crossfade,setCrossfade]=useState(.08);
   const [pointDb,setPointDb]=useState(0),[inspectAudio,setInspectAudio]=useState(false);
   const [syncSnapshot,setSyncSnapshot]=useState(project),[trackId,setTrackId]=useState('');
-  const abort=useRef<AbortController|null>(null),fileRef=useRef<HTMLInputElement>(null),resize=useRef<{x:number;width:number}|null>(null);
+  const abort=useRef<AbortController|null>(null),resize=useRef<{x:number;width:number}|null>(null);
   useEffect(()=>()=>abort.current?.abort(),[]);
   useEffect(()=>{localStorage.setItem('crispaudio-inspector-width',String(width));},[width]);
   const ids=selection?.segmentIds??[],audio=project.tracks.flatMap(t=>t.segments).find(c=>ids.includes(c.id)),video=videoClips(project.video).find(c=>ids.includes(c.id));
@@ -105,11 +106,9 @@ export function TimelineWorkspace({tab,onTab,onClose}:{tab:WorkspaceTab;onTab:(t
         </>}
       </>}
       {tab==='text'&&<>
-        <SpokenEditor/>
-        <p className="text-gray-400">{t('workspace.textHelp')}</p>
+        <div className="flex items-center gap-1 flex-wrap"><TranscriptImportButton label={t('workspace.importText')} help={t('spoken.importHelp')} onImport={(text,snapshot)=>commit(withTimelineTranscript(snapshot,text,offset))}/><ToolButton icon={Download} label={t('workspace.exportText')} disabled={!project.transcript?.length} onClick={()=>void run(()=>saveText(transcriptSrt(project.transcript??[]),project.name,'srt'))}/></div>
         <label>{t('workspace.offset')}<NumberField label={t('workspace.offset')} min={-Infinity} step={.001} width="w-24 mx-2" value={offset} onCommit={next=>{setOffset(next);return true;}}/></label>
-        <input ref={fileRef} type="file" accept=".srt,.vtt,.json" className="hidden" onChange={e=>{const file=e.target.files?.[0];if(file)void run(async()=>{const cues=parseTranscript(await file.text(),offset);commit({...useProjectStore.getState().project,transcript:cues,transcriptLayout:undefined});});e.target.value='';}}/>
-        <div className="flex gap-2"><ToolButton icon={Upload} label={t('workspace.importText')} onClick={()=>void run(async()=>{if(native){const path=await open({multiple:false,filters:[{name:'Transcript',extensions:['srt','vtt','json']}]});if(typeof path==='string')commit({...project,transcript:parseTranscript(await readTextFile(path),offset),transcriptLayout:undefined});}else fileRef.current?.click();})}/><ToolButton icon={Download} label={t('workspace.exportText')} disabled={!project.transcript?.length} onClick={()=>void run(()=>saveText(transcriptSrt(project.transcript??[]),project.name,'srt'))}/></div>
+        <SpokenEditor/>
         <input className="w-full bg-gray-800 rounded p-2" placeholder={t('workspace.search')} aria-label={t('workspace.search')} value={filter} onChange={e=>setFilter(e.target.value)}/>
         {project.transcript?.filter(c=>c.text.toLowerCase().includes(filter.toLowerCase())).map(cue=><section className="bg-gray-950 rounded p-2 space-y-2" key={cue.id}><button className="timeline-tool" onClick={()=>{const state=useProjectStore.getState();state.setIsPlaying(false);state.setPlayheadPosition(cue.start);state.setSelection({startTime:cue.start,endTime:cue.end,segmentIds:projectClips(project).filter(c=>c.startTime<cue.end&&c.startTime+c.duration>cue.start).map(c=>c.id)});}}>{cue.start.toFixed(2)}–{cue.end.toFixed(2)} s</button><textarea className="w-full bg-gray-800 rounded p-2" aria-label={t('workspace.cue')} value={cue.text} onChange={e=>commit({...project,transcript:project.transcript?.map(c=>c.id===cue.id?{...c,text:e.target.value,words:undefined}:c)})}/><button className="timeline-tool" onClick={()=>void run(()=>{commit(rippleRange(project,cue.start,cue.end));useProjectStore.getState().setSelection(null);})}>{t('workspace.removePassage')}</button></section>)}
       </>}

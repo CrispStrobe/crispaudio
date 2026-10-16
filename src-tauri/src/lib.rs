@@ -150,8 +150,6 @@ pub fn run() {
             native_files::stage_share_file,
             native_files::persist_recording,
             media::desktop_media_available,
-            media::transcribe_project,
-            media::crispasr_defaults,
             media::probe_media,
             media::cancel_media_job,
             media::measure_loudness,

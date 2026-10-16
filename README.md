@@ -203,10 +203,12 @@ words and speaker labels, search occurrences and organize named sections.
 Generate speech and transcripts in **CrisperWeaver**, then import the audio and
 timed text into CrispAudio for editing, captions and mixing. Existing voiceovers
 remain ordinary editable audio clips. CrispAudio no longer creates text-to-speech.
-Desktop builds retain a legacy optional **CrispASR** CLI launcher; models are not
-bundled, and expanding speech recognition belongs to CrisperWeaver.
+CrispAudio no longer launches ASR or manages its executables/models. Import
+JSON, SRT or VTT on desktop, mobile or the web. CrisperWeaver’s current standard
+JSON export supplies cue times; word cuts require a genuinely word-timed JSON
+file. Imported word timing is guarded against later arrangement changes.
 
-[Speech editing and setup](docs/SPEECH_EDITING.md) · [Keep-text editing](docs/KEEP_TEXT_EDITING.md) · [Interview walkthrough](docs/INTERVIEW_WALKTHROUGH.md)
+[Transcript import and speech editing](docs/SPEECH_EDITING.md) · [Keep-text editing](docs/KEEP_TEXT_EDITING.md) · [Interview walkthrough](docs/INTERVIEW_WALKTHROUGH.md)
 
 ## Design sounds, process voices and add notes
 
@@ -253,8 +255,8 @@ shows its audio measurements and file information.
 | Desktop video export | MP4/MOV with H.264/AAC; compatible Mac encoders also support ProRes/LPCM in MOV; optional FFmpeg provides WebM paths |
 | Projects and exchange | Embedded/linked projects, portable media collection, JSON presets, SRT/VTT captions, MIDI pattern export and cut-only OTIO |
 
-The browser provides audio editing, SFX and voice tools. Video composition, local
-CrispASR integration and desktop delivery require the app. The native media backend
+The browser provides audio editing, transcript import, SFX and voice tools.
+Video composition and desktop delivery require the app. The native media backend
 uses macOS 13+; other desktop media paths may require FFmpeg/FFprobe. Some Mac
 transitions require compatible Metal hardware. Codec availability and export scopes
 vary by route; the [format matrix](docs/MEDIA_FORMATS_AND_LICENSES.md) lists the details.

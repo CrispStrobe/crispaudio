@@ -18,6 +18,28 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.25 — transcript handoff and ASR scope cleanup
+
+ASR launch/setup controls, model/executable discovery and app-side ASR commands
+are removed. Existing aligned projects and speech edits remain supported; the
+independent CLI retains its previous helper command for scripts. Timeline and
+source views share JSON/SRT/VTT import with desktop and browser/mobile pickers,
+stale-read guards, destination bounds and timeline word-layout checks.
+
+The current CrisperWeaver standard exporter supplies cue timing but omits words.
+Schema-matched cue import passes; genuine word-timed JSON enables word cuts.
+A word-preserving export remains a cross-app gap, and no CrisperWeaver code was
+changed. [Speech workflow](SPEECH_EDITING.md).
+
+All 1,933 frontend tests, 39 desktop app tests, the iOS Rust simulator check,
+lint, TypeScript, 21 release checks and listing limits pass. The normal Mac bundle
+passes and is installed locally as 0.13.25 with strict/deep ad-hoc signature
+verification and its autosave preserved. The browser workflow verifies file imports, a one-second word cut
+across three audio tracks and video, Undo/Redo, project/source-transcript reopen
+and a 624,000-frame WAV roundtrip. The 390px German workspace has no horizontal
+content overflow. These are software checks, not new physical device acceptance.
+[Checkpoint evidence](evidence/transcript-handoff.json). No Apple upload.
+
 ## Local 0.13.24 — continuous waveform feedback
 
 Segment-effect waveforms now refresh during uninterrupted slider movements.

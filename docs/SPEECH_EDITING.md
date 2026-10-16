@@ -1,100 +1,101 @@
-# Transcript editing and the legacy speech launcher
+# Import transcripts and edit speech
 
-CrisperWeaver owns speech recognition and generation. Import its timed transcripts
-and audio for word editing, captions and mixing in CrispAudio. TTS creation is
-removed in 0.13.22; existing generated audio remains editable. The optional desktop
-CrispASR launcher documented below is legacy functionality retained for now, not
-a second model-management roadmap. Its retirement/handoff is a separate follow-up.
+Create transcripts and generated speech in **CrisperWeaver**. CrispAudio imports
+the resulting audio and timed text for captions, editing and mixing. TTS creation
+was removed in 0.13.22; ASR launch/setup controls and their app commands are removed
+in 0.13.25. Existing audio and saved transcripts remain editable.
 
-Open **Timeline → Workspace → Transcript**. Choose the current audible mix or one
-microphone track. A selected microphone is transcribed even if it is muted in the
-mix; its gain, automation and effects still apply. Transcription renders the edited
-arrangement, including clip source offsets and gaps, not the original file clock.
+## Choose the matching clock
 
-On this development Mac, ASR setup detects the existing CrispASR executable and
-Cohere Q8 model. Elsewhere choose both local files under **ASR setup**, or configure
-`CRISPAUDIO_ASR_EXECUTABLE` and `CRISPAUDIO_ASR_MODEL`. Settings persist locally.
-Language defaults to `de`. `auto` alignment selects the German wav2vec2 aligner
-for `de`; the first invocation downloads it through CrispASR. A local aligner path
-or a `wav2vec2-aligner-<language>` registry alias is also accepted.
+| What was transcribed? | Import destination | Timestamp meaning |
+|---|---|---|
+| The exact current timeline mix | Workspace → Transcript → Import timed transcript | Project time; use the offset field for an exported excerpt |
+| An original recording before timeline edits | Source transcript → choose that recording → Import | Original source time, starting at zero |
 
-Click **Transcribe with CrispASR**. This desktop integration runs the installed
-CrispASR CLI without a shell. It renders linked 48 kHz mono/stereo sources through
-the native mixer, uses 15-second ASR chunks, requests full JSON and forced alignment,
-and requires word timestamps. Cancel stops the native job and its process; a
-changed arrangement cannot receive a stale transcription. The ASR executable,
-ASR models and alignment models are external, not bundled dependencies. Cohere
-Transcribe 03-2026 and the German xlsr-53 wav2vec2 alignment model have Apache 2.0
-model cards in the existing CrispASR checkout. No new codec dependency is added.
+JSON, SRT and VTT import through a desktop file picker or a browser/mobile file
+input. The source view maps original times through trims, repeats, reverse and
+speed changes. Use the current mix view only when the transcribed audio matches
+that arrangement. Neither view can detect whether you chose the correct recording.
 
-Select a word in the spoken-word editor. Use the seek button to review it, and
-inspect/correct its start and end if necessary. **Delete / Backspace** while the
-word editor is focused, or its trash button, extracts that interval and closes the
-gap across **every audio lane and the picture lane**, including lanes excluded
-from ordinary ripple edits. Video bounds expand outward to whole frames to cover
-the word; the actual cut interval is displayed. Audio-only cuts use word times
-on the audio sample clock. An adjacent word crossing the proposed frame cut, a
-locked affected lane, or a boundary inside a picture blend blocks the operation.
+Imports reject invalid timing and times beyond their destination duration. A
+changed project, replaced source or closed view cannot receive a late file read.
+A successful import is one undoable edit. Source records replace only that source's
+transcript; other source transcripts stay intact.
 
-The operation preserves source files, source offsets, AV/edit groups and unrelated
-mix settings. Later words, markers, automation and the canvas floor are retimed.
-It commits once: **Undo** restores words, sound and picture together. Word timing
-is saved with the project. Moving, slipping or otherwise rearranging audio after
-ASR invalidates its arrangement guard; transcribe again before a word cut.
+## Cue timing and word timing
 
-Caption textareas below are explicitly **text-only corrections**. Editing a cue
-clears its word alignment instead of retaining timestamps for different words.
-SRT/VTT imports have cue timing only; they cannot supply word deletion. Full
-CrispASR JSON imports retain genuine `words[].offsets` in milliseconds, not the
-legacy centisecond token fields. Saving the project retains word timings; SRT
-export retains only captions. ASR is not implemented on iOS/Android or the web.
-Saved aligned words can still be edited there; a browser viewport test does not
-validate physical iOS behavior. Alignment remains a model estimate: review cuts.
+CrisperWeaver's current standard JSON exporter writes `segments` with `text`,
+`startTime`, `endTime`, `speaker` and `confidence`. CrispAudio reads that format,
+including its disclosure-wrapped form. **That exporter currently omits words.**
+Its JSON export and SRT/VTT therefore support timed captions, search and passage
+selection, but do not provide word cuts. A word-preserving CrisperWeaver export
+remains a cross-app follow-up; it was not added by changing CrispAudio.
 
-## CLI
+For word editing, import genuine aligned word timestamps, for example:
+
+```json
+{"segments":[{"text":"Hallo Welt","startTime":1,"endTime":3,"words":[
+  {"word":"Hallo","startTime":1,"endTime":2},
+  {"word":"Welt","startTime":2.1,"endTime":3}
+]}]}
+```
+
+CrispAudio accepts `text` or `word` for each word, `start`/`end` or
+`startTime`/`endTime` in seconds, and existing CrispASR `offsets.from`/`to` in
+milliseconds. It never derives word timing by dividing subtitle duration.
+JSON's optional `crispaudioOffset` and the timeline import offset shift both
+cue and word times. Source imports use source time rather than an arrangement
+offset. Saving a project retains word times; SRT export retains cue timing only.
+
+## Cut and review
+
+Select a timed word in the speech editor. Seek to review it and correct its
+start/end when necessary. **Delete / Backspace** in the word group, or its trash
+button, extracts the interval across every audio and picture lane and closes the
+gap. Video cuts expand to whole frames. An adjacent word crossing that cut,
+a locked affected lane or a boundary inside a picture blend blocks the edit.
+
+Cuts preserve original media, AV/edit groups and unrelated mix settings. Later
+words, markers, automation and the canvas floor move with the edit. **Undo**
+restores words, sound and picture together. Genuine word-timed timeline imports
+capture an arrangement guard: moving or slipping clips afterward blocks stale
+word cuts until you import alignment for the current mix. Existing saved guards
+are retained; older projects without a guard remain readable.
+
+In Source transcript, select mapped words, choose Lift or Extract and review the
+ranges before applying. Source-word corrections and speaker labels remain on the
+original recording clock. Partial words and cuts into unselected neighbouring
+words are blocked. The original source transcript survives timeline edits.
+
+Caption text corrections change text only and clear that cue's word alignment.
+For deletion-only edits to a pasted shortened transcript, see
+[Keep-text editing](KEEP_TEXT_EDITING.md).
+
+## Existing CLI compatibility
+
+The independent media CLI retains its existing external ASR helper command for
+scripts. It is not exposed by the app and is not the recommended creation workflow:
 
 ```sh
 crispaudio transcribe-project --input interview.crispaudio \
   --output interview.words.json --executable /path/to/crispasr \
-  --model /path/to/cohere-transcribe-q8_0.gguf --language de --aligner auto
+  --model /path/to/model.gguf --language de --aligner auto
 ```
 
-Output is full CrispASR JSON, suitable for Transcript import. A document's optional
-`renderRange` is respected; `crispaudioOffset` restores its arrangement offset when
-imported. The GUI transcribes the full arrangement. To automate deletion in an
-already saved word-timed project, use `edit-project` with a recipe:
-
-```json
-[{"op":"delete-word","wordId":"the-persisted-word-id"}]
-```
-
-Native recipes use the same all-lane extraction, frame coverage, lock and adjacent
-word rules. Render that edited project as usual. Outputs do not overwrite files.
+Existing word-timed projects also support `edit-project` recipes such as
+`[{"op":"delete-word","wordId":"the-persisted-word-id"}]`. These preserve the
+same all-lane, frame, lock and neighbouring-word rules. The media CLI and its
+external tools/models retain their existing platform and license requirements.
 
 ## Validation
 
-The real Canon/H6 MVI_8251 interview supplied a 44–59 s excerpt. Cohere Q8 plus
-German wav2vec2 forced alignment produced 35 timed words. The browser test selects
-“Muslimen”, deletes it through the actual editor, checks all three microphone
-source offsets and the picture source offset, undo/redo, project round-trip and
-German phone controls. Its frame-covering cut is 44.96–45.48 s (0.52 s).
-Native `delete-word` recipe clocks agree with GUI clocks to sub-sample tolerance.
-The resulting project is rendered to WAV and MP4 for a 44–46 s review interval.
-The WAV’s 96,000 stereo frames are byte-identical to the original PCM with the
-selected interval removed. MP4 sound/picture durations are both exactly 2 seconds
-at 25 fps. Re-transcribing the edited excerpt no longer yielded “Muslimen”;
-recognition also changed nearby wording, so the exact PCM comparison is the
-stronger cut check. The final UI harness used installed headless Chrome; the external
-WebKit runtime stalled on startup after its initial word-deletion checks.
+The 0.13.25 handoff checks cover the current CrisperWeaver cue-export schema,
+genuine word JSON, caption-only formats, import cancellation, late reads,
+arrangement guards, source mapping and word deletion/Undo. The browser workflow
+uses the bundled audio/video sample, actual file inputs, project save/reopen and
+WAV encode/decode. It does not establish physical iOS acceptance or recognition
+quality. See [checkpoint evidence](evidence/transcript-handoff.json).
 
-`scripts/test-spoken-editor.mjs` reruns this with explicit private fixture paths.
-Unit tests cover imported timestamp units, missing/invalid timestamps, locked
-lanes, adjacent words, stale arrangement guards, ASR invocation and changes during
-ASR. Fixtures, recordings and derived projects stay outside git.
-
-## Keep a pasted shortened transcript (0.8.6)
-
-The same Transcript panel now accepts a draft where words or whole passages have
-been deleted. Compare the text, resolve ambiguous repeated phrases, and keep only
-the matched audio/video in one undoable edit. See
-[Keep text editing](KEEP_TEXT_EDITING.md) for exact boundaries, workflow and CLI.
+Earlier real Canon/H6 word-cut validation remains reproducible through
+`scripts/test-spoken-editor.mjs` with explicit private fixture paths. The legacy
+ASR creation checks in that history describe an older app, not the current GUI.

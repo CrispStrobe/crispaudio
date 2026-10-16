@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.24. This section is the current plan.
+Updated 2026-10-16, for local 0.13.25. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -10,8 +10,10 @@ The user's 16 October direction is recording, editing, restoration, mixing and
 audio/video finishing. CometBeat owns music composition/instruments/sequencing;
 CrisperWeaver owns ASR/TTS generation and model management. TTS creation is removed
 in 0.13.22; existing generated clips, transcript import/editing and captions remain.
-The optional legacy CrispASR launcher is still present and is a separate handoff/
-retirement task. Do not expand it or build a second music composition environment.
+ASR launch/setup and its app commands are removed in 0.13.25. Transcript import,
+word editing and old aligned projects remain. The independent CLI keeps its existing
+external-helper command for compatibility; do not expand it or build a second
+music composition environment.
 
 The [current comparison and gap inventory](docs/DAW_GAP_ANALYSIS.md) covers
 ocenaudio, Ardour, LMMS, openDAW, Waveform, MusE, REAPER and Cubase. Implemented
@@ -24,9 +26,7 @@ All audio-workstation gaps in that inventory are now accepted roadmap work by th
 user, including restoration/spectral repair, routing/input DSP, timing, session
 management, finishing and long-session streaming. Accepted does not mean implemented;
 large architecture changes need their own measured checkpoints. Effect-aware segment
-waveforms are implemented through the 0.13.24 continuous-refresh checkpoint. Next
-retire the legacy ASR launch/setup surface in favor of CrisperWeaver transcript
-import, preserving existing aligned words and projects. Then proceed with release qualification,
+waveforms are implemented through the 0.13.24 continuous-refresh checkpoint. ASR scope cleanup follows in 0.13.25. Proceed with release qualification,
 complete-session acceptance, audible recording
 count-in/pre-roll, physical-device checks when available and native plug-in
 usability, in the accepted order. The gap document records the larger follow-up
@@ -34,6 +34,13 @@ sequence and acceptance boundaries. Historical “completed” entries below des
 bounded increments, not a finished state-of-the-art DAW. MIDI/composition expansion
 is outside this app's active scope. Long-session paging/streaming is accepted in
 the final scale phase; additional codec expansion has no new priority.
+
+Local 0.13.25 removes the ASR launch/setup GUI and app bridge. Shared guarded
+transcript import supports desktop and browser/mobile file selection, preserves
+source and project clocks and adds a layout guard for genuine word-timed mix
+imports. The current CrisperWeaver standard JSON exporter omits words: its cues
+work now, while a word-preserving export remains an explicit cross-app gap. Do
+not claim complete word-level CrisperWeaver roundtrip until that exporter exists.
 
 Local 0.13.24 samples ongoing slider edits every 120 ms between serialized renders.
 It keeps the last processed waveform visible with FX… until the latest rack is

@@ -766,3 +766,16 @@ it must not interrupt playback or capture. Native inserts and clips beyond the
 by eight entries / 32 MiB; track/bus/master FX and out-of-clip tails are excluded.
 The full audio-workstation gap inventory is now accepted roadmap work; see active
 PLAN and docs/DAW_GAP_ANALYSIS.md rather than historical paging deferrals.
+
+## Transcript handoff (0.13.25)
+
+The app no longer discovers ASR executables/models or exposes transcribe_project /
+crispasr_defaults. Keep the independent media CLI helper compatible. Use shared
+TranscriptImportButton for desktop and browser/iOS file inputs; reject late reads
+against the captured project, source and view lifetime. importedTranscript.ts
+validates destination bounds and records speechLayout for genuine word-timed mix
+imports. Source imports retain the original clock. Do not infer words from cues:
+CrisperWeaver's current standard JSON exporter omits them. Its cue schema imports
+successfully; word-preserving export remains a cross-app task. Source word records
+must pass project roundtrip validation before commit. Old ASR preferences are
+inert and ignored; do not delete user model files during this cleanup.

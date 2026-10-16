@@ -1,6 +1,6 @@
 # CrispAudio: product boundary and audio workstation gaps
 
-Reviewed 16 October 2026 against local 0.13.24 and current official product pages.
+Reviewed 16 October 2026 against local 0.13.25 and current official product pages.
 This is a workflow and architecture comparison, not a claim of feature parity or
 an independent listening/performance benchmark. Competitor editions differ.
 
@@ -15,9 +15,10 @@ an independent listening/performance benchmark. Competitor editions differ.
 TTS creation is removed from CrispAudio in 0.13.22, including its server settings,
 iOS synthesis commands and menus. Existing generated audio is ordinary source
 media and remains editable. Transcript import, correction, captions and word-based
-editing stay in CrispAudio. Its existing optional CrispASR launcher is still legacy
-functionality: retire or replace its launch/setup surface in a separate migration;
-do not expand it into another speech application. Existing MIDI utilities remain,
+editing stay in CrispAudio. ASR launch/setup and app commands are removed in
+0.13.25; guarded transcript import replaces them. The independent CLI retains
+its existing external-helper command for compatibility, with no new generation
+roadmap. Existing MIDI utilities remain,
 but instrument tracks, beat sequencing and a second composition environment are
 outside the active plan. SFX creation and Voice processing remain existing audio
 and sound-design tools; no new synthesizer/composition roadmap is implied.
@@ -65,15 +66,15 @@ continuous-refresh checkpoint; continue the execution order below.
 | Mastering precision | Partial | LUFS/estimated true-peak analysis and a sample-peak limiter exist. A true-peak limiter, dither/noise-shaping choices and systematic resampling/stretch quality qualification remain. |
 | Large sessions | Partial, architectural gap | GUI PCM is memory-resident; native snapshots and recording backing have explicit budgets. Long-file streaming, scalable waveform caches and native seek preparation require measured redesign. Streaming/paging is accepted in the scale phase; first measure real sessions and define memory/seek budgets. |
 | Cross-platform/native hardware behavior | Partial | Mac is the qualified native-hosting path. Physical iOS, commercial plug-ins, external interfaces and Windows/Linux media/hosting parity need separate acceptance. |
-| Cross-app exchange | Basic file exchange present | Define and test a portable stem/timing/marker contract with CometBeat and a transcript/audio handoff with CrisperWeaver. Do not add a second model manager or generation service. |
+| Cross-app exchange | Basic file exchange present | Define and test a portable stem/timing/marker contract with CometBeat. CrisperWeaver cue JSON imports work; its current standard exporter omits words, so word-preserving export/handoff remains pending. Do not add a second model manager or generation service. |
 
 ## Execution order
 
 1. **Release qualification and scope cleanup.** Keep the current CI run alive long
    enough to finish, refresh Apple state, remove TTS creation and retain old audio.
-   Update release notes and listing drafts; publish no new parity claims. Next retire
-   the legacy ASR launch/setup surface in favor of a verified CrisperWeaver import
-   workflow, retaining existing aligned transcripts and word editing.
+   Update release notes and listing drafts; publish no new parity claims. ASR launch/setup is retired in 0.13.25, retaining existing aligned transcripts
+   and word editing. Cue import is verified against the current CrisperWeaver
+   export schema; its missing word export remains a separate cross-app task.
 2. **Complete-session acceptance.** Exercise audio-only editing, sound-for-video,
    recording/comping, reopen and actual saved-file review on desktop/touch.
    Capture concrete defects and fix those before adding controls.
