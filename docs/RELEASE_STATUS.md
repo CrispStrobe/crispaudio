@@ -18,6 +18,34 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.31 — restoration quality and frequency selection
+
+Restoration uses a logarithmic frequency axis including DC. Display bins, band
+shading and mouse/touch selection share one mapping; cancelled touch gestures
+restore the previous band. Other spectrograms keep their linear defaults. Captions
+reflect the selected window and colour floor. The German 390 px layout fits.
+
+Nonstationary deterministic fixtures cover changing voice-like envelopes,
+percussion and sweeps, plus mains removal at 8–192 kHz. The repeatable
+[quality report](evidence/source-restoration-material.json) includes clean-signal
+damage. Declipping improvements are modest on noisy/transient fixtures (about
+0.5–1.1 dB), unlike the sweep (about 27 dB). These are synthetic reference-error
+measurements; real recordings and physical listening remain unqualified.
+
+Frontend: **2,003 tests pass in 205 files**. Lint, TypeScript/web build and 21 release
+checks pass. Browser checks cover actual mouse and CDP touch band selection/cancel,
+real restoration workers, stale/cancel handling, unchanged channels/ranges,
+one Undo/Redo, retained originals, temporary float WAV bytes, linked reopen and
+render. Native storage is fixture-bridged; native plug-in DSP and physical iOS
+are not qualified by those browser checks. No new Apple upload or release tag.
+
+The normal macOS debug bundle passes (1m 41s; existing Rust dead-code warnings).
+Local 0.13.31 is installed/reopened, strict/deep ad-hoc signature verified and the
+one autosave retained, with a recovery backup. Rust logic is unchanged apart from
+the version; no new full Rust suite, iOS build or physical-device check is claimed.
+
+Native input FX/cue routing remains the next accepted implementation area.
+
 ## Local 0.13.30 — bounded source restoration and audition level
 
 Source Editor offers cancellable de-hum, selected-band spectral attenuation and

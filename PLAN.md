@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.30. This section is the current plan.
+Updated 2026-10-16, for local 0.13.31. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -35,6 +35,15 @@ bounded increments, not a finished state-of-the-art DAW. MIDI/composition expans
 is outside this app's active scope. Long-session paging/streaming is accepted in
 the final scale phase; additional codec expansion has no new priority.
 
+Local 0.13.31 qualifies nonstationary deterministic material: voice-like envelopes,
+percussion and sweeps, including clean-signal damage and de-hum at 8–192 kHz.
+These are synthesized fixtures, not real-recording/listening acceptance. Declip
+improvement is modest on noisy/transient fixtures; the conservative limits remain.
+The restoration graph uses a logarithmic axis to expand low-frequency selection,
+with matching shading, mouse/touch input and exact numeric bounds.
+Next: native input FX/cue routing; continue real-material listening acceptance,
+spectral healing, drift tracking and automatic loudness matching as separate work.
+
 Local 0.13.30 adds bounded offline restoration: mains/harmonic notch filtering,
 selected time/frequency-band attenuation and short hard-clip reconstruction. Worker
 requests are cancellable and stale results rejected; static source boundaries,
@@ -45,8 +54,8 @@ These are scoped tools: spectral attenuation is not spectral healing/inpainting;
 clipped runs beyond 2 ms or unsuitable context are skipped. No universal quality
 or varied-material listening qualification is claimed. Automatic loudness matching,
 full live source FX and further restoration quality/selection workflows remain.
-Next: qualify varied-material restoration and improve spectral editing where
-measurements justify it, then native input FX/cue routing in the accepted order.
+The following 0.13.31 checkpoint adds varied synthetic-material checks and improves
+frequency selection; native input FX/cue routing remains next in the accepted order.
 
 Local 0.13.29 adds source channel/polarity operations and bounded manual click
 repair to the same preview/A-B/Apply workflow. Stereo swap, dual-mono average and

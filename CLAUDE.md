@@ -886,3 +886,12 @@ or actual native plug-in DSP qualification is added. See docs/RESTORATION.md.
 
 Integer-PCM full-scale plateaus are accepted within a small ceiling tolerance;
 non-flat ordinary peaks and isolated single-sample candidates are skipped.
+
+### Restoration qualification (0.13.31)
+
+`node scripts/qualify-source-restoration.mjs` runs nonstationary synthetic DSP
+fixtures without audio hardware or network media. It owns an isolated temporary
+Vite cache; do not share optimizer caches with a running app dev server. Spectral
+restoration uses a log1p frequency axis including DC; rendering, overlays and
+pointers share frequencyAxis helpers. Other spectrograms retain linear defaults.
+Keep real-recording/listening and native-input/cue qualification separate.

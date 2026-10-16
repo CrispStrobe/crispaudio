@@ -1,0 +1,81 @@
+{
+  "scope": "Original deterministic synthetic signals, not real speech/instrument recordings or listening acceptance. DSP unchanged by this qualification.",
+  "command": "node scripts/qualify-source-restoration.mjs",
+  "measurements": [
+    {
+      "tool": "dehum",
+      "material": "voice-like envelopes and changing pitch",
+      "rate": 8000,
+      "interiorErrorImprovementDb": 44.0148481377406
+    },
+    {
+      "tool": "dehum",
+      "material": "voice-like envelopes and changing pitch",
+      "rate": 44100,
+      "interiorErrorImprovementDb": 44.58781766423889
+    },
+    {
+      "tool": "dehum",
+      "material": "voice-like envelopes and changing pitch",
+      "rate": 48000,
+      "interiorErrorImprovementDb": 44.63982821993539
+    },
+    {
+      "tool": "dehum",
+      "material": "voice-like envelopes and changing pitch",
+      "rate": 96000,
+      "interiorErrorImprovementDb": 44.8182051961297
+    },
+    {
+      "tool": "dehum",
+      "material": "voice-like envelopes and changing pitch",
+      "rate": 192000,
+      "interiorErrorImprovementDb": 44.871553826200426
+    },
+    {
+      "tool": "spectral",
+      "material": "voice",
+      "rate": 48000,
+      "interiorErrorImprovementDb": 23.88402547288283,
+      "cleanSignalRelativeErrorEnergy": 0.00002458917460140986
+    },
+    {
+      "tool": "declip",
+      "material": "voice",
+      "rate": 48000,
+      "errorImprovementDb": 1.0843185715296073,
+      "repaired": 184,
+      "skipped": 1005
+    },
+    {
+      "tool": "spectral",
+      "material": "percussion",
+      "rate": 48000,
+      "interiorErrorImprovementDb": 23.606863496217212,
+      "cleanSignalRelativeErrorEnergy": 0.00029428009771944187
+    },
+    {
+      "tool": "declip",
+      "material": "percussion",
+      "rate": 48000,
+      "errorImprovementDb": 0.49807446746649914,
+      "repaired": 105,
+      "skipped": 348
+    },
+    {
+      "tool": "spectral",
+      "material": "chirp",
+      "rate": 48000,
+      "interiorErrorImprovementDb": 23.999999664255796,
+      "cleanSignalRelativeErrorEnergy": 4.004064448646817e-15
+    },
+    {
+      "tool": "declip",
+      "material": "chirp",
+      "rate": 48000,
+      "errorImprovementDb": 26.96572873987893,
+      "repaired": 1696,
+      "skipped": 9
+    }
+  ]
+}

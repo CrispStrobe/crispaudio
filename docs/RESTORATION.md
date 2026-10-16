@@ -30,7 +30,10 @@ It does not estimate or track drifting mains automatically.
 ## Spectral attenuation
 
 Select time ranges in the source waveform. Drag vertically in the spectrogram to
-choose a frequency band, or enter its bounds and reduction. The graph joins the
+choose a frequency band, or enter its bounds and reduction. The logarithmic
+frequency axis expands bass/midrange detail while keeping 0 Hz selectable. Cancelled
+mouse/touch gestures restore the previous band; exact numeric bounds remain available.
+The graph joins the
 selected time portions and shows the first chosen channel; processing respects
 your channel choice. The highlighted band affects all selected time portions.
 
@@ -63,8 +66,19 @@ spectral-band attenuation, hard-clip error and headroom. Browser checks cover re
 workers, cancellation, unchanged channels/ranges, retained originals, float WAV,
 linked project reopen, render, parameter metadata and Undo/Redo. These measurements
 are specific to synthetic fixtures; varied recordings and physical listening remain
-separate acceptance work. No parity with mature dedicated restoration suites is
-claimed. See [the gap inventory](DAW_GAP_ANALYSIS.md) for the remaining work.
+separate acceptance work. Additional nonstationary fixtures cover changing voice-like
+envelopes, percussion and pitch sweeps. Run `node scripts/qualify-source-restoration.mjs`
+for a repeatable report ([checked results](evidence/source-restoration-material.json)).
+At 8–192 kHz, de-hum improves interior reference error by roughly 44 dB. A 24 dB
+band reduction improves interior error by about 24 dB on these fixtures; clean-signal
+error energy is also checked. These are time-domain reference-error measurements,
+not perceptual quality scores. The voice-like signal is synthesis, not speech.
+
+Declipping improves reference error by only about **0.5 dB for percussion** and
+**1.1 dB for the noisy voice-like signal**, compared with **27 dB for the sweep**.
+Many candidate peaks are deliberately skipped. Check A/B carefully; do not expect
+large or audible recovery on arbitrary damaged recordings. No parity with mature
+dedicated restoration suites is claimed. See [the gap inventory](DAW_GAP_ANALYSIS.md) for the remaining work.
 
 Integer-PCM full-scale plateaus are accepted within a small ceiling tolerance;
 non-flat ordinary peaks and isolated single-sample candidates are skipped.

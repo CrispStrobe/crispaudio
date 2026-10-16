@@ -73,6 +73,9 @@ selection/source/settings changes discard in-flight work. Expand **Audition** fo
 a separate editable listening level shared by A/B. Hot float sources get sample-peak
 headroom; this changes monitoring only, without automatic loudness matching.
 
+Frequency selection uses a logarithmic graph with matching mouse/touch band dragging
+and exact numeric bounds. Cancellation restores the previous band.
+
 See [Restoration tools and limits](RESTORATION.md) before using these on a recording.
 
 ## Measure and use native effects

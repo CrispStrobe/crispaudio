@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.31 — 2026-10-16
+
+- Expand low-frequency detail in the restoration spectrogram with a logarithmic frequency axis. Band shading, mouse/touch dragging and exact numeric bounds share the same mapping; cancelled gestures restore the previous band.
+- Show the selected FFT window and colour floor accurately in spectrogram captions.
+- Add repeatable restoration quality checks for changing voice-like envelopes, percussion and sweeps, including clean-signal damage and multiple sample rates. Document the much smaller declipping gains on noisy/transient material.
+
 ## 0.13.30 — 2026-10-16
 
 - Add cancellable source restoration previews: mains/harmonic de-hum, selected-band spectral attenuation and conservative reconstruction of short hard-clipped peaks.
