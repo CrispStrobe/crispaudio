@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.15. This section is the current plan.
+Updated 2026-10-16, for local 0.13.16. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -118,6 +118,12 @@ Local 0.13.15 reuses that editor for built-in clip/master effects with readable
 curves follow moves, nudges, slides and paste. Speed scaling preserves valid
 Linear/Step values at project zero.
 [Built-in curve checks](docs/evidence/builtin-parameter-curve-editor.json).
+Local 0.13.16 adds compact inspector range selection/copy/paste, numeric bounds,
+mouse/touch dragging, playhead paste and time stretching. Built-in clip/master
+inspectors share track-lane clipboards; native compatibility includes plug-in,
+address and parameter range. Local drafts, boundary guards and one Apply/Undo
+remain in place.
+[Curve range checks](docs/evidence/curve-range-tools.json).
 Continuous native input DSP remains future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 

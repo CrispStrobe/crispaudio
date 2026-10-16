@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.16 — 2026-10-16
+
+- Select curve ranges with a mouse, touch or numeric start/end fields from the inspector’s compact “…” menu.
+- Copy and paste built-in clip/master curves using the same clipboards as track lanes. Native copies match the plug-in, parameter and reported range.
+- Paste at the playhead or stretch into a selected interval, with one-sample exterior guards and one Undo on Apply. Clipboard and selection changes leave project history intact.
+- Keep menu keyboard navigation from triggering timeline shortcuts; cancelled range gestures restore the selection.
+
 ## 0.13.15 — 2026-10-16
 
 - Give built-in clip/master effects the same visual curve editor as native inserts, with touch/pen dragging, keyboard controls and editable percentages, milliseconds and Hz.

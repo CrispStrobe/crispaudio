@@ -75,7 +75,11 @@ Readable number formatting leaves untouched stored values at full precision.
 Drafts publish only on Apply, as one Undo. To record, expand Record pass, arm
 Touch, Latch or Write before playback; stop, review, Use pass and Apply. Clear removes the
 curve and restores the static knob. Saved curves also run in Preview and GUI
-exports. Native Live samples curves once per worker block (normally 512 frames);
+exports. The inspector’s “…” menu selects, copies and pastes time ranges. Copies from
+native parameters match plug-in ID, parameter address and reported range across
+compatible clip/track/master inserts. Playhead paste keeps the copied duration;
+fit-to-range stretches time. The draft protects outside values with one-sample
+guards and Apply creates one Undo. Native Live samples curves once per worker block (normally 512 frames);
 Preview/export bridges sample once per 4096-frame block. Curves use absolute
 project time with held ends and Linear/Step segments, compensating upstream
 latency. Native history preparation can use larger blocks. These are block updates, not sample-accurate parameter events. Static

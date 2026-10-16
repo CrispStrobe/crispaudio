@@ -1,0 +1,48 @@
+{
+  "version": "0.13.16",
+  "date": "2026-10-16",
+  "behavior": [
+    "Compact inspector overflow menu for range mode, curve copy, playhead paste and fit to selected interval",
+    "Mouse/touch/pen range selection and numeric start/end; cancellation, Escape and focus loss restore the prior selection",
+    "Built-in clip/master inspectors share the existing track-lane effect clipboards; native session clipboard matches plug-in ID, address and reported min/max",
+    "Relative copied endpoints retain Linear/Step and static fallback; paste stretches time only and reuses recorded-pass one-sample exterior guards",
+    "Clipboard and selection do not change project history; paste stays a local draft until one Apply/Undo; invalid/incompatible/out-of-bounds operations remain guarded",
+    "Overflow menus consume keyboard events so Delete/arrows do not reach timeline shortcuts"
+  ],
+  "validation": {
+    "status": "complete",
+    "targeted": "84 tests passed in five files, including existing capture guards, both editors, menu and range model",
+    "targetedLog": "/tmp/crispaudio-range-targeted-final2.log",
+    "browser": "PASS four German Chromium cases: built-in/native \u00d7 desktop/touch; actual CDP touch range drag, relative copy, fit paste, local draft, one Undo, 44px menu targets, Escape keeps inspector, no horizontal overflow",
+    "browserScript": "scripts/test-curve-range-tools.mjs",
+    "browserLog": "/tmp/crispaudio-curve-range-browser-final2.log",
+    "screenshots": [
+      "/tmp/crispaudio-curve-range-builtin-touch.png",
+      "/tmp/crispaudio-curve-range-builtin-desktop.png",
+      "/tmp/crispaudio-curve-range-native-touch.png",
+      "/tmp/crispaudio-curve-range-native-desktop.png"
+    ],
+    "frontendLog": "/tmp/crispaudio-curve-range-frontend-final2.log",
+    "typecheck": "Standalone PASS and final Mac bundle frontend typecheck PASS",
+    "lintLog": "/tmp/crispaudio-curve-range-lint-final2.log",
+    "release": "21 passed /tmp/crispaudio-curve-range-release.log",
+    "macBuildLog": "/tmp/crispaudio-01316-build-final2.log",
+    "scope": "Frontend editing only; native DSP/bridge unchanged. Local native media/app/iOS checks from 0.13.12 remain applicable; no hardware or commercial plug-in acceptance claimed.",
+    "lint": "PASS; menu availability uses React state instead of reading gesture/validity refs during render",
+    "frontend": {
+      "result": "PASS",
+      "tests": 1879,
+      "files": 188,
+      "options": "maxWorkers=2; testTimeout=20000; repository options unchanged",
+      "durationSeconds": 139.14
+    },
+    "macBuild": "Final normal debug Mac bundle PASS",
+    "installation": "0.13.16 installed/running; strict/deep signature PASS; one autosave retained; previous app and live/quiescent session backed up"
+  },
+  "limits": [
+    "Range mode selects time only; return to Edit points for point dragging",
+    "Native clipboard is session-only and does not convert incompatible plug-in parameter domains",
+    "Manual visual drafts affect playback only after Apply",
+    "Existing native block-based automation, physical device acceptance and continuous input DSP limits remain"
+  ]
+}

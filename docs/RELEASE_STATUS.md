@@ -5,6 +5,16 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.16 — inspector curve range tools
+
+The inspector’s “…” menu exposes range selection, copy, playhead paste and fit to
+range. Mouse/touch range dragging and numeric bounds show a selection band.
+Built-in inspectors share clipboards with track lanes; native copies require the
+same plug-in, parameter and reported range. Paste uses one-sample exterior guards
+and stays a local draft until Apply. Cancelled gestures restore the selection;
+menu keys stay isolated from timeline shortcuts. No native DSP or Apple upload.
+[Validation evidence](evidence/curve-range-tools.json).
+
 ## Local 0.13.15 — built-in curves and clip editing
 
 Built-in clip/master inspectors now share native inserts’ visual editor, with

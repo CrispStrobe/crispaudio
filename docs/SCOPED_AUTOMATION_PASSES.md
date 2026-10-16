@@ -8,6 +8,16 @@ Shift makes larger steps. Choose Linear or Step, delete points or clear the curv
 to restore the static knob. Edits stay local until Apply and cancelled gestures
 restore the previous draft. The info button explains the curve’s project clock.
 
+Use **… → Select range** to drag a time interval or type its start/end. While
+range mode is active, Copy captures that interval; otherwise it captures the
+whole clip or project. **Edit points** returns to point editing. Paste at playhead
+keeps the copied duration; Fit paste to range stretches time into the selected
+interval. Both replace only that interval with one-sample exterior guards and
+stay local until Apply. Built-in inspectors share the compatible track-lane
+clipboard, including static values from empty curves. Native copies match the
+same plug-in, parameter address and reported range. Clipboards last for the app
+session and are independent of project Undo.
+
 To record, expand Record pass. Touch records while a control is held; Latch
 continues after release; Write starts at playback start (or clip start when later).
 Arm before playback, use the inspector transport and move the value slider.

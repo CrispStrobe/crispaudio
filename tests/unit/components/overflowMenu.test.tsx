@@ -30,6 +30,10 @@ describe('toolbar overflow menu', () => {
     fireEvent.click(trigger);fireEvent.keyDown(screen.getByRole('menu'), { key: 'Tab' });
     expect(screen.queryByRole('menu')).toBeNull();
   });
+  it('keeps menu keystrokes from reaching timeline shortcuts', () => {
+    const shortcut=vi.fn();window.addEventListener('keydown',shortcut);
+    try{render(<OverflowMenu label="More"><button role="menuitem">Action</button></OverflowMenu>);fireEvent.click(screen.getByRole('button',{name:'More'}));fireEvent.keyDown(screen.getByRole('menuitem'),{key:'Delete'});fireEvent.keyDown(screen.getByRole('menuitem'),{key:'ArrowRight'});expect(shortcut).not.toHaveBeenCalled();}finally{window.removeEventListener('keydown',shortcut);}
+  });
   it('remains keyboard-dismissible when every action is disabled', () => {
     render(<OverflowMenu label="More"><button role="menuitem" disabled>Unavailable</button></OverflowMenu>);
     fireEvent.click(screen.getByRole('button', { name: 'More' }));

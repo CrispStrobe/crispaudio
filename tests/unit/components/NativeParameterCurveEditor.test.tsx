@@ -71,3 +71,11 @@ it('replaces an invalid numeric draft when returning to graph edits',()=>{
 it('keeps fractional point indices invalid and clears stale numeric drafts on a new graph selection',()=>{
  open();const index=number('fxInspector.point','1.5');expect(index).toHaveAttribute('aria-invalid','true');expect(screen.getByRole('button',{name:'fxInspector.apply'})).toBeDisabled();act(()=>index.focus());fireEvent.keyDown(index,{key:'Escape'});number('fxInspector.point','1');number('fxInspector.value (dB)','100');const svg=graph();pointer(svg,'pointerdown',444,46);pointer(svg,'pointerup',444,46);expect(screen.getByRole('spinbutton',{name:'fxInspector.value (dB)'})).toHaveValue(3);expect(screen.getByRole('button',{name:'fxInspector.apply'})).toBeEnabled();
 });
+
+function menu(action:string){vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});fireEvent.click(screen.getByRole('button',{name:'curveRange.actions'}));fireEvent.click(screen.getByRole('menuitem',{name:action}));}
+it('copies a native interval and pastes a guarded draft without changing opaque state or other lanes',()=>{
+ const {snapshot}=open();menu('curveRange.select');number('curveRange.start','1');number('curveRange.end','2');menu('curveRange.copy');number('curveRange.end','4');number('curveRange.start','3');menu('curveRange.fit');expect(useProjectStore.getState().project).toBe(snapshot);fireEvent.click(screen.getByRole('button',{name:'fxInspector.apply'}));expect(effect().parameterAutomation!.gain.points.find(p=>p.time===3)?.value).toBe(.25);expect(effect().parameterAutomation!.gain.points.find(p=>p.time===4)?.value).toBe(.5);expect(effect().parameterAutomation!.other).toEqual(fx().parameterAutomation!.other);expect(effect().state).toBe('opaque');expect(useProjectStore.temporal.getState().pastStates).toHaveLength(1);
+});
+it('matches native clipboard to plug-in, address and reported range',()=>{
+ open();menu('curveRange.copy');cleanup();const other=fixture();other.nativeEffects![0].pluginId='au:other';open('master',other);vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});fireEvent.click(screen.getByRole('button',{name:'curveRange.actions'}));expect(screen.getByRole('menuitem',{name:'curveRange.paste'})).toBeDisabled();
+});

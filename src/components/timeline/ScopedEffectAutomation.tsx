@@ -13,6 +13,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { Modal } from '../common/Modal';
 import { InfoButton } from '../common/InfoButton';
 import { ToolButton } from '../common/ToolButton';
+import type {EffectEnvelope} from '../../lib/effectEnvelope';
 import { ParameterCurveEditor } from './ParameterCurveEditor';
 
 export function ScopedEffectAutomation({ snapshot, original, scope, index, onClose }: { snapshot: TimelineProject; original: EffectConfig; scope: string; index: number; onClose: () => void }) {
@@ -40,7 +41,7 @@ export function ScopedEffectAutomation({ snapshot, original, scope, index, onClo
       <select className="bg-gray-800 rounded min-h-11 p-2" aria-label={t('fxInspector.parameter')} disabled={blocked || editing || !validDraft} value={parameter} onChange={e => { setParameter(e.target.value as typeof parameter); setValidDraft(true); }}>{parameters.map(key => <option key={key} value={key}>{t(`timeline.effectParams.${key}`)}</option>)}</select>
     </div>
     <div className="flex justify-end gap-2"><ToolButton icon={RotateCcw} label={t('fxInspector.clear')} disabled={blocked||editing||!points.length} onClick={()=>{update([]);setValidDraft(true);}}/><InfoButton label={t('fxInspector.title')}><p>{t('fxInspector.help')}</p></InfoButton></div>
-    <ParameterCurveEditor key={parameter} points={points} fallback={fallback} min={0} max={maximum*displayScale} storageMax={maximum} unit={unit} duration={timelineDuration(snapshot)} rate={snapshot.sampleRate} clip={scope.startsWith('clip:')?{start:target.start,end:target.end}:undefined} disabled={blocked} onChange={update} onBusy={setEditing} onValidity={setValidDraft} playhead={()=>useProjectStore.getState().playheadPosition}/>
+    <ParameterCurveEditor key={parameter} points={points} fallback={fallback} min={0} max={maximum*displayScale} storageMax={maximum} domain={{kind:'builtin',effectType:original.type as EffectEnvelope['effectType'],parameter}} unit={unit} duration={timelineDuration(snapshot)} rate={snapshot.sampleRate} clip={scope.startsWith('clip:')?{start:target.start,end:target.end}:undefined} disabled={blocked} onChange={update} onBusy={setEditing} onValidity={setValidDraft} playhead={()=>useProjectStore.getState().playheadPosition}/>
     <details onToggle={e=>setRecordOpen(e.currentTarget.open)} data-scoped-record-section><summary className="min-h-11 content-center cursor-pointer">{t('fxInspector.recordPass')}</summary>{recordOpen&&<fieldset disabled={editing||!validDraft}><ScopedAutomationRecorder key={`${scope}:${index}:${parameter}`} snapshot={snapshot} scope={scope} index={index} parameter={parameter} points={points} fallback={fallback} onDraft={update} onBusy={setPassBusy}/></fieldset>}</details>
     {blocked && <p role="status" className="text-amber-300">{t(current !== snapshot ? 'fxInspector.stale' : 'fxInspector.protected')}</p>}{error && <p role="alert" className="text-red-300">{error}</p>}
     <div className="flex justify-end gap-2"><button className="timeline-tool" onClick={onClose}>{t('common.cancel')}</button><button className="timeline-tool" disabled={blocked||editing||!validDraft} onClick={apply}>{t('fxInspector.apply')}</button></div>

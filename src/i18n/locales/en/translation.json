@@ -1884,7 +1884,7 @@
     "stale": "The project changed. Reopen this inspector.",
     "protected": "Recording or a track lock protects this effect.",
     "invalid": "Invalid automation.",
-    "help": "Drag points with a mouse or touch, or select a point number and edit its time and value. Arrow keys adjust the selected point; Shift makes larger adjustments. Times use the project clock; shading marks the clip. Apply creates one undo step. Clear restores the static parameter. Moving or pasting a clip moves its curves with the audio.",
+    "help": "Drag points with a mouse or touch, or select a point number and edit its time and value. Arrow keys adjust the selected point; Shift makes larger adjustments. Times use the project clock; shading marks the clip. Apply creates one undo step. Clear restores the static parameter. Moving or pasting a clip moves its curves with the audio. Use the … menu to select a range, then drag across the graph or edit its start/end. Copy uses that range, or the full clip/project when selection is off. Paste replaces only the destination interval; Fit stretches time to the selected range. Built-in clip/master inspectors share the track-lane clipboard.",
     "recordPass": "Record pass",
     "usePass": "Use pass",
     "passHelp": "The pass stays in this draft until Apply. Closing or cancelling discards it; recorded times use the project clock."
@@ -2255,7 +2255,7 @@
   "nativeRack": {
     "rangeChanged": "This plug-in reports a different parameter range. Clear the saved curve before recording a new pass.",
     "automation": "Parameter automation",
-    "automationHelp": "Tap the curve to add a point; drag points or enter time and values below. Choose Linear or Step for the segment after a point. Apply saves the draft as one Undo step. Dense captures use a simplified overview; the point index reaches every stored point. Record pass opens Touch/Latch/Write controls for Mac Live playback. Saved curves also run in Preview and export; Clear returns to the static knob.",
+    "automationHelp": "Tap the curve to add a point; drag points or enter time and values below. Choose Linear or Step for the segment after a point. Apply saves the draft as one Undo step. Dense captures use a simplified overview; the point index reaches every stored point. Record pass opens Touch/Latch/Write controls for Mac Live playback. Saved curves also run in Preview and export; Clear returns to the static knob. Use the … menu to select a range, then drag across the graph or edit its start/end. Copy uses that range, or the full clip/project when selection is off. Paste replaces only the destination interval; Fit stretches time to the selected range. Native copies match the same plug-in, parameter address and reported range.",
     "title": "Native plug-ins",
     "macOnly": "Native plug-in parameters require the Mac app.",
     "help": "Inserts run after built-in effects. Mac playback and export include them. Live mode allows parameter and bypass changes during playback.",
@@ -2287,5 +2287,17 @@
     "liveHelp": "Live runs AU/VST3 effects continuously. Mixer controls, plug-in parameters and supported track, clip and master effect knobs update during playback. Pause retains state; seeking rebuilds history.",
     "liveLimits": "Rack changes and other built-in effect settings restart playback. Audio runs at 48 kHz. Microphone recording uses a prepared wet backing and dry monitoring. Monitor clicks and live plug-in input monitoring remain unavailable.",
     "shortLoop": "This loop is too short for Live native effects. Select Preview to audition loops shorter than 43 ms."
+  },
+  "curveRange": {
+    "actions": "Curve actions",
+    "select": "Select range",
+    "close": "Edit points",
+    "start": "Range start (s)",
+    "end": "Range end (s)",
+    "copy": "Copy curve",
+    "paste": "Paste at playhead",
+    "fit": "Fit paste to range",
+    "copied": "Curve copied",
+    "pasted": "Pasted into draft"
   }
 }

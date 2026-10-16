@@ -143,6 +143,11 @@ plug-in’s units, then choose Linear or Step. Apply saves the draft with one Un
 For recorded passes, expand Record pass, arm Touch, Latch or Write, play and
 adjust, then stop to review and Apply. Dense curves show an overview; the point
 index reaches every stored point.
+Use the inspector’s **…** menu to select a range, then drag across the graph or
+enter its start/end. Copy that curve, paste at the playhead, or fit it to another
+range. Built-in inspectors share clipboards with track lanes. Native copies match
+the same plug-in, parameter and range. Paste stays in the draft until Apply and
+protects the surrounding curve with one-sample guards.
 Curves are saved with the project and run in Live, Preview and GUI export.
 Clip curves follow moves, nudges, paste and speed changes. Splits, trims and
 source slips preserve curves at their existing timeline positions. Ripple edits

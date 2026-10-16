@@ -56,7 +56,8 @@ export function OverflowMenu({ label, text, children }: { label: string; text?: 
       className="toolbar-overflow-menu fixed z-[1000] select-none p-2 rounded-xl border border-gray-700 bg-gray-900 shadow-xl space-y-2 overflow-y-auto"
       onClick={event => { if ((event.target as HTMLElement).closest('[role="menuitem"]:not(:disabled)')) close(true); }}
       onKeyDown={event => {
-        if (event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); close(true); }
+        event.stopPropagation();
+        if (event.key === 'Escape') { event.preventDefault(); close(true); }
         else if (event.key === 'Tab') { close(true); }
         else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
           event.preventDefault();

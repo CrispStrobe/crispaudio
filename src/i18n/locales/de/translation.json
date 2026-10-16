@@ -1897,7 +1897,7 @@
     "stale": "Das Projekt wurde geändert. Öffne den Inspector erneut.",
     "protected": "Aufnahme oder Spursperre schützt diesen Effekt.",
     "invalid": "Ungültige Automation.",
-    "help": "Punkte mit Maus oder Finger ziehen oder per Punktnummer wählen und Zeit und Wert bearbeiten. Pfeiltasten ändern den gewählten Punkt; Umschalt vergrößert die Schritte. Zeiten gelten ab Projektbeginn; die Schattierung markiert den Clip. Anwenden erzeugt einen Rückgängig-Schritt. Leeren stellt den festen Parameterwert wieder her. Beim Verschieben oder Einfügen folgen die Kurven dem Clip.",
+    "help": "Punkte mit Maus oder Finger ziehen oder per Punktnummer wählen und Zeit und Wert bearbeiten. Pfeiltasten ändern den gewählten Punkt; Umschalt vergrößert die Schritte. Zeiten gelten ab Projektbeginn; die Schattierung markiert den Clip. Anwenden erzeugt einen Rückgängig-Schritt. Leeren stellt den festen Parameterwert wieder her. Beim Verschieben oder Einfügen folgen die Kurven dem Clip. Im …-Menü Bereich auswählen und im Graphen ziehen oder Anfang/Ende eingeben. Kopieren nutzt diesen Bereich; ohne Auswahl den ganzen Clip bzw. das Projekt. Einfügen ersetzt nur das Zielintervall; Einpassen streckt die Zeit auf den gewählten Bereich. Die Zwischenablage eingebauter Clip/Master-Effekte gilt auch für Spurkurven.",
     "recordPass": "Durchgang aufnehmen",
     "usePass": "Durchgang übernehmen",
     "passHelp": "Der Durchgang bleibt bis Anwenden im Entwurf. Schließen oder Abbrechen verwirft ihn; Zeiten gelten auf der Projektzeit."
@@ -2268,7 +2268,7 @@
   "nativeRack": {
     "rangeChanged": "Das Plug-in meldet einen anderen Wertebereich. Die gespeicherte Kurve vor einem neuen Durchlauf leeren.",
     "automation": "Parameterautomation",
-    "automationHelp": "Die Kurve antippen, um einen Punkt hinzuzufügen. Punkte ziehen oder Zeit und Werte unten eingeben. Linear oder Stufe gilt für den Abschnitt nach dem Punkt. Anwenden speichert den Entwurf als einen Rückgängig-Schritt. Dichte Kurven zeigen eine vereinfachte Übersicht; über die Punktnummer ist jeder gespeicherte Punkt erreichbar. Aufnahme öffnet Touch/Latch/Write für Mac Live. Kurven gelten auch für Vorschau und Export; Leeren gibt den statischen Regler frei.",
+    "automationHelp": "Die Kurve antippen, um einen Punkt hinzuzufügen. Punkte ziehen oder Zeit und Werte unten eingeben. Linear oder Stufe gilt für den Abschnitt nach dem Punkt. Anwenden speichert den Entwurf als einen Rückgängig-Schritt. Dichte Kurven zeigen eine vereinfachte Übersicht; über die Punktnummer ist jeder gespeicherte Punkt erreichbar. Aufnahme öffnet Touch/Latch/Write für Mac Live. Kurven gelten auch für Vorschau und Export; Leeren gibt den statischen Regler frei. Im …-Menü Bereich auswählen und im Graphen ziehen oder Anfang/Ende eingeben. Kopieren nutzt diesen Bereich; ohne Auswahl den ganzen Clip bzw. das Projekt. Einfügen ersetzt nur das Zielintervall; Einpassen streckt die Zeit auf den gewählten Bereich. Native Kopien passen nur zum gleichen Plug-in, Parameter und Wertebereich.",
     "title": "Native Plug-ins",
     "macOnly": "Native Plug-in-Parameter benötigen die Mac-App.",
     "help": "Inserts laufen nach den eingebauten Effekten. Mac-Wiedergabe und Export berücksichtigen sie. Im Live-Modus lassen sich Parameter und Bypass beim Abspielen ändern.",
@@ -2300,5 +2300,17 @@
     "liveHelp": "Live verarbeitet AU-/VST3-Effekte fortlaufend. Mixer, Plug-in-Parameter und unterstützte Effektregler auf Spuren, Clips und Master reagieren während der Wiedergabe. Pause erhält den Zustand; Springen baut die Vorgeschichte neu auf.",
     "liveLimits": "Rack-Änderungen und andere Einstellungen integrierter Effekte starten die Wiedergabe neu. Audio läuft mit 48 kHz. Mikrofonaufnahmen nutzen einen vorbereiteten Effekt-Begleitmix und trockenes Monitoring. Metronom und direktes Eingangsmonitoring durch Plug-ins sind noch nicht verfügbar.",
     "shortLoop": "Diese Schleife ist für native Live-Effekte zu kurz. Für Schleifen unter 43 ms „Vorschau“ wählen."
+  },
+  "curveRange": {
+    "actions": "Kurvenaktionen",
+    "select": "Bereich auswählen",
+    "close": "Punkte bearbeiten",
+    "start": "Bereichsanfang (s)",
+    "end": "Bereichsende (s)",
+    "copy": "Kurve kopieren",
+    "paste": "Am Abspielkopf einfügen",
+    "fit": "In Bereich einpassen",
+    "copied": "Kurve kopiert",
+    "pasted": "In Entwurf eingefügt"
   }
 }
