@@ -1,4 +1,4 @@
-import {retainedNativeClipAutomation} from '../lib/nativeAutomationEdits';
+import {retainedClipAutomation} from '../lib/nativeAutomationEdits';
 import {replaceNativeEffects} from '../lib/nativeEffects';
 import {pictureTrackId} from '../lib/pictureComposition';
 import {routingOrder,removeRoutingTrack} from '../lib/audioRouting';
@@ -396,7 +396,7 @@ export const useProjectStore = create<ProjectState>()(
             segments: track.segments.filter((s) => s.id !== segmentId),
           }));
 
-          const updatedSegment: AudioSegment = retainedNativeClipAutomation(found.segment,{
+          const updatedSegment: AudioSegment = retainedClipAutomation(found.segment,{
             ...found.segment,
             startTime: clampedStart,
             trackId: targetTrackId,
@@ -809,7 +809,7 @@ export const useProjectStore = create<ProjectState>()(
           // Group pasted segments by their original trackId; place on same track
           const newSegmentsByTrack = new Map<string, AudioSegment[]>();
           for (const seg of clipboard.segments) {
-            const newSeg: AudioSegment = retainedNativeClipAutomation(seg,{
+            const newSeg: AudioSegment = retainedClipAutomation(seg,{
               ...seg,
               id: uuid(),
               linkGroup:groupFor(seg.linkGroup),

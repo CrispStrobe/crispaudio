@@ -1,7 +1,14 @@
 # Clip and master automation passes
 
 Open the FX automation inspector from an expanded clip/master effect. Choose its
-parameter and expand Record pass. Touch records while a control is held; Latch
+parameter. Tap the graph to add points, drag with a mouse or finger, or select a
+point number and enter time/value. Values display in %, ms or Hz while retaining
+the project’s stored units and precision. Arrow keys adjust a selected point;
+Shift makes larger steps. Choose Linear or Step, delete points or clear the curve
+to restore the static knob. Edits stay local until Apply and cancelled gestures
+restore the previous draft. The info button explains the curve’s project clock.
+
+To record, expand Record pass. Touch records while a control is held; Latch
 continues after release; Write starts at playback start (or clip start when later).
 Arm before playback, use the inspector transport and move the value slider.
 Stopping opens a concise interval review. Use pass adds points to the local draft;
@@ -33,3 +40,8 @@ including track inserts. They use the same review and Apply workflow, preserve
 static Read values and saved state, and run saved curves in Live/Preview/export.
 Values are normalized within the plug-in’s reported range and delivered per
 processing block. EQ, compressor and musical instrument automation remain separate.
+
+Built-in and native clip curves follow content moves, nudges, slides and paste.
+Split, trim and source-slip edits retain their timeline clock. Speed changes scale
+curves with the content. Points moved before project zero produce a sampled zero
+boundary, preserving the existing Linear/Step value for the remaining curve.

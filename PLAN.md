@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.14. This section is the current plan.
+Updated 2026-10-16, for local 0.13.15. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -113,6 +113,11 @@ actual-unit numeric fields, Linear/Step, keyboard/touch/pen, bounded dense overv
 and one Apply/Undo. Record pass is collapsed; local edits protect locks, stale
 projects, capture, metadata ranges and saved state.
 [Native curve editor checks](docs/evidence/native-parameter-curve-editor.json).
+Local 0.13.15 reuses that editor for built-in clip/master effects with readable
+%, ms and Hz, preserves untouched stored precision, and makes built-in clip
+curves follow moves, nudges, slides and paste. Speed scaling preserves valid
+Linear/Step values at project zero.
+[Built-in curve checks](docs/evidence/builtin-parameter-curve-editor.json).
 Continuous native input DSP remains future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 

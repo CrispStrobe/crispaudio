@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.15 — 2026-10-16
+
+- Give built-in clip/master effects the same visual curve editor as native inserts, with touch/pen dragging, keyboard controls and editable percentages, milliseconds and Hz.
+- Preview local edits on the graph, collapse pass recording, and put explanations behind an info button. Apply remains one Undo and retains untouched values exactly.
+- Make built-in clip curves follow moves, nudges, slides and paste alongside native curves. Trims, splits and source slips retain their timeline clock.
+- Preserve Linear/Step boundary values when moved or speed-scaled curves extend before project zero.
+
 ## 0.13.14 — 2026-10-16
 
 - Edit native plug-in parameter curves visually: add/drag/delete points, enter time and values in plug-in units, and choose Linear or Step.

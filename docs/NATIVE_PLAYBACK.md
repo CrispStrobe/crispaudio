@@ -80,7 +80,7 @@ Preview/export bridges sample once per 4096-frame block. Curves use absolute
 project time with held ends and Linear/Step segments, compensating upstream
 latency. Native history preparation can use larger blocks. These are block updates, not sample-accurate parameter events. Static
 Read values and saved plug-in state remain separate from temporary audition.
-Native clip curves follow content moves (including slides, grouped moves and
+Built-in and native clip curves follow content moves (including slides, grouped moves and
 nudges), pasted placement and speed scaling. Trimming, splitting or slipping a
 source retains the curve’s timeline clock. When earlier points move before zero,
 a boundary point preserves the original value and Linear/Step segment at zero.

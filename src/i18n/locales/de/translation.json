@@ -1897,7 +1897,7 @@
     "stale": "Das Projekt wurde geändert. Öffne den Inspector erneut.",
     "protected": "Aufnahme oder Spursperre schützt diesen Effekt.",
     "invalid": "Ungültige Automation.",
-    "help": "Klicke auf die Kurve, um Punkte hinzuzufügen oder auszuwählen, oder nutze Punktauswahl und Zahlenfelder. Zeiten gelten in Projektsekunden; die schattierte Fläche markiert den Clip. Anwenden erzeugt einen Rückgängig-Schritt. Leeren stellt den statischen Wert wieder her. Andere Hüllkurven und Punkte außerhalb des Clips bleiben erhalten.",
+    "help": "Punkte mit Maus oder Finger ziehen oder per Punktnummer wählen und Zeit und Wert bearbeiten. Pfeiltasten ändern den gewählten Punkt; Umschalt vergrößert die Schritte. Zeiten gelten ab Projektbeginn; die Schattierung markiert den Clip. Anwenden erzeugt einen Rückgängig-Schritt. Leeren stellt den festen Parameterwert wieder her. Beim Verschieben oder Einfügen folgen die Kurven dem Clip.",
     "recordPass": "Durchgang aufnehmen",
     "usePass": "Durchgang übernehmen",
     "passHelp": "Der Durchgang bleibt bis Anwenden im Entwurf. Schließen oder Abbrechen verwirft ihn; Zeiten gelten auf der Projektzeit."

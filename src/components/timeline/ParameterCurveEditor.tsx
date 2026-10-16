@@ -6,7 +6,8 @@ import {editGainPoint,gainAt} from '../../lib/mixAutomation';
 import {NumberField} from './NumberField';
 import {ToolButton} from '../common/ToolButton';
 
-interface Props {points:GainPoint[];fallback:number;min:number;max:number;unit:string;duration:number;rate:number;clip?:{start:number;end:number};disabled:boolean;onChange:(points:GainPoint[])=>void;onBusy:(busy:boolean)=>void;onValidity:(valid:boolean)=>void;playhead:()=>number}
+/** Points retain their saved units; storageMax defaults to normalized native values. */
+interface Props {points:GainPoint[];fallback:number;min:number;max:number;unit:string;storageMax?:number;duration:number;rate:number;clip?:{start:number;end:number};disabled:boolean;onChange:(points:GainPoint[])=>void;onBusy:(busy:boolean)=>void;onValidity:(valid:boolean)=>void;playhead:()=>number}
 interface Drag {id:number;before:GainPoint[];base:GainPoint[];point:GainPoint;selected:number|null;end:number}
 /** Dense captures use a bounded overview; every stored point remains addressable by index. */
 function overview(points:GainPoint[]){
@@ -15,14 +16,14 @@ function overview(points:GainPoint[]){
  for(let i=0;i<points.length;i+=stride){const chunk=points.slice(i,i+stride);let low=chunk[0],high=chunk[0];for(const point of chunk){if(point.value<low.value)low=point;if(point.value>high.value)high=point;}result.push(...[...new Set([chunk[0],low,high,chunk.at(-1)!])].sort((a,b)=>a.time-b.time));}
  return result;
 }
-export function NativeParameterCurveEditor({points,fallback,min,max,unit,duration,rate,clip,disabled,onChange,onBusy,onValidity,playhead}:Props){
+export function ParameterCurveEditor({points,fallback,min,max,unit,storageMax=1,duration,rate,clip,disabled,onChange,onBusy,onValidity,playhead}:Props){
  const {t}=useTranslation(),[selected,setSelected]=useState<number|null>(null),[numericPreview,setNumericPreview]=useState<GainPoint|null>(null),[revision,setRevision]=useState(0),drag=useRef<Drag|null>(null);
  const invalid=useRef(new Set<string>());
  const validate=(field:string,raw:string,accept:(value:number)=>boolean)=>{const value=raw.trim()?Number(raw):NaN;if(Number.isFinite(value)&&accept(value))invalid.current.delete(field);else invalid.current.add(field);onValidity(!invalid.current.size);};
  const end=Math.max(1,duration,clip?.end??0,points.at(-1)?.time??0),index=points.findIndex(p=>p.time===selected),point=points[index];
  const digits=Math.max(2,Math.min(10,4-Math.floor(Math.log10(max-min))));
- const actual=(value:number)=>min+(max-min)*value,normalized=(value:number)=>(value-min)/(max-min);
- const x=(time:number,extent=end)=>12+time/extent*576,y=(value:number)=>148-value*136;
+ const actual=(value:number)=>min+(max-min)*value/storageMax,normalized=(value:number)=>(value-min)/(max-min)*storageMax;
+ const x=(time:number,extent=end)=>12+time/extent*576,y=(value:number)=>148-value/storageMax*136;
  const visual=numericPreview&&point?editGainPoint(points,point.time,numericPreview):points;
  const displayed=overview(visual.length?visual:[{time:0,value:fallback}]);
  let path=`M${x(displayed[0].time)},${y(displayed[0].value)}`;
@@ -32,7 +33,7 @@ export function NativeParameterCurveEditor({points,fallback,min,max,unit,duratio
  const publish=(next:GainPoint[],selection:number|null)=>{resetFields();onChange(next);setSelected(selection);};
  const edit=(patch:Partial<GainPoint>)=>{
   setNumericPreview(null);if(disabled||!point)return false;const next={...point,...patch};delete next.shapeReview;
-  if(!Number.isFinite(next.time)||next.time<0||!Number.isFinite(next.value)||next.value<0||next.value>1)return false;
+  if(!Number.isFinite(next.time)||next.time<0||!Number.isFinite(next.value)||next.value<0||next.value>storageMax)return false;
   publish(editGainPoint(points,point.time,next),next.time);return true;
  };
  const cancel=()=>{setNumericPreview(null);const active=drag.current;if(!active)return;drag.current=null;publish(active.before,active.selected);onBusy(false);};
@@ -44,11 +45,11 @@ export function NativeParameterCurveEditor({points,fallback,min,max,unit,duratio
  },[onChange,onBusy]);
  const location=(e:PointerEvent<SVGSVGElement>,extent=end)=>{
   const rect=e.currentTarget.getBoundingClientRect();if(rect.width<=0||rect.height<=0)return;
-  return {time:Math.max(0,Math.min(extent,((e.clientX-rect.left)/rect.width*600-12)/576*extent)),value:Math.max(0,Math.min(1,(148-(e.clientY-rect.top)/rect.height*160)/136)),rect};
+  return {time:Math.max(0,Math.min(extent,((e.clientX-rect.left)/rect.width*600-12)/576*extent)),value:Math.max(0,Math.min(storageMax,(148-(e.clientY-rect.top)/rect.height*160)/136*storageMax)),rect};
  };
- return <div className="space-y-2" data-native-curve-editor>
+ return <div className="space-y-2" data-parameter-curve-editor>
   <svg viewBox="0 0 600 160" role="img" aria-label={t('fxInspector.curve')} aria-disabled={disabled} tabIndex={0} className="w-full rounded bg-gray-950 border border-gray-700 touch-none select-none"
-   onKeyDown={e=>{if(e.key!=='Tab'&&e.key!=='Escape')e.stopPropagation();if(!disabled&&!drag.current&&point&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();if(e.key==='ArrowLeft'||e.key==='ArrowRight')edit({time:Math.max(0,point.time+(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?.01:1/rate))});else edit({value:Math.max(0,Math.min(1,point.value+(e.key==='ArrowDown'?-1:1)*(e.shiftKey?.01:.001)))});return;}if(e.key==='Escape'&&drag.current){e.preventDefault();e.stopPropagation();cancel();}else if((e.key==='Delete'||e.key==='Backspace')&&!disabled&&point){e.preventDefault();publish(points.filter(p=>p.time!==selected),null);}}}
+   onKeyDown={e=>{if(e.key!=='Tab'&&e.key!=='Escape')e.stopPropagation();if(!disabled&&!drag.current&&point&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();if(e.key==='ArrowLeft'||e.key==='ArrowRight')edit({time:Math.max(0,point.time+(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?.01:1/rate))});else edit({value:Math.max(0,Math.min(storageMax,point.value+(e.key==='ArrowDown'?-1:1)*(e.shiftKey?.01:.001)*storageMax))});return;}if(e.key==='Escape'&&drag.current){e.preventDefault();e.stopPropagation();cancel();}else if((e.key==='Delete'||e.key==='Backspace')&&!disabled&&point){e.preventDefault();publish(points.filter(p=>p.time!==selected),null);}}}
    onPointerDown={e=>{
     if(disabled||e.button>0||drag.current)return;const at=location(e);if(!at)return;e.preventDefault();e.currentTarget.focus();resetFields();
     let nearest:GainPoint|undefined,distance=e.pointerType==='touch'||e.pointerType==='pen'?24:12;

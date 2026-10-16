@@ -5,6 +5,16 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.15 — built-in curves and clip editing
+
+Built-in clip/master inspectors now share native inserts’ visual editor, with
+mouse/touch/pen dragging, keyboard adjustment and typed %, ms and Hz. Recording
+stays collapsed and Apply publishes one Undo. Built-in clip envelopes follow
+moves, nudges, slides and paste; trims/splits/slips keep their timeline clocks.
+Moves and speed changes sample Linear/Step boundaries at project zero.
+Frontend changes only; native DSP and Apple submissions are unchanged.
+[Validation evidence](evidence/builtin-parameter-curve-editor.json).
+
 ## Local 0.13.14 — native parameter curve editor
 
 Native parameter inspectors now include a graph with point creation/dragging,

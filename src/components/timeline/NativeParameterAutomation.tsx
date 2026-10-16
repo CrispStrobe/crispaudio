@@ -1,4 +1,4 @@
-import {NativeParameterCurveEditor} from './NativeParameterCurveEditor';
+import {ParameterCurveEditor} from './ParameterCurveEditor';
 import {normalizeGainPoints} from '../../lib/mixAutomation';
 import {timelineDuration} from '../../lib/timelineView';
 import {useState} from 'react';
@@ -23,7 +23,7 @@ export function NativeParameterAutomation({snapshot,scope,target,name,unit,defau
  return <Modal isOpen title={`${t('nativeRack.automation')} · ${name}`} onClose={onClose} widthClass="max-w-lg self-start my-4"><div className="space-y-3 text-sm"><InspectorTransport/>
   <div className="flex items-center gap-2"><span className="flex-1">{target.min}–{target.max} {unit}</span><ToolButton icon={RotateCcw} label={t('fxInspector.clear')} disabled={blocked||editing||!points.length} onClick={()=>{setPoints([]);setRangeReset(true);setValidDraft(true);}}/><InfoButton label={t('nativeRack.automation')}><p>{t('nativeRack.automationHelp')}</p></InfoButton></div>
   {rangeChanged&&points.length?<p role="alert">{t('nativeRack.rangeChanged')}</p>:<>
-  <NativeParameterCurveEditor points={points} fallback={fallback} min={target.min} max={target.max} unit={unit} duration={timelineDuration(snapshot)} rate={snapshot.sampleRate} clip={scope.startsWith('clip:')?{start:resolved.start,end:resolved.end}:undefined} disabled={blocked} onChange={setPoints} onBusy={setEditing} onValidity={setValidDraft} playhead={()=>useProjectStore.getState().playheadPosition}/>
+  <ParameterCurveEditor points={points} fallback={fallback} min={target.min} max={target.max} unit={unit} duration={timelineDuration(snapshot)} rate={snapshot.sampleRate} clip={scope.startsWith('clip:')?{start:resolved.start,end:resolved.end}:undefined} disabled={blocked} onChange={setPoints} onBusy={setEditing} onValidity={setValidDraft} playhead={()=>useProjectStore.getState().playheadPosition}/>
   <details onToggle={e=>setRecordOpen(e.currentTarget.open)} data-native-record-section><summary className="min-h-11 content-center cursor-pointer">{t('fxInspector.recordPass')}</summary>{recordOpen&&<fieldset disabled={editing||!validDraft}><ScopedAutomationRecorder snapshot={snapshot} scope={scope} index={0} parameter="mix" nativeParameter={{...target,defaultValue:defaultValue??target.defaultValue,unit}} points={points} fallback={fallback} onDraft={next=>{setPoints(normalizeGainPoints(next));setError('');}} onBusy={setBusy}/></fieldset>}</details></>}
   {current!==snapshot&&<p role="status" className="text-amber-300">{t('fxInspector.stale')}</p>}
   {error&&<p role="alert">{error}</p>}

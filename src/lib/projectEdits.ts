@@ -1,4 +1,4 @@
-import {retainedNativeClipAutomation} from './nativeAutomationEdits';
+import {retainedClipAutomation} from './nativeAutomationEdits';
 import {pictureTrackId,retainedPictureAnimation} from './pictureComposition';
 import { editTimeRange } from './rangeEdits';
 import type { TimelineProject, AudioSegment, VideoClip, TimelineSelection } from '../types/audio';
@@ -20,7 +20,7 @@ export function projectSelection(project:TimelineProject,ids:string[]):TimelineS
 }
 function finish(p: TimelineProject): TimelineProject { return {...p,duration:timelineDuration(p)}; }
 export function mapClips(p: TimelineProject, fn:(clip:Clip)=>Clip, blendVideo=false): TimelineProject {
-  const tracks=p.tracks.map(t=>({...t,segments:t.segments.map(c=>retainedNativeClipAutomation(c,fn(c) as AudioSegment))}));
+  const tracks=p.tracks.map(t=>({...t,segments:t.segments.map(c=>retainedClipAutomation(c,fn(c) as AudioSegment))}));
   const original=videoClips(p.video); let clips=original.map(c=>retainedPictureAnimation(c,fn(c) as VideoClip));
   if(blendVideo&&clips.some((clip,index)=>clip.startTime!==original[index].startTime||clip.duration!==original[index].duration))clips=[...new Set(clips.map(pictureTrackId))].flatMap(id=>automaticVideoBlends(clips.filter(c=>pictureTrackId(c)===id)));
   const video=p.video&&clips.some((c,i)=>c!==original[i])?{...p.video,clips,inPoint:undefined,outPoint:undefined}:p.video;

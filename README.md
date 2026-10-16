@@ -134,6 +134,9 @@ Delay time and feedback, chorus depth and rate, and ring frequency can also be
 recorded on tracks, clips and master while retaining effect history and oscillator
 phase. Open a clip or master effect’s automation inspector to record a pass there.
 The same effect knobs can be adjusted live; Undo keeps playback running.
+Built-in clip/master inspectors also let you tap to add points, drag them with a
+mouse or finger, and type values in %, ms or Hz. Numeric edits preview on the
+graph; Apply saves one Undo. Recording stays in a collapsed section.
 For AU/VST3 parameters, expand the insert and use the automation icon beside a
 knob. Tap the graph to add a point, drag points or enter time and values in the
 plug-in’s units, then choose Linear or Step. Apply saves the draft with one Undo.
