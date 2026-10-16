@@ -5,10 +5,11 @@ const picker=vi.hoisted(()=>vi.fn());
 const savePicker=vi.hoisted(()=>vi.fn());
 const invoke=vi.hoisted(()=>vi.fn());
 const write=vi.hoisted(()=>vi.fn());
+const read=vi.hoisted(()=>vi.fn());
 vi.mock('@tauri-apps/plugin-dialog',()=>({open:picker,save:savePicker}));
 vi.mock('@tauri-apps/api/core',()=>({invoke}));
-vi.mock('@tauri-apps/plugin-fs',()=>({readTextFile:vi.fn(),writeTextFile:write}));
-beforeEach(()=>{Object.assign(window,{__TAURI_INTERNALS__:{}});vi.spyOn(navigator,'userAgent','get').mockReturnValue('Macintosh');Object.defineProperty(navigator,'maxTouchPoints',{value:0,configurable:true});invoke.mockReset();picker.mockReset();write.mockReset();savePicker.mockReset();});
+vi.mock('@tauri-apps/plugin-fs',()=>({readTextFile:vi.fn(),writeTextFile:write,readFile:read}));
+beforeEach(()=>{Object.assign(window,{__TAURI_INTERNALS__:{}});vi.spyOn(navigator,'userAgent','get').mockReturnValue('Macintosh');Object.defineProperty(navigator,'maxTouchPoints',{value:0,configurable:true});invoke.mockReset();picker.mockReset();write.mockReset();read.mockReset();savePicker.mockReset();});
 afterEach(()=>{delete (window as unknown as Record<string,unknown>).__TAURI_INTERNALS__;vi.restoreAllMocks();});
 it('awaits durable read-only file access before returning a multi-selection',async()=>{
  picker.mockResolvedValue(['/media/a.wav','/media/b.mp4']);let release!:(v:unknown)=>void;invoke.mockImplementation(()=>new Promise(resolve=>{release=resolve;}));
@@ -62,4 +63,36 @@ it('keeps iPad native Save independent of Mac staging',async()=>{
 it('propagates staging-check failure before starting an export',async()=>{
  const {saveNative}=await import('../../../src/lib/nativeDialog');savePicker.mockResolvedValue('/work/mix.wav');invoke.mockRejectedValue(new Error('Staging unavailable'));
  await expect(saveNative()).rejects.toThrow('Staging unavailable');expect(picker).not.toHaveBeenCalled();
+});
+
+it('restores bookmarked media locations before linked project audio is read',async()=>{
+ const {deserializeProject}=await import('../../../src/lib/projectFile');
+ const saved={format:'crispaudio-project',version:3,sources:[{id:'s',name:'take',path:'/old.wav',sampleRate:48000,channels:1}],project:{id:'p',name:'project',sampleRate:48000,duration:1,tracks:[],masterEffects:[]}};
+ invoke.mockResolvedValue({'/old.wav':'/new.wav'});read.mockResolvedValue(new Uint8Array([0,1]));
+ const buffer={getChannelData:()=>new Float32Array([0,0]),duration:1,sampleRate:48000,numberOfChannels:1};const decode=vi.fn().mockResolvedValue(buffer);
+ const result=await deserializeProject(JSON.stringify(saved),{sampleRate:48000,decodeAudioData:decode} as unknown as BaseAudioContext);
+ expect(invoke).toHaveBeenCalledWith('relocate_resource_paths',{paths:['/old.wav']});expect(read).toHaveBeenCalledExactlyOnceWith('/new.wav');expect(result.sources.get('s')?.filePath).toBe('/new.wav');
+});
+it('keeps browser and iPad recovery independent of Mac bookmark restoration',async()=>{
+ const {restoreProjectResources}=await import('../../../src/lib/resourceAccess');
+ Object.defineProperty(navigator,'maxTouchPoints',{value:5,configurable:true});expect(await restoreProjectResources('original')).toBe('original');
+ delete (window as unknown as Record<string,unknown>).__TAURI_INTERNALS__;expect(await restoreProjectResources('original')).toBe('original');expect(invoke).not.toHaveBeenCalled();
+});
+it('does not decode linked audio after a bookmark restoration failure',async()=>{
+ const {deserializeProject}=await import('../../../src/lib/projectFile');invoke.mockRejectedValue(new Error('File access unavailable'));const decode=vi.fn();
+ await expect(deserializeProject(JSON.stringify({sources:[{path:'/old.wav'}]}),{decodeAudioData:decode} as unknown as BaseAudioContext)).rejects.toThrow('File access unavailable');expect(read).not.toHaveBeenCalled();expect(decode).not.toHaveBeenCalled();
+});
+
+it('does not send embedded audio or display text through bookmark IPC',async()=>{
+ const {restoreProjectResources}=await import('../../../src/lib/resourceAccess');const json=JSON.stringify({sources:[{path:'/old.wav',wav:'embedded PCM'}],project:{video:{path:'/old.wav'},name:'/old.wav'}});invoke.mockResolvedValue({'/old.wav':'/new.wav'});
+ const restored=JSON.parse(await restoreProjectResources(json));expect(invoke).toHaveBeenCalledExactlyOnceWith('relocate_resource_paths',{paths:['/old.wav']});expect(restored.sources[0]).toEqual({path:'/new.wav',wav:'embedded PCM'});expect(restored.project.name).toBe('/old.wav');expect(restored.project.video.path).toBe('/new.wav');
+});
+it('leaves portable audio and unresolved documents unchanged without extra IPC',async()=>{
+ const {restoreProjectResources}=await import('../../../src/lib/resourceAccess');const portable=JSON.stringify({sources:[{wav:'embedded PCM'}]});expect(await restoreProjectResources(portable)).toBe(portable);expect(invoke).not.toHaveBeenCalled();
+ invoke.mockResolvedValue({});const linked=JSON.stringify({sources:[{path:'/offline.wav'}]});expect(await restoreProjectResources(linked)).toBe(linked);
+});
+it('batches large projects without sending audio payloads',async()=>{
+ const {restoreProjectResources}=await import('../../../src/lib/resourceAccess');const sources=Array.from({length:4097},(_,i)=>({path:`/old-${i}`,wav:'PCM'}));invoke.mockResolvedValue({'/old-4096':'/last'});
+ const restored=JSON.parse(await restoreProjectResources(JSON.stringify({sources})));
+ expect(invoke).toHaveBeenCalledTimes(2);expect(invoke.mock.calls[0][1].paths).toHaveLength(4096);expect(invoke.mock.calls[1]).toEqual(['relocate_resource_paths',{paths:['/old-4096']}]);expect(restored.sources[4096].path).toBe('/last');
 });

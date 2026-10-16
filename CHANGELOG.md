@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.4 — 2026-10-16
+
+- Recover missing linked media after a Mac relaunch when a saved bookmark follows the renamed file or selected folder.
+- Restore paths before project decoding, autosave recovery and saved-delivery decoding, including video, stills and retained originals.
+- Send only path lists through recovery IPC, keeping embedded audio in the frontend.
+- Preserve bounded move history across launches; keep existing paths and ambiguous or unavailable sources for manual relinking.
+
 ## 0.13.3 — 2026-10-16
 
 - Use private temporary storage for Mac native audio/video exports on the same volume, avoiding the extra output-folder picker.

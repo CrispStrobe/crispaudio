@@ -52,3 +52,30 @@ pub fn native_export_requires_folder(path: String) -> bool {
         false
     }
 }
+
+/// Send only linked paths across IPC, never embedded project audio.
+#[tauri::command]
+pub fn relocate_resource_paths(
+    paths: Vec<String>,
+) -> Result<std::collections::HashMap<String, String>, String> {
+    if paths.len() > 4096
+        || paths
+            .iter()
+            .any(|path| path.len() > 4096 || !std::path::Path::new(path).is_absolute())
+    {
+        return Err("Invalid resource path batch".into());
+    }
+    #[allow(unused_mut)]
+    let mut result = std::collections::HashMap::new();
+    #[cfg(target_os = "macos")]
+    for path in paths {
+        if let Some(current) =
+            crispaudio_media::security_scope::relocated_resource(std::path::Path::new(&path))?
+        {
+            result.insert(path, current.to_string_lossy().into_owned());
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = paths;
+    Ok(result)
+}

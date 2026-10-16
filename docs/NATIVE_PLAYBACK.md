@@ -161,3 +161,23 @@ python3 scripts/test-macos-export-publication.py
 This noninteractive Seatbelt probe denies sibling scratch files and checks exclusive
 publication and scratch cleanup. It does not exercise an actual Save panel grant
 or replace the signed-app resource tests above.
+
+## Moved media on Mac
+
+After restarting CrispAudio, a saved bookmark can follow a renamed or moved file
+or selected media folder. Project opening, autosave recovery and saved-delivery
+decoding apply that location before reading linked audio or video. Recovery sends
+only path lists to the native backend; embedded project audio stays in the frontend.
+The next saved
+project contains the recovered paths; opening does not rewrite the project file.
+
+Only missing paths with a unique, accessible bookmarked identity are recovered.
+Existing paths remain unchanged. Folder recovery stays inside the selected folder
+and does not follow symlinks outside it. Offline volumes are not mounted during
+startup; reconnect and reopen or use the existing relink picker. Moves that macOS
+cannot resolve, copies to another volume and ambiguous history still need relinking.
+
+Each resource retains at most 16 previous locations in private bookmark storage.
+Old storage records remain readable. Individual move histories remain retained
+when their current files are covered by a newly selected folder, so grouping may
+retain those records within the existing 256-resource limit.

@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.3. This section is the current plan.
+Updated 2026-10-16, for local 0.13.4. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -8,7 +8,7 @@ and test counts do not describe the current application.
 
 The user accepted this order after 0.12.1:
 
-1. Check CI: preceding iOS passed; its general run was superseded. Current runs remain queued.
+1. Check CI: preceding main and iOS runs passed. New checkpoint runs are tracked separately.
 2. Refine numeric controls: useful touch scales, explicit units/bounds, cancellation,
    one Undo per gesture and live feedback for mixer values.
 3. Consolidate recording, track, clip and FX inspectors: compact rows and dropdowns,
@@ -60,9 +60,14 @@ sibling staging and explicit folder access; final publication remains atomic and
 exclusive. Project sidecar assets and delivery-folder selections remain explicit.
 [Export staging checks](docs/evidence/native-export-staging.json).
 
+Local 0.13.4 restores moved media paths from selected-resource bookmark identities
+on Mac relaunch. Project loading, autosave recovery and saved-delivery decoding
+apply unambiguous missing-path replacements, retaining manual relinking for
+unavailable sources. Existing paths are never substituted.
+[Moved-media checks](docs/evidence/macos-moved-media.json).
+
 Next: collect beta feedback, check physical iOS devices and Finder gestures,
-commercial plugins and external interfaces. Moved/missing sources retain the
-existing relink workflow; automatic migration of moved file paths is not implemented.
+commercial plugins and external interfaces.
 Continuous native input DSP and native automation recording remain future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 

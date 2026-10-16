@@ -1,0 +1,70 @@
+{
+  "version": "0.13.4",
+  "date": "2026-10-16",
+  "behavior": [
+    "On Mac startup resolve selected-resource bookmarks to their current filesystem locations",
+    "Keep up to 16 previous locations per resource in private bookmark storage",
+    "Before linked-project decoding recover missing absolute media paths from unique accessible bookmarked identities",
+    "Apply recovery to project open/drop/Finder, autosave recovery and saved-delivery decoding",
+    "Include video, stills and retained-original path/originalPath references",
+    "Retain move history when a newly selected folder groups current file grants",
+    "Do not rewrite the project file on disk until the user saves",
+    "Deserialize through bounded path-only IPC batches; embedded PCM, names and unrelated text stay in the frontend"
+  ],
+  "boundaries": [
+    "Never substitute an existing accessible path",
+    "Never choose between conflicting bookmarked identities",
+    "Never guess by basename or search unrelated folders",
+    "Canonical recovered folder descendants must stay inside the bookmarked folder, including symlink checks",
+    "No offline volume mounting or permission UI during startup",
+    "Old storage records default to empty history; all saved path history is bounded and validated"
+  ],
+  "nativeIdentityTests": {
+    "result": "PASS",
+    "tests": 7,
+    "scope": "Real Core Foundation app-scoped bookmark creation, serialized restoration and consecutive file/folder renames in isolated temporary fixtures; regular nonsandboxed test executable",
+    "checks": [
+      "Two successive renames of a selected file and of a selected folder",
+      "Old and intermediate paths recover after separate store restorations",
+      "An unrelated replacement at the old path is preserved",
+      "Read-only registry authority preserved",
+      "Conflicting and inactive grants rejected",
+      "Folder aliases, prefix boundaries and symlink escape",
+      "Legacy records and bounded history"
+    ],
+    "log": "/tmp/crispaudio-relocation-media-focused.log"
+  },
+  "validation": {
+    "status": "complete",
+    "frontend": {
+      "result": "PASS",
+      "tests": 1748,
+      "files": 180,
+      "scope": "One fresh full run of final source, maxWorkers=2, testTimeout=20000; command-scoped idle-sleep inhibition; repository timeout settings unchanged",
+      "log": "/tmp/crispaudio-relocation-frontend-final.log"
+    },
+    "media": "143 passed, 10 optional tests skipped",
+    "appTests": "41 passed, 1 optional test skipped",
+    "ios": "Locked aarch64-apple-ios-sim compile PASS; existing unused MIDI method warning",
+    "lint": "PASS",
+    "typescript": "PASS",
+    "release": "21 passed",
+    "macBuild": "Final normal debug app bundle PASS"
+  },
+  "limits": [
+    "No new signed sandbox PowerBox/physical Finder gesture replay; earlier resource access evidence remains separate",
+    "Moves are discovered on app relaunch, not continuously while the app remains open",
+    "Copies to another volume or moves macOS cannot resolve retain manual relinking",
+    "Disconnected volumes and paths older than the retained history may require manual relinking",
+    "No physical iOS, microphone, audible output, commercial-plugin or external-interface checks"
+  ],
+  "appleUpload": false,
+  "installed": {
+    "version": "0.13.4",
+    "app": "~/Applications/CrispAudio-local.app",
+    "signature": "deep/strict PASS",
+    "autosavesRetained": 1,
+    "priorAppAndSession": "backed up before replacement",
+    "independentCli": "unchanged"
+  }
+}

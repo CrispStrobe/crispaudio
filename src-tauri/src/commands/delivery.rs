@@ -88,6 +88,38 @@ pub fn resolve_project_media(json: String, project_path: String) -> Result<Strin
         }
     }
     rewrite(&mut doc, &replacements);
+    restore_project_media(serde_json::to_string(&doc).map_err(|e| e.to_string())?)
+}
+/// Bookmarked identities can recover moved sources after a Mac app relaunch.
+fn restore_project_media(json: String) -> Result<String, String> {
+    let doc = document(&json)?;
+    restore_document(doc, |path| {
+        #[cfg(target_os = "macos")]
+        {
+            crispaudio_media::security_scope::relocated_resource(path)
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            let _ = path;
+            Ok(None)
+        }
+    })
+}
+fn restore_document(
+    mut doc: Value,
+    mut locate: impl FnMut(&Path) -> Result<Option<PathBuf>, String>,
+) -> Result<String, String> {
+    let mut refs = BTreeSet::new();
+    paths(&doc, &mut refs);
+    let mut replacements = HashMap::new();
+    for path in refs {
+        if Path::new(&path).is_absolute() {
+            if let Some(current) = locate(Path::new(&path))? {
+                replacements.insert(path, current.to_string_lossy().into_owned());
+            }
+        }
+    }
+    rewrite(&mut doc, &replacements);
     serde_json::to_string(&doc).map_err(|e| e.to_string())
 }
 fn collect(json: &str, directory: &Path) -> Result<String, String> {
@@ -382,6 +414,37 @@ mod tests {
         ));
         fs::create_dir(&p).unwrap();
         p
+    }
+    #[test]
+    fn restored_locations_rewrite_all_media_references_without_touching_other_text() {
+        let doc = json!({"format":"crispaudio-project","version":4,"sources":[{"path":"/old.wav","name":"/old.wav"}],"project":{"video":{"path":"/old.mov","graphics":[{"clips":[{"path":"/old.png"}]}]},"tracks":[{"segments":[{"retime":{"original":{"path":"/old.wav"}},"sourceEdit":{"originalPath":"/old.wav"}}]}]},"relative":{"path":"media/relative.wav"},"offline":{"path":"/offline.wav"}});
+        let restored = restore_document(doc, |path| {
+            Ok(match path.to_str().unwrap() {
+                "/old.wav" => Some("/current/audio.wav".into()),
+                "/old.mov" => Some("/current/video.mov".into()),
+                "/old.png" => Some("/current/still.png".into()),
+                _ => None,
+            })
+        })
+        .unwrap();
+        let doc: Value = serde_json::from_str(&restored).unwrap();
+        assert_eq!(doc["sources"][0]["path"], "/current/audio.wav");
+        assert_eq!(doc["sources"][0]["name"], "/old.wav");
+        assert_eq!(doc["project"]["video"]["path"], "/current/video.mov");
+        assert_eq!(
+            doc["project"]["video"]["graphics"][0]["clips"][0]["path"],
+            "/current/still.png"
+        );
+        assert_eq!(
+            doc["project"]["tracks"][0]["segments"][0]["retime"]["original"]["path"],
+            "/current/audio.wav"
+        );
+        assert_eq!(
+            doc["project"]["tracks"][0]["segments"][0]["sourceEdit"]["originalPath"],
+            "/current/audio.wav"
+        );
+        assert_eq!(doc["relative"]["path"], "media/relative.wav");
+        assert_eq!(doc["offline"]["path"], "/offline.wav");
     }
     #[test]
     fn collection_is_relocatable_and_retains_originals_and_stills() {

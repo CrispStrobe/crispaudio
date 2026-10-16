@@ -5,6 +5,27 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.4 — recover moved media from Mac bookmarks
+
+Restored resource bookmarks now retain their resolved location and bounded path
+history. Missing absolute references in projects, autosave recovery and saved-job
+decoding can follow renamed files or selected folders after relaunch, including
+video, stills and retained originals. No project file is rewritten just by opening.
+Existing paths remain unchanged; ambiguous or unavailable identities still use
+manual relinking. Startup does not mount offline volumes or show permission UI.
+Folder recovery cannot escape the selected folder through a symlink.
+
+The local 0.13.4 app is installed and signature-verified with one autosave retained
+and the previous app/session backed up. All 1,748 frontend tests pass in one final
+run; 143 media tests, 41 app tests, the locked iOS simulator compile, lint,
+TypeScript and 21 release checks pass. Seven native bookmark tests include actual
+consecutive file/folder renames and serialized restoration in a nonsandboxed
+fixture process. They do not replace signed sandbox/Finder gesture acceptance.
+Recovery IPC sends only bounded path lists, leaving embedded project audio in the
+frontend. [Checkpoint evidence](evidence/macos-moved-media.json).
+
+No new Apple upload is part of this local software checkpoint.
+
 ## Local 0.13.3 — simpler single-file exports
 
 Mac native WAV, FLAC, AAC and video exports stage privately when the destination
@@ -113,7 +134,7 @@ DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaud
 | iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
 | Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. Native 0.13.0/build 14 is now available for internal TestFlight. |
 | Provisioning | Active `IOS_APP_STORE` and newly created `MAC_APP_STORE` profiles, bound to the existing Distribution certificate. Existing account/API credentials work. |
-| Local native macOS app | Installed 0.13.3 ad-hoc signed app, separate from the public iOS release. |
+| Local native macOS app | Installed 0.13.4 ad-hoc signed app, separate from the public iOS release. |
 | Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
 
 [Public App Store listing](https://apps.apple.com/de/app/crispaudio/id6791876962) ·

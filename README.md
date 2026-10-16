@@ -120,8 +120,10 @@ drive is unavailable, select its folder again.
 The Mac app also remembers selected media and project files. Use **File → Media
 Folder Access…** for a folder of linked recordings. Most single-file Mac exports
 use just the Save dialog. Exports to other drives and projects saved with separate
-audio assets may ask for their output folder once; later work in that folder reuses the selection. If files move or a drive is unavailable, relink them
-when opening the project.
+audio assets may ask for their output folder once; later work in that folder reuses the selection. After restarting the app, macOS bookmarks can recover renamed or moved sources
+when their identity is still available. Existing paths stay unchanged. If a drive
+is unavailable or a move cannot be resolved, use the relink picker when opening
+the project.
 
 Native inserts include generic parameter controls, saved state and rack copy/paste.
 Structural or built-in effect edits restart live playback. To record a microphone

@@ -136,6 +136,7 @@ pub fn run() {
             commands::resources::remember_resources,
             commands::resources::resource_folder_writable,
             commands::resources::native_export_requires_folder,
+            commands::resources::relocate_resource_paths,
             commands::plugins::remember_plugin_folder,
             commands::plugins::audio_unit_plugin,
             commands::plugins::plugin_stream_open,

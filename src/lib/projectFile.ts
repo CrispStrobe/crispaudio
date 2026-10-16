@@ -1,3 +1,4 @@
+import {restoreProjectResources} from './resourceAccess';
 import {hasNativeEffects,hasStoredNativeEffects,validProjectNativeEffects} from './nativeEffects';
 import {validMixVersions} from './mixVersions';
 import {validTrackFolders} from './trackFolders';
@@ -122,7 +123,7 @@ export async function deserializeProject(
   ctx: BaseAudioContext,
   locateMissing?: (path:string)=>Promise<string|null>,
 ): Promise<{ project: TimelineProject; sources: Map<string, AudioSource> }> {
-  const doc = JSON.parse(json) as Partial<SerializedProject>;
+  const doc = JSON.parse(await restoreProjectResources(json)) as Partial<SerializedProject>;
   if (doc.format !== FORMAT || !doc.project || !Array.isArray(doc.sources)) {
     throw new Error('Not a valid CrispAudio project file');
   }
