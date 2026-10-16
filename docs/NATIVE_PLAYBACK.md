@@ -65,8 +65,15 @@ they do not provide sample-accurate timestamped control delivery. Detected seek
 or loop discontinuities discard an active pass.
 
 AU/VST3 parameter passes are available from the automation icon beside each
-expanded native parameter knob, at clip, track or master scope. Arm Touch, Latch
-or Write before playback; stop, review, Use pass and Apply. Clear removes the
+expanded native parameter knob, at clip, track or master scope. The curve editor
+also supports manual point creation, dragging, deletion and exact time/value
+entry in the plug-in’s units. Touch/pen numeric scrubbing previews the curve;
+Escape or pointer interruption cancels a gesture. Arrow keys adjust the selected
+point (Shift gives larger steps); Delete removes it. The point index reaches
+every point in a dense capture, even when the graph shows a simplified overview.
+Readable number formatting leaves untouched stored values at full precision.
+Drafts publish only on Apply, as one Undo. To record, expand Record pass, arm
+Touch, Latch or Write before playback; stop, review, Use pass and Apply. Clear removes the
 curve and restores the static knob. Saved curves also run in Preview and GUI
 exports. Native Live samples curves once per worker block (normally 512 frames);
 Preview/export bridges sample once per 4096-frame block. Curves use absolute

@@ -5,6 +5,17 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.14 — native parameter curve editor
+
+Native parameter inspectors now include a graph with point creation/dragging,
+actual-unit time/value fields, Linear/Step, deletion and keyboard editing.
+Touch/pen numeric scrubbing previews the curve; cancelled gestures restore the
+draft. Dense captures use bounded rendering while every point stays editable by
+index. Apply publishes one Undo and preserves plug-in state and other lanes.
+Recording controls are collapsed; first-point selection keeps the graph stable.
+Desktop/touch German browser checks cover layout, dragging, units and Undo.
+[Validation evidence](evidence/native-parameter-curve-editor.json).
+
 ## Local 0.13.13 — native automation follows editing
 
 Native parameter curves follow moved/nudged/pasted clip content and speed scaling.

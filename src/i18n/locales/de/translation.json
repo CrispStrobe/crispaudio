@@ -2268,7 +2268,7 @@
   "nativeRack": {
     "rangeChanged": "Das Plug-in meldet einen anderen Wertebereich. Die gespeicherte Kurve vor einem neuen Durchlauf leeren.",
     "automation": "Parameterautomation",
-    "automationHelp": "Touch, Latch oder Write während der Mac-Live-Wiedergabe aufnehmen. Den Durchlauf prüfen und mit Anwenden als einen Rückgängig-Schritt speichern. Kurven gelten auch für Vorschau und Export. Werte ändern sich pro Verarbeitungsblock; Leeren gibt den statischen Regler frei.",
+    "automationHelp": "Die Kurve antippen, um einen Punkt hinzuzufügen. Punkte ziehen oder Zeit und Werte unten eingeben. Linear oder Stufe gilt für den Abschnitt nach dem Punkt. Anwenden speichert den Entwurf als einen Rückgängig-Schritt. Dichte Kurven zeigen eine vereinfachte Übersicht; über die Punktnummer ist jeder gespeicherte Punkt erreichbar. Aufnahme öffnet Touch/Latch/Write für Mac Live. Kurven gelten auch für Vorschau und Export; Leeren gibt den statischen Regler frei.",
     "title": "Native Plug-ins",
     "macOnly": "Native Plug-in-Parameter benötigen die Mac-App.",
     "help": "Inserts laufen nach den eingebauten Effekten. Mac-Wiedergabe und Export berücksichtigen sie. Im Live-Modus lassen sich Parameter und Bypass beim Abspielen ändern.",

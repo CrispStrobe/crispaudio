@@ -128,6 +128,7 @@ it.each(['failed audition','native fault','mode change'])('discards a native sco
  expect(screen.queryByRole('button',{name:'fxInspector.usePass'})).not.toBeInTheDocument();expect(onDraft).not.toHaveBeenCalled();expect(useProjectStore.getState().project).toBe(snapshot);expect(screen.getByRole('button',{name:'automation.armPass'})).toHaveAttribute('aria-pressed','false');
 });
 
+function openNativeRecord(){const details=document.querySelector('[data-native-record-section]');if(details)act(()=>{details.setAttribute('open','');details.dispatchEvent(new Event('toggle'));});}
 const pluginTarget={instanceId:'fx',address:'gain',min:-24,max:12};
 function pluginScope(scope:string){
  const {snapshot:base}=scopedProject('clip:clip');const effect={...base.nativeEffects![0],parameters:{gain:-6}};
@@ -136,7 +137,7 @@ function pluginScope(scope:string){
 }
 it.each([['master','write'],['track:track','touch'],['clip:clip','latch']])('records a native plug-in %s pass in %s with review and one Undo', (scope,mode)=>{
  const live=liveMac(),snapshot=pluginScope(scope);useProjectStore.temporal.getState().clear();
- render(<TimelineEngineContext.Provider value={{current:live.engine}}><NativeParameterAutomation snapshot={snapshot} scope={scope} target={pluginTarget} name="Gain" unit="dB" onClose={noop}/></TimelineEngineContext.Provider>);
+ render(<TimelineEngineContext.Provider value={{current:live.engine}}><NativeParameterAutomation snapshot={snapshot} scope={scope} target={pluginTarget} name="Gain" unit="dB" onClose={noop}/></TimelineEngineContext.Provider>);openNativeRecord();
  fireEvent.change(screen.getByRole('combobox',{name:'automation.recordMode'}),{target:{value:mode}});fireEvent.click(screen.getByRole('button',{name:'automation.armPass'}));act(()=>useProjectStore.getState().setIsPlaying(true));live.frame();
  const slider=screen.getByRole('slider',{name:'automation.recordValue'});Object.defineProperty(slider,'setPointerCapture',{value:vi.fn()});fireEvent.pointerDown(slider,{pointerId:1});fireEvent.change(slider,{target:{value:'3'}});live.setTime(1);live.frame();fireEvent.pointerUp(slider);
  expect(live.previewNativeParameterAutomation).toHaveBeenCalledWith(snapshot,scope,expect.objectContaining(pluginTarget),.75);
@@ -148,7 +149,7 @@ it.each([['master','write'],['track:track','touch'],['clip:clip','latch']])('rec
 });
 it.each(['failed audition','mode change','native fault'])('discards native plugin capture on %s',cause=>{
  const live=liveMac(),snapshot=pluginScope('master');if(cause==='failed audition')live.previewNativeParameterAutomation.mockReturnValue(false);
- render(<TimelineEngineContext.Provider value={{current:live.engine}}><NativeParameterAutomation snapshot={snapshot} scope="master" target={pluginTarget} name="Gain" unit="dB" onClose={noop}/></TimelineEngineContext.Provider>);
+ render(<TimelineEngineContext.Provider value={{current:live.engine}}><NativeParameterAutomation snapshot={snapshot} scope="master" target={pluginTarget} name="Gain" unit="dB" onClose={noop}/></TimelineEngineContext.Provider>);openNativeRecord();
  fireEvent.change(screen.getByRole('combobox',{name:'automation.recordMode'}),{target:{value:'write'}});fireEvent.click(screen.getByRole('button',{name:'automation.armPass'}));act(()=>useProjectStore.getState().setIsPlaying(true));live.frame();live.setTime(1);live.frame();
  if(cause==='mode change'){act(()=>useSettingsStore.setState({nativePlaybackMode:'rendered'}));live.frame();}
  if(cause==='native fault'){act(()=>useProjectStore.getState().setIsPlaying(false));expect(screen.getByRole('button',{name:'fxInspector.usePass'})).toBeInTheDocument();act(()=>window.dispatchEvent(new CustomEvent('crispaudio-edit-error')));}
@@ -156,12 +157,12 @@ it.each(['failed audition','mode change','native fault'])('discards native plugi
 });
 it('guards plugin passes in Preview, during recording and on locked tracks',()=>{
  liveMac();const snapshot=pluginScope('track:track'),props={snapshot,scope:'track:track',target:pluginTarget,name:'Gain',unit:'dB',onClose:noop};
- useSettingsStore.setState({nativePlaybackMode:'rendered'});const preview=render(<NativeParameterAutomation {...props}/>);expect(screen.getByRole('button',{name:'automation.armPass'})).toBeDisabled();preview.unmount();
- useSettingsStore.setState({nativePlaybackMode:'live'});useUIStore.setState({timelineRecording:true});const recording=render(<NativeParameterAutomation {...props}/>);expect(screen.getByRole('button',{name:'automation.armPass'})).toBeDisabled();recording.unmount();useUIStore.setState({timelineRecording:false});
- const locked={...snapshot,tracks:snapshot.tracks.map(track=>({...track,locked:true}))};useProjectStore.setState({project:locked});render(<NativeParameterAutomation {...props} snapshot={locked}/>);expect(screen.getByRole('button',{name:'automation.armPass'})).toBeDisabled();
+ useSettingsStore.setState({nativePlaybackMode:'rendered'});const preview=render(<NativeParameterAutomation {...props}/>);openNativeRecord();expect(screen.getByRole('button',{name:'automation.armPass'})).toBeDisabled();preview.unmount();
+ useSettingsStore.setState({nativePlaybackMode:'live'});useUIStore.setState({timelineRecording:true});const recording=render(<NativeParameterAutomation {...props}/>);openNativeRecord();expect(screen.getByRole('button',{name:'automation.armPass'})).toBeDisabled();recording.unmount();useUIStore.setState({timelineRecording:false});
+ const locked={...snapshot,tracks:snapshot.tracks.map(track=>({...track,locked:true}))};useProjectStore.setState({project:locked});render(<NativeParameterAutomation {...props} snapshot={locked}/>);openNativeRecord();expect(screen.getByRole('button',{name:'automation.armPass'})).toBeDisabled();
 });
 it('requires clearing an old parameter range before recording with changed plugin metadata',()=>{
  liveMac();const old=pluginScope('master'),snapshot={...old,nativeEffects:old.nativeEffects.map(effect=>({...effect,parameterAutomation:{gain:{min:-12,max:12,points:[{time:0,value:.5}]}}}))};useProjectStore.setState({project:snapshot});
- render(<NativeParameterAutomation snapshot={snapshot} scope="master" target={pluginTarget} name="Gain" unit="dB" onClose={noop}/>);expect(screen.getByRole('alert')).toHaveTextContent('nativeRack.rangeChanged');expect(screen.getByRole('button',{name:'fxInspector.apply'})).toBeDisabled();
- fireEvent.click(screen.getByRole('button',{name:'fxInspector.clear'}));expect(screen.getByRole('button',{name:'automation.armPass'})).toBeEnabled();expect(screen.getByRole('button',{name:'fxInspector.apply'})).toBeEnabled();
+ render(<NativeParameterAutomation snapshot={snapshot} scope="master" target={pluginTarget} name="Gain" unit="dB" onClose={noop}/>);openNativeRecord();expect(screen.getByRole('alert')).toHaveTextContent('nativeRack.rangeChanged');expect(screen.getByRole('button',{name:'fxInspector.apply'})).toBeDisabled();
+ fireEvent.click(screen.getByRole('button',{name:'fxInspector.clear'}));openNativeRecord();expect(screen.getByRole('button',{name:'automation.armPass'})).toBeEnabled();expect(screen.getByRole('button',{name:'fxInspector.apply'})).toBeEnabled();
 });

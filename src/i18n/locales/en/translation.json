@@ -2255,7 +2255,7 @@
   "nativeRack": {
     "rangeChanged": "This plug-in reports a different parameter range. Clear the saved curve before recording a new pass.",
     "automation": "Parameter automation",
-    "automationHelp": "Record Touch, Latch or Write during Mac Live playback. Review the pass, then Apply to save one Undo step. Saved curves also run in Preview and export. Values update once per processing block; Clear returns to the static knob.",
+    "automationHelp": "Tap the curve to add a point; drag points or enter time and values below. Choose Linear or Step for the segment after a point. Apply saves the draft as one Undo step. Dense captures use a simplified overview; the point index reaches every stored point. Record pass opens Touch/Latch/Write controls for Mac Live playback. Saved curves also run in Preview and export; Clear returns to the static knob.",
     "title": "Native plug-ins",
     "macOnly": "Native plug-in parameters require the Mac app.",
     "help": "Inserts run after built-in effects. Mac playback and export include them. Live mode allows parameter and bypass changes during playback.",

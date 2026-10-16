@@ -135,7 +135,11 @@ recorded on tracks, clips and master while retaining effect history and oscillat
 phase. Open a clip or master effect’s automation inspector to record a pass there.
 The same effect knobs can be adjusted live; Undo keeps playback running.
 For AU/VST3 parameters, expand the insert and use the automation icon beside a
-knob. Arm Touch, Latch or Write, play, adjust, then stop to review and Apply.
+knob. Tap the graph to add a point, drag points or enter time and values in the
+plug-in’s units, then choose Linear or Step. Apply saves the draft with one Undo.
+For recorded passes, expand Record pass, arm Touch, Latch or Write, play and
+adjust, then stop to review and Apply. Dense curves show an overview; the point
+index reaches every stored point.
 Curves are saved with the project and run in Live, Preview and GUI export.
 Clip curves follow moves, nudges, paste and speed changes. Splits, trims and
 source slips preserve curves at their existing timeline positions. Ripple edits

@@ -1,0 +1,45 @@
+{
+  "version": "0.13.14",
+  "date": "2026-10-16",
+  "behavior": [
+    "Visual native AU/VST3 parameter curve editing in existing clip/track/master inspector: create/drag/delete points, numeric time/value in plugin units, and Linear/Step segment selection",
+    "Local drafts publish once on Apply with one Undo; other parameter lanes, static Read values and opaque plugin state are preserved",
+    "Mouse/touch/pen point dragging and touch numeric scrubbing update the graph immediately; Escape, pointer cancellation/lost capture and focus loss restore gestures",
+    "Arrow keys adjust selected point; Shift gives larger steps; Delete removes it without reaching timeline shortcuts",
+    "Invalid numeric drafts block Apply; explicit graph/point selection resets stale numeric drafts",
+    "Dense curves use a bounded overview while every stored point remains editable by index; readable number formatting does not quantize untouched data",
+    "Record pass is collapsed and preserves existing Touch/Latch/Write capture, review and interruption guards",
+    "Inspector anchors near the top so first selection does not shift the graph; metadata-range changes, locks, stale snapshots and microphone capture remain guarded"
+  ],
+  "validation": {
+    "status": "complete",
+    "editorTests": "Final 21 editor tests passed; prior focused integration checks pass for native recorder/rack/model",
+    "editorLog": "/tmp/crispaudio-native-curve-editor-final.log",
+    "browser": "Final Chromium desktop and real CDP touch input PASS in German: no horizontal overflow, first selection stable, collapsed recording, numeric domain, dragging, local draft, one Undo and state preservation",
+    "browserLog": "/tmp/crispaudio-native-curve-browser-final4.log",
+    "browserScript": "scripts/test-native-parameter-curves.mjs; fixture parameter data mounted in the browser; no native plugin or audio playback invoked",
+    "screenshots": [
+      "/tmp/crispaudio-native-curve-desktop.png",
+      "/tmp/crispaudio-native-curve-touch.png"
+    ],
+    "typecheck": "Standalone PASS and final Mac bundle frontend typecheck PASS",
+    "lint": "PASS /tmp/crispaudio-native-curve-lint-final4.log",
+    "release": "21 passed /tmp/crispaudio-native-curve-release.log",
+    "macBuild": "Final normal debug bundle PASS /tmp/crispaudio-01314-build-final.log",
+    "scope": "Frontend editor only; native DSP/bridge unchanged. Native/media/iOS checks from 0.13.12 not repeated locally.",
+    "frontend": {
+      "result": "PASS",
+      "tests": 1839,
+      "files": 185,
+      "log": "/tmp/crispaudio-native-curve-frontend-final2.log",
+      "options": "maxWorkers=2; testTimeout=20000; repository options unchanged"
+    },
+    "installation": "0.13.14 installed/running; strict/deep signature PASS; one autosave retained; recovery backup created"
+  },
+  "limits": [
+    "Dense overview approximates display only; all original points remain stored",
+    "Manual graph/numeric previews update the local visual draft; Apply publishes audio changes",
+    "Existing block-based native parameter playback and physical/commercial-plugin acceptance limits remain",
+    "Continuous native microphone input DSP remains future work"
+  ]
+}

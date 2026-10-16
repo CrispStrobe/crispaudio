@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.14 — 2026-10-16
+
+- Edit native plug-in parameter curves visually: add/drag/delete points, enter time and values in plug-in units, and choose Linear or Step.
+- Preview numeric edits on the graph, support touch/pen scrubbing and keyboard edits, and restore drafts after cancelled gestures.
+- Keep recording controls collapsed and the inspector anchored while point controls appear; Apply saves one Undo step.
+- Bound dense-curve rendering while retaining access to every stored point; format readable numbers without reducing saved precision.
+
 ## 0.13.13 — 2026-10-16
 
 - Keep native plug-in parameter curves attached to moved, nudged, pasted and speed-adjusted audio clips.
