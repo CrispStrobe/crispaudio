@@ -55,7 +55,7 @@ continuous-refresh checkpoint; continue the execution order below.
 | Basic arrangement, trims, fades, ripple, groups, source selections and analysis | Present | Measure completion time and friction in complete editing jobs; improve inline/context actions from findings. |
 | Effect-aware timeline waveforms | Partial in 0.13.24 | Built-in segment DSP refreshes during continuous edits for visible clips up to 60 s / 32 MiB. Native inserts, longer clips and track/bus/master processing still show source or remain excluded. Extend with scalable caches and safe native-render ownership; modulation follows a clip-range render, not the running graph phase. |
 | Source FX audition | Partial in 0.13.28 | Position-preserving Original/Preview, cleanup replacement/reset, loop changes and source cursor are implemented. Active normalization follows its target. Native source previews still need helper renders. Full live source FX, audition level/loudness matching and larger-file performance remain. |
-| Repair and restoration | Partial | Existing DC/normalization/fades and desktop denoise do not cover manual sample repair, click interpolation, de-hum, declipping or editable spectral repair. Add bounded, reviewable repairs with listening tests. |
+| Repair and restoration | Partial in 0.13.29 | Source polarity/stereo tools and conservative manual click interpolation (up to 1 ms, clean context) now use preview/A-B/Apply, retain originals and preserve selected boundaries. Spectral repair, de-hum, declipping and a general click detector remain. Synthetic repair-error improvements do not replace listening/varied-material qualification. |
 | Recording and takes | Partial | Built-in mic accepted; punch/loop/multi-arm/comping implemented. Bar-based audible count-in and pre-roll are implemented in 0.13.26 with bounded scheduled lead-in. Local track/input/FX templates are implemented in 0.13.27; real interface/channel checks remain. |
 | Live input DSP | Missing for native inserts | Monitor input through inserts while keeping an optional dry take; report latency, use one coherent clock and prove cancellation/device-loss cleanup. Prepared wet backing is not a substitute. |
 | Monitor/cue routing | Partial | The Mac output picker currently changes the system output. Add app-local device routing, arbitrary input-channel maps, independent headphone mixes, PFL/AFL and dim/mono. Native playback currently targets 48 kHz stereo; broader channel/rate support needs a defined use case. |
@@ -82,8 +82,8 @@ continuous-refresh checkpoint; continue the execution order below.
    in 0.13.26; local track/input/FX templates follow in 0.13.27. Continue cue/input state;
    keep advanced settings collapsed and qualify real interfaces when available.
 4. **Source editing and restoration.** Buffered continuous original/processed
-   comparison exists in 0.13.28; continue full live FX/level matching, channel/polarity
-   utilities and a small manual click-repair workflow.
+   comparison exists in 0.13.28; channel/polarity and bounded manual click repair
+   follow in 0.13.29. Continue full live FX/level matching.
    Include spectral repair, de-hum and declipping, each with explicit quality targets and original/processed comparison.
 5. **Live recording and monitoring.** Native input FX, dry/wet capture choices,
    latency reporting and cue routing; software fixtures first, then real interfaces.

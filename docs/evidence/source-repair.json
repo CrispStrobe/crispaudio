@@ -1,0 +1,88 @@
+{
+  "checkpoint": "0.13.29",
+  "date": "2026-10-16",
+  "feature": "Source polarity/stereo utilities and bounded manual click repair",
+  "script": "scripts/test-source-repair.mjs",
+  "browser": "Headless muted Chrome; actual app preview/Apply and temporary float WAV persistence through a fixture Tauri bridge",
+  "results": {
+    "repaired": {
+      "improvementDb": 70.6823120449843,
+      "outsideUnchanged": true,
+      "rightUnchanged": true,
+      "originalRetained": true,
+      "undo": 1,
+      "channels": 2,
+      "duration": 1,
+      "operation": "repair"
+    },
+    "roundtrip": {
+      "operation": "repair",
+      "originalRetained": true,
+      "samePcm": true,
+      "renderedFrames": 48000,
+      "renderedClickPeak": 0.2996135950088501
+    },
+    "utilityResults": [
+      {
+        "kind": "invert",
+        "maxPcmError": 0,
+        "undo": 1
+      },
+      {
+        "kind": "swap",
+        "maxPcmError": 0,
+        "undo": 1
+      },
+      {
+        "kind": "mono",
+        "maxPcmError": 2.2351741790771484e-08,
+        "undo": 1
+      },
+      {
+        "kind": "leftToRight",
+        "maxPcmError": 0,
+        "undo": 1
+      },
+      {
+        "kind": "rightToLeft",
+        "maxPcmError": 0,
+        "undo": 1
+      }
+    ],
+    "repairAuditionFrames": [
+      9608,
+      9608,
+      9608,
+      9608
+    ],
+    "sampleWaveformPixels": 679,
+    "german390": {
+      "width": 316,
+      "overflow": false
+    },
+    "recordingGuard": true,
+    "physicalAudio": false,
+    "persistence": "real temporary float WAV files through fixture Tauri bridge"
+  },
+  "frontend_tests": {
+    "passed": 1971,
+    "files": 200,
+    "log": "/tmp/crispaudio-repair-full-tests-final.log"
+  },
+  "focused_tests": {
+    "passed": 22,
+    "files": 3
+  },
+  "regressions": {
+    "source_editor_touch": "passed (headroom, ranges/channels, originals, undo/redo, regions, loop, analysis, locked linked trim, recording guard, German, save/reopen/render)",
+    "continuous_audition_after_context_change": "passed (real offline stereo PCM, rapid switching, clock, reset, source/timeline/record/close cleanup)"
+  },
+  "release_checks": 21,
+  "limits": [
+    "Conservative interpolation for gaps up to 1 ms, requiring clean context; no automatic click detector or general dropout recovery",
+    "The 70.68 dB error improvement compares one synthetic damaged selection against its known clean original; no varied-material/perceptual-quality claim",
+    "Stereo mono mix remains two channels; channel count, source clock and all unselected samples are retained",
+    "100 ms audition padding is not included in repaired or persisted ranges",
+    "No new physical listening, actual native plug-in DSP, production persistence implementation, physical iOS or signed Apple build qualification"
+  ]
+}

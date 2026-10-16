@@ -18,6 +18,34 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.29 — channel utilities and manual click repair
+
+Source Editor gains a compact Channels & repair dropdown: invert polarity, stereo
+swap, dual-mono average, side-copy and manual click repair. Stereo tools require
+All channels and keep channel count/timing. Inversion/repair respect the chosen
+channels/ranges. Utility previews use the existing Original/Preview and one-Undo
+Apply path; originals and samples outside the edit remain intact.
+
+Repair interpolates gaps up to 1 ms between clean neighbours with bounded cubic
+curves. It requires two clean samples on either side/between gaps. Audition adds
+100 ms of context per side without expanding the repair itself; overlapping
+listening windows merge. Zoom to selection and connected samples/dots fix the
+previously disappearing close-zoom waveform. The prepared operation is named
+beside Apply. A short synthetic click fixture improves its selected-gap error;
+this is not a general perceptual-quality or spectral-restoration claim.
+
+All 1,971 frontend tests (200 files), 22 focused checks, full lint plus final
+changed-source/script lint, TypeScript, 21 release checks and the final normal Mac
+bundle pass. Browser tests cover all six operations, a real temporary float WAV,
+linked reopen/render, original/Undo preservation, context-only audition padding,
+close-zoom drawing and German 390 px layout. Existing touch source-editing and final
+continuous-audition regressions pass. The local 0.13.29 app is installed/reopened
+with strict/deep ad-hoc signature verification and its one autosave preserved.
+[Evidence](evidence/source-repair.json). No new physical
+listening, native plug-in DSP, full Rust suite or iOS build is claimed. Spectral
+repair, de-hum, declipping and general click detection remain open.
+[Source guide](SOURCE_EDITING.md).
+
 ## Local 0.13.28 — continuous source comparison
 
 Source Editor now preserves audition position across Original/Preview, cleanup

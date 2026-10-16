@@ -2231,7 +2231,13 @@
     "restoreOriginal": "Original wiederherstellen",
     "plugin": "Plug-in",
     "regionName": "Bereichsname",
-    "saveRegions": "Bereiche speichern"
+    "saveRegions": "Bereiche speichern",
+    "invert": "Polarität umkehren",
+    "swap": "L/R tauschen",
+    "mono": "Monomischung",
+    "leftToRight": "L → R",
+    "rightToLeft": "R → L",
+    "repair": "Klick reparieren"
   },
   "sourcePlugins": {
     "title": "Externe Effekte",
@@ -2318,5 +2324,15 @@
     "storage": "Vorlage konnte nicht gespeichert werden. Der lokale Speicher ist möglicherweise voll.",
     "help": "Erstellt eine leere Spur mit Pegel, Panorama, Wellenformmodus, Aufnahmezeiten und gespeicherten Effekten. Ohne Audio, Takes, Automation oder Routing. Verwendet den Standardeingang; Aufnahmebereitschaft und Mithören sind aus. Kanal und Latenz für das Mikrofon prüfen. Native Effekte benötigen dieselben Plug-ins und verwenden ihren zuletzt gespeicherten Zustand. Vorlagen bleiben in dieser App auf diesem Gerät.",
     "delete": "Löschen"
+  },
+  "sourceTools": {
+    "title": "Kanäle & Reparatur",
+    "operation": "Quellenoperation",
+    "prepare": "Vorschau berechnen",
+    "info": "Hilfe zu Kanälen und Reparatur",
+    "stereoRequired": "Für diese Funktion bei einer Stereoquelle Alle Kanäle wählen.",
+    "repairSelection": "Lücken bis 1 ms mit je zwei sauberen Samples davor und danach wählen. Zwischen Lücken mindestens zwei saubere Samples lassen.",
+    "help": "Bearbeitet die gewählten Bereiche vor den Zeitleisteneffekten. Polarität umkehren wirkt auf die gewählten Kanäle. Stereofunktionen benötigen Alle Kanäle: L/R tauschen, den Mittelwert aus L+R in beide Kanäle schreiben oder eine Seite kopieren. Monomischung behält zwei Kanäle; gegenphasiges Audio kann sich auslöschen. Klickreparatur ersetzt Lücken bis 1 ms durch eine begrenzte kubische Kurve zwischen sauberen Nachbarn. In den Klick hineinzoomen und Nulldurchgangsraster für genaue Samplegrenzen ausschalten. Je zwei saubere Samples davor, danach und zwischen Lücken lassen; nur den beschädigten Kanal wählen. Original/Vorschau vergleichen, dann Anwenden. Für einzelne kurze Klicks, nicht für lange Aussetzer oder Clipping. Eine Vorschau ersetzt den bisherigen Entwurf; zum Kombinieren zuerst anwenden. Bei Klick reparieren umfasst das Abhören je 100 ms Kontext davor und danach; nur die gewählten Samples werden repariert. Beim Wechsel in diesen Abhörmodus oder zurück stoppt die Wiedergabe.",
+    "focus": "Auswahl vergrößern"
   }
 }

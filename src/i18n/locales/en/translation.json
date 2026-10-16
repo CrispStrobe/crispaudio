@@ -2218,7 +2218,13 @@
     "restoreOriginal": "Restore original",
     "plugin": "Plugin",
     "regionName": "Region name",
-    "saveRegions": "Save regions"
+    "saveRegions": "Save regions",
+    "invert": "Invert polarity",
+    "swap": "Swap L/R",
+    "mono": "Mono mix",
+    "leftToRight": "L → R",
+    "rightToLeft": "R → L",
+    "repair": "Repair click"
   },
   "sourcePlugins": {
     "title": "External effects",
@@ -2305,5 +2311,15 @@
     "storage": "The template could not be saved. Local storage may be full.",
     "help": "Creates an empty track with level, pan, waveform mode, input timing and saved FX settings. No audio, takes, automation or routing. Uses the default input; starts unarmed with monitoring off. Review channel and latency for your microphone. Native inserts require the same plug-ins and use their last saved state. Templates stay in this app on this device.",
     "delete": "Delete"
+  },
+  "sourceTools": {
+    "title": "Channels & repair",
+    "operation": "Source operation",
+    "prepare": "Prepare preview",
+    "info": "Channel and repair help",
+    "stereoRequired": "Choose All channels on a stereo source for this operation.",
+    "repairSelection": "Select gaps up to 1 ms with two clean samples on each side. Keep at least two clean samples between gaps.",
+    "help": "Works on selected ranges before timeline FX. Invert changes the selected channel polarity. Stereo operations require All channels: swap L/R, average L+R into both channels, or copy one side to the other. Mono mix keeps two channels; opposite polarity can cancel. Click repair fills selected gaps up to 1 ms with a bounded cubic curve between clean neighbours. Zoom into the click and turn zero-crossing snapping off for exact sample selection. Leave two clean samples on both sides and between gaps; choose only the damaged channel. Compare Original/Preview, then Apply. This repairs isolated short clicks, not long dropouts or clipping. Preview operations replace the current draft; Apply first to combine operations. Choosing Repair click adds 100 ms of audition context on each side; only the selected samples are repaired. Entering/leaving this listening mode stops audition.",
+    "focus": "Zoom to selection"
   }
 }

@@ -31,6 +31,39 @@ playback or closing the editor stops audition and releases its audio nodes.
 linked material too; locked linked tracks prevent a partial edit. Named ranges can
 be saved as project regions for delivery.
 
+## Channel tools and manual click repair
+
+Expand **Channels & repair**, choose an operation, then use the wand button to
+prepare its preview. **Invert polarity** affects the chosen channels/ranges.
+For stereo operations, choose **All channels**: swap L/R, write their average into
+both channels, or copy one side to the other. Mono mix keeps two channels and can
+cancel opposite-polarity audio. No automatic gain boost or boundary fade is added;
+listen at selection edges. Apply first if you want to combine several operations,
+since preparing a preview replaces the current draft.
+
+For an isolated click, turn **Zero crossings** off and select just the damaged
+samples. **Ranges** allows exact start/end sample entry. Choose **Repair click**
+and **Zoom to selection**; close zoom shows the connected samples and sample dots.
+Select the damaged channel, leave two clean samples before and after each gap,
+and keep at least two clean samples between separate gaps. Each gap must be at
+most 1 ms (48 samples at 48 kHz, 44 at 44.1 kHz).
+
+With **Repair click** chosen, audition includes 100 ms before and after the gaps,
+merging overlapping listening windows. This adds listening context only; the repair
+still changes just the selected samples. Entering/leaving repair listening mode
+stops audition so it can start with the new window.
+
+The preview fills the gap with a cubic curve bounded by the two clean anchor
+levels. Compare it with Original in that context before Apply. Only
+selected samples change; length, channel count and timing stay intact. Apply writes
+a derived source, retains the original, and creates one Undo step.
+
+This is conservative interpolation for short isolated clicks. It cannot recover
+lost waveform detail in a long dropout, a missing transient or a clipped passage.
+Repair is unavailable at window edges or without enough clean context; extend the
+clip/source window if clean material exists outside it. No automatic click detector
+or spectral editing is included in this increment.
+
 ## Measure and use native effects
 
 Expand **Analysis** for peak/RMS, DC, clipping, loudness/true peak, spectrum and
@@ -43,5 +76,5 @@ Processing preserves the source window's length, so extend it first for effect t
 
 Continuous comparison currently uses in-memory audio. Long-file streaming,
 audition level/loudness matching, full live source FX and further restoration
-(channel/polarity, click repair, spectral repair, de-hum and declipping) remain work
+(spectral repair, de-hum and declipping) remain work
 in the [audio-workstation roadmap](DAW_GAP_ANALYSIS.md).

@@ -825,3 +825,25 @@ still render offline; only completed preview results replace the playing buffer.
 No new true live native FX graph or loudness matching. Browser qualification:
 `scripts/test-source-audition.mjs`; existing source-editor regression uses explicit
 Original/Preview choices and muted Chrome. No new physical listening acceptance.
+
+## Source utilities and click repair (0.13.29)
+
+`sourceRepair.ts` supplies static polarity inversion, stereo swap/dual-mono/copy and
+manual cubic gap interpolation. Keep channels/sample length and untouched samples
+identical. Stereo tools require two channels and channel=-1; invert/repair respect
+the selected channel(s). Every repair gap is <= floor(sampleRate*.001) samples with
+two clean samples either side and between gaps; validate the whole request before
+copying/processing. Slopes are limited and output clamped to clean anchor levels.
+No invented spectral/declipping/click-detection claims. Repair quality evidence is
+synthetic, not physical/varied-material acceptance. Utility previews share existing
+source Apply/retained-original/Undo logic, and replace the current draft. The compact
+section has one dropdown, wand, (i), and conditional repair-focus icon. SourceEditor
+now draws connected samples and dots when zoomed closely (old zero-length min/max
+lines vanished). Browser regression `scripts/test-source-repair.mjs` uses real temp
+float WAV files through a fixture Tauri bridge; this is not a new production storage
+implementation or physical listening test.
+
+Repair-mode audition adds 100 ms each side and merges listening windows; repair
+and saved operation ranges remain exact. The buffer cache keys context mode, and
+entering/leaving repair mode stops audition before changing its window length.
+Original/Preview then use identical context buffers, preserving their audition clock.

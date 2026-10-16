@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.29 — 2026-10-16
+
+- Add source polarity inversion, stereo L/R swap, dual-mono averaging and channel copying in a compact Channels & repair dropdown.
+- Preview and apply manual click repairs to gaps up to 1 ms using bounded cubic interpolation with clean context. Retain originals, selected-channel/range boundaries and one Undo per Apply.
+- Add Zoom to selection for repair and draw connected samples/dots at close waveform zoom. Show the prepared operation beside Apply; keep A/B audition running.
+
 ## 0.13.28 — 2026-10-16
 
 - Keep source audition running when switching Original/Preview, updating cleanup previews, resetting or toggling loop. Crossfade at the current selection position; show comparison controls beside playback.
