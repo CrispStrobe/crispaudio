@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.22 — 2026-10-16
+
+- Retire text-to-speech creation, server preferences and native iOS speech-generation commands; keep existing generated audio editable.
+- Define CrispAudio's audio editing/recording/finishing role alongside CometBeat composition and CrisperWeaver speech generation/recognition.
+- Record a sourced comparison with ocenaudio, Ardour, LMMS, openDAW, Waveform, MusE, REAPER and Cubase, with explicit partial/missing workflows and priorities.
+- Verify old preference migration, voiceover project compatibility, audio/take/video sample roundtrips and real-reference audio range export/review.
+
+## 0.13.21 — 2026-10-16
+
+- Add monitor metronome support for rendered Preview and microphone recording, using the actual playback/capture anchors and source loops.
+- Continue recording clicks after backing audio ends and release them on stop, cancellation and unmount.
+
+## 0.13.20 — 2026-10-16
+
+- Add a native-clocked monitor metronome to Mac Live playback; bar accents follow seeks and loops without entering exports or mix loudness measurements.
+
 ## 0.13.19 — 2026-10-16
 
 - Consolidate track gain, pan and effect curve shaping into the compact review already used by effect inspectors.

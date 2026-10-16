@@ -25,7 +25,6 @@ const SettingsModal = lazy(() => import('./components/common/SettingsModal').the
 const AboutModal = lazy(() => import('./components/common/AboutModal').then(m => ({ default: m.AboutModal })));
 const ShortcutsModal = lazy(() => import('./components/common/ShortcutsModal').then(m => ({ default: m.ShortcutsModal })));
 const VoiceEffectsModal = lazy(() => import('./components/timeline/VoiceEffectsModal').then(m => ({ default: m.VoiceEffectsModal })));
-const TTSModal = lazy(() => import('./components/timeline/TTSModal').then(m => ({ default: m.TTSModal })));
 
 export default function App() {
   const {t}=useTranslation();
@@ -158,7 +157,6 @@ export default function App() {
         {activeModal === 'about' && <AboutModal />}
         {activeModal === 'shortcuts' && <ShortcutsModal />}
         {activeModal === 'voiceEffects' && <VoiceEffectsModal />}
-        {activeModal === 'tts' && <TTSModal />}
       </Suspense>
     </AppShell>
   );

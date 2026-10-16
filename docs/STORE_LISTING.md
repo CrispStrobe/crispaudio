@@ -9,6 +9,11 @@ into finished clips. Deliberately not "audio workstation" (generic) and not
 transcription/TTS-first (that is CrisperWeaver's territory); speech is one
 input to the sound-design workflow, not the product.
 
+The current product boundary is recording, audio editing/restoration, mixing and
+finishing sound for video. CometBeat owns music composition; CrisperWeaver owns
+ASR/TTS creation. The SFX-first listing below needs a broader positioning review
+before a new public release. Editing this file does not change live Apple metadata.
+
 ## en-US
 
 ### Name
@@ -52,7 +57,7 @@ CUT IT INTO A FINISHED CLIP
 
 PRIVATE AND OFFLINE
 
-All synthesis, voice processing and speech rendering happen on your device. CrispAudio has no accounts, no ads, no analytics and no tracking, and it works without an internet connection. The microphone is only used while you are recording.
+Sound synthesis and voice processing happen on your device. CrispAudio has no accounts, no ads, no analytics and no tracking, and it works without an internet connection. The microphone is only used while you are recording.
 
 Full undo and redo everywhere, light and dark themes, English and German.
 
@@ -101,7 +106,7 @@ ZUM FERTIGEN CLIP SCHNEIDEN
 
 PRIVAT UND OFFLINE
 
-Synthese, Stimmbearbeitung und Sprachausgabe laufen vollständig auf deinem Gerät. CrispAudio hat keine Konten, keine Werbung, keine Analyse und kein Tracking und funktioniert ohne Internetverbindung. Das Mikrofon wird nur während einer Aufnahme verwendet.
+Klangsynthese und Stimmbearbeitung laufen vollständig auf deinem Gerät. CrispAudio hat keine Konten, keine Werbung, keine Analyse und kein Tracking und funktioniert ohne Internetverbindung. Das Mikrofon wird nur während einer Aufnahme verwendet.
 
 Rückgängig und Wiederholen überall, helles und dunkles Design, Deutsch und Englisch.
 
@@ -111,6 +116,6 @@ CrispAudio ist quelloffen unter der MIT-Lizenz.
 
 No account or login is required, and the app works fully offline.
 
-Suggested path: SFX tab → tap a generator (e.g. "Laser/Shoot") → press Mutate a few times → Export, which opens the share sheet. Voice tab → Record (microphone permission) or load an audio file → choose "Demon" or "Classic Robot". Timeline tab → "Text to Speech" → type a sentence → Generate → Add to Timeline (uses the on-device system voices, no network).
+Suggested path: SFX tab → tap a generator (e.g. "Laser/Shoot") → press Mutate a few times → Export, which opens the share sheet. Voice tab → Record (microphone permission) or load an audio file → choose "Demon" or "Classic Robot". Timeline tab → import an audio recording or a voiceover created in CrisperWeaver → edit, mix and export. Text-to-speech creation was retired in 0.13.22.
 
 Audio files can also be sent to CrispAudio from the Files app via Share → CrispAudio.

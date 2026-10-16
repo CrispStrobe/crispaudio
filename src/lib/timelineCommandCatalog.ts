@@ -39,7 +39,7 @@ export const timelineCommands: Record<string, TimelineCommand[]> = {
     Tools: [
         {id:'mix-review',label:'Mix A/B…',requires:'content'},
         { id: 'recording', label: 'Record / Takes…', key: '⌘/Ctrl Shift R' }, { id: 'align', label: 'Alignment…', requires: 'content' }, { id: 'auto-sync', label: 'Synchronize Tracks…', requires: 'content' },
-        { id: 'source-speech', label: 'Source Transcripts…', requires: 'content' }, { id: 'tts', label: 'Text to Speech…' },
+        { id: 'source-speech', label: 'Source Transcripts…', requires: 'content' },
         { id: 'video-setup', label: 'Video Setup…' }, { id: 'open-session', label: 'Open Media Session…' }, { id: 'detach-video', label: 'Detach Video' }, { id: 'recover-media', label: 'Recover Media…' }, { id: 'multicam', label: 'Multicam…' },
         { id: 'musical-time', label: 'Musical Time…' }, { id: 'midi', label: 'MIDI…' },
     ],

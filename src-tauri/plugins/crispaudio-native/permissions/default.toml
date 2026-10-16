@@ -2,4 +2,4 @@
 
 [default]
 description = "Allows all native CrispAudio commands."
-permissions = ["allow-listVoices", "allow-synthesize", "allow-shareFile", "allow-haptic"]
+permissions = ["allow-shareFile", "allow-haptic"]

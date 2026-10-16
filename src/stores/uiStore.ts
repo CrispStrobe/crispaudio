@@ -9,7 +9,7 @@ import { useProjectStore } from './projectStore';
 import type { OpenedFile } from '../lib/native';
 
 export type ActivePanel = 'sfx' | 'voice' | 'timeline';
-export type ActiveModal = 'settings' | 'about' | 'shortcuts' | 'voiceEffects' | 'tts' | null;
+export type ActiveModal = 'settings' | 'about' | 'shortcuts' | 'voiceEffects' | null;
 
 interface UIState {
   timelineRecording:boolean;

@@ -605,7 +605,6 @@ export const TimelinePanel: React.FC = () => {
       case 'workspace':setWorkspace(old=>old?null:'media');break;
       case 'mixer':setMixer(value=>!value);break;
       case 'automation':setAutomation(value=>!value);break;
-      case 'tts':useUIStore.getState().openModal('tts');break;
       case 'waveform-mode':setWaveformOpen(true);break;
       case 'navigation-view':{const s=useSettingsStore.getState();s.setTimelineNavigation(!s.timelineNavigation);break;}
       case 'align':if(state.project.tracks.length>=2){state.setIsPlaying(false);setAlignmentOpen(true);}break;

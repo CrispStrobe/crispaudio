@@ -1,4 +1,10 @@
-# Speech transcription and word editing (local 0.8.5)
+# Transcript editing and the legacy speech launcher
+
+CrisperWeaver owns speech recognition and generation. Import its timed transcripts
+and audio for word editing, captions and mixing in CrispAudio. TTS creation is
+removed in 0.13.22; existing generated audio remains editable. The optional desktop
+CrispASR launcher documented below is legacy functionality retained for now, not
+a second model-management roadmap. Its retirement/handoff is a separate follow-up.
 
 Open **Timeline → Workspace → Transcript**. Choose the current audible mix or one
 microphone track. A selected microphone is transcribed even if it is muted in the

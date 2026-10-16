@@ -634,7 +634,6 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
                 timeline && context.content,
                 None,
             )?,
-            &item("tts", "Text to Speech…", "Sprachausgabe…", timeline, None)?,
             &sep()?,
             &item(
                 "video-setup",

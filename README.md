@@ -190,17 +190,18 @@ when needed.
 
 [Media workspace](docs/MEDIA_WORKSPACE.md) · [Picture layers, graphics and multicam](docs/EDITOR_CHECKPOINT.md) · [Color](docs/VIDEO_COLOR.md) · [Orientation](docs/VIDEO_ORIENTATION.md)
 
-## Edit speech and create voiceovers
+## Edit speech and voiceovers
 
 Use a transcript to find and select passages, remove timed words across sound and
 picture, or paste a shortened transcript and review which passages to keep.
 Source transcripts map through trims, repeated clips, speed and reverse. Correct
 words and speaker labels, search occurrences and organize named sections.
 
-Desktop transcription and word alignment use a separately configured local
-**CrispASR** executable and model. Existing timed transcripts can also be imported.
-Text-to-speech can generate a voiceover, preview it and place it in the timeline;
-it uses a configured speech service, or system voices in the iOS app.
+Generate speech and transcripts in **CrisperWeaver**, then import the audio and
+timed text into CrispAudio for editing, captions and mixing. Existing voiceovers
+remain ordinary editable audio clips. CrispAudio no longer creates text-to-speech.
+Desktop builds retain a legacy optional **CrispASR** CLI launcher; models are not
+bundled, and expanding speech recognition belongs to CrisperWeaver.
 
 [Speech editing and setup](docs/SPEECH_EDITING.md) · [Keep-text editing](docs/KEEP_TEXT_EDITING.md) · [Interview walkthrough](docs/INTERVIEW_WALKTHROUGH.md)
 
@@ -262,6 +263,15 @@ CLI rejects enabled native inserts. GUI audio is decoded into
 memory, so long recordings can need substantial RAM. iOS does not yet have desktop
 feature parity; newer touch, device and multi-input workflows need device-specific
 checks. See [platform status](docs/RELEASE_STATUS.md) for availability.
+
+## Role in the app family
+
+**CrispAudio** records, edits, restores, mixes and finishes audio and sound for video.
+**CometBeat** owns composition, beats, instruments and music sequencing.
+**CrisperWeaver** owns speech recognition, speech generation and model management.
+Exchange rendered audio, stems and timed transcripts through files. Existing
+musical utilities remain available, but building another composition environment
+is outside CrispAudio's roadmap.
 
 ## Run from source
 

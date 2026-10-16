@@ -5,6 +5,33 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Apple and baseline CI refresh — 2026-10-16
+
+Read-only App Store Connect checks from the VPS confirm public iOS 0.3.0 remains
+`READY_FOR_SALE`; native Mac 1.0 remains `PREPARE_FOR_SUBMISSION`. Both platform
+0.13.0/build 14 binaries are `VALID` and unexpired. Current internal/external review
+states were not established: detail requests timed out/returned 404 and included
+state fields were null. This does not establish rejection or build removal.
+[Sanitized refresh](evidence/apple-store-status-2026-10-16.json).
+
+Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051561)
+and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
+This does not claim remote validation for the subsequent scope-cleanup commit.
+
+## Local 0.13.22 — audio finishing scope and TTS retirement
+
+TTS creation, server preferences and iOS speech synthesis commands are removed.
+Existing generated clips remain ordinary audio; imported transcripts and captions
+remain editable. CometBeat owns composition; CrisperWeaver owns ASR/TTS generation.
+The legacy optional CrispASR launcher remains a separate retirement/handoff task.
+The [comparison and gap inventory](DAW_GAP_ANALYSIS.md) distinguishes implemented
+subsets from larger recording, restoration, routing and session-engine gaps.
+All 1,908 frontend tests and 39 desktop app tests pass, as do release gates,
+old-project/real-source browser checks, the full unsigned iOS simulator bundle
+and normal Mac bundle. The local app is installed with its autosave preserved.
+[Checkpoint evidence](evidence/audio-focus-tts-retirement.json). No new public
+App Store release or parity claim follows from this scope cleanup.
+
 ## Local 0.13.21 — Preview and recording monitor clicks
 
 The monitor metronome now follows rendered Preview source loops and recording

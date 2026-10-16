@@ -1,0 +1,189 @@
+{
+  "checkpoint": "0.13.22",
+  "date": "2026-10-16",
+  "feature": "Audio-finishing product boundary and TTS retirement",
+  "authorization": "User explicitly selected Remove TTS creation; use CrisperWeaver. Existing generated audio remains editable.",
+  "removed": [
+    "TTS modal and HTTP generation client",
+    "TTS server/voice/backend settings and persisted legacy keys",
+    "Desktop menu, command catalog and modal route",
+    "iOS voice enumeration/synthesis APIs and default plugin permissions",
+    "Obsolete TTS-specific tests and translations"
+  ],
+  "preserved": [
+    "Ordinary imported/generated audio sources and saved projects",
+    "Voice audio processing, SFX and recording",
+    "Transcript import/editing, captions and word-based edits",
+    "Native iOS sharing, haptics and audio-session setup"
+  ],
+  "scope": [
+    "CometBeat owns composition/instruments/sequencing; CrisperWeaver owns ASR/TTS generation.",
+    "Optional legacy CrispASR launcher is still present; retirement/handoff remains a separate follow-up.",
+    "No new composition, speech-model UI, native input engine or paging rewrite was started."
+  ],
+  "comparison": "docs/DAW_GAP_ANALYSIS.md",
+  "checks": {
+    "full_frontend": {
+      "passed": 1908,
+      "files": 190,
+      "log": "/tmp/crispaudio-audio-focus-full-tests.log"
+    },
+    "focused_before_final_migration_test": {
+      "passed": 58,
+      "files": 5,
+      "log": "/tmp/crispaudio-tts-retirement-focused.log",
+      "note": "Final migration case is included in the full suite."
+    },
+    "lint": {
+      "status": "passed",
+      "log": "/tmp/crispaudio-audio-focus-lint.log"
+    },
+    "validation_script_lint": {
+      "status": "passed",
+      "log": "/tmp/crispaudio-audio-focus-scripts-lint.log"
+    },
+    "typescript": {
+      "status": "passed",
+      "log": "/tmp/crispaudio-audio-focus-tsc-final.log"
+    },
+    "release_gates": {
+      "passed": 21,
+      "log": "/tmp/crispaudio-audio-focus-release.log"
+    },
+    "listing_limits": {
+      "status": "passed",
+      "log": "/tmp/crispaudio-audio-focus-listing-final.log"
+    },
+    "desktop_app": {
+      "passed": 39,
+      "ignored": 1,
+      "log": "/tmp/crispaudio-audio-focus-app.log"
+    },
+    "full_ios_simulator_bundle": {
+      "status": "passed",
+      "version": "0.13.22",
+      "target": "arm64-sim",
+      "command": "tauri ios build --debug --target aarch64-sim --no-sign",
+      "log": "/tmp/crispaudio-audio-focus-ios-build.log"
+    },
+    "mac_bundle": {
+      "status": "passed",
+      "log": "/tmp/crispaudio-01322-build.log"
+    },
+    "browser_scope_and_samples": {
+      "status": "passed",
+      "script": "scripts/test-audio-product-boundary.mjs",
+      "log": "/tmp/crispaudio-audio-focus-browser-final.log",
+      "results": {
+        "retirement": {
+          "retiredSettingsGone": true,
+          "editingSettingsRetained": true,
+          "ttsCommandGone": true,
+          "oldClip": "TTS - Guten Tag",
+          "sources": 1,
+          "frames": 12000,
+          "peak": 0.09899494796991348,
+          "undo": 1,
+          "restoredVolume": 0.7
+        },
+        "sessions": [
+          {
+            "kind": "mix",
+            "frames": 672000,
+            "rms": 0.03328517312331053,
+            "peak": 0.1998922973871231,
+            "tracks": 3,
+            "reopened": true,
+            "sources": 3,
+            "takes": 0,
+            "picture": false
+          },
+          {
+            "kind": "takes",
+            "frames": 672000,
+            "rms": 0.033385257080484634,
+            "peak": 0.1998922973871231,
+            "tracks": 3,
+            "reopened": true,
+            "sources": 4,
+            "takes": 2,
+            "picture": false
+          },
+          {
+            "kind": "picture",
+            "frames": 672000,
+            "rms": 0.033285173120911705,
+            "peak": 0.1998922973871231,
+            "tracks": 3,
+            "reopened": true,
+            "sources": 3,
+            "takes": 0,
+            "picture": true
+          }
+        ],
+        "settingsDesktopTouch": true,
+        "physicalAudio": false
+      }
+    },
+    "real_reference_audio": {
+      "status": "passed",
+      "script": "scripts/test-reference-audio-workflow.mjs",
+      "log": "/tmp/crispaudio-audio-focus-real-source-final.log",
+      "source": "User-supplied local 16-second MP4; no media/path committed",
+      "results": {
+        "realSource": true,
+        "import": "browser audio picker and actual MP4 audio decoding",
+        "edit": {
+          "sourceDuration": 16,
+          "sourceRate": 48000,
+          "sourceChannels": 2,
+          "undo": 1,
+          "undoDuration": 16,
+          "frames": 384000,
+          "rate": 48000,
+          "channels": 2,
+          "rms": 0.050348247996025046,
+          "peak": 0.7355524897575378,
+          "first": 0,
+          "reopened": true
+        },
+        "actualSavedWavReview": {
+          "frames": 384000,
+          "channels": 2,
+          "rate": 48000,
+          "maxPCMError": 1.1920928955078125e-07
+        },
+        "originalUnchanged": true,
+        "physicalAudio": false,
+        "desktopVideoAndFinder": "not exercised by this audio-only test"
+      }
+    }
+  },
+  "baseline_ci": {
+    "commit": "c1ec01a7b64f4c2c6484fb8586e8cdc3e8ec20f1",
+    "general": {
+      "run": 38911051561,
+      "conclusion": "success"
+    },
+    "ios": {
+      "run": 38911051851,
+      "conclusion": "success"
+    },
+    "note": "Subsequent scope-cleanup commit requires its own remote checks."
+  },
+  "apple_refresh": "docs/evidence/apple-store-status-2026-10-16.json",
+  "limits": [
+    "Muted browser/synthetic samples and real-source audio software checks are not physical microphone/listening acceptance.",
+    "Picture sample checks cover its audio render and saved structure; desktop video export and physical Finder gestures were not requalified.",
+    "No App Store/TestFlight upload, release tag or live listing mutation.",
+    "No native media DSP changes; full media/native-hosting qualification was not repeated."
+  ],
+  "installation": {
+    "version": "0.13.22",
+    "app": "~/Applications/CrispAudio-local.app",
+    "strict_deep_signature": "passed",
+    "autosaves_retained": 1,
+    "backup": "recovery-before-01322-20261016-163522",
+    "log": "/tmp/crispaudio-01322-install.log"
+  }
+}

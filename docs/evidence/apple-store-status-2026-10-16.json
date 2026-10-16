@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-10-16T14:23:31Z",
+  "method": "Read-only App Store Connect GET requests from VPS, sanitized fields only",
+  "appStoreVersions": [
+    {
+      "platform": "MAC_OS",
+      "version": "1.0",
+      "state": "PREPARE_FOR_SUBMISSION"
+    },
+    {
+      "platform": "IOS",
+      "version": "0.3.0",
+      "state": "READY_FOR_SALE"
+    }
+  ],
+  "testFlightBuilds": [
+    {
+      "platform": "MAC_OS",
+      "version": "0.13.0",
+      "build": "14",
+      "processing": "VALID",
+      "internal": null,
+      "external": null,
+      "expired": false
+    },
+    {
+      "platform": "IOS",
+      "version": "0.13.0",
+      "build": "14",
+      "processing": "VALID",
+      "internal": null,
+      "external": null,
+      "expired": false
+    }
+  ],
+  "testFlightReviewState": "Not established by this refresh: detail queries returned timeout/404; included state fields were null. Do not infer removal or rejection.",
+  "mutations": false,
+  "priorSubmissionEvidence": "testflight-0.13.0-build14.json"
+}

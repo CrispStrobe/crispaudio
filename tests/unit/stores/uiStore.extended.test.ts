@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// uiStore extended tests — voice effects modal and TTS modal
+// uiStore extended tests — voice effects navigation and opened files
 // ---------------------------------------------------------------------------
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -38,28 +38,6 @@ describe('uiStore — voice navigation', () => {
     useUIStore.getState().openModal('settings');
     useUIStore.getState().closeModal();
     expect(useUIStore.getState().voiceEffectsTargetSegmentId).toBe('editing');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TTS modal
-// ---------------------------------------------------------------------------
-
-describe('uiStore — TTS modal', () => {
-  it('openModal("tts") sets activeModal to "tts"', () => {
-    useUIStore.getState().openModal('tts');
-    expect(useUIStore.getState().activeModal).toBe('tts');
-  });
-
-  it('closeModal clears TTS modal', () => {
-    useUIStore.getState().openModal('tts');
-    useUIStore.getState().closeModal();
-    expect(useUIStore.getState().activeModal).toBeNull();
-  });
-
-  it('TTS modal does not set voiceEffectsTargetSegmentId', () => {
-    useUIStore.getState().openModal('tts');
-    expect(useUIStore.getState().voiceEffectsTargetSegmentId).toBeNull();
   });
 });
 

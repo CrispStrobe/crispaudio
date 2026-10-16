@@ -1,8 +1,32 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.21. This section is the current plan.
+Updated 2026-10-16, for local 0.13.22. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
+
+## Current product boundary and next work
+
+The user's 16 October direction is recording, editing, restoration, mixing and
+audio/video finishing. CometBeat owns music composition/instruments/sequencing;
+CrisperWeaver owns ASR/TTS generation and model management. TTS creation is removed
+in 0.13.22; existing generated clips, transcript import/editing and captions remain.
+The optional legacy CrispASR launcher is still present and is a separate handoff/
+retirement task. Do not expand it or build a second music composition environment.
+
+The [current comparison and gap inventory](docs/DAW_GAP_ANALYSIS.md) covers
+ocenaudio, Ardour, LMMS, openDAW, Waveform, MusE, REAPER and Cubase. Implemented
+features are not a claim of equivalent depth or production maturity. Large gaps
+include continuous source FX audition/restoration, native input FX and cue routing,
+reversible freeze/render-in-place, session/asset workflows, broader automation,
+finishing precision and scalable long-session playback.
+
+Proceed with release qualification, complete-session acceptance, audible recording
+count-in/pre-roll, physical-device checks when available and native plug-in
+usability, in the accepted order. The gap document records the larger follow-up
+sequence and acceptance boundaries. Historical “completed” entries below describe
+bounded increments, not a finished state-of-the-art DAW. MIDI/composition expansion
+is outside this app's active scope; codec/paging rewrites remain deferred until
+explicitly prioritized or justified by an actual blocked session.
 
 Local 0.13.20 adds a native-clocked monitor metronome to Mac Live playback.
 The existing musical controls enable clicks and change their level without a DSP

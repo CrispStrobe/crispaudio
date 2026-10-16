@@ -38,9 +38,6 @@ interface SettingsState {
   defaultBitDepth: BitDepth;
   defaultExportFormat: ExportFormat;
   defaultBitrateKbps: number;
-  ttsServerUrl: string;
-  ttsDefaultVoice: string;
-  ttsDefaultBackend: string;
 
   setLanguage: (lang: Language) => void;
   setTheme: (theme: Theme) => void;
@@ -48,9 +45,6 @@ interface SettingsState {
   setDefaultBitDepth: (depth: BitDepth) => void;
   setDefaultExportFormat: (format: ExportFormat) => void;
   setDefaultBitrateKbps: (kbps: number) => void;
-  setTTSServerUrl: (url: string) => void;
-  setTTSDefaultVoice: (voice: string) => void;
-  setTTSDefaultBackend: (backend: string) => void;
 }
 
 /** Apply theme class to the document root element. */
@@ -85,9 +79,6 @@ export const useSettingsStore = create<SettingsState>()(
       defaultBitDepth: 16,
       defaultExportFormat: 'wav' as ExportFormat,
       defaultBitrateKbps: 192,
-      ttsServerUrl: 'http://localhost:8766',
-      ttsDefaultVoice: '',
-      ttsDefaultBackend: 'kokoro',
 
       setLanguage: (language) => {
         i18n.changeLanguage(language);
@@ -101,12 +92,15 @@ export const useSettingsStore = create<SettingsState>()(
       setDefaultBitDepth: (defaultBitDepth) => set({ defaultBitDepth }),
       setDefaultExportFormat: (defaultExportFormat) => set({ defaultExportFormat }),
       setDefaultBitrateKbps: (defaultBitrateKbps) => set({ defaultBitrateKbps }),
-      setTTSServerUrl: (ttsServerUrl) => set({ ttsServerUrl }),
-      setTTSDefaultVoice: (ttsDefaultVoice) => set({ ttsDefaultVoice }),
-      setTTSDefaultBackend: (ttsDefaultBackend) => set({ ttsDefaultBackend }),
     }),
     {
       name: 'crispaudio-settings',
+      // Retired speech generation preferences must not return on rehydration.
+      merge: (persisted, current) => {
+        const saved = { ...(persisted as Record<string, unknown>) };
+        for (const key of ['ttsServerUrl', 'ttsDefaultVoice', 'ttsDefaultBackend']) delete saved[key];
+        return { ...current, ...saved };
+      },
       onRehydrateStorage: () => (state) => {
         if (state?.language) i18n.changeLanguage(state.language);
         if (state?.theme) applyTheme(state.theme);

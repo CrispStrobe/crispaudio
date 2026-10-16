@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// native bridge tests — platform detection, system-voice selection, and the
+// native bridge tests — platform detection and the
 // invoke sequences behind the share sheet and "Open in CrispAudio".
 // ---------------------------------------------------------------------------
 
@@ -11,16 +11,11 @@ vi.mock('@tauri-apps/api/core', () => ({ invoke: (...args: unknown[]) => invoke(
 vi.mock('@tauri-apps/api/event', () => ({ listen: (...args: unknown[]) => listen(...args) }));
 
 import {
-  base64ToArrayBuffer,
-  groupVoicesByLanguage,
   haptic,
   isIOSApp,
-  pickDefaultSystemVoice,
   setAudioSessionType,
   shareFile,
   subscribeOpenedFiles,
-  synthesizeWithSystemVoice,
-  type SystemVoice,
 } from '../../../src/lib/native';
 
 const IPHONE_UA =
@@ -34,10 +29,6 @@ function setPlatform({ tauri, ua, touchPoints = 0 }: { tauri: boolean; ua: strin
   // jsdom has no maxTouchPoints, so define it rather than spy on it.
   Object.defineProperty(navigator, 'maxTouchPoints', { value: touchPoints, configurable: true });
 }
-
-const voice = (over: Partial<SystemVoice>): SystemVoice => ({
-  id: 'id', name: 'Name', language: 'en-US', quality: 'default', novelty: false, ...over,
-});
 
 beforeEach(() => {
   invoke.mockReset();
@@ -69,56 +60,6 @@ describe('isIOSApp', () => {
   it('is false for Safari on iPhone (no Tauri)', () => {
     setPlatform({ tauri: false, ua: IPHONE_UA });
     expect(isIOSApp()).toBe(false);
-  });
-});
-
-describe('system voice selection', () => {
-  const voices = [
-    voice({ id: 'en-basic', language: 'en-US', quality: 'default' }),
-    voice({ id: 'en-premium', language: 'en-GB', quality: 'premium' }),
-    voice({ id: 'de-enhanced', language: 'de-DE', quality: 'enhanced' }),
-    voice({ id: 'de-basic', language: 'de-DE', quality: 'default' }),
-    voice({ id: 'bubbles', language: 'en-US', quality: 'default', novelty: true }),
-  ];
-
-  it('prefers the highest-quality voice in the UI language', () => {
-    expect(pickDefaultSystemVoice(voices, 'de')?.id).toBe('de-enhanced');
-    expect(pickDefaultSystemVoice(voices, 'en-US')?.id).toBe('en-premium');
-  });
-
-  it('falls back to any non-novelty voice when the language has none', () => {
-    expect(pickDefaultSystemVoice(voices, 'ja')?.id).toBe('en-premium');
-  });
-
-  it('returns undefined when no voices are installed', () => {
-    expect(pickDefaultSystemVoice([], 'en')).toBeUndefined();
-  });
-
-  it('groups by language with sorted languages and names', () => {
-    const grouped = groupVoicesByLanguage([
-      voice({ id: '1', name: 'Zoe', language: 'en-US' }),
-      voice({ id: '2', name: 'Anna', language: 'de-DE' }),
-      voice({ id: '3', name: 'Alex', language: 'en-US' }),
-    ]);
-    expect(grouped.map(([lang]) => lang)).toEqual(['de-DE', 'en-US']);
-    expect(grouped[1][1].map((v) => v.name)).toEqual(['Alex', 'Zoe']);
-  });
-});
-
-describe('synthesizeWithSystemVoice', () => {
-  it('invokes the native plugin and decodes the base64 WAV', async () => {
-    invoke.mockResolvedValue({ wavBase64: btoa('RIFF'), sampleRate: 22050, durationSeconds: 0 });
-    const bytes = await synthesizeWithSystemVoice('Hallo', { voiceId: 'v', rate: 1.5, pitch: 0.8 });
-
-    expect(invoke).toHaveBeenCalledWith('plugin:crispaudio-native|synthesize', {
-      text: 'Hallo', voiceId: 'v', rate: 1.5, pitch: 0.8,
-    });
-    expect(new TextDecoder().decode(bytes)).toBe('RIFF');
-  });
-
-  it('base64ToArrayBuffer round-trips binary data', () => {
-    const raw = String.fromCharCode(0, 255, 128, 7);
-    expect([...new Uint8Array(base64ToArrayBuffer(btoa(raw)))]).toEqual([0, 255, 128, 7]);
   });
 });
 

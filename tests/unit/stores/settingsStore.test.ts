@@ -168,3 +168,18 @@ describe('settingsStore -- setDefaultBitDepth', () => {
     expect(useSettingsStore.getState().defaultBitDepth).toBe(depth);
   });
 });
+
+it('drops retired speech-generation preferences on rehydrate while retaining editing settings', async () => {
+  localStorage.setItem('crispaudio-settings', JSON.stringify({version:0,state:{
+    ttsServerUrl:'https://old-speech.invalid',ttsDefaultVoice:'old',ttsDefaultBackend:'kokoro',
+    defaultBitDepth:24,timelineAutoFit:false,language:'en',theme:'dark',
+  }}));
+  await useSettingsStore.persist.rehydrate();
+  const state=useSettingsStore.getState();
+  expect(state.defaultBitDepth).toBe(24);expect(state.timelineAutoFit).toBe(false);
+  for(const key of ['ttsServerUrl','ttsDefaultVoice','ttsDefaultBackend'])expect(state).not.toHaveProperty(key);
+  state.setDefaultBitrateKbps(256);
+  const saved=JSON.parse(localStorage.getItem('crispaudio-settings')!).state;
+  expect(saved.defaultBitDepth).toBe(24);
+  for(const key of ['ttsServerUrl','ttsDefaultVoice','ttsDefaultBackend'])expect(saved).not.toHaveProperty(key);
+});
