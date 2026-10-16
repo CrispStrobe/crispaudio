@@ -116,6 +116,7 @@ export interface AudioSegment {
 export type FadeCurve = 'linear' | 'exponential' | 'scurve';
 
 export interface EffectConfig {
+  instanceId?: string; // Stable processor identity; older projects acquire IDs on reorder.
   automation?: {mix?: GainPoint[];feedback?: GainPoint[];time?: GainPoint[];depth?: GainPoint[];rate?: GainPoint[];freq?:GainPoint[]}; // absolute timeline seconds; delay mix/feedback/time, chorus depth/rate, ringmod freq, or ringmod/bitcrush/distortion/chorus/reverb mix
   type: EffectType;
   enabled: boolean;

@@ -115,3 +115,14 @@ it('auditions master and clip independently, restores Read and keeps scoped cont
  const changed=structuredClone(p);changed.masterEffects[0].params.time=1.5;changed.tracks[0].segments[0].effects[0].params.mix=.7;expect(nativeLiveStructureKey(changed)).toBe(nativeLiveStructureKey(p));
  expect(controller.previewEffectAutomation(p,'clip:missing',0,'mix',.4)).toBe(false);controller.previewEffectAutomation(p,'clip:clip',0,'mix');await controller.update(p);expect(f.playback.update).toHaveBeenLastCalledWith(p);expect(p).toEqual(original);expect(create).toHaveBeenCalledTimes(1);await controller.stop();
 });
+
+import {identifyEffectRack,pasteEffectRack} from '../../../src/lib/builtinEffectIdentity';
+it('rebuilds paused identical processors after reorder or paste rather than resuming their old histories',async()=>{
+ const first=session(),second=session(),third=session();create.mockResolvedValueOnce(first.snapshot).mockResolvedValueOnce(second.snapshot).mockResolvedValueOnce(third.snapshot);
+ const controller=new NativePlaybackController(()=>{},()=>{}),effects=identifyEffectRack([{type:'delay',enabled:true,params:{time:.3,mix:.3}},{type:'delay',enabled:true,params:{time:.3,mix:.3}}]),p={...project(),masterEffects:effects};
+ await controller.play(p,sources,.5,0,4,true);await controller.pause();
+ const reordered={...p,masterEffects:[...effects].reverse()};expect(nativeLiveStructureKey(reordered)).not.toBe(nativeLiveStructureKey(p));
+ await controller.play(reordered,sources,.5,0,4,true);expect(create).toHaveBeenCalledTimes(2);expect(first.snapshot.close).toHaveBeenCalledTimes(1);expect(first.playback.pause).not.toHaveBeenCalledWith(false);
+ await controller.pause();const pasted={...reordered,masterEffects:pasteEffectRack(reordered.masterEffects)};
+ await controller.play(pasted,sources,.5,0,4,true);expect(create).toHaveBeenCalledTimes(3);expect(second.snapshot.close).toHaveBeenCalledTimes(1);await controller.stop();
+});

@@ -259,3 +259,14 @@ describe('deserializeProject — invalid documents', () => {
     ).rejects.toThrow();
   });
 });
+
+it('roundtrips built-in processor identities without requiring them in legacy files',async()=>{
+ for(const instanceId of [undefined,'delay-instance-1']){
+  const effects=[{type:'delay' as const,enabled:true,params:{time:.3},...(instanceId?{instanceId}:{})}];
+  const project=makeProject({masterEffects:effects,tracks:[{id:'t',name:'Track',volume:1,pan:0,muted:false,solo:false,effects,segments:[]}]});
+  const json=serializeProject(project,new Map());
+  const restored=await deserializeProject(json,makeMockAudioContext());
+  expect(restored.project.masterEffects).toEqual(effects);expect(restored.project.tracks[0].effects).toEqual(effects);
+  expect(JSON.parse(json).version).toBe(3);
+ }
+});

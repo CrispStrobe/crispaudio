@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.11 — 2026-10-16
+
+- Rebuild Mac Live playback after reordering built-in effects of the same type, including Undo, Redo and paused playback.
+- Keep stable processor identities through knob edits and save/reopen; pasted effects receive fresh identities.
+- Preserve compatibility with projects saved before processor identities were introduced.
+
 ## 0.13.10 — 2026-10-16
 
 - Adjust supported clip and master effect knobs during Mac Live playback without restarting processors.

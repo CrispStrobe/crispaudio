@@ -109,6 +109,7 @@ regions, and save named comp versions. Recorded originals remain available.
 
 On macOS, discover AU/VST3 effects and add them to clip, track, bus or master
 racks. **Live** playback keeps native effects running through pause and loops.
+Reordering effects rebuilds the processing chain, including effects of the same type.
 Adjust faders, pan, mute, solo, sends, plugin parameters and bypass while listening;
 track meters and master loudness remain visible. Seeking rebuilds effect history.
 Use the compact **Live / Preview** selector beside Play for a rendered fallback.

@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.10. This section is the current plan.
+Updated 2026-10-16, for local 0.13.11. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -89,6 +89,12 @@ Local 0.13.9 also updates these track effect knobs live, including Undo/Redo,
 without resetting processors. Base values follow constructor clamping and remain
 subordinate to saved curves. Other built-in settings and rack edits still restart.
 [Live knob checks](docs/evidence/native-static-track-effects.json).
+Local 0.13.11 makes same-type built-in effect reorders structural in Mac Live
+playback, including Undo, Redo and paused resume. Stable optional processor IDs
+survive ordinary edits and saved projects; reordering upgrades legacy racks and
+pasting creates fresh processors. Knob changes still retain running DSP history.
+[Effect identity checks](docs/evidence/native-effect-identity.json).
+
 Local 0.13.10 extends live controls and reviewed passes to master and clip effects,
 with scope validation, shared delay-history budgeting and native-fault guards.
 [Scoped native checks](docs/evidence/native-scoped-effects.json).

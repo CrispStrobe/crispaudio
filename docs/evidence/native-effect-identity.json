@@ -1,0 +1,33 @@
+{
+  "version": "0.13.11",
+  "date": "2026-10-16",
+  "behavior": [
+    "Same-type built-in effect reorders change native topology at track, clip and master scope, including Undo and Redo",
+    "Optional stable instanceId persists through knob edits and saved projects; new editor effects and pasted processors get fresh identities",
+    "Legacy racks are identified on reorder without mutating prior snapshots; duplicate IDs repaired on reorder",
+    "Paused playback rebuilds reordered or pasted identical processors instead of resuming old processor histories",
+    "Supported knob edits continue to update the running native graph"
+  ],
+  "validation": {
+    "frontend": {
+      "result": "PASS",
+      "tests": 1787,
+      "files": 182,
+      "log": "/tmp/crispaudio-effect-identity-frontend-full.log",
+      "options": "maxWorkers=2; testTimeout=20000; repository options unchanged"
+    },
+    "focused": "32 passed; final rack/identity checks 3 passed after lint-only test cleanup",
+    "typescript": "PASS; standalone tsc -b and final Mac build",
+    "lint": "PASS /tmp/crispaudio-effect-identity-lint-final.log",
+    "release": "21 passed /tmp/crispaudio-effect-identity-release.log",
+    "macBuild": "PASS /tmp/crispaudio-01311-build.log",
+    "installation": "0.13.11; strict/deep signature verified; running; one autosave retained",
+    "nativeScope": "No Rust DSP or native bridge changes; native graph rebuild/resume decisions covered with mocked native sessions and real transport/store subscriptions"
+  },
+  "limits": [
+    "No new listening, physical-device or commercial plug-in acceptance claim",
+    "Native plug-in parameter passes and continuous native microphone DSP remain pending",
+    "Unsupported built-in knobs still rebuild playback; native live control updates remain block based",
+    "Physical iOS, Finder/PowerBox and external interface acceptance remain pending"
+  ]
+}

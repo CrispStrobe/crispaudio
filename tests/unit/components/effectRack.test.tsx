@@ -11,7 +11,8 @@ function Rack({label,initial=effects}:{label:string;initial?:EffectConfig[]}) {
   const [value,setValue]=useState(initial);
   return <><EffectChainEditor label={label} effects={value} onChange={setValue}/><output data-testid={label}>{JSON.stringify(value)}</output></>;
 }
-const value=(label:string)=>JSON.parse(screen.getByTestId(label).textContent!);
+const value=(label:string):EffectConfig[]=>JSON.parse(screen.getByTestId(label).textContent!);
+const settings=(rack:EffectConfig[])=>rack.map(effect=>{const copy={...effect};delete copy.instanceId;return copy;});
 describe('shared effect rack',()=>{
  it('reorders, bypasses, copies and pastes independent settings between scopes',()=>{
   render(<><Rack label="clip"/><Rack label="master" initial={[]}/></>);
@@ -22,7 +23,8 @@ describe('shared effect rack',()=>{
   expect(value('clip').every((e:EffectConfig)=>!e.enabled)).toBe(true);
   fireEvent.click(clip.getByRole('button',{name:'rack.copy'}));
   fireEvent.click(master.getByRole('button',{name:'rack.paste'}));
-  expect(value('master')).toEqual(value('clip'));
+  expect(settings(value('master'))).toEqual(settings(value('clip')));
+  expect(value('master').every(e=>e.instanceId&&!value('clip').some(source=>source.instanceId===e.instanceId))).toBe(true);
   fireEvent.click(master.getByRole('button',{name:'rack.enable'}));
   expect(value('master').every((e:EffectConfig)=>e.enabled)).toBe(true);
   expect(value('clip').every((e:EffectConfig)=>!e.enabled)).toBe(true);
@@ -36,8 +38,13 @@ it('retains all delay and chorus envelopes when copying and reordering racks',()
  render(<><Rack label="clip" initial={initial}/><Rack label="master" initial={[]}/></>);
  const clip=within(screen.getByRole('region',{name:'clip'})),master=within(screen.getByRole('region',{name:'master'}));
  fireEvent.click(clip.getAllByRole('button',{name:'rack.moveDown'})[0]);
- expect(value('clip')).toEqual([initial[1],initial[0]]);
+ expect(settings(value('clip'))).toEqual([initial[1],initial[0]]);
+ const ids=value('clip').map(e=>e.instanceId);
+ fireEvent.click(clip.getAllByRole('button',{name:'rack.moveUp'})[1]);
+ expect(value('clip').map(e=>e.instanceId)).toEqual([...ids].reverse());
+ fireEvent.click(clip.getAllByRole('button',{name:'rack.moveDown'})[0]);
+ expect(value('clip').map(e=>e.instanceId)).toEqual(ids);
  fireEvent.click(clip.getByRole('button',{name:'rack.copy'}));fireEvent.click(master.getByRole('button',{name:'rack.paste'}));
- expect(value('master')).toEqual([initial[1],initial[0]]);
+ expect(settings(value('master'))).toEqual([initial[1],initial[0]]);
  expect(initial[0].automation!.time![0].curve).toBe('step');
 });

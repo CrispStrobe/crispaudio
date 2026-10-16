@@ -17,7 +17,9 @@ installed Mac app; browser and iOS sessions can retain the project data.
 
 Controls that update live on tracks, clips and master: wet/dry mix for delay, chorus, reverb, distortion,
 ring modulation and bitcrush; delay time/feedback; chorus depth/rate; ring frequency.
-Undo and Redo also retain the running graph. Saved automation takes priority over
+Undo and Redo of supported controls also retain the running graph. Reordering
+built-in effects rebuilds the graph, including two effects of the same type.
+Stable processor identities survive save/reopen; pasting creates fresh processors. Saved automation takes priority over
 a base value until the curve is cleared. Other settings, such as reverb decay or
 distortion drive, still restart playback.
 

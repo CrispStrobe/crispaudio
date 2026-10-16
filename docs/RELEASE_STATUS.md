@@ -5,6 +5,15 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.11 — built-in effect order
+
+Same-type built-in effect reorders now rebuild native playback, including Undo,
+Redo and changes made while paused. Stable optional processor identities persist
+through edits and save/reopen; paste creates fresh identities. Legacy projects
+remain compatible and acquire identities when reordered. Supported knob edits
+continue to update the running graph. This checkpoint changes no native DSP code.
+See [validation evidence](evidence/native-effect-identity.json).
+
 ## Local 0.13.10 — live master and clip effects
 
 Mac Live playback now supports the same eleven built-in effect controls on tracks,

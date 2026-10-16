@@ -5,6 +5,7 @@ import {NativeEffectRack} from './NativeEffectRack';
 import {ScopedEffectAutomation} from './ScopedEffectAutomation';
 import {scopedEffect, effectParameters} from '../../lib/scopedEffectAutomation';
 import {supportsEffectParameter} from '../../lib/effectAutomation';
+import {identifyEffectRack, pasteEffectRack} from '../../lib/builtinEffectIdentity';
 import {useProjectStore} from '../../stores/projectStore';
 import {useUIStore} from '../../stores/uiStore';
 import {HelpDetails} from '../common/HelpDetails';
@@ -59,7 +60,7 @@ function defaultEffect(type: EffectType): EffectConfig {
     peaking: {freq:1000,q:1,gain:0}, lowshelf:{freq:200,gain:0}, highshelf:{freq:4000,gain:0},
     compressor: { threshold: -24, ratio: 4, attack: 0.003, release: 0.25, knee: 5 },
   };
-  return { type, enabled: true, params: { ...defaults[type] } };
+  return { instanceId: crypto.randomUUID(), type, enabled: true, params: { ...defaults[type] } };
 }
 
 // ── Effect param specs ────────────────────────────────────────────────────────
@@ -232,8 +233,9 @@ export function EffectChainEditor({effects, onChange, label, scope}: {
   const actionLabel=(action:'copy'|'paste'|'bypass'|'enable')=>t(nativePresent?`nativeRack.${action}Builtin`:`rack.${action}`);
   const update = (index: number, patch: Partial<EffectConfig>) => onChange(effects.map((e, i) => i === index ? {...e, ...patch} : e));
   const move = (index: number, direction: number) => {
-    const next = clone(effects), target = index + direction;
-    if (target < 0 || target >= next.length) return;
+    const target = index + direction;
+    if (target < 0 || target >= effects.length) return;
+    const next = identifyEffectRack(effects);
     [next[index], next[target]] = [next[target], next[index]]; onChange(next);
   };
   return <section aria-label={label} className="space-y-2 effect-rack">
@@ -245,14 +247,14 @@ export function EffectChainEditor({effects, onChange, label, scope}: {
         {ALL_EFFECT_TYPES.map(type => <option key={type} value={type}>{t(`timeline.effectNames.${type}`, EFFECT_LABELS[type])}</option>)}
       </select>
       <ToolButton icon={Copy} label={actionLabel('copy')} disabled={!effects.length} onClick={() => useEffectClipboard.setState({effects: clone(effects)})}/>
-      <ToolButton icon={ClipboardPaste} label={actionLabel('paste')} disabled={!clipboard} onClick={() => clipboard && onChange(clone(clipboard))}/>
+      <ToolButton icon={ClipboardPaste} label={actionLabel('paste')} disabled={!clipboard} onClick={() => clipboard && onChange(pasteEffectRack(clipboard))}/>
       <ToolButton icon={Power} label={actionLabel(effects.some(e=>e.enabled)?'bypass':'enable')} disabled={!effects.length}
         onClick={() => {const enabled = !effects.some(e => e.enabled); onChange(effects.map(e => ({...e, enabled})));}}/>
     </div>
     <EqualizerGraph effects={effects} onChange={onChange}/>
     <HelpDetails><p className="text-xs text-gray-400">{t('rack.orderHelp')}</p></HelpDetails>
     {!effects.length && !nativePresent && <p className="text-xs text-gray-500 py-2">{t('timeline.noEffects')}</p>}
-    {effects.map((effect, i) => <EffectRow scope={scope} key={`${i}-${effect.type}`} effect={effect} index={i} count={effects.length} onUpdate={update}
+    {effects.map((effect, i) => <EffectRow scope={scope} key={effect.instanceId ?? `${i}-${effect.type}`} effect={effect} index={i} count={effects.length} onUpdate={update}
       onRemove={index => onChange(effects.filter((_, j) => j !== index))} onMove={move}/>)}
     {scope&&<NativeEffectRack scope={scope} pickerOpen={nativePicker} onPickerClose={()=>setNativePicker(false)}/>}
   </section>;
