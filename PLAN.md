@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.9. This section is the current plan.
+Updated 2026-10-16, for local 0.13.10. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -89,8 +89,10 @@ Local 0.13.9 also updates these track effect knobs live, including Undo/Redo,
 without resetting processors. Base values follow constructor clamping and remain
 subordinate to saved curves. Other built-in settings and rack edits still restart.
 [Live knob checks](docs/evidence/native-static-track-effects.json).
-Continuous native input DSP, native plug-in parameter passes and master/clip
-passes remain future work.
+Local 0.13.10 extends live controls and reviewed passes to master and clip effects,
+with scope validation, shared delay-history budgeting and native-fault guards.
+[Scoped native checks](docs/evidence/native-scoped-effects.json).
+Continuous native input DSP and native plug-in parameter passes remain future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 
 Audio troubleshooting interrupted the start: distortion persisted after quitting

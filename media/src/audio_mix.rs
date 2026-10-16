@@ -2471,7 +2471,7 @@ pub(crate) mod block_dsp {
             Ok(Self(effects))
         }
         /// Reserve time-edit history before playback, inside the shared rack budget.
-        pub fn new_track(value: &Value, budget: &mut Budget) -> Result<Self> {
+        pub fn new_live(value: &Value, budget: &mut Budget) -> Result<Self> {
             let mut rack = Self::new(value, budget)?;
             for effect in &mut rack.0 {
                 if let Effect::Delay(delay) = effect {
@@ -2505,7 +2505,7 @@ pub(crate) mod block_dsp {
         fn track_delay_reserves_edit_history_once_and_respects_shared_budget() {
             let doc = json!([{"type":"delay","enabled":true,"params":{"time":0.001,"mix":1}}]);
             let mut budget = Budget::default();
-            let mut rack = Rack::new_track(&doc, &mut budget).unwrap();
+            let mut rack = Rack::new_live(&doc, &mut budget).unwrap();
             let (pointer, length) = match &rack.0[0] {
                 Effect::Delay(delay) => (delay.history.as_ptr(), delay.history.len()),
                 _ => panic!(),
@@ -2528,7 +2528,7 @@ pub(crate) mod block_dsp {
                 bytes: MAX_EFFECT_STATE - 4096,
                 count: 0,
             });
-            assert!(Rack::new_track(&doc, &mut bounded)
+            assert!(Rack::new_live(&doc, &mut bounded)
                 .err()
                 .unwrap()
                 .contains("delay history"));
@@ -2550,7 +2550,7 @@ pub(crate) mod block_dsp {
             ] {
                 for value in [-100000., 0.73, 100000.] {
                     let doc = json!([{"type":kind,"enabled":true,"params":{}}]);
-                    let mut updated = Rack::new_track(&doc, &mut Budget::default()).unwrap();
+                    let mut updated = Rack::new_live(&doc, &mut Budget::default()).unwrap();
                     assert!(updated
                         .prepare_value_control(0, parameter, &Value::Null, Some(f64::NAN))
                         .is_err());
@@ -2560,7 +2560,7 @@ pub(crate) mod block_dsp {
                     updated.apply_control(update);
                     let mut fresh_doc = doc.clone();
                     fresh_doc[0]["params"][parameter] = json!(value);
-                    let mut fresh = Rack::new_track(&fresh_doc, &mut Budget::default()).unwrap();
+                    let mut fresh = Rack::new_live(&fresh_doc, &mut Budget::default()).unwrap();
                     for frame in 0..128 {
                         assert_eq!(
                             updated.at([0.3, -0.2], frame),
@@ -2571,8 +2571,8 @@ pub(crate) mod block_dsp {
                 }
             }
             let doc = json!([{"type":"ringmod","enabled":true,"params":{"freq":200,"mix":1},"automation":{"freq":[{"time":0,"value":300}]}}]);
-            let mut updated = Rack::new_track(&doc, &mut Budget::default()).unwrap();
-            let mut reference = Rack::new_track(&doc, &mut Budget::default()).unwrap();
+            let mut updated = Rack::new_live(&doc, &mut Budget::default()).unwrap();
+            let mut reference = Rack::new_live(&doc, &mut Budget::default()).unwrap();
             let update = updated
                 .prepare_value_control(0, "freq", &doc[0]["automation"]["freq"], Some(9000.))
                 .unwrap();
@@ -2583,7 +2583,7 @@ pub(crate) mod block_dsp {
         }
         #[test]
         fn live_carrier_phase_survives_controls_read_and_project_loops() {
-            let mut rack = Rack::new_track(
+            let mut rack = Rack::new_live(
                 &json!([{"type":"ringmod","enabled":true,"params":{"freq":200,"mix":1}}]),
                 &mut Budget::default(),
             )

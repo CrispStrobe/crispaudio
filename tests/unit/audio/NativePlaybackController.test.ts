@@ -104,3 +104,14 @@ it('holds audition above changed static values and restores Read without changin
  const drive={...changed,tracks:changed.tracks.map(track=>({...track,effects:[{type:'distortion' as const,enabled:true,params:{drive:.4,mix:.3}}]}))},driveChanged=structuredClone(drive);driveChanged.tracks[0].effects[0].params.drive=.9;expect(nativeLiveStructureKey(driveChanged)).not.toBe(nativeLiveStructureKey(drive));
  const invalid=structuredClone(changed);invalid.tracks[0].effects[0].params.mix=NaN;expect(nativeLiveStructureKey(invalid)).not.toBe(nativeLiveStructureKey(changed));
 });
+
+it('auditions master and clip independently, restores Read and keeps scoped controls out of topology',async()=>{
+ const f=session();create.mockResolvedValue(f.snapshot);const controller=new NativePlaybackController(()=>{},()=>{}),effect={type:'delay' as const,enabled:true,params:{time:.2,feedback:.4,mix:.3},automation:{mix:[{time:0,value:.2}]}};
+ const p={...mixProject(),masterEffects:[structuredClone(effect)],tracks:mixProject().tracks.map(track=>({...track,segments:[{id:'clip',trackId:track.id,sourceId:'s',name:'Clip',color:'#fff',startTime:.25,sourceOffset:0,duration:2,gain:1,effects:[structuredClone(effect)],fadeInDuration:0,fadeOutDuration:0,fadeInCurve:'linear' as const,fadeOutCurve:'linear' as const}]}))},original=structuredClone(p);
+ await controller.play(p,sources,0,0,4,false);
+ expect(controller.previewEffectAutomation(p,'master',0,'mix',.8)).toBe(true);expect(controller.previewEffectAutomation(p,'clip:clip',0,'mix',.6)).toBe(true);await controller.update(p);
+ let sent=f.playback.update.mock.calls.at(-1)![0];expect(sent.masterEffects[0].automation?.mix).toEqual([{time:0,value:.8}]);expect(sent.tracks[0].segments[0].effects[0].automation?.mix).toEqual([{time:0,value:.6}]);expect(nativeLiveStructureKey(sent)).toBe(nativeLiveStructureKey(p));
+ controller.previewEffectAutomation(p,'master',0,'mix');await controller.update(p);sent=f.playback.update.mock.calls.at(-1)![0];expect(sent.masterEffects).toEqual(p.masterEffects);expect(sent.tracks[0].segments[0].effects[0].automation?.mix).toEqual([{time:0,value:.6}]);
+ const changed=structuredClone(p);changed.masterEffects[0].params.time=1.5;changed.tracks[0].segments[0].effects[0].params.mix=.7;expect(nativeLiveStructureKey(changed)).toBe(nativeLiveStructureKey(p));
+ expect(controller.previewEffectAutomation(p,'clip:missing',0,'mix',.4)).toBe(false);controller.previewEffectAutomation(p,'clip:clip',0,'mix');await controller.update(p);expect(f.playback.update).toHaveBeenLastCalledWith(p);expect(p).toEqual(original);expect(create).toHaveBeenCalledTimes(1);await controller.stop();
+});

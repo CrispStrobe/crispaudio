@@ -1,6 +1,6 @@
-import type {AudioSource,NativeEffect,TimelineProject} from '../../types/audio';
+import type {AudioSource,EffectConfig,NativeEffect,TimelineProject} from '../../types/audio';
 import type {AutomationTarget} from '../../lib/automationRecording';
-import {supportsNativeTrackEffectParameter,nativeTrackEffectParameters,delayParameterMaximum,type DelayParameter} from '../../lib/effectAutomation';
+import {builtinEffectScopes,supportsNativeEffectParameter,nativeEffectParameters,delayParameterMaximum,type DelayParameter} from '../../lib/effectAutomation';
 import {renderedPreviewKey,renderedSourcesMatch} from './RenderedPreviewCache';
 import {NativeTimelineSnapshot} from './NativeTimelineSnapshot';
 import type {NativeTimelinePlayback,NativePlaybackStatus} from './NativeTimelinePlayback';
@@ -10,9 +10,9 @@ function stateKey(state:string){let id=stateIDs.get(state);if(!id){if(stateIDs.s
 function rack(effects:NativeEffect[]|undefined){return effects?.map(effect=>({...effect,parameters:{},bypass:false,state:stateKey(effect.state)}));}
 function effectStructure(effects:TimelineProject['tracks'][number]['effects']){
  return effects?.map(effect=>{
-  if(!nativeTrackEffectParameters.some(parameter=>supportsNativeTrackEffectParameter(effect.type,parameter)))return effect;
+  if(!nativeEffectParameters.some(parameter=>supportsNativeEffectParameter(effect.type,parameter)))return effect;
   const automation={...effect.automation},params={...effect.params};
-  for(const parameter of nativeTrackEffectParameters)if(supportsNativeTrackEffectParameter(effect.type,parameter)){
+  for(const parameter of nativeEffectParameters)if(supportsNativeEffectParameter(effect.type,parameter)){
    delete automation[parameter];
    // Keep malformed static values structural so preparation still rejects them.
    if(params[parameter]===undefined||typeof params[parameter]==='number'&&Number.isFinite(params[parameter]))delete params[parameter];
@@ -22,7 +22,7 @@ function effectStructure(effects:TimelineProject['tracks'][number]['effects']){
 }
 /** Live controls do not invalidate topology or replace running DSP. */
 export function nativeLiveStructureKey(project:TimelineProject){
- return renderedPreviewKey({...project,masterVolume:undefined,nativeEffects:rack(project.nativeEffects),tracks:project.tracks.map(track=>({...track,volume:1,pan:0,muted:false,solo:false,automation:undefined,panAutomation:undefined,effects:effectStructure(track.effects),sends:track.sends?.map(send=>({...send,gain:1})),nativeEffects:rack(track.nativeEffects),segments:track.segments.map(clip=>({...clip,nativeEffects:rack(clip.nativeEffects)}))}))});
+ return renderedPreviewKey({...project,masterVolume:undefined,masterEffects:effectStructure(project.masterEffects)!,nativeEffects:rack(project.nativeEffects),tracks:project.tracks.map(track=>({...track,volume:1,pan:0,muted:false,solo:false,automation:undefined,panAutomation:undefined,effects:effectStructure(track.effects),sends:track.sends?.map(send=>({...send,gain:1})),nativeEffects:rack(track.nativeEffects),segments:track.segments.map(clip=>({...clip,effects:effectStructure(clip.effects)!,nativeEffects:rack(clip.nativeEffects)}))}))});
 }
 const interrupted=()=>new DOMException('Native playback superseded','AbortError');
 export class NativePlaybackController {
@@ -72,7 +72,7 @@ export class NativePlaybackController {
  }
  /** Audition native mix lanes without modifying the saved project or DSP topology. */
  previewAutomation(project:TimelineProject,target:AutomationTarget,value?:number):boolean{
-  if(target.parameter!=='gain'&&target.parameter!=='pan')return this.previewEffect(project,target.trackId,target.effectIndex??-1,target.parameter,value);
+  if(target.parameter!=='gain'&&target.parameter!=='pan')return this.previewEffectAutomation(project,`track:${target.trackId}`,target.effectIndex??-1,target.parameter,value);
   if(!this.playback||!['playing','paused'].includes(this.statusValue?.phase??'')||!['gain','pan'].includes(target.parameter)||!project.tracks.some(track=>track.id===target.trackId))return false;
   const parameter=target.parameter as 'gain'|'pan';
   if(value!==undefined&&(!Number.isFinite(value)||(parameter==='pan'?value < -1||value > 1:value < 0||value > 10**.6)))return false;
@@ -83,22 +83,23 @@ export class NativePlaybackController {
   void this.update(project).catch(error=>{if(this.playback!==playback)return;void this.stop();this.onFault(error);});
   return true;
  }
- private previewEffect(project:TimelineProject,trackId:string,index:number,parameter:DelayParameter,value?:number):boolean{
-  const effect=project.tracks.find(track=>track.id===trackId)?.effects?.[index];
-  if(!this.playback||!['playing','paused'].includes(this.statusValue?.phase??'')||!effect?.enabled||!supportsNativeTrackEffectParameter(effect.type,parameter)||value!==undefined&&(!Number.isFinite(value)||value<0||value>delayParameterMaximum(parameter)))return false;
-  const overrides=new Map(this.effectOverrides.get(trackId));
+ previewEffectAutomation(project:TimelineProject,scope:string,index:number,parameter:DelayParameter,value?:number):boolean{
+  const effect=builtinEffectScopes(project).find(([id])=>id===scope)?.[1]?.[index];
+  if(!this.playback||!['playing','paused'].includes(this.statusValue?.phase??'')||!effect?.enabled||!supportsNativeEffectParameter(effect.type,parameter)||value!==undefined&&(!Number.isFinite(value)||value<0||value>delayParameterMaximum(parameter)))return false;
+  const overrides=new Map(this.effectOverrides.get(scope));
   const held={...overrides.get(index)};if(value===undefined)delete held[parameter];else held[parameter]=value;
   if(Object.keys(held).length)overrides.set(index,held);else overrides.delete(index);
-  if(overrides.size)this.effectOverrides.set(trackId,overrides);else this.effectOverrides.delete(trackId);
+  if(overrides.size)this.effectOverrides.set(scope,overrides);else this.effectOverrides.delete(scope);
   const playback=this.playback;
   void this.update(project).catch(error=>{if(this.playback!==playback)return;void this.stop();this.onFault(error);});
   return true;
  }
  private audition(project:TimelineProject):TimelineProject{
   if(!this.automationOverrides.size&&!this.effectOverrides.size)return project;
-  return {...project,tracks:project.tracks.map(track=>{
-   const override=this.automationOverrides.get(track.id),mixes=this.effectOverrides.get(track.id);if(!override&&!mixes)return track;
-   return {...track,...(override?.gain!==undefined?{automation:[{time:0,value:override.gain}]}:{}),...(override?.pan!==undefined?{panAutomation:[{time:0,value:override.pan}]}:{}),...(mixes?{effects:track.effects?.map((effect,index)=>mixes.has(index)?{...effect,automation:{...effect.automation,...Object.fromEntries(Object.entries(mixes.get(index)!).map(([key,value])=>[key,[{time:0,value}]]))}}:effect)}:{})};
+  const effects=(scope:string,rack:EffectConfig[]|undefined)=>{const overrides=this.effectOverrides.get(scope);return overrides?rack?.map((effect,index)=>overrides.has(index)?{...effect,automation:{...effect.automation,...Object.fromEntries(Object.entries(overrides.get(index)!).map(([key,value])=>[key,[{time:0,value}]]))}}:effect):rack;};
+  return {...project,masterEffects:effects('master',project.masterEffects)!,tracks:project.tracks.map(track=>{
+   const override=this.automationOverrides.get(track.id);
+   return {...track,...(override?.gain!==undefined?{automation:[{time:0,value:override.gain}]}:{}),...(override?.pan!==undefined?{panAutomation:[{time:0,value:override.pan}]}:{}),effects:effects(`track:${track.id}`,track.effects),segments:track.segments.map(clip=>({...clip,effects:effects(`clip:${clip.id}`,clip.effects)!}))};
   })};
  }
  update(project:TimelineProject):Promise<void>{

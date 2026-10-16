@@ -11,11 +11,11 @@ installed Mac app; browser and iOS sessions can retain the project data.
 | Seek | Rebuilds history to the new position | Seeks within the cached mix |
 | Loop | Musical time wraps; effect tails continue | Repeats the rendered range |
 | Fader, pan, mute/solo, sends, native parameters/bypass | Update the running graph | Stop playback and invalidate the mix |
-| Supported track FX knobs and their automation | Update without resetting effect history or oscillator phase | Stop playback and invalidate the mix |
+| Supported track, clip and master FX knobs and automation | Update without resetting effect history or oscillator phase | Stop playback and invalidate the mix |
 | Clip edits, routing, insert order or other built-in FX changes | Restart from the current position | Require another render |
 | Meters | Track/master peak and RMS, master LUFS/true peak | Master meter |
 
-Track controls that update live: wet/dry mix for delay, chorus, reverb, distortion,
+Controls that update live on tracks, clips and master: wet/dry mix for delay, chorus, reverb, distortion,
 ring modulation and bitcrush; delay time/feedback; chorus depth/rate; ring frequency.
 Undo and Redo also retain the running graph. Saved automation takes priority over
 a base value until the curve is cleared. Other settings, such as reverb decay or
@@ -40,7 +40,7 @@ remain aligned across delayed UI frames. The accompaniment cannot be changed
 during the take. Preparation is bounded to a 128 MiB stereo buffer and can be
 cancelled with Record/Stop before the microphone opens.
 
-Track level, pan and built-in track effect wet/dry mix passes work in **Live** on
+Track level, pan and built-in effect wet/dry mix passes work in **Live** on
 Mac. Open a track's automation lane, choose Touch, Latch or Write, arm the pass and press Play. Adjust
 the recording slider or editable value, then stop, review and Apply. Applying
 creates one Undo step; audition does not change the project or saved plug-in state.
@@ -48,16 +48,21 @@ Touch release restores Read. Escape, interruption or a playback fault discards
 the draft. Delay, chorus, reverb, distortion, ring modulation and bitcrush support
 wet/dry passes without resetting delay buffers, reverb tails or oscillator state.
 Delay time and feedback, chorus depth and rate, and ring frequency can also be
-recorded and restored to Read while processors keep running. Native track delays
+recorded and restored to Read while processors keep running. Native delays in all three scopes
 reserve their full two-second history before playback, within the shared 64 MiB
 effect-state budget. Oscillator phase continues through automation edits, Read restoration
 and loops; envelope readers follow project time when a loop wraps.
+For clip/master passes, open the effect automation inspector and expand Record
+pass. Use pass adds the reviewed capture to the inspector draft; Apply publishes
+that draft as one Undo step. Clip capture stays within the clip’s timeline extent;
+points use absolute project time. Native playback failures discard active or
+pending-review captures.
+
 These passes use the native playback clock and control-block updates;
 they do not provide sample-accurate timestamped control delivery. Detected seek
 or loop discontinuities discard an active pass.
 
-Preview playback, microphone capture, master/clip effect passes, plug-in parameter
-passes, continuous native input monitoring, monitor clicks, custom plug-in windows and
+Preview playback, microphone capture, native plug-in parameter passes, continuous native input monitoring, monitor clicks, custom plug-in windows and
 MIDI instruments remain outside this automation mode.
 
 ## Try the included session

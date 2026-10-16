@@ -5,6 +5,33 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.10 — live master and clip effects
+
+Mac Live playback now supports the same eleven built-in effect controls on tracks,
+clips and master: wet/dry mix for six effects, delay time/feedback, chorus depth/rate
+and ring frequency. Knobs and saved curves update without replacing processors.
+All native delays reserve time-edit history before playback inside the shared
+64 MiB effect-state budget. Oscillator phase and effect tails keep running.
+
+Clip/master inspectors can capture Touch, Latch and Write passes. Use pass adds
+reviewed points to the local draft; Apply publishes one Undo step. Clip capture
+uses its timeline extent and absolute project time. Preview, microphone capture
+and locks remain guarded. Failed audition, native faults and playback-mode changes
+discard active passes; faults also discard pending reviews.
+
+Master and clip controls have explicit scope identities, with duplicate/unknown
+scopes and invalid indices rejected before any packet changes the graph. Unsupported
+built-in settings, native plug-in parameter passes and continuous native input DSP
+remain outside this increment. Live control delivery remains block-based.
+All 1,781 frontend tests, 164 media tests with native-engine enabled, 41 app tests
+and 21 release checks pass. Lint, TypeScript, locked iOS simulator compilation and
+the normal Mac bundle pass. The installed 0.13.10 app is running with a verified
+deep/strict signature, one autosave preserved and the prior app/session backed up.
+DSP checks use synthetic PCM and fixture native inserts; no new physical audio or
+commercial plug-in acceptance was performed. Both preceding CI workflows passed.
+[Scoped native evidence](evidence/native-scoped-effects.json).
+No Apple upload or release tag was triggered for this checkpoint.
+
 ## Local 0.13.9 — live track effect knobs
 
 Supported built-in track effect knobs update during Mac Live playback without
@@ -246,7 +273,7 @@ DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaud
 | iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
 | Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. Native 0.13.0/build 14 is now available for internal TestFlight. |
 | Provisioning | Active `IOS_APP_STORE` and newly created `MAC_APP_STORE` profiles, bound to the existing Distribution certificate. Existing account/API credentials work. |
-| Local native macOS app | Installed 0.13.9 ad-hoc signed app, separate from the public iOS release. |
+| Local native macOS app | Installed 0.13.10 ad-hoc signed app, separate from the public iOS release. |
 | Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
 
 [Public App Store listing](https://apps.apple.com/de/app/crispaudio/id6791876962) ·

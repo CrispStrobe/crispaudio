@@ -1,0 +1,53 @@
+{
+  "version": "0.13.10",
+  "date": "2026-10-16",
+  "behavior": [
+    "Live built-in effect knobs and curves on tracks, clips and master",
+    "Master/clip effect Touch/Latch/Write passes through existing inspector: review, local draft, Apply and one Undo",
+    "Independent scoped audition and Read restoration without project or saved plug-in-state mutation",
+    "Shared scope/index/type/bounds validation completes before packet application; duplicate and unknown scopes rejected",
+    "Full native delay time-edit history reserved in all scopes within the shared 64 MiB budget",
+    "Clip capture uses absolute project time inside its timeline extent; locks/source identity preserved",
+    "Native audition failure, native faults and mode changes discard active captures; faults discard pending reviews"
+  ],
+  "validation": {
+    "status": "complete",
+    "media": "164 passed, 10 optional tests skipped with native-engine enabled",
+    "mediaLog": "/tmp/crispaudio-scoped-native-media-final.log",
+    "nativeSignal": "All eleven static controls compared to continuous step-envelope PCM in track/master/late-start clip scopes with disabled rack indices; duplicate/unknown scope and invalid later controls reject atomically",
+    "scopedCurves": "Concurrent master and clip audition plus independent Read restoration match continuous curve references, retaining oscillator phase and delay history",
+    "focusedFrontend": "44 passed; controller scope isolation, scoped packet indices, real master/clip inspector review/Apply with one Undo, Preview/capture/lock guards and failed-audition/fault/mode interruption",
+    "frontend": {
+      "result": "PASS",
+      "tests": 1781,
+      "files": 181,
+      "log": "/tmp/crispaudio-scoped-native-frontend-full.log",
+      "scope": "One fresh full run, maxWorkers=2 and testTimeout=20000; repository options unchanged"
+    },
+    "appTests": "41 passed, 1 optional test skipped",
+    "ios": "Locked aarch64-apple-ios-sim compile PASS; existing unused MIDI method warning",
+    "release": "21 passed",
+    "lint": "PASS",
+    "typescript": "PASS",
+    "macBuild": "Normal debug app bundle PASS"
+  },
+  "limits": [
+    "Unsupported built-in settings, native plug-in parameter passes and continuous native input DSP remain pending",
+    "Block-based controls, not sample-accurate timestamped events; detected seek/loop discontinuities discard captures",
+    "No new physical audio, commercial plug-in or external interface acceptance performed"
+  ],
+  "appleUpload": false,
+  "previousCi": {
+    "commit": "d84b76d",
+    "general": "PASS",
+    "ios": "PASS"
+  },
+  "installed": {
+    "version": "0.13.10",
+    "app": "~/Applications/CrispAudio-local.app",
+    "signature": "deep/strict PASS",
+    "autosavesRetained": 1,
+    "priorAppAndSession": "backed up before replacement",
+    "independentCli": "unchanged"
+  }
+}

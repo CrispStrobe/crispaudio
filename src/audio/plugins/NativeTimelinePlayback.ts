@@ -1,7 +1,7 @@
 import type {LoudnessReading} from '../dsp/loudness';
-import type {TimelineProject} from '../../types/audio';
+import type {EffectConfig,TimelineProject} from '../../types/audio';
 import {nativeEffectScopes} from '../../lib/nativeEffects';
-import {supportsNativeTrackEffectParameter,nativeTrackEffectParameters,effectParameterDefault} from '../../lib/effectAutomation';
+import {builtinEffectScopes,supportsNativeEffectParameter,nativeEffectParameters,effectParameterDefault} from '../../lib/effectAutomation';
 import {invoke} from '@tauri-apps/api/core';
 export interface NativePlaybackStatus {
  phase:'preparing'|'playing'|'paused'|'ended'|'fault'|'stopped';frame:number;clockTimeMs:number;
@@ -22,7 +22,8 @@ export class NativeTimelinePlayback {
  status(){if(this.closed)return Promise.reject(new DOMException('Native playback closed','AbortError'));return invoke<NativePlaybackStatus>('native_playback_status',{session:this.session});}
  update(project:TimelineProject){
   if(this.closed)return Promise.reject(new DOMException('Native playback closed','AbortError'));
-  const controls={masterVolume:project.masterVolume??1,tracks:project.tracks.map(track=>({id:track.id,volume:track.volume,pan:track.pan,muted:track.muted,solo:track.solo,automation:track.automation??null,panAutomation:track.panAutomation??null,effectAutomation:(track.effects??[]).flatMap((effect,index)=>effect.enabled?nativeTrackEffectParameters.filter(parameter=>supportsNativeTrackEffectParameter(effect.type,parameter)).map(parameter=>({index,parameter,value:effect.params[parameter]===undefined?effectParameterDefault(effect.type,parameter):effect.params[parameter],points:effect.automation?.[parameter]??null})):[]),sends:(track.sends??[]).map(send=>send.gain)})),native:nativeEffectScopes(project).flatMap(([scope,effects])=>(effects??[]).filter(effect=>effect.enabled).map(effect=>({scope,instanceId:effect.instanceId,parameters:effect.parameters,bypass:effect.bypass})))};
+  const effects=(rack:EffectConfig[]|undefined)=>(rack??[]).flatMap((effect,index)=>effect.enabled?nativeEffectParameters.filter(parameter=>supportsNativeEffectParameter(effect.type,parameter)).map(parameter=>({index,parameter,value:effect.params[parameter]===undefined?effectParameterDefault(effect.type,parameter):effect.params[parameter],points:effect.automation?.[parameter]??null})):[]);
+  const controls={effectScopes:builtinEffectScopes(project).filter(([scope])=>!scope.startsWith('track:')).map(([scope,rack])=>({scope,controls:effects(rack)})).filter(entry=>entry.controls.length),masterVolume:project.masterVolume??1,tracks:project.tracks.map(track=>({id:track.id,volume:track.volume,pan:track.pan,muted:track.muted,solo:track.solo,automation:track.automation??null,panAutomation:track.panAutomation??null,effectAutomation:effects(track.effects),sends:(track.sends??[]).map(send=>send.gain)})),native:nativeEffectScopes(project).flatMap(([scope,effects])=>(effects??[]).filter(effect=>effect.enabled).map(effect=>({scope,instanceId:effect.instanceId,parameters:effect.parameters,bypass:effect.bypass})))};
   return invoke<number>('native_playback_update',{session:this.session,controls});
  }
  resetLoudness(){if(!this.closed)return invoke<void>('native_playback_reset_loudness',{session:this.session});return Promise.resolve();}

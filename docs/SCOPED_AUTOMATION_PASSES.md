@@ -8,6 +8,12 @@ Stopping opens a concise interval review. Use pass adds points to the local draf
 Apply publishes the complete inspector draft as one undo. Cancel, Escape during
 capture, collapsing the record section, interruption or stale state discards capture.
 
+With native inserts, these passes are available in Mac **Live** playback.
+Preview and microphone capture keep pass recording disabled. Native faults,
+failed audition or a playback-mode change discard an active capture; a native
+fault also clears a pending review. Supported effect knobs and curves update
+without replacing processors. Delay history and oscillator phase keep running.
+
 Clips record inside their own timeline extent. Master passes use the project extent.
 All times are absolute project seconds; source offsets do not change the clock.
 One-sample guards preserve the original envelope outside recorded intervals.

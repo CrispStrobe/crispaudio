@@ -184,7 +184,7 @@ export class TimelineEngine {
   }
   /** Preview a real rack scope, retaining every DSP node and oscillator phase. */
   previewEffectAutomation(project:TimelineProject,scope:string,index:number,parameter:DelayParameter,value?:number):boolean{
-    if(this.owned.active)return scope.startsWith('track:')?this.owned.previewAutomation(project,{trackId:scope.slice(6),parameter,effectIndex:index},value):false;
+    if(this.owned.active)return this.owned.previewEffectAutomation(project,scope,index,parameter,value);
     if(this.renderedPlayback)return false;
     const effect=(scope==='master'?project.masterEffects:scope.startsWith('track:')?project.tracks.find(t=>t.id===scope.slice(6))?.effects:project.tracks.flatMap(t=>t.segments).find(c=>scope===`clip:${c.id}`)?.effects)?.[index];
     const nodes=this.mixNodes.get(`${scope}:${index}`);if(!nodes||!effect||!supportsEffectParameter(effect.type,parameter))return false;

@@ -45,3 +45,11 @@ it('sends wet/dry curves with original rack indices, excluding disabled and unsu
  await playback.update(project);
  expect(invoke).toHaveBeenCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({tracks:[expect.objectContaining({effectAutomation:[{index:1,parameter:'mix',value:.3,points:[{time:0,value:.2},{time:1,value:.7}]},{index:3,parameter:'mix',value:.4,points:null},{index:3,parameter:'depth',value:.5,points:null},{index:3,parameter:'rate',value:1.5,points:null}]})]})}));await snapshot.close();
 });
+
+it('sends master and clip base values and curves with original scope and rack indices',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create(f.p,f.sources);invoke.mockImplementation(async(cmd:string)=>cmd==='native_playback_start'?'session':cmd==='native_playback_update'?1:undefined);const playback=await snapshot.startPlayback({startFrame:0,endFrame:48000});
+ const effect={type:'ringmod' as const,enabled:true,params:{freq:731,mix:.4},automation:{freq:[{time:0,value:200}]}};
+ const project={...f.p,masterEffects:[effect],tracks:f.p.tracks.map(track=>({...track,segments:track.segments.map(clip=>({...clip,effects:[{...effect,enabled:false},effect]}))}))};await playback.update(project);
+ const controls=(index:number)=>[{index,parameter:'mix',value:.4,points:null},{index,parameter:'freq',value:731,points:[{time:0,value:200}]}];
+ expect(invoke).toHaveBeenCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({effectScopes:[{scope:'master',controls:controls(0)},{scope:'clip:c',controls:controls(1)}]})}));await snapshot.close();
+});

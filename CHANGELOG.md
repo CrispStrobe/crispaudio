@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.10 — 2026-10-16
+
+- Adjust supported clip and master effect knobs during Mac Live playback without restarting processors.
+- Record clip/master Touch, Latch and Write effect passes through the existing inspector, with review and one Undo on Apply.
+- Preserve delay history and oscillator phase across scopes; validate scope identity and complete packets before applying controls.
+- Discard scoped captures on failed native audition, playback faults or mode changes; retain capture and lock guards.
+
 ## 0.13.9 — 2026-10-16
 
 - Adjust supported built-in track effect knobs during Mac Live playback without restarting processors; Undo and Redo retain the running graph.

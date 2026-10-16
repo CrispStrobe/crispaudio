@@ -126,14 +126,14 @@ is unavailable or a move cannot be resolved, use the relink picker when opening
 the project.
 
 Native inserts include generic parameter controls, saved state and rack copy/paste.
-Mac Live playback records track level, pan and built-in track effect wet/dry mix
+Mac Live playback records track level, pan and built-in effect wet/dry mix
 passes in Touch, Latch or Write, with review before applying and one Undo. Mix
 passes support delay, chorus, reverb, distortion, ring modulation and bitcrush.
 Delay time and feedback, chorus depth and rate, and ring frequency can also be
-recorded while retaining effect history and oscillator phase. Master/clip effect
-passes and native plug-in parameter passes remain unavailable.
-The same track effect controls can be adjusted live from the mixer; Undo keeps
-playback running.
+recorded on tracks, clips and master while retaining effect history and oscillator
+phase. Open a clip or master effect’s automation inspector to record a pass there.
+The same effect knobs can be adjusted live; Undo keeps playback running. Native
+plug-in parameter passes remain unavailable.
 
 Structural edits and other built-in effect changes restart live playback. To record
 a microphone with native effects in the session, CrispAudio first prepares a fixed wet backing

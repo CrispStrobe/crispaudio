@@ -1,4 +1,4 @@
-import type {EffectConfig,GainPoint} from '../types/audio';
+import type {EffectConfig,GainPoint,TimelineProject} from '../types/audio';
 import {gainAt,normalizeGainPoints,schedulePoints,validAutomationCurve} from './mixAutomation';
 export function normalizeMixPoints(points:GainPoint[]|undefined){return normalizeGainPoints(points).filter(p=>p.value<=1);}
 export function mixAt(points:GainPoint[]|undefined,time:number,fallback:number){return points?.length?gainAt(points,time):Math.max(0,Math.min(1,fallback));}
@@ -53,6 +53,9 @@ export function scheduleRingFrequency(param:AudioParam,points:GainPoint[]|undefi
  schedulePoints(param,sorted,contextStart,timelineStart);
 }
 
-/** Parameters supported by hot controls in the native track rack. */
-export const nativeTrackEffectParameters=['mix','feedback','depth','time','rate','freq'] as const;
-export const supportsNativeTrackEffectParameter=(type:string|undefined,parameter:string)=>nativeTrackEffectParameters.some(key=>key===parameter)&&supportsEffectParameter(type,parameter);
+/** Parameters supported by hot controls in native built-in racks. */
+export const nativeEffectParameters=['mix','feedback','depth','time','rate','freq'] as const;
+export const supportsNativeEffectParameter=(type:string|undefined,parameter:string)=>nativeEffectParameters.some(key=>key===parameter)&&supportsEffectParameter(type,parameter);
+
+/** Built-in rack identities match native insert scopes, independently of inserts. */
+export function builtinEffectScopes(project:TimelineProject):[string,EffectConfig[]|undefined][]{return [['master',project.masterEffects],...project.tracks.flatMap(track=>[[`track:${track.id}`,track.effects] as [string,EffectConfig[]|undefined],...track.segments.map(clip=>[`clip:${clip.id}`,clip.effects] as [string,EffectConfig[]|undefined])])];}

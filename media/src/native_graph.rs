@@ -2,7 +2,7 @@
 //! Owns a compiled project snapshot and immutable decoded 48 kHz PCM. Not CLI playback.
 use crate::{
     audio_mix::{
-        block_dsp::{Budget, Curve, Fade, Rack},
+        block_dsp::{Budget, Curve, EffectUpdate, Fade, Rack},
         finite, frames, pan, positive,
     },
     Result,
@@ -259,6 +259,14 @@ pub struct MixControls {
     pub tracks: Vec<TrackControls>,
     #[serde(default)]
     pub native: Vec<NativeControls>,
+    #[serde(default)]
+    pub effect_scopes: Vec<ScopedEffectControls>,
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ScopedEffectControls {
+    pub scope: String,
+    pub controls: Vec<EffectAutomationControls>,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -323,6 +331,7 @@ impl ProjectClock {
 pub struct Graph {
     tracks: Vec<Track>,
     master: Rack,
+    master_effects: Value,
     native: NativeRack,
     limiter: Option<crate::limiter::Limiter>,
     gain: f64,
@@ -426,7 +435,7 @@ impl Graph {
                 {
                     return Err("Native clip exceeds source/project extent".into());
                 }
-                let builtin = Rack::new(&clip["effects"], &mut budget)?;
+                let builtin = Rack::new_live(&clip["effects"], &mut budget)?;
                 let native = native(&clip["nativeEffects"], &mut count, &mut factory)?;
                 mono &= source.mono && !builtin.stereo() && native.inserts.is_empty();
                 input_latency = input_latency.max(native.latency);
@@ -448,7 +457,7 @@ impl Graph {
             for clip in &mut clips {
                 clip.align = Delay::new(input_latency - clip.native.latency, &mut delay_budget)?;
             }
-            let builtin = Rack::new_track(&doc["effects"], &mut budget)?;
+            let builtin = Rack::new_live(&doc["effects"], &mut budget)?;
             let native = native(&doc["nativeEffects"], &mut count, &mut factory)?;
             mono &= !builtin.stereo() && native.inserts.is_empty();
             let rack_output = input_latency + native.latency;
@@ -549,7 +558,7 @@ impl Graph {
                 });
             }
         }
-        let master = Rack::new(&project["masterEffects"], &mut budget)?;
+        let master = Rack::new_live(&project["masterEffects"], &mut budget)?;
         let native = native(&project["nativeEffects"], &mut count, &mut factory)?;
         let latency = master_input + native.latency;
         let limiter = if let Some(config) = project.get("outputLimiter") {
@@ -571,6 +580,7 @@ impl Graph {
         let mut graph = Self {
             tracks,
             master,
+            master_effects: project["masterEffects"].clone(),
             native,
             limiter,
             gain: positive(project, "masterVolume", Some(1.))?,
@@ -631,6 +641,74 @@ impl Graph {
         }
         None
     }
+    fn builtin_rack(&self, scope: &str) -> Option<&Rack> {
+        if scope == "master" {
+            return Some(&self.master);
+        }
+        let id = scope.strip_prefix("clip:")?;
+        self.tracks
+            .iter()
+            .flat_map(|track| &track.clips)
+            .find(|clip| clip.id == id)
+            .map(|clip| &clip.builtin)
+    }
+    fn builtin_rack_mut(&mut self, scope: &str) -> Option<&mut Rack> {
+        if scope == "master" {
+            return Some(&mut self.master);
+        }
+        let id = scope.strip_prefix("clip:")?;
+        self.tracks
+            .iter_mut()
+            .flat_map(|track| &mut track.clips)
+            .find(|clip| clip.id == id)
+            .map(|clip| &mut clip.builtin)
+    }
+    fn builtin_doc(&self, scope: &str) -> Option<&Value> {
+        if scope == "master" {
+            return Some(&self.master_effects);
+        }
+        let id = scope.strip_prefix("clip:")?;
+        self.routing_docs
+            .iter()
+            .filter_map(|track| track["segments"].as_array())
+            .flatten()
+            .find(|clip| clip["id"].as_str() == Some(id))
+            .map(|clip| &clip["effects"])
+    }
+    fn prepare_effect_controls(
+        rack: &Rack,
+        doc: &Value,
+        controls: &[EffectAutomationControls],
+    ) -> Result<Vec<EffectUpdate>> {
+        if controls.len() > 3072 {
+            return Err("Too many native effect controls".into());
+        }
+        let mut parsed = Vec::new();
+        let mut indices = HashSet::new();
+        for control in controls {
+            let effects = doc.as_array().ok_or("Unknown native effect controls")?;
+            let effect = effects
+                .get(control.index)
+                .ok_or("Unknown native effect control")?;
+            if !indices.insert((control.index, &control.parameter))
+                || effect["enabled"] != true
+                || !crate::effect_envelope::supports(effect, &control.parameter)
+            {
+                return Err("Invalid native effect control".into());
+            }
+            let index = effects[..control.index]
+                .iter()
+                .filter(|effect| effect["enabled"] == true)
+                .count();
+            parsed.push(rack.prepare_value_control(
+                index,
+                &control.parameter,
+                &control.points,
+                control.value,
+            )?);
+        }
+        Ok(parsed)
+    }
     /// Topology is immutable; this packet can only change existing controls.
     pub fn update_controls(&mut self, update: MixControls) -> Result<()> {
         if !update.master_volume.is_finite()
@@ -661,39 +739,16 @@ impl Graph {
             if track.routes.len() != control.sends.len() + 1 {
                 return Err("Native send topology changed".into());
             }
-            let effects = self
+            let effect_doc = &self
                 .routing_docs
                 .iter()
                 .find(|doc| doc["id"].as_str() == Some(&control.id))
-                .unwrap()["effects"]
-                .as_array();
-            if control.effect_automation.len() > 3072 {
-                return Err("Too many native effect automation controls".into());
-            }
-            let mut mixes = Vec::new();
-            let mut indices = HashSet::new();
-            for mix in &control.effect_automation {
-                let effects = effects.ok_or("Unknown native effect mix control")?;
-                let effect = effects
-                    .get(mix.index)
-                    .ok_or("Unknown native effect mix control")?;
-                if !indices.insert((mix.index, &mix.parameter))
-                    || effect["enabled"] != true
-                    || !crate::effect_envelope::supports(effect, &mix.parameter)
-                {
-                    return Err("Invalid native effect mix control".into());
-                }
-                let active_index = effects[..mix.index]
-                    .iter()
-                    .filter(|effect| effect["enabled"] == true)
-                    .count();
-                mixes.push(track.builtin.prepare_value_control(
-                    active_index,
-                    &mix.parameter,
-                    &mix.points,
-                    mix.value,
-                )?);
-            }
+                .unwrap()["effects"];
+            let mixes = Self::prepare_effect_controls(
+                &track.builtin,
+                effect_doc,
+                &control.effect_automation,
+            )?;
             parsed.push((
                 Curve::gain(&control.automation)?,
                 Curve::pan(&control.pan_automation, control.pan)?,
@@ -705,6 +760,26 @@ impl Graph {
                 .unwrap();
             doc["muted"] = json!(control.muted);
             doc["solo"] = json!(control.solo);
+        }
+        if update.effect_scopes.len() > 257 {
+            return Err("Too many native effect scopes".into());
+        }
+        let mut scopes = HashSet::new();
+        let mut scoped = Vec::new();
+        for control in &update.effect_scopes {
+            if !scopes.insert(&control.scope) {
+                return Err("Duplicate native effect scope".into());
+            }
+            let rack = self
+                .builtin_rack(&control.scope)
+                .ok_or("Unknown native effect scope")?;
+            let doc = self
+                .builtin_doc(&control.scope)
+                .ok_or("Unknown native effect scope")?;
+            scoped.push((
+                &control.scope,
+                Self::prepare_effect_controls(rack, doc, &control.controls)?,
+            ));
         }
         let mut native_ids = HashSet::new();
         for control in &update.native {
@@ -750,6 +825,12 @@ impl Graph {
             for (route, gain) in track.routes.iter_mut().skip(1).zip(&control.sends) {
                 route.gain = *gain;
                 route.slew.set(*gain);
+            }
+        }
+        for (scope, controls) in scoped {
+            let rack = self.builtin_rack_mut(scope).unwrap();
+            for control in controls {
+                rack.apply_control(control);
             }
         }
         self.gain = update.master_volume;
@@ -1297,7 +1378,7 @@ mod tests {
         }
     }
     #[test]
-    fn static_track_effect_values_keep_history_and_validate_packets_before_applying() {
+    fn scoped_effect_values_keep_history_and_validate_packets_before_applying() {
         for (kind, parameter, params, original, held) in [
             (
                 "delay",
@@ -1359,60 +1440,171 @@ mod tests {
                 0.8,
             ),
         ] {
-            let source = || {
-                HashMap::from([(
-                    "s".into(),
-                    Source::new(vec![
-                        (0..4096)
-                            .map(|i| 0.3 * (i as f32 * 0.173).sin())
-                            .collect();
-                        2
-                    ])
-                    .unwrap(),
-                )])
-            };
-            let mut doc = json!({"sampleRate":48000,"duration":4096./48000.,"nativeEffects":insert(0),"tracks":[{"id":"a","volume":1,"pan":0,"effects":[{"type":kind,"enabled":true,"params":params}],"segments":[clip("c")]}]});
-            let mut graph = Graph::prepare(&doc, source(), fake).unwrap();
-            doc["tracks"][0]["effects"][0]["automation"][parameter] = json!([
-                {"time":0,"value":original,"curve":"step"},
-                {"time":1024./48000.,"value":held,"curve":"step"},
-                {"time":2048./48000.,"value":original}
-            ]);
-            let mut reference = Graph::prepare(&doc, source(), fake).unwrap();
-            let controls = |value: f64| json!({"masterVolume":1,"tracks":[{"id":"a","volume":1,"pan":0,"muted":false,"solo":false,"effectAutomation":[{"index":0,"parameter":parameter,"value":value,"points":null}]}]});
-            let mut invalid = controls(held);
-            invalid["masterVolume"] = json!(0);
-            invalid["tracks"][0]["effectAutomation"]
-                .as_array_mut()
-                .unwrap()
-                .push(json!({"index":99,"parameter":"mix","value":0,"points":null}));
-            assert!(graph
-                .update_controls(serde_json::from_value(invalid).unwrap())
-                .is_err());
-            let mut out = vec![[0.; 2]; 1024];
-            let mut expected = out.clone();
-            for block in 0..4 {
-                if block == 1 || block == 2 {
-                    graph
-                        .update_controls(
-                            serde_json::from_value(controls(if block == 1 {
-                                held
-                            } else {
-                                original
-                            }))
-                            .unwrap(),
-                        )
-                        .unwrap();
-                }
-                graph.render(&mut out).unwrap();
-                reference.render(&mut expected).unwrap();
-                for (sample, expected) in out.iter().zip(&expected) {
-                    for channel in 0..2 {
-                        assert!(
-                            (sample[channel] - expected[channel]).abs() < 1e-6,
-                            "{kind} {parameter} lost state at block {block}"
-                        );
+            for scope in ["track:a", "master", "clip:c"] {
+                let source = || {
+                    HashMap::from([(
+                        "s".into(),
+                        Source::new(vec![
+                            (0..4096)
+                                .map(|i| 0.3 * (i as f32 * 0.173).sin())
+                                .collect();
+                            2
+                        ])
+                        .unwrap(),
+                    )])
+                };
+                let mut doc = json!({"sampleRate":48000,"duration":4096./48000.,"nativeEffects":insert(0),"tracks":[{"id":"a","volume":1,"pan":0,"effects":[{"type":kind,"enabled":true,"params":params}],"segments":[clip("c")]}]});
+                let (path, index) = if scope == "master" {
+                    let effect = doc["tracks"][0]["effects"][0].clone();
+                    doc["tracks"][0]["effects"] = json!([]);
+                    doc["masterEffects"] =
+                        json!([{"type":"delay","enabled":false,"params":{}},effect]);
+                    ("/masterEffects", 1)
+                } else if scope == "clip:c" {
+                    let effect = doc["tracks"][0]["effects"][0].clone();
+                    doc["tracks"][0]["effects"] = json!([]);
+                    doc["tracks"][0]["segments"][0]["effects"] =
+                        json!([{"type":"delay","enabled":false,"params":{}},effect]);
+                    doc["tracks"][0]["segments"][0]["startTime"] = json!(512. / 48000.);
+                    doc["duration"] = json!(4608. / 48000.);
+                    ("/tracks/0/segments/0/effects", 1)
+                } else {
+                    ("/tracks/0/effects", 0)
+                };
+                // Reprepare after assigning the real scope; curves below are the oracle.
+                let mut graph = Graph::prepare(&doc, source(), fake).unwrap();
+                doc.pointer_mut(path).unwrap()[index]["automation"][parameter] = json!([
+                    {"time":0,"value":original,"curve":"step"},
+                    {"time":1024./48000.,"value":held,"curve":"step"},
+                    {"time":2048./48000.,"value":original}
+                ]);
+                let mut reference = Graph::prepare(&doc, source(), fake).unwrap();
+                let controls = |value: f64| {
+                    let effect =
+                        json!({"index":index,"parameter":parameter,"value":value,"points":null});
+                    let mut packet = json!({"masterVolume":1,"tracks":[{"id":"a","volume":1,"pan":0,"muted":false,"solo":false}]});
+                    if scope == "track:a" {
+                        packet["tracks"][0]["effectAutomation"] = json!([effect]);
+                    } else {
+                        packet["effectScopes"] = json!([{"scope":scope,"controls":[effect]}]);
                     }
+                    packet
+                };
+                let mut invalid = controls(held);
+                invalid["masterVolume"] = json!(0);
+                invalid
+                    .pointer_mut(if scope == "track:a" {
+                        "/tracks/0/effectAutomation"
+                    } else {
+                        "/effectScopes/0/controls"
+                    })
+                    .unwrap()
+                    .as_array_mut()
+                    .unwrap()
+                    .push(json!({"index":99,"parameter":"mix","value":0,"points":null}));
+                assert!(graph
+                    .update_controls(serde_json::from_value(invalid).unwrap())
+                    .is_err());
+                if scope != "track:a" {
+                    let mut duplicate = controls(held);
+                    let entry = duplicate["effectScopes"][0].clone();
+                    duplicate["effectScopes"]
+                        .as_array_mut()
+                        .unwrap()
+                        .push(entry);
+                    assert!(graph
+                        .update_controls(serde_json::from_value(duplicate).unwrap())
+                        .is_err());
+                    for unknown in ["clip:missing", "track:a"] {
+                        let mut invalid = controls(held);
+                        invalid["effectScopes"][0]["scope"] = json!(unknown);
+                        assert!(graph
+                            .update_controls(serde_json::from_value(invalid).unwrap())
+                            .is_err());
+                    }
+                }
+                let mut out = vec![[0.; 2]; 1024];
+                let mut expected = out.clone();
+                for block in 0..4 {
+                    if block == 1 || block == 2 {
+                        graph
+                            .update_controls(
+                                serde_json::from_value(controls(if block == 1 {
+                                    held
+                                } else {
+                                    original
+                                }))
+                                .unwrap(),
+                            )
+                            .unwrap();
+                    }
+                    graph.render(&mut out).unwrap();
+                    reference.render(&mut expected).unwrap();
+                    for (sample, expected) in out.iter().zip(&expected) {
+                        for channel in 0..2 {
+                            assert!(
+                                (sample[channel] - expected[channel]).abs() < 1e-6,
+                                "{scope} {kind} {parameter} lost state at block {block}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+    #[test]
+    fn master_and_clip_audition_restore_independently_and_reject_cross_scope_partial_updates() {
+        let source = || {
+            HashMap::from([(
+                "s".into(),
+                Source::new(vec![
+                    (0..4096)
+                        .map(|i| 0.3 * (i as f32 * 0.173).sin())
+                        .collect();
+                    2
+                ])
+                .unwrap(),
+            )])
+        };
+        let mut doc = json!({"sampleRate":48000,"duration":4096./48000.,"nativeEffects":insert(0),"masterEffects":[{"type":"delay","enabled":true,"params":{"time":0.001,"feedback":0.2,"mix":0.3}}],"tracks":[{"id":"a","volume":1,"pan":0,"segments":[clip("c")]}]});
+        doc["tracks"][0]["segments"][0]["effects"] =
+            json!([{"type":"ringmod","enabled":true,"params":{"freq":200,"mix":0.8}}]);
+        let mut graph = Graph::prepare(&doc, source(), fake).unwrap();
+        doc["masterEffects"][0]["automation"]["mix"] = json!([{"time":0,"value":0.3,"curve":"step"},{"time":1024./48000.,"value":0.8,"curve":"step"},{"time":2048./48000.,"value":0.3}]);
+        doc["tracks"][0]["segments"][0]["effects"][0]["automation"]["freq"] = json!([{"time":0,"value":200,"curve":"step"},{"time":1024./48000.,"value":731,"curve":"step"},{"time":3072./48000.,"value":200}]);
+        let mut reference = Graph::prepare(&doc, source(), fake).unwrap();
+        let controls = |master: Value, clip: Value| json!({"masterVolume":1,"tracks":[{"id":"a","volume":1,"pan":0,"muted":false,"solo":false}],"effectScopes":[{"scope":"master","controls":[{"index":0,"parameter":"mix","points":master}]},{"scope":"clip:c","controls":[{"index":0,"parameter":"freq","points":clip}]}]});
+        let mut invalid = controls(json!([{"time":0,"value":0.8}]), Value::Null);
+        invalid["effectScopes"][1]["scope"] = json!("clip:missing");
+        assert!(graph
+            .update_controls(serde_json::from_value(invalid).unwrap())
+            .is_err());
+        let mut out = vec![[0.; 2]; 1024];
+        let mut expected = out.clone();
+        for block in 0..4 {
+            if block > 0 {
+                let master = if block == 1 {
+                    json!([{"time":0,"value":0.8}])
+                } else {
+                    Value::Null
+                };
+                let clip = if block < 3 {
+                    json!([{"time":0,"value":731}])
+                } else {
+                    Value::Null
+                };
+                graph
+                    .update_controls(serde_json::from_value(controls(master, clip)).unwrap())
+                    .unwrap();
+            }
+            graph.render(&mut out).unwrap();
+            reference.render(&mut expected).unwrap();
+            for (sample, expected) in out.iter().zip(&expected) {
+                for channel in 0..2 {
+                    assert!(
+                        (sample[channel] - expected[channel]).abs() < 1e-6,
+                        "Scoped automation or phase changed at block {block}"
+                    );
                 }
             }
         }
