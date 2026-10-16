@@ -1,0 +1,38 @@
+{
+  "version": "0.13.13",
+  "date": "2026-10-16",
+  "behavior": [
+    "Native parameter curves follow content moves through direct/cross-track drags, grouped/linked movement, nudges, slides and clip paste",
+    "Positive affine speed changes scale clip envelopes around clip start, including restoring original speed; static Read parameters, opaque plugin state, bounds and instance identities remain intact",
+    "Earlier points moving before zero are replaced by a sampled zero boundary, preserving Linear/Step behavior on the retained timeline",
+    "Splits, trims and source slips retain the existing absolute timeline clock",
+    "Range insert/extract retimes selected clip and track curves plus comp backup clips; master follows retimeGlobal; excluded scopes retain their data",
+    "Lift preserves envelope clocks; ripple boundaries use existing one-sample guards",
+    "Automation-only locked tracks and saved comp racks remain protected; point-limit overflow rejects edits atomically",
+    "Existing mix version capture/restoration retains curves and rejects stale geometry"
+  ],
+  "validation": {
+    "status": "complete",
+    "frontend": {
+      "result": "PASS",
+      "tests": 1818,
+      "files": 184,
+      "log": "/tmp/crispaudio-native-edits-frontend-full.log",
+      "options": "maxWorkers=2; testTimeout=20000; repository options unchanged"
+    },
+    "focused": "100 passed in initial integration run; final 44 passed including all 14 new native edit regressions",
+    "focusedLog": "/tmp/crispaudio-native-edits-focused-final.log",
+    "typecheck": "PASS standalone and final Mac bundle frontend build",
+    "lint": "PASS /tmp/crispaudio-native-edits-lint.log",
+    "release": "21 passed /tmp/crispaudio-native-edits-release.log",
+    "macBuild": "PASS /tmp/crispaudio-01313-build.log",
+    "installation": "0.13.13 running; strict/deep signature verified; one autosave retained and recovery backup saved",
+    "scope": "Frontend project-editing changes only; Rust native DSP/bridge unchanged. Native/media/iOS checks from 0.13.12 were not repeated locally for this increment."
+  },
+  "limits": [
+    "Native parameter curve capture/playback remains block based; no new physical audio, device or commercial plugin verification claimed",
+    "Native parameter graphical point editing and continuous native microphone DSP remain future work",
+    "Off-canvas points discarded by an affine edit are represented by a boundary value; Undo retains the original snapshot",
+    "Existing stale mix-version policy follows arrangement geometry; comparisons do not automatically retime saved snapshots"
+  ]
+}

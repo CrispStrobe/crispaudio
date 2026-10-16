@@ -5,6 +5,16 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.13 — native automation follows editing
+
+Native parameter curves follow moved/nudged/pasted clip content and speed scaling.
+Splits, trims and source slips retain their timeline clock. Range edits retime
+selected clip/track curves and comp backups, with master curves following global
+scope policy. Boundary values/Step segments, locks and existing curve limits are
+protected. Mix snapshots retain the data and reject stale arrangement geometry.
+This checkpoint changes frontend project editing only; native DSP is unchanged.
+[Validation evidence](evidence/native-automation-edits.json).
+
 ## Local 0.13.12 — native parameter passes
 
 AU/VST3 parameter automation is available at track, clip and master scope through

@@ -137,7 +137,10 @@ The same effect knobs can be adjusted live; Undo keeps playback running.
 For AU/VST3 parameters, expand the insert and use the automation icon beside a
 knob. Arm Touch, Latch or Write, play, adjust, then stop to review and Apply.
 Curves are saved with the project and run in Live, Preview and GUI export.
-Clear a curve to return to its static knob. Parameter changes use processing
+Clip curves follow moves, nudges, paste and speed changes. Splits, trims and
+source slips preserve curves at their existing timeline positions. Ripple edits
+retime curves in the selected scope, including master curves when global retiming
+is enabled. Clear a curve to return to its static knob. Parameter changes use processing
 blocks rather than sample-accurate events.
 
 Structural edits and other built-in effect changes restart live playback. To record

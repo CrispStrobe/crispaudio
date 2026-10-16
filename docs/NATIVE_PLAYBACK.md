@@ -73,6 +73,16 @@ Preview/export bridges sample once per 4096-frame block. Curves use absolute
 project time with held ends and Linear/Step segments, compensating upstream
 latency. Native history preparation can use larger blocks. These are block updates, not sample-accurate parameter events. Static
 Read values and saved plug-in state remain separate from temporary audition.
+Native clip curves follow content moves (including slides, grouped moves and
+nudges), pasted placement and speed scaling. Trimming, splitting or slipping a
+source retains the curve’s timeline clock. When earlier points move before zero,
+a boundary point preserves the original value and Linear/Step segment at zero.
+Ripple insert/extract retimes curves in the selected clip/track scope and comp
+backups; master follows the global-retiming policy. Lift retains curve clocks.
+One-sample guards preserve the join values. Locked automation-only tracks remain
+protected, and edits exceeding saved-curve limits are rejected atomically.
+Mix snapshots retain native curves and refuse changed arrangement geometry.
+
 A changed reported parameter range requires clearing the old curve before a new
 pass. At most 32 lanes and 100,000 total points per insert are accepted, with
 parameter packet limits checked before processing.

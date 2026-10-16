@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.12. This section is the current plan.
+Updated 2026-10-16, for local 0.13.13. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -103,7 +103,13 @@ rack scope, with review, one Undo, independent Read restoration and saved curves
 in Live, Preview and GUI exports. Curves use stable scope/instance/address IDs,
 normalized values and explicit parameter ranges. Processing is block based.
 [Native parameter checks](docs/evidence/native-parameter-passes.json).
-Continuous native input DSP remains future work.
+Local 0.13.13 integrates native parameter curves with clip moves/nudges/paste,
+speed changes and scoped range edits, including comp backups and locked empty
+tracks. Splits, trims and slips retain the original timeline clock. Existing mix
+snapshots retain curves and reject stale arrangement geometry.
+[Native timeline-edit checks](docs/evidence/native-automation-edits.json).
+Continuous native input DSP and a native parameter curve point editor remain
+future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 
 Audio troubleshooting interrupted the start: distortion persisted after quitting

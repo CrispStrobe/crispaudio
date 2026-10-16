@@ -1,3 +1,4 @@
+import {affineNativeAutomation} from './nativeAutomationEdits';
 import type {AudioSegment,VideoClip,TimelineProject,Retime,AudioSource} from '../types/audio';
 import {projectClips,linkedIds,mapClips} from './projectEdits';
 import {clipSource,validateVideoClips} from './videoEditing';
@@ -28,7 +29,7 @@ export function applyRetime(project:TimelineProject,plans:RetimePlan[],derived:M
  const next=mapClips(prepared,c=>{
   const plan=byId.get(c.id);if(!plan)return c;const source=derived.get(c.id),duration=restore?plan.original.duration:Math.min(plan.duration,source!.duration),scale=duration/c.duration;
   const common={sourceId:restore?plan.original.sourceId:source!.id,sourceOffset:restore?plan.original.offset:0,duration,retime:restore?undefined:{...plan.settings,original:plan.original,renderDuration:duration}};
-  if('trackId' in c){const rack=c.effects.map(e=>({...e,automation:e.automation?Object.fromEntries(Object.entries(e.automation).map(([key,points])=>[key,points?.map(p=>({...p,time:c.startTime+(p.time-c.startTime)*scale}))])):undefined}));return {...c,...common,sourceId:common.sourceId!,trackId:c.trackId,fadeInDuration:c.fadeInDuration*scale,fadeOutDuration:c.fadeOutDuration*scale,effects:rack};}
+  if('trackId' in c){const rack=c.effects.map(e=>({...e,automation:e.automation?Object.fromEntries(Object.entries(e.automation).map(([key,points])=>[key,points?.map(p=>({...p,time:c.startTime+(p.time-c.startTime)*scale}))])):undefined}));return {...c,...common,sourceId:common.sourceId!,trackId:c.trackId,fadeInDuration:c.fadeInDuration*scale,fadeOutDuration:c.fadeOutDuration*scale,effects:rack,...(c.nativeEffects?{nativeEffects:affineNativeAutomation(c.nativeEffects,c.startTime,scale)}:{})};}
   return {...c,...common,fadeIn:c.fadeIn*scale,fadeOut:c.fadeOut*scale,transitionDuration:c.transitionDuration*scale,composition:c.composition?{...c.composition,keyframeOffset:(c.composition.keyframeOffset??0)*scale,keyframes:c.composition.keyframes?.map(k=>({...k,time:k.time*scale}))}:undefined};
  });
  if(next.video&&validateVideoClips(next.video.clips??[],next.video.duration,next.video.sources))throw new Error('retime.overlap');

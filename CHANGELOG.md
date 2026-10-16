@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.13 — 2026-10-16
+
+- Keep native plug-in parameter curves attached to moved, nudged, pasted and speed-adjusted audio clips.
+- Retime clip, track, master and comp-backup curves during scoped ripple edits; preserve values around edit boundaries.
+- Keep curves on their existing timeline clock for splits, trims and source slips.
+- Protect automation-only locked tracks and reject edits that would exceed saved-curve limits.
+
 ## 0.13.12 — 2026-10-16
 
 - Record native AU/VST3 parameter automation in Touch, Latch or Write at track, clip and master scope.

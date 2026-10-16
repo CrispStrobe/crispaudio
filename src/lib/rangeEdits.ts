@@ -1,3 +1,4 @@
+import {hasNativeAutomation,mapNativeAutomation} from './nativeAutomationEdits';
 import {recordingRange} from './recordingRange';
 import {editGraphicsRange} from './graphics';
 import {pictureTrackId,pictureTracks,pictureLocked,retainedPictureAnimation} from './pictureComposition';
@@ -53,7 +54,7 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
   const groups=new Set(all.filter(c=>included(c)&&affected(c)&&c.linkGroup).map(c=>c.linkGroup));
   if(all.some(c=>c.linkGroup&&groups.has(c.linkGroup)&&!included(c)))fail('linkedScope');
   if(project.groupEditingEnabled!==false){const editGroups=new Set(all.filter(c=>included(c)&&affected(c)&&c.editGroup).map(c=>c.editGroup!.id));if(all.some(c=>c.editGroup&&editGroups.has(c.editGroup.id)&&!included(c)))fail('groupScope');}
-  if(project.tracks.some(t=>ids.has(t.id)&&t.locked&&(t.segments.some(affected)||t.takes?.some(take=>!take.inactive&&(operation==='insert'||operation==='extract'?take.startTime+take.duration>start:take.startTime<end&&take.startTime+take.duration>start))||(operation!=='lift'&&!!(t.automation?.length||t.panAutomation?.length||t.effects?.some(hasEffectAutomation)||t.segments.some(c=>c.effects.some(hasEffectAutomation))))))||(includeVideo&&videoClips(project.video).some(c=>included(c)&&affected(c)&&pictureLocked(project.video,c))))fail('locked');
+  if(project.tracks.some(t=>ids.has(t.id)&&t.locked&&(t.segments.some(affected)||t.takes?.some(take=>!take.inactive&&(operation==='insert'||operation==='extract'?take.startTime+take.duration>start:take.startTime<end&&take.startTime+take.duration>start))||(operation!=='lift'&&!!(t.automation?.length||t.panAutomation?.length||t.effects?.some(hasEffectAutomation)||hasNativeAutomation(t.nativeEffects)||t.compBaseSegments?.some(c=>hasNativeAutomation(c.nativeEffects))||t.segments.some(c=>c.effects.some(hasEffectAutomation)||hasNativeAutomation(c.nativeEffects))))))||(includeVideo&&videoClips(project.video).some(c=>included(c)&&affected(c)&&pictureLocked(project.video,c))))fail('locked');
   const cuts=new Map<string,VideoClip>();
   if(includeVideo){
     const review=planRangeTransitionCuts(project,start,end,operation).filter(c=>!options.trimmedClips?.has(c.clipId)&&included(videoClips(project.video).find(v=>v.id===c.clipId)!));
@@ -96,15 +97,22 @@ export function editTimeRange(project:TimelineProject,start:number,end:number,op
     return [...new Map(result.sort((a,b)=>a.time-b.time).map(p=>[p.time,p])).values()];
   };
   const effects=(rack:EffectConfig[]|undefined)=>rack?.map(e=>hasEffectAutomation(e)?{...e,automation:{...e.automation,...(e.automation?.mix===undefined?{}:{mix:automation(e.automation.mix,true)}),...(e.automation?.feedback===undefined?{}:{feedback:automation(e.automation.feedback,true)}),...(e.automation?.depth===undefined?{}:{depth:automation(e.automation.depth)}),...(e.automation?.freq===undefined?{}:{freq:automation(e.automation.freq)}),...(e.automation?.rate===undefined?{}:{rate:automation(e.automation.rate)}),...(e.automation?.time===undefined?{}:{time:automation(e.automation.time)})}}:e);
+  const native=(rack:TimelineProject['nativeEffects'])=>operation==='lift'?rack:mapNativeAutomation(rack,points=>automation(points,true)!);
+  const recordings=(track:TimelineProject['tracks'][number])=>{
+    const result=recordingRange(track,start,end,operation);
+    if(operation!=='lift'&&result.compBaseSegments?.some(c=>hasNativeAutomation(c.nativeEffects)))result.compBaseSegments=result.compBaseSegments.map(c=>({...c,nativeEffects:native(c.nativeEffects)}));
+    return result;
+  };
   const pictures=includeVideo?videoClips(project.video).flatMap(c=>(edit(c) as VideoClip[]).map(part=>retainedPictureAnimation(c,part))):undefined;
   // Validate the arrangement after the explicitly reviewed conversions.
   if(pictures&&project.video&&validateVideoClips(pictures,project.video.duration,project.video.sources))fail('pictureTopology');
   const next:TimelineProject={...project,editRange:operation==='lift'?{start,end}:undefined,
-    tracks:project.tracks.map(t=>ids.has(t.id)?{...t,...recordingRange(t,start,end,operation),segments:t.segments.flatMap(c=>edit(c) as AudioSegment[]).map(c=>({...c,effects:effects(c.effects)!})),effects:effects(t.effects),automation:automation(t.automation),panAutomation:automation(t.panAutomation,true)}:t),
+    tracks:project.tracks.map(t=>ids.has(t.id)?{...t,...recordings(t),nativeEffects:native(t.nativeEffects),segments:t.segments.flatMap(c=>edit(c) as AudioSegment[]).map(c=>({...c,effects:effects(c.effects)!,nativeEffects:native(c.nativeEffects)})),effects:effects(t.effects),automation:automation(t.automation),panAutomation:automation(t.panAutomation,true)}:t),
     video:project.video&&includeVideo?{...project.video,clips:pictures,inPoint:undefined,outPoint:undefined}:project.video};
   if(operation==='lift')next.minimumDuration=timelineDuration(project);
   if(retimeGlobal){
     next.masterEffects=effects(project.masterEffects)!;
+    next.nativeEffects=native(project.nativeEffects);
     if(operation!=='lift'&&project.minimumDuration!==undefined)next.minimumDuration=retime(project.minimumDuration);
     next.sections=project.sections?.flatMap(section=>{
       if(operation==='insert')return [{...section,start:retime(section.start),end:retime(section.end)}];
