@@ -9,7 +9,7 @@ export const open:typeof nativeOpen=async options=>{
  return result;
 };
 
-/** Native renders stage files beside the destination, so require a selected folder. */
+/** Sidecar assets and cross-volume renders require a selected output folder. */
 export async function ensureWritableFolder(path:string,title:string):Promise<boolean>{
  const {usesMacResourceAccess}=await import('./resourceAccess');
  if(!usesMacResourceAccess())return true;
@@ -26,6 +26,10 @@ export async function ensureWritableFolder(path:string,title:string):Promise<boo
 export const saveNative:typeof import('@tauri-apps/plugin-dialog').save=async options=>{
  const {save}=await import('@tauri-apps/plugin-dialog');
  const path=await save(options);if(!path)return null;
+ const {usesMacResourceAccess}=await import('./resourceAccess');
+ if(!usesMacResourceAccess())return path;
+ const {invoke}=await import('@tauri-apps/api/core');
+ if(!await invoke<boolean>('native_export_requires_folder',{path}))return path;
  const {default:i18n}=await import('../i18n');
  return await ensureWritableFolder(path,i18n.t('editor.nativeExportFolder'))?path:null;
 };

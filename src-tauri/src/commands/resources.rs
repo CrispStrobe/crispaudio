@@ -38,3 +38,17 @@ pub fn resource_folder_writable(path: String) -> Result<bool, String> {
         Ok(true)
     }
 }
+
+/// A different-volume destination needs sibling staging for atomic publication.
+#[tauri::command]
+pub fn native_export_requires_folder(path: String) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        !crispaudio_media::export_staging::uses_private_directory(std::path::Path::new(&path))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = path;
+        false
+    }
+}

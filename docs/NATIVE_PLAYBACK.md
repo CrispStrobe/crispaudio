@@ -71,10 +71,13 @@ its files under one saved bookmark. There are up to 256 media/project/folder rec
 separate from the eight plug-in folders. Selecting a containing folder replaces
 covered individual records; existing records are never silently evicted at the limit.
 
-Native renders stage files beside their destination. If its folder has not been
-selected before, the app asks for that output folder once before rendering. Saves
-with audio assets beside the project use the same folder-access step. Cancelling
-leaves the save/render unstarted. Ordinary media-file bookmarks request read access;
+Native WAV, FLAC, AAC and video renders use private temporary storage when it
+is on the destination volume. The parent publishes the completed file atomically
+without overwriting an existing destination; the Save dialog is sufficient. On
+another volume (or when its filesystem cannot be identified), staging stays beside
+the destination and the app asks for that output folder once before rendering.
+Projects saved with audio assets beside them still need folder access. Cancelling
+either picker leaves the save/render unstarted. Ordinary media-file bookmarks request read access;
 explicitly selected media/output folders and saved project files request write access.
 Helpers receive matching resource bookmarks for their request, alongside plug-in folders.
 
@@ -148,3 +151,13 @@ folder, then restore them. The probe checks native reads, project writes, read-o
 source access after relaunch, rejection of an unselected neighboring file in both
 parent and helper, and native encoding into the selected output folder. It does
 not perform a physical Finder drag or validate physical iOS hardware.
+
+To check atomic publication with write access restricted to the named output file:
+
+```bash
+python3 scripts/test-macos-export-publication.py
+```
+
+This noninteractive Seatbelt probe denies sibling scratch files and checks exclusive
+publication and scratch cleanup. It does not exercise an actual Save panel grant
+or replace the signed-app resource tests above.

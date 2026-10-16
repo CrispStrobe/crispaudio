@@ -884,11 +884,7 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
     }
     let tracks = &legacy_tracks;
     let sources = doc["sources"].as_array().ok_or("Missing sources")?;
-    let parent = Path::new(output)
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    let directory = tempfile::tempdir_in(parent).map_err(|e| e.to_string())?;
+    let directory = crate::export_staging::directory(std::path::Path::new(output))?;
     let mut effect_budget = EffectBudget { bytes: 0, count: 0 };
     let master_gain = positive(project, "masterVolume", Some(1.0))?;
     let mut limiter = if let Some(config) = project.get("outputLimiter") {

@@ -691,17 +691,9 @@ pub fn export_edit(
         ]));
     }
     let output_path = Path::new(output);
-    let parent = output_path
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    let stamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_nanos();
-    let staged = parent.join(format!(
-        ".crispaudio-edit-{}-{stamp}.{}",
-        std::process::id(),
+    let directory = crate::export_staging::directory(output_path)?;
+    let staged = directory.path().join(format!(
+        "edited.{}",
         if ["vp9", "av1"].contains(&format) {
             "webm"
         } else {
@@ -904,7 +896,13 @@ mod tests {
         );
         for range in [4000..8000, 39000..43000] {
             let rms = (samples[range].iter().map(|x| x * x).sum::<f32>() / 4000.0).sqrt();
-            assert!(rms > 0.12 && rms < 0.16, "wrong section audio {rms}");
+            // A 0.2-peak sine has 0.2/sqrt(2) RMS. Equal-power mono
+            // centre pan contributes another 1/sqrt(2) per stereo channel.
+            let expected_rms = 0.2 / 2.0;
+            assert!(
+                (rms - expected_rms).abs() < 0.01,
+                "wrong section audio {rms}"
+            );
         }
         assert!(export_linked_project(&doc, &edit, output.to_str().unwrap(), 1.0, 2.0).is_err());
         let missing = folder.path().join("invalid.mp4");

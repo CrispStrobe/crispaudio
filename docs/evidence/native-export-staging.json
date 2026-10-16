@@ -1,0 +1,61 @@
+{
+  "version": "0.13.3",
+  "date": "2026-10-16",
+  "scope": [
+    "Mac native WAV/FLAC/AAC and Apple video use private temporary staging on the destination filesystem",
+    "Optional FFmpeg edited-video staging uses the same policy",
+    "Cross-filesystem or unreadable-parent destinations retain sibling staging and explicit folder selection",
+    "Project sidecar assets and delivery-folder selection stay explicit",
+    "Final hard-link publication remains atomic and exclusive; no copying into a visible partial output"
+  ],
+  "sandbox": {
+    "command": "python3 scripts/test-macos-export-publication.py",
+    "result": "PASS",
+    "checks": [
+      "Write access limited to the named destination and private staging",
+      "Sibling scratch creation denied",
+      "Completed output published",
+      "Existing destination not overwritten",
+      "Private scratch unlink preserves final bytes"
+    ],
+    "limit": "Seatbelt file-boundary probe; does not exercise an actual PowerBox Save panel or App Store identity"
+  },
+  "limits": [
+    "No new actual Save-panel replay; macOS denied earlier Accessibility automation, and permissions were not changed",
+    "No physical iOS, external-interface or audible playback checks",
+    "Cross-volume staging policy conservatively retains the existing folder-selection path"
+  ],
+  "validation": {
+    "status": "complete",
+    "media": "139 passed, 10 optional tests skipped",
+    "nativeCodecs": "3 passed: AAC, M4A and FLAC with generated signal and independent FFmpeg decoding",
+    "video": "PASS: native linked-project section, range signal/length and output collision; corrected the stale expected RMS to account for the existing equal-power mono centre pan",
+    "frontend": {
+      "uniqueTestsPassed": 1742,
+      "files": 180,
+      "scope": "Across full run and retries; not a single all-green full invocation",
+      "fullRun": "1730 passed, 1 timed out; 2 files had worker startup timeouts",
+      "firstRetry": "Track selection and equalizer passed; panel export still had two timing failures",
+      "finalRetry": "All 11 panel-export tests passed with one worker, 20-second per-test timeout and command-scoped idle-sleep inhibition; no source timeout relaxation",
+      "logs": [
+        "/tmp/crispaudio-staging-frontend-full.log",
+        "/tmp/crispaudio-staging-frontend-retry.log",
+        "/tmp/crispaudio-staging-panel-final.log"
+      ]
+    },
+    "release": "21 passed",
+    "appTests": "40 passed, 1 optional test skipped",
+    "ios": "Locked aarch64-apple-ios-sim compile PASS; existing unused MIDI method warning",
+    "lint": "PASS",
+    "typescript": "PASS",
+    "macBuild": "Normal debug app bundle PASS"
+  },
+  "appleUpload": false,
+  "installed": {
+    "version": "0.13.3",
+    "signature": "deep/strict PASS",
+    "autosavesRetained": 1,
+    "previousAppAndSession": "backed up before replacement",
+    "independentCli": "unchanged"
+  }
+}

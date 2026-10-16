@@ -39,10 +39,27 @@ it('uses a previously selected native export folder without another picker',asyn
  expect(await saveNative({defaultPath:'mix.flac'})).toBe('/delivery/mix.flac');expect(picker).not.toHaveBeenCalled();expect(invoke).toHaveBeenCalledWith('resource_folder_writable',{path:'/delivery'});
 });
 it('cancels native export before rendering when output-folder access is cancelled',async()=>{
- const {saveNative}=await import('../../../src/lib/nativeDialog');savePicker.mockResolvedValue('/delivery/mix.flac');invoke.mockResolvedValue(false);picker.mockResolvedValue(null);
+ const {saveNative}=await import('../../../src/lib/nativeDialog');savePicker.mockResolvedValue('/delivery/mix.flac');invoke.mockImplementation((command)=>Promise.resolve(command==='native_export_requires_folder'));picker.mockResolvedValue(null);
  expect(await saveNative()).toBeNull();expect(picker).toHaveBeenCalledWith(expect.objectContaining({directory:true,defaultPath:'/delivery'}));
 });
 it('rejects an unrelated output folder before a native export begins',async()=>{
- const {saveNative}=await import('../../../src/lib/nativeDialog');savePicker.mockResolvedValue('/delivery/mix.flac');invoke.mockResolvedValue(false);picker.mockResolvedValue('/unrelated');
+ const {saveNative}=await import('../../../src/lib/nativeDialog');savePicker.mockResolvedValue('/delivery/mix.flac');invoke.mockImplementation((command)=>Promise.resolve(command==='native_export_requires_folder'));picker.mockResolvedValue('/unrelated');
  await expect(saveNative()).rejects.toThrow();expect(invoke).toHaveBeenCalledWith('remember_resources',{paths:['/unrelated'],writable:true});
+});
+
+it('uses only the Save dialog when private export staging is on the destination volume',async()=>{
+ const {saveNative}=await import('../../../src/lib/nativeDialog');savePicker.mockResolvedValue('/work/mix.m4a');invoke.mockResolvedValue(false);
+ expect(await saveNative()).toBe('/work/mix.m4a');expect(picker).not.toHaveBeenCalled();expect(invoke).toHaveBeenCalledExactlyOnceWith('native_export_requires_folder',{path:'/work/mix.m4a'});
+});
+it('does not check staging or request folders after cancelling Save',async()=>{
+ const {saveNative}=await import('../../../src/lib/nativeDialog');savePicker.mockResolvedValue(null);
+ expect(await saveNative()).toBeNull();expect(invoke).not.toHaveBeenCalled();expect(picker).not.toHaveBeenCalled();
+});
+it('keeps iPad native Save independent of Mac staging',async()=>{
+ const {saveNative}=await import('../../../src/lib/nativeDialog');Object.defineProperty(navigator,'maxTouchPoints',{value:5,configurable:true});savePicker.mockResolvedValue('/mobile/mix.wav');
+ expect(await saveNative()).toBe('/mobile/mix.wav');expect(invoke).not.toHaveBeenCalled();expect(picker).not.toHaveBeenCalled();
+});
+it('propagates staging-check failure before starting an export',async()=>{
+ const {saveNative}=await import('../../../src/lib/nativeDialog');savePicker.mockResolvedValue('/work/mix.wav');invoke.mockRejectedValue(new Error('Staging unavailable'));
+ await expect(saveNative()).rejects.toThrow('Staging unavailable');expect(picker).not.toHaveBeenCalled();
 });

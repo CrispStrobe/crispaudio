@@ -1,9 +1,33 @@
-# Distribution and platform status — 2026-10-15
+# Distribution and platform status — 2026-10-16
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
+
+## Local 0.13.3 — simpler single-file exports
+
+Mac native WAV, FLAC, AAC and video exports stage privately when the destination
+is on the temporary-storage volume, so ordinary exports use only the Save dialog.
+Another volume (or an unreadable destination parent) retains sibling staging and
+explicit folder access. Project sidecar assets and delivery folders still require
+folder selections. Completed files are published atomically without replacing an
+existing destination; cancellation and render failures leave no new output.
+
+The noninteractive Seatbelt probe confirms that a named-file write grant allows
+publication while sibling scratch writes remain denied. This is a kernel boundary
+check, not a new PowerBox/Save-panel replay. The prior 0.13.2 signed-app resource
+evidence remains unchanged; Accessibility permission has not been bypassed.
+
+The local 0.13.3 app is installed and deep/strict signature-verified, with the prior
+app/session backed up and one autosave preserved. The 139 regular media checks,
+three generated codec checks, native linked-video section check, 40 app tests,
+iOS simulator compile, lint, TypeScript build and 21 release checks pass. All
+1,742 frontend tests pass across the full run and targeted retries; the initial
+run had one test timeout and two worker-start timeouts. The final panel-export
+retry passes all 11 tests with a 20-second timeout and command-scoped sleep
+inhibition. [Checkpoint evidence](evidence/native-export-staging.json).
+No Apple upload or release tag is part of this local change.
 
 ## Local 0.13.2 — project, media and output access
 
@@ -89,7 +113,7 @@ DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaud
 | iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
 | Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. Native 0.13.0/build 14 is now available for internal TestFlight. |
 | Provisioning | Active `IOS_APP_STORE` and newly created `MAC_APP_STORE` profiles, bound to the existing Distribution certificate. Existing account/API credentials work. |
-| Local native macOS app | Installed 0.13.2 ad-hoc signed app, separate from the public iOS release. |
+| Local native macOS app | Installed 0.13.3 ad-hoc signed app, separate from the public iOS release. |
 | Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
 
 [Public App Store listing](https://apps.apple.com/de/app/crispaudio/id6791876962) ·

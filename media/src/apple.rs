@@ -142,11 +142,7 @@ pub fn prepare(operation: &str, path: &str, output: &str) -> Result<bool> {
     if std::path::Path::new(output).exists() {
         return Err("Output already exists".into());
     }
-    let parent = std::path::Path::new(output)
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or(std::path::Path::new("."));
-    let directory = tempfile::tempdir_in(parent).map_err(|e| e.to_string())?;
+    let directory = crate::export_staging::directory(std::path::Path::new(output))?;
     let ext = std::path::Path::new(output)
         .extension()
         .unwrap_or_default()
@@ -181,11 +177,7 @@ pub fn export(
     if backend == Backend::Ffmpeg {
         return Ok(false);
     }
-    let parent = std::path::Path::new(output)
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or(std::path::Path::new("."));
-    let directory = tempfile::tempdir_in(parent).map_err(|e| e.to_string())?;
+    let directory = crate::export_staging::directory(std::path::Path::new(output))?;
     let ext = if output.to_lowercase().ends_with(".mov") {
         "mov"
     } else {

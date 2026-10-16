@@ -6,6 +6,7 @@ pub mod audio_mix;
 mod compressor;
 mod distortion;
 mod ducking;
+pub mod export_staging;
 mod graphics;
 pub mod jobs;
 mod limiter;

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.3 — 2026-10-16
+
+- Use private temporary storage for Mac native audio/video exports on the same volume, avoiding the extra output-folder picker.
+- Keep destination-folder staging for other volumes and preserve atomic publication without overwriting existing files.
+- Keep the explicit folder selection for project sidecar assets and delivery folders.
+
 ## 0.13.2 — 2026-10-15
 
 - Remember selected Mac media files, saved projects and output folders across launches; pass matching resource access to native helpers.

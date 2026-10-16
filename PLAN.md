@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-15, for local 0.13.2. This section is the current plan.
+Updated 2026-10-16, for local 0.13.3. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -53,6 +53,12 @@ resolve relative media and accept saved format 4. Real sandbox tests pass file r
 read-only source boundaries, writable project reopening and native AAC output across
 five launches; unselected neighboring input remains inaccessible.
 [Resource-access evidence](docs/evidence/macos-resource-bookmarks.json).
+
+Local 0.13.3 stages Mac exports privately on the destination volume, avoiding
+the extra folder picker for ordinary single-file exports. Other volumes retain
+sibling staging and explicit folder access; final publication remains atomic and
+exclusive. Project sidecar assets and delivery-folder selections remain explicit.
+[Export staging checks](docs/evidence/native-export-staging.json).
 
 Next: collect beta feedback, check physical iOS devices and Finder gestures,
 commercial plugins and external interfaces. Moved/missing sources retain the

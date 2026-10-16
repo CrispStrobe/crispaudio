@@ -48,11 +48,7 @@ fn render_encoded(doc: &Value, output: &str, codec: Codec) -> Result<()> {
     if !cfg!(target_os = "macos") {
         return Err("Native compressed audio export requires macOS".into());
     }
-    let parent = Path::new(output)
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    let folder = tempfile::tempdir_in(parent).map_err(|e| e.to_string())?;
+    let folder = crate::export_staging::directory(std::path::Path::new(output))?;
     let mix = folder.path().join("mix.wav");
     crate::audio_mix::render(doc, mix.to_str().ok_or("Invalid mix path")?)?;
     let frames = hound::WavReader::open(&mix)
