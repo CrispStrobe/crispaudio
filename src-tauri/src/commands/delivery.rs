@@ -417,34 +417,46 @@ mod tests {
     }
     #[test]
     fn restored_locations_rewrite_all_media_references_without_touching_other_text() {
-        let doc = json!({"format":"crispaudio-project","version":4,"sources":[{"path":"/old.wav","name":"/old.wav"}],"project":{"video":{"path":"/old.mov","graphics":[{"clips":[{"path":"/old.png"}]}]},"tracks":[{"segments":[{"retime":{"original":{"path":"/old.wav"}},"sourceEdit":{"originalPath":"/old.wav"}}]}]},"relative":{"path":"media/relative.wav"},"offline":{"path":"/offline.wav"}});
+        let root = root();
+        let old_audio = root.join("old.wav");
+        let old_video = root.join("old.mov");
+        let old_still = root.join("old.png");
+        let audio = root.join("current/audio.wav");
+        let video = root.join("current/video.mov");
+        let still = root.join("current/still.png");
+        let offline = root.join("offline.wav");
+        let doc = json!({"format":"crispaudio-project","version":4,"sources":[{"path":old_audio,"name":old_audio}],"project":{"video":{"path":old_video,"graphics":[{"clips":[{"path":old_still}]}]},"tracks":[{"segments":[{"retime":{"original":{"path":old_audio}},"sourceEdit":{"originalPath":old_audio}}]}]},"relative":{"path":"media/relative.wav"},"offline":{"path":offline}});
         let restored = restore_document(doc, |path| {
-            Ok(match path.to_str().unwrap() {
-                "/old.wav" => Some("/current/audio.wav".into()),
-                "/old.mov" => Some("/current/video.mov".into()),
-                "/old.png" => Some("/current/still.png".into()),
-                _ => None,
+            Ok(if path == old_audio {
+                Some(audio.clone())
+            } else if path == old_video {
+                Some(video.clone())
+            } else if path == old_still {
+                Some(still.clone())
+            } else {
+                None
             })
         })
         .unwrap();
         let doc: Value = serde_json::from_str(&restored).unwrap();
-        assert_eq!(doc["sources"][0]["path"], "/current/audio.wav");
-        assert_eq!(doc["sources"][0]["name"], "/old.wav");
-        assert_eq!(doc["project"]["video"]["path"], "/current/video.mov");
+        assert_eq!(doc["sources"][0]["path"], json!(audio));
+        assert_eq!(doc["sources"][0]["name"], json!(old_audio));
+        assert_eq!(doc["project"]["video"]["path"], json!(video));
         assert_eq!(
             doc["project"]["video"]["graphics"][0]["clips"][0]["path"],
-            "/current/still.png"
+            json!(still)
         );
         assert_eq!(
             doc["project"]["tracks"][0]["segments"][0]["retime"]["original"]["path"],
-            "/current/audio.wav"
+            json!(audio)
         );
         assert_eq!(
             doc["project"]["tracks"][0]["segments"][0]["sourceEdit"]["originalPath"],
-            "/current/audio.wav"
+            json!(audio)
         );
         assert_eq!(doc["relative"]["path"], "media/relative.wav");
-        assert_eq!(doc["offline"]["path"], "/offline.wav");
+        assert_eq!(doc["offline"]["path"], json!(offline));
+        fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn collection_is_relocatable_and_retains_originals_and_stills() {
