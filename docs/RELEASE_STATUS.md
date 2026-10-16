@@ -5,6 +5,28 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.8 — delay-time and oscillator passes
+
+Mac Live playback adds track delay time, chorus rate and ring frequency to the
+existing Touch/Latch/Write workflow. Audition remains session-only; reviewed
+Apply creates one Undo step. Native track delays reserve their full two-second
+history before playback, within the existing shared 64 MiB effect-state budget.
+Time edits retain the history and do not resize the buffer during playback.
+Native oscillators keep phase through automation control changes, Read restoration and
+project loops. Static and automated rates use the same native frequency increment.
+Offline rendering retains its established DSP paths.
+
+Master/clip effect passes, native plug-in parameter passes and continuous native
+input DSP remain pending. Live control delivery remains block-based.
+All 1,771 frontend tests, 161 media tests with native-engine enabled, 41 app tests
+and 21 release checks pass. Lint, TypeScript, locked iOS simulator compilation
+and the normal Mac bundle pass. The installed 0.13.8 app is running with a verified
+deep/strict signature, one autosave preserved and the prior app/session backed up.
+DSP checks use synthetic PCM and fixture native inserts; no new physical audio or
+commercial plug-in acceptance was performed. Both preceding CI workflows passed.
+[Delay and oscillator evidence](evidence/native-time-phase-automation.json).
+No Apple upload or release tag was triggered for this checkpoint.
+
 ## Local 0.13.7 — delay feedback and chorus depth passes
 
 Mac Live playback adds Touch, Latch and Write passes for track delay feedback
@@ -201,7 +223,7 @@ DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaud
 | iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
 | Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. Native 0.13.0/build 14 is now available for internal TestFlight. |
 | Provisioning | Active `IOS_APP_STORE` and newly created `MAC_APP_STORE` profiles, bound to the existing Distribution certificate. Existing account/API credentials work. |
-| Local native macOS app | Installed 0.13.7 ad-hoc signed app, separate from the public iOS release. |
+| Local native macOS app | Installed 0.13.8 ad-hoc signed app, separate from the public iOS release. |
 | Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
 
 [Public App Store listing](https://apps.apple.com/de/app/crispaudio/id6791876962) ·

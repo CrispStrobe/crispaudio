@@ -54,5 +54,5 @@ export function scheduleRingFrequency(param:AudioParam,points:GainPoint[]|undefi
 }
 
 /** Parameters supported by hot controls in the native track rack. */
-export const nativeTrackEffectParameters=['mix','feedback','depth'] as const;
+export const nativeTrackEffectParameters=['mix','feedback','depth','time','rate','freq'] as const;
 export const supportsNativeTrackEffectParameter=(type:string|undefined,parameter:string)=>nativeTrackEffectParameters.some(key=>key===parameter)&&supportsEffectParameter(type,parameter);

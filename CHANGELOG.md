@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.8 — 2026-10-16
+
+- Record delay time, chorus rate and ring frequency passes during Mac Live playback with native inserts.
+- Reserve native track delay history before playback within the existing effect-state budget; time changes retain recorded history.
+- Keep native oscillator phase continuous through automation changes, Read restoration and project loops.
+
 ## 0.13.7 — 2026-10-16
 
 - Record delay feedback and chorus depth automation passes during Mac Live playback with native inserts.

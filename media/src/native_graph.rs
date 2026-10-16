@@ -446,7 +446,7 @@ impl Graph {
             for clip in &mut clips {
                 clip.align = Delay::new(input_latency - clip.native.latency, &mut delay_budget)?;
             }
-            let builtin = Rack::new(&doc["effects"], &mut budget)?;
+            let builtin = Rack::new_track(&doc["effects"], &mut budget)?;
             let native = native(&doc["nativeEffects"], &mut count, &mut factory)?;
             mono &= !builtin.stereo() && native.inserts.is_empty();
             let rack_output = input_latency + native.latency;
@@ -1180,14 +1180,15 @@ mod tests {
         }
     }
     #[test]
-    fn feedback_and_depth_controls_match_continuous_read_without_resetting_history() {
-        for (kind, parameter, params, original, held) in [
+    fn track_parameter_controls_match_continuous_read_without_resetting_history() {
+        for (kind, parameter, params, original, held, maximum) in [
             (
                 "delay",
                 "feedback",
                 json!({"time":0.003,"feedback":0.2,"mix":0.8}),
                 0.2,
                 0.8,
+                0.95,
             ),
             (
                 "chorus",
@@ -1195,6 +1196,31 @@ mod tests {
                 json!({"rate":1.5,"depth":0.2,"mix":0.8}),
                 0.2,
                 0.9,
+                1.0,
+            ),
+            (
+                "delay",
+                "time",
+                json!({"time":0.003,"feedback":0.3,"mix":0.8}),
+                0.003,
+                0.018,
+                2.0,
+            ),
+            (
+                "chorus",
+                "rate",
+                json!({"rate":1.5,"depth":0.7,"mix":0.8}),
+                1.5,
+                4.7,
+                8.0,
+            ),
+            (
+                "ringmod",
+                "freq",
+                json!({"freq":200,"mix":0.8}),
+                200.0,
+                731.0,
+                2000.0,
             ),
         ] {
             let source = || {
@@ -1223,7 +1249,7 @@ mod tests {
             for block in 0..4 {
                 if block == 1 {
                     for points in [
-                        json!([{"time":0,"value":if parameter == "feedback" { 0.96 } else { 1.01 }}]),
+                        json!([{"time":0,"value":maximum + 0.01}]),
                         json!([{"time":0,"value":-0.1}]),
                     ] {
                         assert!(graph
@@ -1240,7 +1266,8 @@ mod tests {
                         .update_controls(serde_json::from_value(duplicate).unwrap())
                         .is_err());
                     let mut unsupported = controls(json!([{"time":0,"value":held}]));
-                    unsupported["tracks"][0]["effectAutomation"][0]["parameter"] = json!("time");
+                    unsupported["tracks"][0]["effectAutomation"][0]["parameter"] =
+                        json!(if kind == "delay" { "depth" } else { "feedback" });
                     assert!(graph
                         .update_controls(serde_json::from_value(unsupported).unwrap())
                         .is_err());

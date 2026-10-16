@@ -1,0 +1,54 @@
+{
+  "version": "0.13.8",
+  "date": "2026-10-16",
+  "behavior": [
+    "Mac Live track delay time, chorus rate and ring frequency Touch/Latch/Write passes",
+    "Reviewed Apply uses one Undo; audition does not mutate the project or saved plug-in state",
+    "Native track delay history is reserved before playback inside the existing shared 64 MiB effect-state budget",
+    "Time control updates retain history and buffer allocation",
+    "Native oscillators retain continuous phase across hot edits, Read restoration and project loops",
+    "Native static and automated frequency increments use the same float32 calculation; offline DSP paths remain unchanged"
+  ],
+  "validation": {
+    "status": "complete",
+    "media": "161 passed, 10 optional tests skipped with native-engine enabled",
+    "mediaLog": "/tmp/crispaudio-time-phase-media-final.log",
+    "nativeSignal": "Known PCM through fixture native inserts matches continuous step envelopes for delay time and feedback, chorus rate and depth, and ring frequency through hot changes and static Read restoration",
+    "phaseOracle": "Native ring carrier matches an independent accumulated-phase oracle across hot frequency changes, static Read restoration and project loops",
+    "allocation": "Native delay history allocation remains unchanged through time updates; shared budget rejects oversized preparation",
+    "focusedFrontend": "34 passed",
+    "frontend": {
+      "tests": 1771,
+      "files": 180,
+      "result": "PASS",
+      "log": "/tmp/crispaudio-time-phase-frontend-full.log",
+      "scope": "Full run, maxWorkers=2 and testTimeout=20000; repository settings unchanged"
+    },
+    "release": "21 passed",
+    "appTests": "41 passed, 1 optional test skipped",
+    "ios": "Locked aarch64-apple-ios-sim compile PASS; existing unused MIDI method warning",
+    "lint": "PASS",
+    "typescript": "PASS",
+    "macBuild": "Normal debug app bundle PASS"
+  },
+  "limits": [
+    "Live controls arrive at block boundaries, not sample-accurate timestamped events",
+    "Master/clip effect passes, native plug-in parameter passes and continuous native input DSP remain unavailable",
+    "No new physical audio, commercial plug-in or external interface acceptance performed",
+    "Pass capture still discards drafts on detected seek/loop clock discontinuities; phase continuity describes DSP playback"
+  ],
+  "previousCi": {
+    "commit": "994053a",
+    "general": "PASS",
+    "ios": "PASS"
+  },
+  "appleUpload": false,
+  "installed": {
+    "version": "0.13.8",
+    "app": "~/Applications/CrispAudio-local.app",
+    "signature": "deep/strict PASS",
+    "autosavesRetained": 1,
+    "priorAppAndSession": "backed up before replacement",
+    "independentCli": "unchanged"
+  }
+}

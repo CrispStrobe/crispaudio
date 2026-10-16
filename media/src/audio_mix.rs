@@ -282,7 +282,42 @@ impl Delay {
         output
     }
 }
+/// Native processors keep oscillator phase across hot controls and project loops.
+/// Offline renders retain their established absolute/integrated phase paths.
+#[derive(Default)]
+struct LivePhase {
+    next: f64,
+    initialized: bool,
+}
+impl LivePhase {
+    fn at(&mut self, frame: u32, curve: &mut Automation, fallback: f64, scale: f64) -> f64 {
+        // Match the oscillator's float32 frequency increment for both static and
+        // automated rates, avoiding a precision change when Read is restored.
+        let increment = |value: f64| ((value as f32) * (4096.0 / RATE) as f32) as f64 / 4096.0;
+        if !self.initialized {
+            if curve.points.is_empty() {
+                self.next = increment(fallback) * frame as f64;
+            } else {
+                for previous in 0..frame {
+                    self.next = (self.next + increment(curve.at(previous as f64 / RATE) * scale))
+                        .rem_euclid(1.0);
+                }
+            }
+            self.initialized = true;
+        }
+        let phase = self.next;
+        let static_value = curve.points.is_empty();
+        let value = if static_value {
+            fallback
+        } else {
+            curve.at(frame as f64 / RATE) * scale
+        };
+        self.next = (self.next + increment(value)).rem_euclid(1.0);
+        std::f64::consts::TAU * phase
+    }
+}
 struct Chorus {
+    live_phases: Option<[LivePhase; 2]>,
     history: Vec<[f32; 2]>,
     cursor: usize,
     rates: [f64; 2],
@@ -304,7 +339,7 @@ impl Chorus {
         };
         // Frequency is integrated from oscillator start, including silent time
         // before a later clip. Rate edits never reset phase or the delay buffer.
-        if !self.rate_automation.points.is_empty() {
+        if self.live_phases.is_none() && !self.rate_automation.points.is_empty() {
             while self.phase_frame < frame {
                 let value = self.rate_automation.at(self.phase_frame as f64 / RATE);
                 for (phase, scale) in self.phases.iter_mut().zip([1.0, 1.2]) {
@@ -317,7 +352,14 @@ impl Chorus {
         }
         let mut wet = [0.0; 2];
         for (index, (rate, base)) in self.rates.into_iter().zip([0.02f32, 0.03f32]).enumerate() {
-            let phase = if self.rate_automation.points.is_empty() {
+            let phase = if let Some(phases) = &mut self.live_phases {
+                phases[index].at(
+                    frame,
+                    &mut self.rate_automation,
+                    rate,
+                    if index == 0 { 1.0 } else { 1.2 },
+                )
+            } else if self.rate_automation.points.is_empty() {
                 std::f64::consts::TAU * rate * frame as f64 / RATE
             } else {
                 std::f64::consts::TAU * self.phases[index]
@@ -365,6 +407,7 @@ enum Effect {
         automation: Automation,
     },
     RingMod {
+        live_phase: Option<LivePhase>,
         frequency: f64,
         frequency_automation: Automation,
         phase_frame: u32,
@@ -428,6 +471,7 @@ impl Effect {
                 }
             }),
             Self::RingMod {
+                live_phase,
                 frequency,
                 frequency_automation,
                 phase_frame,
@@ -440,7 +484,9 @@ impl Effect {
                 // phase. Power-of-two table sizes share the same normalized step.
                 let cycles_per_frame =
                     ((*frequency as f32) * (4096.0 / RATE) as f32) as f64 / 4096.0;
-                let phase = if frequency_automation.points.is_empty() {
+                let phase = if let Some(phase) = live_phase {
+                    phase.at(frame, frequency_automation, *frequency, 1.0)
+                } else if frequency_automation.points.is_empty() {
                     std::f64::consts::TAU * cycles_per_frame * frame as f64
                 } else {
                     while *phase_frame < frame {
@@ -546,6 +592,7 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
             budget.reserve(length * std::mem::size_of::<[f32; 2]>())?;
             let rate = finite(params, "rate", Some(1.5))?;
             out.push(Effect::Chorus(Chorus {
+                live_phases: None,
                 history: vec![[0.0; 2]; length],
                 cursor: 0,
                 rates: [
@@ -620,6 +667,7 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
                 }
             } else {
                 Effect::RingMod {
+                    live_phase: None,
                     frequency_automation,
                     phase_frame: 0,
                     phase_cycles: 0.0,
@@ -2301,6 +2349,13 @@ pub(crate) mod block_dsp {
             let maximum = match (self.0.get(index), parameter) {
                 (Some(Effect::Delay(_)), "feedback") => 0.95,
                 (Some(Effect::Chorus(_)), "depth") => 1.0,
+                (Some(Effect::Delay(delay)), "time")
+                    if delay.history.len() >= (2.0 * RATE) as usize + 2 =>
+                {
+                    2.0
+                }
+                (Some(Effect::Chorus(_)), "rate") => 8.0,
+                (Some(Effect::RingMod { .. }), "freq") => 2000.0,
                 (
                     Some(
                         Effect::Delay(_)
@@ -2329,6 +2384,15 @@ pub(crate) mod block_dsp {
             let automation = match (&mut self.0[update.index], update.parameter.as_str()) {
                 (Effect::Delay(delay), "feedback") => &mut delay.feedback_automation,
                 (Effect::Chorus(chorus), "depth") => &mut chorus.depth_automation,
+                (Effect::Delay(delay), "time") => &mut delay.time_automation,
+                (Effect::Chorus(chorus), "rate") => &mut chorus.rate_automation,
+                (
+                    Effect::RingMod {
+                        frequency_automation,
+                        ..
+                    },
+                    "freq",
+                ) => frequency_automation,
                 (Effect::Delay(delay), "mix") => &mut delay.automation,
                 (Effect::Chorus(chorus), "mix") => &mut chorus.automation,
                 (
@@ -2343,7 +2407,33 @@ pub(crate) mod block_dsp {
             *automation = update.curve;
         }
         pub fn new(value: &Value, budget: &mut Budget) -> Result<Self> {
-            Ok(Self(filters(value, &mut budget.0)?))
+            let mut effects = filters(value, &mut budget.0)?;
+            for effect in &mut effects {
+                match effect {
+                    Effect::Chorus(chorus) => chorus.live_phases = Some(Default::default()),
+                    Effect::RingMod { live_phase, .. } => *live_phase = Some(Default::default()),
+                    _ => {}
+                }
+            }
+            Ok(Self(effects))
+        }
+        /// Reserve time-edit history before playback, inside the shared rack budget.
+        pub fn new_track(value: &Value, budget: &mut Budget) -> Result<Self> {
+            let mut rack = Self::new(value, budget)?;
+            for effect in &mut rack.0 {
+                if let Effect::Delay(delay) = effect {
+                    let length = (2.0 * RATE) as usize + 2;
+                    let extra = (length - delay.history.len()) * std::mem::size_of::<[f32; 2]>();
+                    if extra > MAX_EFFECT_STATE - budget.0.bytes {
+                        return Err(
+                            "Native delay history exceeds 64 MiB effect state budget".into()
+                        );
+                    }
+                    budget.0.bytes += extra;
+                    delay.history.resize(length, [0.0; 2]);
+                }
+            }
+            Ok(rack)
         }
         pub fn at(&mut self, sample: [f64; 2], frame: u32) -> [f64; 2] {
             process(&mut self.0, sample, frame)
@@ -2352,6 +2442,80 @@ pub(crate) mod block_dsp {
             self.0
                 .iter()
                 .any(|e| matches!(e, Effect::Reverb { .. } | Effect::Compressor(_)))
+        }
+    }
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use serde_json::json;
+        #[test]
+        fn track_delay_reserves_edit_history_once_and_respects_shared_budget() {
+            let doc = json!([{"type":"delay","enabled":true,"params":{"time":0.001,"mix":1}}]);
+            let mut budget = Budget::default();
+            let mut rack = Rack::new_track(&doc, &mut budget).unwrap();
+            let (pointer, length) = match &rack.0[0] {
+                Effect::Delay(delay) => (delay.history.as_ptr(), delay.history.len()),
+                _ => panic!(),
+            };
+            assert_eq!(length, 96002);
+            let bytes = budget.0.bytes;
+            for value in [0.0, 2.0, 0.3] {
+                let update = rack
+                    .prepare_control(0, "time", &json!([{"time":0,"value":value}]))
+                    .unwrap();
+                rack.apply_control(update);
+                match &rack.0[0] {
+                    Effect::Delay(delay) => assert_eq!(delay.history.as_ptr(), pointer),
+                    _ => panic!(),
+                }
+            }
+            assert_eq!(budget.0.bytes, bytes);
+            assert_eq!(budget.0.count, 1);
+            let mut bounded = Budget(EffectBudget {
+                bytes: MAX_EFFECT_STATE - 4096,
+                count: 0,
+            });
+            assert!(Rack::new_track(&doc, &mut bounded)
+                .err()
+                .unwrap()
+                .contains("delay history"));
+        }
+        #[test]
+        fn live_carrier_phase_survives_controls_read_and_project_loops() {
+            let mut rack = Rack::new_track(
+                &json!([{"type":"ringmod","enabled":true,"params":{"freq":200,"mix":1}}]),
+                &mut Budget::default(),
+            )
+            .unwrap();
+            let mut phase = 0.0f64;
+            for sample in 0..2400 {
+                if sample == 1200 {
+                    let update = rack
+                        .prepare_control(0, "freq", &json!([{"time":0,"value":731}]))
+                        .unwrap();
+                    rack.apply_control(update);
+                } else if sample == 1800 {
+                    let update = rack.prepare_control(0, "freq", &Value::Null).unwrap();
+                    rack.apply_control(update);
+                }
+                let project_frame = if sample < 1000 {
+                    sample
+                } else {
+                    1000 + (sample - 1000) % 257
+                };
+                let actual = rack.at([1.; 2], project_frame)[0];
+                assert!(
+                    (actual - (std::f64::consts::TAU * phase).sin()).abs() < 1e-9,
+                    "Phase reset at sample {sample}"
+                );
+                let frequency = if (1200..1800).contains(&sample) {
+                    731.0f32
+                } else {
+                    200.0f32
+                };
+                phase =
+                    (phase + (frequency * (4096.0 / RATE) as f32) as f64 / 4096.0).rem_euclid(1.0);
+            }
         }
     }
     pub struct Fade(Envelope);

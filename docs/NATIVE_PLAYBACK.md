@@ -40,15 +40,17 @@ creates one Undo step; audition does not change the project or saved plug-in sta
 Touch release restores Read. Escape, interruption or a playback fault discards
 the draft. Delay, chorus, reverb, distortion, ring modulation and bitcrush support
 wet/dry passes without resetting delay buffers, reverb tails or oscillator state.
-Delay feedback and chorus depth can also be recorded and restored to Read while
-the processors keep running. Delay time, chorus rate and ring frequency passes
-remain guarded during native playback. Envelope readers rewind with project time
-when a loop wraps.
+Delay time and feedback, chorus depth and rate, and ring frequency can also be
+recorded and restored to Read while processors keep running. Native track delays
+reserve their full two-second history before playback, within the shared 64 MiB
+effect-state budget. Oscillator phase continues through automation edits, Read restoration
+and loops; envelope readers follow project time when a loop wraps.
 These passes use the native playback clock and control-block updates;
-they do not provide sample-accurate timestamped control delivery.
+they do not provide sample-accurate timestamped control delivery. Detected seek
+or loop discontinuities discard an active pass.
 
-Preview playback, microphone capture, other effect-parameter passes, master/clip
-effect passes, plug-in parameter passes, continuous native input monitoring, monitor clicks, custom plug-in windows and
+Preview playback, microphone capture, master/clip effect passes, plug-in parameter
+passes, continuous native input monitoring, monitor clicks, custom plug-in windows and
 MIDI instruments remain outside this automation mode.
 
 ## Try the included session

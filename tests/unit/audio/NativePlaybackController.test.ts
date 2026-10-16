@@ -63,14 +63,14 @@ it('waits for the native clock before a pass starts and auditions through the ru
  expect(engine.previewAutomation(p,{trackId:'a',parameter:'mix',effectIndex:0},.2)).toBe(false);expect(engine.previewAutomation(p,target)).toBe(true);await vi.waitFor(()=>expect(f.playback.update).toHaveBeenLastCalledWith(p));await engine.closeNativeOwned();
 });
 
-it('holds track effect mix independently, restores Read and keeps only mix envelopes out of topology',async()=>{
+it('holds track effect mix independently, restores Read and keeps supported envelopes out of topology',async()=>{
  const f=session();create.mockResolvedValue(f.snapshot);const controller=new NativePlaybackController(()=>{},()=>{});
  const p={...mixProject(),tracks:mixProject().tracks.map(track=>({...track,effects:[{type:'delay' as const,enabled:true,params:{mix:.3,time:.2},automation:{mix:[{time:0,value:.3}],time:[{time:0,value:.2}]}}]}))},original=structuredClone(p),target={trackId:'a',parameter:'mix' as const,effectIndex:0};
  await controller.play(p,sources,0,0,4,false);
  controller.previewAutomation(p,{trackId:'a',parameter:'gain'},.5);expect(controller.previewAutomation(p,target,.8)).toBe(true);await controller.update(p);
  const sent=f.playback.update.mock.calls.at(-1)![0];expect(sent.tracks[0]).toMatchObject({automation:[{time:0,value:.5}],effects:[{automation:{mix:[{time:0,value:.8}],time:[{time:0,value:.2}]}}]});
  expect(nativeLiveStructureKey(sent)).toBe(nativeLiveStructureKey(p));
- const different=structuredClone(p);different.tracks[0].effects[0].automation.time[0].value=.4;expect(nativeLiveStructureKey(different)).not.toBe(nativeLiveStructureKey(p));
+ const different=structuredClone(p);different.tracks[0].effects[0].params.time=.4;expect(nativeLiveStructureKey(different)).not.toBe(nativeLiveStructureKey(p));
  for(const value of [-1,1.1,NaN])expect(controller.previewAutomation(p,target,value)).toBe(false);
  controller.previewAutomation(p,target);await controller.update(p);expect(f.playback.update.mock.calls.at(-1)![0].tracks[0]).toMatchObject({automation:[{time:0,value:.5}],effects:p.tracks[0].effects});
  expect(p).toEqual(original);expect(create).toHaveBeenCalledTimes(1);await controller.stop();
@@ -80,8 +80,15 @@ it.each([{type:'delay' as const,parameter:'feedback' as const,held:.8,invalid:.9
  const f=session();create.mockResolvedValue(f.snapshot);const controller=new NativePlaybackController(()=>{},()=>{});
  const p={...mixProject(),tracks:mixProject().tracks.map(track=>({...track,effects:[{type,enabled:true,params:{mix:.3,feedback:.2,depth:.2},automation:{[parameter]:[{time:0,value:.2},{time:3,value:.4}]}}]}))},original=structuredClone(p),target={trackId:'a',parameter,effectIndex:0};
  await controller.play(p,sources,0,0,4,false);expect(controller.previewAutomation(p,target,invalid)).toBe(false);
- expect(controller.previewAutomation(p,{trackId:'a',parameter:'time',effectIndex:0},.4)).toBe(false);
+ expect(controller.previewAutomation(p,{trackId:'a',parameter:'freq',effectIndex:0},.4)).toBe(false);
  controller.previewAutomation(p,{trackId:'a',parameter:'mix',effectIndex:0},.7);expect(controller.previewAutomation(p,target,held)).toBe(true);await controller.update(p);
  const sent=f.playback.update.mock.calls.at(-1)![0];expect(sent.tracks[0].effects?.[0].automation).toMatchObject({mix:[{time:0,value:.7}],[parameter]:[{time:0,value:held}]});expect(nativeLiveStructureKey(sent)).toBe(nativeLiveStructureKey(p));
  controller.previewAutomation(p,target);await controller.update(p);expect(f.playback.update.mock.calls.at(-1)![0].tracks[0].effects?.[0].automation).toMatchObject({mix:[{time:0,value:.7}],[parameter]:original.tracks[0].effects[0].automation[parameter]});expect(p).toEqual(original);expect(create).toHaveBeenCalledTimes(1);await controller.stop();
+});
+
+it.each([{type:'delay' as const,parameter:'time' as const,held:.7,invalid:2.01},{type:'chorus' as const,parameter:'rate' as const,held:4.7,invalid:8.01},{type:'ringmod' as const,parameter:'freq' as const,held:731,invalid:2001}])('auditions $type $parameter and restores Read without replacing the session',async({type,parameter,held,invalid})=>{
+ const f=session();create.mockResolvedValue(f.snapshot);const controller=new NativePlaybackController(()=>{},()=>{});
+ const p={...mixProject(),tracks:mixProject().tracks.map(track=>({...track,effects:[{type,enabled:true,params:{mix:.3},automation:{[parameter]:[{time:0,value:.2}]}}]}))},original=structuredClone(p),target={trackId:'a',parameter,effectIndex:0};await controller.play(p,sources,0,0,4,false);
+ expect(controller.previewAutomation(p,target,invalid)).toBe(false);expect(controller.previewAutomation(p,target,held)).toBe(true);await controller.update(p);const sent=f.playback.update.mock.calls.at(-1)![0];expect(sent.tracks[0].effects?.[0].automation?.[parameter]).toEqual([{time:0,value:held}]);expect(nativeLiveStructureKey(sent)).toBe(nativeLiveStructureKey(p));
+ controller.previewAutomation(p,target);await controller.update(p);expect(f.playback.update).toHaveBeenLastCalledWith(p);expect(p).toEqual(original);expect(create).toHaveBeenCalledTimes(1);await controller.stop();
 });
