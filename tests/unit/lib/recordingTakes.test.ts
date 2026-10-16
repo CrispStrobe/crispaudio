@@ -38,3 +38,7 @@ it('saved comp versions recall choices after reset, remain independent and retim
  const shifted=recordingRange(saved.tracks[0],0,1,'insert');expect(shifted.compVersions![0].regions[0].start).toBe(3);expect(shifted.compVersions![0].regions[0].end).toBe(5);
  expect(validRecording(saved)).toBe(true);version.regions[0].takeId='missing';expect(validRecording(saved)).toBe(false);
 });
+it('validates saved cue settings without changing legacy inputs',()=>{
+ const p=project();p.tracks[0].recordingInput={deviceId:'',channel:'mono',monitor:false,countIn:0,latencyMs:0,monitorLevelDb:-18,monitorPan:.5,monitorMono:true,monitorFx:true};expect(validRecording(p)).toBe(true);
+ for(const patch of [{monitorLevelDb:1},{monitorLevelDb:NaN},{monitorPan:2},{monitorMono:'true'},{monitorFx:1}])expect(validRecording({...p,tracks:[{...p.tracks[0],recordingInput:{...p.tracks[0].recordingInput,...patch} as typeof p.tracks[0]['recordingInput']}]})).toBe(false);
+});

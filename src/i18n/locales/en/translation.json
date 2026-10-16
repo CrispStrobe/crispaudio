@@ -1535,6 +1535,17 @@
     "safeAreasHelp": "The outer dashed rectangle keeps action inside 90% of the picture; the inner rectangle keeps titles inside 80%. Leave important text and faces inside these guides to allow for cropped displays. The guides are preview aids and are never exported."
   },
   "recording": {
+    "cue": "Cue mix",
+    "cueLevel": "Cue level",
+    "cuePan": "Cue pan",
+    "cueMono": "Mono cue",
+    "cueFx": "Native track inserts (buffered)",
+    "cueLatency": "Added FX delay: {{milliseconds}} ms",
+    "cueHelp": "Cue controls affect only live input monitoring; takes stay dry. Cue audio uses the chosen playback output and monitor volume, independently of the track fader. Add inserts in Track settings first. Native monitoring uses up to two enabled AU/VST3 track inserts with saved static settings. Each insert adds 4096 samples of bridge buffering plus its reported latency (at 48 kHz: at least 85.3 ms). This is a buffered cue, unsuitable for tight real-time performance. The displayed delay excludes input/output device latency. Disable monitoring to release plug-in streams. A plug-in fault mutes the cue; dry capture continues. Headphone devices, independent backing mixes and wet capture are separate future work. Use headphones to avoid acoustic feedback.",
+    "cueInvalid": "Cue settings are invalid, or more than two native inserts are enabled.",
+    "cueFault": "Native cue stopped after a plug-in error. Dry recording is unaffected. Reconnect monitoring to retry.",
+    "cueMac": "Native input monitoring requires the Mac app. Turn native cue inserts off to monitor dry.",
+
     "countInBars": "Count-in",
     "preRollBars": "Pre-roll",
     "bars_one": "{{count}} bar",
@@ -1626,7 +1637,7 @@
     "timing": "Timing and calibration",
     "preparingBacking": "Preparing accompaniment",
     "backingBudget": "The native-effects accompaniment exceeds the recording preparation limit. Shorten the session or export a backing mix to a new session.",
-    "nativeHelp": "Native effects are prepared as a fixed wet accompaniment before recording. Accompaniment and input share one audio clock. Takes and input monitoring remain dry; the track effects apply on playback. Editing the arrangement stops recording."
+    "nativeHelp": "Native effects are prepared as a fixed wet accompaniment before recording. Accompaniment and input share one audio clock. Takes stay dry; track effects apply on playback. Cue mix offers separate level, pan/mono and optional buffered native track inserts. Editing the arrangement stops recording."
   },
   "retime": {
     "title": "Speed / pitch",
@@ -2273,14 +2284,14 @@
     "rendering": "Rendering…",
     "menu": "Play / Pause",
     "macOnly": "Native effects preview requires the installed Mac app.",
-    "recording": "Built-in effect and native plug-in parameter passes require Mac Live playback. Microphone recording uses prepared accompaniment; input monitoring stays dry.",
+    "recording": "Built-in effect and native plug-in parameter passes require Mac Live playback. Microphone recording uses prepared accompaniment and dry takes. Cue mix supports optional buffered native monitoring.",
     "mixAutomation": "Mac Live: record track level, pan and built-in effect parameters on tracks, clips or master. Touch restores Read on release; Latch and Write hold until Stop. Review and apply with one Undo.",
     "help": "Play renders the finished stereo mix once, including native effects. Pause, seek and loop reuse it. Audio edits stop playback and rebuild the preview on the next Play.",
     "limits": "Master meters only; rendered Preview does not support live mixing. Recording uses a separate prepared backing. Playback uses your selected output device.",
     "mode": "Playback mode",
     "live": "Live",
     "liveHelp": "Live runs AU/VST3 effects continuously. Mixer controls, plug-in parameters and supported track, clip and master effect knobs update during playback. Pause retains state; seeking rebuilds history.",
-    "liveLimits": "Rack changes and other built-in effect settings restart playback. Audio runs at 48 kHz. Microphone recording uses a prepared wet backing and dry monitoring. The metronome is monitor-only. Live plug-in input monitoring remains unavailable.",
+    "liveLimits": "Rack changes and other built-in effect settings restart playback. Audio runs at 48 kHz. Microphone recording uses a prepared wet backing and dry takes. Cue mix offers buffered native monitoring with its added delay shown. The metronome is monitor-only.",
     "shortLoop": "This loop is too short for Live native effects. Select Preview to audition loops shorter than 43 ms."
   },
   "curveRange": {

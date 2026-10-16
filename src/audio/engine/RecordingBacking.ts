@@ -4,7 +4,8 @@ import type {CapturePass} from '../../lib/capturedTakes';
 import {hasNativeEffects} from '../../lib/nativeEffects';
 import type {TimelineEngine} from './TimelineEngine';
 /** Freeze the wet accompaniment before opening input. Playback and capture then
- * share the same Web Audio clock; native helpers never run on input deadlines. */
+ * share the same Web Audio clock; accompaniment helpers finish before capture.
+ * Optional buffered input cue inserts own separate sessions after preparation. */
 export async function prepareRecordingBacking(engine:TimelineEngine,ctx:AudioContext,project:TimelineProject,sources:Map<string,AudioSource>,signal:AbortSignal){
  if(!hasNativeEffects(project))return;
  signal.throwIfAborted();const frozen=structuredClone(project),registry=new Map([...sources].map(([id,source])=>[id,{...source}]));

@@ -11,7 +11,7 @@ export function captureTrackTemplate(track:TimelineTrack,name:string,id=crypto.r
  const result:TrackTemplate={id,name:name.trim(),settings:{volume:track.volume,pan:track.pan,waveformMode:track.waveformMode,
  effects:track.effects?.map(effect=>({type:effect.type,enabled:effect.enabled,params:{...effect.params}})),
  nativeEffects:track.nativeEffects?.map(effect=>({instanceId:crypto.randomUUID(),pluginId:effect.pluginId,name:effect.name,format:effect.format,enabled:effect.enabled,bypass:effect.bypass,parameters:{...effect.parameters},state:effect.state})),
- recordingInput:input?{deviceId:'',channel:input.channel,monitor:false,countIn:input.countIn,countInBars:input.countInBars,preRollBars:input.preRollBars,latencyMs:input.latencyMs}:undefined}};
+ recordingInput:input?{deviceId:'',channel:input.channel,monitor:false,monitorLevelDb:input.monitorLevelDb,monitorPan:input.monitorPan,monitorMono:input.monitorMono,monitorFx:input.monitorFx,countIn:input.countIn,countInBars:input.countInBars,preRollBars:input.preRollBars,latencyMs:input.latencyMs}:undefined}};
  if(!validTrackTemplate(result))throw new Error('templates.invalid');return result;
 }
 export function validTrackTemplate(value:unknown):value is TrackTemplate {
@@ -24,7 +24,7 @@ export function validTrackTemplate(value:unknown):value is TrackTemplate {
  if(s.nativeEffects?.some(effect=>!effect||Object.keys(effect).some(k=>!['instanceId','pluginId','name','format','enabled','bypass','parameters','state'].includes(k))))return false;
  const input=s.recordingInput;
  if(input!==undefined&&(!input||typeof input!=='object'))return false;
- if(input&&(input.deviceId!==''||input.monitor!==false||Object.keys(input).some(k=>!['deviceId','channel','monitor','countIn','countInBars','preRollBars','latencyMs'].includes(k))))return false;
+ if(input&&(input.deviceId!==''||input.monitor!==false||Object.keys(input).some(k=>!['deviceId','channel','monitor','monitorLevelDb','monitorPan','monitorMono','monitorFx','countIn','countInBars','preRollBars','latencyMs'].includes(k))))return false;
  const track={...s,id:'template',name:v.name,segments:[],muted:false,solo:false};
  return validMixVersion({signature:'template',masterEffects:[],tracks:[{id:'template',state:track,clips:[]}]})&&validRecording({id:'template',name:v.name,sampleRate:48000,masterEffects:[],duration:0,tracks:[track]});
 }

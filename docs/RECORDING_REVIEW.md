@@ -93,3 +93,10 @@ same plug-ins and use their last saved state, rather than querying a live window
 Portable template files, complete session templates and custom native-window state
 capture remain separate work. No new physical microphone check is needed for this
 settings-only increment; the existing built-in microphone acceptance still stands.
+
+## Cue while recording
+
+Under **Input → Cue mix**, set an independent cue level/pan/mono. Optional buffered
+native track inserts on Mac affect monitoring only; takes stay dry. The displayed
+FX delay excludes hardware latency. See [Recording cue mix](RECORDING_CUE.md) for
+setup, measured scope and limits.

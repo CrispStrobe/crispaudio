@@ -11,6 +11,7 @@ export function recordingTargets(project:TimelineProject,selectedId:string,allAr
  const tracks=allArmed?project.tracks.filter(t=>t.kind!=='bus'&&t.recordArmed):project.tracks.filter(t=>t.id===selectedId);
  if(!tracks.length||tracks.length>8)throw new Error('recording.groupCount');
  if(tracks.some(t=>t.kind==='bus'||t.locked||!t.recordArmed))throw new Error('recording.locked');
+ if(tracks.reduce((count,t)=>count+(t.recordingInput?.monitor&&t.recordingInput.monitorFx?t.nativeEffects?.filter(e=>e.enabled).length??0:0),0)>8)throw new Error('recording.cueInvalid');
  return tracks.map(t=>({trackId:t.id,input:{...(t.recordingInput??defaultRecordingInput)}}));
 }
 export interface PreparedRecording {trackId:string;source:AudioSource;takes:RecordingTake[]}

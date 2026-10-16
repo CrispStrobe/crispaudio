@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.32 — 2026-10-16
+
+- Add a collapsed recording cue mix with editable level, pan and mono, independent of track faders and recorded PCM.
+- Monitor through up to two saved native track inserts on Mac, with added buffering/plugin delay displayed. Keep takes dry; mute a faulty cue without losing raw capture.
+- Release cue plug-in sessions on monitoring stop, cancellation, input/source changes and close. Bound simultaneous cue inserts and preserve settings in projects/templates, with new templates unarmed and monitoring off.
+- Validate generated input through actual Mac Tauri/WebKit AU cue chains, dry capture, cue controls, fault cleanup, Undo and project reopen.
+
 ## 0.13.31 — 2026-10-16
 
 - Expand low-frequency detail in the restoration spectrogram with a logarithmic frequency axis. Band shading, mouse/touch dragging and exact numeric bounds share the same mapping; cancelled gestures restore the previous band.

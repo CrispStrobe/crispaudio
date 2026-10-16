@@ -1,0 +1,53 @@
+{
+  "kind": "native-cue",
+  "muted": true,
+  "runs": [
+    {
+      "count": 1,
+      "faults": [],
+      "input": "generated AudioBufferSource; no microphone",
+      "kind": "native-cue",
+      "latencyFrames": 4096,
+      "muted": true,
+      "pass1000": 0.12646700755102386,
+      "registry": {
+        "active": 0,
+        "opening": 0
+      },
+      "reject6000": 0.0036478069486521334,
+      "success": true,
+      "transport": "actual Tauri IPC and bundled AU helper",
+      "observedStages": [
+        "accepted",
+        "input",
+        "posted",
+        "reply"
+      ],
+      "retainedTraceEvents": 256
+    },
+    {
+      "count": 2,
+      "faults": [],
+      "input": "generated AudioBufferSource; no microphone",
+      "kind": "native-cue",
+      "latencyFrames": 8192,
+      "muted": true,
+      "pass1000": 0.15956018395592553,
+      "registry": {
+        "active": 0,
+        "opening": 0
+      },
+      "reject6000": 0.00013274791862096015,
+      "success": true,
+      "transport": "actual Tauri IPC and bundled AU helper",
+      "observedStages": [
+        "accepted",
+        "input",
+        "posted",
+        "reply"
+      ],
+      "retainedTraceEvents": 256
+    }
+  ],
+  "success": true
+}

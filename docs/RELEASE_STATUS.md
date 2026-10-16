@@ -18,6 +18,43 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.32 — separate recording cue and buffered native inserts
+
+Recording now has a separate per-input cue level, pan and mono under collapsed
+Input → Cue mix. Takes, raw meters and capture timing remain dry. Optional Mac
+native track inserts use saved static settings, up to two per input/eight total,
+with the 4096-sample bridge delay per insert plus plug-in latency displayed.
+Monitoring off, cancellation, ownership changes and faults release cue sessions;
+faults mute the cue while the raw capture worklet continues. Cue settings persist
+in projects/templates; templates start unarmed, monitoring off/default device.
+Native rack identity changes invalidate warm input; transport-only store updates
+avoid repeatedly cloning/serializing plug-in state.
+
+Final frontend: **2,014 tests pass in 206 files**; lint, TypeScript/web build and
+21 release checks pass. Actual Mac WebKit/Tauri IPC with the current bundled AU
+helper passes generated-input one/two-AUBandpass cue chains at 48 kHz, two seconds
+each, with expected response/delay and an empty native registry after close.
+[Sanitized measurements](evidence/recording-cue-native.json).
+
+Muted Chromium checks use real capture/native worklets, generated MediaStreams
+and an actual AU helper through a separate Node pipe fixture bridge. Cue level is
+compared with an offline render of the same AU. They cover dry capture, mono/pan,
+injected transport failure without losing raw PCM, stream release, inspector
+numeric edits/one Undo, saved settings/reopen and German 390 px layout. Existing
+multi-input and warm-preview ownership regressions pass. These measurements do
+not qualify physical microphones, VST3/commercial cue chains, sustained load or
+background use. No new full Rust suite/iOS build/physical listening claim.
+
+The final normal Mac debug bundle passes (26.62 s, existing Rust warnings), with
+the updated EN/DE cue help verified in the final dist. Local 0.13.32 is installed
+and reopened, strict/deep ad-hoc signature verified, one autosave retained and a
+recovery backup created. Count-in/pre-roll regression also passes on a fresh dev
+server (the earlier prototype probe used a stale HMR module identity).
+
+The cue shares the current playback output. Low-latency native input DSP, wet/dry
+capture, separate headphone devices/backing mixes, PFL/AFL and dim remain open.
+See [Recording cue mix](RECORDING_CUE.md). No Apple upload or release tag.
+
 ## Local 0.13.31 — restoration quality and frequency selection
 
 Restoration uses a logarithmic frequency axis including DC. Display bins, band

@@ -21,3 +21,7 @@ it('fails atomically for stale projects or any invalid/locked/duplicate capture'
 it('quick recording honors setup and armed targets while protecting locks and bus tracks',()=>{
  const p=project();expect(defaultRecordingInput.countIn).toBe(0);expect(quickRecordingTrack(p,'b')?.id).toBe('b');p.tracks[0].locked=true;expect(quickRecordingTrack(p,'')?.id).toBe('b');expect(()=>quickRecordingTrack(p,'a')).toThrow('recording.locked');p.tracks[1].recordArmed=false;expect(quickRecordingTrack(p,'','b')?.id).toBe('b');p.tracks[1].kind='bus';expect(quickRecordingTrack(p,'')).toBeUndefined();expect(p.tracks[1].recordArmed).toBe(false);
 });
+it('bounds the combined native cue streams before opening recording inputs',()=>{
+ const p=project(),effect={instanceId:'fx',pluginId:'au',name:'Gain',format:'AU' as const,enabled:true,bypass:false,parameters:{},state:''};
+ p.tracks=Array.from({length:5},(_,i)=>({...p.tracks[0],id:String(i),recordingInput:{...defaultRecordingInput,monitor:true,monitorFx:true},nativeEffects:[effect,{...effect,instanceId:'second'}]}));expect(()=>recordingTargets(p,'0',true)).toThrow('cueInvalid');p.tracks.pop();expect(recordingTargets(p,'0',true)).toHaveLength(4);p.tracks[0].recordingInput!.monitor=false;expect(recordingTargets(p,'0',true)).toHaveLength(4);
+});

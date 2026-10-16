@@ -25,3 +25,8 @@ describe('reusable track templates',()=>{
  });
  it('ships valid neutral mono/stereo and gentle speech low-cut starting points',()=>{expect(builtInTrackTemplates.every(validTrackTemplate)).toBe(true);expect(trackFromTemplate(builtInTrackTemplates[2]).recordingInput?.channel).toBe('stereo');});
 });
+
+it('retains cue tone/level choices while disabling monitoring on new tracks',()=>{
+ const track={id:'cue',name:'Cue',volume:1,pan:0,muted:false,solo:false,segments:[],recordingInput:{deviceId:'external',channel:'mono' as const,monitor:true,countIn:0,latencyMs:0,monitorLevelDb:-22,monitorPan:.3,monitorMono:true,monitorFx:true}};
+ const saved=captureTrackTemplate(track,'Cue'),next=trackFromTemplate(saved);expect(next.recordingInput).toMatchObject({deviceId:'',monitor:false,monitorLevelDb:-22,monitorPan:.3,monitorMono:true,monitorFx:true});
+});

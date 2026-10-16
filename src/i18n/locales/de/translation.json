@@ -1548,6 +1548,17 @@
     "safeAreasHelp": "Der äußere gestrichelte Rahmen umfasst 90 % des Bildes, der innere 80 %. Wichtige Handlung und Gesichter innerhalb des äußeren Rahmens, Titel innerhalb des inneren platzieren: So bleibt Abstand zum Rand bei beschnittenen Anzeigen. Die Hilfslinien erscheinen nur in der Vorschau und werden nicht exportiert."
   },
   "recording": {
+    "cue": "Monitormix",
+    "cueLevel": "Monitorpegel",
+    "cuePan": "Monitorpanorama",
+    "cueMono": "Monitor in Mono",
+    "cueFx": "Native Spureffekte (gepuffert)",
+    "cueLatency": "Zusätzliche Effektverzögerung: {{milliseconds}} ms",
+    "cueHelp": "Diese Regler betreffen nur das Abhören des Live-Eingangs; Aufnahmen bleiben trocken. Der Monitor nutzt den gewählten Wiedergabeausgang und dessen Lautstärke, unabhängig vom Spurfader. Effekte zunächst in den Spureinstellungen hinzufügen. Native Effekte verwenden bis zu zwei aktivierte AU/VST3-Spureffekte mit gespeicherten statischen Einstellungen. Pro Effekt kommen 4096 Samples Puffer und die gemeldete Plug-in-Latenz hinzu (bei 48 kHz mindestens 85,3 ms). Das eignet sich nicht für zeitkritisches Einspielen. Die Anzeige enthält keine Ein-/Ausgabelatenz des Geräts. Monitoring ausschalten gibt die Plug-in-Verbindungen frei. Bei einem Plug-in-Fehler verstummt der Monitor; die trockene Aufnahme läuft weiter. Separate Kopfhörerausgänge, Begleitmischungen und Effektaufnahmen folgen separat. Kopfhörer vermeiden akustische Rückkopplung.",
+    "cueInvalid": "Ungültige Monitoreinstellungen oder mehr als zwei aktivierte native Effekte.",
+    "cueFault": "Nativer Monitor nach einem Plug-in-Fehler gestoppt. Die trockene Aufnahme bleibt erhalten. Zum Wiederholen Monitoring neu verbinden.",
+    "cueMac": "Natives Eingangsmonitoring benötigt die Mac-App. Für trockenes Monitoring die nativen Monitoreffekte ausschalten.",
+
     "countInBars": "Einzählen",
     "preRollBars": "Vorlauf",
     "bars_one": "{{count}} Takt",
@@ -1639,7 +1650,7 @@
     "timing": "Timing und Kalibrierung",
     "preparingBacking": "Begleitung vorbereiten",
     "backingBudget": "Die Begleitung mit nativen Effekten überschreitet das Vorbereitungslimit. Kürze die Sitzung oder exportiere einen Begleitmix in eine neue Sitzung.",
-    "nativeHelp": "Native Effekte werden vor der Aufnahme als fester Begleitmix vorbereitet. Begleitung und Eingang nutzen dieselbe Audiouhr. Takes und Eingangsmonitoring bleiben unbearbeitet; Spureffekte wirken bei der Wiedergabe. Änderungen am Arrangement stoppen die Aufnahme."
+    "nativeHelp": "Native Effekte werden vor der Aufnahme als fester Begleitmix vorbereitet. Begleitung und Eingang nutzen dieselbe Audiouhr. Takes bleiben unbearbeitet; Spureffekte wirken bei der Wiedergabe. Der Monitormix bietet eigene Pegel-, Panorama-/Mono-Regler und optional gepufferte native Spureffekte. Änderungen am Arrangement stoppen die Aufnahme."
   },
   "retime": {
     "title": "Tempo / Tonhöhe",
@@ -2286,14 +2297,14 @@
     "rendering": "Rendern…",
     "menu": "Wiedergabe / Pause",
     "macOnly": "Die Vorschau nativer Effekte erfordert die installierte Mac-App.",
-    "recording": "Automationsaufnahmen integrierter Effekte und nativer Plug-in-Parameter erfordern Mac-Live-Wiedergabe. Mikrofonaufnahmen nutzen einen vorbereiteten Begleitmix; Eingangsmonitoring bleibt trocken.",
+    "recording": "Automationsaufnahmen integrierter Effekte und nativer Plug-in-Parameter erfordern Mac-Live-Wiedergabe. Mikrofonaufnahmen nutzen einen vorbereiteten Begleitmix und trockene Takes. Der Monitormix bietet optional gepufferte native Effekte.",
     "mixAutomation": "Mac Live: Spurpegel, Panorama und Parameter integrierter Effekte auf Spuren, Clips oder Master aufnehmen. Touch kehrt beim Loslassen zu Read zurück; Latch und Write halten bis Stopp. Prüfen und mit einem Undo übernehmen.",
     "help": "Wiedergabe rendert den fertigen Stereomix samt nativen Effekten einmal. Pause, Springen und Schleife verwenden ihn weiter. Audioänderungen stoppen die Wiedergabe; beim nächsten Start wird neu gerendert.",
     "limits": "Nur Master-Anzeigen; die vorbereitete Vorschau unterstützt kein Live-Mischen. Aufnahmen nutzen einen eigenen vorbereiteten Begleitmix. Die Wiedergabe nutzt das gewählte Ausgabegerät.",
     "mode": "Wiedergabemodus",
     "live": "Live",
     "liveHelp": "Live verarbeitet AU-/VST3-Effekte fortlaufend. Mixer, Plug-in-Parameter und unterstützte Effektregler auf Spuren, Clips und Master reagieren während der Wiedergabe. Pause erhält den Zustand; Springen baut die Vorgeschichte neu auf.",
-    "liveLimits": "Rack-Änderungen und andere Einstellungen integrierter Effekte starten die Wiedergabe neu. Audio läuft mit 48 kHz. Mikrofonaufnahmen nutzen einen vorbereiteten Effekt-Begleitmix und trockenes Monitoring. Das Metronom dient nur zum Mithören. Direktes Eingangsmonitoring durch Plug-ins ist noch nicht verfügbar.",
+    "liveLimits": "Rack-Änderungen und andere Einstellungen integrierter Effekte starten die Wiedergabe neu. Audio läuft mit 48 kHz. Mikrofonaufnahmen nutzen einen vorbereiteten Effekt-Begleitmix und trockene Takes. Der Monitormix bietet gepufferte native Effekte mit angezeigter Verzögerung. Das Metronom dient nur zum Mithören.",
     "shortLoop": "Diese Schleife ist für native Live-Effekte zu kurz. Für Schleifen unter 43 ms „Vorschau“ wählen."
   },
   "curveRange": {

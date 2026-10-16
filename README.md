@@ -102,7 +102,10 @@ Select a clip and open **Source Editor** for detailed work on its source window.
 ## Record and choose takes
 
 Record directly into an audio track, with device/channel selection and optional
-input monitoring. Add an audible bar-based count-in or project-audio pre-roll,
+input monitoring. Under **Input → Cue mix**, adjust cue level, pan/mono and, on
+Mac, optional native track inserts. Cue changes leave recorded takes dry. Native
+monitoring is buffered (at least 85.3 ms per insert at 48 kHz); its added delay is
+shown. The cue uses the current playback output. Add an audible bar-based count-in or project-audio pre-roll,
 with both kept outside the published take. Recording options also include punch
 ranges, loop takes and simultaneous capture into up to eight armed tracks. Input calibration can
 measure a real return path, or you can enter a known correction.
@@ -118,7 +121,7 @@ takes, automation and routing stay in the project. New tracks use the default
 input with monitoring and arming off. Check channel and latency before recording.
 Your templates stay on this device. On touch, use the Edit ribbon or Track Settings.
 
-[Recording and take review](docs/RECORDING_REVIEW.md)
+[Recording and take review](docs/RECORDING_REVIEW.md) · [Cue mix and native monitoring](docs/RECORDING_CUE.md)
 
 ## Mix, automate and compare
 
@@ -194,12 +197,13 @@ blocks rather than sample-accurate events.
 
 Structural edits and other built-in effect changes restart live playback. To record
 a microphone with native effects in the session, CrispAudio first prepares a fixed wet backing
-mix. Backing and capture share one clock; takes and input monitoring stay dry.
+mix. Backing and capture share one clock; takes stay dry. Cue mix can apply
+buffered native track inserts while monitoring.
 Live and Preview playback and microphone recording support a monitor-only
 metronome with bar accents; switch it on in the musical timing controls. Clicks
 follow playback and recording loops, continue after the backing ends, and stay
-out of exports, recorded input routing and mix loudness readings. Live plug-in input monitoring and custom plug-in windows
-remain pending. Native playback processes at 48 kHz and converts other source rates
+out of exports, recorded input routing and mix loudness readings. Low-latency native input DSP, wet capture, independent headphone mixes and custom
+plug-in windows remain pending. Native playback processes at 48 kHz and converts other source rates
 when needed.
 
 [FX and automation](docs/DAW_EFFECTS.md) · [Clip/master recording passes](docs/SCOPED_AUTOMATION_PASSES.md) · [Mix A/B and export review](docs/MIX_REVIEW.md) · [Native playback](docs/NATIVE_PLAYBACK.md) · [Native effect support](docs/MEDIA_FORMATS_AND_LICENSES.md)

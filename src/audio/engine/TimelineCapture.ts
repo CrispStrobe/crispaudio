@@ -1,6 +1,8 @@
 import url from '../worklets/captureProcessor.ts?worker&url';
 import {resumePlaybackContext} from '../../lib/audioOutput';
 import {setAudioSessionType} from '../../lib/native';
+import {RecordingMonitor,recordingCue,type RecordingCueSettings} from './RecordingMonitor';
+import type {RecordingInput,NativeEffect} from '../../types/audio';
 let inputOwners=0;
 const loaded=new WeakMap<AudioContext,Promise<void>>();
 export type InputMode='mono'|'right'|'stereo';
@@ -8,7 +10,8 @@ export interface CapturedInput {buffer:AudioBuffer;firstFrame:number;droppedFram
 export class TimelineCapture {
  private ownsInput=false;private byteBudget=240*1024*1024;
  private generation=0;private captureId=0;private expectedFrame?:number;
- private stream?:MediaStream;private node?:AudioWorkletNode;private input?:MediaStreamAudioSourceNode;private monitor?:GainNode;private chunks:{frame:number;left:Float32Array;right:Float32Array}[]=[];private first?:number;private frames=0;private mode:InputMode='mono';private dropped=0;private notes:string[]=[];private stopped?:()=>void;private recording=false;
+ private stream?:MediaStream;private node?:AudioWorkletNode;private input?:MediaStreamAudioSourceNode;private monitor?:RecordingMonitor;private cue?:RecordingCueSettings;private chunks:{frame:number;left:Float32Array;right:Float32Array}[]=[];private first?:number;private frames=0;private mode:InputMode='mono';private dropped=0;private notes:string[]=[];private stopped?:()=>void;private recording=false;
+ private sink?:GainNode;private monitorFault:(reason:string)=>void=()=>{};
  private ctx:AudioContext;private output:AudioNode;private meter:(peak:number,channels:number)=>void;private interrupted:(reason:string)=>void;private channels=0;private inputReady?:()=>void;private captureReady?:()=>void;
  constructor(ctx:AudioContext,output:AudioNode,meter:(peak:number,channels:number)=>void,interrupted:(reason:string)=>void){this.ctx=ctx;this.output=output;this.meter=meter;this.interrupted=interrupted;}
  async connect(deviceId:string,mode:InputMode){
@@ -17,7 +20,10 @@ export class TimelineCapture {
    const stream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:deviceId?{exact:deviceId}:undefined,channelCount:{ideal:2},echoCancellation:false,noiseSuppression:false,autoGainControl:false}});if(this.generation!==generation){stream.getTracks().forEach(t=>t.stop());throw new DOMException('Input connection cancelled','AbortError');}this.stream=stream;
    let ready=loaded.get(this.ctx);if(!ready){ready=this.ctx.audioWorklet.addModule(url).catch(e=>{loaded.delete(this.ctx);throw e;});loaded.set(this.ctx,ready);}await ready;await resumePlaybackContext(this.ctx);if(this.generation!==generation)throw new DOMException('Input connection cancelled','AbortError');
    this.mode=mode;this.node=new AudioWorkletNode(this.ctx,'crispaudio-capture',{numberOfInputs:1,numberOfOutputs:1,channelCountMode:'max',outputChannelCount:[2]});this.node.port.postMessage({type:'mode',mode});
-   this.monitor=this.ctx.createGain();this.monitor.gain.value=0;this.input=this.ctx.createMediaStreamSource(stream);this.input.connect(this.node);this.node.connect(this.monitor);this.monitor.connect(this.output);
+   this.input=this.ctx.createMediaStreamSource(stream);this.input.connect(this.node);
+   // A silent sink keeps raw meters/capture running even with the cue disabled.
+   const sink=this.ctx.createGain();sink.gain.value=0;this.node.connect(sink);sink.connect(this.output);this.sink=sink;
+   this.monitor=new RecordingMonitor(this.ctx,this.node,this.output,reason=>this.monitorFault(reason));
    this.node.port.onmessage=e=>{const message=e.data;if(message.type==='meter'){this.channels=message.channels;if(this.channels>0)this.inputReady?.();this.meter(message.peak,message.channels);return;}if(message.type==='stopped'&&message.id===this.captureId){this.stopped?.();this.stopped=undefined;return;}if(message.type==='pcm'&&message.id===this.captureId){
     if(this.first===undefined){this.first=message.firstFrame;this.captureReady?.();}
     if(this.expectedFrame!==undefined&&message.firstFrame!==this.expectedFrame)this.dropped+=Math.abs(message.firstFrame-this.expectedFrame);this.expectedFrame=message.firstFrame+message.left.length;
@@ -32,7 +38,9 @@ export class TimelineCapture {
   }catch(e){if(this.generation===generation)this.disconnect();throw e;}
  }
  budget(bytes:number){if(this.recording||!Number.isFinite(bytes)||bytes<1024||bytes>240*1024*1024)throw new Error('recording.budget');this.byteBudget=bytes;}
- monitoring(enabled:boolean){this.monitor?.gain.setTargetAtTime(enabled?1:0,this.ctx.currentTime,.005);}
+ configureCue(input:RecordingInput,effects:NativeEffect[]=[],onFault:(reason:string)=>void=()=>{}){this.cue=recordingCue(input,effects);this.monitorFault=onFault;this.monitor?.update(this.cue);}
+ monitorLatency(){return (this.monitor?.latencyFrames??0)/this.ctx.sampleRate*1000;}
+ async monitoring(enabled:boolean){if(!enabled){await this.monitor?.disable();return;}if(this.monitor)await this.monitor.enable(this.cue??recordingCue({deviceId:'',channel:this.mode,monitor:true,countIn:0,latencyMs:0}));}
  connected(){return !!this.node;}
  start(frame=Math.ceil(this.ctx.currentTime*this.ctx.sampleRate)){
   if(!this.node||this.recording)throw new Error('recording.notReady');if(this.mode==='right'&&this.channels<2)throw new Error('recording.rightUnavailable');this.chunks=[];this.first=undefined;this.expectedFrame=undefined;this.frames=0;this.dropped=0;this.notes=[];this.recording=true;this.node.port.postMessage({type:'start',id:++this.captureId,mode:this.mode,frame});return frame;
@@ -57,5 +65,5 @@ export class TimelineCapture {
   for(const chunk of this.chunks){const offset=chunk.frame-this.first;buffer.getChannelData(0).set(chunk.left,offset);if(buffer.numberOfChannels===2)buffer.getChannelData(1).set(chunk.right,offset);}
   const result={buffer,firstFrame:this.first,droppedFrames:this.dropped,notes:this.notes};this.chunks=[];return result;
  }
- disconnect(){this.generation++;this.captureReady?.();this.captureReady=undefined;this.captureId++;this.channels=0;this.inputReady?.();this.inputReady=undefined;this.recording=false;this.stopped?.();this.stopped=undefined;this.input?.disconnect();if(this.node){this.node.port.postMessage({type:'dispose'});this.node.disconnect();this.node.port.onmessage=null;}this.monitor?.disconnect();this.stream?.getTracks().forEach(t=>t.stop());this.stream=undefined;this.node=undefined;this.input=undefined;this.monitor=undefined;this.chunks=[];if(this.ownsInput){this.ownsInput=false;if(--inputOwners===0)setAudioSessionType('playback');}}
+ disconnect(){this.generation++;this.captureReady?.();this.captureReady=undefined;this.captureId++;this.channels=0;this.inputReady?.();this.inputReady=undefined;this.recording=false;this.stopped?.();this.stopped=undefined;this.input?.disconnect();if(this.node){this.node.port.postMessage({type:'dispose'});this.node.disconnect();this.node.port.onmessage=null;}this.monitor?.disable();this.sink?.disconnect();this.sink=undefined;this.stream?.getTracks().forEach(t=>t.stop());this.stream=undefined;this.node=undefined;this.input=undefined;this.monitor=undefined;this.chunks=[];if(this.ownsInput){this.ownsInput=false;if(--inputOwners===0)setAudioSessionType('playback');}}
 }

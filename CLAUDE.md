@@ -895,3 +895,13 @@ Vite cache; do not share optimizer caches with a running app dev server. Spectra
 restoration uses a log1p frequency axis including DC; rendering, overlays and
 pointers share frequencyAxis helpers. Other spectrograms retain linear defaults.
 Keep real-recording/listening and native-input/cue qualification separate.
+
+### Recording cue (0.13.32)
+
+RecordingMonitor owns a separate monitor-only graph; TimelineCapture retains a
+silent sink so raw capture/meters survive cue disable/fault. Native cue inserts use
+saved static track state, up to two/input and eight total, 1024-frame blocks with
+four-block transport delay plus plug-in latency. No wet capture or independent cue
+device/mix. Await monitoring(false) before native backing preparation and replacement
+cues to release sessions. Preview ownership compares immutable native rack identity;
+project subscriptions skip transport-only state updates. See RECORDING_CUE.md.

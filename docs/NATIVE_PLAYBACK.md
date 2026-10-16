@@ -36,8 +36,9 @@ Preview for shorter loops. Large projects may require Preview. Starting late in 
 project takes time because plugins must process the earlier history.
 
 Microphone recording with native racks prepares a fixed wet accompaniment before
-opening input, then plays it on the same audio clock as capture. Takes and input
-monitoring stay dry; track inserts apply when the take is played back. Loop takes
+opening input, then plays it on the same audio clock as capture. Takes stay dry; track inserts apply when the take is played back. Since 0.13.32,
+optional buffered native cue inserts can process monitoring separately. See
+[Recording cue mix](RECORDING_CUE.md) for delay, limits and qualification. Loop takes
 remain aligned across delayed UI frames. The accompaniment cannot be changed
 during the take. Preparation is bounded to a 128 MiB stereo buffer and can be
 cancelled with Record/Stop before the microphone opens.

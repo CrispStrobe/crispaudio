@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.31. This section is the current plan.
+Updated 2026-10-16, for local 0.13.32. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -34,6 +34,18 @@ sequence and acceptance boundaries. Historical “completed” entries below des
 bounded increments, not a finished state-of-the-art DAW. MIDI/composition expansion
 is outside this app's active scope. Long-session paging/streaming is accepted in
 the final scale phase; additional codec expansion has no new priority.
+
+Local 0.13.32 adds per-input cue level, stereo pan/mono and optional buffered
+native track inserts while retaining dry capture/take timing. Cue setup is collapsed
+under Recording → Input. Native monitoring is limited to two enabled static AU/VST3
+inserts per input/eight total; it adds 4096 samples per insert plus reported plug-in
+latency. It uses the current playback output, not a separate headphone device/mix.
+An input-only silent sink keeps raw meters/capture alive while the cue is off or
+faulted. Native faults mute the cue and close its sessions without stopping dry PCM.
+Actual Mac Tauri/WebKit one/two-AU generated-input checks pass; physical inputs,
+VST3 cue chains, long/background/load behavior remain separate qualification.
+Next: reduce monitoring latency in the native engine, independent cue devices and
+backing mixes, wet capture with retained dry originals; continue restoration gaps.
 
 Local 0.13.31 qualifies nonstationary deterministic material: voice-like envelopes,
 percussion and sweeps, including clean-signal damage and de-hum at 8–192 kHz.
