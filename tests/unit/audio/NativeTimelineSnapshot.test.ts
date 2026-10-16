@@ -53,3 +53,10 @@ it('sends master and clip base values and curves with original scope and rack in
  const controls=(index:number)=>[{index,parameter:'mix',value:.4,points:null},{index,parameter:'freq',value:731,points:[{time:0,value:200}]}];
  expect(invoke).toHaveBeenCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({effectScopes:[{scope:'master',controls:controls(0)},{scope:'clip:c',controls:controls(1)}]})}));await snapshot.close();
 });
+
+it('sends saved native parameter curves and explicit Read restoration by stable instance',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create(f.p,f.sources);invoke.mockImplementation(async(cmd:string)=>cmd==='native_playback_start'?'session':cmd==='native_playback_update'?1:undefined);const playback=await snapshot.startPlayback({startFrame:0,endFrame:48000});
+ const effect={instanceId:'fx',pluginId:'au:test',name:'Gain',format:'AU' as const,enabled:true,bypass:false,state:'opaque',parameters:{gain:-6},parameterAutomation:{gain:{min:-24,max:12,points:[{time:0,value:.5}]}}};
+ await playback.update({...f.p,nativeEffects:[effect]});expect(invoke).toHaveBeenLastCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({native:[{scope:'master',instanceId:'fx',parameters:{gain:-6},bypass:false,parameterAutomation:effect.parameterAutomation}]})}));
+ await playback.update({...f.p,nativeEffects:[{...effect,parameterAutomation:undefined}]});expect(invoke).toHaveBeenLastCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({native:[expect.objectContaining({parameterAutomation:null})]})}));await snapshot.close();
+});

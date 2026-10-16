@@ -4,7 +4,8 @@
 
 export interface TrackFolder {id:string;name:string;trackIds:string[];collapsed:boolean}
 
-export interface NativeEffect {instanceId:string;pluginId:string;name:string;format:'AU'|'VST3';enabled:boolean;bypass:boolean;parameters:Record<string,number>;state:string}
+export interface NativeParameterCurve {min:number;max:number;points:GainPoint[]}
+export interface NativeEffect {parameterAutomation?:Record<string,NativeParameterCurve>;instanceId:string;pluginId:string;name:string;format:'AU'|'VST3';enabled:boolean;bypass:boolean;parameters:Record<string,number>;state:string}
 
 export interface TimelineProject {
   nativeEffects?:NativeEffect[];

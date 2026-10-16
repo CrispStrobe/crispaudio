@@ -1,3 +1,5 @@
+import {nativeEffectScopes} from '../../lib/nativeEffects';
+import {nativeParameterTarget,type NativeParameterTarget} from '../../lib/nativeParameterAutomation';
 import type {AudioSource,EffectConfig,NativeEffect,TimelineProject} from '../../types/audio';
 import type {AutomationTarget} from '../../lib/automationRecording';
 import {builtinEffectScopes,supportsNativeEffectParameter,nativeEffectParameters,delayParameterMaximum,type DelayParameter} from '../../lib/effectAutomation';
@@ -7,7 +9,7 @@ import type {NativeTimelinePlayback,NativePlaybackStatus} from './NativeTimeline
 // Keys are process-local graph identities, never saved as project/plugin state.
 const stateIDs=new Map<string,string>();let nextState=0;
 function stateKey(state:string){let id=stateIDs.get(state);if(!id){if(stateIDs.size>=64)stateIDs.clear();id=String(++nextState);stateIDs.set(state,id);}return id;}
-function rack(effects:NativeEffect[]|undefined){return effects?.map(effect=>({...effect,parameters:{},bypass:false,state:stateKey(effect.state)}));}
+function rack(effects:NativeEffect[]|undefined){return effects?.map(effect=>({...effect,parameters:{},parameterAutomation:undefined,bypass:false,state:stateKey(effect.state)}));}
 function effectStructure(effects:TimelineProject['tracks'][number]['effects']){
  return effects?.map(effect=>{
   if(!nativeEffectParameters.some(parameter=>supportsNativeEffectParameter(effect.type,parameter)))return effect;
@@ -30,6 +32,8 @@ export class NativePlaybackController {
  private preparationTask?:Promise<void>;private preparing?:AbortController;private generation=0;private closing:Promise<void>=Promise.resolve();
  private key?:string;private sources?:Map<string,AudioSource>;private first=0;private last=0;private cycle=false;
  private automationOverrides=new Map<string,{gain?:number;pan?:number}>();
+ private nativeDefaults=new Map<string,Record<string,number>>();
+ private nativeOverrides=new Map<string,Map<string,Map<string,{min:number;max:number;value:number}>>>();
  private effectOverrides=new Map<string,Map<number,Partial<Record<DelayParameter,number>>>>();
  private statusValue?:NativePlaybackStatus;private pending?:TimelineProject;private updating?:Promise<void>;
  private readonly onChange:()=>void;private readonly onFault:(error:unknown)=>void;
@@ -94,8 +98,22 @@ export class NativePlaybackController {
   void this.update(project).catch(error=>{if(this.playback!==playback)return;void this.stop();this.onFault(error);});
   return true;
  }
+ previewNativeParameterAutomation(project:TimelineProject,scope:string,target:NativeParameterTarget,value?:number):boolean{
+  if(!this.playback||!['playing','paused'].includes(this.statusValue?.phase??''))return false;
+  try{const resolved=nativeParameterTarget(project,scope,target);if(value!==undefined){
+   const baseline=resolved.effect.parameters[target.address]??target.defaultValue;
+   if(!resolved.effect.enabled||resolved.effect.bypass||resolved.locked||!Number.isFinite(value)||value<0||value>1||baseline===undefined||!Number.isFinite(baseline))return false;
+   if(resolved.effect.parameters[target.address]===undefined){const key=JSON.stringify([scope,target.instanceId]);this.nativeDefaults.set(key,{...this.nativeDefaults.get(key),[target.address]:baseline});}
+  }}catch{return false;}
+  const instances=new Map(this.nativeOverrides.get(scope)),held=new Map(instances.get(target.instanceId));
+  if(value===undefined)held.delete(target.address);else held.set(target.address,{min:target.min,max:target.max,value});
+  if(held.size)instances.set(target.instanceId,held);else instances.delete(target.instanceId);
+  if(instances.size)this.nativeOverrides.set(scope,instances);else this.nativeOverrides.delete(scope);
+  const playback=this.playback;void this.update(project).catch(error=>{if(this.playback!==playback)return;void this.stop();this.onFault(error);});return true;
+ }
  private audition(project:TimelineProject):TimelineProject{
-  if(!this.automationOverrides.size&&!this.effectOverrides.size)return project;
+  if(!this.automationOverrides.size&&!this.effectOverrides.size&&!this.nativeOverrides.size&&!this.nativeDefaults.size)return project;
+  if(this.nativeOverrides.size||this.nativeDefaults.size){project=structuredClone(project);for(const [scope,rack] of nativeEffectScopes(project))for(const effect of rack??[]){const defaults=this.nativeDefaults.get(JSON.stringify([scope,effect.instanceId]));if(defaults)effect.parameters={...defaults,...effect.parameters};const held=this.nativeOverrides.get(scope)?.get(effect.instanceId);if(held)effect.parameterAutomation={...effect.parameterAutomation,...Object.fromEntries([...held].map(([address,lane])=>[address,{min:lane.min,max:lane.max,points:[{time:0,value:lane.value}]}]))};}}
   const effects=(scope:string,rack:EffectConfig[]|undefined)=>{const overrides=this.effectOverrides.get(scope);return overrides?rack?.map((effect,index)=>overrides.has(index)?{...effect,automation:{...effect.automation,...Object.fromEntries(Object.entries(overrides.get(index)!).map(([key,value])=>[key,[{time:0,value}]]))}}:effect):rack;};
   return {...project,masterEffects:effects('master',project.masterEffects)!,tracks:project.tracks.map(track=>{
    const override=this.automationOverrides.get(track.id);
@@ -109,7 +127,7 @@ export class NativePlaybackController {
  resetLoudness(){return this.playback?.resetLoudness();}
  volume(value:number){return this.playback?.volume(value);}
  stop():Promise<void>{
-  this.generation++;this.preparing?.abort(interrupted());this.preparing=undefined;this.pending=undefined;this.automationOverrides.clear();this.effectOverrides.clear();
+  this.generation++;this.preparing?.abort(interrupted());this.preparing=undefined;this.pending=undefined;this.automationOverrides.clear();this.effectOverrides.clear();this.nativeOverrides.clear();this.nativeDefaults.clear();
   const pending=this.preparationTask;this.preparationTask=undefined;const snapshot=this.snapshot;this.snapshot=undefined;this.playback=undefined;this.statusValue=undefined;this.key=undefined;this.sources=undefined;
   this.closing=Promise.allSettled([this.closing,snapshot?.close(),pending]).then(()=>{});this.onChange();return this.closing;
  }

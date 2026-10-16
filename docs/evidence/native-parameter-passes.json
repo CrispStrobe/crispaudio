@@ -1,0 +1,41 @@
+{
+  "version": "0.13.12",
+  "date": "2026-10-16",
+  "behavior": [
+    "Native AU/VST3 parameter Touch/Latch/Write passes at track, clip and master scope, reached through compact per-parameter automation icons",
+    "Capture uses the native clock, supports direct numeric edits in plugin units, reviews intervals locally and publishes one Undo on Apply",
+    "Optional parameterAutomation maps stable addresses to normalized Linear/Step points plus finite min/max; saved native instance and scope identify processors",
+    "Independent audition overlays restore saved Read curves without mutating the project or saved plugin state; queried defaults are retained as explicit static Read values",
+    "Saved curves run in native Live and the coordinated Preview/GUI export bridge; evaluation follows project time and upstream latency",
+    "Native update validation completes for all scopes before mutating DSP; limits include 32 lanes and 100000 total points per insert and existing 8192-byte parameter packets",
+    "Changed plugin parameter ranges require clearing the old curve before recording with new metadata"
+  ],
+  "validation": {
+    "frontend": {
+      "result": "PASS",
+      "tests": 1803,
+      "files": 183,
+      "log": "/tmp/crispaudio-plugin-pass-frontend-full.log",
+      "options": "maxWorkers=2; testTimeout=20000; repository options unchanged"
+    },
+    "focused": "86 passed across seven files; final native rack 4 passed (adds real icon-to-inspector path after the full run); final locale checks 7 passed after help wording update",
+    "nativeMedia": "166 passed, 10 optional tests ignored; CLI 3 passed; /tmp/crispaudio-plugin-pass-media-final.log",
+    "nativeSignal": "Synthetic stateful gain insert: saved curves, temporary hold, Read restore and static Clear at track/master/clip scopes; rejected later controls preserve graph/audio; compensated per-insert clocks and loop rewind verified",
+    "exportBridge": "Mocked native streams verify saved negative-domain Step curves, project offsets, curve priority and metadata exclusion from helper headers in both realtime and offline modes",
+    "appTests": "38 passed, 1 optional test ignored, default features; /tmp/crispaudio-plugin-pass-tauri.log",
+    "ios": "Locked aarch64-apple-ios-sim library compile PASS; existing unused MIDI method warning; /tmp/crispaudio-plugin-pass-ios.log",
+    "typescript": "PASS standalone and final app frontend build",
+    "lint": "PASS /tmp/crispaudio-plugin-pass-lint-final2.log",
+    "release": "21 passed /tmp/crispaudio-plugin-pass-release.log",
+    "macBuild": "Final normal debug Mac bundle PASS /tmp/crispaudio-01312-build-final.log",
+    "status": "complete",
+    "installation": "0.13.12 installed and running; strict/deep signature verified; one autosave preserved; recovery backup created"
+  },
+  "limits": [
+    "Parameter values update per processing block: Live normally 512 frames, Preview/GUI export normally 4096; native history preparation can use larger blocks; no sample-accurate event delivery or identical interpolation across modes claimed",
+    "Detected seek/loop discontinuities discard active pass capture; saved curves follow wrapped project clocks",
+    "Physical iOS/Finder/PowerBox, commercial plugin and external interface acceptance remain pending; no new listening/hardware verification claimed",
+    "Continuous native microphone input DSP, monitor clicks, custom plugin editors and MIDI instruments remain pending",
+    "Native inserts still require coordinated GUI export; CLI does not silently omit enabled native inserts"
+  ]
+}

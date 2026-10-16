@@ -43,3 +43,12 @@ it('discards native state that returns after playback resumes',async()=>{
  const s=stream();let release!:(value:unknown)=>void;s.snapshot.mockImplementation(()=>new Promise(resolve=>{release=resolve;}));open.mockResolvedValue(s);const ctx=context(),bridge=await createNativePluginNode(ctx,request,{startFrame:96000,onFault:()=>{}});
  const captured=bridge.snapshot(),rejected=expect(captured).rejects.toThrow(/Pause/);await vi.waitFor(()=>expect(s.snapshot).toHaveBeenCalledOnce());Object.assign(ctx,{state:'running'});release({metadata:{state:'stale'}});await rejected;await bridge.close();
 });
+
+it.each(['realtime','offline'] as const)('evaluates saved parameter curves at project time for %s blocks, with curve priority over static values',async processMode=>{
+ const s=stream();s.process.mockResolvedValue({metadata:{latencySamples:0},samples:[new Float32Array(4096)]});open.mockResolvedValue(s);
+ const bridge=await createNativePluginNode(context(),{...request,processMode,parameters:{gain:-6,other:7},parameterAutomation:{gain:{min:-24,max:12,points:[{time:2,value:0,curve:'step'},{time:2+4096/48000,value:1}]}},transport:{samplePosition:96000,tempo:120,numerator:4,denominator:4,originSeconds:0,playing:true}},{startFrame:96000,onFault:vi.fn()});
+ bridge.update({gain:-3,other:8});
+ for(const offset of [0,4096]){bridge.node.port.onmessage?.({data:{type:'block',offset,samples:[new Float32Array(4096)]}} as unknown as MessageEvent);await vi.waitFor(()=>expect(s.process).toHaveBeenCalledTimes(offset?2:1));}
+ expect(s.process.mock.calls[0][1]).toEqual({gain:-24,other:8});expect(s.process.mock.calls[1][1]).toEqual({gain:12});
+ expect(open.mock.calls[0][0]).not.toHaveProperty('parameterAutomation');await bridge.close();
+});

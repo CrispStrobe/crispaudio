@@ -1,3 +1,4 @@
+vi.mock('../../../src/hooks/useAudioEngine',()=>({useAudioEngine:()=>({resume:vi.fn().mockResolvedValue(undefined)})}));
 vi.mock('../../../src/i18n',()=>({default:{language:'en',changeLanguage:vi.fn()}}));
 import {beforeEach,it,expect,vi} from 'vitest';
 import {act,fireEvent,render,screen} from '@testing-library/react';
@@ -24,4 +25,10 @@ it('prevents rack edits during playback and recording and leaves ordinary racks 
 it('copies native program state and pastes independent instances at another scope',()=>{
  const first=render(<NativeEffectRack scope="master"/>);fireEvent.click(screen.getByRole('button',{name:'nativeRack.copy'}));const original=useProjectStore.getState().project.nativeEffects!;first.unmount();useProjectStore.setState({project:{...useProjectStore.getState().project,tracks:[{id:'t',name:'Target',muted:false,solo:false,pan:0,volume:1,segments:[]}]}});
  render(<NativeEffectRack scope="track:t"/>);fireEvent.click(screen.getByRole('button',{name:'nativeRack.paste'}));const pasted=useProjectStore.getState().project.tracks[0].nativeEffects!;expect(pasted.map(effect=>effect.state)).toEqual(original.map(effect=>effect.state));expect(pasted[0].instanceId).not.toBe(original[0].instanceId);expect(pasted[0].parameters).not.toBe(original[0].parameters);
+});
+
+it('opens parameter automation from the compact icon and disables the static knob for a saved curve',async()=>{
+ const state=useProjectStore.getState();useProjectStore.setState({project:{...state.project,nativeEffects:[{...effect('a','Bandpass'),parameterAutomation:{'0':{min:20,max:20000,points:[{time:0,value:.5}]}}}]}});
+ render(<NativeEffectRack scope="master"/>);fireEvent.click(screen.getByRole('button',{name:'Bandpass'}));await screen.findByText('Frequency');expect(screen.getByRole('slider',{name:'Frequency'})).toBeDisabled();
+ const button=screen.getByRole('button',{name:'nativeRack.automation · Frequency'});expect(button).toHaveAttribute('aria-pressed','true');fireEvent.click(button);expect(screen.getByRole('dialog')).toBeInTheDocument();expect(screen.getByRole('button',{name:'fxInspector.clear'})).toBeEnabled();
 });

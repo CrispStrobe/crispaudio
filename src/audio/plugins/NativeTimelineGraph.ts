@@ -1,4 +1,4 @@
-import type {TimelineProject} from '../../types/audio';
+import type {NativeParameterCurve,TimelineProject} from '../../types/audio';
 import {planGraphLatency} from '../../lib/graphLatency';
 import {prepareGraphCompensation} from './GraphCompensation';
 import {prepareNativePluginNode} from './NativePluginNode';
@@ -6,12 +6,12 @@ import type {PluginTransport} from './PluginTransport';
 import type {PluginStreamRequest} from './NativePluginStream';
 
 /** Internal insert configuration, deliberately separate from persisted project FX until normal rack integration is ready. */
-export type NativeTimelineInsert=PluginStreamRequest & {bypass?:boolean;instanceId?:string};
+export type NativeTimelineInsert=PluginStreamRequest & {bypass?:boolean;instanceId?:string;parameterAutomation?:Record<string,NativeParameterCurve>};
 export type NativeTimelineRacks=ReadonlyMap<string,readonly NativeTimelineInsert[]>;
 export interface NativeInsertUpdate {parameters?:Record<string,number>;bypass?:boolean}
 export async function prepareNativeTimelineGraph(ctx:BaseAudioContext,project:TimelineProject,racks:NativeTimelineRacks,signal:AbortSignal,onFault:(reason:string)=>void,transport?:PluginTransport,processMode:'realtime'|'offline'='realtime'){
  const valid=new Set(['master',...project.tracks.map(t=>`track:${t.id}`),...project.tracks.flatMap(t=>t.segments.map(c=>`clip:${c.id}`))]);
- const requests=[...racks].map(([scope,entries])=>[scope,entries.map(r=>({...r,parameters:{...r.parameters}}))] as const);
+ const requests=[...racks].map(([scope,entries])=>[scope,entries.map(r=>({...r,parameters:{...r.parameters},parameterAutomation:structuredClone(r.parameterAutomation)}))] as const);
  if(requests.some(([scope])=>!valid.has(scope)))throw new Error('Unknown native rack scope');
  if(requests.reduce((n,[,entries])=>n+entries.length,0)>8)throw new Error('At most eight native timeline inserts are supported');
  if(requests.some(([,entries])=>entries.some(r=>r.sampleRate!==ctx.sampleRate||r.channels!==2)))throw new Error('Timeline inserts require stereo at the playback sample rate');
@@ -22,7 +22,7 @@ export async function prepareNativeTimelineGraph(ctx:BaseAudioContext,project:Ti
  try{
   await prepareGraphCompensation(ctx);signal.throwIfAborted();
   for(const [scope,entries] of requests){const chain:Awaited<ReturnType<typeof prepareNativePluginNode>>[]=[];chains.set(scope,chain);
-   for(const request of entries){signal.throwIfAborted();const node=await prepareNativePluginNode(ctx,{id:request.id,sampleRate:request.sampleRate,channels:request.channels,parameters:request.parameters,state:request.state,transport,processMode},{signal,onFault:reason=>onFault(`${scope}: ${reason}`)});chain.push(node);node.update(request.parameters??{},request.bypass??false);}
+   for(const request of entries){signal.throwIfAborted();const node=await prepareNativePluginNode(ctx,{id:request.id,sampleRate:request.sampleRate,channels:request.channels,parameters:request.parameters,state:request.state,parameterAutomation:request.parameterAutomation,transport,processMode},{signal,onFault:reason=>onFault(`${scope}: ${reason}`)});chain.push(node);node.update(request.parameters??{},request.bypass??false);}
   }
   signal.throwIfAborted();
   const delay=(scope:string)=>(chains.get(scope)??[]).reduce((n,node)=>n+node.delayFrames,0);

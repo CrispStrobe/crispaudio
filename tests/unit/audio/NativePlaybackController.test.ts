@@ -126,3 +126,21 @@ it('rebuilds paused identical processors after reorder or paste rather than resu
  await controller.pause();const pasted={...reordered,masterEffects:pasteEffectRack(reordered.masterEffects)};
  await controller.play(pasted,sources,.5,0,4,true);expect(create).toHaveBeenCalledTimes(3);expect(second.snapshot.close).toHaveBeenCalledTimes(1);await controller.stop();
 });
+
+it('auditions native parameters independently by scope/instance/address and restores saved Read without state mutation',async()=>{
+ const f=session();create.mockResolvedValue(f.snapshot);const controller=new NativePlaybackController(()=>{},()=>{}),p=project(),target={instanceId:'n',address:'1',min:-24,max:12};
+ const curve={min:-24,max:12,points:[{time:0,value:.5},{time:2,value:1}]};p.nativeEffects[0].parameters={'1':-6};const saved={...p,nativeEffects:p.nativeEffects.map(e=>({...e,parameterAutomation:{'1':curve}}))},before=structuredClone(saved);
+ await controller.play(saved,sources,0,0,4,false);
+ expect(controller.previewNativeParameterAutomation(saved,'master',target,.75)).toBe(true);await controller.update(saved);expect(f.playback.update.mock.calls.at(-1)![0].nativeEffects![0].parameterAutomation?.['1'].points).toEqual([{time:0,value:.75}]);
+ expect(controller.previewNativeParameterAutomation(saved,'master',{...target,address:'2',min:0,max:1,defaultValue:.4},.2)).toBe(true);await controller.update(saved);
+ controller.previewNativeParameterAutomation(saved,'master',target);await controller.update(saved);const sent=f.playback.update.mock.calls.at(-1)![0].nativeEffects![0];expect(sent.parameterAutomation?.['1']).toEqual(curve);expect(sent.parameterAutomation?.['2'].points).toEqual([{time:0,value:.2}]);
+ expect(nativeLiveStructureKey(saved)).toBe(nativeLiveStructureKey(p));expect(saved).toEqual(before);expect(create).toHaveBeenCalledTimes(1);
+ for(const value of [-.1,1.1,NaN])expect(controller.previewNativeParameterAutomation(saved,'master',target,value)).toBe(false);
+ await controller.stop();
+});
+
+it('restores an unstored plugin default after audition without mutating the saved state or base parameters',async()=>{
+ const f=session();create.mockResolvedValue(f.snapshot);const controller=new NativePlaybackController(()=>{},()=>{}),p=project(),target={instanceId:'n',address:'new',min:-24,max:12,defaultValue:-6};
+ await controller.play(p,sources,0,0,4,false);expect(controller.previewNativeParameterAutomation(p,'master',target,.9)).toBe(true);await controller.update(p);
+ controller.previewNativeParameterAutomation(p,'master',target);await controller.update(p);expect(f.playback.update.mock.calls.at(-1)![0].nativeEffects![0]).toMatchObject({parameters:{new:-6}});expect(f.playback.update.mock.calls.at(-1)![0].nativeEffects![0].parameterAutomation?.new).toBeUndefined();expect(p.nativeEffects[0].parameters).not.toHaveProperty('new');expect(p.nativeEffects[0].state).toBe('saved');await controller.stop();
+});

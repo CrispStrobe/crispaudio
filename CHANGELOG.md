@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.12 — 2026-10-16
+
+- Record native AU/VST3 parameter automation in Touch, Latch or Write at track, clip and master scope.
+- Review each pass before Apply, with one Undo and no mutation of saved plug-in state.
+- Play saved parameter curves in Mac Live, Preview and GUI exports, using project time and processing-block updates.
+- Preserve static Read values, including queried defaults; validate curve bounds and packet limits before native updates.
+
 ## 0.13.11 — 2026-10-16
 
 - Rebuild Mac Live playback after reordering built-in effects of the same type, including Undo, Redo and paused playback.

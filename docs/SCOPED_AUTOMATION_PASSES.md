@@ -27,5 +27,9 @@ phase; later audio phase may differ even when subsequent parameter values match.
 The frequency clipboard has its own tag and cannot overwrite the mix clipboard.
 
 Other supported pass parameters remain delay mix/feedback/time, chorus mix/depth/
-rate, and ring-modulator/bit-crusher/distortion/reverb mix. EQ, compressor, arbitrary
-plugin parameters and musical instrument automation are outside this increment.
+rate, and ring-modulator/bit-crusher/distortion/reverb mix. Native AU/VST3 parameter
+passes are available via the automation icon next to each expanded native knob,
+including track inserts. They use the same review and Apply workflow, preserve
+static Read values and saved state, and run saved curves in Live/Preview/export.
+Values are normalized within the plug-in’s reported range and delivered per
+processing block. EQ, compressor and musical instrument automation remain separate.

@@ -1,9 +1,11 @@
+import {nativeAutomationPacketFits,compileNativeParameterAutomation,validNativeParameterAutomation} from '../../lib/nativeParameterCurves';
+import type {NativeParameterCurve} from '../../types/audio';
 import url from '../worklets/nativePluginProcessor.ts?worker&url';
 import {FrameDelay} from '../dsp/frameDelay';
 import {NativePluginStream,type PluginStreamRequest} from './NativePluginStream';
 import {validatePluginTransport,type PluginTransport} from './PluginTransport';
 import type {PluginBlock} from './PluginBlockBuffer';
-export type PluginNodeRequest=PluginStreamRequest & {transport?:PluginTransport};
+export type PluginNodeRequest=PluginStreamRequest & {transport?:PluginTransport;parameterAutomation?:Record<string,NativeParameterCurve>};
 export interface NativePluginDiagnostic {stage:'input'|'reply'|'posted'|'accepted'|'fault';id:string;instance:number;offset?:number;frame:number;mainFrame:number;reason?:string}
 let diagnosticInstance=0;
 const diagnostics=new WeakMap<BaseAudioContext,(event:NativePluginDiagnostic)=>void>();
@@ -14,7 +16,9 @@ export function prepareNativePlugin(ctx:BaseAudioContext){let ready=prepared.get
 /** Internal real-time bridge. Callers must compensate its fixed delay in the complete graph. */
 export async function prepareNativePluginNode(ctx:BaseAudioContext,request:PluginNodeRequest,options:{blockFrames?:number;signal?:AbortSignal;onFault:(reason:string)=>void}){
  if(ctx.sampleRate!==request.sampleRate)throw new Error('Invalid plugin bridge clock');
- const {transport:configuration,...streamRequest}=request;
+ const {transport:configuration,parameterAutomation,...streamRequest}=request;
+ if(!validNativeParameterAutomation(parameterAutomation)||!nativeAutomationPacketFits(request.parameters??{},parameterAutomation))throw new Error('Invalid native parameter automation');
+ const parameterValues=compileNativeParameterAutomation(parameterAutomation);
  const transport=configuration?validatePluginTransport(configuration):undefined;
  const blockFrames=options.blockFrames??4096,delayBlocks=4;if(!Number.isInteger(blockFrames)||blockFrames<128||blockFrames>4096||blockFrames%128)throw new Error('Invalid plugin bridge buffer');
  await prepareNativePlugin(ctx);options.signal?.throwIfAborted();const stream=await NativePluginStream.open(streamRequest,options.signal);
@@ -35,7 +39,7 @@ export async function prepareNativePluginNode(ctx:BaseAudioContext,request:Plugi
  const trace=(stage:NativePluginDiagnostic['stage'],frame:number,offset?:number,reason?:string)=>diagnostics.get(ctx)?.({stage,id:request.id,instance,offset,frame,mainFrame:Math.round(ctx.currentTime*ctx.sampleRate),reason});
  node.onprocessorerror=()=>fault('processor-error');
  node.port.onmessage=e=>{if(closed)return;if(e.data?.type==='fault'){trace('fault',e.data.frame,e.data.offset,String(e.data.reason));fault(String(e.data.reason));return;}if(e.data?.type==='barrier'){const waiter=barriers.get(e.data.id);barriers.delete(e.data.id);if(e.data.active)waiter?.resolve();else waiter?.reject(new Error('Native processor fault'));return;}if(e.data?.type==='diagnostic-accepted'){trace('accepted',e.data.frame,e.data.offset);return;}if(e.data?.type==='block-accepted'){awaiting.delete(e.data.offset);notifyIdle();return;}if(e.data?.type!=='block')return;
-  const block=e.data as PluginBlock;trace('input',e.data.frame,block.offset);if(offline)awaiting.add(block.offset);if(++pending>4){fault('backpressure');return;}const values=dirty?{...parameters}:{},dry=bypass,drySamples=dry?Array.from({length:request.channels},()=>new Float32Array(blockFrames)):dryScratch;if(dry||stream.info.latencySamples)dryDelay.process(block.samples,drySamples);dirty=false;
+  const block=e.data as PluginBlock;trace('input',e.data.frame,block.offset);if(offline)awaiting.add(block.offset);if(++pending>4){fault('backpressure');return;}const automated=parameterValues(((transport?.projectPosition??transport?.samplePosition??0)+block.offset)/request.sampleRate),values={...(dirty?parameters:{}),...automated},dry=bypass,drySamples=dry?Array.from({length:request.channels},()=>new Float32Array(blockFrames)):dryScratch;if(dry||stream.info.latencySamples)dryDelay.process(block.samples,drySamples);dirty=false;
   void (transport?stream.process(block.samples,values,false,{...transport,samplePosition:transport.samplePosition+block.offset}):stream.process(block.samples,values,false)).then(reply=>{if(closed)return;if(reply.metadata.latencySamples!==stream.info.latencySamples){fault('latency-changed');return;}trace('reply',Math.round(ctx.currentTime*ctx.sampleRate),block.offset);const samples=dry?drySamples:reply.samples.map(s=>s instanceof Float32Array?s:Float32Array.from(s));active.port.postMessage({type:'block',offset:block.offset,samples,recycle:block.samples},[...samples,...block.samples].map(s=>s.buffer));if(instance)trace('posted',Math.round(ctx.currentTime*ctx.sampleRate),block.offset);}).catch(error=>{if(!closed)fault(String(error));}).finally(()=>{pending--;notifyIdle();});
  };
  return active;

@@ -1,3 +1,4 @@
+import type {NativeParameterTarget} from '../../lib/nativeParameterAutomation';
 import {NativePlaybackController} from '../plugins/NativePlaybackController';
 import {hasNativeEffects,projectNativeRacks} from '../../lib/nativeEffects';
 import {projectPluginTransport} from '../plugins/PluginTransport';
@@ -181,6 +182,9 @@ export class TimelineEngine {
       param.cancelScheduledValues(now);if(value===undefined)schedulePan(param,track.panAutomation,now,time,track.pan);else param.setValueAtTime(value,now);return true;
     }
     return this.previewEffectAutomation(project,`track:${track.id}`,target.effectIndex??-1,target.parameter,value);
+  }
+  previewNativeParameterAutomation(project:TimelineProject,scope:string,target:NativeParameterTarget,value?:number):boolean{
+    return this.owned.active&&this.owned.previewNativeParameterAutomation(project,scope,target,value);
   }
   /** Preview a real rack scope, retaining every DSP node and oscillator phase. */
   previewEffectAutomation(project:TimelineProject,scope:string,index:number,parameter:DelayParameter,value?:number):boolean{

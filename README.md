@@ -133,8 +133,12 @@ passes support delay, chorus, reverb, distortion, ring modulation and bitcrush.
 Delay time and feedback, chorus depth and rate, and ring frequency can also be
 recorded on tracks, clips and master while retaining effect history and oscillator
 phase. Open a clip or master effect’s automation inspector to record a pass there.
-The same effect knobs can be adjusted live; Undo keeps playback running. Native
-plug-in parameter passes remain unavailable.
+The same effect knobs can be adjusted live; Undo keeps playback running.
+For AU/VST3 parameters, expand the insert and use the automation icon beside a
+knob. Arm Touch, Latch or Write, play, adjust, then stop to review and Apply.
+Curves are saved with the project and run in Live, Preview and GUI export.
+Clear a curve to return to its static knob. Parameter changes use processing
+blocks rather than sample-accurate events.
 
 Structural edits and other built-in effect changes restart live playback. To record
 a microphone with native effects in the session, CrispAudio first prepares a fixed wet backing

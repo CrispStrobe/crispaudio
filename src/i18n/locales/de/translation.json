@@ -2266,6 +2266,9 @@
     "skipped": "{{count}} Plug-ins übersprungen"
   },
   "nativeRack": {
+    "rangeChanged": "Das Plug-in meldet einen anderen Wertebereich. Die gespeicherte Kurve vor einem neuen Durchlauf leeren.",
+    "automation": "Parameterautomation",
+    "automationHelp": "Touch, Latch oder Write während der Mac-Live-Wiedergabe aufnehmen. Den Durchlauf prüfen und mit Anwenden als einen Rückgängig-Schritt speichern. Kurven gelten auch für Vorschau und Export. Werte ändern sich pro Verarbeitungsblock; Leeren gibt den statischen Regler frei.",
     "title": "Native Plug-ins",
     "macOnly": "Native Plug-in-Parameter benötigen die Mac-App.",
     "help": "Inserts laufen nach den eingebauten Effekten. Mac-Wiedergabe und Export berücksichtigen sie. Im Live-Modus lassen sich Parameter und Bypass beim Abspielen ändern.",
@@ -2288,7 +2291,7 @@
     "rendering": "Rendern…",
     "menu": "Wiedergabe / Pause",
     "macOnly": "Die Vorschau nativer Effekte erfordert die installierte Mac-App.",
-    "recording": "Durchläufe integrierter Effekte erfordern Mac-Live-Wiedergabe. Automationsaufnahmen nativer Plug-in-Parameter sind noch nicht verfügbar. Mikrofonaufnahmen nutzen einen vorbereiteten Begleitmix; Eingangsmonitoring bleibt trocken.",
+    "recording": "Automationsaufnahmen integrierter Effekte und nativer Plug-in-Parameter erfordern Mac-Live-Wiedergabe. Mikrofonaufnahmen nutzen einen vorbereiteten Begleitmix; Eingangsmonitoring bleibt trocken.",
     "mixAutomation": "Mac Live: Spurpegel, Panorama und Parameter integrierter Effekte auf Spuren, Clips oder Master aufnehmen. Touch kehrt beim Loslassen zu Read zurück; Latch und Write halten bis Stopp. Prüfen und mit einem Undo übernehmen.",
     "help": "Wiedergabe rendert den fertigen Stereomix samt nativen Effekten einmal. Pause, Springen und Schleife verwenden ihn weiter. Audioänderungen stoppen die Wiedergabe; beim nächsten Start wird neu gerendert.",
     "limits": "Nur die Master-Anzeigen sind verfügbar. Live-Mischen, Aufnahme und Metronom sind in diesem Modus nicht verfügbar. Die Wiedergabe nutzt das gewählte Ausgabegerät.",

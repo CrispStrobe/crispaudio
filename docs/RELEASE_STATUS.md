@@ -5,6 +5,19 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.12 — native parameter passes
+
+AU/VST3 parameter automation is available at track, clip and master scope through
+the icon beside each expanded native parameter. Touch/Latch/Write captures use
+the native clock, local review and one Undo on Apply. Audition holds independent
+instance/address lanes without changing the project or saved plug-in state.
+Static Read values include queried defaults. Saved curves run in Live, Preview
+and GUI exports; CLI native-insert exports remain unsupported. Curve evaluation
+uses processing blocks (normally 512 frames Live, 4096 Preview/export), with
+project-time latency compensation. Physical/commercial plug-in acceptance and
+continuous native input DSP remain pending.
+[Validation evidence](evidence/native-parameter-passes.json).
+
 ## Local 0.13.11 — built-in effect order
 
 Same-type built-in effect reorders now rebuild native playback, including Undo,

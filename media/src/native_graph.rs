@@ -64,6 +64,76 @@ struct NativeRack {
     ids: Vec<String>,
     delays: Vec<usize>,
     latency: usize,
+    controls: Vec<NativeParameterState>,
+}
+struct NativeParameterState {
+    parameters: Value,
+    bypass: bool,
+    curves: Vec<(String, f64, f64, Curve)>,
+}
+impl NativeParameterState {
+    fn new(parameters: Value, bypass: bool, automation: &Value) -> Result<Self> {
+        let mut curves = Vec::new();
+        let mut count = 0;
+        if !automation.is_null() {
+            let lanes = automation
+                .as_object()
+                .ok_or("Invalid native parameter automation")?;
+            if lanes.len() > 32 {
+                return Err("Too many native automation lanes".into());
+            }
+            for (address, lane) in lanes {
+                let min = finite(lane, "min", None)?;
+                let max = finite(lane, "max", None)?;
+                let points = lane["points"]
+                    .as_array()
+                    .ok_or("Invalid native automation points")?;
+                count += points.len();
+                if address.is_empty()
+                    || address.len() > 128
+                    || min >= max
+                    || !(max - min).is_finite()
+                    || count > 100000
+                    || points.iter().any(|p| {
+                        p["value"]
+                            .as_f64()
+                            .is_none_or(|v| !v.is_finite() || !(0.0..=1.0).contains(&v))
+                    })
+                {
+                    return Err("Invalid native automation bounds".into());
+                }
+                let curve = Curve::gain(&lane["points"])?;
+                if !points.is_empty() {
+                    if parameters[address].as_f64().is_none_or(|v| !v.is_finite()) {
+                        return Err("Missing native automation static value".into());
+                    }
+                    curves.push((address.clone(), min, max, curve));
+                }
+            }
+        }
+        let mut worst = parameters.clone();
+        for (address, _, _, _) in &curves {
+            worst[address] = json!(-f64::MAX);
+        }
+        if !worst.is_object()
+            || worst.to_string().len() + worst.as_object().unwrap().len() * 3 + 512 > 8192
+        {
+            return Err("Native automation parameter packet too large".into());
+        }
+        Ok(Self {
+            parameters,
+            bypass,
+            curves,
+        })
+    }
+    fn at(&mut self, frame: i64) -> Value {
+        let mut parameters = self.parameters.clone();
+        for (address, min, max, curve) in &mut self.curves {
+            parameters[address.as_str()] =
+                json!(*min + (*max - *min) * curve.at(frame.max(0) as f64 / RATE));
+        }
+        parameters
+    }
 }
 fn native(
     value: &Value,
@@ -72,6 +142,7 @@ fn native(
 ) -> Result<NativeRack> {
     let mut inserts = Vec::new();
     let mut identities = Vec::new();
+    let mut controls = Vec::new();
     let mut latency = 0usize;
     let mut ids = HashSet::new();
     if !value.is_null() {
@@ -92,6 +163,11 @@ fn native(
             {
                 return Err("Invalid native rack entry".into());
             }
+            let control = NativeParameterState::new(
+                entry["parameters"].clone(),
+                entry["bypass"].as_bool().unwrap(),
+                &entry["parameterAutomation"],
+            )?;
             if entry["enabled"] == false {
                 continue;
             }
@@ -118,6 +194,7 @@ fn native(
             latency = latency
                 .checked_add(delay)
                 .ok_or("Native latency overflow")?;
+            controls.push(control);
             inserts.push(insert);
             identities.push(id.to_string());
         }
@@ -126,6 +203,7 @@ fn native(
     Ok(NativeRack {
         inserts,
         ids: identities,
+        controls,
         delays,
         latency,
     })
@@ -143,7 +221,12 @@ impl NativeRack {
             if insert.latency() != self.delays[i] {
                 return Err("Native insert latency changed".into());
             }
-            insert.timeline(clock.at(frame as i64 - delay as i64));
+            let project_frame = clock.at(frame as i64 - delay as i64);
+            insert.timeline(project_frame);
+            let controls = &mut self.controls[i];
+            if !controls.curves.is_empty() {
+                insert.update(&controls.at(project_frame), controls.bypass)?;
+            }
             insert.process(pcm, frame)?;
             delay += self.delays[i];
             if insert.latency() != self.delays[i] {
@@ -304,6 +387,8 @@ pub struct NativeControls {
     pub scope: String,
     pub instance_id: String,
     pub parameters: Value,
+    #[serde(default)]
+    pub parameter_automation: Value,
     pub bypass: bool,
 }
 /// Project time can wrap while the render/processor clock stays monotonic.
@@ -782,6 +867,7 @@ impl Graph {
             ));
         }
         let mut native_ids = HashSet::new();
+        let mut native_prepared = Vec::new();
         for control in &update.native {
             if !native_ids.insert((&control.scope, &control.instance_id))
                 || !control.parameters.is_object()
@@ -798,6 +884,11 @@ impl Graph {
             {
                 return Err("Invalid native insert controls".into());
             }
+            native_prepared.push(NativeParameterState::new(
+                control.parameters.clone(),
+                control.bypass,
+                &control.parameter_automation,
+            )?);
             let rack = self
                 .rack_mut(&control.scope)
                 .ok_or("Unknown native control scope")?;
@@ -836,17 +927,20 @@ impl Graph {
         self.gain = update.master_volume;
         self.gain_slew.set(update.master_volume);
         self.routing_docs = docs;
-        for control in update.native {
+        for (control, prepared) in update.native.into_iter().zip(native_prepared) {
             let rack = self.rack_mut(&control.scope).unwrap();
             let index = rack
                 .ids
                 .iter()
                 .position(|id| id == &control.instance_id)
                 .unwrap();
+            // Validate every lane before any mutation. Restore static Read immediately;
+            // automated values are evaluated on the next latency-compensated block.
             if let Err(error) = rack.inserts[index].update(&control.parameters, control.bypass) {
                 self.fault = Some(error.clone());
                 return Err(error);
             }
+            rack.controls[index] = prepared;
         }
         Ok(())
     }
@@ -1829,5 +1923,150 @@ mod tests {
             .map(|(a, b)| (a - b).abs())
             .fold(0f32, f32::max);
         assert!(error < 2e-6, "parity error {error}");
+    }
+    #[test]
+    fn native_parameter_curves_read_restore_all_scopes_without_reset_and_reject_atomically() {
+        struct Gain {
+            gain: f32,
+            history: usize,
+        }
+        impl Insert for Gain {
+            fn latency(&self) -> usize {
+                0
+            }
+            fn update(&mut self, values: &Value, _: bool) -> Result<()> {
+                self.gain = values["gain"].as_f64().unwrap() as f32;
+                Ok(())
+            }
+            fn process(&mut self, pcm: &mut [Stereo], _: u32) -> Result<()> {
+                for sample in pcm {
+                    for channel in sample {
+                        *channel = *channel * self.gain + self.history as f32 / 100000.;
+                    }
+                    self.history += 1;
+                }
+                Ok(())
+            }
+        }
+        for scope in ["master", "track:a", "clip:c"] {
+            let lane = json!({"gain":{"min":-2,"max":2,"points":[{"time":0,"value":0.25,"curve":"step"},{"time":1024./RATE,"value":0.75}]}});
+            let mut effects = insert(0);
+            effects[0]["parameters"] = json!({"gain":0.25});
+            effects[0]["parameterAutomation"] = lane.clone();
+            let mut doc = json!({"sampleRate":48000,"duration":4096./RATE,"masterVolume":1,"tracks":[{"id":"a","volume":1,"pan":0,"segments":[clip("c")]}]});
+            match scope {
+                "master" => doc["nativeEffects"] = effects,
+                "track:a" => doc["tracks"][0]["nativeEffects"] = effects,
+                _ => doc["tracks"][0]["segments"][0]["nativeEffects"] = effects,
+            };
+            let mut graph = Graph::prepare(
+                &doc,
+                HashMap::from([("s".into(), Source::new(vec![vec![1.; 4096]; 2]).unwrap())]),
+                |entry| {
+                    Ok(Box::new(Gain {
+                        gain: entry["parameters"]["gain"].as_f64().unwrap() as f32,
+                        history: 0,
+                    }))
+                },
+            )
+            .unwrap();
+            let controls = |automation: Value| json!({"masterVolume":1,"tracks":[{"id":"a","volume":1,"pan":0,"muted":false,"solo":false}],"native":[{"scope":scope,"instanceId":"i","parameters":{"gain":0.25},"bypass":false,"parameterAutomation":automation}]});
+            let mut out = vec![[0.; 2]; 512];
+            for (block, expected) in [-1., -1., -2., 1.].into_iter().enumerate() {
+                if block == 2 {
+                    graph
+                        .update_controls(
+                            serde_json::from_value(controls(
+                                json!({"gain":{"min":-2,"max":2,"points":[{"time":0,"value":0}]}}),
+                            ))
+                            .unwrap(),
+                        )
+                        .unwrap();
+                }
+                if block == 3 {
+                    graph
+                        .update_controls(serde_json::from_value(controls(lane.clone())).unwrap())
+                        .unwrap();
+                }
+                graph.render(&mut out).unwrap();
+                for (i, sample) in out.iter().enumerate() {
+                    let value = expected + (block * 512 + i) as f32 / 100000.;
+                    assert!((sample[0] - value).abs() < 1e-6, "{scope} block {block}");
+                    assert_eq!(sample[0], sample[1]);
+                }
+            }
+            let mut invalid = controls(Value::Null);
+            let mut bad = invalid["native"][0].clone();
+            bad["scope"] = json!("missing");
+            bad["parameterAutomation"] =
+                json!({"gain":{"min":-2,"max":2,"points":[{"time":0,"value":2}]}});
+            invalid["native"].as_array_mut().unwrap().push(bad);
+            assert!(graph
+                .update_controls(serde_json::from_value(invalid).unwrap())
+                .is_err());
+            assert_eq!(graph.position, 2048);
+            graph.render(&mut out).unwrap();
+            assert!((out[0][0] - 1.02048).abs() < 1e-6);
+            graph
+                .update_controls(serde_json::from_value(controls(Value::Null)).unwrap())
+                .unwrap();
+            graph.render(&mut out).unwrap();
+            assert!((out[0][0] - 0.2756).abs() < 1e-6);
+        }
+    }
+    #[test]
+    fn native_parameter_curves_follow_compensated_clock_and_wrap() {
+        use std::sync::Mutex;
+        struct Probe {
+            values: Arc<Mutex<Vec<f64>>>,
+        }
+        impl Insert for Probe {
+            fn latency(&self) -> usize {
+                512
+            }
+            fn update(&mut self, values: &Value, _: bool) -> Result<()> {
+                self.values
+                    .lock()
+                    .unwrap()
+                    .push(values["gain"].as_f64().unwrap());
+                Ok(())
+            }
+            fn process(&mut self, _: &mut [Stereo], _: u32) -> Result<()> {
+                Ok(())
+            }
+        }
+        let values = Arc::new(Mutex::new(Vec::new()));
+        let mut entries = insert(0);
+        entries[0]["parameters"] = json!({"gain":0.25});
+        entries[0]["parameterAutomation"] = json!({"gain":{"min":-2,"max":2,"points":[{"time":0,"value":0.25,"curve":"step"},{"time":512./RATE,"value":0.75}]}});
+        let mut second = entries[0].clone();
+        second["instanceId"] = json!("second");
+        entries.as_array_mut().unwrap().push(second);
+        let mut rack = native(&entries, &mut 0, &mut |_| {
+            Ok(Box::new(Probe {
+                values: values.clone(),
+            }))
+        })
+        .unwrap();
+        let mut pcm = vec![[0.; 2]; 128];
+        rack.process(&mut pcm, 1024, ProjectClock::default(), 512)
+            .unwrap();
+        assert_eq!(*values.lock().unwrap(), vec![1., -1.]);
+        rack.process(
+            &mut pcm,
+            2048,
+            ProjectClock {
+                cycle: Some((0, 1024)),
+            },
+            0,
+        )
+        .unwrap();
+        assert_eq!(*values.lock().unwrap(), vec![1., -1., -1., 1.]);
+        for invalid in [
+            json!({"gain":{"min":2,"max":2,"points":[]}}),
+            json!({"gain":{"min":-2,"max":2,"points":[{"time":-1,"value":0}]}}),
+        ] {
+            assert!(NativeParameterState::new(json!({}), false, &invalid).is_err());
+        }
     }
 }

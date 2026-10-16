@@ -64,7 +64,21 @@ These passes use the native playback clock and control-block updates;
 they do not provide sample-accurate timestamped control delivery. Detected seek
 or loop discontinuities discard an active pass.
 
-Preview playback, microphone capture, native plug-in parameter passes, continuous native input monitoring, monitor clicks, custom plug-in windows and
+AU/VST3 parameter passes are available from the automation icon beside each
+expanded native parameter knob, at clip, track or master scope. Arm Touch, Latch
+or Write before playback; stop, review, Use pass and Apply. Clear removes the
+curve and restores the static knob. Saved curves also run in Preview and GUI
+exports. Native Live samples curves once per worker block (normally 512 frames);
+Preview/export bridges sample once per 4096-frame block. Curves use absolute
+project time with held ends and Linear/Step segments, compensating upstream
+latency. Native history preparation can use larger blocks. These are block updates, not sample-accurate parameter events. Static
+Read values and saved plug-in state remain separate from temporary audition.
+A changed reported parameter range requires clearing the old curve before a new
+pass. At most 32 lanes and 100,000 total points per insert are accepted, with
+parameter packet limits checked before processing.
+
+Preview pass capture, microphone capture, continuous native input monitoring,
+monitor clicks, custom plug-in windows and
 MIDI instruments remain outside this automation mode.
 
 ## Try the included session

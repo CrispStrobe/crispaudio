@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.11. This section is the current plan.
+Updated 2026-10-16, for local 0.13.12. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -98,7 +98,12 @@ pasting creates fresh processors. Knob changes still retain running DSP history.
 Local 0.13.10 extends live controls and reviewed passes to master and clip effects,
 with scope validation, shared delay-history budgeting and native-fault guards.
 [Scoped native checks](docs/evidence/native-scoped-effects.json).
-Continuous native input DSP and native plug-in parameter passes remain future work.
+Local 0.13.12 adds native AU/VST3 parameter Touch/Latch/Write passes at every
+rack scope, with review, one Undo, independent Read restoration and saved curves
+in Live, Preview and GUI exports. Curves use stable scope/instance/address IDs,
+normalized values and explicit parameter ranges. Processing is block based.
+[Native parameter checks](docs/evidence/native-parameter-passes.json).
+Continuous native input DSP remains future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 
 Audio troubleshooting interrupted the start: distortion persisted after quitting

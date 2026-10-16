@@ -1,3 +1,4 @@
+import {NativeParameterAutomation} from '../../../src/components/timeline/NativeParameterAutomation';
 import {afterEach,beforeEach,it,expect,vi} from 'vitest';
 import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {AutomationRecorder} from '../../../src/components/timeline/AutomationRecorder';
@@ -30,8 +31,8 @@ function liveMac(){
  vi.spyOn(navigator,'platform','get').mockReturnValue('MacIntel');vi.spyOn(navigator,'userAgent','get').mockReturnValue('Macintosh');Object.defineProperty(navigator,'maxTouchPoints',{value:0,configurable:true});
  const callbacks=new Map<number,FrameRequestCallback>();let request=0;
  vi.stubGlobal('requestAnimationFrame',(callback:FrameRequestCallback)=>{callbacks.set(++request,callback);return request;});vi.stubGlobal('cancelAnimationFrame',(id:number)=>callbacks.delete(id));
- let time=.5;const previewAutomation=vi.fn(()=>true),previewEffectAutomation=vi.fn(()=>true),engine={previewAutomation,previewEffectAutomation,automationClock:()=>({time,start:.5,generation:1})} as unknown as TimelineEngine;
- return {engine,previewAutomation,previewEffectAutomation,setTime:(next:number)=>{time=next;},frame:()=>act(()=>{const batch=[...callbacks.values()];callbacks.clear();for(const callback of batch)callback(0);})};
+ let time=.5;const previewAutomation=vi.fn(()=>true),previewEffectAutomation=vi.fn(()=>true),previewNativeParameterAutomation=vi.fn(()=>true),engine={previewAutomation,previewEffectAutomation,previewNativeParameterAutomation,automationClock:()=>({time,start:.5,generation:1})} as unknown as TimelineEngine;
+ return {engine,previewAutomation,previewEffectAutomation,previewNativeParameterAutomation,setTime:(next:number)=>{time=next;},frame:()=>act(()=>{const batch=[...callbacks.values()];callbacks.clear();for(const callback of batch)callback(0);})};
 }
 it('records a native Live level pass, restores Read and applies it with one Undo',()=>{
  const live=liveMac(),snapshot=useProjectStore.getState().project;useProjectStore.temporal.getState().clear();
@@ -125,4 +126,42 @@ it.each(['failed audition','native fault','mode change'])('discards a native sco
  if(cause==='native fault'){expect(live.previewEffectAutomation).toHaveBeenCalledWith(snapshot,'master',0,'mix',.3);act(()=>useProjectStore.getState().setIsPlaying(false));expect(screen.getByRole('button',{name:'fxInspector.usePass'})).toBeInTheDocument();act(()=>window.dispatchEvent(new CustomEvent('crispaudio-edit-error')));}
  if(cause==='mode change'){act(()=>useSettingsStore.setState({nativePlaybackMode:'rendered'}));live.frame();}
  expect(screen.queryByRole('button',{name:'fxInspector.usePass'})).not.toBeInTheDocument();expect(onDraft).not.toHaveBeenCalled();expect(useProjectStore.getState().project).toBe(snapshot);expect(screen.getByRole('button',{name:'automation.armPass'})).toHaveAttribute('aria-pressed','false');
+});
+
+const pluginTarget={instanceId:'fx',address:'gain',min:-24,max:12};
+function pluginScope(scope:string){
+ const {snapshot:base}=scopedProject('clip:clip');const effect={...base.nativeEffects![0],parameters:{gain:-6}};
+ const snapshot={...base,nativeEffects:scope==='master'?[effect]:[],tracks:base.tracks.map(track=>({...track,nativeEffects:scope==='track:track'?[effect]:[],segments:track.segments.map(clip=>({...clip,nativeEffects:scope==='clip:clip'?[effect]:[]}))}))};
+ useProjectStore.setState({project:snapshot});return snapshot;
+}
+it.each([['master','write'],['track:track','touch'],['clip:clip','latch']])('records a native plug-in %s pass in %s with review and one Undo', (scope,mode)=>{
+ const live=liveMac(),snapshot=pluginScope(scope);useProjectStore.temporal.getState().clear();
+ render(<TimelineEngineContext.Provider value={{current:live.engine}}><NativeParameterAutomation snapshot={snapshot} scope={scope} target={pluginTarget} name="Gain" unit="dB" onClose={noop}/></TimelineEngineContext.Provider>);
+ fireEvent.change(screen.getByRole('combobox',{name:'automation.recordMode'}),{target:{value:mode}});fireEvent.click(screen.getByRole('button',{name:'automation.armPass'}));act(()=>useProjectStore.getState().setIsPlaying(true));live.frame();
+ const slider=screen.getByRole('slider',{name:'automation.recordValue'});Object.defineProperty(slider,'setPointerCapture',{value:vi.fn()});fireEvent.pointerDown(slider,{pointerId:1});fireEvent.change(slider,{target:{value:'3'}});live.setTime(1);live.frame();fireEvent.pointerUp(slider);
+ expect(live.previewNativeParameterAutomation).toHaveBeenCalledWith(snapshot,scope,expect.objectContaining(pluginTarget),.75);
+ act(()=>useProjectStore.getState().setIsPlaying(false));expect(live.previewNativeParameterAutomation).toHaveBeenLastCalledWith(snapshot,scope,expect.objectContaining(pluginTarget));expect(useProjectStore.getState().project).toBe(snapshot);
+ fireEvent.click(screen.getByRole('button',{name:'fxInspector.usePass'}));expect(useProjectStore.getState().project).toBe(snapshot);fireEvent.click(screen.getByRole('button',{name:'fxInspector.apply'}));
+ const project=useProjectStore.getState().project,effect=scope==='master'?project.nativeEffects![0]:scope==='track:track'?project.tracks[0].nativeEffects![0]:project.tracks[0].segments[0].nativeEffects![0];
+ expect(effect.parameterAutomation?.gain.points).toContainEqual({time:1,value:.75});expect(effect.state).toBe(snapshot.nativeEffects?.[0]?.state??snapshot.tracks[0].nativeEffects?.[0]?.state??snapshot.tracks[0].segments[0].nativeEffects![0].state);expect(effect.parameters).toEqual({gain:-6});
+ expect(useProjectStore.temporal.getState().pastStates).toHaveLength(1);act(()=>useProjectStore.temporal.getState().undo());expect(useProjectStore.getState().project).toBe(snapshot);
+});
+it.each(['failed audition','mode change','native fault'])('discards native plugin capture on %s',cause=>{
+ const live=liveMac(),snapshot=pluginScope('master');if(cause==='failed audition')live.previewNativeParameterAutomation.mockReturnValue(false);
+ render(<TimelineEngineContext.Provider value={{current:live.engine}}><NativeParameterAutomation snapshot={snapshot} scope="master" target={pluginTarget} name="Gain" unit="dB" onClose={noop}/></TimelineEngineContext.Provider>);
+ fireEvent.change(screen.getByRole('combobox',{name:'automation.recordMode'}),{target:{value:'write'}});fireEvent.click(screen.getByRole('button',{name:'automation.armPass'}));act(()=>useProjectStore.getState().setIsPlaying(true));live.frame();live.setTime(1);live.frame();
+ if(cause==='mode change'){act(()=>useSettingsStore.setState({nativePlaybackMode:'rendered'}));live.frame();}
+ if(cause==='native fault'){act(()=>useProjectStore.getState().setIsPlaying(false));expect(screen.getByRole('button',{name:'fxInspector.usePass'})).toBeInTheDocument();act(()=>window.dispatchEvent(new CustomEvent('crispaudio-edit-error')));}
+ expect(screen.queryByRole('button',{name:'fxInspector.usePass'})).not.toBeInTheDocument();expect(screen.getByRole('button',{name:'automation.armPass'})).toHaveAttribute('aria-pressed','false');expect(useProjectStore.getState().project).toBe(snapshot);
+});
+it('guards plugin passes in Preview, during recording and on locked tracks',()=>{
+ liveMac();const snapshot=pluginScope('track:track'),props={snapshot,scope:'track:track',target:pluginTarget,name:'Gain',unit:'dB',onClose:noop};
+ useSettingsStore.setState({nativePlaybackMode:'rendered'});const preview=render(<NativeParameterAutomation {...props}/>);expect(screen.getByRole('button',{name:'automation.armPass'})).toBeDisabled();preview.unmount();
+ useSettingsStore.setState({nativePlaybackMode:'live'});useUIStore.setState({timelineRecording:true});const recording=render(<NativeParameterAutomation {...props}/>);expect(screen.getByRole('button',{name:'automation.armPass'})).toBeDisabled();recording.unmount();useUIStore.setState({timelineRecording:false});
+ const locked={...snapshot,tracks:snapshot.tracks.map(track=>({...track,locked:true}))};useProjectStore.setState({project:locked});render(<NativeParameterAutomation {...props} snapshot={locked}/>);expect(screen.getByRole('button',{name:'automation.armPass'})).toBeDisabled();
+});
+it('requires clearing an old parameter range before recording with changed plugin metadata',()=>{
+ liveMac();const old=pluginScope('master'),snapshot={...old,nativeEffects:old.nativeEffects.map(effect=>({...effect,parameterAutomation:{gain:{min:-12,max:12,points:[{time:0,value:.5}]}}}))};useProjectStore.setState({project:snapshot});
+ render(<NativeParameterAutomation snapshot={snapshot} scope="master" target={pluginTarget} name="Gain" unit="dB" onClose={noop}/>);expect(screen.getByRole('alert')).toHaveTextContent('nativeRack.rangeChanged');expect(screen.getByRole('button',{name:'fxInspector.apply'})).toBeDisabled();
+ fireEvent.click(screen.getByRole('button',{name:'fxInspector.clear'}));expect(screen.getByRole('button',{name:'automation.armPass'})).toBeEnabled();expect(screen.getByRole('button',{name:'fxInspector.apply'})).toBeEnabled();
 });
