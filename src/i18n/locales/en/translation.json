@@ -2168,7 +2168,7 @@
   "sourceEditor": {
     "title": "Source editor",
     "info": "About source editing",
-    "help": "Select source samples by dragging. Shift or + adds a separate range. Audition joins the selected portions and uses the chosen playback device. Preview compares original and processed source audio; timeline effects apply when playing the arrangement. Apply retains the original recording and creates one undo step. Keep range also trims linked clips. If processed audio was subsequently retimed, restore that timing in Speed / Pitch before further source processing or restoring the original.",
+    "help": "Select source samples by dragging. Shift or + adds a separate range. Audition joins the selected portions and uses the chosen playback device. Preview compares original and processed source audio; timeline effects apply when playing the arrangement. Apply retains the original recording and creates one undo step. Keep range also trims linked clips. If processed audio was subsequently retimed, restore that timing in Speed / Pitch before further source processing or restoring the original. Original and Preview switch at the current audition position with a short crossfade. Loop and preview updates keep playing; the cursor follows the joined selections. With a normalization preview active, changing Target updates it. Source audition does not include timeline FX. Native preview updates require a completed helper render.",
     "stop": "Stop audition",
     "audition": "Audition selection",
     "loop": "Loop",

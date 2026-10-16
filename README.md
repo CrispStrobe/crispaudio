@@ -73,12 +73,19 @@ Select a clip and open **Source Editor** for detailed work on its source window.
   Make several separate selections and loop them for listening.
 - Preview normalization, silence, DC removal and protective fades. Find the useful
   sound within surrounding silence, or keep a selected interval.
-- Compare the original with the processed preview before applying it. Originals
-  remain available for undo and restoration.
+- Switch **Original / Preview** beside the play button while listening. A short
+  crossfade keeps your position; loop changes, cleanup previews and Reset keep
+  playing. The cursor follows your selected ranges. Changing the normalization
+  target updates an active normalization preview.
+- Apply a preview as one undoable edit. Originals remain available for restoration.
+  Source audition plays source audio; timeline FX belong to arrangement playback.
+  Native source previews update after their render finishes.
 - Inspect peak, RMS, DC offset, clipping, loudness and true-peak readings. Open a
   spectrum or spectrogram and adjust its analysis settings.
 - Save selections as named regions for later delivery. On macOS, apply supported
   Audio Unit or VST3 effects to the selected source window.
+
+[Source editing and continuous comparison](docs/SOURCE_EDITING.md)
 
 ## Record and choose takes
 

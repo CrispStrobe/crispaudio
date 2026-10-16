@@ -18,6 +18,32 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.28 — continuous source comparison
+
+Source Editor now preserves audition position across Original/Preview, cleanup
+preview changes, Reset and loop toggles. The source cursor maps joined ranges;
+normalization target edits update an active preview during valid typing/scrubbing.
+A/B controls sit beside playback with a visible active choice. Apply is still a
+separate undoable edit. Opening/redrawing the editor does not allocate playback PCM.
+
+The source-only engine explicitly anchors 10 ms gain ramps, including rapid swaps,
+and bounds fading voices. Recording, source changes, arrangement playback and
+close release audition. Native source effects still prepare offline previews;
+completed renders can update running audition. This does not qualify a live native
+FX graph, loudness matching, streaming, physical outputs or physical iOS.
+
+Desktop/touch source-editing regression checks pass: source headroom, channel/range
+processing, retained originals, one Undo/Redo, regions, loop audition, analysis,
+linked lock atomicity, capture protection, German layout and save/reopen/render.
+All 1,962 frontend tests pass (199 files), with 21 final focused numeric/audition
+checks after live-target wiring. Browser PCM/comparison/lifecycle checks pass: zero
+measured clock error, continuous rapid-swap level, unchanged project/Undo, and
+recording/source/timeline/close cleanup. Full lint plus final changed-source/script
+lint, TypeScript, 21 release checks and the final normal Mac bundle pass.
+[Evidence](evidence/source-audition.json). The local 0.13.28 app is installed and
+reopened with strict/deep ad-hoc signature verification; its autosave is preserved.
+[Source editing guide](SOURCE_EDITING.md).
+
 ## Local 0.13.27 — reusable track/input/FX templates
 
 The native Edit menu, touch command ribbon and Track Settings open a compact

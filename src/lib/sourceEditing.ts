@@ -41,3 +41,11 @@ export function auditionSamples(channels:Float32Array[],ranges:SampleRange[]):Fl
  const selected=sampleRanges(ranges,channels[0]?.length??0),length=selected.reduce((n,r)=>n+r.end-r.start,0);
  return channels.map(c=>{const output=new Float32Array(length);let offset=0;for(const r of selected){output.set(c.subarray(r.start,r.end),offset);offset+=r.end-r.start;}return output;});
 }
+
+/** Translate the concatenated audition clock back into the original selection. */
+export function auditionSourceSample(ranges:SampleRange[],sample:number):number|undefined{
+ if(!ranges.length||!Number.isFinite(sample))return undefined;
+ let remaining=Math.max(0,Math.floor(sample));
+ for(const range of ranges){const length=range.end-range.start;if(remaining<length)return range.start+remaining;remaining-=length;}
+ return ranges.at(-1)!.end;
+}

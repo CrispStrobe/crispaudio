@@ -36,7 +36,7 @@ continuous-refresh checkpoint; continue the execution order below.
 
 | Reference | Relevant strengths in the official description | Lesson for CrispAudio |
 |---|---|---|
-| [ocenaudio](https://www.ocenaudio.com/features) | Immediate effect preview, simultaneous selections, adjustable spectrogram, efficient long-file editing and desktop consistency | A list of editor tools is insufficient: audition must stay fluid, selection work must be quick, and large-file limits matter. Our source edits currently prepare a draft rather than continuously updating a running FX graph. |
+| [ocenaudio](https://www.ocenaudio.com/features) | Immediate effect preview, simultaneous selections, adjustable spectrogram, efficient long-file editing and desktop consistency | A list of editor tools is insufficient: audition must stay fluid, selection work must be quick, and large-file limits matter. 0.13.28 keeps buffered source comparison/cleanup previews playing, but does not replace offline preparation with a running FX graph. |
 | [Ardour](https://ardour.org/features.html) | Cue monitoring, playlists/takes, routing matrix, VCA/foldback, monitor controls and export analysis | Recording, routing and monitoring form one continuous workflow. Our prepared wet accompaniment does not process live microphone input through native inserts. |
 | [LMMS](https://lmms.github.io/lmms/) | Piano roll, beat sequencer, song editor and mixer | Composition belongs in CometBeat. Reuse workflow ideas for finding assets and arranging rendered audio; do not recreate its instruments/sequencer. |
 | [openDAW](https://opendaw.org/) and [architecture](https://github.com/andremichelle/openDAW/blob/main/introduction.md) | Browser music production, audio/MIDI input and modular editor/engine packages | Browser delivery can support a coherent creation workflow. Learn from its separation of editor, engine and assets; its composition tools are a CometBeat comparison. |
@@ -54,7 +54,7 @@ continuous-refresh checkpoint; continue the execution order below.
 |---|---|---|
 | Basic arrangement, trims, fades, ripple, groups, source selections and analysis | Present | Measure completion time and friction in complete editing jobs; improve inline/context actions from findings. |
 | Effect-aware timeline waveforms | Partial in 0.13.24 | Built-in segment DSP refreshes during continuous edits for visible clips up to 60 s / 32 MiB. Native inserts, longer clips and track/bus/master processing still show source or remain excluded. Extend with scalable caches and safe native-render ownership; modulation follows a clip-range render, not the running graph phase. |
-| Source FX audition | Partial | Continuous, cancellable audition while changing parameters; fast original/processed comparison with level control and no mandatory render/apply cycle. |
+| Source FX audition | Partial in 0.13.28 | Position-preserving Original/Preview, cleanup replacement/reset, loop changes and source cursor are implemented. Active normalization follows its target. Native source previews still need helper renders. Full live source FX, audition level/loudness matching and larger-file performance remain. |
 | Repair and restoration | Partial | Existing DC/normalization/fades and desktop denoise do not cover manual sample repair, click interpolation, de-hum, declipping or editable spectral repair. Add bounded, reviewable repairs with listening tests. |
 | Recording and takes | Partial | Built-in mic accepted; punch/loop/multi-arm/comping implemented. Bar-based audible count-in and pre-roll are implemented in 0.13.26 with bounded scheduled lead-in. Local track/input/FX templates are implemented in 0.13.27; real interface/channel checks remain. |
 | Live input DSP | Missing for native inserts | Monitor input through inserts while keeping an optional dry take; report latency, use one coherent clock and prove cancellation/device-loss cleanup. Prepared wet backing is not a substitute. |
@@ -81,8 +81,9 @@ continuous-refresh checkpoint; continue the execution order below.
 3. **Recording preparation.** Bar-based audible count-in/pre-roll is implemented
    in 0.13.26; local track/input/FX templates follow in 0.13.27. Continue cue/input state;
    keep advanced settings collapsed and qualify real interfaces when available.
-4. **Source editing and restoration.** Continuous audition, original/processed
-   comparison, channel/polarity utilities and a small manual click-repair workflow.
+4. **Source editing and restoration.** Buffered continuous original/processed
+   comparison exists in 0.13.28; continue full live FX/level matching, channel/polarity
+   utilities and a small manual click-repair workflow.
    Include spectral repair, de-hum and declipping, each with explicit quality targets and original/processed comparison.
 5. **Live recording and monitoring.** Native input FX, dry/wet capture choices,
    latency reporting and cue routing; software fixtures first, then real interfaces.

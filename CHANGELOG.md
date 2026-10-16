@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.28 — 2026-10-16
+
+- Keep source audition running when switching Original/Preview, updating cleanup previews, resetting or toggling loop. Crossfade at the current selection position; show comparison controls beside playback.
+- Add a moving source cursor across joined ranges and update an active normalization preview when its target changes.
+- Anchor and bound crossfade voices, allocate audition buffers only when needed, and stop/release audition on recording, source replacement, timeline playback or editor close. Apply remains a separate undoable edit.
+
 ## 0.13.27 — 2026-10-16
 
 - Add reusable track templates through Edit → Track Templates, the touch command ribbon and Track Settings. Start with mono, stereo or a gentle speech low-cut; save custom input/FX setups locally.

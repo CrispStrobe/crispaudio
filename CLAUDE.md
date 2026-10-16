@@ -809,3 +809,19 @@ full-session templates yet. The compact picker is registered as `track-templates
 for native Edit, touch ribbon/command search, and Track Settings. Disable mutations
 during recording and reject actions after project replacement. Browser checks:
 `scripts/test-track-templates.mjs` (muted Chrome, synthetic offline DSP, no hardware).
+
+## Source audition (0.13.28)
+
+`SourceAudition` replaces equal-size source buffers at the concatenated selection
+clock, crossfading for 10 ms. Every fading voice is explicitly anchored and reramped
+on rapid switches; do not rely on cancelAndHoldAtTime alone for static gain (actual
+Chrome PCM caught a dip). At most eight fading voices plus the active voice remain.
+SourceEditor lazily caches its audition buffer; opening/redrawing does not duplicate
+PCM. Original/Preview, normalization-target updates, Reset and loop toggles keep
+playing. Range/channel edits, source replacement, recording, timeline playback,
+Apply and close stop/release audition. RAF moves an overlay cursor without repainting
+the full waveform; mapping uses the normalized joined ranges. Native source helpers
+still render offline; only completed preview results replace the playing buffer.
+No new true live native FX graph or loudness matching. Browser qualification:
+`scripts/test-source-audition.mjs`; existing source-editor regression uses explicit
+Original/Preview choices and muted Chrome. No new physical listening acceptance.
