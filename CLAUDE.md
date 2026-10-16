@@ -794,3 +794,18 @@ can play once before loopStart; extendRecordingPasses uses the first intro lengt
 then regular lap lengths. TimelineMetronome supports the same intro. Stop before
 the record frame discards input and publishes no take/file. Changing lead-in or
 latency preserves a connected preview; device/channel changes disconnect it.
+
+## Track templates (0.13.27)
+
+`trackTemplates.ts` uses an explicit allowlist for reusable static settings, strips
+all project-time automation, audio/takes and routing, and resets input to the
+existing empty-string default device convention. New tracks are unarmed with
+monitoring off, independently identified and inserted with one store mutation.
+Native racks carry stored state only; no live host query or missing-plug-in fallback
+is introduced. The saved state is not a fresh capture of a custom plug-in window.
+`trackTemplateStore` validates at reload, caps at 64 and commits localStorage before
+updating memory, so quota failures preserve the current library. No file sharing or
+full-session templates yet. The compact picker is registered as `track-templates`
+for native Edit, touch ribbon/command search, and Track Settings. Disable mutations
+during recording and reject actions after project replacement. Browser checks:
+`scripts/test-track-templates.mjs` (muted Chrome, synthetic offline DSP, no hardware).

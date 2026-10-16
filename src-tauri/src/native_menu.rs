@@ -427,6 +427,13 @@ pub fn install(app: &tauri::AppHandle, context: &MenuContext) -> tauri::Result<(
             Some("CmdOrCtrl+B"),
         )?,
         &item(
+            "track-templates",
+            "Track Templates…",
+            "Spurvorlagen…",
+            timeline,
+            None,
+        )?,
+        &item(
             "add-track",
             "Add Audio Track",
             "Audiospur hinzufügen",

@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.26. This section is the current plan.
+Updated 2026-10-16, for local 0.13.27. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -35,6 +35,16 @@ bounded increments, not a finished state-of-the-art DAW. MIDI/composition expans
 is outside this app's active scope. Long-session paging/streaming is accepted in
 the final scale phase; additional codec expansion has no new priority.
 
+Local 0.13.27 adds a local reusable track/input/FX template library, including
+mono/stereo and gentle speech low-cut starters. Desktop Edit menu, touch ribbon
+and Track Settings reach the same compact picker. Saving advanced settings is
+collapsed. New tracks are empty, selected, independently identified and undoable;
+recording is unarmed, monitoring off and the input defaults to this machine.
+Templates exclude audio, takes, time automation and session routing. Native
+inserts use their last saved state and require the same plug-ins. Sharing files,
+full-session templates and live native-state capture are not implemented here.
+Next: continuous source audition/original-processed comparison and restoration.
+
 Local 0.13.26 adds bar-based count-in and pre-roll using scheduled Web Audio
 anchors. Existing countIn seconds stay a silent delay. Monitor clicks are scheduled
 ahead; published takes exclude lead-in input while originals keep source handles.
@@ -42,7 +52,7 @@ Cancelling before the recording point publishes nothing. Prepared wet backing
 supports one intro before loop passes. Tempo/meter come from the existing global
 musical clock; multi-arm uses maxima and selected lead-in has a 60-second budget.
 Software PCM/synthetic capture pass; this adds no physical device qualification.
-Next: useful track templates and continued recording/source-audition workflow work,
+Next: continuous source audition/restoration and continued recording workflow work,
 with external-device/plugin acceptance when the relevant hardware is available.
 
 Local 0.13.25 removes the ASR launch/setup GUI and app bridge. Shared guarded

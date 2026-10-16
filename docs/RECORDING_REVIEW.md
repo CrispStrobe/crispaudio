@@ -76,3 +76,20 @@ Software audits use generated MediaStreams with real capture worklets. They do
 not validate physical microphone permission, audibility or independent device drift.
 The current hardware check is the MacBook built-in microphone; a webcam or interface
 can be added later for simultaneous-device checks.
+
+## Reuse input and FX setups
+
+Open **Edit → Track Templates…** (also in the touch Edit ribbon and Track Settings).
+Choose mono, stereo or speech low-cut, then **Add track**. To keep your setup,
+expand **Save from track**, choose the source track, enter a name and save it.
+The library is local to this app/device (up to 64 custom entries).
+
+Templates copy level, pan, waveform mode, input channel/timing/latency, built-in FX
+and stored native FX state. Each new track is empty and selected, with fresh FX
+instances; Undo removes it in one step. Audio, takes, automation and project routing
+are excluded. The default input replaces hardware IDs, and monitoring/arming are
+off. Check device, channel and latency before capture. Native templates require the
+same plug-ins and use their last saved state, rather than querying a live window.
+Portable template files, complete session templates and custom native-window state
+capture remain separate work. No new physical microphone check is needed for this
+settings-only increment; the existing built-in microphone acceptance still stands.

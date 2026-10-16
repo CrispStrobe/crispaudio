@@ -14,6 +14,7 @@ import {navigateClip} from '../../lib/clipNavigation';
 import {trimToPlayhead} from '../../lib/trimEdits';
 import {TrackFolders,FolderHeader} from './TrackFolders';
 import {visibleTrackRows} from '../../lib/trackFolders';
+import {TrackTemplates} from './TrackTemplates';
 import {SampleSessions} from './SampleSessions';
 import {runTimelineTool} from '../../hooks/useTimelineTool';
 import {TimelineCommandMenus} from './TimelineCommandMenus';
@@ -639,7 +640,7 @@ export const TimelinePanel: React.FC = () => {
         <ToolButton icon={Activity} label={t('automation.openTitle')} aria-pressed={automation} onClick={()=>setAutomation(value=>!value)}/>
         <ToolButton icon={SlidersHorizontal} label={t('mixer.title')} aria-pressed={mixer} onClick={()=>setMixer(value=>!value)}/>
         <CommandSearch/>
-        <SampleWalkthroughs/><ExportReview/><MixReview/><ClipPlacement/><TrackFolders/><SampleSessions/><MusicalControls launcher={false}/>
+        <TrackTemplates/><SampleWalkthroughs/><ExportReview/><MixReview/><ClipPlacement/><TrackFolders/><SampleSessions/><MusicalControls launcher={false}/>
         <MidiControls audio={audioEngine} launcher={false}/>
         <DeliveryControls launcher={false}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} launcher={false}/>

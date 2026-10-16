@@ -23,6 +23,7 @@ export const timelineCommands: Record<string, TimelineCommand[]> = {
         { id: 'retime', label: 'Speed / Pitch…', requires: 'selection' }, { id: 'range-tools', label: 'Range Edits…', requires: 'editRange' }, { id: 'edit-groups', label: 'Named Edit Groups…', requires: 'content' },
         { id: 'nudge-left', label: 'Nudge Left', requires: 'selection' }, { id: 'nudge-right', label: 'Nudge Right', requires: 'selection' }, { id: 'nudge-settings', label: 'Nudge Step…' },
         { id: 'previous-edit', label: 'Previous Edit Point', requires: 'content', key: '⌘/Ctrl Alt ←' }, { id: 'next-edit', label: 'Next Edit Point', requires: 'content', key: '⌘/Ctrl Alt →' },
+        { id:'track-templates',label:'Track Templates…' },
         { id: 'add-track', label: 'Add Audio Track', key: '⌘/Ctrl Shift N' },
     ],
     View: [

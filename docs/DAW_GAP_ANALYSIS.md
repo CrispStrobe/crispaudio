@@ -56,12 +56,12 @@ continuous-refresh checkpoint; continue the execution order below.
 | Effect-aware timeline waveforms | Partial in 0.13.24 | Built-in segment DSP refreshes during continuous edits for visible clips up to 60 s / 32 MiB. Native inserts, longer clips and track/bus/master processing still show source or remain excluded. Extend with scalable caches and safe native-render ownership; modulation follows a clip-range render, not the running graph phase. |
 | Source FX audition | Partial | Continuous, cancellable audition while changing parameters; fast original/processed comparison with level control and no mandatory render/apply cycle. |
 | Repair and restoration | Partial | Existing DC/normalization/fades and desktop denoise do not cover manual sample repair, click interpolation, de-hum, declipping or editable spectral repair. Add bounded, reviewable repairs with listening tests. |
-| Recording and takes | Partial | Built-in mic accepted; punch/loop/multi-arm/comping implemented. Bar-based audible count-in and pre-roll are implemented in 0.13.26 with bounded scheduled lead-in. Useful track templates and real interface/channel checks remain. |
+| Recording and takes | Partial | Built-in mic accepted; punch/loop/multi-arm/comping implemented. Bar-based audible count-in and pre-roll are implemented in 0.13.26 with bounded scheduled lead-in. Local track/input/FX templates are implemented in 0.13.27; real interface/channel checks remain. |
 | Live input DSP | Missing for native inserts | Monitor input through inserts while keeping an optional dry take; report latency, use one coherent clock and prove cancellation/device-loss cleanup. Prepared wet backing is not a substitute. |
 | Monitor/cue routing | Partial | The Mac output picker currently changes the system output. Add app-local device routing, arbitrary input-channel maps, independent headphone mixes, PFL/AFL and dim/mono. Native playback currently targets 48 kHz stereo; broader channel/rate support needs a defined use case. |
 | Native FX and automation | Partial | AU/VST3 generic controls and saved curves exist on Mac. Custom plug-in windows, broader live built-in parameter coverage and stronger event-timing guarantees remain. Some edits restart playback. |
 | Freeze/render in place | Missing as a reversible track workflow | Render a track/clip with tails and routing semantics, release its DSP, retain source/rack state and unfreeze safely. Whole-project Preview is different. |
-| Assets and sessions | Partial | Add searchable audition of local files/regions, reusable track/FX templates and more useful session navigation/version workflows. No multiple-open-project workflow is established. |
+| Assets and sessions | Partial | Local track/input/FX templates exist in 0.13.27. Add searchable audition of local files/regions, portable/session templates and more useful session navigation/version workflows. No multiple-open-project workflow is established. |
 | Recorded-audio timing | Partial | Current global tempo and offline speed/pitch tools do not provide tempo maps, transient/warp markers or grouped timing edits with qualified phase coherence. Composition remains outside scope. |
 | Mastering precision | Partial | LUFS/estimated true-peak analysis and a sample-peak limiter exist. A true-peak limiter, dither/noise-shaping choices and systematic resampling/stretch quality qualification remain. |
 | Large sessions | Partial, architectural gap | GUI PCM is memory-resident; native snapshots and recording backing have explicit budgets. Long-file streaming, scalable waveform caches and native seek preparation require measured redesign. Streaming/paging is accepted in the scale phase; first measure real sessions and define memory/seek budgets. |
@@ -79,7 +79,7 @@ continuous-refresh checkpoint; continue the execution order below.
    recording/comping, reopen and actual saved-file review on desktop/touch.
    Capture concrete defects and fix those before adding controls.
 3. **Recording preparation.** Bar-based audible count-in/pre-roll is implemented
-   in 0.13.26. Continue with clear cue/input state and useful track templates;
+   in 0.13.26; local track/input/FX templates follow in 0.13.27. Continue cue/input state;
    keep advanced settings collapsed and qualify real interfaces when available.
 4. **Source editing and restoration.** Continuous audition, original/processed
    comparison, channel/polarity utilities and a small manual click-repair workflow.
@@ -87,7 +87,7 @@ continuous-refresh checkpoint; continue the execution order below.
 5. **Live recording and monitoring.** Native input FX, dry/wet capture choices,
    latency reporting and cue routing; software fixtures first, then real interfaces.
 6. **Session efficiency.** Reversible freeze/render in place, asset audition and
-   reusable track/FX chains, project versions/tabs and custom plug-in windows; expand
+   portable/session templates (local track/FX chains exist), project versions/tabs and custom plug-in windows; expand
    automation and recorded-audio tempo/warp/grouped timing with phase-coherence tests.
 7. **Finishing quality and scale.** True-peak/dither/resampling qualification,
    long-session measurements and the resulting memory/streaming work. Hardware

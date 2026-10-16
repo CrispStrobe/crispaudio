@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.27 — 2026-10-16
+
+- Add reusable track templates through Edit → Track Templates, the touch command ribbon and Track Settings. Start with mono, stereo or a gentle speech low-cut; save custom input/FX setups locally.
+- Create selected empty tracks in one Undo step with independent FX identities. Exclude audio, takes, automation and routing; use the default input, unarmed with monitoring off.
+- Validate the bounded library on reload and report storage errors without losing the current library. Advanced saving stays collapsed; explanations live behind (i).
+
 ## 0.13.26 — 2026-10-16
 
 - Add audible bar-based recording count-in and backing pre-roll, with compact options and a visible lead-in phase. Preserve old seconds values as silent start delay.

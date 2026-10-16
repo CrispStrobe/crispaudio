@@ -18,6 +18,26 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.27 — reusable track/input/FX templates
+
+The native Edit menu, touch command ribbon and Track Settings open a compact
+picker, with mono/stereo/speech low-cut starters and a local custom library. Saving
+is collapsed; explanations are behind (i). Templates retain static input timing,
+level/pan, waveform mode and saved FX settings. New tracks are empty, selected,
+unarmed and monitoring-off, with independent processors and one Undo step.
+Audio/takes, project-time automation, hardware IDs and session routing are excluded.
+
+All 1,955 frontend tests (198 files) pass, including new model/component checks
+for persistence, fresh identities, Undo/Redo, quota failure and recording/stale
+project guards. Browser save/add/delete/reload, actual copied-FX offline PCM and
+German 390 px layout checks pass. After the final selected-clip/bus fallback fix,
+all 10 focused template tests and the browser check pass again. [Evidence](evidence/track-templates.json).
+Full lint, final changed-source/script lint, TypeScript, 21 release checks and the
+normal Mac bundle pass. The final local 0.13.27 app is installed/reopened with
+strict/deep ad-hoc signature verification and its one autosave preserved.
+No new physical-device, native plug-in DSP or signed iOS build is claimed.
+Portable/session templates and live native-window state capture remain open.
+
 ## Local 0.13.26 — count-in and pre-roll
 
 Recording options now offer audible bar-based count-in and project-audio pre-roll.

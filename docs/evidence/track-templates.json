@@ -1,0 +1,45 @@
+{
+  "checkpoint": "0.13.27",
+  "date": "2026-10-16",
+  "feature": "Local reusable track/input/FX templates",
+  "browser_script": "scripts/test-track-templates.mjs",
+  "browser": "Headless Chrome, muted; actual app controllers and Web Audio offline DSP",
+  "verified": {
+    "save_add_delete": true,
+    "library_survives_page_reload": true,
+    "new_track_empty_selected_unarmed": true,
+    "default_input_monitor_off": true,
+    "copied_timing_and_fx": true,
+    "fresh_processor_ids_and_one_undo": "unit test",
+    "project_change_and_recording_guards": "component test",
+    "quota_failure_atomicity": "unit test",
+    "invalid_library_rejection": "unit test",
+    "german_390px_panel": {
+      "width": 356,
+      "horizontal_overflow": false
+    },
+    "actual_copied_highpass_output_amplitudes": {
+      "50Hz": 0.003192056383018411,
+      "2000Hz": 0.1145840622367161
+    }
+  },
+  "limits": [
+    "Library is app/device-local, up to 64 custom entries; no portable file or full-session templates",
+    "Native inserts use stored states, not a live custom-window snapshot; same plug-ins required",
+    "No physical microphone, output listening or actual native plug-in DSP qualification in this increment",
+    "Browser viewport is not physical iOS device acceptance"
+  ],
+  "frontend_full_suite": {
+    "tests": 1955,
+    "files": 198,
+    "passed": true,
+    "stage": "before final selected-clip/bus fallback refinement"
+  },
+  "final_focused_suite": {
+    "tests": 10,
+    "files": 2,
+    "passed": true,
+    "includes": "selected clip track and selected-bus fallback"
+  },
+  "browser_readiness": "Waits for actual controller mounting after reload; original immediate-dispatch rerun timed out under high system load."
+}

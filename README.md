@@ -92,6 +92,13 @@ Audition an original take or listen to its comp through the project mix. Choose
 parts of different takes, edit region boundaries and crossfades, replace or remove
 regions, and save named comp versions. Recorded originals remain available.
 
+Choose **Edit → Track Templates…** to add a mono, stereo or speech low-cut track.
+Under **Save from track**, name and save your own input/FX setup. Templates keep
+level, pan, waveform display, recording timing and saved FX settings; audio,
+takes, automation and routing stay in the project. New tracks use the default
+input with monitoring and arming off. Check channel and latency before recording.
+Your templates stay on this device. On touch, use the Edit ribbon or Track Settings.
+
 [Recording and take review](docs/RECORDING_REVIEW.md)
 
 ## Mix, automate and compare

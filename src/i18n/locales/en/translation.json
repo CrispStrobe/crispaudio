@@ -101,7 +101,8 @@
     "Review Export…": "Review Export…",
     "Sample Walkthroughs…": "Sample walkthroughs…",
     "Show / Hide Zoom and Navigation": "Show / Hide Zoom and Navigation",
-    "Source Editor…": "Source Editor…"
+    "Source Editor…": "Source Editor…",
+    "Track Templates…": "Track Templates…"
   },
   "app": {
     "name": "CrispAudio",
@@ -2289,5 +2290,20 @@
     "info": "Curve shape help",
     "use": "Use shape",
     "help": "Choose a preset or Custom and drag the Bézier handles. Use shape updates this inspector draft; Apply saves one Undo. Cancel keeps the previous curve. Shapes become up to sixteen editable linear intervals; other segments and parameters stay intact."
+  },
+  "templates": {
+    "title": "Track Templates…",
+    "template": "Template",
+    "voice": "Voice · low-cut",
+    "mono": "Mono recording",
+    "stereo": "Stereo recording",
+    "add": "Add track",
+    "saveTitle": "Save from track",
+    "name": "Template name",
+    "invalid": "Invalid track template.",
+    "full": "The template library is full (64). Delete an unused template first.",
+    "storage": "The template could not be saved. Local storage may be full.",
+    "help": "Creates an empty track with level, pan, waveform mode, input timing and saved FX settings. No audio, takes, automation or routing. Uses the default input; starts unarmed with monitoring off. Review channel and latency for your microphone. Native inserts require the same plug-ins and use their last saved state. Templates stay in this app on this device.",
+    "delete": "Delete"
   }
 }

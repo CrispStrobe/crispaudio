@@ -114,7 +114,8 @@
     "Review Export…": "Export prüfen…",
     "Sample Walkthroughs…": "Beispielanleitungen…",
     "Show / Hide Zoom and Navigation": "Zoom und Navigation ein-/ausblenden",
-    "Source Editor…": "Quelleneditor…"
+    "Source Editor…": "Quelleneditor…",
+    "Track Templates…": "Spurvorlagen…"
   },
   "app": {
     "name": "CrispAudio",
@@ -2302,5 +2303,20 @@
     "info": "Kurvenform erklären",
     "use": "Form übernehmen",
     "help": "Vorlage wählen oder bei Frei die Bézier-Griffe ziehen. Form übernehmen ändert den Entwurf; Anwenden speichert einen Rückgängig-Schritt. Abbrechen erhält die vorige Kurve. Formen werden zu bis zu sechzehn bearbeitbaren linearen Abschnitten; andere Segmente und Parameter bleiben erhalten."
+  },
+  "templates": {
+    "title": "Spurvorlagen…",
+    "template": "Vorlage",
+    "voice": "Stimme · Hochpass",
+    "mono": "Monoaufnahme",
+    "stereo": "Stereoaufnahme",
+    "add": "Spur hinzufügen",
+    "saveTitle": "Aus Spur speichern",
+    "name": "Vorlagenname",
+    "invalid": "Ungültige Spurvorlage.",
+    "full": "Die Vorlagenbibliothek ist voll (64). Bitte zuerst eine ungenutzte Vorlage löschen.",
+    "storage": "Vorlage konnte nicht gespeichert werden. Der lokale Speicher ist möglicherweise voll.",
+    "help": "Erstellt eine leere Spur mit Pegel, Panorama, Wellenformmodus, Aufnahmezeiten und gespeicherten Effekten. Ohne Audio, Takes, Automation oder Routing. Verwendet den Standardeingang; Aufnahmebereitschaft und Mithören sind aus. Kanal und Latenz für das Mikrofon prüfen. Native Effekte benötigen dieselben Plug-ins und verwenden ihren zuletzt gespeicherten Zustand. Vorlagen bleiben in dieser App auf diesem Gerät.",
+    "delete": "Löschen"
   }
 }
