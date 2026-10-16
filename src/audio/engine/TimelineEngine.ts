@@ -167,6 +167,12 @@ export class TimelineEngine {
     if(!this.outputGain)return;
     return {frame:Math.round(this.playbackClock*this.ctx.sampleRate),timeline:this.playbackStart};
   }
+  /** Web Audio monitor clock only. Native Live owns its clicks on the native clock. */
+  monitorPlaybackClock(){
+    const anchor=this.playbackAnchor();
+    if(this.owned.active||!anchor)return;
+    return {anchor,end:this.playbackEnd,loop:this.renderedLoop};
+  }
   /** Audition one lane without changing the project or rebuilding DSP. Undefined restores Read. */
   previewAutomation(project:TimelineProject,target:AutomationTarget,value?:number):boolean {
     if(this.owned.active)return this.owned.previewAutomation(project,target,value);

@@ -5,6 +5,16 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.21 — Preview and recording monitor clicks
+
+The monitor metronome now follows rendered Preview source loops and recording
+capture-pass anchors. Recording clicks continue after the backing ends, respect
+punch boundaries and stop on cancellation/unmount. Clicks are separate from
+project meters, rendered buffers and microphone input routing. Native Live keeps
+its native click path. Real offline PCM and muted synthetic capture checks pass;
+physical input/output acceptance is unchanged. No Apple upload.
+[Validation evidence](evidence/preview-recording-metronome.json).
+
 ## Local 0.13.20 — native monitor metronome
 
 Mac Live playback now supplies monitor clicks from its native render clock.

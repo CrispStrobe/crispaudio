@@ -1,3 +1,4 @@
+import {TimelineMetronome} from './TimelineMetronome';
 import type {AudioSource,TimelineProject} from '../../types/audio';
 import type {CapturePass} from '../../lib/capturedTakes';
 import {hasNativeEffects} from '../../lib/nativeEffects';
@@ -27,4 +28,12 @@ export function extendRecordingPasses(passes:CapturePass[],frame:number,rate:num
  const completed=Math.max(0,Math.floor((frame-first.frame)/(duration*rate))),count=Math.min(499,completed);
  for(let index=passes.length;index<=count;index++)passes.push({frame:first.frame+Math.round(index*duration*rate),timeline:range.start});
  return completed>=500;
+}
+
+/** A recording owns its click until capture stops, even after backing audio ends.
+ * The monitor destination is separate from the microphone capture graph. */
+export function startRecordingMetronome(ctx:AudioContext,destination:AudioNode,project:TimelineProject,anchor:CapturePass,range?:{start:number;end:number},loop=false){
+ const music=project.music;if(!music?.metronome||music.clickLevel===0)return;
+ const click=new TimelineMetronome(ctx,destination,music,anchor,range?.end??Infinity,loop?range:undefined);
+ click.start();return click;
 }

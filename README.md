@@ -165,9 +165,10 @@ blocks rather than sample-accurate events.
 Structural edits and other built-in effect changes restart live playback. To record
 a microphone with native effects in the session, CrispAudio first prepares a fixed wet backing
 mix. Backing and capture share one clock; takes and input monitoring stay dry.
-Live playback supports a monitor-only metronome with bar accents; switch it on
-in the musical timing controls. Clicks follow seeks and loops and stay out of exports
-and mix loudness readings. Live plug-in input monitoring and custom plug-in windows
+Live and Preview playback and microphone recording support a monitor-only
+metronome with bar accents; switch it on in the musical timing controls. Clicks
+follow playback and recording loops, continue after the backing ends, and stay
+out of exports, recorded input routing and mix loudness readings. Live plug-in input monitoring and custom plug-in windows
 remain pending. Native playback processes at 48 kHz and converts other source rates
 when needed.
 

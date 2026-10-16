@@ -10,12 +10,12 @@ function fixture(){
 it('plays the baked mix through the selected monitor path without applying the master twice',()=>{
  const {ctx,monitor,engine,nodes,buffer}=fixture();engine.playRenderedPreview(buffer,3,8);
  const source=nodes.find(node=>node.kind==='source')!,gain=nodes.find(node=>node.kind==='gain')!;
- const when=engine.playbackAnchor()!.frame/48000;expect(source.start).toHaveBeenCalledWith(when,3,5);expect(gain.connect).toHaveBeenCalledWith(monitor);expect(gain.gain.value).toBe(1);expect(engine.getMeter('master')).toHaveLength(2);expect(engine.getMeter('track')).toBeUndefined();
+ expect(engine.monitorPlaybackClock()).toEqual({anchor:engine.playbackAnchor(),end:8,loop:undefined});const when=engine.playbackAnchor()!.frame/48000;expect(source.start).toHaveBeenCalledWith(when,3,5);expect(gain.connect).toHaveBeenCalledWith(monitor);expect(gain.gain.value).toBe(1);expect(engine.getMeter('master')).toHaveLength(2);expect(engine.getMeter('track')).toBeUndefined();
  engine.updateMix({...useProjectStore.getInitialState().project,masterVolume:.01});expect(gain.gain.setTargetAtTime).not.toHaveBeenCalled();
- ctx.currentTime=when+2;expect(engine.automationClock()?.time).toBe(5);engine.stop();expect(source.stop).toHaveBeenCalledOnce();expect(monitor.disconnect).not.toHaveBeenCalled();expect(engine.playbackAnchor()).toBeUndefined();
+ ctx.currentTime=when+2;expect(engine.automationClock()?.time).toBe(5);engine.stop();expect(source.stop).toHaveBeenCalledOnce();expect(monitor.disconnect).not.toHaveBeenCalled();expect(engine.playbackAnchor()).toBeUndefined();expect(engine.monitorPlaybackClock()).toBeUndefined();
 });
 it('uses source-level looping and reports the wrapped audio clock after missed UI frames',()=>{
  const {ctx,engine,nodes,buffer}=fixture();engine.playRenderedPreview(buffer,4,7,3);const source=nodes.find(node=>node.kind==='source')!;
- expect(source).toMatchObject({loop:true,loopStart:3,loopEnd:7});const when=engine.playbackAnchor()!.frame/48000;expect(source.start).toHaveBeenCalledWith(when,4);
+ expect(source).toMatchObject({loop:true,loopStart:3,loopEnd:7});expect(engine.monitorPlaybackClock()).toEqual({anchor:engine.playbackAnchor(),end:7,loop:{start:3,end:7}});const when=engine.playbackAnchor()!.frame/48000;expect(source.start).toHaveBeenCalledWith(when,4);
  ctx.currentTime=when+11.5;expect(engine.automationClock()?.time).toBe(3.5);expect(source.start).toHaveBeenCalledOnce();engine.stop();
 });

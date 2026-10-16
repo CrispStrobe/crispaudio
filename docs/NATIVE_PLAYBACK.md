@@ -104,8 +104,18 @@ signature and origin. Seeking resumes the current click tail; loops return to
 the project beat position. Enable and level changes use the existing musical
 controls without restarting DSP (tempo and signature changes restart playback).
 Monitor volume also controls the clicks. The monitor sum is bounded to full scale;
-clicks do not enter exports, effect inputs or mix loudness measurements. Preview
-mode and the prepared recording backing still omit native-session clicks.
+clicks do not enter exports, effect inputs or mix loudness measurements.
+
+Preview uses a separate Web Audio monitor click on its actual playback anchor and
+source-loop boundaries. Its pre-rendered mix remains click-free. Recording owns
+its monitor click on the capture pass anchor, including after backing audio ends
+or when starting beyond it. Punch ends truncate clicks. Prepared-backing loops
+follow the source clock; ordinary recording loops restart clicks with each actual
+playback pass. Stopping, cancelling and unmounting recording release the click
+nodes and timer. Clicks are not routed into microphone capture. The recording
+count-in remains a delay in seconds; this change does not add count-in clicks.
+Web Audio clicks use bounded lookahead scheduling and skip stale beats after a
+UI stall. Pathologically short loops have a bounded click-event budget.
 
 Preview pass capture, microphone capture, continuous native input monitoring,
 custom plug-in windows and

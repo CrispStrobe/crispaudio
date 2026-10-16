@@ -1,0 +1,125 @@
+{
+  "checkpoint": "0.13.21",
+  "date": "2026-10-16",
+  "feature": "Monitor metronome for rendered Preview and recording",
+  "implementation": [
+    "TimelineEngine exposes Web Audio playback anchor/end/loop only; native Live owns its existing native clicks.",
+    "Preview hook waits for an actual playback clock and releases clicks on seek, stop or recording handoff.",
+    "Recording session owns clicks from its capture-pass anchor, beyond backing duration and during source-clock loops.",
+    "Ordinary recording-loop restarts replace the click using the new actual pass anchor; punch end truncates the click tail.",
+    "Stop, cancelled preparation and unmount release recording click nodes/timer.",
+    "No clicks are baked into backing/export buffers or connected to microphone capture inputs."
+  ],
+  "checks": {
+    "focused": {
+      "passed": 26,
+      "files": 4,
+      "log": "/tmp/crispaudio-preview-click-focused-final.log"
+    },
+    "playback_regressions": {
+      "passed": 71,
+      "files": 11,
+      "log": "/tmp/crispaudio-preview-click-regression.log"
+    },
+    "capture_regressions": {
+      "passed": 11,
+      "files": 4,
+      "log": "/tmp/crispaudio-preview-click-capture.log"
+    },
+    "lint": {
+      "status": "passed",
+      "log": "/tmp/crispaudio-preview-click-lint.log"
+    },
+    "typescript": {
+      "status": "passed",
+      "log": "/tmp/crispaudio-preview-click-tsc-final.log"
+    },
+    "release_gates": {
+      "passed": 21,
+      "log": "/tmp/crispaudio-preview-click-release.log"
+    },
+    "ios_simulator": {
+      "status": "passed",
+      "target": "aarch64-apple-ios-sim",
+      "log": "/tmp/crispaudio-preview-click-ios.log"
+    },
+    "mac_bundle": {
+      "status": "passed",
+      "log": "/tmp/crispaudio-01321-build.log"
+    },
+    "browser": {
+      "status": "passed",
+      "script": "scripts/test-monitor-metronome.mjs",
+      "log": "/tmp/crispaudio-preview-click-browser.log",
+      "results": {
+        "offlinePreviewPCM": {
+          "onsets": [
+            {
+              "frame": 256,
+              "peak": 0.03749999776482582,
+              "idle": 0
+            },
+            {
+              "frame": 9856,
+              "peak": 0.03749999776482582,
+              "idle": 0
+            },
+            {
+              "frame": 19456,
+              "peak": 0.03749999776482582,
+              "idle": 0
+            },
+            {
+              "frame": 29056,
+              "peak": 0.03749999776482582,
+              "idle": 0
+            },
+            {
+              "frame": 38656,
+              "peak": 0.03749999776482582,
+              "idle": 0
+            }
+          ],
+          "backingSilent": true,
+          "stopped": true
+        },
+        "recording": {
+          "clicks": 8,
+          "disconnected": true,
+          "inputsStopped": true,
+          "takes": 1,
+          "undo": 1,
+          "dryAmplitude": 0.1999639948178417,
+          "clickLeak": 7.332421807075453e-05
+        },
+        "afterBackingEnd": true,
+        "noDoubleClick": true,
+        "cancelBeforeInput": true,
+        "unmountCleanup": true,
+        "physicalAudio": false,
+        "nativeDSP": "synthetic prepared buffer; not requalified"
+      }
+    }
+  },
+  "scope": [
+    "Focused/regression runs overlap; counts are not a new full-suite total.",
+    "Native DSP/IPC implementations unchanged; full native tests from 0.13.20 are not claimed as rerun.",
+    "The browser uses real offline Web Audio and actual recording controller/worklets, a generated 317 Hz microphone and a synthetic prepared backing; native plug-in DSP is not requalified.",
+    "No new hardware listening, physical microphone/iOS or commercial plug-in acceptance.",
+    "No App Store/TestFlight upload or release tag."
+  ],
+  "limits": [
+    "Web Audio scheduling uses bounded lookahead; stale beats after a UI stall are skipped.",
+    "Pathologically short loops are bounded to 128 click events and 256 scheduling windows per pump.",
+    "Recording count-in remains a delay in seconds, without count-in clicks.",
+    "Clicks are not digitally routed into input capture; the synthetic-input proof does not assess acoustic microphone bleed."
+  ],
+  "installation": {
+    "version": "0.13.21",
+    "app": "~/Applications/CrispAudio-local.app",
+    "strict_deep_signature": "passed",
+    "autosaves_retained": 1,
+    "backup": "recovery-before-01321-20261016-155002",
+    "log": "/tmp/crispaudio-01321-install.log"
+  }
+}
