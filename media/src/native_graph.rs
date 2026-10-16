@@ -273,7 +273,15 @@ pub struct TrackControls {
     #[serde(default)]
     pub pan_automation: Value,
     #[serde(default)]
+    pub effect_mixes: Vec<EffectMixControls>,
+    #[serde(default)]
     pub sends: Vec<f64>,
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct EffectMixControls {
+    pub index: usize,
+    pub points: Value,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -646,9 +654,38 @@ impl Graph {
             if track.routes.len() != control.sends.len() + 1 {
                 return Err("Native send topology changed".into());
             }
+            let effects = self
+                .routing_docs
+                .iter()
+                .find(|doc| doc["id"].as_str() == Some(&control.id))
+                .unwrap()["effects"]
+                .as_array();
+            if control.effect_mixes.len() > 1024 {
+                return Err("Too many native effect mix controls".into());
+            }
+            let mut mixes = Vec::new();
+            let mut indices = HashSet::new();
+            for mix in &control.effect_mixes {
+                let effects = effects.ok_or("Unknown native effect mix control")?;
+                let effect = effects
+                    .get(mix.index)
+                    .ok_or("Unknown native effect mix control")?;
+                if !indices.insert(mix.index)
+                    || effect["enabled"] != true
+                    || !crate::effect_envelope::supports(effect, "mix")
+                {
+                    return Err("Invalid native effect mix control".into());
+                }
+                let active_index = effects[..mix.index]
+                    .iter()
+                    .filter(|effect| effect["enabled"] == true)
+                    .count();
+                mixes.push(track.builtin.prepare_mix(active_index, &mix.points)?);
+            }
             parsed.push((
                 Curve::gain(&control.automation)?,
                 Curve::pan(&control.pan_automation, control.pan)?,
+                mixes,
             ));
             let doc = docs
                 .iter_mut()
@@ -682,7 +719,7 @@ impl Graph {
             }
         }
         let audible = crate::routing::audible(&docs);
-        for (control, (gain, pan)) in update.tracks.iter().zip(parsed) {
+        for (control, (gain, pan, mixes)) in update.tracks.iter().zip(parsed) {
             let track = self.tracks.iter_mut().find(|t| t.id == control.id).unwrap();
             track.gain = control.volume;
             track.gain_slew.set(control.volume);
@@ -690,6 +727,9 @@ impl Graph {
             track.audible_slew.set(if track.audible { 1. } else { 0. });
             track.automation = gain;
             track.pan = pan;
+            for mix in mixes {
+                track.builtin.apply_mix(mix);
+            }
             track.pan_slew.set(control.pan);
             track.pan_automated = control
                 .pan_automation
@@ -1043,6 +1083,92 @@ mod tests {
             assert!(*length <= clock.remaining(*frame as i64 - upstream));
         }
         assert!(graph.set_cycle(10, 41).is_err());
+    }
+    #[test]
+    fn track_effect_mix_updates_preserve_dsp_history_restore_static_and_validate_atomically() {
+        for (kind, params) in [
+            ("delay", json!({"time":0.001,"feedback":0.5,"mix":0})),
+            ("chorus", json!({"rate":1.5,"depth":0.5,"mix":0})),
+            ("reverb", json!({"size":0.01,"decay":0.05,"mix":0})),
+            ("distortion", json!({"drive":0.8,"mix":0})),
+            ("ringmod", json!({"freq":200,"mix":0})),
+            ("bitcrush", json!({"bits":4,"mix":0})),
+        ] {
+            let dry: Vec<f32> = (0..4096).map(|i| 0.3 * (i as f32 * 0.173).sin()).collect();
+            let source = || {
+                HashMap::from([(
+                    "s".into(),
+                    Source::new(vec![dry.clone(), dry.clone()]).unwrap(),
+                )])
+            };
+            // UI indices include disabled effects; prepared racks do not.
+            let mut doc = json!({"sampleRate":48000,"duration":4096./48000.,"nativeEffects":insert(0),"tracks":[{"id":"a","volume":1,"pan":0,"effects":[{"type":"delay","enabled":false,"params":{}},{"type":kind,"enabled":true,"params":params}],"segments":[clip("c")]}]});
+            let mut graph = Graph::prepare(&doc, source(), fake).unwrap();
+            doc["tracks"][0]["effects"][1]["params"]["mix"] = json!(1);
+            let mut wet = Graph::prepare(&doc, source(), fake).unwrap();
+            let mut out = vec![[0.; 2]; 256];
+            let mut reference = out.clone();
+            graph.render(&mut out).unwrap();
+            wet.render(&mut reference).unwrap();
+            let controls = |points: Value| json!({"masterVolume":1,"tracks":[{"id":"a","volume":1,"pan":0,"muted":false,"solo":false,"effectMixes":[{"index":1,"points":points}]}]});
+            let mut invalid = controls(json!([{"time":0,"value":1}]));
+            invalid["masterVolume"] = json!(0);
+            invalid["tracks"][0]["effectMixes"]
+                .as_array_mut()
+                .unwrap()
+                .push(json!({"index":0,"points":null}));
+            assert!(graph
+                .update_controls(serde_json::from_value(invalid).unwrap())
+                .is_err());
+            graph.render(&mut out).unwrap();
+            wet.render(&mut reference).unwrap();
+            for (i, sample) in out.iter().enumerate() {
+                assert!(
+                    (sample[0] - dry[256 + i]).abs() < 1e-6,
+                    "{kind}: invalid packet partly applied"
+                );
+            }
+            let position = graph.position;
+            graph
+                .update_controls(
+                    serde_json::from_value(controls(json!([{"time":0,"value":1}]))).unwrap(),
+                )
+                .unwrap();
+            assert_eq!(graph.position, position);
+            graph.render(&mut out).unwrap();
+            wet.render(&mut reference).unwrap();
+            assert!(
+                out.iter()
+                    .zip(&dry[512..768])
+                    .any(|(sample, dry)| (sample[0] - dry).abs() > 1e-4),
+                "{kind}: wet control missing"
+            );
+            for (sample, reference) in out.iter().zip(&reference) {
+                assert!(
+                    (sample[0] - reference[0]).abs() < 1e-6,
+                    "{kind}: effect history restarted"
+                );
+            }
+            for points in [
+                json!([{"time":0,"value":1.01}]),
+                json!([{"time":0,"value":-0.1}]),
+                json!("invalid"),
+            ] {
+                assert!(graph
+                    .update_controls(serde_json::from_value(controls(points)).unwrap())
+                    .is_err());
+            }
+            graph
+                .update_controls(serde_json::from_value(controls(Value::Null)).unwrap())
+                .unwrap();
+            graph.render(&mut out).unwrap();
+            for (i, sample) in out.iter().enumerate() {
+                assert!(
+                    (sample[0] - dry[768 + i]).abs() < 1e-6,
+                    "{kind}: static Read mix not restored"
+                );
+            }
+        }
     }
     #[test]
     fn temporary_gain_and_pan_curves_restore_read_without_resetting_native_history() {

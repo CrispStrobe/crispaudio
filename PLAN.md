@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.5. This section is the current plan.
+Updated 2026-10-16, for local 0.13.6. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -68,13 +68,18 @@ unavailable sources. Existing paths are never substituted.
 
 Next: collect beta feedback, check physical iOS devices and Finder gestures,
 commercial plugins and external interfaces.
-Local 0.13.5 enables track level/pan automation passes during Mac Live playback,
+Local 0.13.6 enables track level/pan and built-in track wet/dry automation passes
+during Mac Live playback,
 with session-only audition, Touch/Latch/Write, review and one Undo. Preview and
 microphone capture remain guarded. Native control updates no longer lose the
 last queued value. The Windows recovery-test fixture now uses portable paths.
 [Native mix automation checks](docs/evidence/native-mix-automation.json).
 
-Continuous native input DSP and effect-parameter passes remain future work.
+Wet/dry passes preserve the six supported effects’ DSP history and restore static
+mix or the original Read envelope.
+[Native effect mix checks](docs/evidence/native-effect-mix-automation.json).
+
+Continuous native input DSP, other effect parameters and master/clip passes remain future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 
 Audio troubleshooting interrupted the start: distortion persisted after quitting

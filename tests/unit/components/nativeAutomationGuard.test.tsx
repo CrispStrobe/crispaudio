@@ -69,3 +69,13 @@ it('discards a pass if the native graph cannot audition its control',()=>{
  fireEvent.change(screen.getByRole('combobox',{name:'automation.recordMode'}),{target:{value:'write'}});fireEvent.click(screen.getByRole('button',{name:'automation.armPass'}));act(()=>useProjectStore.getState().setIsPlaying(true));live.frame();
  expect(screen.getByRole('button',{name:'automation.armPass'})).toHaveAttribute('aria-pressed','false');expect(screen.queryByRole('button',{name:'automation.applyPass'})).not.toBeInTheDocument();expect(useProjectStore.getState().project).toBe(snapshot);
 });
+
+function trackMix(){const state=useProjectStore.getState();const snapshot={...state.project,tracks:state.project.tracks.map(track=>({...track,effects:[{type:'delay' as const,enabled:true,params:{time:.2,mix:.3}}]}))};useProjectStore.setState({project:snapshot});return snapshot;}
+it('records a native track wet/dry pass and publishes it with one Undo',()=>{
+ const live=liveMac(),snapshot=trackMix();useProjectStore.temporal.getState().clear();
+ render(<TimelineEngineContext.Provider value={{current:live.engine}}><AutomationRecorder target={{trackId:'track',parameter:'mix',effectIndex:0}} onBusy={noop}/></TimelineEngineContext.Provider>);
+ fireEvent.change(screen.getByRole('combobox',{name:'automation.recordMode'}),{target:{value:'touch'}});fireEvent.click(screen.getByRole('button',{name:'automation.armPass'}));act(()=>useProjectStore.getState().setIsPlaying(true));live.frame();
+ const slider=screen.getByRole('slider',{name:'automation.recordValue'});Object.defineProperty(slider,'setPointerCapture',{value:vi.fn()});fireEvent.pointerDown(slider,{pointerId:1});fireEvent.change(slider,{target:{value:'80'}});live.setTime(1);live.frame();fireEvent.pointerUp(slider);
+ expect(live.previewAutomation).toHaveBeenCalledWith(snapshot,{trackId:'track',parameter:'mix',effectIndex:0},.8);act(()=>useProjectStore.getState().setIsPlaying(false));expect(useProjectStore.getState().project).toBe(snapshot);
+ fireEvent.click(screen.getByRole('button',{name:'automation.applyPass'}));expect(useProjectStore.getState().project.tracks[0].effects?.[0].automation?.mix).toContainEqual({time:.5,value:.8});expect(useProjectStore.temporal.getState().pastStates).toHaveLength(1);act(()=>useProjectStore.temporal.getState().undo());expect(useProjectStore.getState().project).toBe(snapshot);
+});

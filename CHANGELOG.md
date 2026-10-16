@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.6 — 2026-10-16
+
+- Record wet/dry mix passes for built-in track delay, chorus, reverb, distortion, ring modulation and bitcrush during Mac Live playback with native inserts.
+- Keep running effect history through audition and Read restoration; restore reverb's static mix correctly after clearing an envelope.
+- Validate complete effect mix control packets before applying them, preserving playback on invalid input.
+
 ## 0.13.5 — 2026-10-16
 
 - Record track level and pan automation in Mac Live playback with native inserts, using Touch, Latch or Write and review before applying.

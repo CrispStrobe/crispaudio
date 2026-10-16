@@ -36,3 +36,12 @@ it('owns one playback session, sends explicit live controls and closes it once',
  expect(invoke).toHaveBeenCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({masterVolume:.25,tracks:[expect.objectContaining({id:'t',volume:1,sends:[]})]})}));
  await snapshot.close();await playback.close();expect(invoke.mock.calls.filter(c=>c[0]==='native_playback_close')).toHaveLength(1);await expect(playback.status()).rejects.toMatchObject({name:'AbortError'});
 });
+
+it('sends wet/dry curves with original rack indices, excluding disabled and unsupported effects',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create(f.p,f.sources);
+ invoke.mockImplementation(async(cmd:string)=>cmd==='native_playback_start'?'session':cmd==='native_playback_update'?1:undefined);
+ const playback=await snapshot.startPlayback({startFrame:0,endFrame:48000});
+ const project={...f.p,tracks:f.p.tracks.map(track=>({...track,effects:[{type:'delay' as const,enabled:false,params:{mix:.1}},{type:'reverb' as const,enabled:true,params:{mix:.3},automation:{mix:[{time:0,value:.2},{time:1,value:.7}]}},{type:'lowpass' as const,enabled:true,params:{frequency:1000}},{type:'chorus' as const,enabled:true,params:{mix:.4}}]}))};
+ await playback.update(project);
+ expect(invoke).toHaveBeenCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({tracks:[expect.objectContaining({effectMixes:[{index:1,points:[{time:0,value:.2},{time:1,value:.7}]},{index:3,points:null}]})]})}));await snapshot.close();
+});

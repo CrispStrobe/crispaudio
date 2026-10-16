@@ -1,0 +1,50 @@
+{
+  "version": "0.13.6",
+  "date": "2026-10-16",
+  "behavior": [
+    "Mac Live track built-in effect wet/dry Touch, Latch and Write passes",
+    "Delay, chorus, reverb, distortion, ring modulation and bitcrush",
+    "Temporary control envelopes leave project and saved plug-in state unchanged until reviewed Apply with one Undo",
+    "Read restoration preserves processor state and restores original static mix or envelope",
+    "Effect mix curves update without replacing native playback topology",
+    "Whole control packet validation rejects disabled, unknown, duplicate or invalid mix controls before mutation"
+  ],
+  "validation": {
+    "status": "complete",
+    "media": "157 passed, 10 optional tests skipped with native-engine enabled",
+    "nativeSignal": "Known PCM compared against continuously running wet DSP references for all six effects; invalid packets leave mix unchanged; Read restoration returns to dry static mix",
+    "release": "21 passed",
+    "frontend": {
+      "tests": 1761,
+      "files": 180,
+      "result": "PASS",
+      "log": "/tmp/crispaudio-effect-mix-frontend-full.log",
+      "scope": "Full run, maxWorkers=2, testTimeout=20000; repository timeouts unchanged"
+    },
+    "appTests": "41 passed, 1 optional test skipped",
+    "ios": "Locked aarch64-apple-ios-sim compile PASS; existing unused MIDI method warning",
+    "lint": "PASS",
+    "typescript": "PASS",
+    "macBuild": "Normal debug app bundle PASS"
+  },
+  "limits": [
+    "Block-based control delivery; no sample-accurate timestamped event delivery",
+    "Other effect parameters, master/clip passes and native plug-in parameter passes remain guarded",
+    "No new physical speaker, microphone, commercial plug-in or external interface acceptance"
+  ],
+  "previousCi": {
+    "commit": "124614b",
+    "general": "PASS",
+    "ios": "PASS",
+    "windowsFixtureRepair": "PASS"
+  },
+  "appleUpload": false,
+  "installed": {
+    "version": "0.13.6",
+    "app": "~/Applications/CrispAudio-local.app",
+    "signature": "deep/strict PASS",
+    "autosavesRetained": 1,
+    "priorAppAndSession": "backed up before replacement",
+    "independentCli": "unchanged"
+  }
+}

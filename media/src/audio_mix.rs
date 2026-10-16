@@ -351,6 +351,7 @@ enum Effect {
     },
     Reverb {
         dsp: Box<crate::reverb::Reverb>,
+        mix: f64,
         automation: Automation,
     },
     Chorus(Chorus),
@@ -386,10 +387,16 @@ impl Effect {
                 });
                 dsp.at(input)
             }
-            Self::Reverb { dsp, automation } => {
-                if !automation.points.is_empty() {
-                    dsp.set_mix(automation.at(frame as f64 / RATE));
-                }
+            Self::Reverb {
+                dsp,
+                mix,
+                automation,
+            } => {
+                dsp.set_mix(if automation.points.is_empty() {
+                    *mix
+                } else {
+                    automation.at(frame as f64 / RATE)
+                });
                 dsp.at(input)
             }
             Self::Chorus(chorus) => chorus.at(input, frame),
@@ -513,6 +520,7 @@ fn filters(effects: &Value, budget: &mut EffectBudget) -> Result<Vec<Effect>> {
             }
             out.push(Effect::Reverb {
                 dsp: Box::new(crate::reverb::Reverb::new(size, decay, mix)?),
+                mix,
                 automation,
             });
             continue;
@@ -2250,7 +2258,45 @@ pub(crate) mod block_dsp {
         }
     }
     pub struct Rack(Vec<Effect>);
+    pub struct MixUpdate {
+        index: usize,
+        curve: Automation,
+    }
     impl Rack {
+        /// Parse separately so an invalid packet cannot partly change the graph.
+        pub fn prepare_mix(&self, index: usize, value: &Value) -> Result<MixUpdate> {
+            if !matches!(
+                self.0.get(index),
+                Some(
+                    Effect::Delay(_)
+                        | Effect::Chorus(_)
+                        | Effect::Distortion { .. }
+                        | Effect::Reverb { .. }
+                        | Effect::BitCrush { .. }
+                        | Effect::RingMod { .. }
+                )
+            ) {
+                return Err("Unsupported native effect mix control".into());
+            }
+            let curve = Automation::parse(value)?;
+            if curve.points.iter().any(|p| p.1 > 1.) {
+                return Err("Effect mix automation outside 0..1".into());
+            }
+            Ok(MixUpdate { index, curve })
+        }
+        /// Keep delay/reverb history, oscillators and every processor instance.
+        pub fn apply_mix(&mut self, update: MixUpdate) {
+            let automation = match &mut self.0[update.index] {
+                Effect::Delay(delay) => &mut delay.automation,
+                Effect::Chorus(chorus) => &mut chorus.automation,
+                Effect::Distortion { automation, .. }
+                | Effect::Reverb { automation, .. }
+                | Effect::BitCrush { automation, .. }
+                | Effect::RingMod { automation, .. } => automation,
+                _ => unreachable!("Mix update validated against immutable rack"),
+            };
+            *automation = update.curve;
+        }
         pub fn new(value: &Value, budget: &mut Budget) -> Result<Self> {
             Ok(Self(filters(value, &mut budget.0)?))
         }

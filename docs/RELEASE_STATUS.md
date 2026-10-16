@@ -5,6 +5,28 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.6 — native track effect mix passes
+
+Mac Live playback can record wet/dry Touch, Latch and Write passes for built-in
+track delay, chorus, reverb, distortion, ring modulation and bitcrush. Audition
+uses temporary envelopes; Apply publishes the reviewed pass with one Undo.
+Native inserts and built-in effect histories keep running. Clearing a reverb
+mix envelope now restores its original static mix. Entire mix packets are
+validated before controls are applied, including disabled-effect index mapping.
+
+Control delivery remains block-based. Other effect parameters, master/clip
+passes, plug-in parameter passes and continuous native input DSP remain pending.
+Preview and microphone capture keep their existing automation guards.
+
+All 1,761 frontend tests, 157 media tests with native-engine enabled, 41 app
+tests and 21 release checks pass. Lint, TypeScript, the locked iOS simulator
+compile and normal Mac bundle pass. The installed 0.13.6 app is running with a
+verified deep/strict signature, one autosave preserved and the prior app/session
+backed up. DSP checks use synthetic PCM and fixture inserts; no new physical
+audio or commercial plug-in acceptance was performed.
+[Effect mix checkpoint evidence](evidence/native-effect-mix-automation.json).
+No Apple upload or release tag was triggered for this checkpoint.
+
 ## Local 0.13.5 — native level and pan passes
 
 Mac Live playback can record track level/pan Touch, Latch and Write passes.
@@ -16,7 +38,7 @@ A native control-drain race that could drop the final slider value is fixed.
 
 The 0.13.4 general CI failure was a Windows-only Unix-path assumption in the
 new test fixture; bee3577 replaces it with native absolute temporary paths.
-The preceding iOS check passed; the repair's Windows CI remains pending.
+Both general CI and iOS CI passed at 124614b, including the Windows fixture repair.
 
 The local 0.13.5 app is installed and deep/strict signature-verified, with the prior
 app/session backed up and one autosave preserved. All 1,758 frontend tests pass in
@@ -157,7 +179,7 @@ DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaud
 | iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
 | Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. Native 0.13.0/build 14 is now available for internal TestFlight. |
 | Provisioning | Active `IOS_APP_STORE` and newly created `MAC_APP_STORE` profiles, bound to the existing Distribution certificate. Existing account/API credentials work. |
-| Local native macOS app | Installed 0.13.5 ad-hoc signed app, separate from the public iOS release. |
+| Local native macOS app | Installed 0.13.6 ad-hoc signed app, separate from the public iOS release. |
 | Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
 
 [Public App Store listing](https://apps.apple.com/de/app/crispaudio/id6791876962) ·

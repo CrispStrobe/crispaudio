@@ -33,16 +33,18 @@ remain aligned across delayed UI frames. The accompaniment cannot be changed
 during the take. Preparation is bounded to a 128 MiB stereo buffer and can be
 cancelled with Record/Stop before the microphone opens.
 
-Track level and pan automation passes work in **Live** on Mac. Open a track's
-automation lane, choose Touch, Latch or Write, arm the pass and press Play. Adjust
+Track level, pan and built-in track effect wet/dry mix passes work in **Live** on
+Mac. Open a track's automation lane, choose Touch, Latch or Write, arm the pass and press Play. Adjust
 the recording slider or editable value, then stop, review and Apply. Applying
 creates one Undo step; audition does not change the project or saved plug-in state.
 Touch release restores Read. Escape, interruption or a playback fault discards
-the draft. Gain and pan use the native playback clock and control-block updates;
+the draft. Delay, chorus, reverb, distortion, ring modulation and bitcrush support
+wet/dry passes without resetting delay buffers, reverb tails or oscillator state.
+These passes use the native playback clock and control-block updates;
 they do not provide sample-accurate timestamped control delivery.
 
-Preview playback, microphone capture, built-in/plug-in effect-parameter passes,
-continuous native input monitoring, monitor clicks, custom plug-in windows and
+Preview playback, microphone capture, other effect-parameter passes, master/clip
+effect passes, plug-in parameter passes, continuous native input monitoring, monitor clicks, custom plug-in windows and
 MIDI instruments remain outside this automation mode.
 
 ## Try the included session

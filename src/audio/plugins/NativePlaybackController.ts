@@ -1,5 +1,6 @@
 import type {AudioSource,NativeEffect,TimelineProject} from '../../types/audio';
 import type {AutomationTarget} from '../../lib/automationRecording';
+import {supportsEffectParameter} from '../../lib/effectAutomation';
 import {renderedPreviewKey,renderedSourcesMatch} from './RenderedPreviewCache';
 import {NativeTimelineSnapshot} from './NativeTimelineSnapshot';
 import type {NativeTimelinePlayback,NativePlaybackStatus} from './NativeTimelinePlayback';
@@ -7,9 +8,16 @@ import type {NativeTimelinePlayback,NativePlaybackStatus} from './NativeTimeline
 const stateIDs=new Map<string,string>();let nextState=0;
 function stateKey(state:string){let id=stateIDs.get(state);if(!id){if(stateIDs.size>=64)stateIDs.clear();id=String(++nextState);stateIDs.set(state,id);}return id;}
 function rack(effects:NativeEffect[]|undefined){return effects?.map(effect=>({...effect,parameters:{},bypass:false,state:stateKey(effect.state)}));}
+function mixStructure(effects:TimelineProject['tracks'][number]['effects']){
+ return effects?.map(effect=>{
+  if(!supportsEffectParameter(effect.type,'mix'))return effect;
+  const automation={...effect.automation};delete automation.mix;
+  return {...effect,automation:Object.keys(automation).length?automation:undefined};
+ });
+}
 /** Live controls do not invalidate topology or replace running DSP. */
 export function nativeLiveStructureKey(project:TimelineProject){
- return renderedPreviewKey({...project,masterVolume:undefined,nativeEffects:rack(project.nativeEffects),tracks:project.tracks.map(track=>({...track,volume:1,pan:0,muted:false,solo:false,automation:undefined,panAutomation:undefined,sends:track.sends?.map(send=>({...send,gain:1})),nativeEffects:rack(track.nativeEffects),segments:track.segments.map(clip=>({...clip,nativeEffects:rack(clip.nativeEffects)}))}))});
+ return renderedPreviewKey({...project,masterVolume:undefined,nativeEffects:rack(project.nativeEffects),tracks:project.tracks.map(track=>({...track,volume:1,pan:0,muted:false,solo:false,automation:undefined,panAutomation:undefined,effects:mixStructure(track.effects),sends:track.sends?.map(send=>({...send,gain:1})),nativeEffects:rack(track.nativeEffects),segments:track.segments.map(clip=>({...clip,nativeEffects:rack(clip.nativeEffects)}))}))});
 }
 const interrupted=()=>new DOMException('Native playback superseded','AbortError');
 export class NativePlaybackController {
@@ -17,6 +25,7 @@ export class NativePlaybackController {
  private preparationTask?:Promise<void>;private preparing?:AbortController;private generation=0;private closing:Promise<void>=Promise.resolve();
  private key?:string;private sources?:Map<string,AudioSource>;private first=0;private last=0;private cycle=false;
  private automationOverrides=new Map<string,{gain?:number;pan?:number}>();
+ private effectMixOverrides=new Map<string,Map<number,number>>();
  private statusValue?:NativePlaybackStatus;private pending?:TimelineProject;private updating?:Promise<void>;
  private readonly onChange:()=>void;private readonly onFault:(error:unknown)=>void;
  constructor(onChange:()=>void,onFault:(error:unknown)=>void){this.onChange=onChange;this.onFault=onFault;}
@@ -58,6 +67,7 @@ export class NativePlaybackController {
  }
  /** Audition native mix lanes without modifying the saved project or DSP topology. */
  previewAutomation(project:TimelineProject,target:AutomationTarget,value?:number):boolean{
+  if(target.parameter==='mix')return this.previewEffectMix(project,target.trackId,target.effectIndex??-1,value);
   if(!this.playback||!['playing','paused'].includes(this.statusValue?.phase??'')||!['gain','pan'].includes(target.parameter)||!project.tracks.some(track=>track.id===target.trackId))return false;
   const parameter=target.parameter as 'gain'|'pan';
   if(value!==undefined&&(!Number.isFinite(value)||(parameter==='pan'?value < -1||value > 1:value < 0||value > 10**.6)))return false;
@@ -68,11 +78,21 @@ export class NativePlaybackController {
   void this.update(project).catch(error=>{if(this.playback!==playback)return;void this.stop();this.onFault(error);});
   return true;
  }
+ private previewEffectMix(project:TimelineProject,trackId:string,index:number,value?:number):boolean{
+  const effect=project.tracks.find(track=>track.id===trackId)?.effects?.[index];
+  if(!this.playback||!['playing','paused'].includes(this.statusValue?.phase??'')||!effect?.enabled||!supportsEffectParameter(effect.type,'mix')||value!==undefined&&(!Number.isFinite(value)||value<0||value>1))return false;
+  const overrides=new Map(this.effectMixOverrides.get(trackId));
+  if(value===undefined)overrides.delete(index);else overrides.set(index,value);
+  if(overrides.size)this.effectMixOverrides.set(trackId,overrides);else this.effectMixOverrides.delete(trackId);
+  const playback=this.playback;
+  void this.update(project).catch(error=>{if(this.playback!==playback)return;void this.stop();this.onFault(error);});
+  return true;
+ }
  private audition(project:TimelineProject):TimelineProject{
-  if(!this.automationOverrides.size)return project;
+  if(!this.automationOverrides.size&&!this.effectMixOverrides.size)return project;
   return {...project,tracks:project.tracks.map(track=>{
-   const override=this.automationOverrides.get(track.id);if(!override)return track;
-   return {...track,...(override.gain!==undefined?{automation:[{time:0,value:override.gain}]}:{}),...(override.pan!==undefined?{panAutomation:[{time:0,value:override.pan}]}:{})};
+   const override=this.automationOverrides.get(track.id),mixes=this.effectMixOverrides.get(track.id);if(!override&&!mixes)return track;
+   return {...track,...(override?.gain!==undefined?{automation:[{time:0,value:override.gain}]}:{}),...(override?.pan!==undefined?{panAutomation:[{time:0,value:override.pan}]}:{}),...(mixes?{effects:track.effects?.map((effect,index)=>mixes.has(index)?{...effect,automation:{...effect.automation,mix:[{time:0,value:mixes.get(index)!}]}}:effect)}:{})};
   })};
  }
  update(project:TimelineProject):Promise<void>{
@@ -82,7 +102,7 @@ export class NativePlaybackController {
  resetLoudness(){return this.playback?.resetLoudness();}
  volume(value:number){return this.playback?.volume(value);}
  stop():Promise<void>{
-  this.generation++;this.preparing?.abort(interrupted());this.preparing=undefined;this.pending=undefined;this.automationOverrides.clear();
+  this.generation++;this.preparing?.abort(interrupted());this.preparing=undefined;this.pending=undefined;this.automationOverrides.clear();this.effectMixOverrides.clear();
   const pending=this.preparationTask;this.preparationTask=undefined;const snapshot=this.snapshot;this.snapshot=undefined;this.playback=undefined;this.statusValue=undefined;this.key=undefined;this.sources=undefined;
   this.closing=Promise.allSettled([this.closing,snapshot?.close(),pending]).then(()=>{});this.onChange();return this.closing;
  }

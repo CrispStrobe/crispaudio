@@ -1,5 +1,6 @@
 import {EditableNumber} from '../shared/EditableNumber';
 import {hasNativeEffects} from '../../lib/nativeEffects';
+import {supportsEffectParameter} from '../../lib/effectAutomation';
 import {useSettingsStore} from '../../stores/settingsStore';
 import {useUIStore} from '../../stores/uiStore';
 import {isNativeMac} from '../../lib/nativeMenuPlatform';
@@ -100,7 +101,7 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[review]);
  const native=hasNativeEffects(project),nativeMode=useSettingsStore(s=>s.nativePlaybackMode);
- const nativeMix=native&&isNativeMac()&&nativeMode==='live'&&(target.parameter==='gain'||target.parameter==='pan');
+ const nativeMix=native&&isNativeMac()&&nativeMode==='live'&&(target.parameter==='gain'||target.parameter==='pan'||target.parameter==='mix'&&supportsEffectParameter(track.effects?.[target.effectIndex??-1]?.type,'mix'));
  const blocked=recording||(native&&!nativeMix)||!!track.locked||(target.effectIndex!==undefined&&!track.effects?.[target.effectIndex]?.enabled);
  let preview:TimelineProject|undefined;
  let errorPreview='';
