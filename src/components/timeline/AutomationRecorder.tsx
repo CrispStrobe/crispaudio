@@ -1,5 +1,8 @@
 import {EditableNumber} from '../shared/EditableNumber';
 import {hasNativeEffects} from '../../lib/nativeEffects';
+import {useSettingsStore} from '../../stores/settingsStore';
+import {useUIStore} from '../../stores/uiStore';
+import {isNativeMac} from '../../lib/nativeMenuPlatform';
 import {useContext,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Circle,Square,CircleHelp} from 'lucide-react';
@@ -15,6 +18,7 @@ interface Pass {project:TimelineProject;sources:ReturnType<typeof useProjectStor
 export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBusy:(busy:boolean)=>void}) {
  const {t}=useTranslation(),engine=useContext(TimelineEngineContext);
  const project=useProjectStore(s=>s.project),playing=useProjectStore(s=>s.isPlaying),sources=useProjectStore(s=>s.sources);
+ const recording=useUIStore(s=>s.timelineRecording);
  const track=project.tracks.find(track=>track.id===target.trackId)!;
  const [mode,setMode]=useState<AutomationMode>('read'),[armed,setArmed]=useState(false),[review,setReview]=useState<Pass|null>(null),[error,setError]=useState('');
  const pass=useRef<Pass|null>(null),slider=useRef<HTMLInputElement>(null),modeRef=useRef(mode);
@@ -25,7 +29,9 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
  const draw=(value:number)=>{if(slider.current)slider.current.value=String(toControl(value));setReadoutValue(value);};
  const restore=()=>{engine?.current?.previewAutomation(useProjectStore.getState().project,target);};
  const discard=(message='')=>{pass.current=null;restore();setArmed(false);setReview(null);setMode('read');modeRef.current='read';setError(message);};
+ const audition=(p:Pass)=>{const applied=engine?.current?.previewAutomation(p.project,target,p.value);if(hasNativeEffects(p.project)&&applied!==true){discard(t('automation.recordInterrupted'));return false;}return true;};
  const valid=(p:Pass)=>{const state=useProjectStore.getState();return state.project===p.project&&state.sources===p.sources;};
+ const available=(p:Pass)=>!useUIStore.getState().timelineRecording&&(!hasNativeEffects(p.project)||useSettingsStore.getState().nativePlaybackMode==='live'&&isNativeMac());
  const sample=(p:Pass,time:number)=>{
   if(!p.active)return;
   const points=p.active.points,last=points.at(-1)!,quantized=Math.min(timelineDuration(p.project),Math.round(time*p.project.sampleRate)/p.project.sampleRate);
@@ -37,21 +43,22 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
   // Separate gestures at the same captured clock form one interval, not an invalid overlap.
   if(last&&clock<=last.points.at(-1)!.time+1/p.project.sampleRate){p.active=last;sample(p,clock);}
   else{p.active={points:[{time:clock,value:p.value}]};p.spans.push(p.active);p.count++;}
-  engine?.current?.previewAutomation(p.project,target,p.value);
+  audition(p);
  };
  const endSpan=(p:Pass,time:number)=>{sample(p,time);if(p.active&&p.active.points.length<2)p.spans.pop();p.active=undefined;};
  const finish=()=>{
   const p=pass.current;if(!p)return;
   if(!valid(p)){discard(t('automation.changed'));return;}
+  if(!available(p)){discard(t('automation.recordInterrupted'));return;}
   if(p.active)endSpan(p,p.lastTime??p.active.points[0].time);
   pass.current=null;restore();setArmed(false);setMode('read');modeRef.current='read';
   if(p.spans.length)setReview(p);
  };
  const beginTouch=()=>{
-  const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!useProjectStore.getState().isPlaying||!valid(p))return;
+  const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!useProjectStore.getState().isPlaying||!valid(p)||!available(p))return;
   const start=modeRef.current==='write'?clock.start:clock.time;
   if(!p.active)p.value=Math.max(minimum,Math.min(maximum,automationValue(p.project,target,start)));
-  p.held=true;beginSpan(p,start);engine?.current?.previewAutomation(p.project,target,p.value);
+  p.held=true;beginSpan(p,start);
  };
  const endTouch=(cancel=false)=>{
   const p=pass.current;if(!p)return;
@@ -67,6 +74,7 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
    const p=pass.current,state=useProjectStore.getState(),clock=engine?.current?.automationClock();
    if(p){
     if(!valid(p)){discard(t('automation.changed'));}
+    else if(!available(p)){discard(t('automation.recordInterrupted'));}
     else if(clock&&state.isPlaying){
      if(p.generation!==undefined&&(p.generation!==clock.generation||clock.time<(p.lastTime??clock.time))){discard(t('automation.recordDiscontinuity'));}
      else{
@@ -84,13 +92,16 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
   const key=(event:KeyboardEvent)=>{if(event.key==='Escape'&&pass.current){event.preventDefault();event.stopPropagation();discard();}};
   const blur=()=>{if(pass.current)discard(t('automation.recordInterrupted'));};
   const visibility=()=>{if(document.hidden)blur();};
+  const nativeFailure=()=>{if(hasNativeEffects(useProjectStore.getState().project))discard(t('automation.recordInterrupted'));};
   window.addEventListener('keydown',key,true);window.addEventListener('blur',blur);document.addEventListener('visibilitychange',visibility);
-  return()=>{cancelAnimationFrame(frame);unsubscribe();pass.current=null;restore();window.removeEventListener('keydown',key,true);window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);};
+  window.addEventListener('crispaudio-edit-error',nativeFailure);
+  return()=>{cancelAnimationFrame(frame);unsubscribe();pass.current=null;restore();window.removeEventListener('keydown',key,true);window.removeEventListener('blur',blur);window.removeEventListener('crispaudio-edit-error',nativeFailure);document.removeEventListener('visibilitychange',visibility);};
   // Target is keyed by lane/track; the running pass reads mutable control refs.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[review]);
- const native=hasNativeEffects(project);
- const blocked=native||!!track.locked||(target.effectIndex!==undefined&&!track.effects?.[target.effectIndex]?.enabled);
+ const native=hasNativeEffects(project),nativeMode=useSettingsStore(s=>s.nativePlaybackMode);
+ const nativeMix=native&&isNativeMac()&&nativeMode==='live'&&(target.parameter==='gain'||target.parameter==='pan');
+ const blocked=recording||(native&&!nativeMix)||!!track.locked||(target.effectIndex!==undefined&&!track.effects?.[target.effectIndex]?.enabled);
  let preview:TimelineProject|undefined;
  let errorPreview='';
  // Compute review errors before rendering; Apply revalidates the snapshot.
@@ -105,10 +116,10 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
   <input ref={slider} type="range" aria-label={t('automation.recordValue')} className="min-h-11 w-36 max-w-full" min={target.parameter==='gain'?-60:target.parameter==='pan'?-1:0} max={target.parameter==='gain'?12:target.parameter==='pan'?1:maximum*(target.parameter==='rate'||target.parameter==='freq'?1:target.parameter==='time'?1000:100)} step={target.parameter==='pan'?.01:.1} disabled={!armed||!playing||blocked} defaultValue={toControl(automationValue(project,target,useProjectStore.getState().playheadPosition))}
    onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);beginTouch();}} onPointerUp={()=>endTouch()} onPointerCancel={()=>endTouch(true)} onLostPointerCapture={()=>{if(pass.current?.held)endTouch(true);}}
    onKeyDown={e=>{if(e.key.startsWith('Arrow')||['Home','End','PageUp','PageDown'].includes(e.key))beginTouch();}} onKeyUp={()=>endTouch()} onBlur={()=>endTouch()}
-   onChange={e=>{const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!valid(p))return;if(!p.active)beginTouch();p.value=fromControl(Number(e.target.value));sample(p,clock.time);engine?.current?.previewAutomation(p.project,target,p.value);draw(p.value);}}/>
-  <EditableNumber label={t('automation.recordReadout')} value={toControl(readoutValue)} min={target.parameter==='gain'?-60:target.parameter==='pan'?-1:0} max={toControl(maximum)} step={target.parameter==='pan'?.01:.1} unit={target.parameter==='gain'?'dB':target.parameter==='time'?'ms':target.parameter==='rate'||target.parameter==='freq'?'Hz':target.parameter==='pan'?undefined:'%'} disabled={!armed||!playing||blocked} onCancel={()=>discard()} onBegin={beginTouch} onEnd={()=>endTouch()} onPreview={next=>{const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!valid(p))return;if(!p.active)beginTouch();p.value=fromControl(next);sample(p,clock.time);engine?.current?.previewAutomation(p.project,target,p.value);draw(p.value);}} onChange={next=>{const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!valid(p))return;p.value=fromControl(next);sample(p,clock.time);engine?.current?.previewAutomation(p.project,target,p.value);draw(p.value);}}/>
+   onChange={e=>{const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!valid(p))return;if(!p.active){beginTouch();if(pass.current!==p)return;}p.value=fromControl(Number(e.target.value));sample(p,clock.time);audition(p);draw(p.value);}}/>
+  <EditableNumber label={t('automation.recordReadout')} value={toControl(readoutValue)} min={target.parameter==='gain'?-60:target.parameter==='pan'?-1:0} max={toControl(maximum)} step={target.parameter==='pan'?.01:.1} unit={target.parameter==='gain'?'dB':target.parameter==='time'?'ms':target.parameter==='rate'||target.parameter==='freq'?'Hz':target.parameter==='pan'?undefined:'%'} disabled={!armed||!playing||blocked} onCancel={()=>discard()} onBegin={beginTouch} onEnd={()=>endTouch()} onPreview={next=>{const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!valid(p))return;if(!p.active){beginTouch();if(pass.current!==p)return;}p.value=fromControl(next);sample(p,clock.time);audition(p);draw(p.value);}} onChange={next=>{const p=pass.current,clock=engine?.current?.automationClock();if(!p||!clock||!valid(p))return;p.value=fromControl(next);sample(p,clock.time);audition(p);draw(p.value);}}/>
   <span className={armed?'text-red-300':'text-gray-400'}>{t(armed?'automation.passArmed':'automation.passSafe')}</span>
-  <ToolButton icon={CircleHelp} label={t(native?'nativePreview.recording':`automation.recordHelp_${mode}`)}/>
+  <ToolButton icon={CircleHelp} label={t(nativeMix?'nativePreview.mixAutomation':native?'nativePreview.recording':`automation.recordHelp_${mode}`)}/>
   {error&&<p role="alert" className="text-amber-300 w-full">{error}</p>}
   {review&&<Modal isOpen onClose={()=>setReview(null)} title={t('automation.reviewPass')}>
    <div data-automation-review className="space-y-3 text-sm" onKeyDown={e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();setReview(null);}}}>
@@ -116,7 +127,7 @@ export function AutomationRecorder({target,onBusy}:{target:AutomationTarget;onBu
     <p className="text-xs text-gray-400">{t('automation.passReviewHelp')}</p>
     <ul className="max-h-48 overflow-y-auto text-xs">{review.spans.map((span,i)=><li key={i} data-recorded-start={span.points[0].time} data-recorded-end={span.points.at(-1)!.time}>{span.points[0].time.toFixed(3)}–{span.points.at(-1)!.time.toFixed(3)} s · {span.points.length} {t('automation.recordPoints')}</li>)}</ul>
     {errorPreview&&<p role="alert" className="text-amber-300">{errorPreview}</p>}
-    <div className="flex justify-end gap-2"><button className="timeline-tool" onClick={()=>setReview(null)}>{t('common.cancel')}</button><button className="timeline-tool bg-indigo-700" disabled={!preview||playing} onClick={()=>{if(!valid(review)||!preview)return;if(preview!==review.project)useProjectStore.setState({project:preview});setReview(null);}}>{t('automation.applyPass')}</button></div>
+    <div className="flex justify-end gap-2"><button className="timeline-tool" onClick={()=>setReview(null)}>{t('common.cancel')}</button><button className="timeline-tool bg-indigo-700" disabled={!preview||playing||recording} onClick={()=>{if(!valid(review)||!preview||useUIStore.getState().timelineRecording)return;if(preview!==review.project)useProjectStore.setState({project:preview});setReview(null);}}>{t('automation.applyPass')}</button></div>
    </div>
   </Modal>}
  </div>;

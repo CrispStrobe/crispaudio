@@ -126,12 +126,16 @@ is unavailable or a move cannot be resolved, use the relink picker when opening
 the project.
 
 Native inserts include generic parameter controls, saved state and rack copy/paste.
+Mac Live playback records track level and pan passes in Touch, Latch or Write,
+with review before applying and one Undo. Effect-parameter passes remain unavailable
+with native inserts.
+
 Structural or built-in effect edits restart live playback. To record a microphone
 with native effects in the session, CrispAudio first prepares a fixed wet backing
 mix. Backing and capture share one clock; takes and input monitoring stay dry.
-Native automation passes, live plugin input monitoring, monitor clicks and custom
-plugin windows remain pending. Native playback processes at 48 kHz and converts
-other source rates when needed.
+Live plug-in input monitoring, monitor clicks and custom plug-in windows remain
+pending. Native playback processes at 48 kHz and converts other source rates
+when needed.
 
 [FX and automation](docs/DAW_EFFECTS.md) · [Clip/master recording passes](docs/SCOPED_AUTOMATION_PASSES.md) · [Mix A/B and export review](docs/MIX_REVIEW.md) · [Native playback](docs/NATIVE_PLAYBACK.md) · [Native effect support](docs/MEDIA_FORMATS_AND_LICENSES.md)
 

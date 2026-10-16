@@ -1,0 +1,57 @@
+{
+  "version": "0.13.5",
+  "date": "2026-10-16",
+  "behavior": [
+    "Mac Live track gain/pan Touch, Latch and Write automation passes",
+    "Temporary native hot-control curves without project or saved plug-in-state mutation",
+    "Wait for native playback readiness before sampling the pass clock",
+    "Touch release and discard restore Read; Apply uses the existing reviewed pass and one Undo",
+    "Pending controls survive the drain/finalization race and the final value is delivered",
+    "Stop and session replacement clear audition overrides; native faults discard active and pending-review drafts"
+  ],
+  "guards": [
+    "Preview playback remains unavailable for these passes",
+    "Microphone capture and effect-parameter passes remain guarded",
+    "Reject invalid values, unknown tracks and unavailable native audition",
+    "Mode/project/source changes and observed seek/loop clock discontinuities interrupt the active pass"
+  ],
+  "validation": {
+    "status": "complete",
+    "frontend": {
+      "result": "PASS",
+      "tests": 1758,
+      "files": 180,
+      "scope": "One fresh full run of final source with maxWorkers=2 and testTimeout=20000; command-scoped idle-sleep inhibition; repository timeout settings unchanged",
+      "log": "/tmp/crispaudio-native-pass-frontend-full.log"
+    },
+    "media": "156 passed, 10 optional tests skipped with native-engine enabled",
+    "nativeSignal": "Known PCM through a stateful native-insert fixture preserves position and insert history through gain/pan override and Read restoration",
+    "appTests": "41 passed, 1 optional test skipped",
+    "ios": "Locked aarch64-apple-ios-sim compile PASS; existing unused MIDI method warning",
+    "release": "21 passed",
+    "lint": "PASS",
+    "typescript": "PASS",
+    "macBuild": "Normal debug app bundle PASS"
+  },
+  "ciRepair": {
+    "commit": "bee3577",
+    "cause": "New moved-media regression fixture assumed Unix-rooted paths are absolute on Windows",
+    "change": "Use native absolute paths from the owned temporary fixture directory; no test skip or production-path workaround",
+    "localRegression": "PASS",
+    "windowsCi": "Pending"
+  },
+  "limits": [
+    "Track gain and pan only; built-in and native effect-parameter recording remain outside this increment",
+    "Native control delivery is block-based, not sample-accurate timestamped event delivery",
+    "Native signal test uses a stateful fixture insert; no new physical speaker/microphone, commercial-plugin, external-interface or actual AU/VST listening acceptance"
+  ],
+  "appleUpload": false,
+  "installed": {
+    "version": "0.13.5",
+    "app": "~/Applications/CrispAudio-local.app",
+    "signature": "deep/strict PASS",
+    "autosavesRetained": 1,
+    "priorAppAndSession": "backed up before replacement",
+    "independentCli": "unchanged"
+  }
+}

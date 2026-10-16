@@ -1045,6 +1045,47 @@ mod tests {
         assert!(graph.set_cycle(10, 41).is_err());
     }
     #[test]
+    fn temporary_gain_and_pan_curves_restore_read_without_resetting_native_history() {
+        struct Counter(usize);
+        impl Insert for Counter {
+            fn latency(&self) -> usize {
+                0
+            }
+            fn process(&mut self, pcm: &mut [Stereo], _: u32) -> Result<()> {
+                for sample in pcm {
+                    sample[0] += self.0 as f32 / 10000.;
+                    sample[1] -= self.0 as f32 / 10000.;
+                    self.0 += 1;
+                }
+                Ok(())
+            }
+        }
+        let doc = json!({"sampleRate":48000,"duration":4096./48000.,"masterVolume":1,"nativeEffects":insert(0),"tracks":[{"id":"a","volume":0.5,"pan":0,"segments":[clip("c")]}]});
+        let pcm = HashMap::from([("s".into(), Source::new(vec![vec![1.; 4096]; 2]).unwrap())]);
+        let mut graph = Graph::prepare(&doc, pcm, |_| Ok(Box::new(Counter(0)))).unwrap();
+        let mut out = vec![[0.; 2]; 256];
+        graph.render(&mut out).unwrap();
+        assert_eq!(out[0], [0.5; 2]);
+        for (gain, pan, expected) in [
+            (Some(0.25), Some(0.), [0.125, 0.125]),
+            (Some(0.25), Some(1.), [0., 0.25]),
+            (None, None, [0.5, 0.5]),
+        ] {
+            let position = graph.position;
+            let update = json!({"masterVolume":1,"tracks":[{"id":"a","volume":0.5,"pan":0,"muted":false,"solo":false,"automation":gain.map(|v|json!([{"time":0,"value":v}])),"panAutomation":pan.map(|v|json!([{"time":0,"value":v}]))}]});
+            graph
+                .update_controls(serde_json::from_value(update).unwrap())
+                .unwrap();
+            assert_eq!(graph.position, position);
+            graph.render(&mut out).unwrap();
+            for (index, sample) in out.iter().enumerate() {
+                let history = (position as usize + index) as f32 / 10000.;
+                assert!((sample[0] - (expected[0] + history)).abs() < 1e-6);
+                assert!((sample[1] - (expected[1] - history)).abs() < 1e-6);
+            }
+        }
+    }
+    #[test]
     fn live_mix_controls_ramp_without_rebuilding_or_advancing_on_rejection() {
         let doc = json!({"sampleRate":48000,"duration":4096./48000.,"masterVolume":1,"tracks":[{"id":"a","volume":1,"pan":0,"segments":[clip("c")]}]});
         let pcm = HashMap::from([("s".into(), Source::new(vec![vec![1.; 4096]; 2]).unwrap())]);

@@ -154,6 +154,7 @@ export class TimelineEngine {
 
   /** Audio-clock position and generation let a local pass reject seeks/loops/restarts. */
   automationClock():{time:number;start:number;generation:number}|undefined {
+    if(this.owned.active&&this.owned.status?.phase==='preparing')return;
     const native=this.owned.clock();if(native!==undefined)return {time:native,start:this.playbackStart,generation:this.playbackGeneration};
     if(!this.outputGain)return;
     const elapsed=this.playbackStart+Math.max(0,this.ctx.currentTime-this.playbackClock),loop=this.renderedLoop;
@@ -167,6 +168,7 @@ export class TimelineEngine {
   }
   /** Audition one lane without changing the project or rebuilding DSP. Undefined restores Read. */
   previewAutomation(project:TimelineProject,target:AutomationTarget,value?:number):boolean {
+    if(this.owned.active)return this.owned.previewAutomation(project,target,value);
     if(this.renderedPlayback)return false;
     const track=project.tracks.find(t=>t.id===target.trackId);if(!track)return false;
     const now=this.ctx.currentTime,time=this.playbackStart+now-this.scopeClock(`${target.parameter}:${track.id}`);

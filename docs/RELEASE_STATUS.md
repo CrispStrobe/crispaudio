@@ -5,6 +5,29 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.5 — native level and pan passes
+
+Mac Live playback can record track level/pan Touch, Latch and Write passes.
+Audition uses temporary hot-control envelopes; the project and plug-in state stay
+unchanged until review and Apply. Read restoration, stop/replacement cleanup and
+fault interruption are covered. Preview, microphone capture and effect-parameter
+passes remain guarded. Control delivery is block-based, not sample-accurate.
+A native control-drain race that could drop the final slider value is fixed.
+
+The 0.13.4 general CI failure was a Windows-only Unix-path assumption in the
+new test fixture; bee3577 replaces it with native absolute temporary paths.
+The preceding iOS check passed; the repair's Windows CI remains pending.
+
+The local 0.13.5 app is installed and deep/strict signature-verified, with the prior
+app/session backed up and one autosave preserved. All 1,758 frontend tests pass in
+one final run, including native Touch/Latch/Write, Read restoration, one Undo,
+fault discard and unavailable-audition guards. With the native engine enabled,
+156 media tests pass; the stateful insert fixture checks known PCM and DSP-history
+continuity through override/restoration. The 41 app tests, locked iOS simulator
+compile, lint, TypeScript build and 21 release checks also pass.
+[Checkpoint evidence](evidence/native-mix-automation.json). No new Apple upload.
+
+
 ## Local 0.13.4 — recover moved media from Mac bookmarks
 
 Restored resource bookmarks now retain their resolved location and bounded path
@@ -134,7 +157,7 @@ DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaud
 | iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
 | Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. Native 0.13.0/build 14 is now available for internal TestFlight. |
 | Provisioning | Active `IOS_APP_STORE` and newly created `MAC_APP_STORE` profiles, bound to the existing Distribution certificate. Existing account/API credentials work. |
-| Local native macOS app | Installed 0.13.4 ad-hoc signed app, separate from the public iOS release. |
+| Local native macOS app | Installed 0.13.5 ad-hoc signed app, separate from the public iOS release. |
 | Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
 
 [Public App Store listing](https://apps.apple.com/de/app/crispaudio/id6791876962) ·

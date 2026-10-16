@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.5 — 2026-10-16
+
+- Record track level and pan automation in Mac Live playback with native inserts, using Touch, Latch or Write and review before applying.
+- Restore Read on release or cancellation; discard passes on playback failure and keep Preview, microphone capture and effect-parameter guards.
+- Fix a native control-queue race that could drop the final slider update.
+- Make the moved-media regression fixture portable to Windows.
+
 ## 0.13.4 — 2026-10-16
 
 - Recover missing linked media after a Mac relaunch when a saved bookmark follows the renamed file or selected folder.
