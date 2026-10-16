@@ -51,3 +51,9 @@ export function makeSourceAuditionBuffer(ctx:BaseAudioContext,channels:Float32Ar
  const pcm=auditionSamples(channels,ranges);if(!pcm[0]?.length)return null;
  const buffer=ctx.createBuffer(pcm.length,pcm[0].length,rate);pcm.forEach((c,i)=>buffer.copyToChannel(c as Float32Array<ArrayBuffer>,i));return buffer;
 }
+
+/** Monitor only: keep hot float sources audible without changing saved PCM or relative A/B level. */
+export function sourceAuditionHeadroom(buffer:AudioBuffer,levelDb:number):number{
+ let peak=0;for(let ch=0;ch<buffer.numberOfChannels;ch++)for(const value of buffer.getChannelData(ch)){if(!Number.isFinite(value))throw new Error('sourceEditor.invalidPcm');peak=Math.max(peak,Math.abs(value));}
+ return peak>1?Math.min(levelDb,-1-20*Math.log10(peak)):levelDb;
+}

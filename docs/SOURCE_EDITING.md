@@ -64,6 +64,17 @@ Repair is unavailable at window edges or without enough clean context; extend th
 clip/source window if clean material exists outside it. No automatic click detector
 or spectral editing is included in this increment.
 
+## Restoration previews
+
+Open **Restoration** for de-hum, spectral attenuation and short hard-clip
+reconstruction. Choose settings, prepare, compare Original/Preview and apply.
+Parameters are retained with the derived source. Preparation can be cancelled;
+selection/source/settings changes discard in-flight work. Expand **Audition** for
+a separate editable listening level shared by A/B. Hot float sources get sample-peak
+headroom; this changes monitoring only, without automatic loudness matching.
+
+See [Restoration tools and limits](RESTORATION.md) before using these on a recording.
+
 ## Measure and use native effects
 
 Expand **Analysis** for peak/RMS, DC, clipping, loudness/true peak, spectrum and
@@ -75,6 +86,6 @@ still need a helper render; this is not a new continuously running native FX gra
 Processing preserves the source window's length, so extend it first for effect tails.
 
 Continuous comparison currently uses in-memory audio. Long-file streaming,
-audition level/loudness matching, full live source FX and further restoration
-(spectral repair, de-hum and declipping) remain work
+automatic loudness matching, full live source FX and further restoration
+(spectral healing, drift tracking and varied-material qualification) remain work
 in the [audio-workstation roadmap](DAW_GAP_ANALYSIS.md).

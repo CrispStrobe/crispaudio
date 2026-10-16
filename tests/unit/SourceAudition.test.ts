@@ -1,5 +1,5 @@
 import {describe,expect,it,vi} from 'vitest';
-import {SourceAudition} from '../../src/audio/engine/SourceAudition';
+import {SourceAudition,sourceAuditionHeadroom} from '../../src/audio/engine/SourceAudition';
 import {auditionSourceSample} from '../../src/lib/sourceEditing';
 function fixture(){
  const sources:{buffer:AudioBuffer|null;loop:boolean;onended:(()=>void)|null;connect:ReturnType<typeof vi.fn>;disconnect:ReturnType<typeof vi.fn>;start:ReturnType<typeof vi.fn>;stop:ReturnType<typeof vi.fn>}[]=[],gains:{gain:{setValueAtTime:ReturnType<typeof vi.fn>;linearRampToValueAtTime:ReturnType<typeof vi.fn>;cancelScheduledValues:ReturnType<typeof vi.fn>};connect:ReturnType<typeof vi.fn>;disconnect:ReturnType<typeof vi.fn>}[]=[],ended=vi.fn();
@@ -15,3 +15,5 @@ describe('continuous source audition',()=>{
  it('bounds retained fading nodes when ended events are delayed',()=>{const h=fixture();h.player.start(h.buffer,true);for(let i=0;i<30;i++){h.ctx.currentTime+=.001;h.player.replace({...h.buffer} as AudioBuffer);}expect(h.sources.filter(s=>!s.disconnect.mock.calls.length)).toHaveLength(9);h.player.stop();expect(h.sources.every(s=>s.disconnect.mock.calls.length===1)).toBe(true);});
  it('maps concatenated samples to disjoint source ranges without changing either clock',()=>{const ranges=[{start:100,end:200},{start:500,end:700}];expect(auditionSourceSample(ranges,99)).toBe(199);expect(auditionSourceSample(ranges,100)).toBe(500);expect(auditionSourceSample(ranges,299)).toBe(699);expect(auditionSourceSample(ranges,300)).toBe(700);expect(auditionSourceSample([],0)).toBeUndefined();});
 });
+
+it('sets monitor-only headroom for hot float PCM without raising a lower chosen level',()=>{const data=Float32Array.from([0,1.5,-2,.5]),buffer={numberOfChannels:1,getChannelData:()=>data} as unknown as AudioBuffer,level=sourceAuditionHeadroom(buffer,0);expect(level).toBeCloseTo(-1-20*Math.log10(2));expect(2*10**(level/20)).toBeCloseTo(10**(-1/20));expect(sourceAuditionHeadroom(buffer,-30)).toBe(-30);expect(data[2]).toBe(-2);});

@@ -2237,7 +2237,10 @@
     "mono": "Monomischung",
     "leftToRight": "L → R",
     "rightToLeft": "R → L",
-    "repair": "Klick reparieren"
+    "repair": "Klick reparieren",
+    "dehum": "Entbrummen",
+    "spectral": "Spektral absenken",
+    "declip": "Clipping reparieren"
   },
   "sourcePlugins": {
     "title": "Externe Effekte",
@@ -2334,5 +2337,35 @@
     "repairSelection": "Lücken bis 1 ms mit je zwei sauberen Samples davor und danach wählen. Zwischen Lücken mindestens zwei saubere Samples lassen.",
     "help": "Bearbeitet die gewählten Bereiche vor den Zeitleisteneffekten. Polarität umkehren wirkt auf die gewählten Kanäle. Stereofunktionen benötigen Alle Kanäle: L/R tauschen, den Mittelwert aus L+R in beide Kanäle schreiben oder eine Seite kopieren. Monomischung behält zwei Kanäle; gegenphasiges Audio kann sich auslöschen. Klickreparatur ersetzt Lücken bis 1 ms durch eine begrenzte kubische Kurve zwischen sauberen Nachbarn. In den Klick hineinzoomen und Nulldurchgangsraster für genaue Samplegrenzen ausschalten. Je zwei saubere Samples davor, danach und zwischen Lücken lassen; nur den beschädigten Kanal wählen. Original/Vorschau vergleichen, dann Anwenden. Für einzelne kurze Klicks, nicht für lange Aussetzer oder Clipping. Eine Vorschau ersetzt den bisherigen Entwurf; zum Kombinieren zuerst anwenden. Bei Klick reparieren umfasst das Abhören je 100 ms Kontext davor und danach; nur die gewählten Samples werden repariert. Beim Wechsel in diesen Abhörmodus oder zurück stoppt die Wiedergabe.",
     "focus": "Auswahl vergrößern"
+  },
+  "restoration": {
+    "title": "Restaurierung",
+    "tool": "Restaurierungswerkzeug",
+    "prepare": "Restaurierung vorbereiten",
+    "info": "Hilfe zur Restaurierung",
+    "frequency": "Netzfrequenz (Hz)",
+    "harmonics": "Obertöne",
+    "width": "Breite (Hz)",
+    "low": "Untergrenze (Hz)",
+    "high": "Obergrenze (Hz)",
+    "reduction": "Absenkung (dB)",
+    "ceiling": "Clipping-Pegel (%)",
+    "advanced": "Erweitert",
+    "spectrum": "Frequenzauswahl",
+    "processing": "Vorschau wird vorbereitet…",
+    "report": "{{repaired}} Spitzen · {{skipped}} übersprungen",
+    "invalid": "Ungültige Restaurierungseinstellungen oder Audiodaten.",
+    "budget": "Ein Quellfenster bis 32 MiB / acht Kanäle verwenden und höchstens 30 Sekunden wählen. Zuerst ein kürzeres Segment teilen oder zuschneiden.",
+    "band": "Mindestens 2048 Samples und ein Frequenzband von mindestens einer FFT-Breite wählen (etwa 23 Hz bei 48 kHz).",
+    "short": "Entbrummen benötigt Bereiche ab 20 ms. Bei mehr als 120 Sekunden Filterkontext weniger getrennte Bereiche wählen.",
+    "noPeaks": "Keine kurzen Clipping-Spitzen konnten rekonstruiert werden. Grenze und Auswahl prüfen; lange Plateaus und Randbereiche bleiben erhalten.",
+    "failed": "Die Restaurierung konnte nicht vorbereitet werden.",
+    "dehumHelp": "Die gemessene Netzfrequenz wählen (meist 50 oder 60 Hz). Schmale Offline-Kerbfilter senken Grundfrequenz und gewählte Obertöne ab. Breite und Anzahl stehen unter Erweitert. Der Filter nutzt Quellkontext und 5 ms Übergänge innerhalb der Auswahl; ungewähltes Audio bleibt unverändert. Nutzsignale an diesen Frequenzen werden ebenfalls abgesenkt. Driftende Frequenzen und kurze Randbereiche begrenzen die Wirkung.",
+    "spectralHelp": "Zeitbereiche in der Quellwellenform wählen, dann im Spektrogramm vertikal ziehen oder Unter-/Obergrenze eingeben. Die Vorschau senkt dieses Band ab; fehlendes Audio wird nicht ergänzt. Eine FFT mit 2048 Punkten bestimmt Frequenz-/Zeitauflösung, mit weichen Bandgrenzen und 5 ms Zeitübergängen. Die Grafik verbindet gewählte Zeitbereiche und zeigt den ersten gewählten Kanal. Vorsichtig absenken, damit Nutzsignale erhalten bleiben.",
+    "declipHelp": "Als Grenze den Pegel der flachen Clipping-Spitzen einstellen, nicht den gewünschten Ausgangspegel. Kubische Rekonstruktion schätzt gleichphasige Clipping-Abschnitte bis 2 ms anhand von zwei sauberen Nachbarn auf beiden Seiten. Lange, ungeeignete oder am Rand liegende Spitzen werden übersprungen. Ungeclippte Samples bleiben unverändert. Starke Verzerrung oder verlorene Transienten werden nicht rückgängig gemacht; rekonstruierte Spitzen können über 0 dBFS liegen. Die Float-Quelle behält diese Pegelreserve. Der Pegel ist in Prozent der Vollaussteuerung angegeben: 100 % sind 0 dBFS, 50 % die halbe Amplitude. Es werden mindestens zwei flache Samples benötigt; kleine Rundungsabweichungen bei Integer-PCM-Vollaussteuerung werden berücksichtigt.",
+    "limits": "Vorschau vorbereiten, Original/Vorschau vergleichen, dann als einen Undo-Schritt anwenden. Die Berechnung läuft in einem abbrechbaren Worker. Änderungen an Quelle, Auswahl, Einstellungen oder Aufnahmezustand brechen sie ab. Jede Vorschau ersetzt den bisherigen Entwurf; zum Kombinieren zuerst anwenden. Der Abhörpegel ändert gespeichertes Audio nicht und gilt für Original/Vorschau gemeinsam. Bei Restaurierungen über Vollaussteuerung wird er für Pegelreserve abgesenkt; unter Abhören anpassen. Dies ist kein Lautheitsabgleich.",
+    "update": "Vorschau erneut vorbereiten",
+    "audition": "Abhören",
+    "level": "Abhörpegel"
   }
 }

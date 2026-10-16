@@ -2224,7 +2224,10 @@
     "mono": "Mono mix",
     "leftToRight": "L → R",
     "rightToLeft": "R → L",
-    "repair": "Repair click"
+    "repair": "Repair click",
+    "dehum": "De-hum",
+    "spectral": "Spectral attenuation",
+    "declip": "Declip"
   },
   "sourcePlugins": {
     "title": "External effects",
@@ -2321,5 +2324,35 @@
     "repairSelection": "Select gaps up to 1 ms with two clean samples on each side. Keep at least two clean samples between gaps.",
     "help": "Works on selected ranges before timeline FX. Invert changes the selected channel polarity. Stereo operations require All channels: swap L/R, average L+R into both channels, or copy one side to the other. Mono mix keeps two channels; opposite polarity can cancel. Click repair fills selected gaps up to 1 ms with a bounded cubic curve between clean neighbours. Zoom into the click and turn zero-crossing snapping off for exact sample selection. Leave two clean samples on both sides and between gaps; choose only the damaged channel. Compare Original/Preview, then Apply. This repairs isolated short clicks, not long dropouts or clipping. Preview operations replace the current draft; Apply first to combine operations. Choosing Repair click adds 100 ms of audition context on each side; only the selected samples are repaired. Entering/leaving this listening mode stops audition.",
     "focus": "Zoom to selection"
+  },
+  "restoration": {
+    "title": "Restoration",
+    "tool": "Restoration tool",
+    "prepare": "Prepare restoration",
+    "info": "Restoration help",
+    "frequency": "Mains (Hz)",
+    "harmonics": "Harmonics",
+    "width": "Width (Hz)",
+    "low": "Low (Hz)",
+    "high": "High (Hz)",
+    "reduction": "Reduction (dB)",
+    "ceiling": "Clip level (%)",
+    "advanced": "Advanced",
+    "spectrum": "Frequency selection",
+    "processing": "Preparing…",
+    "report": "{{repaired}} peaks · {{skipped}} skipped",
+    "invalid": "Invalid restoration settings or audio.",
+    "budget": "Use a source window up to 32 MiB / eight channels and select at most 30 seconds. Split or trim a shorter clip first.",
+    "band": "Select at least 2048 samples and a frequency band at least one FFT bin wide (about 23 Hz at 48 kHz).",
+    "short": "De-hum needs selections of at least 20 ms. Reduce the number of separate ranges if their filter context exceeds 120 seconds.",
+    "noPeaks": "No short clipped peaks could be reconstructed. Check the ceiling and selection; long or edge plateaus stay unchanged.",
+    "failed": "Restoration could not be prepared.",
+    "dehumHelp": "Choose the measured mains frequency (usually 50 or 60 Hz). Narrow offline notch filters suppress the fundamental and chosen harmonics. Width and harmonic count are under Advanced. Filtering uses source context and 5 ms transitions inside selection edges; unselected audio is unchanged. Wanted audio at those frequencies is also reduced. Frequency drift and short edge selections can limit suppression.",
+    "spectralHelp": "Select time ranges in the source waveform, then drag vertically in the spectrogram or enter low/high frequencies. Prepare attenuates that band; it does not invent missing audio. A 2048-point FFT sets the frequency/time resolution, with soft frequency edges and 5 ms time transitions. The plot joins selected time ranges and shows the first chosen channel. Reduce unneeded frequencies carefully to avoid removing wanted sound.",
+    "declipHelp": "Set the ceiling to the flat-top level of hard clipping, not the desired output peak. Cubic reconstruction estimates same-polarity clipped runs up to 2 ms using two clean neighbours on both sides. Long, edge or unsuitable peaks are skipped. Unclipped samples stay unchanged. It cannot undo heavy distortion or restore lost transients, and reconstructed peaks may exceed 0 dBFS; float source audio retains that headroom. The level uses percent of full scale: 100% is 0 dBFS; 50% is half amplitude. Runs must contain at least two flat samples; small integer-PCM full-scale rounding is accepted.",
+    "limits": "Preview first, compare Original/Preview, then Apply for one Undo. Preparation runs in a cancellable worker. Changing source, selection, settings or recording state cancels it. Each preview replaces the current draft; apply first to combine edits. Audition level is independent of saved audio and shared by Original/Preview. Hot restoration previews lower it for headroom; adjust it under Audition. This is not loudness matching.",
+    "update": "Prepare to update preview",
+    "audition": "Audition",
+    "level": "Audition level"
   }
 }

@@ -2,11 +2,12 @@ import { memo, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { computeSpectrogram } from '../../audio/utils/spectrogram';
 
-export const SpectrogramDisplay = memo(function SpectrogramDisplay({ buffer, sampleRate, title,fftSize=1024,windowType='hann',floor=-90 }: {
-  buffer: Float32Array | null; sampleRate: number; title: string;fftSize?:number;windowType?:'hann'|'hamming';floor?:number;
+export const SpectrogramDisplay = memo(function SpectrogramDisplay({ buffer, sampleRate, title,fftSize=1024,windowType='hann',floor=-90,band,onBandChange }: {
+  buffer: Float32Array | null; sampleRate: number; title: string;fftSize?:number;windowType?:'hann'|'hamming';floor?:number;band?:{low:number;high:number};onBandChange?:(band:{low:number;high:number})=>void;
 }) {
   const { t } = useTranslation();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null),drag=useRef<{id:number;y:number;band?:{low:number;high:number}}|null>(null);
+  const frequency=(y:number)=>{const rect=canvasRef.current!.getBoundingClientRect();return Math.round(Math.max(0,Math.min(1,1-(y-rect.top)/rect.height))*sampleRate/2);};
   const analysis = useMemo(() => buffer ? computeSpectrogram(buffer, sampleRate,{fftSize,windowType,floor}) : null, [buffer, sampleRate,fftSize,windowType,floor]);
   useEffect(() => {
     const canvas = canvasRef.current, ctx = canvas?.getContext('2d');
@@ -40,7 +41,8 @@ export const SpectrogramDisplay = memo(function SpectrogramDisplay({ buffer, sam
         <span>{(sampleRate / 2000).toFixed(1)} kHz</span><span>{(sampleRate / 4000).toFixed(1)} kHz</span><span>0 Hz</span>
       </div>
       <div className="relative flex-1 min-w-0">
-        <canvas ref={canvasRef} width={512} height={160} role="img" aria-label={title} className="w-full h-40 rounded border border-gray-700"/>
+        <canvas ref={canvasRef} width={512} height={160} role="img" aria-label={title} className={`w-full h-40 rounded border border-gray-700 ${onBandChange?'touch-none':''}`} onPointerDown={event=>{if(!onBandChange||event.button!==0)return;event.preventDefault();event.currentTarget.setPointerCapture(event.pointerId);drag.current={id:event.pointerId,y:event.clientY,band};}} onPointerMove={event=>{const current=drag.current;if(!onBandChange||!current||current.id!==event.pointerId)return;const a=frequency(current.y),b=frequency(event.clientY);onBandChange({low:Math.min(a,b),high:Math.max(a,b)});}} onPointerUp={event=>{drag.current=null;if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);}} onPointerCancel={()=>{if(drag.current?.band)onBandChange?.(drag.current.band);drag.current=null;}} onLostPointerCapture={()=>{if(drag.current?.band)onBandChange?.(drag.current.band);drag.current=null;}}/>
+        {band&&band.high>=band.low&&<div data-spectral-band className="absolute inset-x-0 bg-indigo-400/20 border-y border-indigo-300 pointer-events-none" style={{top:`${100*(1-band.high/(sampleRate/2))}%`,height:`${100*(band.high-band.low)/(sampleRate/2)}%`}}/>}
         {!buffer && <span className="absolute inset-0 grid place-items-center text-xs text-gray-400">{t('sfx.noSignal')}</span>}
       </div>
     </div>

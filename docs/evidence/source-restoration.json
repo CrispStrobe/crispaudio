@@ -1,0 +1,118 @@
+{
+  "checkpoint": "0.13.30",
+  "date": "2026-10-16",
+  "script": "scripts/test-source-restoration.mjs",
+  "browser": "Headless muted Chrome; real restoration workers and temporary float WAV persistence via a fixture Tauri bridge",
+  "results": [
+    {
+      "kind": "dehum",
+      "outside": true,
+      "rightUnchanged": true,
+      "originalRetained": true,
+      "undo": 1,
+      "parameters": {
+        "frequency": 50,
+        "harmonics": 4,
+        "width": 2,
+        "low": 1800,
+        "high": 2200,
+        "reduction": 18,
+        "ceiling": 0
+      },
+      "reopened": true,
+      "fixture_quality": {
+        "hum50Db": -76.63888985924385,
+        "hum100Db": -76.60443294286067,
+        "wanted997": 0.2999949886639972
+      }
+    },
+    {
+      "kind": "spectral",
+      "outside": true,
+      "rightUnchanged": true,
+      "originalRetained": true,
+      "undo": 1,
+      "parameters": {
+        "frequency": 50,
+        "harmonics": 4,
+        "width": 2,
+        "low": 1800,
+        "high": 2200,
+        "reduction": 18,
+        "ceiling": 0
+      },
+      "reopened": true,
+      "fixture_quality": {
+        "wanted500": 0.200000001081287,
+        "band2000Db": -17.99997994338035
+      }
+    },
+    {
+      "kind": "declip",
+      "outside": true,
+      "rightUnchanged": true,
+      "originalRetained": true,
+      "undo": 1,
+      "parameters": {
+        "frequency": 50,
+        "harmonics": 4,
+        "width": 2,
+        "low": 1800,
+        "high": 2200,
+        "reduction": 18,
+        "ceiling": -6.020599913279624
+      },
+      "reopened": true,
+      "fixture_quality": {
+        "wanted997": 0.7935751156280083,
+        "declipImprovementDb": 28.372080778540777,
+        "unclipped": true
+      }
+    }
+  ],
+  "headroom": {
+    "automaticLevel": -3.9,
+    "savedHotPeak": 1.4031691551208496,
+    "reopenedLevel": -3.9,
+    "manualLevelSharedByAB": true
+  },
+  "cancelled_real_worker": true,
+  "restoration_workers_released": true,
+  "supersession": {
+    "discarded": true,
+    "timing": "one dispatch delayed by browser fixture"
+  },
+  "german_390px": {
+    "width": 316,
+    "overflow": false
+  },
+  "spectrogram_visible_tones_and_band_drag": true,
+  "full_frontend_suite": {
+    "tests": 1989,
+    "files": 203,
+    "passed": true,
+    "log": "/tmp/crispaudio-restoration-full-tests-final.log"
+  },
+  "additional_unit_cases": [
+    "60 Hz mains plus harmonics",
+    "quantized positive and negative integer-PCM plateaus",
+    "ordinary non-flat peaks refused",
+    "float headroom above full scale retained",
+    "selection/settings/project/record invalidation and worker termination"
+  ],
+  "regressions": [
+    "continuous audition/real offline PCM/rapid swaps/cleanup",
+    "manual click repair with context/real WAV/reopen/Undo",
+    "touch source editing/headroom/regions/analysis/linked locks/save-reopen-render"
+  ],
+  "release_checks": 21,
+  "limits": [
+    "Quality figures are specific to synthetic fixtures; no varied-material or physical listening qualification",
+    "Spectral mode attenuates a time/frequency band; no spectral healing/inpainting",
+    "Declip reconstructs flat runs of at least two samples and at most 2 ms; unsuitable/long/edge runs skipped",
+    "Monitoring is separate and uses sample-peak headroom; no automatic loudness matching or true-peak limiter",
+    "The headroom dB readings in browser evidence are UI values rounded to one decimal",
+    "Worker budgets: 32 MiB source window, eight channels, 8\u2013192 kHz, 30 seconds selected and 120 seconds de-hum context",
+    "No new full Rust test suite, signed iOS build, native plug-in DSP or production persistence implementation qualification"
+  ]
+}

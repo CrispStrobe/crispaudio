@@ -87,12 +87,16 @@ Select a clip and open **Source Editor** for detailed work on its source window.
   Leave two clean samples on either side. Audition adds 100 ms of context.
   Prepare, compare Original/Preview, then
   Apply; the original remains available. Long gaps and clipping need other tools.
+- Under **Restoration**, prepare de-hum at the measured mains frequency,
+  attenuate a frequency band selected in the spectrogram, or estimate short
+  hard-clipped peaks. Compare Original/Preview, then Apply. Preparation is cancellable.
+  A separate audition level keeps saved audio unchanged; hot sources get monitor headroom.
 - Inspect peak, RMS, DC offset, clipping, loudness and true-peak readings. Open a
   spectrum or spectrogram and adjust its analysis settings.
 - Save selections as named regions for later delivery. On macOS, apply supported
   Audio Unit or VST3 effects to the selected source window.
 
-[Source editing and continuous comparison](docs/SOURCE_EDITING.md)
+[Source editing and continuous comparison](docs/SOURCE_EDITING.md) · [Restoration tools and limits](docs/RESTORATION.md)
 
 ## Record and choose takes
 

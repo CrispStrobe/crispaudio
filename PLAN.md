@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.29. This section is the current plan.
+Updated 2026-10-16, for local 0.13.30. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -35,6 +35,19 @@ bounded increments, not a finished state-of-the-art DAW. MIDI/composition expans
 is outside this app's active scope. Long-session paging/streaming is accepted in
 the final scale phase; additional codec expansion has no new priority.
 
+Local 0.13.30 adds bounded offline restoration: mains/harmonic notch filtering,
+selected time/frequency-band attenuation and short hard-clip reconstruction. Worker
+requests are cancellable and stale results rejected; static source boundaries,
+originals and one-Undo Apply remain intact. Spectrogram band dragging and numeric
+bounds share a compact collapsed section. Separate audition gain supports common
+A/B level and sample-peak headroom without normalizing saved source PCM.
+These are scoped tools: spectral attenuation is not spectral healing/inpainting;
+clipped runs beyond 2 ms or unsuitable context are skipped. No universal quality
+or varied-material listening qualification is claimed. Automatic loudness matching,
+full live source FX and further restoration quality/selection workflows remain.
+Next: qualify varied-material restoration and improve spectral editing where
+measurements justify it, then native input FX/cue routing in the accepted order.
+
 Local 0.13.29 adds source channel/polarity operations and bounded manual click
 repair to the same preview/A-B/Apply workflow. Stereo swap, dual-mono average and
 side-copy retain channel count/timing and require All channels. Inversion/repair
@@ -63,7 +76,7 @@ recording is unarmed, monitoring off and the input defaults to this machine.
 Templates exclude audio, takes, time automation and session routing. Native
 inserts use their last saved state and require the same plug-ins. Sharing files,
 full-session templates and live native-state capture are not implemented here.
-Next: measured spectral repair, de-hum, declipping and broader restoration.
+Next: restoration quality/selection qualification and native input/cue workflows.
 
 Local 0.13.26 adds bar-based count-in and pre-roll using scheduled Web Audio
 anchors. Existing countIn seconds stay a silent delay. Monitor clicks are scheduled

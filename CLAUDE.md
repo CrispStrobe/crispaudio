@@ -847,3 +847,42 @@ Repair-mode audition adds 100 ms each side and merges listening windows; repair
 and saved operation ranges remain exact. The buffer cache keys context mode, and
 entering/leaving repair mode stops audition before changing its window length.
 Original/Preview then use identical context buffers, preserving their audition clock.
+
+## Source restoration (0.13.30)
+
+`sourceRestoration.ts` provides pure offline DSP; `runSourceRestoration` validates
+budgets before copying/transferring PCM to one dedicated module worker per request.
+Terminate on completion/error/abort. Limits: 32 MiB window, 8 channels, 8–192 kHz,
+30 s selected and 120 s accumulated de-hum context. De-hum uses forward/backward
+RBJ notches with 2 s source padding and 5 ms internal transitions. Spectral mode
+uses 2048-point Hann STFT/OLA, normalized window weights, two-bin soft band edges
+and internal transitions, writing only selected samples. Declip uses unclamped
+cubic reconstruction of same-polarity flat hard-clipped runs of 2 samples to 2 ms with two clean
+neighbours, rejects unsuitable estimates/long plateaus, and reports repaired/skipped
+counts. Do not market this as full spectral healing or a universal declipper.
+
+`SourceRestoration` has compact controls, advanced de-hum settings collapsed,
+worker cancellation/stale source/selection/settings/record/project guards, and a
+prepare-again indicator. SpectrogramDisplay optionally drags a frequency band;
+numeric bounds remain the precise/touch/keyboard alternative. SourceEditor shares
+a preview generation guard with native source helpers: only the newest requested
+preview can install. Range/channel edits and Reset invalidate pending previews.
+
+Source-edit operations retain numeric `parameters` alongside their derived PCM.
+Clip ceiling is stored in dBFS but shown as percent of full scale to allow exact
+50%/100% entry. Monitoring is a separate GainNode and dB control shared by A/B;
+sourceAuditionHeadroom and preview peak checks lower hot monitoring, never saved
+PCM. The monitor is released on stop, natural end, source/record/timeline changes,
+errors and unmount; gain changes do not rebuild the source buffer. Auto headroom
+is sample-peak based, not true-peak limiting or automatic loudness matching.
+
+`scripts/test-source-restoration.mjs` exercises real workers, synthetic quality,
+temporary float WAV fixture-bridge persistence, reopen/render, Undo/Redo, headroom,
+manual A/B gain and cancellation. One worker dispatch is delayed ONLY by the test
+fixture to deterministically prove newer Normalize supersedes an older request.
+Other processing/cancel tests use real worker timing. Codec workers are persistent
+by design; termination assertions filter restoration workers. No physical listening
+or actual native plug-in DSP qualification is added. See docs/RESTORATION.md.
+
+Integer-PCM full-scale plateaus are accepted within a small ceiling tolerance;
+non-flat ordinary peaks and isolated single-sample candidates are skipped.

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.30 — 2026-10-16
+
+- Add cancellable source restoration previews: mains/harmonic de-hum, selected-band spectral attenuation and conservative reconstruction of short hard-clipped peaks.
+- Select frequency bands by dragging the spectrogram or entering bounds. Retain originals, unchanged channels/ranges, saved parameters and one Undo per Apply.
+- Add a separate editable audition level shared by Original/Preview, with sample-peak headroom for hot float sources and restoration previews. Saved source levels stay intact.
+- Bound worker memory/duration/context work, cancel stale requests and mark previews that need preparing again after settings change.
+
 ## 0.13.29 — 2026-10-16
 
 - Add source polarity inversion, stereo L/R swap, dual-mono averaging and channel copying in a compact Channels & repair dropdown.

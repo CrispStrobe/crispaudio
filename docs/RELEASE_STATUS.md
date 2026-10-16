@@ -18,6 +18,37 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.30 — bounded source restoration and audition level
+
+Source Editor offers cancellable de-hum, selected-band spectral attenuation and
+short hard-clip reconstruction through the existing preview/A-B/Apply path. The
+spectrogram supports band dragging and numeric bounds. Parameters persist with
+derived audio; originals, outside-range samples, other channels and timing remain
+intact. Preview request ownership also covers native source helpers, so older
+results cannot replace a newer requested preview.
+
+Separate editable audition gain is shared by Original/Preview. Hot sources and
+prepared restorations get sample-peak monitor headroom; saved float audio retains
+reconstructed levels above full scale. This is not automatic loudness matching.
+Worker memory/duration/context limits and tool-specific quality limits are explicit
+in [the restoration guide](RESTORATION.md).
+
+The final frontend suite passes 1,989 tests (203 files), with source DSP, worker
+ownership/cancellation, headroom and stale-result checks. Browser checks measure
+mains/harmonics, target-band reduction and short-clip error against known synthetic
+signals; they also exercise real workers, cancellation, float WAV, linked reopen,
+render, metadata, one Undo/Redo, hot-source replay and German 390 px layout. These
+are fixture-specific measurements, not varied-material/physical listening claims.
+Final full lint plus changed-source/DSP/script lint, TypeScript, 21 release checks
+and the normal Mac bundle pass. Existing audition, manual repair and touch source
+editing regressions pass. The local 0.13.30 app is installed/reopened with strict/deep
+ad-hoc signature verification and its one autosave preserved.
+[Evidence](evidence/source-restoration.json).
+
+No new full Rust test suite, signed iOS build or physical audio acceptance is added. Spectral
+healing/inpainting, drifting-noise tracking, general click detection, automatic
+loudness matching and broader material qualification remain open.
+
 ## Local 0.13.29 — channel utilities and manual click repair
 
 Source Editor gains a compact Channels & repair dropdown: invert polarity, stereo
