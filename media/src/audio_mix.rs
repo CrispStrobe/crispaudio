@@ -167,6 +167,10 @@ impl Automation {
         if self.points.is_empty() {
             return self.fallback;
         }
+        // Native project time can wrap while the processor clock keeps running.
+        if t < self.points[self.cursor].0 {
+            self.cursor = 0;
+        }
         if t <= self.points[0].0 {
             return self.points[0].1;
         }
@@ -1251,6 +1255,29 @@ mod tests {
     }
 
     #[test]
+    fn automation_cursor_rewinds_for_project_loops_and_read_restoration() {
+        let mut curve = Automation::parse(&json!([
+            {"time":0,"value":0}, {"time":1,"value":1,"curve":"step"},
+            {"time":2,"value":0.5}, {"time":3,"value":0}
+        ]))
+        .unwrap();
+        for _ in 0..3 {
+            for (time, expected) in [
+                (2.5, 0.25),
+                (0., 0.),
+                (0.5, 0.5),
+                (1.5, 1.),
+                (2.5, 0.25),
+                (0.5, 0.5),
+            ] {
+                assert!(
+                    (curve.at(time) - expected).abs() < 1e-9,
+                    "Wrong Read value after project clock rewind"
+                );
+            }
+        }
+    }
+    #[test]
     fn nested_bus_and_pre_post_sends_render_faders_and_mute_consistently() {
         let folder = tempfile::tempdir().unwrap();
         let input = source(folder.path(), 2, &[0.2, -0.1]);
@@ -2258,42 +2285,60 @@ pub(crate) mod block_dsp {
         }
     }
     pub struct Rack(Vec<Effect>);
-    pub struct MixUpdate {
+    pub struct EffectUpdate {
         index: usize,
+        parameter: String,
         curve: Automation,
     }
     impl Rack {
         /// Parse separately so an invalid packet cannot partly change the graph.
-        pub fn prepare_mix(&self, index: usize, value: &Value) -> Result<MixUpdate> {
-            if !matches!(
-                self.0.get(index),
-                Some(
-                    Effect::Delay(_)
+        pub fn prepare_control(
+            &self,
+            index: usize,
+            parameter: &str,
+            value: &Value,
+        ) -> Result<EffectUpdate> {
+            let maximum = match (self.0.get(index), parameter) {
+                (Some(Effect::Delay(_)), "feedback") => 0.95,
+                (Some(Effect::Chorus(_)), "depth") => 1.0,
+                (
+                    Some(
+                        Effect::Delay(_)
                         | Effect::Chorus(_)
                         | Effect::Distortion { .. }
                         | Effect::Reverb { .. }
                         | Effect::BitCrush { .. }
-                        | Effect::RingMod { .. }
-                )
-            ) {
-                return Err("Unsupported native effect mix control".into());
-            }
+                        | Effect::RingMod { .. },
+                    ),
+                    "mix",
+                ) => 1.0,
+                _ => return Err("Unsupported native effect automation control".into()),
+            };
             let curve = Automation::parse(value)?;
-            if curve.points.iter().any(|p| p.1 > 1.) {
-                return Err("Effect mix automation outside 0..1".into());
+            if curve.points.iter().any(|p| p.1 > maximum) {
+                return Err("Effect automation outside parameter bounds".into());
             }
-            Ok(MixUpdate { index, curve })
+            Ok(EffectUpdate {
+                index,
+                parameter: parameter.into(),
+                curve,
+            })
         }
         /// Keep delay/reverb history, oscillators and every processor instance.
-        pub fn apply_mix(&mut self, update: MixUpdate) {
-            let automation = match &mut self.0[update.index] {
-                Effect::Delay(delay) => &mut delay.automation,
-                Effect::Chorus(chorus) => &mut chorus.automation,
-                Effect::Distortion { automation, .. }
-                | Effect::Reverb { automation, .. }
-                | Effect::BitCrush { automation, .. }
-                | Effect::RingMod { automation, .. } => automation,
-                _ => unreachable!("Mix update validated against immutable rack"),
+        pub fn apply_control(&mut self, update: EffectUpdate) {
+            let automation = match (&mut self.0[update.index], update.parameter.as_str()) {
+                (Effect::Delay(delay), "feedback") => &mut delay.feedback_automation,
+                (Effect::Chorus(chorus), "depth") => &mut chorus.depth_automation,
+                (Effect::Delay(delay), "mix") => &mut delay.automation,
+                (Effect::Chorus(chorus), "mix") => &mut chorus.automation,
+                (
+                    Effect::Distortion { automation, .. }
+                    | Effect::Reverb { automation, .. }
+                    | Effect::BitCrush { automation, .. }
+                    | Effect::RingMod { automation, .. },
+                    "mix",
+                ) => automation,
+                _ => unreachable!("Effect update validated against immutable rack"),
             };
             *automation = update.curve;
         }

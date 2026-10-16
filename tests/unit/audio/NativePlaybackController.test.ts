@@ -75,3 +75,13 @@ it('holds track effect mix independently, restores Read and keeps only mix envel
  controller.previewAutomation(p,target);await controller.update(p);expect(f.playback.update.mock.calls.at(-1)![0].tracks[0]).toMatchObject({automation:[{time:0,value:.5}],effects:p.tracks[0].effects});
  expect(p).toEqual(original);expect(create).toHaveBeenCalledTimes(1);await controller.stop();
 });
+
+it.each([{type:'delay' as const,parameter:'feedback' as const,held:.8,invalid:.96},{type:'chorus' as const,parameter:'depth' as const,held:.9,invalid:1.01}])('auditions $type $parameter independently and restores its original curve',async({type,parameter,held,invalid})=>{
+ const f=session();create.mockResolvedValue(f.snapshot);const controller=new NativePlaybackController(()=>{},()=>{});
+ const p={...mixProject(),tracks:mixProject().tracks.map(track=>({...track,effects:[{type,enabled:true,params:{mix:.3,feedback:.2,depth:.2},automation:{[parameter]:[{time:0,value:.2},{time:3,value:.4}]}}]}))},original=structuredClone(p),target={trackId:'a',parameter,effectIndex:0};
+ await controller.play(p,sources,0,0,4,false);expect(controller.previewAutomation(p,target,invalid)).toBe(false);
+ expect(controller.previewAutomation(p,{trackId:'a',parameter:'time',effectIndex:0},.4)).toBe(false);
+ controller.previewAutomation(p,{trackId:'a',parameter:'mix',effectIndex:0},.7);expect(controller.previewAutomation(p,target,held)).toBe(true);await controller.update(p);
+ const sent=f.playback.update.mock.calls.at(-1)![0];expect(sent.tracks[0].effects?.[0].automation).toMatchObject({mix:[{time:0,value:.7}],[parameter]:[{time:0,value:held}]});expect(nativeLiveStructureKey(sent)).toBe(nativeLiveStructureKey(p));
+ controller.previewAutomation(p,target);await controller.update(p);expect(f.playback.update.mock.calls.at(-1)![0].tracks[0].effects?.[0].automation).toMatchObject({mix:[{time:0,value:.7}],[parameter]:original.tracks[0].effects[0].automation[parameter]});expect(p).toEqual(original);expect(create).toHaveBeenCalledTimes(1);await controller.stop();
+});

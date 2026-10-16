@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.6. This section is the current plan.
+Updated 2026-10-16, for local 0.13.7. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -79,7 +79,10 @@ Wet/dry passes preserve the six supported effects’ DSP history and restore sta
 mix or the original Read envelope.
 [Native effect mix checks](docs/evidence/native-effect-mix-automation.json).
 
-Continuous native input DSP, other effect parameters and master/clip passes remain future work.
+Local 0.13.7 adds delay feedback and chorus depth passes without resetting running
+effect history. [Parameter pass checks](docs/evidence/native-feedback-depth-automation.json).
+Continuous native input DSP, delay time, oscillator rate/frequency, native plug-in
+parameter passes and master/clip passes remain future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 
 Audio troubleshooting interrupted the start: distortion persisted after quitting

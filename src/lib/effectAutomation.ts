@@ -52,3 +52,7 @@ export function scheduleRingFrequency(param:AudioParam,points:GainPoint[]|undefi
  param.setValueAtTime(sorted.length?effectParameterAt(sorted,timelineStart,fallback,'freq'):Math.max(.1,fallback),contextStart);
  schedulePoints(param,sorted,contextStart,timelineStart);
 }
+
+/** Parameters supported by hot controls in the native track rack. */
+export const nativeTrackEffectParameters=['mix','feedback','depth'] as const;
+export const supportsNativeTrackEffectParameter=(type:string|undefined,parameter:string)=>nativeTrackEffectParameters.some(key=>key===parameter)&&supportsEffectParameter(type,parameter);

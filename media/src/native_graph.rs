@@ -272,16 +272,21 @@ pub struct TrackControls {
     pub automation: Value,
     #[serde(default)]
     pub pan_automation: Value,
-    #[serde(default)]
-    pub effect_mixes: Vec<EffectMixControls>,
+    #[serde(default, alias = "effectMixes")]
+    pub effect_automation: Vec<EffectAutomationControls>,
     #[serde(default)]
     pub sends: Vec<f64>,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct EffectMixControls {
+pub struct EffectAutomationControls {
     pub index: usize,
+    #[serde(default = "mix_parameter")]
+    pub parameter: String,
     pub points: Value,
+}
+fn mix_parameter() -> String {
+    "mix".into()
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -660,19 +665,19 @@ impl Graph {
                 .find(|doc| doc["id"].as_str() == Some(&control.id))
                 .unwrap()["effects"]
                 .as_array();
-            if control.effect_mixes.len() > 1024 {
-                return Err("Too many native effect mix controls".into());
+            if control.effect_automation.len() > 3072 {
+                return Err("Too many native effect automation controls".into());
             }
             let mut mixes = Vec::new();
             let mut indices = HashSet::new();
-            for mix in &control.effect_mixes {
+            for mix in &control.effect_automation {
                 let effects = effects.ok_or("Unknown native effect mix control")?;
                 let effect = effects
                     .get(mix.index)
                     .ok_or("Unknown native effect mix control")?;
-                if !indices.insert(mix.index)
+                if !indices.insert((mix.index, &mix.parameter))
                     || effect["enabled"] != true
-                    || !crate::effect_envelope::supports(effect, "mix")
+                    || !crate::effect_envelope::supports(effect, &mix.parameter)
                 {
                     return Err("Invalid native effect mix control".into());
                 }
@@ -680,7 +685,11 @@ impl Graph {
                     .iter()
                     .filter(|effect| effect["enabled"] == true)
                     .count();
-                mixes.push(track.builtin.prepare_mix(active_index, &mix.points)?);
+                mixes.push(track.builtin.prepare_control(
+                    active_index,
+                    &mix.parameter,
+                    &mix.points,
+                )?);
             }
             parsed.push((
                 Curve::gain(&control.automation)?,
@@ -728,7 +737,7 @@ impl Graph {
             track.automation = gain;
             track.pan = pan;
             for mix in mixes {
-                track.builtin.apply_mix(mix);
+                track.builtin.apply_control(mix);
             }
             track.pan_slew.set(control.pan);
             track.pan_automated = control
@@ -1167,6 +1176,93 @@ mod tests {
                     (sample[0] - dry[768 + i]).abs() < 1e-6,
                     "{kind}: static Read mix not restored"
                 );
+            }
+        }
+    }
+    #[test]
+    fn feedback_and_depth_controls_match_continuous_read_without_resetting_history() {
+        for (kind, parameter, params, original, held) in [
+            (
+                "delay",
+                "feedback",
+                json!({"time":0.003,"feedback":0.2,"mix":0.8}),
+                0.2,
+                0.8,
+            ),
+            (
+                "chorus",
+                "depth",
+                json!({"rate":1.5,"depth":0.2,"mix":0.8}),
+                0.2,
+                0.9,
+            ),
+        ] {
+            let source = || {
+                HashMap::from([(
+                    "s".into(),
+                    Source::new(vec![
+                        (0..4096)
+                            .map(|i| 0.3 * (i as f32 * 0.173).sin())
+                            .collect();
+                        2
+                    ])
+                    .unwrap(),
+                )])
+            };
+            let mut doc = json!({"sampleRate":48000,"duration":4096./48000.,"nativeEffects":insert(0),"tracks":[{"id":"a","volume":1,"pan":0,"effects":[{"type":kind,"enabled":true,"params":params}],"segments":[clip("c")]}]});
+            let mut graph = Graph::prepare(&doc, source(), fake).unwrap();
+            doc["tracks"][0]["effects"][0]["automation"][parameter] = json!([
+                {"time":0,"value":original,"curve":"step"},
+                {"time":1024./48000.,"value":held,"curve":"step"},
+                {"time":2048./48000.,"value":original}
+            ]);
+            let mut reference = Graph::prepare(&doc, source(), fake).unwrap();
+            let controls = |points: Value| json!({"masterVolume":1,"tracks":[{"id":"a","volume":1,"pan":0,"muted":false,"solo":false,"effectAutomation":[{"index":0,"parameter":parameter,"points":points}]}]});
+            let mut out = vec![[0.; 2]; 1024];
+            let mut expected = out.clone();
+            for block in 0..4 {
+                if block == 1 {
+                    for points in [
+                        json!([{"time":0,"value":if parameter == "feedback" { 0.96 } else { 1.01 }}]),
+                        json!([{"time":0,"value":-0.1}]),
+                    ] {
+                        assert!(graph
+                            .update_controls(serde_json::from_value(controls(points)).unwrap())
+                            .is_err());
+                    }
+                    let mut duplicate = controls(json!([{"time":0,"value":held}]));
+                    let copy = duplicate["tracks"][0]["effectAutomation"][0].clone();
+                    duplicate["tracks"][0]["effectAutomation"]
+                        .as_array_mut()
+                        .unwrap()
+                        .push(copy);
+                    assert!(graph
+                        .update_controls(serde_json::from_value(duplicate).unwrap())
+                        .is_err());
+                    let mut unsupported = controls(json!([{"time":0,"value":held}]));
+                    unsupported["tracks"][0]["effectAutomation"][0]["parameter"] = json!("time");
+                    assert!(graph
+                        .update_controls(serde_json::from_value(unsupported).unwrap())
+                        .is_err());
+                    graph
+                        .update_controls(
+                            serde_json::from_value(controls(json!([{"time":0,"value":held}])))
+                                .unwrap(),
+                        )
+                        .unwrap();
+                } else if block == 2 {
+                    graph
+                        .update_controls(serde_json::from_value(controls(Value::Null)).unwrap())
+                        .unwrap();
+                }
+                graph.render(&mut out).unwrap();
+                reference.render(&mut expected).unwrap();
+                for (sample, expected) in out.iter().zip(&expected) {
+                    assert!(
+                        (sample[0] - expected[0]).abs() < 1e-6,
+                        "{kind} {parameter} history or static Read changed at block {block}"
+                    );
+                }
             }
         }
     }

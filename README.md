@@ -129,6 +129,7 @@ Native inserts include generic parameter controls, saved state and rack copy/pas
 Mac Live playback records track level, pan and built-in track effect wet/dry mix
 passes in Touch, Latch or Write, with review before applying and one Undo. Mix
 passes support delay, chorus, reverb, distortion, ring modulation and bitcrush.
+Delay feedback and chorus depth passes also retain the running effect history.
 Other effect parameters and master/clip effect passes remain unavailable with
 native inserts.
 

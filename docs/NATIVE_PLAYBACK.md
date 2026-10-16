@@ -40,6 +40,10 @@ creates one Undo step; audition does not change the project or saved plug-in sta
 Touch release restores Read. Escape, interruption or a playback fault discards
 the draft. Delay, chorus, reverb, distortion, ring modulation and bitcrush support
 wet/dry passes without resetting delay buffers, reverb tails or oscillator state.
+Delay feedback and chorus depth can also be recorded and restored to Read while
+the processors keep running. Delay time, chorus rate and ring frequency passes
+remain guarded during native playback. Envelope readers rewind with project time
+when a loop wraps.
 These passes use the native playback clock and control-block updates;
 they do not provide sample-accurate timestamped control delivery.
 

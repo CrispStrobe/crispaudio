@@ -1,0 +1,52 @@
+{
+  "version": "0.13.7",
+  "date": "2026-10-16",
+  "behavior": [
+    "Mac Live track delay feedback and chorus depth Touch/Latch/Write passes",
+    "Independent held parameters alongside existing track wet/dry mix",
+    "Temporary envelope overrides; reviewed Apply uses one Undo",
+    "Read restores original static settings or envelopes without replacing DSP",
+    "Parameter-specific bounds and duplicate (effect index, parameter) validation before packet application",
+    "Envelope cursors rewind when project time wraps, retaining correct Read values after a loop"
+  ],
+  "validation": {
+    "status": "complete",
+    "media": "159 passed, 10 optional tests skipped with native-engine enabled",
+    "nativeSignal": "Known PCM through fixture native inserts: hot feedback/depth changes and static Read restoration match continuously running effects with equivalent step envelopes",
+    "focusedFrontend": "28 passed",
+    "release": "21 passed",
+    "frontend": {
+      "tests": 1765,
+      "files": 180,
+      "result": "PASS",
+      "log": "/tmp/crispaudio-feedback-depth-frontend-full.log",
+      "scope": "Full run with maxWorkers=2, testTimeout=20000; repository settings unchanged"
+    },
+    "appTests": "41 passed, 1 optional test skipped",
+    "ios": "Locked aarch64-apple-ios-sim compile PASS; existing unused MIDI method warning",
+    "lint": "PASS",
+    "typescript": "PASS",
+    "mediaLog": "/tmp/crispaudio-feedback-depth-media-final.log",
+    "loopRead": "Cursor rewind regression PASS across repeated loops, including Linear and Step points",
+    "macBuild": "Normal debug app bundle PASS"
+  },
+  "limits": [
+    "Block-based control delivery, not sample-accurate timestamped events",
+    "Delay time, chorus rate, ring frequency, master/clip passes, native plug-in parameter passes and continuous native input DSP remain unavailable",
+    "No physical audio, commercial plug-in or external interface acceptance performed"
+  ],
+  "previousCi": {
+    "commit": "0233265",
+    "general": "PASS",
+    "ios": "PASS"
+  },
+  "appleUpload": false,
+  "installed": {
+    "version": "0.13.7",
+    "app": "~/Applications/CrispAudio-local.app",
+    "signature": "deep/strict PASS",
+    "autosavesRetained": 1,
+    "priorAppAndSession": "backed up before replacement",
+    "independentCli": "unchanged"
+  }
+}

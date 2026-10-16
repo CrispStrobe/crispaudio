@@ -5,6 +5,28 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.7 — delay feedback and chorus depth passes
+
+Mac Live playback adds Touch, Latch and Write passes for track delay feedback
+and chorus depth. They share the existing session-only audition, review and
+single-Undo Apply workflow. Wet/dry controls can remain held independently.
+Read restoration retains the processors and their history, returning to the
+original static setting or envelope. Parameter bounds and duplicate controls
+are validated before the complete control packet is applied. Envelope readers
+now rewind their point cursors with project time at loop boundaries.
+
+Delay time, chorus rate, ring frequency, master/clip passes, plug-in parameter
+passes and continuous native input DSP remain pending. Native control delivery
+is block-based. [Parameter pass evidence](evidence/native-feedback-depth-automation.json).
+All 1,765 frontend tests, 159 media tests with native-engine enabled, 41 app tests
+and 21 release checks pass. Lint, TypeScript, locked iOS simulator compilation and
+the normal Mac bundle pass. The installed 0.13.7 app is running with a verified
+deep/strict signature, one autosave retained and the prior app/session backed up.
+DSP checks use fixture native inserts and synthetic PCM; no new physical audio
+or commercial plug-in acceptance was performed. Both CI workflows passed at the
+preceding 0233265 checkpoint.
+No Apple upload or release tag was triggered for this checkpoint.
+
 ## Local 0.13.6 — native track effect mix passes
 
 Mac Live playback can record wet/dry Touch, Latch and Write passes for built-in
@@ -179,7 +201,7 @@ DE/US lookup endpoints. App ID `6791876962`, bundle ID `com.crispstrobe.crispaud
 | iOS app on Apple Silicon Macs | Public listing includes compatibility with Apple M1 or later and macOS 11 or later; this is the iPad app, not the native desktop build. |
 | Native macOS App Store app | Version 1.0 is `PREPARE_FOR_SUBMISSION`, with no build attached. Native 0.13.0/build 14 is now available for internal TestFlight. |
 | Provisioning | Active `IOS_APP_STORE` and newly created `MAC_APP_STORE` profiles, bound to the existing Distribution certificate. Existing account/API credentials work. |
-| Local native macOS app | Installed 0.13.6 ad-hoc signed app, separate from the public iOS release. |
+| Local native macOS app | Installed 0.13.7 ad-hoc signed app, separate from the public iOS release. |
 | Desktop GitHub bundles | `v*` tag or `release.yml` dispatch; macOS ARM, Windows and Linux jobs configured. |
 
 [Public App Store listing](https://apps.apple.com/de/app/crispaudio/id6791876962) ·
