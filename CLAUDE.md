@@ -751,11 +751,14 @@ phase integrates prior per-frame frequency, including silent time before a late
 clip. Empty-rate branch retains legacy static DSP. Rate copy protects outside
 parameter values, not later audio phase. Preserve existing delay keyboard steps.
 
-## Effect-aware timeline waveforms (0.13.23)
+## Effect-aware timeline waveforms (0.13.24)
 
 `useClipWaveforms` schedules visible built-in clip previews through
-`TimelineEngine.renderClipWaveform`, with 120 ms debounce, serialized DSP and
-stale-result rejection. Use the original source normalization reference; the
+`TimelineEngine.renderClipWaveform`, with 120 ms sampling between serialized renders.
+ClipWaveformScheduler samples ongoing edits without resetting its deadline.
+Keep the last processed shape under FX… during updates, but reject it immediately
+after geometry/source changes. Hidden windows suspend preview work.
+Use the original source normalization reference; the
 processed buffer already includes clip gain/fades. Processed peak envelopes cover
 both channels. Never call native rack snapshot/render from this background path:
 it must not interrupt playback or capture. Native inserts and clips beyond the

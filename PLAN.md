@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.23. This section is the current plan.
+Updated 2026-10-16, for local 0.13.24. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -24,7 +24,9 @@ All audio-workstation gaps in that inventory are now accepted roadmap work by th
 user, including restoration/spectral repair, routing/input DSP, timing, session
 management, finishing and long-session streaming. Accepted does not mean implemented;
 large architecture changes need their own measured checkpoints. Effect-aware segment
-waveforms are the current requested priority. Then proceed with release qualification,
+waveforms are implemented through the 0.13.24 continuous-refresh checkpoint. Next
+retire the legacy ASR launch/setup surface in favor of CrisperWeaver transcript
+import, preserving existing aligned words and projects. Then proceed with release qualification,
 complete-session acceptance, audible recording
 count-in/pre-roll, physical-device checks when available and native plug-in
 usability, in the accepted order. The gap document records the larger follow-up
@@ -32,6 +34,12 @@ sequence and acceptance boundaries. Historical “completed” entries below des
 bounded increments, not a finished state-of-the-art DAW. MIDI/composition expansion
 is outside this app's active scope. Long-session paging/streaming is accepted in
 the final scale phase; additional codec expansion has no new priority.
+
+Local 0.13.24 samples ongoing slider edits every 120 ms between serialized renders.
+It keeps the last processed waveform visible with FX… until the latest rack is
+ready; geometry/source changes discard the old view immediately. Hidden windows
+suspend pending preview work. This improves visual feedback, while continuous
+audio audition, native inserts and long-clip visualization remain accepted gaps.
 
 Local 0.13.23 adds automatic built-in segment-FX waveform previews while editing.
 Visible clips up to 60 seconds / 32 MiB render through the existing offline DSP,

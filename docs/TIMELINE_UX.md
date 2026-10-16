@@ -21,14 +21,17 @@ View → Waveform Display chooses normalized or mix-level drawing. This changes
 visual scale, not the audio mix. The occasional waveform control no longer
 occupies the main toolbar.
 
-Built-in segment effects now refresh visible waveforms after a 120 ms editing
-pause. Clip gain is applied before effects and fades after them; normalization
+Built-in segment effects refresh visible waveforms during slider movement.
+The scheduler samples the latest edit at 120 ms intervals between renders, so
+continuous movement cannot indefinitely postpone the preview. Clip gain is applied
+before effects and fades after them; normalization
 uses the original source level so processing level changes remain visible. The
-small FX label means processed, FX… means updating, and FX: source means the
-original waveform is shown. The info button in clip FX explains these states.
+small FX label means processed, FX… means updating (the last processed shape
+stays visible), and FX: source means the original waveform is shown. The info button in clip FX explains these states.
 Previews use a separate offline context, never the playback device or native
-plug-in host. One render runs at a time; obsolete work is discarded. The cache
-retains at most eight entries / 32 MiB. This first implementation handles clips
+plug-in host. One render runs at a time. New trims, source replacements or placement
+changes discard the preceding shape immediately. Hidden windows suspend preview
+work; queued requests use the latest settings. The cache retains at most eight entries / 32 MiB. This first implementation handles clips
 up to 60 seconds / 32 MiB of stereo PCM. Native inserts, over-budget clips,
 evicted results and failures fall back visibly to the source. Track/bus/master
 processing and tails outside the clip are excluded. Modulation phase follows a

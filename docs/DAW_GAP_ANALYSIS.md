@@ -1,6 +1,6 @@
 # CrispAudio: product boundary and audio workstation gaps
 
-Reviewed 16 October 2026 against local 0.13.23 and current official product pages.
+Reviewed 16 October 2026 against local 0.13.24 and current official product pages.
 This is a workflow and architecture comparison, not a claim of feature parity or
 an independent listening/performance benchmark. Competitor editions differ.
 
@@ -28,8 +28,8 @@ The user accepted **all audio-workstation gaps below** on 16 October, including
 the larger engine, restoration, timing, session and scale work. They are authorized
 work, not completed features or a delivery-date promise. Composition and ASR/TTS
 creation remain with CometBeat and CrisperWeaver. Physical device/platform checks require the actual hardware.
-The newly requested effect-aware segment waveform is the immediate checkpoint;
-then continue the execution order below.
+Effect-aware segment waveforms are implemented through the bounded 0.13.24
+continuous-refresh checkpoint; continue the execution order below.
 
 ## What the comparisons tell us
 
@@ -52,7 +52,7 @@ then continue the execution order below.
 | Capability | State | Important remaining work |
 |---|---|---|
 | Basic arrangement, trims, fades, ripple, groups, source selections and analysis | Present | Measure completion time and friction in complete editing jobs; improve inline/context actions from findings. |
-| Effect-aware timeline waveforms | Partial in 0.13.23 | Built-in segment DSP updates after a short pause for visible clips up to 60 s / 32 MiB. Native inserts, longer clips and track/bus/master processing still show source or remain excluded. Extend with scalable caches and safe native-render ownership; modulation follows a clip-range render, not the running graph phase. |
+| Effect-aware timeline waveforms | Partial in 0.13.24 | Built-in segment DSP refreshes during continuous edits for visible clips up to 60 s / 32 MiB. Native inserts, longer clips and track/bus/master processing still show source or remain excluded. Extend with scalable caches and safe native-render ownership; modulation follows a clip-range render, not the running graph phase. |
 | Source FX audition | Partial | Continuous, cancellable audition while changing parameters; fast original/processed comparison with level control and no mandatory render/apply cycle. |
 | Repair and restoration | Partial | Existing DC/normalization/fades and desktop denoise do not cover manual sample repair, click interpolation, de-hum, declipping or editable spectral repair. Add bounded, reviewable repairs with listening tests. |
 | Recording and takes | Partial | Built-in mic accepted; punch/loop/multi-arm/comping implemented. Add audible musical count-in/pre-roll and real interface/channel checks. |

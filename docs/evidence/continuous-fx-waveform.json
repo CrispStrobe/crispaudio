@@ -1,0 +1,225 @@
+{
+  "version": "0.13.24",
+  "date": "2026-10-16",
+  "scope": "Continuous segment-FX waveform refresh with safe pending snapshots and hidden-window suspension",
+  "browser": {
+    "pcm": [
+      {
+        "type": "lowpass",
+        "error": 0,
+        "rms": 0.00011856401250116338,
+        "frames": 24000
+      },
+      {
+        "type": "highpass",
+        "error": 0,
+        "rms": 0.07568103718179847,
+        "frames": 24000
+      },
+      {
+        "type": "peaking",
+        "error": 0,
+        "rms": 0.02964690319641356,
+        "frames": 24000
+      },
+      {
+        "type": "lowshelf",
+        "error": 0,
+        "rms": 0.041149633861467895,
+        "frames": 24000
+      },
+      {
+        "type": "highshelf",
+        "error": 0,
+        "rms": 0.02968154010237154,
+        "frames": 24000
+      },
+      {
+        "type": "distortion",
+        "error": 0,
+        "rms": 0.29209296647162836,
+        "frames": 24000
+      },
+      {
+        "type": "compressor",
+        "error": 0,
+        "rms": 0.15498249186800722,
+        "frames": 24000
+      },
+      {
+        "type": "delay",
+        "error": 0,
+        "rms": 0.14337011616079967,
+        "frames": 24000
+      },
+      {
+        "type": "reverb",
+        "error": 0,
+        "rms": 0.052484430969448985,
+        "frames": 24000
+      },
+      {
+        "type": "chorus",
+        "error": 0,
+        "rms": 0.10133583083322965,
+        "frames": 24000
+      },
+      {
+        "type": "ringmod",
+        "error": 0,
+        "rms": 0.08239986778427119,
+        "frames": 24000
+      },
+      {
+        "type": "bitcrush",
+        "error": 0,
+        "rms": 0.16455944667856062,
+        "frames": 24000
+      }
+    ],
+    "canvasChangedWithInspector": true,
+    "sliderLabels": [
+      "Gain",
+      "Cutoff",
+      "Q"
+    ],
+    "baseline": {
+      "sourceUnchanged": 0.25,
+      "history": 1
+    },
+    "continuous": {
+      "historyEntries": 1,
+      "edits": 48,
+      "processedShapes": 7,
+      "samples": [
+        {
+          "sum": 6920825,
+          "processed": true,
+          "state": "pending"
+        },
+        {
+          "sum": 6920825,
+          "processed": true,
+          "state": "pending"
+        },
+        {
+          "sum": 6920821,
+          "processed": true,
+          "state": "pending"
+        },
+        {
+          "sum": 6920821,
+          "processed": true,
+          "state": "ready"
+        },
+        {
+          "sum": 7369353,
+          "processed": true,
+          "state": "pending"
+        },
+        {
+          "sum": 7369353,
+          "processed": true,
+          "state": "pending"
+        },
+        {
+          "sum": 6920820,
+          "processed": true,
+          "state": "ready"
+        },
+        {
+          "sum": 6920820,
+          "processed": true,
+          "state": "pending"
+        },
+        {
+          "sum": 6920820,
+          "processed": true,
+          "state": "pending"
+        },
+        {
+          "sum": 6920815,
+          "processed": true,
+          "state": "pending"
+        },
+        {
+          "sum": 6920815,
+          "processed": true,
+          "state": "ready"
+        },
+        {
+          "sum": 6920815,
+          "processed": true,
+          "state": "ready"
+        },
+        {
+          "sum": 6920987,
+          "processed": true,
+          "state": "pending"
+        },
+        {
+          "sum": 6920987,
+          "processed": true,
+          "state": "ready"
+        },
+        {
+          "sum": 6920987,
+          "processed": true,
+          "state": "pending"
+        },
+        {
+          "sum": 7369354,
+          "processed": true,
+          "state": "pending"
+        }
+      ]
+    },
+    "trimDoesNotReuseOldShape": true,
+    "rapidEditsBypassUndo": true,
+    "smallGermanViewport": true,
+    "physicalAudio": false
+  },
+  "validation": {
+    "focusedTestsPassed": 17,
+    "focusedFiles": 4,
+    "baselineFullFrontendTests": 1912,
+    "baselineVersion": "0.13.23",
+    "fullFrontendSuiteRepeated": false,
+    "lint": "pass",
+    "typescript": "pass",
+    "releaseTestsPassed": 21,
+    "normalMacBundle": "pass",
+    "localInstall": "0.13.24",
+    "strictDeepAdHocSignature": "pass",
+    "autosavesRetained": 1,
+    "precedingGeneralCI": {
+      "version": "0.13.23",
+      "run": 38919660069,
+      "conclusion": "success"
+    },
+    "precedingIOSCI": {
+      "run": 38919660080,
+      "status": "in_progress"
+    }
+  },
+  "behavior": {
+    "samplingIntervalMilliseconds": 120,
+    "continuousChangesResetDeadline": false,
+    "overlappingDSP": false,
+    "pendingDisplay": "Last processed shape, marked FX\u2026",
+    "geometryChange": "Immediate source fallback, no old processed shape",
+    "hiddenWindow": "No new renders; stale active results discarded",
+    "cacheBudgetBytes": 33554432,
+    "cacheEntries": 8,
+    "clipSeconds": 60
+  },
+  "limitations": [
+    "Visual refresh follows offline-render completion; not sample-by-sample metering or live audition audio.",
+    "Native inserts, track/bus/master processing and out-of-clip tails remain excluded.",
+    "Clips beyond 60 seconds / 32 MiB render budget show source-only.",
+    "Browser checks do not establish physical iOS or new listening acceptance."
+  ],
+  "distribution": {
+    "appleUpload": false
+  }
+}

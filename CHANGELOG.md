@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.24 — 2026-10-16
+
+- Refresh segment-effect waveforms during continuous slider gestures instead of waiting for movement to stop.
+- Keep the last processed shape under FX… while the latest settings render; discard it on trim, source or placement changes.
+- Suspend hidden-window preview work; retain serialized rendering, bounded caching and one Undo per gesture.
+
 ## 0.13.23 — 2026-10-16
 
 - Show processed waveforms for built-in segment effects, including clip gain, fades and saved effect automation, using display-only offline DSP.

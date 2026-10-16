@@ -610,7 +610,7 @@
     "waveformFxReady": "FX",
     "waveformFxPending": "FX…",
     "waveformFxSource": "FX: Quelle",
-    "waveformHelp": "Normalisiert vergrößert leise Quellen anhand ihres Originalpegels. Interne Segmenteffekte, Segmentpegel und Fades aktualisieren sichtbare Wellenformen nach kurzer Pause (bis 60 s / 32 MiB). FX bedeutet verarbeitet, FX… wird aktualisiert, FX: Quelle zeigt das Original (native Inserts, größere Segmente, Cache-Grenze oder Renderfehler). Spur-, Bus- und Mastereffekte sowie Nachhall außerhalb der Segmentgrenzen fehlen. Die Modulationsphase folgt einem Segmentbereich-Render. Die Anzeige verändert kein Audio."
+    "waveformHelp": "Normalisiert vergrößert leise Quellen anhand ihres Originalpegels. Interne Segmenteffekte, Segmentpegel und Fades aktualisieren sichtbare Wellenformen während der Reglerbewegung (bis 60 s / 32 MiB). FX bedeutet verarbeitet, FX… zeigt während der Aktualisierung den letzten verarbeiteten Stand, FX: Quelle zeigt das Original (native Inserts, größere Segmente, Cache-Grenze oder Renderfehler). Spur-, Bus- und Mastereffekte sowie Nachhall außerhalb der Segmentgrenzen fehlen. Die Modulationsphase folgt einem Segmentbereich-Render. Die Anzeige verändert kein Audio."
   },
   "common": {
     "slotA": "A",

@@ -51,7 +51,7 @@ output test. On macOS this changes the system output for all apps.
 - Fit the whole project, zoom to samples or frames, adjust track heights and hide
   optional panels. Choose normalized or mix-level waveforms in View, or override
   the display for one track in its context menu or Track Settings. Built-in segment
-  effects refresh the waveform while you adjust them (clips up to 60 seconds);
+  effects refresh the waveform during continuous slider adjustments (clips up to 60 seconds);
   an FX label distinguishes processed, updating and source-only views. Native
   inserts and track/master effects are not included in this display.
 - Edit slider readouts with exact numeric entries. On touch screens, drag a number up or down to adjust

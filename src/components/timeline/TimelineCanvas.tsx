@@ -763,7 +763,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     <div ref={containerRef} className="relative" style={{ height: totalHeight }}>
       <canvas
         data-audio-timeline
-        data-fx-waveforms={JSON.stringify([...clipWaveforms].map(([id, view]) => [id, view.state]))}
+        data-fx-waveforms={JSON.stringify([...clipWaveforms].map(([id, view]) => [id, view.state, !!view.source]))}
         ref={canvasRef}
         className="block"
         style={{ cursor, width, height: totalHeight, touchAction: touchArrange ? 'none' : 'pan-y' }}

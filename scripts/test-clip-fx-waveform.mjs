@@ -43,11 +43,32 @@ try{
  await ready();await page.waitForTimeout(100);const after=await pixels();assert.notEqual(before,after);
  const baseline=await page.evaluate(()=>({sourceUnchanged:window.fxTest.source.buffer.getChannelData(0)[2],history:window.fxTest.store.temporal.getState().pastStates.length}));
  assert.equal(baseline.sourceUnchanged,.25);assert.equal(baseline.history,1);
+ // Keep moving the real slider: waveform pixels must change before movement ends.
+ const continuous=await slider.evaluate(async n=>{
+  const canvas=document.querySelector('[data-audio-timeline]'),setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;
+  const samples=[],historyBefore=window.fxTest.store.temporal.getState().pastStates.length;let tick=0;
+  n.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1,pointerType:'mouse'}));
+  const edits=setInterval(()=>{tick++;setter.call(n,String(tick%2?200+tick:17500+tick));n.dispatchEvent(new Event('input',{bubbles:true}));},35);
+  try{for(let i=0;i<16;i++){
+   await new Promise(resolve=>setTimeout(resolve,90));
+   const pixels=canvas.getContext('2d').getImageData(10*devicePixelRatio,45*devicePixelRatio,200*devicePixelRatio,65*devicePixelRatio).data;
+   let sum=0;for(const v of pixels)sum+=v;
+   const state=JSON.parse(canvas.dataset.fxWaveforms).find(([id])=>id==='c');samples.push({sum,processed:state[2],state:state[1]});
+  }}finally{clearInterval(edits);n.dispatchEvent(new Event('change',{bubbles:true}));window.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:1,pointerType:'mouse'}));}
+  return{historyEntries:window.fxTest.store.temporal.getState().pastStates.length-historyBefore,edits:tick,processedShapes:new Set(samples.filter(s=>s.processed).map(s=>s.sum)).size,samples};
+ });
+ assert.equal(continuous.historyEntries,1);assert.ok(continuous.edits>20,JSON.stringify(continuous));assert.ok(Math.max(...continuous.samples.map(s=>s.sum))-Math.min(...continuous.samples.map(s=>s.sum))>10000,JSON.stringify(continuous));assert.ok(continuous.processedShapes>=2,JSON.stringify(continuous));await ready();
  // Rapid edits, bypass and Undo must never display an old processed version.
  await page.evaluate(()=>{const s=window.fxTest.store;for(const freq of [9000,3000,150])s.getState().setSegmentEffects('c',[{type:'lowpass',enabled:true,params:{freq,q:1}}]);});await ready();
  await page.evaluate(()=>window.fxTest.store.getState().setSegmentEffects('c',[{type:'lowpass',enabled:false,params:{freq:150,q:1}}]));
  await page.waitForFunction(()=>JSON.parse(document.querySelector('[data-audio-timeline]').dataset.fxWaveforms)[0][1]==='dry');
  await page.evaluate(()=>window.fxTest.store.temporal.getState().undo());await ready();
+ // A trim must never borrow the preceding processed waveform's source coordinates.
+ const trimFallback=await page.evaluate(async()=>{
+  const s=window.fxTest.store,state=s.getState();s.setState({project:{...state.project,tracks:state.project.tracks.map(t=>({...t,segments:t.segments.map(c=>({...c,sourceOffset:.2}))}))}});
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  return JSON.parse(document.querySelector('[data-audio-timeline]').dataset.fxWaveforms)[0];
+ });assert.equal(trimFallback[1],'pending');assert.equal(trimFallback[2],false);await ready();
  await page.setViewportSize({width:390,height:844});await page.evaluate(async()=>{const {default:i18n}=await import('/src/i18n/index.ts');await i18n.changeLanguage('de');document.querySelector('#waveform-test-inspector').style.width='330px';});await ready();
- assert.deepEqual(errors,[]);console.log(JSON.stringify({pcm,canvasChangedWithInspector:before!==after,sliderLabels:labels,baseline,rapidEditsBypassUndo:true,smallGermanViewport:true,physicalAudio:false}));
+ assert.deepEqual(errors,[]);console.log(JSON.stringify({pcm,canvasChangedWithInspector:before!==after,sliderLabels:labels,baseline,continuous,trimDoesNotReuseOldShape:true,rapidEditsBypassUndo:true,smallGermanViewport:true,physicalAudio:false}));
 }finally{await browser.close();}

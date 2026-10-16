@@ -597,7 +597,7 @@
     "waveformFxReady": "FX",
     "waveformFxPending": "FX…",
     "waveformFxSource": "FX: source",
-    "waveformHelp": "Normalized enlarges quiet sources using their original level. Built-in segment effects, clip gain and fades update visible waveforms after a short pause (clips up to 60 s / 32 MiB). FX means processed; FX… means updating; FX: source means the original is shown (native inserts, larger clips, cache limits or render failure). Track/bus/master effects and tails outside clip bounds are excluded. Modulation phase follows a clip-range render. This display never changes the audio."
+    "waveformHelp": "Normalized enlarges quiet sources using their original level. Built-in segment effects, clip gain and fades refresh visible waveforms during slider adjustments (clips up to 60 s / 32 MiB). FX means processed; FX… shows the last processed shape while updating; FX: source means the original is shown (native inserts, larger clips, cache limits or render failure). Track/bus/master effects and tails outside clip bounds are excluded. Modulation phase follows a clip-range render. This display never changes the audio."
   },
   "common": {
     "slotA": "A",

@@ -18,6 +18,25 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.24 — continuous waveform feedback
+
+Segment-effect waveforms now refresh during uninterrupted slider movements.
+The scheduler samples the latest settings between serialized renders and keeps
+the last processed shape under FX… while updating. Trims, source/placement changes
+and bypass immediately stop showing the preceding shape. Hidden windows suspend
+preview work. Render/cache budgets and the native/long-clip exclusions are unchanged.
+
+Seventeen focused scheduler, hook and waveform tests pass. The real-browser
+inspector check made 48 continuous changes, displayed seven processed shapes
+before release and produced one Undo entry. PCM checks for all twelve built-in
+effects, trim invalidation, bypass/Undo and the small German viewport pass again.
+Lint, TypeScript, 21 release checks and the normal Mac bundle pass. The local
+0.13.24 app is installed with strict/deep ad-hoc signature verification and its
+autosave preserved. Preceding 0.13.23 [general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38919660069)
+is green; its iOS run was still in progress at this check. The last full frontend suite is the 1,912-test 0.13.23
+baseline; it is not presented as a new full-suite run.
+[Checkpoint evidence](evidence/continuous-fx-waveform.json). No Apple upload.
+
 ## Local 0.13.23 — effect-aware segment waveforms
 
 Built-in segment effects refresh visible timeline waveforms after a short editing
