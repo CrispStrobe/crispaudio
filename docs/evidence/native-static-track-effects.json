@@ -1,0 +1,54 @@
+{
+  "version": "0.13.9",
+  "date": "2026-10-16",
+  "behavior": [
+    "Live built-in track wet/dry mix for six effects, delay time/feedback, chorus depth/rate and ring frequency",
+    "Native structure identity excludes only finite supported static values and curves; unsupported or malformed settings remain structural",
+    "Existing UI/store controls and Undo/Redo update the current graph",
+    "Optional static values share sparse control packets with curves; omitted values retain prior bases for older callers",
+    "Static values mirror constructor clamping and float precision, including legacy oscillator rates outside automation ranges",
+    "Automation retains priority over base values; history and phase keep running",
+    "Whole packet validation completes before static values or curves are applied"
+  ],
+  "validation": {
+    "status": "complete",
+    "focusedFrontend": "22 passed",
+    "media": "163 passed, 10 optional tests skipped with native-engine enabled",
+    "mediaLog": "/tmp/crispaudio-static-fx-media.log",
+    "nativeSignal": "All eleven supported static controls match continuously running step-envelope references through edits and restoration; malformed later control leaves earlier base/master unchanged",
+    "constructorParity": "Exact PCM matches for negative, fractional and large static values versus fresh constructors; automation priority and non-finite rejection checked",
+    "transport": "Store knob update and Undo call updateMix without another play; rack bypass change restarts",
+    "frontend": {
+      "result": "PASS",
+      "tests": 1773,
+      "files": 181,
+      "log": "/tmp/crispaudio-static-fx-frontend-full.log",
+      "scope": "One fresh full run, maxWorkers=2 and testTimeout=20000; repository options unchanged"
+    },
+    "appTests": "41 passed, 1 optional test skipped",
+    "ios": "Locked aarch64-apple-ios-sim compile PASS; existing unused MIDI method warning",
+    "release": "21 passed",
+    "lint": "PASS",
+    "typescript": "PASS",
+    "macBuild": "Normal debug app bundle PASS"
+  },
+  "limits": [
+    "Other built-in settings, filter/compressor controls, master/clip settings and rack structure remain structural",
+    "Native control delivery is block-based, not sample-accurate timestamped events",
+    "No physical audio, commercial plug-in or external interface acceptance performed"
+  ],
+  "appleUpload": false,
+  "installed": {
+    "version": "0.13.9",
+    "app": "~/Applications/CrispAudio-local.app",
+    "signature": "deep/strict PASS",
+    "autosavesRetained": 1,
+    "priorAppAndSession": "backed up before replacement",
+    "independentCli": "unchanged"
+  },
+  "previousCi": {
+    "commit": "ae6fdc8",
+    "general": "PASS",
+    "ios": "in progress at last check"
+  }
+}

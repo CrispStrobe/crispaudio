@@ -2281,8 +2281,8 @@
     "limits": "Only master meters are available. Live mixing, recording and monitor clicks are unavailable in this mode. Playback uses your selected output device.",
     "mode": "Playback mode",
     "live": "Live",
-    "liveHelp": "Live playback runs AU and VST3 effects continuously. Faders, pan, mute, solo, sends, plug-in parameters and bypass update during playback. Pause retains the effect state; seeking rebuilds its history.",
-    "liveLimits": "Structural and built-in effect edits restart playback. Audio is processed at 48 kHz; sources are converted when needed. Recording and monitor clicks require disabling native inserts. Select Preview for a rendered fallback.",
+    "liveHelp": "Live runs AU/VST3 effects continuously. Mixer controls, plug-in parameters and supported track effect knobs update during playback. Pause retains state; seeking rebuilds history.",
+    "liveLimits": "Rack changes and other built-in effect settings restart playback. Audio runs at 48 kHz. Microphone recording uses a prepared wet backing and dry monitoring. Monitor clicks and live plug-in input monitoring remain unavailable.",
     "shortLoop": "This loop is too short for Live native effects. Select Preview to audition loops shorter than 43 ms."
   }
 }

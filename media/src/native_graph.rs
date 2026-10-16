@@ -283,6 +283,8 @@ pub struct EffectAutomationControls {
     pub index: usize,
     #[serde(default = "mix_parameter")]
     pub parameter: String,
+    #[serde(default)]
+    pub value: Option<f64>,
     pub points: Value,
 }
 fn mix_parameter() -> String {
@@ -685,10 +687,11 @@ impl Graph {
                     .iter()
                     .filter(|effect| effect["enabled"] == true)
                     .count();
-                mixes.push(track.builtin.prepare_control(
+                mixes.push(track.builtin.prepare_value_control(
                     active_index,
                     &mix.parameter,
                     &mix.points,
+                    mix.value,
                 )?);
             }
             parsed.push((
@@ -1289,6 +1292,127 @@ mod tests {
                         (sample[0] - expected[0]).abs() < 1e-6,
                         "{kind} {parameter} history or static Read changed at block {block}"
                     );
+                }
+            }
+        }
+    }
+    #[test]
+    fn static_track_effect_values_keep_history_and_validate_packets_before_applying() {
+        for (kind, parameter, params, original, held) in [
+            (
+                "delay",
+                "time",
+                json!({"time":0.003,"feedback":0.3,"mix":0.8}),
+                0.003,
+                0.018,
+            ),
+            (
+                "delay",
+                "feedback",
+                json!({"time":0.003,"feedback":0.2,"mix":0.8}),
+                0.2,
+                0.8,
+            ),
+            (
+                "chorus",
+                "depth",
+                json!({"rate":1.5,"depth":0.2,"mix":0.8}),
+                0.2,
+                0.9,
+            ),
+            (
+                "chorus",
+                "rate",
+                json!({"rate":1.5,"depth":0.7,"mix":0.8}),
+                1.5,
+                4.7,
+            ),
+            ("ringmod", "freq", json!({"freq":200,"mix":0.8}), 200., 731.),
+            (
+                "delay",
+                "mix",
+                json!({"time":0.003,"feedback":0.3,"mix":0.3}),
+                0.3,
+                0.8,
+            ),
+            (
+                "chorus",
+                "mix",
+                json!({"rate":1.5,"depth":0.7,"mix":0.3}),
+                0.3,
+                0.8,
+            ),
+            ("ringmod", "mix", json!({"freq":200,"mix":0.3}), 0.3, 0.8),
+            (
+                "distortion",
+                "mix",
+                json!({"drive":0.8,"mix":0.3}),
+                0.3,
+                0.8,
+            ),
+            ("bitcrush", "mix", json!({"bits":4,"mix":0.3}), 0.3, 0.8),
+            (
+                "reverb",
+                "mix",
+                json!({"size":0.01,"decay":0.05,"mix":0.3}),
+                0.3,
+                0.8,
+            ),
+        ] {
+            let source = || {
+                HashMap::from([(
+                    "s".into(),
+                    Source::new(vec![
+                        (0..4096)
+                            .map(|i| 0.3 * (i as f32 * 0.173).sin())
+                            .collect();
+                        2
+                    ])
+                    .unwrap(),
+                )])
+            };
+            let mut doc = json!({"sampleRate":48000,"duration":4096./48000.,"nativeEffects":insert(0),"tracks":[{"id":"a","volume":1,"pan":0,"effects":[{"type":kind,"enabled":true,"params":params}],"segments":[clip("c")]}]});
+            let mut graph = Graph::prepare(&doc, source(), fake).unwrap();
+            doc["tracks"][0]["effects"][0]["automation"][parameter] = json!([
+                {"time":0,"value":original,"curve":"step"},
+                {"time":1024./48000.,"value":held,"curve":"step"},
+                {"time":2048./48000.,"value":original}
+            ]);
+            let mut reference = Graph::prepare(&doc, source(), fake).unwrap();
+            let controls = |value: f64| json!({"masterVolume":1,"tracks":[{"id":"a","volume":1,"pan":0,"muted":false,"solo":false,"effectAutomation":[{"index":0,"parameter":parameter,"value":value,"points":null}]}]});
+            let mut invalid = controls(held);
+            invalid["masterVolume"] = json!(0);
+            invalid["tracks"][0]["effectAutomation"]
+                .as_array_mut()
+                .unwrap()
+                .push(json!({"index":99,"parameter":"mix","value":0,"points":null}));
+            assert!(graph
+                .update_controls(serde_json::from_value(invalid).unwrap())
+                .is_err());
+            let mut out = vec![[0.; 2]; 1024];
+            let mut expected = out.clone();
+            for block in 0..4 {
+                if block == 1 || block == 2 {
+                    graph
+                        .update_controls(
+                            serde_json::from_value(controls(if block == 1 {
+                                held
+                            } else {
+                                original
+                            }))
+                            .unwrap(),
+                        )
+                        .unwrap();
+                }
+                graph.render(&mut out).unwrap();
+                reference.render(&mut expected).unwrap();
+                for (sample, expected) in out.iter().zip(&expected) {
+                    for channel in 0..2 {
+                        assert!(
+                            (sample[channel] - expected[channel]).abs() < 1e-6,
+                            "{kind} {parameter} lost state at block {block}"
+                        );
+                    }
                 }
             }
         }

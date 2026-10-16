@@ -11,8 +11,15 @@ installed Mac app; browser and iOS sessions can retain the project data.
 | Seek | Rebuilds history to the new position | Seeks within the cached mix |
 | Loop | Musical time wraps; effect tails continue | Repeats the rendered range |
 | Fader, pan, mute/solo, sends, native parameters/bypass | Update the running graph | Stop playback and invalidate the mix |
-| Clip edits, routing, insert order or built-in FX changes | Restart from the current position | Require another render |
+| Supported track FX knobs and their automation | Update without resetting effect history or oscillator phase | Stop playback and invalidate the mix |
+| Clip edits, routing, insert order or other built-in FX changes | Restart from the current position | Require another render |
 | Meters | Track/master peak and RMS, master LUFS/true peak | Master meter |
+
+Track controls that update live: wet/dry mix for delay, chorus, reverb, distortion,
+ring modulation and bitcrush; delay time/feedback; chorus depth/rate; ring frequency.
+Undo and Redo also retain the running graph. Saved automation takes priority over
+a base value until the curve is cleared. Other settings, such as reverb decay or
+distortion drive, still restart playback.
 
 In Settings, select the playback device. Changing it during Live playback closes
 the old output and prepares the current position on the selected device. A missing

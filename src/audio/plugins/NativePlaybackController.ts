@@ -11,8 +11,13 @@ function rack(effects:NativeEffect[]|undefined){return effects?.map(effect=>({..
 function effectStructure(effects:TimelineProject['tracks'][number]['effects']){
  return effects?.map(effect=>{
   if(!nativeTrackEffectParameters.some(parameter=>supportsNativeTrackEffectParameter(effect.type,parameter)))return effect;
-  const automation={...effect.automation};for(const parameter of nativeTrackEffectParameters)if(supportsNativeTrackEffectParameter(effect.type,parameter))delete automation[parameter];
-  return {...effect,automation:Object.keys(automation).length?automation:undefined};
+  const automation={...effect.automation},params={...effect.params};
+  for(const parameter of nativeTrackEffectParameters)if(supportsNativeTrackEffectParameter(effect.type,parameter)){
+   delete automation[parameter];
+   // Keep malformed static values structural so preparation still rejects them.
+   if(params[parameter]===undefined||typeof params[parameter]==='number'&&Number.isFinite(params[parameter]))delete params[parameter];
+  }
+  return {...effect,params,automation:Object.keys(automation).length?automation:undefined};
  });
 }
 /** Live controls do not invalidate topology or replace running DSP. */

@@ -132,6 +132,8 @@ passes support delay, chorus, reverb, distortion, ring modulation and bitcrush.
 Delay time and feedback, chorus depth and rate, and ring frequency can also be
 recorded while retaining effect history and oscillator phase. Master/clip effect
 passes and native plug-in parameter passes remain unavailable.
+The same track effect controls can be adjusted live from the mixer; Undo keeps
+playback running.
 
 Structural edits and other built-in effect changes restart live playback. To record
 a microphone with native effects in the session, CrispAudio first prepares a fixed wet backing

@@ -70,7 +70,7 @@ it('holds track effect mix independently, restores Read and keeps supported enve
  controller.previewAutomation(p,{trackId:'a',parameter:'gain'},.5);expect(controller.previewAutomation(p,target,.8)).toBe(true);await controller.update(p);
  const sent=f.playback.update.mock.calls.at(-1)![0];expect(sent.tracks[0]).toMatchObject({automation:[{time:0,value:.5}],effects:[{automation:{mix:[{time:0,value:.8}],time:[{time:0,value:.2}]}}]});
  expect(nativeLiveStructureKey(sent)).toBe(nativeLiveStructureKey(p));
- const different=structuredClone(p);different.tracks[0].effects[0].params.time=.4;expect(nativeLiveStructureKey(different)).not.toBe(nativeLiveStructureKey(p));
+ const different=structuredClone(p);different.tracks[0].effects[0].enabled=false;expect(nativeLiveStructureKey(different)).not.toBe(nativeLiveStructureKey(p));
  for(const value of [-1,1.1,NaN])expect(controller.previewAutomation(p,target,value)).toBe(false);
  controller.previewAutomation(p,target);await controller.update(p);expect(f.playback.update.mock.calls.at(-1)![0].tracks[0]).toMatchObject({automation:[{time:0,value:.5}],effects:p.tracks[0].effects});
  expect(p).toEqual(original);expect(create).toHaveBeenCalledTimes(1);await controller.stop();
@@ -91,4 +91,16 @@ it.each([{type:'delay' as const,parameter:'time' as const,held:.7,invalid:2.01},
  const p={...mixProject(),tracks:mixProject().tracks.map(track=>({...track,effects:[{type,enabled:true,params:{mix:.3},automation:{[parameter]:[{time:0,value:.2}]}}]}))},original=structuredClone(p),target={trackId:'a',parameter,effectIndex:0};await controller.play(p,sources,0,0,4,false);
  expect(controller.previewAutomation(p,target,invalid)).toBe(false);expect(controller.previewAutomation(p,target,held)).toBe(true);await controller.update(p);const sent=f.playback.update.mock.calls.at(-1)![0];expect(sent.tracks[0].effects?.[0].automation?.[parameter]).toEqual([{time:0,value:held}]);expect(nativeLiveStructureKey(sent)).toBe(nativeLiveStructureKey(p));
  controller.previewAutomation(p,target);await controller.update(p);expect(f.playback.update).toHaveBeenLastCalledWith(p);expect(p).toEqual(original);expect(create).toHaveBeenCalledTimes(1);await controller.stop();
+});
+
+it('holds audition above changed static values and restores Read without changing topology',async()=>{
+ const f=session();create.mockResolvedValue(f.snapshot);const controller=new NativePlaybackController(()=>{},()=>{});
+ const p={...mixProject(),tracks:mixProject().tracks.map(track=>({...track,effects:[{type:'delay' as const,enabled:true,params:{mix:.3,time:.2,feedback:.4}}]}))},original=structuredClone(p),target={trackId:'a',parameter:'mix' as const,effectIndex:0};
+ await controller.play(p,sources,0,0,4,false);controller.previewAutomation(p,target,.9);
+ const changed=structuredClone(p);changed.tracks[0].effects[0].params={mix:.6,time:1.5,feedback:.8};expect(nativeLiveStructureKey(changed)).toBe(nativeLiveStructureKey(p));await controller.update(changed);
+ expect(f.playback.update.mock.calls.at(-1)![0].tracks[0].effects?.[0]).toMatchObject({params:changed.tracks[0].effects[0].params,automation:{mix:[{time:0,value:.9}]}});
+ controller.previewAutomation(changed,target);await controller.update(changed);expect(f.playback.update).toHaveBeenLastCalledWith(changed);expect(p).toEqual(original);expect(create).toHaveBeenCalledTimes(1);await controller.stop();
+ const structural=structuredClone(changed);structural.tracks[0].effects[0].enabled=false;expect(nativeLiveStructureKey(structural)).not.toBe(nativeLiveStructureKey(changed));
+ const drive={...changed,tracks:changed.tracks.map(track=>({...track,effects:[{type:'distortion' as const,enabled:true,params:{drive:.4,mix:.3}}]}))},driveChanged=structuredClone(drive);driveChanged.tracks[0].effects[0].params.drive=.9;expect(nativeLiveStructureKey(driveChanged)).not.toBe(nativeLiveStructureKey(drive));
+ const invalid=structuredClone(changed);invalid.tracks[0].effects[0].params.mix=NaN;expect(nativeLiveStructureKey(invalid)).not.toBe(nativeLiveStructureKey(changed));
 });

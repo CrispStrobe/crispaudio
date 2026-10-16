@@ -2334,6 +2334,7 @@ pub(crate) mod block_dsp {
     }
     pub struct Rack(Vec<Effect>);
     pub struct EffectUpdate {
+        value: Option<f64>,
         index: usize,
         parameter: String,
         curve: Automation,
@@ -2374,13 +2375,65 @@ pub(crate) mod block_dsp {
                 return Err("Effect automation outside parameter bounds".into());
             }
             Ok(EffectUpdate {
+                value: None,
                 index,
                 parameter: parameter.into(),
                 curve,
             })
         }
+        /// Static base values coexist with curves; old packets keep their bases.
+        pub fn prepare_value_control(
+            &self,
+            index: usize,
+            parameter: &str,
+            points: &Value,
+            value: Option<f64>,
+        ) -> Result<EffectUpdate> {
+            if value.is_some_and(|v| !v.is_finite()) {
+                return Err("Non-finite native effect value".into());
+            }
+            let mut update = self.prepare_control(index, parameter, points)?;
+            update.value = value;
+            Ok(update)
+        }
         /// Keep delay/reverb history, oscillators and every processor instance.
         pub fn apply_control(&mut self, update: EffectUpdate) {
+            if let Some(value) = update.value {
+                // Match filters() static defaults/clamping and float precision.
+                match (&mut self.0[update.index], update.parameter.as_str()) {
+                    (Effect::Delay(delay), "time") => {
+                        delay.frames = value.clamp(0.0, 2.0) as f32 as f64 * RATE
+                    }
+                    (Effect::Delay(delay), "feedback") => {
+                        delay.feedback = value.clamp(0.0, 0.95) as f32 as f64
+                    }
+                    (Effect::Delay(delay), "mix") => {
+                        delay.mix = value.clamp(0.0, 1.0) as f32 as f64
+                    }
+                    (Effect::Chorus(chorus), "depth") => {
+                        chorus.depth = (value.clamp(0.0, 1.0) * 0.01) as f32
+                    }
+                    (Effect::Chorus(chorus), "rate") => {
+                        chorus.rates = [
+                            value.clamp(-RATE / 2.0, RATE / 2.0) as f32 as f64,
+                            (value * 1.2).clamp(-RATE / 2.0, RATE / 2.0) as f32 as f64,
+                        ]
+                    }
+                    (Effect::Chorus(chorus), "mix") => {
+                        chorus.mix = value.clamp(0.0, 1.0) as f32 as f64
+                    }
+                    (Effect::RingMod { frequency, .. }, "freq") => {
+                        *frequency = value.clamp(0.1, RATE / 2.0) as f32 as f64
+                    }
+                    (Effect::RingMod { mix, .. } | Effect::BitCrush { mix, .. }, "mix") => {
+                        *mix = value.clamp(0.0, 1.0) as f32 as f64
+                    }
+                    (Effect::Distortion { mix, .. } | Effect::Reverb { mix, .. }, "mix") => {
+                        *mix = value.clamp(0.0, 1.0)
+                    }
+                    _ => unreachable!("Static value validated against immutable rack"),
+                }
+            }
             let automation = match (&mut self.0[update.index], update.parameter.as_str()) {
                 (Effect::Delay(delay), "feedback") => &mut delay.feedback_automation,
                 (Effect::Chorus(chorus), "depth") => &mut chorus.depth_automation,
@@ -2479,6 +2532,54 @@ pub(crate) mod block_dsp {
                 .err()
                 .unwrap()
                 .contains("delay history"));
+        }
+        #[test]
+        fn static_values_match_constructor_clamping_and_automation_takes_priority() {
+            for (kind, parameter) in [
+                ("delay", "time"),
+                ("delay", "feedback"),
+                ("delay", "mix"),
+                ("chorus", "depth"),
+                ("chorus", "rate"),
+                ("chorus", "mix"),
+                ("ringmod", "freq"),
+                ("ringmod", "mix"),
+                ("bitcrush", "mix"),
+                ("distortion", "mix"),
+                ("reverb", "mix"),
+            ] {
+                for value in [-100000., 0.73, 100000.] {
+                    let doc = json!([{"type":kind,"enabled":true,"params":{}}]);
+                    let mut updated = Rack::new_track(&doc, &mut Budget::default()).unwrap();
+                    assert!(updated
+                        .prepare_value_control(0, parameter, &Value::Null, Some(f64::NAN))
+                        .is_err());
+                    let update = updated
+                        .prepare_value_control(0, parameter, &Value::Null, Some(value))
+                        .unwrap();
+                    updated.apply_control(update);
+                    let mut fresh_doc = doc.clone();
+                    fresh_doc[0]["params"][parameter] = json!(value);
+                    let mut fresh = Rack::new_track(&fresh_doc, &mut Budget::default()).unwrap();
+                    for frame in 0..128 {
+                        assert_eq!(
+                            updated.at([0.3, -0.2], frame),
+                            fresh.at([0.3, -0.2], frame),
+                            "{kind} {parameter} clamp differs"
+                        );
+                    }
+                }
+            }
+            let doc = json!([{"type":"ringmod","enabled":true,"params":{"freq":200,"mix":1},"automation":{"freq":[{"time":0,"value":300}]}}]);
+            let mut updated = Rack::new_track(&doc, &mut Budget::default()).unwrap();
+            let mut reference = Rack::new_track(&doc, &mut Budget::default()).unwrap();
+            let update = updated
+                .prepare_value_control(0, "freq", &doc[0]["automation"]["freq"], Some(9000.))
+                .unwrap();
+            updated.apply_control(update);
+            for frame in 0..128 {
+                assert_eq!(updated.at([1.; 2], frame), reference.at([1.; 2], frame));
+            }
         }
         #[test]
         fn live_carrier_phase_survives_controls_read_and_project_loops() {

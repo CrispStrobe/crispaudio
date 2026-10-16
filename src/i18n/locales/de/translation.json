@@ -2294,8 +2294,8 @@
     "limits": "Nur die Master-Anzeigen sind verfügbar. Live-Mischen, Aufnahme und Metronom sind in diesem Modus nicht verfügbar. Die Wiedergabe nutzt das gewählte Ausgabegerät.",
     "mode": "Wiedergabemodus",
     "live": "Live",
-    "liveHelp": "Live-Wiedergabe verarbeitet AU- und VST3-Effekte fortlaufend. Pegel, Panorama, Stumm, Solo, Sends, Plug-in-Parameter und Bypass lassen sich beim Abspielen ändern. Pause behält den Effektzustand; Springen baut den Verlauf neu auf.",
-    "liveLimits": "Strukturänderungen und Änderungen eingebauter Effekte starten die Wiedergabe neu. Audio wird mit 48 kHz verarbeitet; Quellen werden bei Bedarf umgerechnet. Aufnahme und Metronom erfordern deaktivierte native Inserts. „Vorschau“ bietet die gerenderte Alternative.",
+    "liveHelp": "Live verarbeitet AU-/VST3-Effekte fortlaufend. Mixer, Plug-in-Parameter und unterstützte Regler integrierter Spureffekte reagieren während der Wiedergabe. Pause erhält den Zustand; Springen baut die Vorgeschichte neu auf.",
+    "liveLimits": "Rack-Änderungen und andere Einstellungen integrierter Effekte starten die Wiedergabe neu. Audio läuft mit 48 kHz. Mikrofonaufnahmen nutzen einen vorbereiteten Effekt-Begleitmix und trockenes Monitoring. Metronom und direktes Eingangsmonitoring durch Plug-ins sind noch nicht verfügbar.",
     "shortLoop": "Diese Schleife ist für native Live-Effekte zu kurz. Für Schleifen unter 43 ms „Vorschau“ wählen."
   }
 }

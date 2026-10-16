@@ -1,0 +1,21 @@
+import {afterEach,it,expect,vi} from 'vitest';
+import {act,cleanup,renderHook} from '@testing-library/react';
+import {useNativeTimelineTransport} from '../../../src/hooks/useNativeTimelineTransport';
+import {useProjectStore} from '../../../src/stores/projectStore';
+import {useUIStore} from '../../../src/stores/uiStore';
+import type {TimelineEngine} from '../../../src/audio/engine/TimelineEngine';
+vi.mock('../../../src/i18n',()=>({default:{language:'en',t:(key:string)=>key,changeLanguage:vi.fn()}}));
+afterEach(()=>{cleanup();vi.useRealTimers();});
+it('keeps native playback running for a track FX knob and Undo, restarting for rack changes',async()=>{
+ vi.useFakeTimers();useUIStore.setState({timelineRecording:false});
+ const initial=useProjectStore.getInitialState(),project={...initial.project,duration:4,tracks:[{id:'t',name:'Track',volume:1,pan:0,muted:false,solo:false,segments:[],effects:[{type:'delay' as const,enabled:true,params:{time:.2,mix:.3,feedback:.4}}]}]};
+ useProjectStore.setState({...initial,project});useProjectStore.temporal.getState().clear();
+ const playNativeOwned=vi.fn().mockResolvedValue(undefined),updateMix=vi.fn(),closeNativeOwned=vi.fn().mockResolvedValue(undefined);
+ const engine={playNativeOwned,updateMix,closeNativeOwned,pauseNativeOwned:vi.fn().mockResolvedValue(undefined)} as unknown as TimelineEngine,ref={current:engine};
+ renderHook(()=>useNativeTimelineTransport(ref,true));
+ await act(async()=>useProjectStore.getState().setIsPlaying(true));expect(playNativeOwned).toHaveBeenCalledTimes(1);updateMix.mockClear();
+ act(()=>useProjectStore.getState().updateTrack('t',{effects:[{...project.tracks[0].effects[0],params:{time:1.5,mix:.7,feedback:.8}}]}));
+ expect(playNativeOwned).toHaveBeenCalledTimes(1);expect(updateMix).toHaveBeenLastCalledWith(useProjectStore.getState().project);expect(closeNativeOwned).not.toHaveBeenCalled();
+ act(()=>useProjectStore.temporal.getState().undo());expect(useProjectStore.getState().project).toBe(project);expect(playNativeOwned).toHaveBeenCalledTimes(1);expect(updateMix).toHaveBeenLastCalledWith(project);
+ await act(async()=>useProjectStore.getState().updateTrack('t',{effects:[{...project.tracks[0].effects[0],enabled:false}]}));expect(playNativeOwned).toHaveBeenCalledTimes(2);
+});

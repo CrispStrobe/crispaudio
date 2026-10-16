@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.9 — 2026-10-16
+
+- Adjust supported built-in track effect knobs during Mac Live playback without restarting processors; Undo and Redo retain the running graph.
+- Update static base values alongside automation, preserving effect history, oscillator phase and curve priority.
+- Match existing effect limits and float precision, including legacy oscillator rates and parameter defaults.
+- Correct Live playback help to describe native-rack microphone accompaniment and current control support.
+
 ## 0.13.8 — 2026-10-16
 
 - Record delay time, chorus rate and ring frequency passes during Mac Live playback with native inserts.

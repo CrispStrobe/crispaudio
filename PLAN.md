@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.8. This section is the current plan.
+Updated 2026-10-16, for local 0.13.9. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -85,6 +85,10 @@ Local 0.13.8 adds delay time, chorus rate and ring frequency passes. Track delay
 reserve history before playback within the existing budget; native oscillators
 retain phase across edits, Read restoration and loops.
 [Delay and oscillator checks](docs/evidence/native-time-phase-automation.json).
+Local 0.13.9 also updates these track effect knobs live, including Undo/Redo,
+without resetting processors. Base values follow constructor clamping and remain
+subordinate to saved curves. Other built-in settings and rack edits still restart.
+[Live knob checks](docs/evidence/native-static-track-effects.json).
 Continuous native input DSP, native plug-in parameter passes and master/clip
 passes remain future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
@@ -115,7 +119,7 @@ The user authorized these six steps in order on 2026-10-15:
 
 Local 0.12.0 implements this native transport on macOS, with an explicit rendered
 Preview fallback. Native processing stays at 48 kHz; sources are frozen and
-converted when required. Structural/built-in FX changes restart playback.
+converted when required. Structural edits and unsupported built-in settings restart playback.
 Native microphone/automation-pass recording, monitor clicks, custom plugin windows, commercial-plugin and
 external-interface acceptance remain outside this checkpoint. Mac Store submission
 still needs its native Mac profile setup and signed/sandboxed hosting acceptance;
