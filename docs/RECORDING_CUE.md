@@ -20,8 +20,10 @@ saved static settings and order. Disabled inserts are omitted; bypass keeps the
 same delay. Built-in effects and saved automation curves are not part of this cue
 path. Edit native inserts while stopped; rack changes invalidate the warm input.
 
-Each insert adds **4096 samples of bridge buffering plus reported plug-in latency**:
-at 48 kHz, at least **85.3 ms**, or **170.7 ms** for two inserts. The displayed FX delay
+The whole input rack shares **4096 samples of bridge buffering**, plus the sum of
+reported plug-in latencies: at 48 kHz, **85.3 ms for either one or two inserts**.
+Version 0.13.33 removes the second bridge buffer that previously made a two-insert
+cue add 170.7 ms before plug-in latency. The displayed FX delay
 excludes device/input/output latency. This buffered path is unsuitable for tight
 real-time performance. Low-latency native input DSP remains future work. A plug-in
 fault or missed deadline mutes the cue and closes its streams; raw recording
@@ -39,12 +41,15 @@ microphone or automatically enables monitoring.
 
 ## Measured scope
 
-[Mac native checks](evidence/recording-cue-native.json) use actual Tauri IPC,
+[Mac native checks](evidence/recording-cue-shared-buffer.json) use actual Tauri IPC,
 WebKit AudioWorklets and the bundled Apple AU helper, with generated input and a
-silent output sink. One/two AUBandpass chains at 48 kHz pass a two-second capture,
-show the expected delay/filter response and leave the native registry empty.
-This does not qualify physical microphones, VST3 cue chains, commercial inserts,
-long sessions, background operation or heavy UI load.
+silent output sink. One/two AUBandpass and SDK ADelay VST3 chains at 48 kHz pass eight-second captures
+with the expected response and empty native registry after close. Bypassed AU
+impulse checks measure exactly 4096 samples of bridge delay for both rack sizes.
+This does not qualify physical microphones, commercial inserts, long sessions,
+background operation or heavy UI load. Smaller per-insert buffers were tried and
+[rejected after missed deadlines](evidence/recording-cue-rejected-buffers.json);
+there is no faster-buffer selector in the app.
 
 `scripts/test-recording-cue.mjs` also checks real capture/native worklets with
 synthetic MediaStreams and an actual AU helper through a Node pipe fixture bridge.

@@ -14,14 +14,14 @@ export function observeNativePluginBridge(ctx:BaseAudioContext,observer:(event:N
 const prepared=new WeakMap<BaseAudioContext,Promise<void>>();
 export function prepareNativePlugin(ctx:BaseAudioContext){let ready=prepared.get(ctx);if(!ready){ready=ctx.audioWorklet.addModule(url).catch(error=>{prepared.delete(ctx);throw error;});prepared.set(ctx,ready);}return ready;}
 /** Internal real-time bridge. Callers must compensate its fixed delay in the complete graph. */
-export async function prepareNativePluginNode(ctx:BaseAudioContext,request:PluginNodeRequest,options:{blockFrames?:number;signal?:AbortSignal;onFault:(reason:string)=>void}){
+export async function prepareNativePluginNode(ctx:BaseAudioContext,request:PluginNodeRequest,options:{blockFrames?:number;signal?:AbortSignal;onFault:(reason:string)=>void;openStream?:()=>Promise<Pick<NativePluginStream,'info'|'process'|'close'|'snapshot'>>}){
  if(ctx.sampleRate!==request.sampleRate)throw new Error('Invalid plugin bridge clock');
  const {transport:configuration,parameterAutomation,...streamRequest}=request;
  if(!validNativeParameterAutomation(parameterAutomation)||!nativeAutomationPacketFits(request.parameters??{},parameterAutomation))throw new Error('Invalid native parameter automation');
  const parameterValues=compileNativeParameterAutomation(parameterAutomation);
  const transport=configuration?validatePluginTransport(configuration):undefined;
  const blockFrames=options.blockFrames??4096,delayBlocks=4;if(!Number.isInteger(blockFrames)||blockFrames<128||blockFrames>4096||blockFrames%128)throw new Error('Invalid plugin bridge buffer');
- await prepareNativePlugin(ctx);options.signal?.throwIfAborted();const stream=await NativePluginStream.open(streamRequest,options.signal);
+ await prepareNativePlugin(ctx);options.signal?.throwIfAborted();const stream=await (options.openStream?options.openStream():NativePluginStream.open(streamRequest,options.signal));
  let dryDelay:FrameDelay;try{dryDelay=new FrameDelay(request.channels,stream.info.latencySamples);}catch(error){await stream.close().catch(()=>{});throw error;}
  const dryScratch=Array.from({length:request.channels},()=>new Float32Array(blockFrames));
  let node:AudioWorkletNode|undefined;

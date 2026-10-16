@@ -1,0 +1,253 @@
+{
+  "scope": "Smaller per-insert buffers were rejected after missed deadlines. These configurations are not shipped. Tests used generated input and silent output; some runs overlapped browser checks.",
+  "candidates": [
+    {
+      "success": false,
+      "runs": [
+        {
+          "blockFrames": 1024,
+          "format": "AU",
+          "count": 1,
+          "seconds": 2,
+          "pulse": false,
+          "success": true,
+          "faults": [],
+          "latencyFrames": 4096,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 1024,
+          "format": "AU",
+          "count": 2,
+          "seconds": 2,
+          "pulse": false,
+          "success": true,
+          "faults": [],
+          "latencyFrames": 8192,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 256,
+          "format": "AU",
+          "count": 1,
+          "seconds": 8,
+          "pulse": false,
+          "success": true,
+          "faults": [],
+          "latencyFrames": 1024,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 256,
+          "format": "VST3",
+          "count": 1,
+          "seconds": 8,
+          "pulse": false,
+          "success": true,
+          "faults": [],
+          "latencyFrames": 1024,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 256,
+          "format": "AU",
+          "count": 1,
+          "seconds": 2,
+          "pulse": true,
+          "success": true,
+          "faults": [],
+          "latencyFrames": 1024,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 256,
+          "format": "AU",
+          "count": 2,
+          "seconds": 8,
+          "pulse": false,
+          "success": true,
+          "faults": [],
+          "latencyFrames": 2048,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 256,
+          "format": "VST3",
+          "count": 2,
+          "seconds": 8,
+          "pulse": false,
+          "success": false,
+          "faults": [
+            "recording.cueFault"
+          ],
+          "latencyFrames": 2048,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 256,
+          "format": "AU",
+          "count": 2,
+          "seconds": 2,
+          "pulse": true,
+          "success": true,
+          "faults": [],
+          "latencyFrames": 2048,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        }
+      ]
+    },
+    {
+      "success": false,
+      "runs": [
+        {
+          "blockFrames": 1024,
+          "format": "AU",
+          "count": 1,
+          "seconds": 2,
+          "pulse": false,
+          "success": true,
+          "faults": [],
+          "latencyFrames": 4096,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 1024,
+          "format": "AU",
+          "count": 2,
+          "seconds": 2,
+          "pulse": false,
+          "success": true,
+          "faults": [],
+          "latencyFrames": 8192,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 512,
+          "format": "AU",
+          "count": 1,
+          "seconds": 8,
+          "pulse": false,
+          "success": false,
+          "faults": [
+            "recording.cueFault"
+          ],
+          "latencyFrames": 2048,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 512,
+          "format": "VST3",
+          "count": 1,
+          "seconds": 8,
+          "pulse": false,
+          "success": false,
+          "faults": [
+            "recording.cueFault"
+          ],
+          "latencyFrames": 2048,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 512,
+          "format": "AU",
+          "count": 1,
+          "seconds": 2,
+          "pulse": true,
+          "success": false,
+          "faults": [
+            "recording.cueFault"
+          ],
+          "latencyFrames": 2048,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 512,
+          "format": "AU",
+          "count": 2,
+          "seconds": 8,
+          "pulse": false,
+          "success": false,
+          "faults": [
+            "recording.cueFault"
+          ],
+          "latencyFrames": 4096,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 512,
+          "format": "VST3",
+          "count": 2,
+          "seconds": 8,
+          "pulse": false,
+          "success": false,
+          "faults": [
+            "recording.cueFault"
+          ],
+          "latencyFrames": 4096,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        },
+        {
+          "blockFrames": 512,
+          "format": "AU",
+          "count": 2,
+          "seconds": 2,
+          "pulse": true,
+          "success": false,
+          "faults": [
+            "recording.cueFault"
+          ],
+          "latencyFrames": 4096,
+          "registry": {
+            "active": 0,
+            "opening": 0
+          }
+        }
+      ]
+    }
+  ]
+}

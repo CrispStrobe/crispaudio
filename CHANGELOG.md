@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.33 — 2026-10-16
+
+- Share one audio bridge across a native recording cue rack. Two inserts now add 85.3 ms of bridge delay at 48 kHz instead of 170.7 ms; reported plug-in latency is additional.
+- Preserve static insert order, latency-matched bypass, dry capture and fault cleanup. Reject changed plug-in latency and release the entire cue rack on an error.
+- Measure one/two AU and VST3 cue chains and exact bypassed-impulse timing through actual Mac Tauri/WebKit. Smaller per-insert buffers failed deadline checks and are not offered.
+
 ## 0.13.32 — 2026-10-16
 
 - Add a collapsed recording cue mix with editable level, pan and mono, independent of track faders and recorded PCM.

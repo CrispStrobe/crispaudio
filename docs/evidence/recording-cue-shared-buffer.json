@@ -1,0 +1,183 @@
+{
+  "kind": "native-cue",
+  "muted": true,
+  "runs": [
+    {
+      "blockFrames": 1024,
+      "count": 1,
+      "faults": [],
+      "format": "AU",
+      "input": "generated AudioBufferSource; no microphone",
+      "kind": "native-cue",
+      "latencyFrames": 4096,
+      "muted": true,
+      "pass1000": 0.12646700755103293,
+      "peak": 0.1291511356830597,
+      "peakIndex": 4205,
+      "pulse": false,
+      "registry": {
+        "active": 0,
+        "opening": 0
+      },
+      "reject6000": 0.003647806948653388,
+      "seconds": 8,
+      "success": true,
+      "transport": "actual Tauri IPC and bundled AU helper",
+      "observedStages": [
+        "accepted",
+        "input",
+        "posted",
+        "reply"
+      ],
+      "retainedTraceEvents": 256
+    },
+    {
+      "blockFrames": 1024,
+      "count": 1,
+      "faults": [],
+      "format": "VST3",
+      "input": "generated AudioBufferSource; no microphone",
+      "kind": "native-cue",
+      "latencyFrames": 4096,
+      "muted": true,
+      "pass1000": 0.10023744154885601,
+      "peak": 0.19705937802791595,
+      "peakIndex": 4202,
+      "pulse": false,
+      "registry": {
+        "active": 0,
+        "opening": 0
+      },
+      "reject6000": 0.10023744287766681,
+      "seconds": 8,
+      "success": true,
+      "transport": "actual Tauri IPC and bundled AU helper",
+      "observedStages": [
+        "accepted",
+        "input",
+        "posted",
+        "reply"
+      ],
+      "retainedTraceEvents": 256
+    },
+    {
+      "blockFrames": 1024,
+      "count": 1,
+      "faults": [],
+      "format": "AU",
+      "input": "generated AudioBufferSource; no microphone",
+      "kind": "native-cue",
+      "latencyFrames": 4096,
+      "measuredPulseDelayFrames": 4096,
+      "muted": true,
+      "pass1000": 0,
+      "peak": 0.5011872053146362,
+      "peakIndex": 28096,
+      "pulse": true,
+      "registry": {
+        "active": 0,
+        "opening": 0
+      },
+      "reject6000": 0,
+      "seconds": 2,
+      "success": true,
+      "transport": "actual Tauri IPC and bundled AU helper",
+      "observedStages": [
+        "accepted",
+        "input",
+        "posted",
+        "reply"
+      ],
+      "retainedTraceEvents": 256
+    },
+    {
+      "blockFrames": 1024,
+      "count": 2,
+      "faults": [],
+      "format": "AU",
+      "input": "generated AudioBufferSource; no microphone",
+      "kind": "native-cue",
+      "latencyFrames": 4096,
+      "muted": true,
+      "pass1000": 0.15956018395592408,
+      "peak": 0.16030336916446686,
+      "peakIndex": 4252,
+      "pulse": false,
+      "registry": {
+        "active": 0,
+        "opening": 0
+      },
+      "reject6000": 0.00013274791861940934,
+      "seconds": 8,
+      "success": true,
+      "transport": "actual Tauri IPC and bundled AU helper",
+      "observedStages": [
+        "accepted",
+        "input",
+        "posted",
+        "reply"
+      ],
+      "retainedTraceEvents": 256
+    },
+    {
+      "blockFrames": 1024,
+      "count": 2,
+      "faults": [],
+      "format": "VST3",
+      "input": "generated AudioBufferSource; no microphone",
+      "kind": "native-cue",
+      "latencyFrames": 4096,
+      "muted": true,
+      "pass1000": 0.10023744154885601,
+      "peak": 0.19705937802791595,
+      "peakIndex": 4298,
+      "pulse": false,
+      "registry": {
+        "active": 0,
+        "opening": 0
+      },
+      "reject6000": 0.10023744287766681,
+      "seconds": 8,
+      "success": true,
+      "transport": "actual Tauri IPC and bundled AU helper",
+      "observedStages": [
+        "accepted",
+        "input",
+        "posted",
+        "reply"
+      ],
+      "retainedTraceEvents": 256
+    },
+    {
+      "blockFrames": 1024,
+      "count": 2,
+      "faults": [],
+      "format": "AU",
+      "input": "generated AudioBufferSource; no microphone",
+      "kind": "native-cue",
+      "latencyFrames": 4096,
+      "measuredPulseDelayFrames": 4096,
+      "muted": true,
+      "pass1000": 0,
+      "peak": 0.5011872053146362,
+      "peakIndex": 28096,
+      "pulse": true,
+      "registry": {
+        "active": 0,
+        "opening": 0
+      },
+      "reject6000": 0,
+      "seconds": 2,
+      "success": true,
+      "transport": "actual Tauri IPC and bundled AU helper",
+      "observedStages": [
+        "accepted",
+        "input",
+        "posted",
+        "reply"
+      ],
+      "retainedTraceEvents": 256
+    }
+  ],
+  "success": true
+}

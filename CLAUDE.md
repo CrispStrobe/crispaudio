@@ -901,7 +901,17 @@ Keep real-recording/listening and native-input/cue qualification separate.
 RecordingMonitor owns a separate monitor-only graph; TimelineCapture retains a
 silent sink so raw capture/meters survive cue disable/fault. Native cue inserts use
 saved static track state, up to two/input and eight total, 1024-frame blocks with
-four-block transport delay plus plug-in latency. No wet capture or independent cue
+four-block transport delay plus plug-in latency (since 0.13.33, shared per whole input rack). No wet capture or independent cue
 device/mix. Await monitoring(false) before native backing preparation and replacement
 cues to release sessions. Preview ownership compares immutable native rack identity;
 project subscriptions skip transport-only state updates. See RECORDING_CUE.md.
+
+### Shared native cue bridge (0.13.33)
+
+NativeCueRack opens up to two native helpers and runs each block through them in
+order behind one NativePluginNode. Per-insert bypass uses FrameDelay for reported
+latency; the bridge sees summed plug-in latency. prepareNativePluginNode has an
+internal optional stream factory; its default timeline/source path is unchanged.
+Do not reduce input block size based on short steady-tone tests: 256/512-frame
+candidates missed deadlines and are recorded as rejected evidence. Exact bypassed
+impulse timing plus AU/VST3 response/cleanup qualify the shared-buffer change only.

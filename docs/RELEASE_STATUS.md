@@ -18,6 +18,39 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.33 — one bridge for the whole native cue rack
+
+A native cue rack now uses one Web Audio bridge for up to two saved inserts.
+The transport contribution for two inserts is **4096 samples instead of 8192**:
+85.3 ms instead of 170.7 ms at 48 kHz, plus summed reported plug-in latency.
+Individual insert order/state and latency-matched bypass remain intact. A changed
+latency or processing error closes the entire cue; raw capture remains separate.
+Timeline/source bridges keep their default single-stream path.
+
+Actual Mac Tauri/WebKit checks pass one/two AUBandpass and SDK ADelay VST3 chains,
+eight seconds each at 48 kHz, with expected response and zero owned sessions after
+close. Bypassed AU impulse checks measure exactly 4096 transport samples for both
+rack sizes. [Shared-buffer measurements](evidence/recording-cue-shared-buffer.json).
+Smaller 256/512-frame per-insert candidates missed deadlines and are not shipped;
+[rejected evidence](evidence/recording-cue-rejected-buffers.json) preserves that result.
+These are bounded generated-input checks, not physical input, commercial plug-in,
+background, long-session or heavy-load qualification.
+
+Final frontend **2,020 tests pass in 207 files**. Lint, TypeScript/web build and 21
+release checks pass. The existing cue browser test verifies actual capture/native
+worklets, real AU DSP through a separate Node fixture bridge, dry signal retention,
+transport-fault isolation, level/pan/mono, inspector numeric edit/one Undo, reopen
+and German 390 px layout. Test language is explicitly set before selecting controls.
+The final normal Mac debug bundle passes in 33.73 s (existing Rust warnings).
+Local 0.13.33 is installed/reopened, strict/deep ad-hoc signature verified, with one
+autosave retained and a recovery backup. No new full Rust/iOS or physical listening
+claim; no Apple upload or tag.
+
+Locally, 155 old generated build-script directories were removed from this repo's
+debug cache, retaining the newest 20 and all source, helper outputs, installed apps
+and session backups. Roughly 2.5 GiB was recovered. These are regenerable artifacts.
+Native input ingress, independent cue devices/mixes and wet capture remain open.
+
 ## Local 0.13.32 — separate recording cue and buffered native inserts
 
 Recording now has a separate per-input cue level, pan and mono under collapsed

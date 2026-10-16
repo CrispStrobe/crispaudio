@@ -1,3 +1,4 @@
+import {openNativeCueRack} from '../plugins/NativeCueRack';
 import {prepareNativePluginNode} from '../plugins/NativePluginNode';
 import {validNativeEffects} from '../../lib/nativeEffects';
 import type {NativeEffect,RecordingInput} from '../../types/audio';
@@ -29,9 +30,9 @@ export class RecordingMonitor {
   const fail=(reason:string)=>{if(!current())return;this.disable();this.fault(reason);};
   try{
    await teardown;controller.signal.throwIfAborted();
-   for(const effect of settings.effects){
-    const bridge=await prepareNativePluginNode(this.ctx,{id:effect.pluginId,sampleRate:this.ctx.sampleRate,channels:2,parameters:effect.parameters,state:effect.state,processMode:'realtime'},{blockFrames:INPUT_FX_BLOCK,signal:controller.signal,onFault:()=>fail('recording.cueFault')});
-    bridges.push(bridge);bridge.update(effect.parameters,effect.bypass);
+   if(settings.effects.length){
+    const bridge=await prepareNativePluginNode(this.ctx,{id:'input-cue-rack',sampleRate:this.ctx.sampleRate,channels:2,processMode:'realtime'},{blockFrames:INPUT_FX_BLOCK,signal:controller.signal,onFault:()=>fail('recording.cueFault'),openStream:()=>openNativeCueRack(this.ctx.sampleRate,settings.effects,controller.signal)});
+    bridges.push(bridge);
    }
    controller.signal.throwIfAborted();if(!current())throw new DOMException('Monitoring cancelled','AbortError');
    this.bridges=bridges;const mono=this.ctx.createGain(),pan=this.ctx.createStereoPanner(),gain=this.ctx.createGain();this.nodes=[mono,pan,gain];this.mono=mono;this.pan=pan;this.gain=gain;

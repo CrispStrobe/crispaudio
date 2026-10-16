@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.32. This section is the current plan.
+Updated 2026-10-16, for local 0.13.33. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -34,6 +34,16 @@ sequence and acceptance boundaries. Historical “completed” entries below des
 bounded increments, not a finished state-of-the-art DAW. MIDI/composition expansion
 is outside this app's active scope. Long-session paging/streaming is accepted in
 the final scale phase; additional codec expansion has no new priority.
+
+Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
+Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms
+at 48 kHz), plus summed plug-in latency. Static order/bypass, retained dry capture,
+fault isolation and resource limits remain. Actual Mac IPC/WebKit AU/VST3 checks
+cover one/two inserts for eight seconds and exact bypassed-impulse timing. Smaller
+per-insert buffers missed deadlines and are not shipped. This remains a buffered
+frontend-driven cue, not native low-latency ingress. Native input DSP, independent
+cue devices/backing mixes and wet capture remain next, with physical/long/load
+qualification separate. Obsolete generated build-script caches were pruned locally.
 
 Local 0.13.32 adds per-input cue level, stereo pan/mono and optional buffered
 native track inserts while retaining dry capture/take timing. Cue setup is collapsed

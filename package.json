@@ -1,7 +1,7 @@
 {
   "name": "crispaudio",
   "private": true,
-  "version": "0.13.32",
+  "version": "0.13.33",
   "type": "module",
   "scripts": {
     "dev": "vite",

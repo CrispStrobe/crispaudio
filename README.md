@@ -104,7 +104,7 @@ Select a clip and open **Source Editor** for detailed work on its source window.
 Record directly into an audio track, with device/channel selection and optional
 input monitoring. Under **Input → Cue mix**, adjust cue level, pan/mono and, on
 Mac, optional native track inserts. Cue changes leave recorded takes dry. Native
-monitoring is buffered (at least 85.3 ms per insert at 48 kHz); its added delay is
+monitoring is buffered (85.3 ms per input rack at 48 kHz, plus plug-in latency); its delay is
 shown. The cue uses the current playback output. Add an audible bar-based count-in or project-audio pre-roll,
 with both kept outside the published take. Recording options also include punch
 ranges, loop takes and simultaneous capture into up to eight armed tracks. Input calibration can
