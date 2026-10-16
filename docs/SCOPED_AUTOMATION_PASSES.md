@@ -24,6 +24,14 @@ replacement interval. Typing or touch scrubbing updates this visual preview.
 Paste commits one Undo; Cancel leaves the project intact. Source/range details,
 stretch factor and boundary explanations are available from the info button.
 
+For easing, select a point with a following segment and choose **… → Shape
+segment**. Choose Linear, ease-in/out, S-curve or Custom. Drag custom Bézier handles
+with a mouse or finger, use arrow keys, or enter their time/value percentages.
+Cancel restores the previous draft. Use shape adds up to sixteen editable linear
+intervals; Apply saves the inspector as one Undo. Select an interior point to
+reopen an intact shape. Other segments, raw parameter units and native state stay
+unchanged. Info explains flat segments and the review workflow.
+
 To record, expand Record pass. Touch records while a control is held; Latch
 continues after release; Write starts at playback start (or clip start when later).
 Arm before playback, use the inspector transport and move the value slider.

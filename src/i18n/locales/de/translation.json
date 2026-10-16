@@ -1450,6 +1450,7 @@
     "pasteCurve": "Kopierte Kurve",
     "pasteInfo": "Details zum Einfügen",
     "pastePreviewHelp": "Die gestrichelte Kurve zeigt die aktuelle Automation, die durchgezogene das geplante Ergebnis. Die Schattierung markiert den ersetzten Bereich. Zeit und Länge ändern nur diesen visuellen Entwurf. Dichte Kurven erscheinen als vereinfachte Übersicht. Einfügen erzeugt einen Rückgängig-Schritt.",
+    "ringmodFreqShapeHelp": "Verlauf der Trägerfrequenz in Hz prüfen: Anwenden ersetzt den Abschnitt durch {{count}} bearbeitbare Punkte. Mix bleibt unabhängig; die spätere Oszillatorphase folgt dem geänderten Frequenzverlauf.",
     "ringmodFreqPoint": "Frequenz (Hz)"
   },
   "routing": {
@@ -2320,5 +2321,10 @@
     "fit": "In Bereich einpassen",
     "copied": "Kurve kopiert",
     "pasted": "In Entwurf eingefügt"
+  },
+  "curveShape": {
+    "info": "Kurvenform erklären",
+    "use": "Form übernehmen",
+    "help": "Vorlage wählen oder bei Frei die Bézier-Griffe ziehen. Form übernehmen ändert den Entwurf; Anwenden speichert einen Rückgängig-Schritt. Abbrechen erhält die vorige Kurve. Formen werden zu bis zu sechzehn bearbeitbaren linearen Abschnitten; andere Segmente und Parameter bleiben erhalten."
   }
 }

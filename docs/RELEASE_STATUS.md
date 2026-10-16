@@ -5,6 +5,16 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.18 — scoped curve shaping
+
+The inspector’s “…” menu opens local segment shaping for built-in clip/master
+and native clip/track/master curves. Presets and custom Bézier handles reuse the
+track-shaping math, retain raw or normalized units, and bake at most sixteen
+editable intervals. Intact shapes reopen from interior points. Use shape changes
+only the draft; Apply creates one Undo. Interrupted gestures restore controls;
+other segments, static values and native state remain independent.
+[Validation evidence](evidence/scoped-curve-shapes.json).
+
 ## Local 0.13.17 — compact automation paste review
 
 Track-lane paste now presents time/length fields and a live current/result curve

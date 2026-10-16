@@ -79,3 +79,11 @@ it('copies a native interval and pastes a guarded draft without changing opaque 
 it('matches native clipboard to plug-in, address and reported range',()=>{
  open();menu('curveRange.copy');cleanup();const other=fixture();other.nativeEffects![0].pluginId='au:other';open('master',other);vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});fireEvent.click(screen.getByRole('button',{name:'curveRange.actions'}));expect(screen.getByRole('menuitem',{name:'curveRange.paste'})).toBeDisabled();
 });
+
+it.each(['master','track:t','clip:c'])('shapes normalized native curves in %s without changing plugin state',scope=>{
+ const {snapshot}=open(scope);number('fxInspector.point','1');menu('automation.shapeSegment');fireEvent.change(screen.getByRole('combobox',{name:'automation.shape'}),{target:{value:'ease-out'}});fireEvent.click(screen.getByRole('button',{name:'curveShape.use'}));number('fxInspector.point','8');menu('automation.shapeSegment');expect(screen.getByRole('combobox',{name:'automation.shape'})).toHaveValue('ease-out');fireEvent.click(screen.getByRole('button',{name:'curveShape.use'}));expect(useProjectStore.getState().project).toBe(snapshot);fireEvent.click(screen.getByRole('button',{name:'fxInspector.apply'}));const points=effect(scope).parameterAutomation!.gain.points;expect(points).toHaveLength(17);expect(points[8].value).toBe(.625);expect(effect(scope).state).toBe('opaque');expect(effect(scope).parameters).toEqual(fx().parameters);expect(effect(scope).parameterAutomation!.other).toEqual(fx().parameterAutomation!.other);expect(useProjectStore.temporal.getState().pastStates).toHaveLength(1);
+});
+
+it('releases the parent review lock when refreshed native range metadata replaces the shape editor',()=>{
+ const {snapshot,rerender}=open();number('fxInspector.point','1');menu('automation.shapeSegment');rerender(<NativeParameterAutomation snapshot={snapshot} scope="master" target={{...target,min:-12}} name="Gain" unit="dB" onClose={()=>{}}/>);expect(screen.getByRole('button',{name:'fxInspector.clear'})).toBeEnabled();fireEvent.click(screen.getByRole('button',{name:'fxInspector.clear'}));expect(screen.getByRole('button',{name:'fxInspector.apply'})).toBeEnabled();expect(useProjectStore.getState().project).toBe(snapshot);
+});

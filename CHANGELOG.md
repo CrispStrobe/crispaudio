@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.18 — 2026-10-16
+
+- Shape built-in clip/master and native clip/track/master parameter curves through the inspector’s “…” menu: Linear, ease-in/out, S-curve and custom Bézier handles.
+- Preview shapes locally, reopen intact curves from their interior points, and keep project changes to one Apply/Undo. Other segments, parameters and plug-in state stay intact.
+- Restore interrupted handle drags; support touch, keyboard and directly editable handle percentages without extra toolbar clutter.
+- Correct carrier-frequency units and help in the existing track shape review.
+
 ## 0.13.17 — 2026-10-16
 
 - Simplify track-lane automation paste: two numeric fields and a live current/result curve comparison, with range and boundary details behind an info button.

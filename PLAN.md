@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.17. This section is the current plan.
+Updated 2026-10-16, for local 0.13.18. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -129,6 +129,11 @@ before/after curve comparison. Detailed interval/boundary information moves to
 an info button. Typing/touch scrubbing remain visual drafts until one Paste/Undo;
 carrier-frequency copy/paste labels are corrected in EN/DE.
 [Paste review checks](docs/evidence/automation-paste-review.json).
+Local 0.13.18 adds inspector segment shaping for built-in clip/master and native
+clip/track/master curves. Presets and custom Bézier controls reuse the track-shape
+math with raw/normalized bounds. Local review, cancellation, intact-shape reopen,
+endpoint preservation and one Apply/Undo remain in place.
+[Scoped shape checks](docs/evidence/scoped-curve-shapes.json).
 Continuous native input DSP remains future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 

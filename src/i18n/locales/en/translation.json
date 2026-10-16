@@ -1437,6 +1437,7 @@
     "pasteCurve": "Copied curve",
     "pasteInfo": "Paste details",
     "pastePreviewHelp": "The dashed curve is current automation; the solid curve shows the proposed paste. Shading marks the replacement interval. Editing time or length updates this visual draft without changing audio. Dense curves use a simplified overview. Paste applies one Undo step.",
+    "ringmodFreqShapeHelp": "Preview the carrier transition in Hz. Apply replaces the segment with {{count}} editable points. Mix stays independent; later oscillator phase follows the edited frequency history.",
     "ringmodFreqPoint": "Frequency (Hz)"
   },
   "routing": {
@@ -2307,5 +2308,10 @@
     "fit": "Fit paste to range",
     "copied": "Curve copied",
     "pasted": "Pasted into draft"
+  },
+  "curveShape": {
+    "info": "Curve shape help",
+    "use": "Use shape",
+    "help": "Choose a preset or Custom and drag the Bézier handles. Use shape updates this inspector draft; Apply saves one Undo. Cancel keeps the previous curve. Shapes become up to sixteen editable linear intervals; other segments and parameters stay intact."
   }
 }

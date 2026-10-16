@@ -1,3 +1,5 @@
+import {ParameterCurveShape} from './ParameterCurveShape';
+import {reviewedShapeForPoint} from '../../lib/automationShapeMetadata';
 import {curveOverview} from '../../lib/curveOverview';
 import {OverflowMenu} from '../common/OverflowMenu';
 import {copyCurveRange,pasteCurveRange} from '../../lib/curveRange';
@@ -13,10 +15,13 @@ import {NumberField} from './NumberField';
 import {ToolButton} from '../common/ToolButton';
 
 /** Points retain their saved units; storageMax defaults to normalized native values. */
-interface Props {points:GainPoint[];fallback:number;min:number;max:number;unit:string;storageMax?:number;domain:CurveDomain;duration:number;rate:number;clip?:{start:number;end:number};disabled:boolean;onChange:(points:GainPoint[])=>void;onBusy:(busy:boolean)=>void;onValidity:(valid:boolean)=>void;playhead:()=>number}
+interface Props {points:GainPoint[];fallback:number;min:number;max:number;unit:string;storageMax?:number;domain:CurveDomain;duration:number;rate:number;clip?:{start:number;end:number};disabled:boolean;onChange:(points:GainPoint[])=>void;onBusy:(busy:boolean)=>void;onValidity:(valid:boolean)=>void;onShapeReview?:(open:boolean)=>void;playhead:()=>number}
 interface Drag {id:number;before:GainPoint[];base:GainPoint[];point:GainPoint;selected:number|null;end:number}
-export function ParameterCurveEditor({points,fallback,min,max,unit,storageMax=1,domain,duration,rate,clip,disabled,onChange,onBusy,onValidity,playhead}:Props){
+export function ParameterCurveEditor({points,fallback,min,max,unit,storageMax=1,domain,duration,rate,clip,disabled,onChange,onBusy,onValidity,onShapeReview,playhead}:Props){
  const {t}=useTranslation(),[selected,setSelected]=useState<number|null>(null),[numericPreview,setNumericPreview]=useState<GainPoint|null>(null),[revision,setRevision]=useState(0),drag=useRef<Drag|null>(null);
+ const [shapeDraft,setShapeDraft]=useState<{points:GainPoint[];time:number}|null>(null),graph=useRef<SVGSVGElement>(null);
+ const reviewing=shapeDraft!==null;
+ useEffect(()=>{if(!reviewing)return;return()=>{onShapeReview?.(false);onBusy(false);};},[reviewing,onBusy,onShapeReview]);
  const [rangeOpen,setRangeOpen]=useState(false),[range,setRange]=useState(()=>clip??{start:0,end:Math.max(1,duration,points.at(-1)?.time??0)}),[rangeError,setRangeError]=useState(''),[rangeNotice,setRangeNotice]=useState('');
  const rangeDrag=useRef<{id:number;before:{start:number;end:number};anchor:number;extent:number}|null>(null);
  const effectEnvelope=useProjectStore(state=>domain.kind==='builtin'?state.effectClipboards[effectClipboardKey(domain.effectType,domain.parameter)]:null);
@@ -54,6 +59,9 @@ export function ParameterCurveEditor({points,fallback,min,max,unit,storageMax=1,
  };
  const validRange=Number.isFinite(range.start)&&Number.isFinite(range.end)&&range.start>=0&&range.end<=end&&range.end-range.start>=1/rate;
  const unavailable=disabled||activeGesture||!validFields;
+ const savedShape=reviewedShapeForPoint(points,index),shapeEnd=savedShape?.b??points[index+1],shapeStart=savedShape?.a??point;
+ const shapeAvailable=!!shapeStart&&!!shapeEnd&&shapeEnd.time-shapeStart.time>=2/rate-1e-12;
+ const finishShape=()=>{setShapeDraft(null);onShapeReview?.(false);reportBusy(false);requestAnimationFrame(()=>graph.current?.focus());};
  const copy=()=>{try{const start=rangeOpen?range.start:clip?.start??0,finish=rangeOpen?range.end:clip?.end??end;
   const copied=copyCurveRange(points,fallback,start,finish,storageMax);
   if(domain.kind==='builtin'){const state=useProjectStore.getState();useProjectStore.setState({effectClipboards:{...state.effectClipboards,[effectClipboardKey(domain.effectType,domain.parameter)]:{...copied,effectType:domain.effectType,parameter:domain.parameter,sourceStart:start}}});}
@@ -64,10 +72,11 @@ export function ParameterCurveEditor({points,fallback,min,max,unit,storageMax=1,
   publish(pasteCurveRange(points,fallback,envelope,start,length,rate,storageMax,end),null);setRangeError('');setRangeNotice(t('curveRange.pasted'));
  }catch(e){setRangeError(t(e instanceof Error?e.message:String(e)));}};
  return <div className="space-y-2" data-parameter-curve-editor>
-  <svg viewBox="0 0 600 160" role="img" aria-label={t('fxInspector.curve')} aria-disabled={disabled} tabIndex={0} className="w-full rounded bg-gray-950 border border-gray-700 touch-none select-none"
-   onKeyDown={e=>{if(e.key!=='Tab'&&e.key!=='Escape')e.stopPropagation();if(!disabled&&!rangeOpen&&!drag.current&&!rangeDrag.current&&point&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();if(e.key==='ArrowLeft'||e.key==='ArrowRight')edit({time:Math.max(0,point.time+(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?.01:1/rate))});else edit({value:Math.max(0,Math.min(storageMax,point.value+(e.key==='ArrowDown'?-1:1)*(e.shiftKey?.01:.001)*storageMax))});return;}if(e.key==='Escape'&&(drag.current||rangeDrag.current)){e.preventDefault();e.stopPropagation();cancel();}else if((e.key==='Delete'||e.key==='Backspace')&&!disabled&&!rangeOpen&&point){e.preventDefault();publish(points.filter(p=>p.time!==selected),null);}}}
+  <fieldset disabled={!!shapeDraft} className={shapeDraft?'hidden':'space-y-2 min-w-0'}>
+  <svg ref={graph} viewBox="0 0 600 160" role="img" aria-label={t('fxInspector.curve')} aria-disabled={disabled} tabIndex={0} className="w-full rounded bg-gray-950 border border-gray-700 touch-none select-none"
+   onKeyDown={e=>{if(shapeDraft){e.stopPropagation();return;}if(e.key!=='Tab'&&e.key!=='Escape')e.stopPropagation();if(!disabled&&!rangeOpen&&!drag.current&&!rangeDrag.current&&point&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();if(e.key==='ArrowLeft'||e.key==='ArrowRight')edit({time:Math.max(0,point.time+(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?.01:1/rate))});else edit({value:Math.max(0,Math.min(storageMax,point.value+(e.key==='ArrowDown'?-1:1)*(e.shiftKey?.01:.001)*storageMax))});return;}if(e.key==='Escape'&&(drag.current||rangeDrag.current)){e.preventDefault();e.stopPropagation();cancel();}else if((e.key==='Delete'||e.key==='Backspace')&&!disabled&&!rangeOpen&&point){e.preventDefault();publish(points.filter(p=>p.time!==selected),null);}}}
    onPointerDown={e=>{
-    if(disabled||e.button>0||drag.current||rangeDrag.current)return;const at=location(e);if(!at)return;e.preventDefault();e.currentTarget.focus();resetFields();
+    if(shapeDraft||disabled||e.button>0||drag.current||rangeDrag.current)return;const at=location(e);if(!at)return;e.preventDefault();e.currentTarget.focus();resetFields();
     if(rangeOpen){rangeDrag.current={id:e.pointerId,before:range,anchor:Math.round(at.time*rate)/rate,extent:end};e.currentTarget.setPointerCapture(e.pointerId);reportBusy(true);return;}
     let nearest:GainPoint|undefined,distance=e.pointerType==='touch'||e.pointerType==='pen'?24:12;
     for(const p of points){const d=Math.hypot((x(p.time)-12-at.time/end*576)*at.rect.width/600,(y(p.value)-y(at.value))*at.rect.height/160);if(d<=distance){distance=d;nearest=p;}}
@@ -88,6 +97,7 @@ export function ParameterCurveEditor({points,fallback,min,max,unit,storageMax=1,
    <ToolButton icon={Plus} label={t('fxInspector.add')} disabled={disabled||rangeOpen} onClick={()=>{const time=Math.round(Math.max(0,playhead())*rate)/rate;publish(editGainPoint(points,null,{time,value:points.length?gainAt(points,time):fallback}),time);}}/>
    <ToolButton icon={Trash2} label={t('fxInspector.remove')} disabled={disabled||rangeOpen||!point} onClick={()=>publish(points.filter(p=>p.time!==selected),null)}/>
    <OverflowMenu label={t('curveRange.actions')}>
+    <button role="menuitem" className="w-full min-h-11 text-left px-3 py-2 rounded hover:bg-gray-700 focus:bg-gray-700 disabled:opacity-30" disabled={unavailable||rangeOpen||!shapeAvailable} onClick={()=>{setShapeDraft({points,time:point.time});onShapeReview?.(true);reportBusy(true);}}>{t('automation.shapeSegment')}</button>
     <button role="menuitem" className="w-full min-h-11 text-left px-3 py-2 rounded hover:bg-gray-700 focus:bg-gray-700 disabled:opacity-30" disabled={unavailable} onClick={()=>{setRangeOpen(!rangeOpen);setRangeError('');}}>{t(rangeOpen?'curveRange.close':'curveRange.select')}</button>
     <button role="menuitem" className="w-full min-h-11 text-left px-3 py-2 rounded hover:bg-gray-700 focus:bg-gray-700 disabled:opacity-30" disabled={unavailable||rangeOpen&&!validRange} onClick={copy}>{t('curveRange.copy')}</button>
     <button role="menuitem" className="w-full min-h-11 text-left px-3 py-2 rounded hover:bg-gray-700 focus:bg-gray-700 disabled:opacity-30" disabled={unavailable||!envelope} onClick={()=>paste(false)}>{t('curveRange.paste')}</button>
@@ -105,5 +115,7 @@ export function ParameterCurveEditor({points,fallback,min,max,unit,storageMax=1,
    <label className="text-xs text-gray-400">{t('fxInspector.value')} {unit}<NumberField key={`value:${revision}:${point.time}`} label={`${t('fxInspector.value')}${unit?` (${unit})`:''}`} value={Number(actual(point.value).toFixed(digits))} min={min} max={max} step={(max-min)/1000} width="w-full min-h-11" disabled={disabled} onDraftChange={raw=>validate('value',raw,value=>value>=min&&value<=max)} onPreview={value=>setNumericPreview({...point,value:normalized(value)})} onCancel={()=>setNumericPreview(null)} onEnd={()=>setNumericPreview(null)} onCommit={value=>edit({value:normalized(value)})}/></label>
    <select aria-label={t('fxInspector.segment')} value={point.curve??'linear'} disabled={disabled} className="min-h-11 bg-gray-800 rounded px-2" onChange={e=>edit({curve:e.target.value as 'linear'|'step'})}><option value="linear">{t('automation.linear')}</option><option value="step">{t('automation.step')}</option></select>
   </div>}
+  </fieldset>
+  {shapeDraft&&<ParameterCurveShape points={shapeDraft.points} time={shapeDraft.time} rate={rate} maximum={storageMax} endTime={Math.max(end,shapeDraft.points.at(-1)?.time??0)} disabled={disabled} onCancel={finishShape} onUse={(next,time)=>{publish(next,time);finishShape();}}/>}
  </div>;
 }

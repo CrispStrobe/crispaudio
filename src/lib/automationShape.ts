@@ -1,9 +1,9 @@
 import type {TimelineProject} from '../types/audio';
 import {targetPoints,type AutomationTarget} from './automationRecording';
 import {delayParameterMaximum} from './effectAutomation';
-import {normalizeGainPoints,normalizePanPoints,gainAt,panAt,validAutomationCurve,automationCheckTimes} from './mixAutomation';
+import {shapeEnvelopeSegment} from './shapeEnvelope';
 import {timelineDuration} from './timelineView';
-import {automationShapes,validShapeControls,customShapeProgress,shapeProgress,reviewedShapeSegment,type AutomationShape,type AutomationShapeControls} from './automationShapeMetadata';
+import {automationShapes,validShapeControls,type AutomationShape,type AutomationShapeControls} from './automationShapeMetadata';
 export {automationShapes,defaultShapeControls,validShapeControls,customShapeProgress,shapeProgress,reviewedShapeSegment} from './automationShapeMetadata';
 export type {AutomationShape,AutomationShapeControls} from './automationShapeMetadata';
 const fail=(key:string):never=>{throw new Error(`automation.${key}`);};
@@ -13,17 +13,8 @@ export function shapeAutomationSegment(project:TimelineProject,target:Automation
  if(!automationShapes.includes(shape))fail('invalidShape');
  if(shape==='custom'&&!validShapeControls(controls))fail('invalidShapeControls');
  const track=project.tracks.find(t=>t.id===target.trackId)??fail('missingTrack');if(track.locked)fail('lockedEnvelope');
- const before=targetPoints(project,target)??[],pan=target.parameter==='pan',minimum=pan?-1:0,maximum=target.parameter==='pan'?1:target.parameter==='gain'?Infinity:delayParameterMaximum(target.parameter);
- if(!Array.isArray(before)||before.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value<minimum||p.value>maximum))fail('invalidEnvelope');
- const normalize=pan?normalizePanPoints:normalizeGainPoints,original=normalize(before),index=original.findIndex(p=>p.time===pointTime),a=original[index],endIndex=reviewedShapeSegment(original,index)?.endIndex??index+1,b=original[endIndex],rate=project.sampleRate;
- if(!Number.isFinite(pointTime)||!Number.isFinite(rate)||rate<=0||!a||!b||b.time>timelineDuration(project)||b.time-a.time<2/rate-1e-12)fail('shapeBounds');
- const intervals=shape==='linear'?1:Math.min(16,Math.max(2,Math.floor((b.time-a.time)*rate+1e-9)));
- if(original.length+intervals-(endIndex-index)>100000)fail('recordLimit');
- const first={...a};delete first.curve;delete first.shapeReview;if(shape!=='linear')first.shapeReview={shape,intervals,...(shape==='custom'?{controls:{...controls!}}:{})};
- const generated=[first,...Array.from({length:intervals-1},(_,j)=>{const i=j+1;return {time:a.time+(b.time-a.time)*i/intervals,value:a.value+(b.value-a.value)*(shape==='custom'?customShapeProgress(i/intervals,controls!):shapeProgress(i/intervals,shape))};})];
- const points=[...original.slice(0,index),...generated,...original.slice(endIndex)];
- const at=pan?panAt:gainAt;
- const oldSegment=original.slice(index,endIndex+1),newSegment=[...generated,b];
- if(automationCheckTimes(oldSegment,newSegment).every(t=>Math.abs(at(oldSegment,t)-at(newSegment,t))<=1e-12*Math.max(1,Math.abs(at(oldSegment,t)),Math.abs(at(newSegment,t)))))return project;
+ const before=targetPoints(project,target)??[],points=shapeEnvelopeSegment(before,pointTime,shape,{rate:project.sampleRate,minimum:target.parameter==='pan'?-1:0,maximum:target.parameter==='pan'?1:target.parameter==='gain'?Infinity:delayParameterMaximum(target.parameter),endTime:timelineDuration(project)},controls);
+ if(points===before)return project;
+ const pan=target.parameter==='pan';
  return {...project,tracks:project.tracks.map(t=>t.id!==target.trackId?t:target.parameter==='gain'?{...t,automation:points}:pan?{...t,panAutomation:points}:{...t,effects:t.effects!.map((e,i)=>i!==target.effectIndex?e:{...e,automation:{...e.automation,[target.parameter]:points}})})};
 }

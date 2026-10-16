@@ -23,8 +23,8 @@ export function AutomationShapeReview({project,target,pointTime:selectedTime,onC
  const a=before.find(p=>p.time===pointTime),b=saved?.b??before.filter(p=>p.time>pointTime).sort((a,b)=>a.time-b.time)[0];
  const points=preview?(target.parameter==='pan'?normalizePanPoints:normalizeGainPoints)(targetPoints(preview,target)).filter(p=>p.time>=pointTime&&p.time<=(b?.time??pointTime)):[];
  const effectType=project.tracks.find(t=>t.id===target.trackId)?.effects?.[target.effectIndex??-1]?.type,mixOnly=effectType==='ringmod'||effectType==='bitcrush'||effectType==='distortion'||effectType==='chorus'||effectType==='reverb';
- const parameterLabel=target.parameter==='rate'?'automation.chorusRate':target.parameter==='depth'?'automation.chorusDepth':target.parameter==='gain'?'automation.gainLane':target.parameter==='pan'?'automation.panLane':mixOnly?`automation.${effectType}Mix`:`automation.delay${target.parameter[0].toUpperCase()+target.parameter.slice(1)}`;
- const format=(v:number)=>target.parameter==='gain'?`${v===0?'−∞':(20*Math.log10(v)).toFixed(1)} dB`:target.parameter==='pan'?v.toFixed(2):target.parameter==='rate'?`${v.toFixed(2)} Hz`:target.parameter==='time'?`${(v*1000).toFixed(1)} ms`:`${(v*100).toFixed(1)}%`;
+ const parameterLabel=target.parameter==='freq'?'automation.ringmodFrequency':target.parameter==='rate'?'automation.chorusRate':target.parameter==='depth'?'automation.chorusDepth':target.parameter==='gain'?'automation.gainLane':target.parameter==='pan'?'automation.panLane':mixOnly?`automation.${effectType}Mix`:`automation.delay${target.parameter[0].toUpperCase()+target.parameter.slice(1)}`;
+ const format=(v:number)=>target.parameter==='gain'?`${v===0?'−∞':(20*Math.log10(v)).toFixed(1)} dB`:target.parameter==='pan'?v.toFixed(2):target.parameter==='rate'||target.parameter==='freq'?`${v.toFixed(2)} Hz`:target.parameter==='time'?`${(v*1000).toFixed(1)} ms`:`${(v*100).toFixed(1)}%`;
  const range=Math.abs((b?.value??0)-(a?.value??0))||1,min=Math.min(a?.value??0,b?.value??0);
  const plotted=points.map(p=>({x:(p.time-pointTime)/((b?.time??pointTime+1)-pointTime),y:(p.value-min)/range}));
  return <Modal isOpen initialFocusRef={shapeInput} onClose={onClose} title={t('automation.shapeSegment')}>
@@ -41,7 +41,7 @@ export function AutomationShapeReview({project,target,pointTime:selectedTime,onC
     <p className="text-xs text-gray-400">{t(a?.value===b?.value?'automation.flatShapeHelp':'automation.customShapeHelp')}</p>
    </div>}
 
-   <p className="text-xs text-gray-400">{t(target.parameter==='rate'?'automation.chorusRateShapeHelp':target.parameter==='depth'?'automation.chorusDepthShapeHelp':mixOnly?`automation.${effectType}ShapeHelp`:'automation.shapeHelp',{count:Math.max(0,points.length-2)})}</p>
+   <p className="text-xs text-gray-400">{t(target.parameter==='freq'?'automation.ringmodFreqShapeHelp':target.parameter==='rate'?'automation.chorusRateShapeHelp':target.parameter==='depth'?'automation.chorusDepthShapeHelp':mixOnly?`automation.${effectType}ShapeHelp`:'automation.shapeHelp',{count:Math.max(0,points.length-2)})}</p>
    {error&&<p role="alert" className="text-amber-300">{error}</p>}
    <div className="flex justify-end gap-2"><button className="timeline-tool" onClick={onClose}>{t('common.cancel')}</button><button className="timeline-tool bg-indigo-700" disabled={!preview} onClick={()=>{if(!preview||useProjectStore.getState().project!==project)return;if(preview!==project)useProjectStore.setState({project:preview});onClose();}}>{t('automation.applyShape')}</button></div>
   </div>
