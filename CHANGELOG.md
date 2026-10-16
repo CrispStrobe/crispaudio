@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.17 — 2026-10-16
+
+- Simplify track-lane automation paste: two numeric fields and a live current/result curve comparison, with range and boundary details behind an info button.
+- Preview time/length changes while typing or scrubbing on touch, retaining the original project until Paste creates one Undo.
+- Correct carrier-frequency paste titles and add missing frequency Copy/Paste labels in English and German.
+- Keep negative pan values, Step segments and dense curves visible without changing stored data.
+
 ## 0.13.16 — 2026-10-16
 
 - Select curve ranges with a mouse, touch or numeric start/end fields from the inspector’s compact “…” menu.

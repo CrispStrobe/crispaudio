@@ -1,0 +1,48 @@
+{
+  "version": "0.13.17",
+  "date": "2026-10-16",
+  "behavior": [
+    "Compact track-lane automation paste review: source/destination, two numeric fields and live current/result curve comparison",
+    "Interval, copied range, stretch, effect identity, full long names and boundary explanations are behind Info",
+    "Typing and touch scrubbing update a visual draft only; Paste uses existing bounded envelope models and creates one Undo",
+    "Correct frequency paste title via existing effect clipboard keys; missing carrier-frequency Copy/Paste labels added in EN/DE",
+    "Curve preview preserves negative pan and Step segments, renders a bounded dense overview and never modifies stored data"
+  ],
+  "validation": {
+    "status": "complete",
+    "targeted": "72 tests passed across paste, modal focus, native/built-in editors and envelope models; 13 final paste/preview tests pass (includes two additional dense/pan cases)",
+    "targetedLog": "/tmp/crispaudio-paste-review-targeted.log",
+    "editorLog": "/tmp/crispaudio-paste-review-editor-final.log",
+    "browser": "German desktop1280 and touch390 Chromium: frequency title, compact two fields, live visual preview, actual CDP touch numeric scrub, Info Escape keeps review, full names in Info, no horizontal overflow, local draft, one Undo and other lane retention",
+    "browserScript": "scripts/test-automation-paste-review.mjs",
+    "browserLog": "/tmp/crispaudio-paste-review-browser-final.log",
+    "screenshots": [
+      "/tmp/crispaudio-paste-review-touch.png",
+      "/tmp/crispaudio-paste-review-desktop.png"
+    ],
+    "frontendLog": "/tmp/crispaudio-paste-review-frontend.log",
+    "typecheckLog": "/tmp/crispaudio-paste-review-tsc-final.log",
+    "lintLog": "/tmp/crispaudio-paste-review-lint-final.log",
+    "releaseLog": "/tmp/crispaudio-paste-review-release.log",
+    "macBuildLog": "/tmp/crispaudio-01317-build.log",
+    "scope": "Frontend review only; native DSP/bridge and envelope paste models unchanged. Native media/app/iOS local checks from 0.13.12 not repeated.",
+    "frontend": {
+      "result": "PASS",
+      "tests": 1892,
+      "files": 189,
+      "durationSeconds": 202.16,
+      "options": "maxWorkers=2; testTimeout=20000; repository settings unchanged"
+    },
+    "browserResult": "PASS desktop and touch",
+    "typecheck": "Standalone PASS and final bundle frontend typecheck PASS",
+    "lint": "PASS",
+    "release": "21 passed",
+    "macBuild": "Normal debug Mac bundle PASS",
+    "installation": "0.13.17 installed/running; strict/deep signature PASS; one autosave retained; session and previous app backed up"
+  },
+  "limits": [
+    "Comparison is a visual draft; it does not audition audio before Paste",
+    "Dense overview simplifies display only; full stored point data remains unchanged",
+    "Native continuous input DSP and physical device/commercial plug-in acceptance remain separate work"
+  ]
+}

@@ -147,7 +147,9 @@ Use the inspector’s **…** menu to select a range, then drag across the graph
 enter its start/end. Copy that curve, paste at the playhead, or fit it to another
 range. Built-in inspectors share clipboards with track lanes. Native copies match
 the same plug-in, parameter and range. Paste stays in the draft until Apply and
-protects the surrounding curve with one-sample guards.
+protects the surrounding curve with one-sample guards. Track-lane paste opens a
+compact review: enter time and length, compare the current dashed curve with the
+proposed solid curve, then Paste. The info button explains the range and boundaries.
 Curves are saved with the project and run in Live, Preview and GUI export.
 Clip curves follow moves, nudges, paste and speed changes. Splits, trims and
 source slips preserve curves at their existing timeline positions. Ripple edits

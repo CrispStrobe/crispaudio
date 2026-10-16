@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.16. This section is the current plan.
+Updated 2026-10-16, for local 0.13.17. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -124,6 +124,11 @@ inspectors share track-lane clipboards; native compatibility includes plug-in,
 address and parameter range. Local drafts, boundary guards and one Apply/Undo
 remain in place.
 [Curve range checks](docs/evidence/curve-range-tools.json).
+Local 0.13.17 consolidates track-lane paste review into two fields and a live
+before/after curve comparison. Detailed interval/boundary information moves to
+an info button. Typing/touch scrubbing remain visual drafts until one Paste/Undo;
+carrier-frequency copy/paste labels are corrected in EN/DE.
+[Paste review checks](docs/evidence/automation-paste-review.json).
 Continuous native input DSP remains future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 

@@ -1429,6 +1429,14 @@
     "ringmodFreqHelp": "Carrier frequency in Hz on the project clock. Zero holds the oscillator phase; empty lanes keep the static carrier.",
     "ringmodFreqValue": "Frequency (Hz)",
     "ringmodFreqPasteHelp": "Paste and retime a bounded frequency interval; the original envelope survives outside it. Oscillator phase can differ after frequency edits.",
+    "ringmodFreqCopy": "Copy carrier frequency envelope / selected range",
+    "ringmodFreqPaste": "Paste carrier frequency envelope",
+    "pastePreview": "Automation paste preview",
+    "pasteBefore": "Current",
+    "pasteAfter": "After paste",
+    "pasteCurve": "Copied curve",
+    "pasteInfo": "Paste details",
+    "pastePreviewHelp": "The dashed curve is current automation; the solid curve shows the proposed paste. Shading marks the replacement interval. Editing time or length updates this visual draft without changing audio. Dense curves use a simplified overview. Paste applies one Undo step.",
     "ringmodFreqPoint": "Frequency (Hz)"
   },
   "routing": {

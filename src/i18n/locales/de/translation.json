@@ -1442,6 +1442,14 @@
     "ringmodFreqHelp": "Trägerfrequenz in Hz auf der Projektzeit. Null hält die Oszillatorphase an; leere Spuren behalten den festen Träger.",
     "ringmodFreqValue": "Frequenz (Hz)",
     "ringmodFreqPasteHelp": "Frequenzbereich begrenzt einfügen und zeitlich anpassen. Die übrige Hüllkurve bleibt erhalten; Frequenzänderungen können die spätere Phase ändern.",
+    "ringmodFreqCopy": "Trägerfrequenz-Kurve / Bereich kopieren",
+    "ringmodFreqPaste": "Trägerfrequenz-Kurve einfügen",
+    "pastePreview": "Vorschau der eingefügten Automation",
+    "pasteBefore": "Aktuell",
+    "pasteAfter": "Danach",
+    "pasteCurve": "Kopierte Kurve",
+    "pasteInfo": "Details zum Einfügen",
+    "pastePreviewHelp": "Die gestrichelte Kurve zeigt die aktuelle Automation, die durchgezogene das geplante Ergebnis. Die Schattierung markiert den ersetzten Bereich. Zeit und Länge ändern nur diesen visuellen Entwurf. Dichte Kurven erscheinen als vereinfachte Übersicht. Einfügen erzeugt einen Rückgängig-Schritt.",
     "ringmodFreqPoint": "Frequenz (Hz)"
   },
   "routing": {

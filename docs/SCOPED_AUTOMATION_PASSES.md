@@ -18,6 +18,12 @@ clipboard, including static values from empty curves. Native copies match the
 same plug-in, parameter address and reported range. Clipboards last for the app
 session and are independent of project Undo.
 
+Track-lane paste uses a compact review with destination time and length. Dashed
+shows current automation; solid shows the proposed result and shading marks the
+replacement interval. Typing or touch scrubbing updates this visual preview.
+Paste commits one Undo; Cancel leaves the project intact. Source/range details,
+stretch factor and boundary explanations are available from the info button.
+
 To record, expand Record pass. Touch records while a control is held; Latch
 continues after release; Write starts at playback start (or clip start when later).
 Arm before playback, use the inspector transport and move the value slider.

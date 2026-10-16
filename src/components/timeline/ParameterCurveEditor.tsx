@@ -1,3 +1,4 @@
+import {curveOverview} from '../../lib/curveOverview';
 import {OverflowMenu} from '../common/OverflowMenu';
 import {copyCurveRange,pasteCurveRange} from '../../lib/curveRange';
 import {effectClipboardKey} from '../../lib/effectEnvelope';
@@ -14,13 +15,6 @@ import {ToolButton} from '../common/ToolButton';
 /** Points retain their saved units; storageMax defaults to normalized native values. */
 interface Props {points:GainPoint[];fallback:number;min:number;max:number;unit:string;storageMax?:number;domain:CurveDomain;duration:number;rate:number;clip?:{start:number;end:number};disabled:boolean;onChange:(points:GainPoint[])=>void;onBusy:(busy:boolean)=>void;onValidity:(valid:boolean)=>void;playhead:()=>number}
 interface Drag {id:number;before:GainPoint[];base:GainPoint[];point:GainPoint;selected:number|null;end:number}
-/** Dense captures use a bounded overview; every stored point remains addressable by index. */
-function overview(points:GainPoint[]){
- if(points.length<=2048)return points;
- const result:GainPoint[]=[],stride=Math.ceil(points.length/512);
- for(let i=0;i<points.length;i+=stride){const chunk=points.slice(i,i+stride);let low=chunk[0],high=chunk[0];for(const point of chunk){if(point.value<low.value)low=point;if(point.value>high.value)high=point;}result.push(...[...new Set([chunk[0],low,high,chunk.at(-1)!])].sort((a,b)=>a.time-b.time));}
- return result;
-}
 export function ParameterCurveEditor({points,fallback,min,max,unit,storageMax=1,domain,duration,rate,clip,disabled,onChange,onBusy,onValidity,playhead}:Props){
  const {t}=useTranslation(),[selected,setSelected]=useState<number|null>(null),[numericPreview,setNumericPreview]=useState<GainPoint|null>(null),[revision,setRevision]=useState(0),drag=useRef<Drag|null>(null);
  const [rangeOpen,setRangeOpen]=useState(false),[range,setRange]=useState(()=>clip??{start:0,end:Math.max(1,duration,points.at(-1)?.time??0)}),[rangeError,setRangeError]=useState(''),[rangeNotice,setRangeNotice]=useState('');
@@ -36,7 +30,7 @@ export function ParameterCurveEditor({points,fallback,min,max,unit,storageMax=1,
  const actual=(value:number)=>min+(max-min)*value/storageMax,normalized=(value:number)=>(value-min)/(max-min)*storageMax;
  const x=(time:number,extent=end)=>12+time/extent*576,y=(value:number)=>148-value/storageMax*136;
  const visual=numericPreview&&point?editGainPoint(points,point.time,numericPreview):points;
- const displayed=overview(visual.length?visual:[{time:0,value:fallback}]);
+ const displayed=curveOverview(visual.length?visual:[{time:0,value:fallback}]);
  let path=`M${x(displayed[0].time)},${y(displayed[0].value)}`;
  if(displayed[0].time>0)path=`M12,${y(displayed[0].value)} L${x(displayed[0].time)},${y(displayed[0].value)}`;
  displayed.forEach((p,i)=>{if(i)path+=displayed[i-1].curve==='step'?` H${x(p.time)} V${y(p.value)}`:` L${x(p.time)},${y(p.value)}`;});path+=' H588';

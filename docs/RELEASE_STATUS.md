@@ -5,6 +5,15 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.17 — compact automation paste review
+
+Track-lane paste now presents time/length fields and a live current/result curve
+comparison. Source, interval, stretch and boundary details are behind an info
+button. Typing and touch scrubbing change only the preview; Paste remains one
+Undo. Gain, pan and all six built-in parameter lanes retain their existing bounds,
+locks, no-op and stale-project guards. EN/DE frequency labels are corrected.
+[Validation evidence](evidence/automation-paste-review.json).
+
 ## Local 0.13.16 — inspector curve range tools
 
 The inspector’s “…” menu exposes range selection, copy, playhead paste and fit to
