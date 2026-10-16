@@ -1,6 +1,6 @@
 # CrispAudio: product boundary and audio workstation gaps
 
-Reviewed 16 October 2026 against local 0.13.22 and current official product pages.
+Reviewed 16 October 2026 against local 0.13.23 and current official product pages.
 This is a workflow and architecture comparison, not a claim of feature parity or
 an independent listening/performance benchmark. Competitor editions differ.
 
@@ -21,6 +21,15 @@ do not expand it into another speech application. Existing MIDI utilities remain
 but instrument tracks, beat sequencing and a second composition environment are
 outside the active plan. SFX creation and Voice processing remain existing audio
 and sound-design tools; no new synthesizer/composition roadmap is implied.
+
+## Accepted scope
+
+The user accepted **all audio-workstation gaps below** on 16 October, including
+the larger engine, restoration, timing, session and scale work. They are authorized
+work, not completed features or a delivery-date promise. Composition and ASR/TTS
+creation remain with CometBeat and CrisperWeaver. Physical device/platform checks require the actual hardware.
+The newly requested effect-aware segment waveform is the immediate checkpoint;
+then continue the execution order below.
 
 ## What the comparisons tell us
 
@@ -43,6 +52,7 @@ and sound-design tools; no new synthesizer/composition roadmap is implied.
 | Capability | State | Important remaining work |
 |---|---|---|
 | Basic arrangement, trims, fades, ripple, groups, source selections and analysis | Present | Measure completion time and friction in complete editing jobs; improve inline/context actions from findings. |
+| Effect-aware timeline waveforms | Partial in 0.13.23 | Built-in segment DSP updates after a short pause for visible clips up to 60 s / 32 MiB. Native inserts, longer clips and track/bus/master processing still show source or remain excluded. Extend with scalable caches and safe native-render ownership; modulation follows a clip-range render, not the running graph phase. |
 | Source FX audition | Partial | Continuous, cancellable audition while changing parameters; fast original/processed comparison with level control and no mandatory render/apply cycle. |
 | Repair and restoration | Partial | Existing DC/normalization/fades and desktop denoise do not cover manual sample repair, click interpolation, de-hum, declipping or editable spectral repair. Add bounded, reviewable repairs with listening tests. |
 | Recording and takes | Partial | Built-in mic accepted; punch/loop/multi-arm/comping implemented. Add audible musical count-in/pre-roll and real interface/channel checks. |
@@ -53,7 +63,7 @@ and sound-design tools; no new synthesizer/composition roadmap is implied.
 | Assets and sessions | Partial | Add searchable audition of local files/regions, reusable track/FX templates and more useful session navigation/version workflows. No multiple-open-project workflow is established. |
 | Recorded-audio timing | Partial | Current global tempo and offline speed/pitch tools do not provide tempo maps, transient/warp markers or grouped timing edits with qualified phase coherence. Composition remains outside scope. |
 | Mastering precision | Partial | LUFS/estimated true-peak analysis and a sample-peak limiter exist. A true-peak limiter, dither/noise-shaping choices and systematic resampling/stretch quality qualification remain. |
-| Large sessions | Partial, architectural gap | GUI PCM is memory-resident; native snapshots and recording backing have explicit budgets. Long-file streaming, scalable waveform caches and native seek preparation require measured redesign. Paging remains deferred until explicitly prioritized or a real session hits these bounds. |
+| Large sessions | Partial, architectural gap | GUI PCM is memory-resident; native snapshots and recording backing have explicit budgets. Long-file streaming, scalable waveform caches and native seek preparation require measured redesign. Streaming/paging is accepted in the scale phase; first measure real sessions and define memory/seek budgets. |
 | Cross-platform/native hardware behavior | Partial | Mac is the qualified native-hosting path. Physical iOS, commercial plug-ins, external interfaces and Windows/Linux media/hosting parity need separate acceptance. |
 | Cross-app exchange | Basic file exchange present | Define and test a portable stem/timing/marker contract with CometBeat and a transcript/audio handoff with CrisperWeaver. Do not add a second model manager or generation service. |
 
@@ -71,18 +81,20 @@ and sound-design tools; no new synthesizer/composition roadmap is implied.
    state and useful track templates. Keep advanced settings collapsed.
 4. **Source editing and restoration.** Continuous audition, original/processed
    comparison, channel/polarity utilities and a small manual click-repair workflow.
-   Add spectral repair/advanced restoration only with an explicit quality target.
+   Include spectral repair, de-hum and declipping, each with explicit quality targets and original/processed comparison.
 5. **Live recording and monitoring.** Native input FX, dry/wet capture choices,
    latency reporting and cue routing; software fixtures first, then real interfaces.
 6. **Session efficiency.** Reversible freeze/render in place, asset audition and
-   reusable track/FX chains; expand automation where actual jobs need it.
+   reusable track/FX chains, project versions/tabs and custom plug-in windows; expand
+   automation and recorded-audio tempo/warp/grouped timing with phase-coherence tests.
 7. **Finishing quality and scale.** True-peak/dither/resampling qualification,
    long-session measurements and the resulting memory/streaming work. Hardware
    acceptance can proceed whenever devices are available.
 
 The previously accepted release → real workflows → count-in → physical devices →
 plug-in usability order remains the immediate sequence. Steps 4–7 above describe
-the larger audio-workstation backlog around that sequence. Count-in alone is not
-the next major product milestone. Do not start a paging rewrite, composition suite,
-new ASR/TTS model UI or a large plug-in-input engine implicitly as part of a small
-checkpoint. Public release/upload remains gated by validation and the release task.
+the accepted larger audio-workstation backlog around that sequence. Count-in alone
+is not the next major product milestone. Native input DSP and paging/streaming are
+authorized, substantial projects with their own acceptance criteria. Keep each
+checkpoint reviewable and preserve earlier work. Composition and ASR/TTS model UI
+remain excluded. Public release/upload remains gated by validation and the release task.

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.23 — 2026-10-16
+
+- Show processed waveforms for built-in segment effects, including clip gain, fades and saved effect automation, using display-only offline DSP.
+- Refresh after short editing pauses; bound background renders/cache and mark updating or source-only fallbacks. Keep original-level normalization so FX level changes stay visible.
+- Accept the full audio-workstation gap roadmap while preserving CometBeat/CrisperWeaver responsibilities. Native/long-clip waveforms and full mix visualization remain follow-up work.
+
 ## 0.13.22 — 2026-10-16
 
 - Retire text-to-speech creation, server preferences and native iOS speech-generation commands; keep existing generated audio editable.

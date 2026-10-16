@@ -594,7 +594,10 @@
     "selectedClips_other": "{{count}} clips",
     "waveformDefault": "Default",
     "waveformAtMixLevel": "Waveform at mix level",
-    "waveformHelp": "Normalized enlarges quiet waveforms for readability. Mix level shows relative track and clip gain. This changes the display only; fades and effects are not included."
+    "waveformFxReady": "FX",
+    "waveformFxPending": "FX…",
+    "waveformFxSource": "FX: source",
+    "waveformHelp": "Normalized enlarges quiet sources using their original level. Built-in segment effects, clip gain and fades update visible waveforms after a short pause (clips up to 60 s / 32 MiB). FX means processed; FX… means updating; FX: source means the original is shown (native inserts, larger clips, cache limits or render failure). Track/bus/master effects and tails outside clip bounds are excluded. Modulation phase follows a clip-range render. This display never changes the audio."
   },
   "common": {
     "slotA": "A",

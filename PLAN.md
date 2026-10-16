@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.22. This section is the current plan.
+Updated 2026-10-16, for local 0.13.23. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -20,13 +20,26 @@ include continuous source FX audition/restoration, native input FX and cue routi
 reversible freeze/render-in-place, session/asset workflows, broader automation,
 finishing precision and scalable long-session playback.
 
-Proceed with release qualification, complete-session acceptance, audible recording
+All audio-workstation gaps in that inventory are now accepted roadmap work by the
+user, including restoration/spectral repair, routing/input DSP, timing, session
+management, finishing and long-session streaming. Accepted does not mean implemented;
+large architecture changes need their own measured checkpoints. Effect-aware segment
+waveforms are the current requested priority. Then proceed with release qualification,
+complete-session acceptance, audible recording
 count-in/pre-roll, physical-device checks when available and native plug-in
 usability, in the accepted order. The gap document records the larger follow-up
 sequence and acceptance boundaries. Historical “completed” entries below describe
 bounded increments, not a finished state-of-the-art DAW. MIDI/composition expansion
-is outside this app's active scope; codec/paging rewrites remain deferred until
-explicitly prioritized or justified by an actual blocked session.
+is outside this app's active scope. Long-session paging/streaming is accepted in
+the final scale phase; additional codec expansion has no new priority.
+
+Local 0.13.23 adds automatic built-in segment-FX waveform previews while editing.
+Visible clips up to 60 seconds / 32 MiB render through the existing offline DSP,
+with gain before the rack and fades after it. Original-source normalization keeps
+effect level changes visible. Debounced, serialized work rejects stale results;
+a 32 MiB/eight-entry cache bounds retained preview audio. Native inserts, longer
+clips and failed/evicted previews show a source indicator. Track/bus/master FX
+and tails outside clip bounds are excluded; extending these is accepted follow-up.
 
 Local 0.13.20 adds a native-clocked monitor metronome to Mac Live playback.
 The existing musical controls enable clicks and change their level without a DSP

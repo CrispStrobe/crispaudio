@@ -15,17 +15,20 @@ export function sourceDisplayGain(source: AudioSource): number {
 
 /** Preserve all transients in a pixel; use decoded samples when zoom exceeds
  * the cached peak resolution. At coarser zoom, inspect every covered peak bin. */
-export function waveformBounds(source: AudioSource, start: number, end: number): [number, number] {
+export function waveformBounds(source: AudioSource, start: number, end: number, allChannels = false): [number, number] {
   if (end <= 0 || start >= source.duration || end <= start) return [0, 0];
   const lo = Math.max(0, start), hi = Math.min(source.duration, end);
   const count = source.peaks.max.length;
   if (!count) return [0, 0];
   let min = 0, max = 0;
   if (hi - lo < source.duration / count && typeof source.buffer.getChannelData === 'function') {
-    const data = source.buffer.getChannelData(0);
     const from = Math.floor(lo * source.sampleRate);
-    const to = Math.min(data.length, Math.max(from + 1, Math.ceil(hi * source.sampleRate)));
-    for (let i = from; i < to; i++) { min = Math.min(min, data[i]); max = Math.max(max, data[i]); }
+    // Processed stereo previews include both channels (including right-only FX).
+    for (let ch = 0; ch < (allChannels ? source.channels : 1); ch++) {
+      const data = source.buffer.getChannelData(ch);
+      const to = Math.min(data.length, Math.max(from + 1, Math.ceil(hi * source.sampleRate)));
+      for (let i = from; i < to; i++) { min = Math.min(min, data[i]); max = Math.max(max, data[i]); }
+    }
   } else {
     const from = Math.floor(lo / source.duration * count);
     const to = Math.min(count, Math.max(from + 1, Math.ceil(hi / source.duration * count)));

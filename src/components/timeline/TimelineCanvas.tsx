@@ -24,6 +24,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../stores/uiStore';
 import { useTimeline } from '../../hooks/useTimeline';
 import { sourceDisplayGain, waveformBounds } from '../../lib/waveformView';
+import { useClipWaveforms } from '../../hooks/useClipWaveforms';
 import { haptic } from '../../lib/native';
 import { useTimelineCanvasInvalidation } from './useTimelineCanvasInvalidation';
 import {TrimSourceFeedback} from './TrimSourceFeedback';
@@ -112,6 +113,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     splitSegment: s.splitSegment, removeSegment: s.removeSegment,
     selectSegment: s.selectSegment, copy: s.copy, cut: s.cut, paste: s.paste,
   })));
+  const clipWaveforms = useClipWaveforms(tracks, store.sources, store.scrollOffset, store.scrollOffset + width / store.zoomLevel);
   const {
     trimFeedback,
     cancelDrag,
@@ -145,6 +147,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       segBottom: number,
       baseColor: string,
       displayGain: number,
+      processed = false,
     ) => {
       const { peaks } = source;
       const { max: peakMax } = peaks;
@@ -158,8 +161,8 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       if (segWidth < 2 || peakCount === 0) return;
 
       const bounds = (px: number) => waveformBounds(source,
-        seg.sourceOffset + px / segWidth * seg.duration,
-        seg.sourceOffset + (px + 1) / segWidth * seg.duration);
+        (processed ? 0 : seg.sourceOffset) + px / segWidth * seg.duration,
+        (processed ? 0 : seg.sourceOffset) + (px + 1) / segWidth * seg.duration, processed);
 
       // Keep the original segment-local sampling grids, but visit only the
       // viewport plus one neighboring point per edge for stroke/fill continuity.
@@ -342,7 +345,22 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
       // Waveform
       const source = store.sources.get(seg.sourceId);
       if (source && segRight - segLeft > 4) {
-        drawWaveform(ctx, source, seg, segLeft, segRight, segTop + 6, segBottom, baseColor, (track.waveformMode ?? waveformMode) === 'normalized' ? sourceDisplayGain(source) : track.volume * seg.gain);
+        const preview = clipWaveforms.get(seg.id);
+        const processed = preview?.source;
+        // Keep the original normalization reference so FX level changes stay visible.
+        const scale = (track.waveformMode ?? waveformMode) === 'normalized'
+          ? sourceDisplayGain(source) : track.volume;
+        drawWaveform(ctx, processed ?? source, seg, segLeft, segRight, segTop + 6, segBottom,
+          baseColor, scale * (processed ? 1 : seg.gain), !!processed);
+        if (preview && preview.state !== 'dry' && segRight - segLeft > 100) {
+          ctx.save();
+          ctx.font = '10px Inter, sans-serif';
+          ctx.textAlign = 'right';
+          ctx.fillStyle = preview.state === 'ready' ? '#a7f3d0' : '#fcd34d';
+          ctx.fillText(t(`timeline.waveformFx${preview.state === 'ready' ? 'Ready' : preview.state === 'pending' ? 'Pending' : 'Source'}`),
+            Math.min(segRight - 6, width - 6), segBottom - 5);
+          ctx.restore();
+        }
       }
 
       // Fade overlays
@@ -374,7 +392,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
 
       void track;
     },
-    [timeToPixels, store.sources, drawWaveform, drawFadeOverlay, waveformMode, trackHeight],
+    [timeToPixels, store.sources, drawWaveform, drawFadeOverlay, waveformMode, trackHeight, clipWaveforms, t, width],
   );
 
   const editRange=useProjectStore(s=>s.project.editRange);
@@ -745,6 +763,7 @@ export const TimelineCanvas: React.FC<TimelineCanvasProps> = ({
     <div ref={containerRef} className="relative" style={{ height: totalHeight }}>
       <canvas
         data-audio-timeline
+        data-fx-waveforms={JSON.stringify([...clipWaveforms].map(([id, view]) => [id, view.state]))}
         ref={canvasRef}
         className="block"
         style={{ cursor, width, height: totalHeight, touchAction: touchArrange ? 'none' : 'pan-y' }}

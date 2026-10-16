@@ -750,3 +750,16 @@ Read restoration retain oscillator phase and buffer history. NativeChorus rate
 phase integrates prior per-frame frequency, including silent time before a late
 clip. Empty-rate branch retains legacy static DSP. Rate copy protects outside
 parameter values, not later audio phase. Preserve existing delay keyboard steps.
+
+## Effect-aware timeline waveforms (0.13.23)
+
+`useClipWaveforms` schedules visible built-in clip previews through
+`TimelineEngine.renderClipWaveform`, with 120 ms debounce, serialized DSP and
+stale-result rejection. Use the original source normalization reference; the
+processed buffer already includes clip gain/fades. Processed peak envelopes cover
+both channels. Never call native rack snapshot/render from this background path:
+it must not interrupt playback or capture. Native inserts and clips beyond the
+60 s / 32 MiB render budget show source-only status. Retained previews are bounded
+by eight entries / 32 MiB; track/bus/master FX and out-of-clip tails are excluded.
+The full audio-workstation gap inventory is now accepted roadmap work; see active
+PLAN and docs/DAW_GAP_ANALYSIS.md rather than historical paging deferrals.

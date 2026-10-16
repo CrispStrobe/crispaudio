@@ -18,6 +18,24 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.23 — effect-aware segment waveforms
+
+Built-in segment effects refresh visible timeline waveforms after a short editing
+pause, using the existing clip DSP with gain, fades and effect automation. The
+preview path never accesses native plug-ins or the playback device. An FX status
+marks processed, updating or source-only drawing. The initial bounds are 60 seconds
+/ 32 MiB per render and eight entries / 32 MiB retained cache. Native inserts,
+longer clips and track/bus/master processing remain follow-up work; see the
+[accepted audio-workstation roadmap](DAW_GAP_ANALYSIS.md).
+
+All 1,912 frontend tests, lint, TypeScript and 21 release checks pass. Actual browser
+PCM checks match the existing clip-range renderer exactly for all twelve built-in
+effect types; changing a real inspector slider changes canvas waveform pixels.
+Rapid edits, bypass, Undo and a small German viewport pass. This is software
+verification, not new listening, hardware or physical iOS acceptance. The normal Mac bundle is installed locally as 0.13.23,
+with strict/deep ad-hoc signature verification and the autosave preserved.
+[Checkpoint evidence](evidence/clip-fx-waveform.json). No Apple upload.
+
 ## Local 0.13.22 — audio finishing scope and TTS retirement
 
 TTS creation, server preferences and iOS speech synthesis commands are removed.

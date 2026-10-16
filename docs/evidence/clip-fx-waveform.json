@@ -1,0 +1,136 @@
+{
+  "version": "0.13.23",
+  "date": "2026-10-16",
+  "scope": "Display-only built-in segment-effect waveforms and accepted audio-workstation roadmap",
+  "browser": {
+    "pcm": [
+      {
+        "type": "lowpass",
+        "error": 0,
+        "rms": 0.00011856401250116338,
+        "frames": 24000
+      },
+      {
+        "type": "highpass",
+        "error": 0,
+        "rms": 0.07568103718179847,
+        "frames": 24000
+      },
+      {
+        "type": "peaking",
+        "error": 0,
+        "rms": 0.02964690319641356,
+        "frames": 24000
+      },
+      {
+        "type": "lowshelf",
+        "error": 0,
+        "rms": 0.041149633861467895,
+        "frames": 24000
+      },
+      {
+        "type": "highshelf",
+        "error": 0,
+        "rms": 0.02968154010237154,
+        "frames": 24000
+      },
+      {
+        "type": "distortion",
+        "error": 0,
+        "rms": 0.29209296647162836,
+        "frames": 24000
+      },
+      {
+        "type": "compressor",
+        "error": 0,
+        "rms": 0.15498249186800722,
+        "frames": 24000
+      },
+      {
+        "type": "delay",
+        "error": 0,
+        "rms": 0.14337011616079967,
+        "frames": 24000
+      },
+      {
+        "type": "reverb",
+        "error": 0,
+        "rms": 0.052484430969448985,
+        "frames": 24000
+      },
+      {
+        "type": "chorus",
+        "error": 0,
+        "rms": 0.10133583083322965,
+        "frames": 24000
+      },
+      {
+        "type": "ringmod",
+        "error": 0,
+        "rms": 0.08239986778427119,
+        "frames": 24000
+      },
+      {
+        "type": "bitcrush",
+        "error": 0,
+        "rms": 0.16455944667856062,
+        "frames": 24000
+      }
+    ],
+    "canvasChangedWithInspector": true,
+    "sliderLabels": [
+      "Gain",
+      "Cutoff",
+      "Q"
+    ],
+    "baseline": {
+      "sourceUnchanged": 0.25,
+      "history": 1
+    },
+    "rapidEditsBypassUndo": true,
+    "smallGermanViewport": true,
+    "physicalAudio": false
+  },
+  "unit": {
+    "focusedFiles": 2,
+    "focusedTestsPassed": 8,
+    "covers": [
+      "audible cache keys/source replacement",
+      "native and render-budget fallback",
+      "serialized DSP and stale queued/inflight work",
+      "stereo peaks/cache/source immutability"
+    ]
+  },
+  "bounds": {
+    "maximumClipSeconds": 60,
+    "maximumRenderStereoPCMBytes": 33554432,
+    "maximumCacheBytes": 33554432,
+    "maximumCacheEntries": 8,
+    "debounceMilliseconds": 120,
+    "simultaneousRenders": 1
+  },
+  "limitations": [
+    "Updates follow a short editing pause; this is not a continuously running audition graph.",
+    "Native inserts and over-budget clips show source-only status.",
+    "Track/bus/master processing and tails outside clip bounds are excluded.",
+    "Modulation phase follows clip-range offline rendering, not the running graph.",
+    "Browser verification is not physical iOS or listening acceptance."
+  ],
+  "distribution": {
+    "appleUpload": false
+  },
+  "validation": {
+    "frontendFiles": 191,
+    "frontendTestsPassed": 1912,
+    "fullSuiteSeconds": 344.25,
+    "lint": "pass",
+    "typescript": "pass",
+    "releaseTestsPassed": 21,
+    "nativeDSPChanges": false,
+    "freshIOSBuild": false,
+    "normalMacBundle": "pass",
+    "localInstall": "0.13.23",
+    "strictDeepAdHocSignature": "pass",
+    "autosavesRetained": 1
+  }
+}

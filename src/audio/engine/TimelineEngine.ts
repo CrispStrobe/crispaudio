@@ -259,6 +259,27 @@ export class TimelineEngine {
     }
   }
 
+  /** Display-only clip DSP. Never touches a running engine or native plug-ins.
+   * Uses the same built-in graph and absolute automation clock as a range render.
+   * Gain is before the rack, fades after it; output is cropped to clip boundaries.
+   */
+  static async renderClipWaveform(source: AudioSource, clip: AudioSegment): Promise<AudioBuffer> {
+    const frames = Math.ceil(clip.duration * source.sampleRate);
+    if (!Number.isFinite(frames) || frames < 1 || clip.duration > 60 || frames * 8 > 32 * 1024 * 1024)
+      throw new Error('Clip waveform preview budget exceeded');
+    if (clip.nativeEffects?.some(fx => fx.enabled && !fx.bypass))
+      throw new Error('Native clip waveforms require an explicit render');
+    const ctx = new OfflineAudioContext(2, frames, source.sampleRate);
+    const engine = new TimelineEngine(ctx);
+    const input = ctx.createBufferSource(); input.buffer = source.buffer;
+    const gain = ctx.createGain(); gain.gain.value = clip.gain; input.connect(gain);
+    const output = engine.applyEffects(ctx, gain, clip.effects, undefined, clip.startTime);
+    const fade = ctx.createGain(); output.connect(fade);
+    engine.applyFade(fade, clip, 0, 0); fade.connect(ctx.destination);
+    input.start(0, clip.sourceOffset, clip.duration);
+    return ctx.startRendering();
+  }
+
   /** Update the source registry (call when sources are added/removed). */
   setSources(sources: Map<string, AudioSource>): void {
     this.sources = sources;

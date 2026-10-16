@@ -607,7 +607,10 @@
     "selectedClips_other": "{{count}} Clips",
     "waveformDefault": "Standard",
     "waveformAtMixLevel": "Wellenform mit Mischpegel",
-    "waveformHelp": "Normalisiert vergrößert leise Wellenformen für bessere Lesbarkeit. Mischpegel zeigt die relativen Spur- und Clippegel. Nur die Darstellung ändert sich; Blenden und Effekte sind nicht enthalten."
+    "waveformFxReady": "FX",
+    "waveformFxPending": "FX…",
+    "waveformFxSource": "FX: Quelle",
+    "waveformHelp": "Normalisiert vergrößert leise Quellen anhand ihres Originalpegels. Interne Segmenteffekte, Segmentpegel und Fades aktualisieren sichtbare Wellenformen nach kurzer Pause (bis 60 s / 32 MiB). FX bedeutet verarbeitet, FX… wird aktualisiert, FX: Quelle zeigt das Original (native Inserts, größere Segmente, Cache-Grenze oder Renderfehler). Spur-, Bus- und Mastereffekte sowie Nachhall außerhalb der Segmentgrenzen fehlen. Die Modulationsphase folgt einem Segmentbereich-Render. Die Anzeige verändert kein Audio."
   },
   "common": {
     "slotA": "A",

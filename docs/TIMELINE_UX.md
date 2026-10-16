@@ -21,6 +21,20 @@ View → Waveform Display chooses normalized or mix-level drawing. This changes
 visual scale, not the audio mix. The occasional waveform control no longer
 occupies the main toolbar.
 
+Built-in segment effects now refresh visible waveforms after a 120 ms editing
+pause. Clip gain is applied before effects and fades after them; normalization
+uses the original source level so processing level changes remain visible. The
+small FX label means processed, FX… means updating, and FX: source means the
+original waveform is shown. The info button in clip FX explains these states.
+Previews use a separate offline context, never the playback device or native
+plug-in host. One render runs at a time; obsolete work is discarded. The cache
+retains at most eight entries / 32 MiB. This first implementation handles clips
+up to 60 seconds / 32 MiB of stereo PCM. Native inserts, over-budget clips,
+evicted results and failures fall back visibly to the source. Track/bus/master
+processing and tails outside the clip are excluded. Modulation phase follows a
+clip-range offline render; the waveform is not a full running-mix meter.
+These extensions remain accepted roadmap work.
+
 Settings → Timeline view enables Fit all by default and chooses automatic,
 always-visible or hidden touch ribbon. Fit is enabled initially, runs on project
 open/import and adjusts to changed viewport width or lane layout. Manual zoom
