@@ -147,7 +147,9 @@ Use the inspector’s **…** menu to select a range, then drag across the graph
 enter its start/end. Copy that curve, paste at the playhead, or fit it to another
 range. Select a point and choose **… → Shape segment** for easing presets or
 custom Bézier handles. Use shape updates the inspector draft; Apply saves one
-Undo. Selecting an interior point reopens an intact saved shape.
+Undo. Selecting an interior point reopens an intact saved shape. Track lanes use
+the same compact shape controls for gain, pan and effects; their Apply button
+commits the shape directly as one Undo. Info contains full names, units and guidance.
 Built-in inspectors share clipboards with track lanes. Native copies match
 the same plug-in, parameter and range. Paste stays in the draft until Apply and
 protects the surrounding curve with one-sample guards. Track-lane paste opens a

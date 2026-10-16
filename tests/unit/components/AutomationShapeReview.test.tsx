@@ -1,0 +1,32 @@
+import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import {AutomationShapeReview} from '../../../src/components/timeline/AutomationShapeReview';
+import {useProjectStore} from '../../../src/stores/projectStore';
+import {useUIStore} from '../../../src/stores/uiStore';
+import {targetPoints,type AutomationTarget} from '../../../src/lib/automationRecording';
+import type {EffectConfig,TimelineProject} from '../../../src/types/audio';
+vi.mock('react-i18next',()=>({useTranslation:()=>({t:(key:string,args?:{index?:number})=>args?.index?`${key} ${args.index}`:key})}));
+vi.mock('../../../src/i18n',()=>({default:{language:'en',changeLanguage:vi.fn()}}));
+const cases:[AutomationTarget['parameter'],EffectConfig['type'],number,number][]=[['gain','delay',.2,1.2],['pan','delay',-.6,.6],['mix','reverb',.1,.8],['feedback','delay',.1,.8],['time','delay',.01,1.5],['depth','chorus',.1,.9],['rate','chorus',.5,5],['freq','ringmod',100,1000]];
+function open(parameter:AutomationTarget['parameter']='gain',type:EffectConfig['type']='delay',a=.2,b=1.2,locked=false){
+ const points=[{time:1,value:a},{time:5,value:b}],effect:EffectConfig={type,enabled:true,params:{[parameter]:a},automation:parameter==='gain'||parameter==='pan'?{}:{[parameter]:points}};
+ const project:TimelineProject={...useProjectStore.getInitialState().project,id:crypto.randomUUID(),duration:10,minimumDuration:10,tracks:[{id:'t',name:'Track',volume:1,pan:.1,muted:false,solo:false,locked,segments:[],automation:parameter==='gain'?points:[{time:0,value:1}],panAutomation:parameter==='pan'?points:[{time:0,value:.1}],effects:[effect]}]};
+ useProjectStore.getState().loadProjectState(project,new Map());useProjectStore.temporal.getState().clear();const snapshot=useProjectStore.getState().project,target:AutomationTarget={trackId:'t',parameter,...(parameter==='gain'||parameter==='pan'?{}:{effectIndex:0})},close=vi.fn();const view=render(<AutomationShapeReview project={snapshot} target={target} pointTime={1} onClose={close}/>);return{snapshot,target,close,...view};
+}
+beforeEach(()=>{for(const track of useProjectStore.getState().project.tracks)if(track.locked)useProjectStore.getState().updateTrack(track.id,{locked:false});useUIStore.setState({timelineRecording:false});});
+afterEach(()=>{cleanup();vi.restoreAllMocks();});
+it.each(cases)('shares the compact review for %s with correct raw values and a single direct Apply', (parameter,type,a,b)=>{
+ const {snapshot,target,close}=open(parameter,type,a,b),shape=screen.getByRole('combobox',{name:'automation.shape'});expect(shape).toHaveFocus();expect(screen.queryByRole('spinbutton')).toBeNull();expect(screen.queryByRole('button',{name:'curveShape.use'})).toBeNull();fireEvent.change(shape,{target:{value:'ease-in'}});expect(useProjectStore.getState().project).toBe(snapshot);fireEvent.click(screen.getByRole('button',{name:'automation.applyShape'}));const points=targetPoints(useProjectStore.getState().project,target)!;expect(points).toHaveLength(17);expect(points[8].value).toBeCloseTo(a+(b-a)*.25,12);expect(points[0].shapeReview).toMatchObject({shape:'ease-in'});expect(points.at(-1)).toEqual({time:5,value:b});expect(close).toHaveBeenCalledOnce();expect(useProjectStore.temporal.getState().pastStates).toHaveLength(1);expect(useProjectStore.getState().project.tracks[0].effects![0].params).toBe(snapshot.tracks[0].effects![0].params);act(()=>useProjectStore.temporal.getState().undo());expect(useProjectStore.getState().project).toBe(snapshot);
+});
+it('keeps help behind Info, shows frequency in Hz and cancels help before the review',()=>{
+ const {close}=open('freq','ringmod',100,1000);expect(screen.queryByText(/100.00 Hz/)).toBeNull();fireEvent.click(screen.getByRole('button',{name:'curveShape.info'}));expect(screen.getByRole('note')).toHaveTextContent('100.00 Hz → 1000.00 Hz');expect(screen.getByRole('note')).toHaveTextContent('curveShape.trackHelp');fireEvent.keyDown(document,{key:'Escape'});expect(close).not.toHaveBeenCalled();expect(screen.queryByRole('note')).toBeNull();
+});
+it('preserves redo when applying no-op Linear and when cancelling',()=>{
+ const {snapshot,close}=open();act(()=>{useProjectStore.getState().updateTrack('t',{name:'Changed'});useProjectStore.temporal.getState().undo();});fireEvent.change(screen.getByRole('combobox',{name:'automation.shape'}),{target:{value:'linear'}});fireEvent.click(screen.getByRole('button',{name:'automation.applyShape'}));expect(useProjectStore.getState().project).toBe(snapshot);expect(useProjectStore.temporal.getState().futureStates).toHaveLength(1);fireEvent.click(screen.getByRole('button',{name:'common.cancel'}));expect(close).toHaveBeenCalledTimes(2);expect(useProjectStore.temporal.getState().pastStates).toHaveLength(0);
+});
+it('guards locked targets, stale snapshots and microphone capture',()=>{
+ open('gain','delay',.2,1.2,true);expect(screen.getByRole('button',{name:'automation.applyShape'})).toBeDisabled();cleanup();open();act(()=>useUIStore.setState({timelineRecording:true}));expect(screen.getByRole('button',{name:'automation.applyShape'})).toBeDisabled();act(()=>useUIStore.setState({timelineRecording:false}));expect(screen.getByRole('button',{name:'automation.applyShape'})).toBeEnabled();act(()=>useProjectStore.getState().updateTrack('t',{volume:.7}));expect(screen.getByRole('alert')).toHaveTextContent('automation.changed');expect(screen.getByRole('button',{name:'automation.applyShape'})).toBeDisabled();
+});
+it('uses custom pan controls across zero and reopens saved interiors',()=>{
+ const {snapshot,target,rerender}=open('pan','delay',-.8,.6);fireEvent.change(screen.getByRole('combobox',{name:'automation.shape'}),{target:{value:'custom'}});const y=screen.getByRole('spinbutton',{name:'automation.handleValueLabel 1'});act(()=>y.focus());fireEvent.change(y,{target:{value:'30'}});act(()=>y.blur());fireEvent.click(screen.getByRole('button',{name:'automation.applyShape'}));const saved=useProjectStore.getState().project;expect(targetPoints(saved,target)![0].shapeReview!.controls!.y1).toBe(.3);expect(snapshot.tracks[0].panAutomation).toHaveLength(2);rerender(<AutomationShapeReview key="reopen" project={saved} target={target} pointTime={2} onClose={()=>{}}/>);expect(screen.getByRole('combobox',{name:'automation.shape'})).toHaveValue('custom');expect(screen.getByRole('spinbutton',{name:'automation.handleValueLabel 1'})).toHaveValue(30);
+});

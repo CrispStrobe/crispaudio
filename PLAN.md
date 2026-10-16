@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.18. This section is the current plan.
+Updated 2026-10-16, for local 0.13.19. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -134,6 +134,11 @@ clip/track/master curves. Presets and custom Bézier controls reuse the track-sh
 math with raw/normalized bounds. Local review, cancellation, intact-shape reopen,
 endpoint preservation and one Apply/Undo remain in place.
 [Scoped shape checks](docs/evidence/scoped-curve-shapes.json).
+Local 0.13.19 consolidates the remaining track gain/pan/effect shape review into
+the same compact controls, with explicit pan minimum, raw effect units and a
+single direct Apply/Undo. Detailed guidance and unit context stay behind Info;
+snapshot/locks/capture/no-op guards remain intact.
+[Track shape checks](docs/evidence/compact-track-shapes.json).
 Continuous native input DSP remains future work.
 Public App Store review is a separate release decision; iOS 0.3.0 stays published.
 

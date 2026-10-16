@@ -5,6 +5,15 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.19 — compact track shape review
+
+Track gain, pan and built-in parameter shaping now shares the compact review used
+by inspectors. One selector, the curve, optional custom fields and one action row
+replace the older explanatory paragraphs. Info retains full names and units.
+Negative pan and raw effect values remain intact; direct Apply creates one Undo,
+with project identity/lock/capture checks and no-op Redo preservation.
+[Validation evidence](evidence/compact-track-shapes.json).
+
 ## Local 0.13.18 — scoped curve shaping
 
 The inspector’s “…” menu opens local segment shaping for built-in clip/master

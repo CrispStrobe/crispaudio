@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.19 — 2026-10-16
+
+- Consolidate track gain, pan and effect curve shaping into the compact review already used by effect inspectors.
+- Keep explanations and full track/unit details behind Info, with one preset selector and custom handle fields only when needed.
+- Preserve negative pan, raw effect units, direct one-step Apply/Undo and no-op Redo. Recheck project identity, locks and microphone capture before applying.
+- Cancel numeric edits or handle drags before closing the review with Escape.
+
 ## 0.13.18 — 2026-10-16
 
 - Shape built-in clip/master and native clip/track/master parameter curves through the inspector’s “…” menu: Linear, ease-in/out, S-curve and custom Bézier handles.

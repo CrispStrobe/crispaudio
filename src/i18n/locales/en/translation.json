@@ -2310,6 +2310,7 @@
     "pasted": "Pasted into draft"
   },
   "curveShape": {
+    "trackHelp": "Choose a preset or Custom and adjust the Bézier handles or percentages. Changes stay in this visual review until Apply, which creates one Undo. Cancel keeps the current curve. Shapes become up to sixteen editable linear intervals; other segments and parameters stay intact.",
     "info": "Curve shape help",
     "use": "Use shape",
     "help": "Choose a preset or Custom and drag the Bézier handles. Use shape updates this inspector draft; Apply saves one Undo. Cancel keeps the previous curve. Shapes become up to sixteen editable linear intervals; other segments and parameters stay intact."

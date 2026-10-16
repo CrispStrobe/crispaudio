@@ -32,6 +32,11 @@ intervals; Apply saves the inspector as one Undo. Select an interior point to
 reopen an intact shape. Other segments, raw parameter units and native state stay
 unchanged. Info explains flat segments and the review workflow.
 
+Track-lane shaping uses the same compact controls for gain, pan and effects.
+Its Apply button commits directly as one Undo; inspector Use shape updates the
+local draft first. Info retains full track names, endpoint values/units and help.
+Escape cancels an active numeric edit or handle drag before closing the review.
+
 To record, expand Record pass. Touch records while a control is held; Latch
 continues after release; Write starts at playback start (or clip start when later).
 Arm before playback, use the inspector transport and move the value slider.

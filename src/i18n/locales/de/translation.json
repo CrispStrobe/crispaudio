@@ -2323,6 +2323,7 @@
     "pasted": "In Entwurf eingefügt"
   },
   "curveShape": {
+    "trackHelp": "Vorlage wählen oder bei Frei die Bézier-Griffe bzw. Prozentwerte ändern. Erst Anwenden speichert die Form als einen Rückgängig-Schritt. Abbrechen erhält die aktuelle Kurve. Formen werden zu bis zu sechzehn bearbeitbaren linearen Abschnitten; andere Segmente und Parameter bleiben erhalten.",
     "info": "Kurvenform erklären",
     "use": "Form übernehmen",
     "help": "Vorlage wählen oder bei Frei die Bézier-Griffe ziehen. Form übernehmen ändert den Entwurf; Anwenden speichert einen Rückgängig-Schritt. Abbrechen erhält die vorige Kurve. Formen werden zu bis zu sechzehn bearbeitbaren linearen Abschnitten; andere Segmente und Parameter bleiben erhalten."
