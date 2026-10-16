@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+- Add internal native input queues and an AU/VST3 worker with independent dry capture and cue fault handling. Hardware capture and recording UI integration remain pending; the installed recorder is unchanged.
+
 ## 0.13.33 — 2026-10-16
 
 - Share one audio bridge across a native recording cue rack. Two inserts now add 85.3 ms of bridge delay at 48 kHz instead of 170.7 ms; reported plug-in latency is additional.

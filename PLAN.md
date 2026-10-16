@@ -35,6 +35,13 @@ bounded increments, not a finished state-of-the-art DAW. MIDI/composition expans
 is outside this app's active scope. Long-session paging/streaming is accepted in
 the final scale phase; additional codec expansion has no new priority.
 
+The next development increment adds [native input transport and worker foundations](docs/NATIVE_INPUT.md):
+independent bounded dry/cue queues, contiguous input clocks, explicit incomplete-take
+faults and a native static AU/VST3 rack. Generated-input checks exercise real helpers
+without WebKit. This is not wired to hardware capture or the recording UI; installed
+0.13.33 remains unchanged. Next connect native hardware ingress, dry persistence and
+output scheduling/clock conversion before claiming a native recording path.
+
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms
 at 48 kHz), plus summed plug-in latency. Static order/bypass, retained dry capture,

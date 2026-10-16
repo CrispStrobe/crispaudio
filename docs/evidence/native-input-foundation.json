@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-16",
+  "kind": "native-input-foundation",
+  "applicationVersion": "0.13.33",
+  "connectedToInstalledRecorder": false,
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "transport": "Rust SPSC queues and native DSP worker; actual helper pipes; no WebKit",
+  "sampleRate": 48000,
+  "channels": 2,
+  "packetFrameCycle": [512, 128, 1, 379],
+  "drySlots": 64,
+  "cueInputSlots": 8,
+  "cueOutputSlots": 8,
+  "responseChecks": [
+    { "format": "AU", "plugin": "Apple AUBandpass", "inserts": 1, "inputFrames": 48000, "dryExact": true, "offlineMaxError": 8.7201703e-16, "helpersClosed": true },
+    { "format": "AU", "plugin": "Apple AUBandpass", "inserts": 2, "inputFrames": 48000, "dryExact": true, "offlineMaxError": 5.914394e-15, "helpersClosed": true },
+    { "format": "AU", "plugin": "Apple AUBandpass", "inserts": 2, "bypassed": true, "inputFrames": 48000, "dryExact": true, "cueInputMaxError": 0, "helpersClosed": true },
+    { "format": "VST3", "plugin": "SDK ADelay", "inserts": 1, "inputFrames": 48000, "dryExact": true, "offlineMaxError": 0, "helpersClosed": true },
+    { "format": "VST3", "plugin": "SDK ADelay", "inserts": 2, "inputFrames": 48000, "dryExact": true, "offlineMaxError": 0, "helpersClosed": true }
+  ],
+  "tests": {
+    "focusedWithExplicitVst3Fixture": { "passed": 14, "failed": 0, "ignored": 0 },
+    "fullMediaLibrary": { "passed": 184, "failed": 0, "ignored": 11 },
+    "appRustLibrary": { "passed": 39, "failed": 0, "ignored": 1 },
+    "releasePythonChecks": { "passed": 21, "failed": 0 },
+    "faultCoverage": [
+      "cue input overflow leaves dry capture exact",
+      "dry overflow retains prefix and latches incomplete take",
+      "invalid sizes and non-finite input rejected",
+      "input clock gaps rejected",
+      "counter wrap and 10000 concurrent packet publications",
+      "non-finite and failed processing replies close cue only",
+      "output backpressure, disconnect and cancellation",
+      "cancellation during blocked processing suppresses late reply",
+      "queued cue output suppressed when worker drops or cancels",
+      "partial native rack open failure closes prepared helpers",
+      "killed actual AU helper leaves dry capture running",
+      "latency-matched bypass history across unequal blocks"
+    ]
+  },
+  "qualificationLimits": [
+    "The deterministic response writer waits for each processed packet; this is not a real-time throughput test",
+    "No native hardware capture adapter, disk writer or output scheduler is connected",
+    "No end-to-end latency, drift, physical microphone, commercial plugin, sustained load or background qualification",
+    "Fixtures report zero plugin latency; nonzero bypass history is checked separately without a plugin",
+    "No installed recording UI or audio routing changes"
+  ]
+}

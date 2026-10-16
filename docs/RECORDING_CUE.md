@@ -25,7 +25,8 @@ reported plug-in latencies: at 48 kHz, **85.3 ms for either one or two inserts**
 Version 0.13.33 removes the second bridge buffer that previously made a two-insert
 cue add 170.7 ms before plug-in latency. The displayed FX delay
 excludes device/input/output latency. This buffered path is unsuitable for tight
-real-time performance. Low-latency native input DSP remains future work. A plug-in
+real-time performance. A [Rust input/worker foundation](NATIVE_INPUT.md) is under
+development; hardware capture and output integration remain pending. A plug-in
 fault or missed deadline mutes the cue and closes its streams; raw recording
 continues through the independent capture worklet. Re-enable monitoring to retry.
 

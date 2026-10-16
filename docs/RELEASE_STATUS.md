@@ -18,6 +18,34 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Native input foundation — development after 0.13.33
+
+The Rust media engine now contains independent bounded dry/cue input queues and a
+native worker rack for static AU/VST3 inserts. Cue failure/cancellation suppresses
+queued wet audio while dry capture continues; input gaps or dry overflow explicitly
+mark an incomplete take. [Implementation and integration scope](NATIVE_INPUT.md).
+
+This code is not connected to hardware capture or the recording UI. Installed
+0.13.33 remains the current app; no new application version or Apple upload is
+part of this foundation checkpoint. Hardware ingress, native dry persistence,
+clock conversion and output scheduling remain required before native recording
+can replace the existing Web Audio path.
+
+The 14 focused checks pass with an explicitly supplied SDK VST3 fixture, including
+actual native-worker AU/VST3 output against offline references and helper fault
+cleanup. The full media library passes 184 tests with 11 platform/fixture checks
+ignored; the focused invocation runs the otherwise ignored input VST3 check.
+App Rust library checks pass 39 tests with one hardware check ignored, and the
+21 Python release checks pass. Frontend code is unchanged; its earlier 2,020-test
+result is not a new run for this increment.
+[Evidence and limits](evidence/native-input-foundation.json). Mac CI now explicitly
+runs the input AU checks; Linux media CI already covers the portable queues.
+
+The installed 0.13.33 baseline commit `58c50e6` passed both
+[general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38957944073) and
+[iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38957944069).
+Those runs precede the native input foundation changes.
+
 ## Local 0.13.33 — one bridge for the whole native cue rack
 
 A native cue rack now uses one Web Audio bridge for up to two saved inserts.

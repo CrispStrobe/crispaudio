@@ -915,3 +915,15 @@ internal optional stream factory; its default timeline/source path is unchanged.
 Do not reduce input block size based on short steady-tone tests: 256/512-frame
 candidates missed deadlines and are recorded as rejected evidence. Exact bypassed
 impulse timing plus AU/VST3 response/cleanup qualify the shared-buffer change only.
+
+### Native input foundation (development after 0.13.33)
+
+`media::native_input` (native-engine feature) has one non-Clone/non-Sync callback
+writer, independent dry/cue SPSC queues and a cue worker with a static AU/VST3 rack.
+Do not connect it via JS PCM callbacks: native hardware ingress and output clock
+integration remain pending. No installed recording behavior changes yet. Cue
+faults suppress pending wet packets and retain dry capture; raw overflow/gaps must
+be reported as an incomplete take, never a clean stop. Status cancellation does
+not interrupt helper IPC: the owner must also stop registered helpers. Reserve
+the group stream budget before opening. See docs/NATIVE_INPUT.md for lifecycle,
+scope and focused tests; no latency/hardware qualification follows from these tests.

@@ -87,3 +87,8 @@ jobs:
       - name: cargo test
         working-directory: src-tauri
         run: cargo test
+
+      - name: Native input queues and Apple cue worker
+        if: runner.os == 'macOS'
+        working-directory: src-tauri
+        run: cargo test --manifest-path ../media/Cargo.toml --target-dir target --features native-engine --locked --lib native_input
