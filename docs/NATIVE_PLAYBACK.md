@@ -98,8 +98,17 @@ A changed reported parameter range requires clearing the old curve before a new
 pass. At most 32 lanes and 100,000 total points per insert are accepted, with
 parameter packet limits checked before processing.
 
+Live playback adds the monitor metronome after the project mix and its meters,
+using the same native 48 kHz clock. Bar accents follow the project tempo, time
+signature and origin. Seeking resumes the current click tail; loops return to
+the project beat position. Enable and level changes use the existing musical
+controls without restarting DSP (tempo and signature changes restart playback).
+Monitor volume also controls the clicks. The monitor sum is bounded to full scale;
+clicks do not enter exports, effect inputs or mix loudness measurements. Preview
+mode and the prepared recording backing still omit native-session clicks.
+
 Preview pass capture, microphone capture, continuous native input monitoring,
-monitor clicks, custom plug-in windows and
+custom plug-in windows and
 MIDI instruments remain outside this automation mode.
 
 ## Try the included session

@@ -2307,7 +2307,7 @@
     "mode": "Wiedergabemodus",
     "live": "Live",
     "liveHelp": "Live verarbeitet AU-/VST3-Effekte fortlaufend. Mixer, Plug-in-Parameter und unterstützte Effektregler auf Spuren, Clips und Master reagieren während der Wiedergabe. Pause erhält den Zustand; Springen baut die Vorgeschichte neu auf.",
-    "liveLimits": "Rack-Änderungen und andere Einstellungen integrierter Effekte starten die Wiedergabe neu. Audio läuft mit 48 kHz. Mikrofonaufnahmen nutzen einen vorbereiteten Effekt-Begleitmix und trockenes Monitoring. Metronom und direktes Eingangsmonitoring durch Plug-ins sind noch nicht verfügbar.",
+    "liveLimits": "Rack-Änderungen und andere Einstellungen integrierter Effekte starten die Wiedergabe neu. Audio läuft mit 48 kHz. Mikrofonaufnahmen nutzen einen vorbereiteten Effekt-Begleitmix und trockenes Monitoring. Das Metronom dient nur zum Mithören. Direktes Eingangsmonitoring durch Plug-ins ist noch nicht verfügbar.",
     "shortLoop": "Diese Schleife ist für native Live-Effekte zu kurz. Für Schleifen unter 43 ms „Vorschau“ wählen."
   },
   "curveRange": {

@@ -5,6 +5,15 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Local 0.13.20 — native monitor metronome
+
+Mac Live playback now supplies monitor clicks from its native render clock.
+The existing musical controls set enable/level, bar accents and tempo. Clicks
+follow seeks and loop boundaries, remain outside mix meters and exports, and
+use the selected output and monitor volume. Preview and prepared recording
+backing still omit clicks. No new hardware acceptance or Apple upload.
+[Validation evidence](evidence/native-monitor-click.json).
+
 ## Local 0.13.19 — compact track shape review
 
 Track gain, pan and built-in parameter shaping now shares the compact review used

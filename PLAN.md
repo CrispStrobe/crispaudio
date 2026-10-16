@@ -1,8 +1,15 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.19. This section is the current plan.
+Updated 2026-10-16, for local 0.13.20. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
+
+Local 0.13.20 adds a native-clocked monitor metronome to Mac Live playback.
+The existing musical controls enable clicks and change their level without a DSP
+restart. Absolute project-frame scheduling follows seeks, fractional beat periods
+and loop boundaries. Clicks stay outside effects, exports and mix meters. Native
+Preview and prepared recording backing still omit clicks. Continuous native input
+DSP, custom plug-in windows, MIDI and disk paging remain separate work.
 
 ## Completed local software work: interaction and recording
 

@@ -1,6 +1,7 @@
 //! Continuous, native-owned transport. The callback only consumes bounded PCM.
 //! Control/polling and plugins run off the callback and WebKit document thread.
 use super::*;
+use crispaudio_media::monitor_click::MonitorClick;
 use std::sync::atomic::AtomicU32;
 
 #[derive(Default)]
@@ -16,7 +17,13 @@ pub struct LiveControl {
     callbacks: AtomicU64,
     peaks: [AtomicU32; 2],
     fault: AtomicUsize,
-    pending: Mutex<Option<(u64, crispaudio_media::native_graph::MixControls)>>,
+    pending: Mutex<
+        Option<(
+            u64,
+            crispaudio_media::native_graph::MixControls,
+            Option<MonitorClick>,
+        )>,
+    >,
     revision: AtomicU64,
     applied: AtomicU64,
     meters: Mutex<Value>,
@@ -40,20 +47,25 @@ impl LiveControl {
         self.volume.store(volume.to_bits(), Ordering::Release);
         Ok(())
     }
-    pub fn update(&self, value: Value) -> Result<u64, String> {
+    pub fn update(&self, mut value: Value) -> Result<u64, String> {
         if value.to_string().len() > 4_000_000 {
             return Err("Native controls exceed limit".into());
+        }
+        let click = MonitorClick::parse(&value["music"])?;
+        if let Some(object) = value.as_object_mut() {
+            object.remove("music");
         }
         let update =
             serde_json::from_value(value).map_err(|e| format!("Invalid native controls: {e}"))?;
         let mut pending = self.pending.lock().unwrap();
         let revision = self.revision.fetch_add(1, Ordering::AcqRel) + 1;
-        *pending = Some((revision, update));
+        *pending = Some((revision, update, click));
         Ok(revision)
     }
-    fn apply(&self, graph: &mut Graph) -> Result<(), String> {
-        if let Some((revision, update)) = self.pending.lock().unwrap().take() {
+    fn apply(&self, graph: &mut Graph, click: &mut Option<MonitorClick>) -> Result<(), String> {
+        if let Some((revision, update, next_click)) = self.pending.lock().unwrap().take() {
             graph.update_controls(update)?;
+            *click = next_click;
             self.applied.store(revision, Ordering::Release);
         }
         Ok(())
@@ -223,6 +235,7 @@ pub fn run(
             if unsafe { pthread_set_qos_class_self_np(0x21, 0) } != 0 {
                 return Err("Cannot schedule native audio worker".into());
             }
+            let mut click = MonitorClick::parse(&snapshot.project["music"])?;
             let mut graph = prepare_graph(
                 &snapshot.project,
                 snapshot.sources.clone(),
@@ -254,7 +267,7 @@ pub fn run(
                 {
                     break;
                 }
-                worker_control.apply(&mut graph)?;
+                worker_control.apply(&mut graph, &mut click)?;
                 if ready && worker_control.paused.load(Ordering::Acquire) {
                     thread::sleep(Duration::from_millis(1));
                     continue;
@@ -295,6 +308,13 @@ pub fn run(
                 }
                 *meters = next;
                 drop(meters);
+                if let Some(click) = &click {
+                    click.mix(
+                        &mut pcm,
+                        start as u64 + rendered,
+                        cycle.then_some((cycle_start, end)),
+                    );
+                }
                 worker_control
                     .max_process_ns
                     .fetch_max(processing.elapsed().as_nanos() as u64, Ordering::Relaxed);
@@ -304,7 +324,7 @@ pub fn run(
                     block[i * 2 + 1] = sample[1];
                 }
                 while !producer.push(&block) {
-                    worker_control.apply(&mut graph)?;
+                    worker_control.apply(&mut graph, &mut click)?;
                     if worker_control.stop.stop.load(Ordering::Acquire)
                         || worker_ring.stop.load(Ordering::Acquire)
                         || worker_ring.fault.load(Ordering::Acquire) != 0
@@ -539,4 +559,39 @@ pub fn run(
         result?;
     }
     Ok(summary)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn click_packets_validate_before_replacing_pending_mix_controls() {
+        let control = LiveControl::new();
+        let music = json!({"tempo":120,"numerator":4,"denominator":4,"origin":0,
+            "metronome":true,"clickLevel":0.5});
+        let packet = json!({"masterVolume":1,"tracks":[],"music":music});
+        assert_eq!(control.update(packet.clone()).unwrap(), 1);
+        let mut invalid = packet.clone();
+        invalid["music"]["clickLevel"] = json!(2);
+        assert!(control.update(invalid).is_err());
+        assert_eq!(control.pending.lock().unwrap().as_ref().unwrap().0, 1);
+        let mut unknown = packet.clone();
+        unknown["unexpected"] = json!(true);
+        assert!(control.update(unknown).is_err());
+        assert_eq!(control.revision.load(Ordering::Acquire), 1);
+        assert_eq!(
+            control
+                .update(json!({"masterVolume":1,"tracks":[],"music":null}))
+                .unwrap(),
+            2
+        );
+        assert!(control
+            .pending
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .2
+            .is_none());
+    }
 }

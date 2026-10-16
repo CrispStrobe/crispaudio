@@ -15,6 +15,8 @@ pub mod loudness_meter;
 #[cfg(feature = "native-engine")]
 pub mod native_graph;
 #[cfg(feature = "native-engine")]
+pub mod monitor_click;
+#[cfg(feature = "native-engine")]
 pub mod native_snapshot;
 pub mod plugin_stream;
 pub mod project_edit;

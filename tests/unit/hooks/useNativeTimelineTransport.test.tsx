@@ -1,3 +1,4 @@
+import {DEFAULT_MUSIC} from '../../../src/lib/musicalTime';
 import {afterEach,it,expect,vi} from 'vitest';
 import {act,cleanup,renderHook} from '@testing-library/react';
 import {useNativeTimelineTransport} from '../../../src/hooks/useNativeTimelineTransport';
@@ -40,4 +41,19 @@ it.each(['track','master','clip'] as const)('restarts same-type %s reorders and 
  act(()=>useProjectStore.setState({project:withRack(project,reordered.map(effect=>({...effect,params:{...effect.params,mix:.5}})))}));
  expect(playNativeOwned).toHaveBeenCalledTimes(4);expect(updateMix).toHaveBeenLastCalledWith(useProjectStore.getState().project);
  expect(effects.every(effect=>effect.instanceId===undefined)).toBe(true);
+});
+
+it('updates click enable and level without restarting native playback, including Undo',async()=>{
+ vi.useFakeTimers();useUIStore.setState({timelineRecording:false});
+ const initial=useProjectStore.getInitialState(),project={...initial.project,duration:4,music:{...DEFAULT_MUSIC}};
+ useProjectStore.setState({...initial,project});useProjectStore.temporal.getState().clear();
+ const playNativeOwned=vi.fn().mockResolvedValue(undefined),updateMix=vi.fn(),closeNativeOwned=vi.fn().mockResolvedValue(undefined);
+ const engine={playNativeOwned,updateMix,closeNativeOwned,pauseNativeOwned:vi.fn().mockResolvedValue(undefined)} as unknown as TimelineEngine;
+ renderHook(()=>useNativeTimelineTransport({current:engine},true));
+ await act(async()=>useProjectStore.getState().setIsPlaying(true));
+ act(()=>useProjectStore.setState({project:{...project,music:{...DEFAULT_MUSIC,metronome:true,clickLevel:.8}}}));
+ expect(playNativeOwned).toHaveBeenCalledTimes(1);expect(updateMix).toHaveBeenLastCalledWith(useProjectStore.getState().project);
+ act(()=>useProjectStore.temporal.getState().undo());
+ expect(playNativeOwned).toHaveBeenCalledTimes(1);expect(updateMix).toHaveBeenLastCalledWith(project);
+ expect(closeNativeOwned).not.toHaveBeenCalled();
 });

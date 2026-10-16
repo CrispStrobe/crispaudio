@@ -2294,7 +2294,7 @@
     "mode": "Playback mode",
     "live": "Live",
     "liveHelp": "Live runs AU/VST3 effects continuously. Mixer controls, plug-in parameters and supported track, clip and master effect knobs update during playback. Pause retains state; seeking rebuilds history.",
-    "liveLimits": "Rack changes and other built-in effect settings restart playback. Audio runs at 48 kHz. Microphone recording uses a prepared wet backing and dry monitoring. Monitor clicks and live plug-in input monitoring remain unavailable.",
+    "liveLimits": "Rack changes and other built-in effect settings restart playback. Audio runs at 48 kHz. Microphone recording uses a prepared wet backing and dry monitoring. The metronome is monitor-only. Live plug-in input monitoring remains unavailable.",
     "shortLoop": "This loop is too short for Live native effects. Select Preview to audition loops shorter than 43 ms."
   },
   "curveRange": {

@@ -1,5 +1,6 @@
 import {beforeEach,it,expect,vi} from 'vitest';
 import {NativeTimelineSnapshot} from '../../../src/audio/plugins/NativeTimelineSnapshot';
+import {DEFAULT_MUSIC} from '../../../src/lib/musicalTime';
 import {useProjectStore} from '../../../src/stores/projectStore';
 import type {AudioSource} from '../../../src/types/audio';
 const {invoke}=vi.hoisted(()=>({invoke:vi.fn()}));vi.mock('@tauri-apps/api/core',()=>({invoke}));
@@ -59,4 +60,15 @@ it('sends saved native parameter curves and explicit Read restoration by stable 
  const effect={instanceId:'fx',pluginId:'au:test',name:'Gain',format:'AU' as const,enabled:true,bypass:false,state:'opaque',parameters:{gain:-6},parameterAutomation:{gain:{min:-24,max:12,points:[{time:0,value:.5}]}}};
  await playback.update({...f.p,nativeEffects:[effect]});expect(invoke).toHaveBeenLastCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({native:[{scope:'master',instanceId:'fx',parameters:{gain:-6},bypass:false,parameterAutomation:effect.parameterAutomation}]})}));
  await playback.update({...f.p,nativeEffects:[{...effect,parameterAutomation:undefined}]});expect(invoke).toHaveBeenLastCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({native:[expect.objectContaining({parameterAutomation:null})]})}));await snapshot.close();
+});
+
+it('sends monitor-only music settings on live updates and explicitly clears missing settings',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create({...f.p,music:{...DEFAULT_MUSIC,metronome:true}},f.sources);
+ expect(invoke).toHaveBeenCalledWith('native_snapshot_begin',expect.objectContaining({project:expect.objectContaining({music:expect.objectContaining({metronome:true})})}));
+ invoke.mockImplementation(async(cmd:string)=>cmd==='native_playback_start'?'session':1);
+ const playback=await snapshot.startPlayback({startFrame:0,endFrame:48000});
+ await playback.update({...f.p,music:{...DEFAULT_MUSIC,metronome:true,clickLevel:.7}});
+ expect(invoke).toHaveBeenLastCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({music:{...DEFAULT_MUSIC,metronome:true,clickLevel:.7}})}));
+ await playback.update({...f.p,music:undefined});
+ expect(invoke).toHaveBeenLastCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({music:null})}));await snapshot.close();
 });
