@@ -14,19 +14,21 @@ export async function prepareRecordingBacking(engine:TimelineEngine,ctx:AudioCon
  const buffer=frozen.duration>0?await engine.renderMixRange(frozen,0,frozen.duration,signal,registry):ctx.createBuffer(2,128,ctx.sampleRate);
  signal.throwIfAborted();return buffer;
 }
-export function playRecordingBacking(engine:TimelineEngine,ctx:AudioContext,buffer:AudioBuffer,start:number,loop?:{start:number;end:number}){
+export function playRecordingBacking(engine:TimelineEngine,ctx:AudioContext,buffer:AudioBuffer,start:number,loop?:{start:number;end:number},scheduledAt?:number){
  if(!Number.isFinite(start)||start<0)throw new Error('recording.rangeRequired');
- if(loop)engine.playRenderedPreview(buffer,start,loop.end,loop.start);
- else if(start<buffer.duration)engine.playRenderedPreview(buffer,start);
- else {const silence=ctx.createBuffer(2,128,ctx.sampleRate);engine.playRenderedPreview(silence,0,silence.duration,undefined,start);}
+ if(loop){if(scheduledAt===undefined)engine.playRenderedPreview(buffer,start,loop.end,loop.start);else engine.playRenderedPreview(buffer,start,loop.end,loop.start,0,scheduledAt);}
+ else if(start<buffer.duration){if(scheduledAt===undefined)engine.playRenderedPreview(buffer,start);else engine.playRenderedPreview(buffer,start,buffer.duration,undefined,0,scheduledAt);}
+ else {const silence=ctx.createBuffer(2,128,ctx.sampleRate);engine.playRenderedPreview(silence,0,silence.duration,undefined,start,scheduledAt);}
  const anchor=engine.playbackAnchor();if(!anchor)throw new Error('recording.notReady');return anchor;
 }
 /** Generate loop anchors from the hardware-buffer loop, including UI stalls.
  * Stop at the existing 500-pass budget instead of accumulating unbounded takes. */
 export function extendRecordingPasses(passes:CapturePass[],frame:number,rate:number,range:{start:number;end:number}){
- const first=passes[0],duration=range.end-range.start;if(!first||!Number.isFinite(frame)||!Number.isFinite(rate)||rate<=0||!Number.isFinite(duration)||duration<=0)throw new Error('recording.rangeRequired');
- const completed=Math.max(0,Math.floor((frame-first.frame)/(duration*rate))),count=Math.min(499,completed);
- for(let index=passes.length;index<=count;index++)passes.push({frame:first.frame+Math.round(index*duration*rate),timeline:range.start});
+ const first=passes[0],duration=range.end-range.start;if(!first||!Number.isFinite(first.timeline)||first.timeline<0||first.timeline>=range.end||!Number.isFinite(frame)||!Number.isFinite(rate)||rate<=0||!Number.isFinite(duration)||duration<=0)throw new Error('recording.rangeRequired');
+ const intro=range.end-first.timeline;
+ const elapsed=(frame-first.frame)/rate;
+ const completed=elapsed<intro?0:1+Math.max(0,Math.floor((elapsed-intro)/duration+1e-9)),count=Math.min(499,completed);
+ for(let index=passes.length;index<=count;index++)passes.push({frame:first.frame+Math.round((intro+(index-1)*duration)*rate),timeline:range.start});
  return completed>=500;
 }
 

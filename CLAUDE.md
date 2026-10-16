@@ -779,3 +779,18 @@ CrisperWeaver's current standard JSON exporter omits them. Its cue schema import
 successfully; word-preserving export remains a cross-app task. Source word records
 must pass project roundtrip validation before commit. Old ASR preferences are
 inert and ignored; do not delete user model files during this cleanup.
+
+## Recording lead-in (0.13.26)
+
+recordingLeadIn.ts plans optional countInBars/preRollBars, each 0–4, using the
+global musical clock. Existing countIn is seconds: retain it as silent delay.
+Selected preparation is bounded to60s. Group input uses maxima. A future engine
+play()/playRenderedPreview() anchor aligns playback/count-in to audio frames;
+missed explicit deadlines cancel instead of claiming past scheduling. Count-in
+uses finite lookahead, not UI timers. Pre-roll uses source handles and takeStart
+cropping. Do not crop ordinary latency-compensated placement without pre-roll:
+existing multi-input calibration depends on that behavior. Recording backing
+can play once before loopStart; extendRecordingPasses uses the first intro length
+then regular lap lengths. TimelineMetronome supports the same intro. Stop before
+the record frame discards input and publishes no take/file. Changing lead-in or
+latency preserves a connected preview; device/channel changes disconnect it.

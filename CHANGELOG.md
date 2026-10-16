@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.13.26 — 2026-10-16
+
+- Add audible bar-based recording count-in and backing pre-roll, with compact options and a visible lead-in phase. Preserve old seconds values as silent start delay.
+- Schedule playback and clicks on the audio clock; exclude lead-in from published takes while retaining raw source handles. Cancel before the recording point without saving a take.
+- Support a single intro before prepared-backing loop passes, shared multi-input preparation and persistent lead-in settings.
+
 ## 0.13.25 — 2026-10-16
 
 - Remove ASR launch/setup controls and their app commands; keep existing aligned projects, word editing and independent CLI compatibility.

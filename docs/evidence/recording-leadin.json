@@ -1,0 +1,233 @@
+{
+  "version": "0.13.26",
+  "date": "2026-10-16",
+  "scope": "Audible bar-based recording count-in, backing pre-roll and scheduled capture placement",
+  "browser": {
+    "pcm": {
+      "anchor": {
+        "frame": 24000,
+        "timeline": 0
+      },
+      "firstClick": 0.03749999776482582,
+      "secondClick": 0.03815871477127075,
+      "beforeStart": 0,
+      "firstBacking": 0.10000000149011612,
+      "backingSteady": 0.10000000149011612,
+      "tail": 0,
+      "intro": [
+        0.10000000149011612,
+        0.20000000298023224,
+        0.20000000298023224,
+        0.20000000298023224
+      ]
+    },
+    "countScheduled": {
+      "anchor": {
+        "frame": 71392,
+        "timeline": 1.6
+      },
+      "clicks": [
+        {
+          "when": 1.0873333333333333,
+          "frequency": 1200,
+          "disconnected": false
+        },
+        {
+          "when": 1.287333333333333,
+          "frequency": 800,
+          "disconnected": false
+        }
+      ],
+      "now": 0.8906666666666667
+    },
+    "cancelled": {
+      "takes": 0,
+      "files": 0,
+      "history": 0,
+      "disconnected": true,
+      "ended": true
+    },
+    "take": {
+      "start": 2,
+      "duration": 0.34733333333333327,
+      "sourceOffset": 1.0926666666666667,
+      "expectedOffset": 1.0926666666666667,
+      "dropped": 0,
+      "history": 1,
+      "clicks": 2,
+      "input317": 0.199880035351464,
+      "click800": 0.00024828372934302295,
+      "click1200": 0.0001479048860748401
+    },
+    "reopened": {
+      "count": 1,
+      "pre": 1,
+      "takes": 1
+    },
+    "loops": {
+      "takes": [
+        {
+          "start": 2,
+          "duration": 0.3999999999999999,
+          "offset": 1.0926666666666667
+        },
+        {
+          "start": 2,
+          "duration": 0.3999999999999999,
+          "offset": 1.4926666666666666
+        },
+        {
+          "start": 2,
+          "duration": 0.29933333333333323,
+          "offset": 1.892666666666667
+        }
+      ],
+      "clicks": 2
+    },
+    "preRollCancelled": {
+      "takes": 4,
+      "files": 2
+    },
+    "deviceCancelled": {
+      "takes": 4,
+      "files": 2,
+      "disconnected": true
+    },
+    "germanSmallViewport": {
+      "width": 358,
+      "overflow": false
+    },
+    "physicalAudio": false,
+    "nativePluginDSP": "prepared-buffer fixture"
+  },
+  "existingRegression": {
+    "directRecord": {
+      "recordWithoutDialog": "passed",
+      "emptyProjectCreatesArmedTrack": "passed",
+      "transportAndTrackInputMeters": "passed",
+      "metersNoHistory": "passed",
+      "oneUndoPublication": "passed",
+      "nonzeroCapturedPCM": "passed",
+      "stopReleasesInput": "passed",
+      "lockedTargetProtected": "passed",
+      "pendingPermissionCancelled": "passed",
+      "germanTouch390": "passed",
+      "input": "synthetic MediaStream; no physical microphone requested"
+    },
+    "monitorMetronome": {
+      "offlinePreviewPCM": {
+        "onsets": [
+          {
+            "frame": 256,
+            "peak": 0.03749999776482582,
+            "idle": 0
+          },
+          {
+            "frame": 9856,
+            "peak": 0.03749999776482582,
+            "idle": 0
+          },
+          {
+            "frame": 19456,
+            "peak": 0.03749999776482582,
+            "idle": 0
+          },
+          {
+            "frame": 29056,
+            "peak": 0.03749999776482582,
+            "idle": 0
+          },
+          {
+            "frame": 38656,
+            "peak": 0.03749999776482582,
+            "idle": 0
+          }
+        ],
+        "backingSilent": true,
+        "stopped": true
+      },
+      "recording": {
+        "clicks": 7,
+        "disconnected": true,
+        "inputsStopped": true,
+        "takes": 1,
+        "undo": 1,
+        "dryAmplitude": 0.20000455408690662,
+        "clickLeak": 0.00014670971328208026
+      },
+      "afterBackingEnd": true,
+      "noDoubleClick": true,
+      "cancelBeforeInput": true,
+      "unmountCleanup": true,
+      "physicalAudio": false,
+      "nativeDSP": "synthetic prepared buffer; not requalified"
+    },
+    "recording": {
+      "takes": 1,
+      "segments": 1,
+      "duration": 0.7413333333333333,
+      "rate": 48000,
+      "rms": 0.0848525380623845,
+      "dropped": 0,
+      "past": 1,
+      "files": 1,
+      "countInCancel": "passed",
+      "secondChannel": "passed",
+      "deviceInterruption": "passed",
+      "punch": "passed",
+      "loopTakes": "passed",
+      "takeLanes": "passed",
+      "originalsUndoRedo": "passed",
+      "savedTakes": "passed",
+      "german390": "passed",
+      "input": "synthetic MediaStream; no physical microphone requested"
+    },
+    "multiInput": {
+      "twoInputs": "passed",
+      "perTrackChannelLatency": "passed",
+      "oneUndo": "passed",
+      "durableOriginals": 2,
+      "saveReopen": "passed",
+      "connectionFailureAtomic": "passed",
+      "persistenceFailureAtomic": "passed",
+      "punchLoop": "passed",
+      "german390": "passed",
+      "input": "synthetic MediaStreams; physical devices untested"
+    }
+  },
+  "behavior": {
+    "countInBars": "Optional 0\u20134; project tempo/meter/click level, independent of normal metronome enable",
+    "preRollBars": "Optional 0\u20134, clamped at project zero; one intro before loop passes",
+    "legacyCountInSeconds": "Preserved as silent start delay",
+    "selectedLeadInSecondsLimit": 60,
+    "simultaneousInputs": "Maximum setting of each kind on one shared audio clock",
+    "rawSource": "Retains input lead-in as source handles; published takes exclude pre-roll",
+    "withoutPreRoll": "Retains prior per-input latency placement",
+    "cancelBeforeRecordPoint": "No take or persisted recording file"
+  },
+  "validation": {
+    "focusedTestsPassedBeforeLatencyRegressionFix": 42,
+    "releaseTestsPassed": 21,
+    "newRustLogic": false,
+    "physicalInputOutputRetested": false,
+    "fullFrontendTestsPassed": 1946,
+    "fullFrontendFiles": 196,
+    "finalFullSuiteSeconds": 115.45,
+    "lint": "pass",
+    "typescript": "pass",
+    "normalMacBundle": "pass",
+    "localInstall": "0.13.26",
+    "strictDeepAdHocSignature": "pass",
+    "autosavesRetained": 1
+  },
+  "limitations": [
+    "Current global tempo and meter only; no tempo-map engine.",
+    "Native input/monitor DSP is still dry; native inserts use prepared wet backing.",
+    "Prepared-buffer fixture tests timing and real capture, not new native plug-in qualification.",
+    "Synthetic microphone and muted Chrome checks do not establish physical iOS/interface performance.",
+    "Browser persistence bridges are fixture commands; these tests do not newly qualify native on-disk recording storage."
+  ],
+  "distribution": {
+    "appleUpload": false
+  }
+}

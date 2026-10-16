@@ -4,6 +4,7 @@ export class TimelineMetronome {
     private nodes = new Map<OscillatorNode, GainNode>();
     private timer?: ReturnType<typeof setInterval>;
     private until = -Infinity;
+    private lookAhead = .15;
     private ctx: AudioContext;
     private destination: AudioNode;
     private music: MusicalSettings;
@@ -17,14 +18,14 @@ export class TimelineMetronome {
         frame: number;
         timeline: number;
     }, end: number, loop?: { start: number; end: number }) {
-        if (loop && (!Number.isFinite(loop.start) || !Number.isFinite(loop.end) || loop.start < 0 || loop.end <= loop.start || anchor.timeline < loop.start || anchor.timeline >= loop.end))
+        if (loop && (!Number.isFinite(loop.start) || !Number.isFinite(loop.end) || loop.start < 0 || loop.end <= loop.start || anchor.timeline < 0 || anchor.timeline >= loop.end))
             throw new Error('Invalid metronome loop');
         this.loop = loop; this.ctx = ctx; this.destination = destination; this.music = music; this.anchor = anchor; this.end = end; }
-    start() { if (this.timer !== undefined) return; this.pump(); this.timer = setInterval(() => this.pump(), 25); }
+    start(lookAhead = .15) { if (this.timer !== undefined) return; this.lookAhead = Math.min(61, Math.max(.15, lookAhead)); this.pump(); this.timer = setInterval(() => this.pump(), 25); }
     pump() {
         const ctx = this.ctx, origin = this.anchor.frame / ctx.sampleRate, now = ctx.currentTime;
         const from = Math.max(this.until, origin, this.until === -Infinity && now - origin < .04 ? origin : now);
-        const to = Math.min(now + .15, this.loop ? Infinity : origin + this.end - this.anchor.timeline);
+        const to = Math.min(now + this.lookAhead, this.loop ? Infinity : origin + this.end - this.anchor.timeline);
         if (to <= from) return;
         // Split the audio-clock window at source-loop boundaries. Half-open windows
         // give each onset one owner, even when a beat falls exactly on a boundary.

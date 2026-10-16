@@ -3,8 +3,8 @@
 Press the red Record button beside Play to start capture. Press it again to stop
 and save. A missing recording track is created; an eligible unarmed track is
 armed automatically. Explicit setup targets and locked tracks remain protected.
-The default count-in is zero; a configured count-in is honored and visible in the
-transport. The settings arrow opens Record / takes without requesting input or
+Count-in and pre-roll start off. Configured lead-in phases are visible beside
+Record. The settings arrow opens Record / takes without requesting input or
 starting capture. Close setup before using the transport.
 
 Input levels appear beside Record and in each active input track's header, with
@@ -14,12 +14,42 @@ inputs are released after Stop. An explicitly connected preview can stay warm
 until Disconnect, a device/setup change, or leaving the timeline.
 
 Choose a track in setup; expand Input setup for device/channel, Connect or monitor.
-Expand Recording options for count-in, punch/loop or simultaneous armed tracks.
+Expand Recording options for bar-based count-in and pre-roll, the existing silent
+start delay, punch/loop or simultaneous armed tracks.
 Keep monitoring off with speakers; use headphones for monitored recording. Each
-input buffers a short pre-roll before the common playback clock starts, so a
-slower worklet startup cannot shift one take relative to the others. Pre-roll is
+input buffers a short startup reserve before the common playback clock starts, so a
+slower worklet startup cannot shift one take relative to the others. That reserve is
 retained in the original but excluded from the visible take. Independent physical
 input clocks may still drift and require device acceptance checks.
+
+## Count-in and pre-roll
+
+In Recording options choose **Count-in** and **Pre-roll**, each off or one to four
+bars. Tempo, meter and click level come from Musical time; projects without these
+settings use 120 BPM, 4/4 and the default click level. Count-in plays clicks even
+when the normal metronome is off; a click level of zero still mutes them. Existing
+project `countIn` seconds remain a separate **Start delay**, never converted to bars.
+
+The sequence is silent delay → count-in → backing pre-roll → take. Playback and
+clicks use a scheduled audio-frame anchor, not a UI countdown timer. Count-in
+clicks are scheduled ahead and cancel together. Pre-roll plays existing project
+audio before the cursor or punch/loop in-point, clamped at project zero. An earlier
+cursor still provides the existing punch run-up. Count-in follows the project's
+beat phase, including a cursor between bar boundaries; this does not add tempo maps.
+
+Selected count-in/delay/pre-roll is limited to 60 seconds. Simultaneously armed
+tracks use the longest setting of each kind on one common clock. Native insert
+accompaniment uses its prepared wet buffer and can play an intro before hardware
+looping. Count-in and pre-roll run once before loop passes, rather than on each lap.
+
+The input meter remains active throughout. Lead-in input remains available in the
+raw recording as source handles, but the published take starts at the recording
+point. Saved latency compensation still applies; existing placement without
+pre-roll is preserved. Stop before that point creates no take or recording file. Device loss,
+project changes and leaving the timeline stop the click, backing and capture.
+Digital clicks are monitor-only; they are not routed into capture or exports.
+Timing/calibration and lead-in changes preserve an already connected input preview;
+changing its device or channel reconnects it.
 
 Changing the project, selected track, device or input channel releases the old
 preview connection. Undoing an input change also releases it. A delayed permission

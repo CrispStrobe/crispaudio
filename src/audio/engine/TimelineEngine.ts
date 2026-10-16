@@ -290,18 +290,21 @@ export class TimelineEngine {
   /**
    * Start real-time playback from `startTime` (seconds in the project timeline).
    * Schedules all segments that overlap [startTime, project.duration].
+   * scheduledAt is an optional future AudioContext time in seconds, for recording.
    */
-  play(project: TimelineProject, startTime: number, endTime = project.duration): void {
+  play(project: TimelineProject, startTime: number, endTime = project.duration, scheduledAt?: number): void {
     if(hasNativeEffects(project))throw new Error('Native plug-in playback is awaiting validation');
+    if(scheduledAt!==undefined&&(!Number.isFinite(scheduledAt)||scheduledAt<this.ctx.currentTime))throw new Error('recording.startMissed');
     routingOrder(project.tracks);
     this.stop();
-    try{this.buildPlayback(project,startTime,endTime);}catch(error){this.stop();throw error;}
+    try{this.buildPlayback(project,startTime,endTime,undefined,this.sources,true,scheduledAt);if(scheduledAt!==undefined&&this.ctx.currentTime>scheduledAt)throw new Error('recording.startMissed');}catch(error){this.stop();throw error;}
   }
 
   /** Audition an already rendered stereo mix through the normal monitor/device path.
    * Master FX, limiter and level are baked; only meters are added here. */
-  playRenderedPreview(buffer:AudioBuffer,start:number,end=buffer.duration,loopStart?:number,timelineOffset=0):void{
-    if(!Number.isFinite(timelineOffset)||timelineOffset<0||buffer.numberOfChannels!==2||!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>buffer.duration+1/buffer.sampleRate||loopStart!==undefined&&(!Number.isFinite(loopStart)||loopStart<0||loopStart>=end||start<loopStart))throw new Error('Invalid rendered playback range');
+  playRenderedPreview(buffer:AudioBuffer,start:number,end=buffer.duration,loopStart?:number,timelineOffset=0,scheduledAt?:number):void{
+    if(!Number.isFinite(timelineOffset)||timelineOffset<0||buffer.numberOfChannels!==2||!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>buffer.duration+1/buffer.sampleRate||loopStart!==undefined&&(!Number.isFinite(loopStart)||loopStart<0||loopStart>=end))throw new Error('Invalid rendered playback range');
+    if(scheduledAt!==undefined&&(!Number.isFinite(scheduledAt)||scheduledAt<this.ctx.currentTime))throw new Error('recording.startMissed');
     this.stop();
     try{
       const ctx=this.ctx,source=ctx.createBufferSource(),gain=ctx.createGain();
@@ -310,14 +313,14 @@ export class TimelineEngine {
       source.buffer=buffer;source.connect(gain);let output:AudioNode=gain;
       if(this.loudnessReady){const meter=createLoudness(ctx);this.playbackNodes.add(meter);meter.port.onmessage=e=>{this.loudnessReading=e.data;};gain.connect(meter);output=meter;this.loudnessNode=meter;this.loudnessReading=undefined;}
       this.outputMeter=this.meterTap(ctx,output);output.connect(this.masterGain);
-      const now=Math.ceil((ctx.currentTime*ctx.sampleRate+256)/128)*128/ctx.sampleRate;this.playbackClock=now;
+      const now=scheduledAt??Math.ceil((ctx.currentTime*ctx.sampleRate+256)/128)*128/ctx.sampleRate;if(scheduledAt!==undefined&&ctx.currentTime>now)throw new Error('recording.startMissed');this.playbackClock=now;
       if(loopStart!==undefined){this.renderedLoop={start:loopStart+timelineOffset,end:this.playbackEnd};source.loop=true;source.loopStart=loopStart;source.loopEnd=Math.min(end,buffer.duration);source.start(now,start);}
       else{source.start(now,start,this.playbackEnd-start);const generation=this.playbackGeneration;source.onended=()=>{if(this.playbackGeneration===generation)this.stop();};}
       for(const listener of this.clockListeners)listener();
     }catch(error){this.stop();throw error;}
   }
 
-  private buildPlayback(project:TimelineProject,startTime:number,endTime:number,native?:NativeTimelineGraph,sources=this.sources,autoStop=true):void{
+  private buildPlayback(project:TimelineProject,startTime:number,endTime:number,native?:NativeTimelineGraph,sources=this.sources,autoStop=true,scheduledAt?:number):void{
     // Capture all nodes created by this graph, including effect oscillators and
     // feedback loops, so repeated play/stop cannot leave a live processing graph.
     const nodes = this.playbackNodes;
@@ -334,7 +337,7 @@ export class TimelineEngine {
     });
     const masterInput = ctx.createGain();
     const clock=native?graphClock(ctx.currentTime,ctx.sampleRate,native.plan.output,startTime,endTime,4096):undefined;
-    const now=clock?clock.input/ctx.sampleRate:ctx.currentTime;
+    const now=clock?clock.input/ctx.sampleRate:scheduledAt??ctx.currentTime;
     const audibleTime=clock?clock.audible/ctx.sampleRate:now;
     const connect=(input:AudioNode,output:AudioNode,frames:number,port=0)=>compensatedConnection(this.ctx,input,output,frames,this.compensationNodes,port);
     const rack=(scope:string,input:AudioNode,effects:EffectConfig[],arrival:number)=>{
@@ -358,7 +361,7 @@ export class TimelineEngine {
     this.outputMeter = this.meterTap(ctx, output);
     rangeGate.connect(outputGain);
     output.connect(this.masterGain);
-    rangeGate.gain.setValueAtTime(clock?0:1,ctx.currentTime);
+    rangeGate.gain.setValueAtTime(clock||scheduledAt!==undefined?0:1,ctx.currentTime);
     rangeGate.gain.setValueAtTime(1,audibleTime);
     rangeGate.gain.setValueAtTime(0,audibleTime+Math.max(0,endTime-startTime));
     rack('master',masterInput,project.masterEffects,native?.plan.masterInput??0).connect(rangeGate);

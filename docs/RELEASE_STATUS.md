@@ -18,6 +18,33 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Local 0.13.26 — count-in and pre-roll
+
+Recording options now offer audible bar-based count-in and project-audio pre-roll.
+Existing seconds values stay a silent delay. Future Web Audio playback anchors
+align clicks and takes; count-in clicks are scheduled ahead, outside the capture
+and export graphs. Raw sources retain lead-in handles, while published takes
+exclude pre-roll. Existing per-input latency placement without pre-roll is retained.
+Cancel before the recording point publishes no take or recording file.
+
+Prepared wet backing plays its intro once before hardware loop passes. Settings
+roundtrip in projects; simultaneous inputs use maxima on one common clock. Selected
+lead-in is bounded to 60 seconds and uses the existing global tempo/meter. Native
+input FX, tempo maps and physical interface acceptance remain separate work.
+[Recording guide](RECORDING_REVIEW.md) · [evidence](evidence/recording-leadin.json).
+
+All 1,946 frontend tests, lint, TypeScript, 21 release checks and the normal Mac
+bundle pass. The local app is installed as 0.13.26 with strict/deep ad-hoc signature
+verification and its autosave preserved. No native Rust behavior changed; no new
+full iOS build is claimed.
+
+New browser PCM/capture checks and existing direct-record, punch/loop, multi-input
+and monitor-metronome checks pass. They include exact scheduled start samples,
+pre-roll cropping, count-in/pre-roll/device-loss cancellation, one Undo, persistence,
+German small-screen layout and legacy per-input latency. Native plug-in DSP is a
+prepared-buffer fixture in the new timing test; no new physical listening check or
+Apple upload is claimed.
+
 ## Local 0.13.25 — transcript handoff and ASR scope cleanup
 
 ASR launch/setup controls, model/executable discovery and app-side ASR commands

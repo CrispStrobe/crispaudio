@@ -11,3 +11,7 @@ it('splits loop takes at actual audio-clock restart frames and keeps later passe
 it('clamps compensated placement at zero while retaining the full capture',()=>{
  const take=capturedTakes({firstFrame:0,frames:48000,sampleRate:48000,passes:[{frame:0,timeline:0}],sourceId:'s',name:'Take',latencyMs:100,notes:[],droppedFrames:0})[0];expect(take.startTime).toBe(0);expect(take.sourceOffset).toBe(.1);expect(take.duration).toBe(.9);
 });
+it('keeps lead-in as source handles but starts the take exactly at the recording point',()=>{
+ const take=capturedTakes({firstFrame:0,frames:48000*6,sampleRate:48000,passes:[{frame:48000,timeline:0}],recordStart:3,sourceId:'s',name:'Take',latencyMs:0,notes:[],droppedFrames:0})[0];expect(take).toMatchObject({startTime:3,sourceOffset:4,duration:2});
+ expect(capturedTakes({firstFrame:0,frames:48000*3,sampleRate:48000,passes:[{frame:48000,timeline:0}],recordStart:3,sourceId:'s',name:'Take',latencyMs:0,notes:[],droppedFrames:0})).toEqual([]);
+});

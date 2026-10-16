@@ -56,7 +56,7 @@ it('start is idempotent and stop clears scheduled nodes and its timer',()=>{
  }finally{vi.useRealTimers();}
 });
 it('rejects malformed source loops before creating audio nodes',()=>{
- for(const loop of [{start:1,end:1},{start:0,end:NaN},{start:-1,end:1},{start:.1,end:1}])
+ for(const loop of [{start:1,end:1},{start:0,end:NaN},{start:-1,end:1}])
  expect(()=>fixture({loop})).toThrow('Invalid metronome loop');
 });
 it('keeps recording clicks running beyond the project/backing end on the capture anchor',()=>{
@@ -80,4 +80,19 @@ it('recording punch clicks end at the punch boundary and native backing loops re
 });
 it.each([undefined,{...DEFAULT_MUSIC,metronome:false},{...DEFAULT_MUSIC,metronome:true,clickLevel:0}])('does not create recording clicks for disabled settings',music=>{
  const f=fixture();expect(startRecordingMetronome(f.ctx,{} as AudioNode,{...useProjectStore.getInitialState().project,music},{frame:0,timeline:0})).toBeUndefined();expect(f.nodes).toHaveLength(0);
+});
+
+it('schedules a bounded count-in entirely ahead on the audio clock',()=>{
+ vi.useFakeTimers();try{
+ const f=fixture({anchor:{frame:48000,timeline:-2},end:0});f.time(0);f.met.start(3);
+ expect(f.nodes.map(n=>n.start.mock.calls[0][0])).toEqual([1,1.5,2,2.5]);
+ expect(f.nodes.map(n=>n.frequency.value)).toEqual([1200,800,800,800]);
+ f.met.stop();expect(vi.getTimerCount()).toBe(0);expect(f.nodes.every(n=>n.disconnect.mock.calls.length===1)).toBe(true);
+ }finally{vi.useRealTimers();}
+});
+it('plays an intro once before metronome loop boundaries',()=>{
+ const f=fixture({anchor:{frame:0,timeline:0},end:1,loop:{start:.5,end:1}});
+ for(const now of [0,.4,.9,1.4]){f.time(now);f.met.pump();}
+ expect(f.nodes.map(n=>n.start.mock.calls[0][0])).toEqual([0,.5,1,1.5]);
+ expect(f.nodes.map(n=>n.frequency.value)).toEqual([1200,800,800,800]);f.met.stop();
 });

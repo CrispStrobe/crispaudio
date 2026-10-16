@@ -1,6 +1,6 @@
 # CrispAudio: product boundary and audio workstation gaps
 
-Reviewed 16 October 2026 against local 0.13.25 and current official product pages.
+Reviewed 16 October 2026 against local 0.13.26 and current official product pages.
 This is a workflow and architecture comparison, not a claim of feature parity or
 an independent listening/performance benchmark. Competitor editions differ.
 
@@ -56,7 +56,7 @@ continuous-refresh checkpoint; continue the execution order below.
 | Effect-aware timeline waveforms | Partial in 0.13.24 | Built-in segment DSP refreshes during continuous edits for visible clips up to 60 s / 32 MiB. Native inserts, longer clips and track/bus/master processing still show source or remain excluded. Extend with scalable caches and safe native-render ownership; modulation follows a clip-range render, not the running graph phase. |
 | Source FX audition | Partial | Continuous, cancellable audition while changing parameters; fast original/processed comparison with level control and no mandatory render/apply cycle. |
 | Repair and restoration | Partial | Existing DC/normalization/fades and desktop denoise do not cover manual sample repair, click interpolation, de-hum, declipping or editable spectral repair. Add bounded, reviewable repairs with listening tests. |
-| Recording and takes | Partial | Built-in mic accepted; punch/loop/multi-arm/comping implemented. Add audible musical count-in/pre-roll and real interface/channel checks. |
+| Recording and takes | Partial | Built-in mic accepted; punch/loop/multi-arm/comping implemented. Bar-based audible count-in and pre-roll are implemented in 0.13.26 with bounded scheduled lead-in. Useful track templates and real interface/channel checks remain. |
 | Live input DSP | Missing for native inserts | Monitor input through inserts while keeping an optional dry take; report latency, use one coherent clock and prove cancellation/device-loss cleanup. Prepared wet backing is not a substitute. |
 | Monitor/cue routing | Partial | The Mac output picker currently changes the system output. Add app-local device routing, arbitrary input-channel maps, independent headphone mixes, PFL/AFL and dim/mono. Native playback currently targets 48 kHz stereo; broader channel/rate support needs a defined use case. |
 | Native FX and automation | Partial | AU/VST3 generic controls and saved curves exist on Mac. Custom plug-in windows, broader live built-in parameter coverage and stronger event-timing guarantees remain. Some edits restart playback. |
@@ -78,8 +78,9 @@ continuous-refresh checkpoint; continue the execution order below.
 2. **Complete-session acceptance.** Exercise audio-only editing, sound-for-video,
    recording/comping, reopen and actual saved-file review on desktop/touch.
    Capture concrete defects and fix those before adding controls.
-3. **Recording preparation.** Audible bar-based count-in/pre-roll, clear cue/input
-   state and useful track templates. Keep advanced settings collapsed.
+3. **Recording preparation.** Bar-based audible count-in/pre-roll is implemented
+   in 0.13.26. Continue with clear cue/input state and useful track templates;
+   keep advanced settings collapsed and qualify real interfaces when available.
 4. **Source editing and restoration.** Continuous audition, original/processed
    comparison, channel/polarity utilities and a small manual click-repair workflow.
    Include spectral repair, de-hum and declipping, each with explicit quality targets and original/processed comparison.

@@ -83,8 +83,9 @@ Select a clip and open **Source Editor** for detailed work on its source window.
 ## Record and choose takes
 
 Record directly into an audio track, with device/channel selection and optional
-input monitoring. Recording options include count-in, punch ranges, loop takes
-and simultaneous capture into up to eight armed tracks. Input calibration can
+input monitoring. Add an audible bar-based count-in or project-audio pre-roll,
+with both kept outside the published take. Recording options also include punch
+ranges, loop takes and simultaneous capture into up to eight armed tracks. Input calibration can
 measure a real return path, or you can enter a known correction.
 
 Audition an original take or listen to its comp through the project mix. Choose

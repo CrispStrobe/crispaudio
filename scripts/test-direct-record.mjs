@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {pathToFileURL} from 'node:url';
 const {chromium,webkit}=await import(pathToFileURL(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE).href);
-const browser=await(process.env.CRISPAUDIO_WEBKIT_EXECUTABLE?webkit:chromium).launch({headless:true,executablePath:process.env.CRISPAUDIO_WEBKIT_EXECUTABLE||process.env.CRISPAUDIO_CHROME_EXECUTABLE});
+const browser=await(process.env.CRISPAUDIO_WEBKIT_EXECUTABLE?webkit:chromium).launch({headless:true,executablePath:process.env.CRISPAUDIO_WEBKIT_EXECUTABLE||process.env.CRISPAUDIO_CHROME_EXECUTABLE,args:process.env.CRISPAUDIO_WEBKIT_EXECUTABLE?[]:['--mute-audio']});
 try{
  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),errors=[];page.on('pageerror',e=>errors.push(e.stack));
  await page.addInitScript(()=>{window.calls=0;window.inputs=[];Object.defineProperty(MediaDevices.prototype,'getUserMedia',{configurable:true,value:async()=>{window.calls++;const ctx=new AudioContext(),osc=ctx.createOscillator(),gain=ctx.createGain(),out=ctx.createMediaStreamDestination();osc.frequency.value=317;gain.gain.value=.2;osc.connect(gain);gain.connect(out);osc.start();await ctx.resume();window.inputs.push({ctx,osc,stream:out.stream});if(window.delayInput)await new Promise(resolve=>window.releaseInput=resolve);return out.stream;}});Object.defineProperty(MediaDevices.prototype,'enumerateDevices',{configurable:true,value:async()=>[]});});
