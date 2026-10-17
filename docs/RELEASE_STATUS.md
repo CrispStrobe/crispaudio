@@ -1,4 +1,4 @@
-# Distribution and platform status — 2026-10-16
+# Distribution and platform status — 2026-10-17
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -17,6 +17,35 @@ state fields were null. This does not establish rejection or build removal.
 Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051561)
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
+
+## Mac capture adapter — development after 0.13.33
+
+The native input foundation now has a Mac AudioQueue adapter bound to an explicit
+device UID, with mono/stereo channel mapping, existing-authorization checks,
+sample/host clocks and raw peak reports. The callback validates frames and guards
+against reentrancy. Finish retains partial callbacks delivered during stop;
+abort/error paths mark recoverable prefixes as incomplete. Callback userdata
+survives synchronous disposal, including failure handling.
+
+All 29 focused input checks pass, including the explicit SDK VST3 fixture from
+the preceding worker implementation. Adapter tests use generated buffers and fake
+queue operations; inventory, authorization and host-timebase queries are read-only.
+The C ABI fixture and Rust layout checks agree with the selected Mac SDK.
+The full media library passes 199 tests with 11 platform/fixture checks ignored;
+the app Rust library passes 39 with one hardware check ignored. The 21 Python
+release checks pass. Frontend code is unchanged.
+[Adapter evidence](evidence/native-capture-adapter.json).
+
+No hardware input queue was opened, permission prompt requested, or app build
+installed for this increment. Physical device opening/conversion/timestamps remain
+unqualified. A recording owner/watchdog, dry-file recovery and native output/clock
+integration are still required before exposing this in the app. Installed 0.13.33
+and its Web Audio recording workflow remain current. No Apple upload or tag.
+
+The preceding input-foundation commit `7d2f384` passed
+[general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38968651578) and
+[iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38968651228).
+Those runs precede this adapter increment.
 
 ## Native input foundation — development after 0.13.33
 

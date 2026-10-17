@@ -1,9 +1,10 @@
 # Native input engine foundation
 
 The installed recorder still uses Web Audio capture and the
-[buffered native cue](RECORDING_CUE.md). The Rust foundation in
-`media/src/native_input.rs` is not connected to a hardware device or the recording
-UI. It introduces no new recording mode and establishes no monitoring latency.
+[buffered native cue](RECORDING_CUE.md). The Rust foundation now includes a Mac
+hardware capture adapter, but it is not connected to the recording UI or opened
+by the installed app. It introduces no new recording mode and establishes no
+monitoring latency. Adapter checks use synthetic callbacks, not a microphone.
 
 ## Implemented
 
@@ -32,6 +33,36 @@ it does not compensate plug-in delay. Host ticks have no assumed unit. The rack
 reports plug-in latency only and passes a contiguous input sample position to
 helpers; it has no arrangement transport or live parameter automation.
 
+## Mac capture adapter
+
+`native_input::macos` provides read-only CoreAudio input enumeration and a
+device-UID-bound AudioQueue input adapter. It requests interleaved float PCM at
+48 kHz, checks the accepted client format and maps selected input channels to
+mono (duplicated stereo) or stereo packets. Devices up to 32 channels are supported
+by the mapping API. No system default or hardware sample rate is changed.
+
+Opening requires existing `AVCaptureDevice` microphone authorization. This module
+only queries permission; it never displays a permission prompt. A recording owner
+must handle the explicit user action and authorization flow before opening. Input
+rights and the usage description already exist in the Mac app packaging.
+
+The callback maps at most 512 frames, preserves headroom and updates raw peak
+meters. Device sample time normalizes to a contiguous zero-based input clock;
+packets retain the first-sample host tick. Gaps, repeated/reversed timestamps,
+invalid buffers and overlapping callbacks latch an incomplete-take fault. A
+finishing queue accepts partial buffers delivered during synchronous stop without
+re-enqueuing them. Aborting suppresses further publication. Userdata and producer
+remain alive until synchronous disposal finishes. If disposal fails, userdata is
+retained rather than risking a late callback into freed memory.
+
+`finish()` can return a report with a take fault even if queue disposal succeeds:
+the owner must inspect it before publishing a completed take. `check_device()`
+detects a missing device or a changed channel count/rate on the control thread;
+the owner must stop promptly and also implement a missing-callback watchdog.
+The adapter makes no automatic replacement selection. `HostTimebase` converts
+host tick differences to seconds, but does not synchronize capture and backing
+clocks or provide arrangement/punch placement.
+
 ## Ownership and remaining integration
 
 A recording owner must reserve the group stream budget before opening racks,
@@ -43,10 +74,9 @@ callback. Output underrun detection belongs to the output scheduler.
 The dry consumer must keep draining during monitor-only operation too; retaining
 packets without a consumer deliberately faults the dry path when its queue fills.
 
-Next work is the Mac hardware capture adapter and its device/channel mapping,
-permission/error lifecycle, callback lifetime/reentrancy guards and sample/host
-clock conversion. A native dry writer must retain partial recordings on failure.
-Then connect a native output scheduler with startup buffering, measured latency,
+Next connect the adapter to a recording owner with device-loss/permission handling,
+callback watchdog and transport clock mapping. A native dry writer must retain
+partial recordings on failure. Then connect a native output scheduler with startup buffering, measured latency,
 input/output clock drift handling and fault silence before exposing this in the UI.
 Independent cue outputs/backing mixes and wet capture retaining dry originals
 follow that integration. Existing Web Audio recording remains available meanwhile.
@@ -78,3 +108,11 @@ Linux media CI runs the portable tests; Mac CI also runs the AU checks. SDK VST3
 tests require an explicit fixture and are ignored by default. These checks do not
 qualify physical microphones, commercial plug-ins, background operation, sustained
 load or the end-to-end recording workflow.
+
+Adapter tests additionally cover mono/stereo/channel mapping, raw meters, invalid
+callback layouts/timestamps, overlap, permission preflight, partial stop buffers,
+aborted setup and stop/dispose/enqueue errors. They invoke the actual Rust callback
+against generated buffers and fake queue operations; read-only device/permission
+queries are real. No input queue is opened. The C fixture
+`scripts/fixtures/native-input-abi.c` checks FFI layouts and constants against the
+selected Mac SDK using syntax-only compilation. [Adapter evidence](evidence/native-capture-adapter.json).

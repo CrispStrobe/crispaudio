@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-17",
+  "kind": "mac-native-capture-adapter",
+  "applicationVersion": "0.13.33",
+  "connectedToInstalledRecorder": false,
+  "hardwareInputQueueOpened": false,
+  "hardwareOutputOpened": false,
+  "permissionPromptRequested": false,
+  "realReadOnlyQueries": ["CoreAudio input inventory", "AVCaptureDevice authorization", "mach host timebase"],
+  "callbackTransport": "Actual Rust input callback with generated PCM and fake AudioQueue operations",
+  "requestedClientRate": 48000,
+  "maxCallbackFrames": 512,
+  "hardwareChannelsTestedSynthetically": [1, 2, 32],
+  "channelMaps": ["mono left", "mono right", "stereo swapped", "channel 32 and channel 1"],
+  "sdkAbi": {
+    "fixture": "scripts/fixtures/native-input-abi.c",
+    "command": "xcrun clang -std=c11 -Wall -Werror -fsyntax-only scripts/fixtures/native-input-abi.c",
+    "passed": true,
+    "streamDescriptionBytes": 40,
+    "queueBufferBytes": 56,
+    "timestampBytes": 64,
+    "rustFieldOffsetsChecked": true
+  },
+  "checks": {
+    "focusedIncludingExplicitSdkVst3Fixture": {"passed": 29, "failed": 0, "ignored": 0},
+    "fullMediaLibrary": {"passed": 199, "failed": 0, "ignored": 11},
+    "appRustLibrary": {"passed": 39, "failed": 0, "ignored": 1},
+    "releasePythonChecks": {"passed": 21, "failed": 0},
+    "rawPcmAndMeter": "selected channel samples and headroom preserved; normalized sample clock and host ticks retained",
+    "clockFaults": "gaps, duplicate/reversed sample positions and non-increasing host time reject publication",
+    "callbackFaults": "null/malformed buffers, invalid timestamps, nonfinite PCM and compressed descriptors reject publication",
+    "cueIsolation": "cancelled cue permits 100 more dry packets; full dry queue faults and stops re-enqueue",
+    "reentrancy": "simultaneous callback faults before accessing the unique InputWriter",
+    "finishTail": "128 initial frames plus 31 final frames retained; producer closes only after synchronous disposal",
+    "abortAndSetup": "partial prefix retained and explicit fault latched; no-queue setup failure releases producer",
+    "queueErrors": "enqueue and stop errors retain recoverable prefix; failed disposal retains callback userdata",
+    "permission": "undetermined/restricted/denied preflight rejected; invalid UID cannot create a queue"
+  },
+  "qualificationLimits": [
+    "AudioQueueNewInput/Start and an actual physical capture were not exercised",
+    "Successful device opening, conversion and timestamps still require hardware qualification",
+    "No native disk writer, recording owner/watchdog or output scheduler is connected",
+    "Host tick conversion is not input/backing synchronization or drift handling",
+    "No arrangement/punch placement, end-to-end latency or sustained/background/load qualification",
+    "The installed app still uses its existing Web Audio recording and buffered cue"
+  ]
+}

@@ -927,3 +927,18 @@ be reported as an incomplete take, never a clean stop. Status cancellation does
 not interrupt helper IPC: the owner must also stop registered helpers. Reserve
 the group stream budget before opening. See docs/NATIVE_INPUT.md for lifecycle,
 scope and focused tests; no latency/hardware qualification follows from these tests.
+
+### Mac capture adapter (development after 0.13.33)
+
+`native_input::macos::Capture` is not exposed by app commands/UI. It opens only
+with existing AVCaptureDevice authorization, pins a requested UID and requests
+48 kHz interleaved PCM. Channel maps validate against a read-only CoreAudio input
+inventory. The callback has an atomic reentrancy guard and no helper/file/WebKit
+work; sample time normalizes to input frame zero while host ticks are retained.
+Finish accepts partial callbacks during stop; abort faults the take. Inspect the
+finish report even on Ok. Userdata survives synchronous disposal; failed disposal
+retains it to avoid use-after-free. Owner still needs explicit permission flow,
+device checks/watchdog, clock mapping and native dry/output integration.
+Mac tests use synthetic callback buffers and fake queue operations, not devices.
+Fake queue ownership must outlive Capture even on assertion unwinding. ABI C
+fixture is syntax-only against the installed SDK; no hardware/latency claim.

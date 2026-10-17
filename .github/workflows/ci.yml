@@ -91,4 +91,6 @@ jobs:
       - name: Native input queues and Apple cue worker
         if: runner.os == 'macOS'
         working-directory: src-tauri
-        run: cargo test --manifest-path ../media/Cargo.toml --target-dir target --features native-engine --locked --lib native_input
+        run: |
+          xcrun clang -std=c11 -Wall -Werror -fsyntax-only ../scripts/fixtures/native-input-abi.c
+          cargo test --manifest-path ../media/Cargo.toml --target-dir target --features native-engine --locked --lib native_input

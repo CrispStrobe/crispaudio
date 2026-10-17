@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-16, for local 0.13.33. This section is the current plan.
+Updated 2026-10-17, for local 0.13.33. This section is the current plan.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -35,12 +35,16 @@ bounded increments, not a finished state-of-the-art DAW. MIDI/composition expans
 is outside this app's active scope. Long-session paging/streaming is accepted in
 the final scale phase; additional codec expansion has no new priority.
 
-The next development increment adds [native input transport and worker foundations](docs/NATIVE_INPUT.md):
+Development after 0.13.33 adds [native input transport and worker foundations](docs/NATIVE_INPUT.md):
 independent bounded dry/cue queues, contiguous input clocks, explicit incomplete-take
 faults and a native static AU/VST3 rack. Generated-input checks exercise real helpers
 without WebKit. This is not wired to hardware capture or the recording UI; installed
-0.13.33 remains unchanged. Next connect native hardware ingress, dry persistence and
-output scheduling/clock conversion before claiming a native recording path.
+0.13.33 remains unchanged. A Mac device-bound capture adapter now adds permission
+preflight, channel mapping, timestamp validation, raw peak meters and synchronous
+stop/disposal guards. Synthetic callbacks and read-only inventory pass; no physical
+capture or new UI mode is qualified. Next connect its recording owner/watchdog,
+native dry persistence and output scheduling/clock mapping before claiming a
+native recording path.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

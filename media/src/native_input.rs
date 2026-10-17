@@ -2,9 +2,11 @@
 //!
 //! A single callback writer copies into independent dry/cue SPSC queues. Only
 //! the cue worker runs DSP. Construction and destruction belong off the callback.
-//! Hardware ingress, clock conversion, disk capture and output scheduling are
-//! intentionally not provided here. Empty input queues are normal, not underruns.
+//! The Mac hardware adapter lives in `macos`; disk capture and output scheduling
+//! are not integrated yet. Empty input queues are normal, not underruns.
 use crate::{native_graph::Stereo, Result};
+#[cfg(target_os = "macos")]
+pub mod macos;
 pub mod plugins;
 use std::{
     cell::{Cell, UnsafeCell},
@@ -28,6 +30,7 @@ pub enum Fault {
     Disconnected = 4,
     Processor = 5,
     Cancelled = 6,
+    Device = 7,
 }
 
 #[derive(Clone, Copy)]
@@ -88,7 +91,8 @@ impl<const N: usize> Status<N> {
             3 => Some(Fault::Discontinuous),
             4 => Some(Fault::Disconnected),
             5 => Some(Fault::Processor),
-            _ => Some(Fault::Cancelled),
+            6 => Some(Fault::Cancelled),
+            _ => Some(Fault::Device),
         }
     }
     pub fn closed(&self) -> bool {
