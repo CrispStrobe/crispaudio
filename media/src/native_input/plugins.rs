@@ -37,7 +37,7 @@ impl PluginRack {
     /// Fixed 48 kHz stereo foundation. The caller registers helper stop handles
     /// to interrupt opening/processing during cancellation. Partial-open failures
     /// drop every prepared helper. This does not reserve app-wide stream slots;
-    /// a future recording owner must enforce the group budget before opening.
+    /// the session cue owner reserves its shared group budget before opening.
     pub fn open(configs: &[PluginConfig], mut register: impl FnMut(StreamStop)) -> Result<Self> {
         if configs.len() > 2
             || configs.iter().any(|config| {

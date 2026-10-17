@@ -301,3 +301,69 @@ fn mac_channel_layout_mismatch_rejected_before_file_or_device_creation() {
     assert!(result.err().unwrap().reason.contains("channel map"));
     assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 0);
 }
+
+#[test]
+fn session_cue_output_disconnect_preserves_complete_dry_take_and_closes_workers() {
+    let root = tempfile::tempdir().unwrap();
+    let budget = cue::StreamBudget::default();
+    let (mut session, mut output) = Session::start_with_cue(
+        root.path(),
+        config(),
+        CueConfig {
+            plugins: Vec::new(),
+            budget: budget.clone(),
+            startup_timeout: Duration::from_secs(1),
+        },
+        |writer| {
+            Ok(Fake::new(
+                writer,
+                Rc::new(Cell::new(true)),
+                Rc::new(Cell::new(0)),
+            ))
+        },
+    )
+    .unwrap();
+    assert_eq!(session.cue_latency_samples(), Some(0));
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let wet = loop {
+        if let Some(packet) = output.pop() {
+            break packet;
+        }
+        assert!(Instant::now() < deadline);
+        thread::sleep(Duration::from_millis(1));
+    };
+    assert_eq!(wet.samples(), &[[0.25, -0.5]; 128]);
+    drop(output);
+    assert_eq!(session.cue_fault(), Some(Fault::Disconnected));
+    session.poll().unwrap();
+    let Outcome::Complete(take) = session.stop() else {
+        panic!("Cue disconnect must preserve dry take")
+    };
+    assert_eq!(take.info.frames, 159);
+    assert_eq!(budget.used(), 0);
+}
+
+#[test]
+fn failed_cue_startup_never_opens_capture_and_retains_recovery_files() {
+    let root = tempfile::tempdir().unwrap();
+    let budget = cue::StreamBudget::default();
+    let result = Session::<Fake>::start_with_cue(
+        root.path(),
+        config(),
+        CueConfig {
+            plugins: vec![super::super::plugins::PluginConfig {
+                id: String::new(),
+                state: String::new(),
+                parameters: serde_json::json!({}),
+                bypass: false,
+            }],
+            budget: budget.clone(),
+            startup_timeout: Duration::from_secs(1),
+        },
+        |_| panic!("Invalid cue must not open capture"),
+    );
+    let error = result.err().unwrap();
+    assert!(error.reason.contains("configuration"));
+    assert!(error.recovery_directory.unwrap().join("take.json").exists());
+    assert_eq!(budget.used(), 0);
+}

@@ -967,8 +967,8 @@ control thread plus a dedicated Recorder file worker. Durable creation completes
 before the device factory runs; startup errors can retain a recovery directory.
 `start_macos` checks file/map channel agreement, uses explicit UID and existing
 permission only. There is no permission prompt or device fallback. This owner is
-dry-only: unused cue ingress is disabled. Do not claim helper ownership or native
-cue/output scheduling. Poll at least every 100 ms for device/fault/callback checks;
+dry-only by default; start_with_cue adds a native DSP/helper owner and returns a
+single-consumer CueOutput. Native output scheduling remains pending. Poll at least every 100 ms for device/fault/callback checks;
 timeout includes startup and resets on callback progress, not file progress.
 A poll fault aborts capture and joins files, with a terminal outcome available.
 Stop quiesces capture before final drain and exact frame-count publication.
@@ -976,4 +976,20 @@ Cancel/drop preserves queued valid PCM, attempts checkpoint and joins the worker
 Do not delete interrupted directories. Filesystem stalls can delay shutdown.
 The per-take cap is 32,000,000 frames, matching native decoded-source limits;
 this is not long-session streaming. No app commands/UI integration yet. Next add
-cue/helper stream budgets, grouped atomic publication and native output/clock sync.
+grouped atomic publication and native output/clock sync.
+
+### Native cue ownership (development after 0.13.33)
+
+`session::cue::StreamBudget` must be shared across ALL inputs in one recording
+group: eight inserts total, at most two per input. It is not process-wide and does
+not count playback helpers. Reserve before rack open; worker owns reservation
+until processor/helper cleanup completes, including startup errors/panics. Cue
+readiness timeout cancels registered helpers, kills late registrations and joins
+before returning; cleanup can exceed the deadline. No detached cue workers.
+Session poll reaps cue faults separately from dry faults. On cue queue fault it
+also cancels registered helpers to unblock IPC; dry capture continues. Cue fault
+and plug-in latency are separate session queries. Stop/cancel/drop quiesce capture,
+suppress queued/in-flight wet output, stop helpers and join DSP before file join.
+Do not run helper open/process on the capture or file thread. The returned native
+CueOutput needs a native consumer; do not route PCM through JS. Generated AU/VST3
+checks verify failure isolation and exact dry files, not end-to-end latency/load.

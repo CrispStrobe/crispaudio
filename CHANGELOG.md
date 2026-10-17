@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+- Extend native recording ownership to the cue worker and AU/VST3 helpers, with a shared recording-group stream budget. Cue faults mute wet output while dry recording continues; cancellation joins workers and releases helpers. App/output integration remains pending.
+
 - Add a native dry-recording session owner with device/callback watchdog checks, worker cleanup and retained recovery files after cancellation or failure. This is an internal foundation; the installed recording workflow is unchanged.
 
 - Add native dry-file checkpointing and prefix recovery. Completion requires clean capture closure and matching frame counts; interrupted takes retain their originals. Software integration covers partial stop buffers and dry WAV recording after a cue plug-in fails. App integration remains pending.

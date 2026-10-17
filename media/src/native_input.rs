@@ -3,7 +3,8 @@
 //! A single callback writer copies into independent dry/cue SPSC queues. Only
 //! the cue worker runs DSP. Construction and destruction belong off the callback.
 //! The Mac adapter lives in `macos`, dry-file persistence in `recording`. The
-//! recording owner/output scheduler are not integrated yet. Empty input queues
+//! session owner coordinates capture/files/cue; app/output clock integration is
+//! still pending. Empty input queues
 //! are normal, not underruns.
 use crate::{native_graph::Stereo, Result};
 #[cfg(target_os = "macos")]

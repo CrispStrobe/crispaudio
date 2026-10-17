@@ -18,6 +18,35 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Native cue ownership — development after 0.13.33
+
+The recording owner can now prepare and own a separate native cue worker. Each
+input can reserve up to two AU/VST3 inserts from a shared eight-insert recording
+group budget. Startup cancellation kills registered helpers, including late
+registrations, and joins the worker. Capture stop/cancel also suppresses queued
+and in-flight wet audio before helper/worker cleanup. Runtime cue faults release
+the rack while dry recording continues; cue status is separate from take status.
+
+All 63 focused native-input checks pass with the explicit SDK VST3 fixture and
+subprocess support case. The full media suite passes 231 with 13 ignored; app Rust
+passes 39 with one hardware case ignored, and Python release checks pass 21. New tests
+cover concurrent budget admission, startup failure/timeout/panic, blocked processing
+cancellation, ingress/output overflow and a disconnected consumer. One/two real AU
+and SDK VST3 helpers are killed inside the session owner; all helpers and reserved
+slots close while an exact 1,536-frame dry stereo WAV completes. Partial rack open,
+capture-open failure and late helper registration also clean up.
+[Lifecycle evidence](evidence/native-cue-owner.json).
+
+These are generated inputs and local helper/file processes. No physical capture
+or output queue was opened. The cue output still needs native scheduling and
+input/backing clock mapping; grouped atomic clip publication and app integration
+remain pending. Startup timeout triggers cleanup but cannot promise a hard return
+deadline. No installed app change, Apple upload or release tag.
+
+The preceding `dafad14` main/iOS CI runs were still queued at the initial refresh.
+The older file-worker general run `38998491514` is cancelled; its iOS run passed.
+These remote states do not replace local validation of this increment.
+
 ## Native dry recording owner — development after 0.13.33
 
 A control-thread session now owns dry capture and a separate file worker. Files

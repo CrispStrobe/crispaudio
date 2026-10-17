@@ -130,8 +130,7 @@ and a dedicated file worker. It is deliberately neither Send nor Sync. Durable
 file creation finishes before capture opens. The Mac entry point validates file
 channels against the selected input map, uses an explicit device UID and requires
 existing microphone authorization. It never requests permission or changes a
-system device. This owner disables unused cue ingress; native cue/helper ownership
-is a separate pending step.
+system device. Without a cue configuration, it disables unused cue ingress.
 
 Call `poll()` at least every 100 ms. It checks dry faults, unexpected worker exit,
 device availability/format and a configurable callback-progress timeout. The
@@ -147,9 +146,36 @@ Filesystem stalls can delay joining; this is not a hard real-time stop guarantee
 No original is deleted. The owner caps takes at 32 million frames to match current
 in-memory native graph source limits. Larger streamed sessions remain pending.
 
-This is internal software infrastructure. Grouped atomic clip publication, cue
-helper/stream budgets, native output scheduling and input/backing clock alignment
-remain required before app commands, a native recording mode or hardware acceptance.
+This is internal software infrastructure. Grouped atomic clip publication, native
+output scheduling and input/backing clock alignment remain required before app
+commands, a native recording mode or hardware acceptance.
+
+## Cue worker ownership
+
+`Session::start_with_cue()` adds a native DSP worker and returns its single-consumer
+`CueOutput`. It prepares the rack before capture opens. Share one `StreamBudget`
+across all inputs in a recording group: at most two static inserts per input and
+eight across the group. This budget is separate from playback helpers. Reservations
+are acquired before opening and released only after the processor and registered
+helpers close, including startup errors and panics.
+
+A readiness timeout cancels opening, kills registered helpers (including helpers
+registered after cancellation) and joins the worker. Cleanup may extend beyond the
+deadline. Stop/cancel/drop suppress both queued wet packets and late replies,
+interrupt helper IPC and join the DSP worker. Session polling also interrupts
+helpers when a cue queue faults, so overflow cannot leave a blocked rack running.
+Cue failure and output-consumer disconnection mute wet audio and preserve dry
+capture. `cue_fault()` reports this independently; `cue_latency_samples()` reports
+plug-in delay only. A slow or absent output consumer eventually faults the bounded
+cue queue; no automatic restart is attempted.
+
+Portable checks cover concurrent budget admission, startup error/timeout/panic,
+processing failure, unconsumed output, blocked processing cancellation and ingress
+overflow. Mac checks run real one/two-insert AU and SDK VST3 racks inside the owner:
+a killed helper releases every helper and the reservation while an exact 1,536-frame
+dry stereo WAV completes. Partial-open failure and a helper registered after startup
+cancellation also close. This is software lifecycle qualification with generated
+PCM; no output scheduler, physical device, deadline or sustained-load claim.
 
 ## Checks
 

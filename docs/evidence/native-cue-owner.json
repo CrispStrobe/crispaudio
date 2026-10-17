@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-17",
+  "kind": "native-recording-cue-owner",
+  "applicationVersion": "0.13.33",
+  "connectedToInstalledRecorder": false,
+  "hardwareInputQueueOpened": false,
+  "hardwareOutputOpened": false,
+  "ownership": {
+    "capture": "creating control thread; Session remains !Send/!Sync",
+    "dry": "dedicated file worker",
+    "cue": "dedicated native DSP worker; returns single-consumer CueOutput",
+    "helpers": "registered before handshake; cancellation kills existing and late handles",
+    "groupBudget": {
+      "maxInsertsPerInput": 2,
+      "maxSharedGroupInserts": 8,
+      "reservation": "before opening until DSP/helper cleanup finishes",
+      "scope": "share one StreamBudget across group inputs; separate from playback helpers"
+    },
+    "runtimeFault": "mute queued/late wet packets, close rack and release reservation; dry capture continues",
+    "shutdown": "quiesce capture, cancel/suppress cue, stop helpers and join DSP, join dry file worker"
+  },
+  "tests": {
+    "focusedWithExplicitSdkVst3FixtureAndChildSupport": {
+      "passed": 63,
+      "failed": 0,
+      "ignored": 0
+    },
+    "fullMediaLibrary": {
+      "passed": 231,
+      "failed": 0,
+      "ignored": 13
+    },
+    "releasePythonChecks": {
+      "passed": 21,
+      "failed": 0
+    },
+    "portable": [
+      "concurrent shared-budget admission admits four of eight simultaneous two-slot requests",
+      "reservation reused after worker close/error/timeout/panic",
+      "native packet processing preserves frame/host origin and independent dry PCM",
+      "blocked processing cancellation suppresses late reply",
+      "ingress overflow cancels blocked processing on poll",
+      "output overflow/disconnected consumer mute cue while dry recording remains complete",
+      "invalid cue startup never opens capture; recovery metadata retained"
+    ],
+    "macHelpers": {
+      "formats": [
+        "Apple AUBandpass AU",
+        "explicit SDK ADelay VST3"
+      ],
+      "rackSizes": [
+        1,
+        2
+      ],
+      "dryFramesPerKilledRackCase": 1536,
+      "dryExact": true,
+      "allHelpersClosed": true,
+      "reservationReleased": true,
+      "additionalCases": [
+        "capture factory fails after successful rack startup",
+        "second insert open fails after first helper opened",
+        "helper spawned after startup timeout is killed during registration"
+      ]
+    },
+    "formatAndAbi": "changed Rust rustfmt, git diff --check and Mac SDK C syntax-only ABI checks",
+    "appRustLibrary": {
+      "passed": 39,
+      "failed": 0,
+      "ignored": 1
+    }
+  },
+  "qualificationLimits": [
+    "No physical input/output queue, conversion or end-to-end latency qualification",
+    "No native output scheduler/startup/underrun policy or input/backing clock mapping",
+    "No grouped atomic project clip publication or app recording integration",
+    "No independent headphone output, wet capture or sustained-load/long-session qualification",
+    "Startup timeout triggers cancellation and join; cleanup may exceed timeout",
+    "Installed app remains Web Audio capture with buffered native cue"
+  ]
+}

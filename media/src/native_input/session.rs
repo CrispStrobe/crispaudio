@@ -1,9 +1,9 @@
-//! Control-thread dry recording owner. File I/O runs on its own worker.
-//! No cue output, project publication, or hardware clock alignment is implied.
+//! Control-thread capture owner with dry-file and optional cue workers.
+//! Project publication and hardware output/clock alignment remain separate.
 use super::{
     input,
     recording::{CompletedTake, Recorder, Step},
-    Fault, InputWriter, Status, DRY_SLOTS,
+    CueOutput, Fault, InputWriter, Status, DRY_SLOTS,
 };
 use crate::Result;
 use serde_json::Value;
@@ -15,6 +15,9 @@ use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
+
+pub mod cue;
+use cue::{CueConfig, Owner as CueOwner};
 
 /// Matches the current decoded native graph source limit; this is not a
 /// long-session streaming capability. Owners may choose a smaller budget.
@@ -99,6 +102,7 @@ fn run(mut recorder: Recorder, commands: Receiver<Command>) -> Result<CompletedT
 /// A blocked filesystem can delay shutdown; no hard real-time stop is promised.
 pub struct Session<C: Capture> {
     capture: Option<C>,
+    cue: Option<CueOwner>,
     dry: Status<DRY_SLOTS>,
     commands: Sender<Command>,
     worker: Option<JoinHandle<Result<CompletedTake>>>,
@@ -118,6 +122,25 @@ impl<C: Capture> Session<C> {
         config: Config,
         open: impl FnOnce(InputWriter) -> Result<C>,
     ) -> std::result::Result<Self, StartError> {
+        Self::start_internal(root, config, None, open).map(|(session, _)| session)
+    }
+    /// Prepares cue helpers before capture. Share the cue budget across all group
+    /// inputs. The returned output belongs to one native consumer, never WebKit.
+    pub fn start_with_cue(
+        root: &Path,
+        config: Config,
+        cue: CueConfig,
+        open: impl FnOnce(InputWriter) -> Result<C>,
+    ) -> std::result::Result<(Self, CueOutput), StartError> {
+        Self::start_internal(root, config, Some(cue), open)
+            .map(|(session, output)| (session, output.unwrap()))
+    }
+    fn start_internal(
+        root: &Path,
+        config: Config,
+        cue_config: Option<CueConfig>,
+        open: impl FnOnce(InputWriter) -> Result<C>,
+    ) -> std::result::Result<(Self, Option<CueOutput>), StartError> {
         let error = |reason: String| StartError {
             reason,
             recovery_directory: None,
@@ -129,8 +152,6 @@ impl<C: Capture> Session<C> {
             return Err(error("Invalid recording budget or callback timeout".into()));
         }
         let (writer, reader, cue) = input();
-        // Dry-only owner: explicitly disable unused cue instead of overflowing it.
-        drop(cue);
         let dry = reader.status();
         let root = root.to_owned();
         let (ready_tx, ready_rx) = mpsc::sync_channel(1);
@@ -168,10 +189,29 @@ impl<C: Capture> Session<C> {
                 }));
             }
         };
+        let (cue_owner, output) = if let Some(cue_config) = cue_config {
+            match CueOwner::start(cue, cue_config) {
+                Ok((owner, output)) => (Some(owner), Some(output)),
+                Err(reason) => {
+                    drop(writer);
+                    dry.cancel();
+                    let _ = commands.send(Command::Abort(reason.clone()));
+                    let _ = worker.join();
+                    return Err(StartError {
+                        reason,
+                        recovery_directory: Some(directory),
+                    });
+                }
+            }
+        } else {
+            drop(cue); // No monitor: disable unused ingress instead of overflowing.
+            (None, None)
+        };
         let capture = match open(writer) {
             Ok(capture) => capture,
             Err(reason) => {
                 dry.cancel();
+                drop(cue_owner);
                 let _ = commands.send(Command::Abort(reason.clone()));
                 let _ = worker.join();
                 return Err(StartError {
@@ -180,18 +220,22 @@ impl<C: Capture> Session<C> {
                 });
             }
         };
-        Ok(Self {
-            capture: Some(capture),
-            dry,
-            commands,
-            worker: Some(worker),
-            directory,
-            timeout: config.callback_timeout,
-            progress_at: Instant::now(),
-            callbacks: 0,
-            outcome: None,
-            control_thread: PhantomData,
-        })
+        Ok((
+            Self {
+                capture: Some(capture),
+                cue: cue_owner,
+                dry,
+                commands,
+                worker: Some(worker),
+                directory,
+                timeout: config.callback_timeout,
+                progress_at: Instant::now(),
+                callbacks: 0,
+                outcome: None,
+                control_thread: PhantomData,
+            },
+            output,
+        ))
     }
     pub fn recovery_directory(&self) -> &Path {
         &self.directory
@@ -199,10 +243,21 @@ impl<C: Capture> Session<C> {
     pub fn outcome(&self) -> Option<&Outcome> {
         self.outcome.as_ref()
     }
+    /// Cue failure is isolated from the dry recording outcome.
+    pub fn cue_fault(&self) -> Option<Fault> {
+        self.cue.as_ref().and_then(CueOwner::fault)
+    }
+    /// Plug-in delay only; output scheduling/latency has not been qualified.
+    pub fn cue_latency_samples(&self) -> Option<usize> {
+        self.cue.as_ref().map(CueOwner::latency_samples)
+    }
     pub fn poll(&mut self) -> Result<Report> {
         self.poll_at(Instant::now())
     }
     fn poll_at(&mut self, now: Instant) -> Result<Report> {
+        if let Some(cue) = self.cue.as_mut() {
+            cue.reap();
+        }
         let capture = self.capture.as_ref().ok_or("Recording has stopped")?;
         let report = capture.report();
         let reason = if let Some(fault) = self.dry.fault().or(report.fault) {
@@ -230,6 +285,7 @@ impl<C: Capture> Session<C> {
         Ok(report)
     }
     fn join(&mut self, command: Command) {
+        drop(self.cue.take()); // Suppress cue, kill blocked helpers and join DSP.
         let _ = self.commands.send(command);
         let result = self.worker.take().unwrap().join();
         self.outcome = Some(match result {
