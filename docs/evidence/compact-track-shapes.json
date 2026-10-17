@@ -11,21 +11,21 @@
   "validation": {
     "status": "complete",
     "focused": "83 passed across track/scoped reviews and existing shape/persistence models",
-    "focusedLog": "/tmp/crispaudio-track-shape-focused.log",
-    "finalReview": "12 track review cases passed /tmp/crispaudio-track-shape-review-final.log",
+    "focusedLog": "crispaudio-track-shape-focused.log",
+    "finalReview": "12 track review cases passed crispaudio-track-shape-review-final.log",
     "browser": "PASS four German Chromium cases: negative pan/descending carrier frequency x desktop1280/touch390; real CDP handle drag, busy guard, local preview, direct oneUndo, full names/Hz in Info, Escape, no overflow",
     "browserScript": "scripts/test-track-curve-shapes.mjs",
-    "browserLog": "/tmp/crispaudio-track-shape-browser-final2.log",
+    "browserLog": "crispaudio-track-shape-browser-final2.log",
     "screenshots": [
-      "/tmp/crispaudio-track-shape-pan-touch.png",
-      "/tmp/crispaudio-track-shape-pan-desktop.png",
-      "/tmp/crispaudio-track-shape-frequency-touch.png",
-      "/tmp/crispaudio-track-shape-frequency-desktop.png"
+      "crispaudio-track-shape-pan-touch.png",
+      "crispaudio-track-shape-pan-desktop.png",
+      "crispaudio-track-shape-frequency-touch.png",
+      "crispaudio-track-shape-frequency-desktop.png"
     ],
-    "frontendLog": "/tmp/crispaudio-track-shape-frontend.log",
-    "lint": "PASS /tmp/crispaudio-track-shape-lint-final.log",
+    "frontendLog": "crispaudio-track-shape-frontend.log",
+    "lint": "PASS crispaudio-track-shape-lint-final.log",
     "typecheck": "Standalone PASS and final bundle frontend typecheck PASS",
-    "release": "21 passed /tmp/crispaudio-track-shape-release.log",
+    "release": "21 passed crispaudio-track-shape-release.log",
     "scope": "Frontend review consolidation; existing shape publication model/native DSP/bridge/schema unchanged. Native media/app/iOS local checks not repeated.",
     "frontend": {
       "result": "1924 cases passed across broad run and serial retries",
@@ -33,7 +33,7 @@
         "passedFiles": 190,
         "passedTests": 1918,
         "startupErrors": 2,
-        "log": "/tmp/crispaudio-track-shape-frontend.log"
+        "log": "crispaudio-track-shape-frontend.log"
       },
       "retry": {
         "passedFiles": 2,
@@ -43,11 +43,11 @@
           "ttsModal.test.tsx"
         ],
         "reason": "Vitest worker startup timeouts; no assertion failures",
-        "log": "/tmp/crispaudio-track-shape-worker-retry.log"
+        "log": "crispaudio-track-shape-worker-retry.log"
       },
       "options": "Broad run maxWorkers=2/testTimeout=20000; retry maxWorkers=1; repository options unchanged"
     },
-    "macBuild": "Final normal debug bundle PASS /tmp/crispaudio-01319-build-final.log",
+    "macBuild": "Final normal debug bundle PASS crispaudio-01319-build-final.log",
     "installation": "0.13.19 installed/running; strict/deep signature PASS; one autosave retained; previous app and live/quiescent session backed up"
   },
   "limits": [

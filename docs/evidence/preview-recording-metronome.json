@@ -14,43 +14,43 @@
     "focused": {
       "passed": 26,
       "files": 4,
-      "log": "/tmp/crispaudio-preview-click-focused-final.log"
+      "log": "crispaudio-preview-click-focused-final.log"
     },
     "playback_regressions": {
       "passed": 71,
       "files": 11,
-      "log": "/tmp/crispaudio-preview-click-regression.log"
+      "log": "crispaudio-preview-click-regression.log"
     },
     "capture_regressions": {
       "passed": 11,
       "files": 4,
-      "log": "/tmp/crispaudio-preview-click-capture.log"
+      "log": "crispaudio-preview-click-capture.log"
     },
     "lint": {
       "status": "passed",
-      "log": "/tmp/crispaudio-preview-click-lint.log"
+      "log": "crispaudio-preview-click-lint.log"
     },
     "typescript": {
       "status": "passed",
-      "log": "/tmp/crispaudio-preview-click-tsc-final.log"
+      "log": "crispaudio-preview-click-tsc-final.log"
     },
     "release_gates": {
       "passed": 21,
-      "log": "/tmp/crispaudio-preview-click-release.log"
+      "log": "crispaudio-preview-click-release.log"
     },
     "ios_simulator": {
       "status": "passed",
       "target": "aarch64-apple-ios-sim",
-      "log": "/tmp/crispaudio-preview-click-ios.log"
+      "log": "crispaudio-preview-click-ios.log"
     },
     "mac_bundle": {
       "status": "passed",
-      "log": "/tmp/crispaudio-01321-build.log"
+      "log": "crispaudio-01321-build.log"
     },
     "browser": {
       "status": "passed",
       "script": "scripts/test-monitor-metronome.mjs",
-      "log": "/tmp/crispaudio-preview-click-browser.log",
+      "log": "crispaudio-preview-click-browser.log",
       "results": {
         "offlinePreviewPCM": {
           "onsets": [
@@ -120,6 +120,6 @@
     "strict_deep_signature": "passed",
     "autosaves_retained": 1,
     "backup": "recovery-before-01321-20261016-155002",
-    "log": "/tmp/crispaudio-01321-install.log"
+    "log": "crispaudio-01321-install.log"
   }
 }

@@ -1,6 +1,8 @@
 # CrispAudio — Active roadmap
 
 Updated 2026-10-17, for local 0.13.33. This section is the current plan.
+Start with [the engineering handoff](docs/WORK_HANDOFF.md) for scoped tasks N1–N5,
+acceptance criteria and the remaining accepted product backlog.
 The implementation records below are historical; their old missing-feature lists
 and test counts do not describe the current application.
 
@@ -1162,9 +1164,9 @@ are **not wired end-to-end**. The UI renders but most interactions are dead.
 This document captures the findings from a full audit of `crispaudio` compared against the
 original working apps it was assembled from:
 
-- **crispfxr-app** (`/Volumes/backups/code/crispfxr-app`) — original working SFX synth.
-- **voicelab** (`/Volumes/backups/code/voicelab`) — original working voice processor.
-- **CrispSorter** (`/Volumes/backups/code/CrispSorter`) — sibling Tauri+React app (only the Rust
+- **crispfxr-app** — original working SFX synth.
+- **voicelab** — original working voice processor.
+- **CrispSorter** — sibling Tauri+React app (only the Rust
   backend is present locally; its frontend isn't on disk, so Settings/About/Licenses are rebuilt
   from crispaudio's own primitives rather than copied).
 

@@ -70,6 +70,12 @@ continuous-refresh checkpoint; continue the execution order below.
 
 ## Execution order
 
+For the 17 October implementation checkpoint, concrete dependencies and acceptance
+criteria, use [WORK_HANDOFF.md](WORK_HANDOFF.md). Native queues, files, session/group
+ownership, cue scheduling, Mac output and a portable mixer are implemented as
+internal foundations; hardware/app wiring and synchronized project placement remain
+open. The comparison below retains its earlier feature-level execution order.
+
 1. **Release qualification and scope cleanup.** Keep the current CI run alive long
    enough to finish, refresh Apple state, remove TTS creation and retain old audio.
    Update release notes and listing drafts; publish no new parity claims. ASR launch/setup is retired in 0.13.25, retaining existing aligned transcripts

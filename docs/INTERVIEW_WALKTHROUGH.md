@@ -7,10 +7,11 @@ for synchronization and a fallback. Prefer the jacket mic for answers and check
 the room mic for interviewer questions; this is a listening decision, not a rule
 that automatically identifies the speaker.
 
-The finished local example is in:
+This private example is not included in the repository. Its output directory has
+the following layout (the local location is recorded in the ignored handover):
 
 ```text
-/Users/christianstrobele/code/transcripts/2026-Studienwoche/CrispAudio-validation/
+<validation-directory>/
   MVI_8251.crispaudio       editable project with linked aligned WAVs
   MVI_8251.verified.mp4     verified export, jacket microphone as default
   aligned-final/          camera and microphone WAVs + session.json
@@ -22,25 +23,24 @@ question/answer microphone edit. Original video and camera audio stream hashes
 match the source. Measured audio alignment against the camera was within 1.75 ms
 at beginning/middle/end. That does not independently verify visual lip sync.
 
-## CLI: reproduce alignment and an initial export on this Mac
+## CLI: reproduce alignment and an initial export
 
 1. Check the installed CLI and media tools:
 
    ```sh
-   /Users/christianstrobele/.local/bin/crispaudio --help
-   /opt/homebrew/bin/ffmpeg -version
-   /opt/homebrew/bin/ffprobe -version
+   crispaudio --help
+   ffmpeg -version
+   ffprobe -version
    ```
 
-   The CLI symlink currently points into the local repository's release build.
-   See [build instructions](INTERVIEW_EDITING.md) for another machine.
+   Install the CLI on your PATH; see [build instructions](INTERVIEW_EDITING.md).
 
 2. Set source paths and a **new** output directory. Reusing an existing render
    directory or output file is rejected rather than overwriting it.
 
    ```sh
-   CLI='/Users/christianstrobele/.local/bin/crispaudio'
-   SOURCE='/Users/christianstrobele/Downloads/2026 Studienwoche'
+   CLI=crispaudio
+   SOURCE='/path/to/source-media'
    WORK="$HOME/Documents/CrispAudio/MVI_8251-$(date +%Y%m%d-%H%M%S)"
    mkdir -p "$WORK"
    "$CLI" probe "$SOURCE/MVI_8251.MP4"
@@ -106,7 +106,7 @@ is future work.
 
 ## GUI on macOS: fastest route using the prepared project
 
-1. Launch `/Users/christianstrobele/Applications/CrispAudio-local.app`.
+1. Launch the installed CrispAudio app.
    Open **Timeline**, then **Open project** and select the prepared
    `MVI_8251.crispaudio`. Keep `aligned-final/` and the original video in place:
    this project links those files rather than embedding them.

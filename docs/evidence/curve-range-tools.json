@@ -12,21 +12,21 @@
   "validation": {
     "status": "complete",
     "targeted": "84 tests passed in five files, including existing capture guards, both editors, menu and range model",
-    "targetedLog": "/tmp/crispaudio-range-targeted-final2.log",
+    "targetedLog": "crispaudio-range-targeted-final2.log",
     "browser": "PASS four German Chromium cases: built-in/native \u00d7 desktop/touch; actual CDP touch range drag, relative copy, fit paste, local draft, one Undo, 44px menu targets, Escape keeps inspector, no horizontal overflow",
     "browserScript": "scripts/test-curve-range-tools.mjs",
-    "browserLog": "/tmp/crispaudio-curve-range-browser-final2.log",
+    "browserLog": "crispaudio-curve-range-browser-final2.log",
     "screenshots": [
-      "/tmp/crispaudio-curve-range-builtin-touch.png",
-      "/tmp/crispaudio-curve-range-builtin-desktop.png",
-      "/tmp/crispaudio-curve-range-native-touch.png",
-      "/tmp/crispaudio-curve-range-native-desktop.png"
+      "crispaudio-curve-range-builtin-touch.png",
+      "crispaudio-curve-range-builtin-desktop.png",
+      "crispaudio-curve-range-native-touch.png",
+      "crispaudio-curve-range-native-desktop.png"
     ],
-    "frontendLog": "/tmp/crispaudio-curve-range-frontend-final2.log",
+    "frontendLog": "crispaudio-curve-range-frontend-final2.log",
     "typecheck": "Standalone PASS and final Mac bundle frontend typecheck PASS",
-    "lintLog": "/tmp/crispaudio-curve-range-lint-final2.log",
-    "release": "21 passed /tmp/crispaudio-curve-range-release.log",
-    "macBuildLog": "/tmp/crispaudio-01316-build-final2.log",
+    "lintLog": "crispaudio-curve-range-lint-final2.log",
+    "release": "21 passed crispaudio-curve-range-release.log",
+    "macBuildLog": "crispaudio-01316-build-final2.log",
     "scope": "Frontend editing only; native DSP/bridge unchanged. Local native media/app/iOS checks from 0.13.12 remain applicable; no hardware or commercial plug-in acceptance claimed.",
     "lint": "PASS; menu availability uses React state instead of reading gesture/validity refs during render",
     "frontend": {

@@ -11,20 +11,20 @@
   "validation": {
     "status": "complete",
     "targeted": "72 tests passed across paste, modal focus, native/built-in editors and envelope models; 13 final paste/preview tests pass (includes two additional dense/pan cases)",
-    "targetedLog": "/tmp/crispaudio-paste-review-targeted.log",
-    "editorLog": "/tmp/crispaudio-paste-review-editor-final.log",
+    "targetedLog": "crispaudio-paste-review-targeted.log",
+    "editorLog": "crispaudio-paste-review-editor-final.log",
     "browser": "German desktop1280 and touch390 Chromium: frequency title, compact two fields, live visual preview, actual CDP touch numeric scrub, Info Escape keeps review, full names in Info, no horizontal overflow, local draft, one Undo and other lane retention",
     "browserScript": "scripts/test-automation-paste-review.mjs",
-    "browserLog": "/tmp/crispaudio-paste-review-browser-final.log",
+    "browserLog": "crispaudio-paste-review-browser-final.log",
     "screenshots": [
-      "/tmp/crispaudio-paste-review-touch.png",
-      "/tmp/crispaudio-paste-review-desktop.png"
+      "crispaudio-paste-review-touch.png",
+      "crispaudio-paste-review-desktop.png"
     ],
-    "frontendLog": "/tmp/crispaudio-paste-review-frontend.log",
-    "typecheckLog": "/tmp/crispaudio-paste-review-tsc-final.log",
-    "lintLog": "/tmp/crispaudio-paste-review-lint-final.log",
-    "releaseLog": "/tmp/crispaudio-paste-review-release.log",
-    "macBuildLog": "/tmp/crispaudio-01317-build.log",
+    "frontendLog": "crispaudio-paste-review-frontend.log",
+    "typecheckLog": "crispaudio-paste-review-tsc-final.log",
+    "lintLog": "crispaudio-paste-review-lint-final.log",
+    "releaseLog": "crispaudio-paste-review-release.log",
+    "macBuildLog": "crispaudio-01317-build.log",
     "scope": "Frontend review only; native DSP/bridge and envelope paste models unchanged. Native media/app/iOS local checks from 0.13.12 not repeated.",
     "frontend": {
       "result": "PASS",

@@ -14,24 +14,24 @@
   "validation": {
     "status": "complete",
     "editorTests": "Final 21 editor tests passed; prior focused integration checks pass for native recorder/rack/model",
-    "editorLog": "/tmp/crispaudio-native-curve-editor-final.log",
+    "editorLog": "crispaudio-native-curve-editor-final.log",
     "browser": "Final Chromium desktop and real CDP touch input PASS in German: no horizontal overflow, first selection stable, collapsed recording, numeric domain, dragging, local draft, one Undo and state preservation",
-    "browserLog": "/tmp/crispaudio-native-curve-browser-final4.log",
+    "browserLog": "crispaudio-native-curve-browser-final4.log",
     "browserScript": "scripts/test-native-parameter-curves.mjs; fixture parameter data mounted in the browser; no native plugin or audio playback invoked",
     "screenshots": [
-      "/tmp/crispaudio-native-curve-desktop.png",
-      "/tmp/crispaudio-native-curve-touch.png"
+      "crispaudio-native-curve-desktop.png",
+      "crispaudio-native-curve-touch.png"
     ],
     "typecheck": "Standalone PASS and final Mac bundle frontend typecheck PASS",
-    "lint": "PASS /tmp/crispaudio-native-curve-lint-final4.log",
-    "release": "21 passed /tmp/crispaudio-native-curve-release.log",
-    "macBuild": "Final normal debug bundle PASS /tmp/crispaudio-01314-build-final.log",
+    "lint": "PASS crispaudio-native-curve-lint-final4.log",
+    "release": "21 passed crispaudio-native-curve-release.log",
+    "macBuild": "Final normal debug bundle PASS crispaudio-01314-build-final.log",
     "scope": "Frontend editor only; native DSP/bridge unchanged. Native/media/iOS checks from 0.13.12 not repeated locally.",
     "frontend": {
       "result": "PASS",
       "tests": 1839,
       "files": 185,
-      "log": "/tmp/crispaudio-native-curve-frontend-final2.log",
+      "log": "crispaudio-native-curve-frontend-final2.log",
       "options": "maxWorkers=2; testTimeout=20000; repository options unchanged"
     },
     "installation": "0.13.14 installed/running; strict/deep signature PASS; one autosave retained; recovery backup created"

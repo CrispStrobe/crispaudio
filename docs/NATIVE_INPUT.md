@@ -1,5 +1,9 @@
 # Native input engine foundation
 
+For the ordered integration tasks and acceptance criteria, start with
+[WORK_HANDOFF.md](WORK_HANDOFF.md). These are internal foundations; the installed
+recording path remains unchanged.
+
 The installed recorder still uses Web Audio capture and the
 [buffered native cue](RECORDING_CUE.md). The Rust foundation now includes a Mac
 hardware capture adapter, but it is not connected to the recording UI or opened

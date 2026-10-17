@@ -11,19 +11,19 @@
   "validation": {
     "status": "complete",
     "targeted": "103 passed across native and built-in editor, recorder guard, native edits, speed and project edits; 15 new built-in editor tests included",
-    "frontendLog": "/tmp/crispaudio-shared-curves-frontend.log",
-    "lintLog": "/tmp/crispaudio-shared-curves-lint-final.log",
-    "typecheckLog": "/tmp/crispaudio-shared-curves-tsc-final.log",
-    "release": "21 passed /tmp/crispaudio-shared-curves-release.log",
+    "frontendLog": "crispaudio-shared-curves-frontend.log",
+    "lintLog": "crispaudio-shared-curves-lint-final.log",
+    "typecheckLog": "crispaudio-shared-curves-tsc-final.log",
+    "release": "21 passed crispaudio-shared-curves-release.log",
     "browser": [
       "PASS German desktop1280 and touch390/CDP: built-in numeric ms/Step, drag, local draft, single Undo, other lane preservation, stable first selection, no overflow, collapsed recording",
       "PASS existing native German desktop/touch script after editor extraction",
       "PASS integrated clip/master browser workflow: cancel, one Undo, no-op preserves redo, locks/stale guard, live no restart, save/reopen, offline range/full crop delta 0"
     ],
     "browserLogs": [
-      "/tmp/crispaudio-builtin-curve-browser.log",
-      "/tmp/crispaudio-shared-native-browser.log",
-      "/tmp/crispaudio-scoped-curves-browser.log"
+      "crispaudio-builtin-curve-browser.log",
+      "crispaudio-shared-native-browser.log",
+      "crispaudio-scoped-curves-browser.log"
     ],
     "browserScripts": [
       "scripts/test-builtin-parameter-curves.mjs",
@@ -31,10 +31,10 @@
       "scripts/test-scoped-effect-automation.mjs"
     ],
     "screenshots": [
-      "/tmp/crispaudio-builtin-curve-desktop.png",
-      "/tmp/crispaudio-builtin-curve-touch.png"
+      "crispaudio-builtin-curve-desktop.png",
+      "crispaudio-builtin-curve-touch.png"
     ],
-    "macBuildLog": "/tmp/crispaudio-01315-build.log",
+    "macBuildLog": "crispaudio-01315-build.log",
     "scope": "Frontend project editing only; native DSP/bridge unchanged. Native media/app/iOS checks from 0.13.12 not repeated locally.",
     "frontend": {
       "tests": 1862,

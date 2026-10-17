@@ -13,7 +13,7 @@
   "validation": {
     "status": "complete",
     "media": "164 passed, 10 optional tests skipped with native-engine enabled",
-    "mediaLog": "/tmp/crispaudio-scoped-native-media-final.log",
+    "mediaLog": "crispaudio-scoped-native-media-final.log",
     "nativeSignal": "All eleven static controls compared to continuous step-envelope PCM in track/master/late-start clip scopes with disabled rack indices; duplicate/unknown scope and invalid later controls reject atomically",
     "scopedCurves": "Concurrent master and clip audition plus independent Read restoration match continuous curve references, retaining oscillator phase and delay history",
     "focusedFrontend": "44 passed; controller scope isolation, scoped packet indices, real master/clip inspector review/Apply with one Undo, Preview/capture/lock guards and failed-audition/fault/mode interruption",
@@ -21,7 +21,7 @@
       "result": "PASS",
       "tests": 1781,
       "files": 181,
-      "log": "/tmp/crispaudio-scoped-native-frontend-full.log",
+      "log": "crispaudio-scoped-native-frontend-full.log",
       "scope": "One fresh full run, maxWorkers=2 and testTimeout=20000; repository options unchanged"
     },
     "appTests": "41 passed, 1 optional test skipped",

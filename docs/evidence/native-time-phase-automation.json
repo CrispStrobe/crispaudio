@@ -12,7 +12,7 @@
   "validation": {
     "status": "complete",
     "media": "161 passed, 10 optional tests skipped with native-engine enabled",
-    "mediaLog": "/tmp/crispaudio-time-phase-media-final.log",
+    "mediaLog": "crispaudio-time-phase-media-final.log",
     "nativeSignal": "Known PCM through fixture native inserts matches continuous step envelopes for delay time and feedback, chorus rate and depth, and ring frequency through hot changes and static Read restoration",
     "phaseOracle": "Native ring carrier matches an independent accumulated-phase oracle across hot frequency changes, static Read restoration and project loops",
     "allocation": "Native delay history allocation remains unchanged through time updates; shared budget rejects oversized preparation",
@@ -21,7 +21,7 @@
       "tests": 1771,
       "files": 180,
       "result": "PASS",
-      "log": "/tmp/crispaudio-time-phase-frontend-full.log",
+      "log": "crispaudio-time-phase-frontend-full.log",
       "scope": "Full run, maxWorkers=2 and testTimeout=20000; repository settings unchanged"
     },
     "release": "21 passed",

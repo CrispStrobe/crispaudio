@@ -50,3 +50,7 @@ media/target-cli/
 
 # Python validation scripts
 __pycache__/
+
+# Private machine setup and agent notes (tracked CLAUDE.md stays portable)
+/CLAUDE.local.md
+/AGENTS.local.md

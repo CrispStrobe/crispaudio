@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+- Consolidate engineering handoff, remaining task dependencies and acceptance criteria; keep machine-specific paths and evidence locations in ignored local notes.
+
 - Add an internal shared cue/backing mixer with independent level, stereo balance and mono controls, smooth control changes and isolated cue failures. Backing or clock failures latch silence for owner shutdown. Hardware/app integration remains pending.
 
 - Add an internal Mac cue output adapter with explicit device routing, silent priming and arming, a queue timeline, clock/device watchdogs and guarded disposal. Callback faults retain dry recordings; hardware and app integration remain pending.

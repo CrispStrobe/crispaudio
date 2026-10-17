@@ -5,6 +5,25 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Wrap-up checkpoint — 2026-10-17
+
+The current code checkpoint is `962cc74` (internal shared native mixer); installed
+0.13.33 remains unchanged. [WORK_HANDOFF.md](WORK_HANDOFF.md) is the current
+engineering entry point with ordered tasks, dependencies and completion criteria.
+This documentation wrap-up does not ship a new app or submit a build to Apple.
+
+At the final pre-commit refresh, both code-checkpoint workflows were queued:
+[general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/39008195395)
+and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/39008195374).
+For the preceding `59f0e4c`, general CI succeeded; iOS CI was cancelled. These
+results do not establish green CI for the current code or this documentation commit.
+Check live run status when resuming.
+
+Historical evidence log names identify local artifacts, not committed attachments.
+Their machine-specific locations are preserved only in the ignored local notes.
+Personal walkthrough paths have been replaced with portable examples. This changes
+the current tree; it does not remove previously committed paths from Git history.
+
 ## Apple and baseline CI refresh — 2026-10-16
 
 Read-only App Store Connect checks from the VPS confirm public iOS 0.3.0 remains
@@ -2998,9 +3017,9 @@ solo/mute, nonzero anti-phase stereo meters, offline master scaling, save/load
 and German 390 px layout. `test-native-pcm.mjs` with masterVolume=0.5 matches
 browser offline output byte-for-byte at 8/16/24/32-bit PCM.
 
-Evidence logs: `/tmp/mixer-tests-final.log`, `/tmp/mixer-native-final.log`,
-`/tmp/mixer-browser-final.log`, `/tmp/mixer-pcm-parity.log`,
-`/tmp/mixer-lint-final.log`, `/tmp/mixer-app-build.log`, `/tmp/mixer-install.log`.
+Evidence logs: `mixer-tests-final.log`, `mixer-native-final.log`,
+`mixer-browser-final.log`, `mixer-pcm-parity.log`,
+`mixer-lint-final.log`, `mixer-app-build.log`, `mixer-install.log`.
 Prior 0.8.12 desktop and iOS simulator CI runs both completed successfully:
 [desktop](https://github.com/CrispStrobe/crispaudio/actions/runs/37990218860),
 [iOS simulator](https://github.com/CrispStrobe/crispaudio/actions/runs/37990218850).
@@ -3033,15 +3052,15 @@ budget 0.0002 maximum/0.00002 RMS for new EQ tails. All 33 cases pass these boun
 Real excerpt cases are substantially closer. No physical iOS/touch or installed
 WebKit audio validation is claimed from headless Chrome.
 
-Evidence: `/tmp/eq-tests-final.log`, `/tmp/eq-native-final.log`,
-`/tmp/eq-browser-final.log`, `/tmp/eq-parity-verified.log`, `/tmp/eq-lint-final.log`,
-`/tmp/eq-app-final.log`. Private excerpt outputs are in
+Evidence: `eq-tests-final.log`, `eq-native-final.log`,
+`eq-browser-final.log`, `eq-parity-verified.log`, `eq-lint-final.log`,
+`eq-app-final.log`. Private excerpt outputs are in
 `transcripts/2026-Studienwoche/CrispAudio-validation/ux/eq-0814/`; source recordings
 and original projects were not modified. No release tag or Apple upload.
 
 Installed/launched local 0.8.14 and updated the standalone CLI. Ad-hoc signatures
 verified; one existing autosave preserved. Installation evidence:
-`/tmp/eq-install.log`.
+`eq-install.log`.
 
 ## Local 0.8.15 — output limiter and gain reduction
 
@@ -3132,10 +3151,10 @@ the documented Playwright/CLI environment variables; `CRISPAUDIO_TEST_AUTOMATION
 accepts a JSON GainPoint array. Pan/FX automation, envelope copy and
 Read/Touch/Latch/Write remain future M2.3 work.
 
-Evidence logs: `/tmp/automation-tests-final.log`, `/tmp/automation-native.log`,
-`/tmp/automation-lint-final.log`, `/tmp/automation-browser-final.log`,
-`/tmp/automation-webkit-final.log`, `/tmp/automation-pcm.log`,
-`/tmp/automation-app-build-final.log` and `/tmp/automation-install.log`.
+Evidence logs: `automation-tests-final.log`, `automation-native.log`,
+`automation-lint-final.log`, `automation-browser-final.log`,
+`automation-webkit-final.log`, `automation-pcm.log`,
+`automation-app-build-final.log` and `automation-install.log`.
 
 
 ## Local 0.8.17 — gain envelope copy/paste and time stretching
@@ -3181,10 +3200,10 @@ the final app build ran on its own. Reproduce with `scripts/test-envelope-copy.m
 and the existing Playwright/Chrome/WebKit environment variables. Set
 `CRISPAUDIO_TEST_CLI` to include native recipe/render comparisons.
 
-Evidence: `/tmp/envelope-tests-final.log`, `/tmp/envelope-native.log`,
-`/tmp/envelope-lint-final.log`, `/tmp/envelope-build-final.log`,
-`/tmp/envelope-browser-native.log`, `/tmp/envelope-webkit-native.log`,
-`/tmp/envelope-app-build-final.log`, `/tmp/envelope-install.log`.
+Evidence: `envelope-tests-final.log`, `envelope-native.log`,
+`envelope-lint-final.log`, `envelope-build-final.log`,
+`envelope-browser-native.log`, `envelope-webkit-native.log`,
+`envelope-app-build-final.log`, `envelope-install.log`.
 
 ## Local 0.8.18 — directly editable pan automation
 

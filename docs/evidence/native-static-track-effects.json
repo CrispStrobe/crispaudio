@@ -14,7 +14,7 @@
     "status": "complete",
     "focusedFrontend": "22 passed",
     "media": "163 passed, 10 optional tests skipped with native-engine enabled",
-    "mediaLog": "/tmp/crispaudio-static-fx-media.log",
+    "mediaLog": "crispaudio-static-fx-media.log",
     "nativeSignal": "All eleven supported static controls match continuously running step-envelope references through edits and restoration; malformed later control leaves earlier base/master unchanged",
     "constructorParity": "Exact PCM matches for negative, fractional and large static values versus fresh constructors; automation priority and non-finite rejection checked",
     "transport": "Store knob update and Undo call updateMix without another play; rack bypass change restarts",
@@ -22,7 +22,7 @@
       "result": "PASS",
       "tests": 1773,
       "files": 181,
-      "log": "/tmp/crispaudio-static-fx-frontend-full.log",
+      "log": "crispaudio-static-fx-frontend-full.log",
       "scope": "One fresh full run, maxWorkers=2 and testTimeout=20000; repository options unchanged"
     },
     "appTests": "41 passed, 1 optional test skipped",

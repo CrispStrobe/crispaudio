@@ -32,7 +32,7 @@
       "Folder aliases, prefix boundaries and symlink escape",
       "Legacy records and bounded history"
     ],
-    "log": "/tmp/crispaudio-relocation-media-focused.log"
+    "log": "crispaudio-relocation-media-focused.log"
   },
   "validation": {
     "status": "complete",
@@ -41,7 +41,7 @@
       "tests": 1748,
       "files": 180,
       "scope": "One fresh full run of final source, maxWorkers=2, testTimeout=20000; command-scoped idle-sleep inhibition; repository timeout settings unchanged",
-      "log": "/tmp/crispaudio-relocation-frontend-final.log"
+      "log": "crispaudio-relocation-frontend-final.log"
     },
     "media": "143 passed, 10 optional tests skipped",
     "appTests": "41 passed, 1 optional test skipped",

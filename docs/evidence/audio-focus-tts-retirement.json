@@ -26,54 +26,54 @@
     "full_frontend": {
       "passed": 1908,
       "files": 190,
-      "log": "/tmp/crispaudio-audio-focus-full-tests.log"
+      "log": "crispaudio-audio-focus-full-tests.log"
     },
     "focused_before_final_migration_test": {
       "passed": 58,
       "files": 5,
-      "log": "/tmp/crispaudio-tts-retirement-focused.log",
+      "log": "crispaudio-tts-retirement-focused.log",
       "note": "Final migration case is included in the full suite."
     },
     "lint": {
       "status": "passed",
-      "log": "/tmp/crispaudio-audio-focus-lint.log"
+      "log": "crispaudio-audio-focus-lint.log"
     },
     "validation_script_lint": {
       "status": "passed",
-      "log": "/tmp/crispaudio-audio-focus-scripts-lint.log"
+      "log": "crispaudio-audio-focus-scripts-lint.log"
     },
     "typescript": {
       "status": "passed",
-      "log": "/tmp/crispaudio-audio-focus-tsc-final.log"
+      "log": "crispaudio-audio-focus-tsc-final.log"
     },
     "release_gates": {
       "passed": 21,
-      "log": "/tmp/crispaudio-audio-focus-release.log"
+      "log": "crispaudio-audio-focus-release.log"
     },
     "listing_limits": {
       "status": "passed",
-      "log": "/tmp/crispaudio-audio-focus-listing-final.log"
+      "log": "crispaudio-audio-focus-listing-final.log"
     },
     "desktop_app": {
       "passed": 39,
       "ignored": 1,
-      "log": "/tmp/crispaudio-audio-focus-app.log"
+      "log": "crispaudio-audio-focus-app.log"
     },
     "full_ios_simulator_bundle": {
       "status": "passed",
       "version": "0.13.22",
       "target": "arm64-sim",
       "command": "tauri ios build --debug --target aarch64-sim --no-sign",
-      "log": "/tmp/crispaudio-audio-focus-ios-build.log"
+      "log": "crispaudio-audio-focus-ios-build.log"
     },
     "mac_bundle": {
       "status": "passed",
-      "log": "/tmp/crispaudio-01322-build.log"
+      "log": "crispaudio-01322-build.log"
     },
     "browser_scope_and_samples": {
       "status": "passed",
       "script": "scripts/test-audio-product-boundary.mjs",
-      "log": "/tmp/crispaudio-audio-focus-browser-final.log",
+      "log": "crispaudio-audio-focus-browser-final.log",
       "results": {
         "retirement": {
           "retiredSettingsGone": true,
@@ -128,7 +128,7 @@
     "real_reference_audio": {
       "status": "passed",
       "script": "scripts/test-reference-audio-workflow.mjs",
-      "log": "/tmp/crispaudio-audio-focus-real-source-final.log",
+      "log": "crispaudio-audio-focus-real-source-final.log",
       "source": "User-supplied local 16-second MP4; no media/path committed",
       "results": {
         "realSource": true,
@@ -184,6 +184,6 @@
     "strict_deep_signature": "passed",
     "autosaves_retained": 1,
     "backup": "recovery-before-01322-20261016-163522",
-    "log": "/tmp/crispaudio-01322-install.log"
+    "log": "crispaudio-01322-install.log"
   }
 }

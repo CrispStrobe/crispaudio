@@ -12,49 +12,49 @@
   "checks": {
     "monitor_dsp": {
       "passed": 5,
-      "log": "/tmp/crispaudio-native-click-focused.log"
+      "log": "crispaudio-native-click-focused.log"
     },
     "frontend_transport_bridge": {
       "passed": 15,
       "files": 2,
-      "log": "/tmp/crispaudio-native-click-frontend.log"
+      "log": "crispaudio-native-click-frontend.log"
     },
     "frontend_regressions": {
       "passed": 42,
       "files": 6,
-      "log": "/tmp/crispaudio-native-click-regression.log"
+      "log": "crispaudio-native-click-regression.log"
     },
     "media_native_engine": {
       "library_passed": 171,
       "library_ignored": 10,
       "cli_passed": 3,
-      "log": "/tmp/crispaudio-native-click-media.log"
+      "log": "crispaudio-native-click-media.log"
     },
     "desktop_app": {
       "passed": 39,
       "ignored": 1,
-      "log": "/tmp/crispaudio-native-click-app.log"
+      "log": "crispaudio-native-click-app.log"
     },
     "ios_simulator": {
       "status": "passed",
       "target": "aarch64-apple-ios-sim",
-      "log": "/tmp/crispaudio-native-click-ios.log"
+      "log": "crispaudio-native-click-ios.log"
     },
     "lint": {
       "status": "passed",
-      "log": "/tmp/crispaudio-native-click-lint.log"
+      "log": "crispaudio-native-click-lint.log"
     },
     "typescript": {
       "status": "passed",
-      "log": "/tmp/crispaudio-native-click-tsc.log"
+      "log": "crispaudio-native-click-tsc.log"
     },
     "release_gates": {
       "passed": 21,
-      "log": "/tmp/crispaudio-native-click-release.log"
+      "log": "crispaudio-native-click-release.log"
     },
     "mac_bundle": {
       "status": "passed",
-      "log": "/tmp/crispaudio-01320-build.log"
+      "log": "crispaudio-01320-build.log"
     }
   },
   "limits": [
@@ -70,6 +70,6 @@
     "strict_deep_signature": "passed",
     "autosaves_retained": 1,
     "backup": "recovery-before-01320-20261016-153354",
-    "log": "/tmp/crispaudio-01320-install.log"
+    "log": "crispaudio-01320-install.log"
   }
 }

@@ -18,7 +18,7 @@
       "tests": 1761,
       "files": 180,
       "result": "PASS",
-      "log": "/tmp/crispaudio-effect-mix-frontend-full.log",
+      "log": "crispaudio-effect-mix-frontend-full.log",
       "scope": "Full run, maxWorkers=2, testTimeout=20000; repository timeouts unchanged"
     },
     "appTests": "41 passed, 1 optional test skipped",

@@ -5,13 +5,13 @@
     "media": {
       "passed": 278,
       "ignored": 16,
-      "log": "/tmp/crispaudio-mix-media.log"
+      "log": "crispaudio-mix-media.log"
     },
     "mixer_tests": 6,
     "app_rust": {
       "passed": 39,
       "ignored": 1,
-      "log": "/tmp/crispaudio-mix-app.log"
+      "log": "crispaudio-mix-app.log"
     },
     "format_and_diff": "pass"
   },

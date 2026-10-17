@@ -1,5 +1,10 @@
 # CLAUDE.md — CrispAudio
 
+Start with [docs/WORK_HANDOFF.md](docs/WORK_HANDOFF.md) for the current checkpoint,
+ordered tasks and acceptance criteria. Read ignored `HANDOVER.local.md` and
+`CLAUDE.local.md`, when available, for machine-specific setup. Keep private paths,
+credentials, fixture locations and recovery details out of tracked documentation.
+
 ## Quick commands
 
 ```bash

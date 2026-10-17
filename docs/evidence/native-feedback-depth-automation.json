@@ -19,14 +19,14 @@
       "tests": 1765,
       "files": 180,
       "result": "PASS",
-      "log": "/tmp/crispaudio-feedback-depth-frontend-full.log",
+      "log": "crispaudio-feedback-depth-frontend-full.log",
       "scope": "Full run with maxWorkers=2, testTimeout=20000; repository settings unchanged"
     },
     "appTests": "41 passed, 1 optional test skipped",
     "ios": "Locked aarch64-apple-ios-sim compile PASS; existing unused MIDI method warning",
     "lint": "PASS",
     "typescript": "PASS",
-    "mediaLog": "/tmp/crispaudio-feedback-depth-media-final.log",
+    "mediaLog": "crispaudio-feedback-depth-media-final.log",
     "loopRead": "Cursor rewind regression PASS across repeated loops, including Linear and Step points",
     "macBuild": "Normal debug app bundle PASS"
   },

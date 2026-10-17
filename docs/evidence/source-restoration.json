@@ -91,7 +91,7 @@
     "tests": 1989,
     "files": 203,
     "passed": true,
-    "log": "/tmp/crispaudio-restoration-full-tests-final.log"
+    "log": "crispaudio-restoration-full-tests-final.log"
   },
   "additional_unit_cases": [
     "60 Hz mains plus harmonics",

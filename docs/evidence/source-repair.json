@@ -67,7 +67,7 @@
   "frontend_tests": {
     "passed": 1971,
     "files": 200,
-    "log": "/tmp/crispaudio-repair-full-tests-final.log"
+    "log": "crispaudio-repair-full-tests-final.log"
   },
   "focused_tests": {
     "passed": 22,

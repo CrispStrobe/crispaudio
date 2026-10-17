@@ -76,7 +76,7 @@
       "tests": 1962,
       "files": 199,
       "passed": true,
-      "log": "/tmp/crispaudio-audition-full-tests-final.log",
+      "log": "crispaudio-audition-full-tests-final.log",
       "note": "Last numeric live-preview wiring also covered by final browser and focused checks."
     },
     "final_focused": {

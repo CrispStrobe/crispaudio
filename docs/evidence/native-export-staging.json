@@ -38,9 +38,9 @@
       "firstRetry": "Track selection and equalizer passed; panel export still had two timing failures",
       "finalRetry": "All 11 panel-export tests passed with one worker, 20-second per-test timeout and command-scoped idle-sleep inhibition; no source timeout relaxation",
       "logs": [
-        "/tmp/crispaudio-staging-frontend-full.log",
-        "/tmp/crispaudio-staging-frontend-retry.log",
-        "/tmp/crispaudio-staging-panel-final.log"
+        "crispaudio-staging-frontend-full.log",
+        "crispaudio-staging-frontend-retry.log",
+        "crispaudio-staging-panel-final.log"
       ]
     },
     "release": "21 passed",

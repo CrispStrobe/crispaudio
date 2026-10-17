@@ -86,7 +86,7 @@
     ],
     "freeGiBBefore": 1.8,
     "freeGiBAfterImmediateCheck": 6.4,
-    "manifest": "/tmp/crispaudio-group-pruned-old-executables.json",
+    "manifest": "crispaudio-group-pruned-old-executables.json",
     "installedAppOrProjectDataChanged": false
   }
 }

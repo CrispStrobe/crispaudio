@@ -22,7 +22,7 @@
       "tests": 1758,
       "files": 180,
       "scope": "One fresh full run of final source with maxWorkers=2 and testTimeout=20000; command-scoped idle-sleep inhibition; repository timeout settings unchanged",
-      "log": "/tmp/crispaudio-native-pass-frontend-full.log"
+      "log": "crispaudio-native-pass-frontend-full.log"
     },
     "media": "156 passed, 10 optional tests skipped with native-engine enabled",
     "nativeSignal": "Known PCM through a stateful native-insert fixture preserves position and insert history through gain/pan override and Read restoration",

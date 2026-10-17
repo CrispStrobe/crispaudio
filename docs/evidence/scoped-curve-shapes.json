@@ -13,16 +13,16 @@
   "validation": {
     "status": "complete",
     "targeted": "79 passed across shape model/persistence/handles and native/built-in editors; final metadata-unmount/editor cases 61 passed",
-    "targetedLog": "/tmp/crispaudio-scoped-shape-focused-final.log",
-    "unmountLog": "/tmp/crispaudio-scoped-shape-unmount.log",
+    "targetedLog": "crispaudio-scoped-shape-focused-final.log",
+    "unmountLog": "crispaudio-scoped-shape-unmount.log",
     "browser": "Four German Chromium cases built-in/native x desktop1280/touch390: actual CDP Bezier touch drag, local review, intact interior reopen, units, one Undo, state/other lane preservation, no horizontal overflow",
     "browserScript": "scripts/test-scoped-curve-shapes.mjs",
-    "browserLog": "/tmp/crispaudio-scoped-shape-browser-final2.log",
+    "browserLog": "crispaudio-scoped-shape-browser-final2.log",
     "screenshots": [
-      "/tmp/crispaudio-scoped-shape-builtin-touch.png",
-      "/tmp/crispaudio-scoped-shape-builtin-desktop.png",
-      "/tmp/crispaudio-scoped-shape-native-touch.png",
-      "/tmp/crispaudio-scoped-shape-native-desktop.png"
+      "crispaudio-scoped-shape-builtin-touch.png",
+      "crispaudio-scoped-shape-builtin-desktop.png",
+      "crispaudio-scoped-shape-native-touch.png",
+      "crispaudio-scoped-shape-native-desktop.png"
     ],
     "scope": "Frontend curve editing/shared shape math; native DSP/bridge/schema unchanged. Native media/app/iOS local checks from 0.13.12 not repeated.",
     "frontend": {
@@ -30,13 +30,13 @@
       "tests": 1912,
       "files": 191,
       "durationSeconds": 201.28,
-      "log": "/tmp/crispaudio-scoped-shape-frontend-final.log",
+      "log": "crispaudio-scoped-shape-frontend-final.log",
       "options": "maxWorkers=2; testTimeout=20000; repository options unchanged"
     },
-    "lint": "PASS /tmp/crispaudio-scoped-shape-lint-final3.log",
-    "typecheck": "Standalone PASS /tmp/crispaudio-scoped-shape-tsc3.log and final bundle frontend typecheck PASS",
-    "release": "21 passed /tmp/crispaudio-scoped-shape-release.log",
-    "macBuild": "Final normal debug bundle PASS /tmp/crispaudio-01318-build-final.log",
+    "lint": "PASS crispaudio-scoped-shape-lint-final3.log",
+    "typecheck": "Standalone PASS crispaudio-scoped-shape-tsc3.log and final bundle frontend typecheck PASS",
+    "release": "21 passed crispaudio-scoped-shape-release.log",
+    "macBuild": "Final normal debug bundle PASS crispaudio-01318-build-final.log",
     "installation": "0.13.18 installed/running; strict/deep signature PASS; one autosave retained; session and previous app backed up"
   },
   "limits": [
