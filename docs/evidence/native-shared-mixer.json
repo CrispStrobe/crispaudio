@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-17",
+  "scope": "Internal portable native cue/backing mixer; no installed app changes",
+  "checks": {
+    "media": {
+      "passed": 278,
+      "ignored": 16,
+      "log": "/tmp/crispaudio-mix-media.log"
+    },
+    "mixer_tests": 6,
+    "app_rust": {
+      "passed": 39,
+      "ignored": 1,
+      "log": "/tmp/crispaudio-mix-app.log"
+    },
+    "format_and_diff": "pass"
+  },
+  "coverage": [
+    "Two independent cue lanes plus backing; mono averaging and stereo balance",
+    "Control interpolation across unequal blocks and invalid update rejection",
+    "Cue cancellation isolation",
+    "Backing loss, frame/length mismatch, output clock discontinuity and overflow",
+    "Non-finite backing/sums and invalid output buffers latch silence",
+    "Shared clock, lane limit and control validation"
+  ],
+  "limitations": [
+    "Not wired to Mac output queue or installed recording",
+    "Backing PCM must be prepared off callback; worker handoff pending",
+    "No microphone or physical output opened",
+    "No latency or sustained-load qualification",
+    "Clock/project placement, synchronized arming and project Undo integration pending"
+  ]
+}

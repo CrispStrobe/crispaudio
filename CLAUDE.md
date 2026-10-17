@@ -918,6 +918,13 @@ impulse timing plus AU/VST3 response/cleanup qualify the shared-buffer change on
 
 ### Native input foundation (development after 0.13.33)
 
+`native_input::mix` sums up to 16 scheduled cue lanes and pre-rendered backing
+blocks. Construct/drop off callback; controls require exclusive render ownership.
+Never render Graph/helpers on the output callback. Cue faults isolate one lane;
+missing/misaligned backing or output clock errors latch whole-mix silence. The
+future synchronized recording owner must stop/invalidate placement on those faults.
+This mixer is not yet wired to the Mac output adapter or app.
+
 `media::native_input` (native-engine feature) has one non-Clone/non-Sync callback
 writer, independent dry/cue SPSC queues and a cue worker with a static AU/VST3 rack.
 Do not connect it via JS PCM callbacks: native hardware ingress and output clock

@@ -58,8 +58,11 @@ startup, partial-packet consumption, silence on underrun and integer host-clock
 mapping/drift detection. A Mac device-bound output adapter now supplies silent
 priming/arming, a real queue timeline/anchor path, device/clock watchdogs and guarded
 shutdown. Its software callbacks pass with fake queue operations; hardware clocks,
-backing/project placement, shared cue/backing mixing and project insertion/Undo
-remain before native recording app integration and physical qualification.
+backing/project placement and project insertion/Undo remain before native recording
+app integration and physical qualification. A portable shared mixer now sums up to
+16 scheduled cue lanes with prepared backing PCM, smooth level/balance/mono controls
+and separate cue versus backing fault handling. Wiring the mixer to the hardware
+queue, worker-produced backing and synchronized preparation/arming remains open.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

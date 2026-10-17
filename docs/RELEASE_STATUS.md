@@ -18,6 +18,20 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Shared cue/backing mixer — development after 0.13.33
+
+An internal portable mixer now combines up to 16 scheduled cue lanes with prepared
+backing PCM. Cue level, stereo balance and mono changes ramp over 64 frames. Cue
+failure leaves other lanes/backing running; backing/clock faults latch whole-output
+silence for the future recording owner to handle. It preserves float headroom and
+rejects non-finite output. No physical queue, permission prompt or test tone was
+used. Installed 0.13.33 is unchanged; hardware mixer wiring, backing worker handoff,
+coordinated arming, project placement/Undo and physical qualification remain open.
+
+Six generated-PCM mixer tests pass within the full media suite (278 passed,
+16 ignored); app Rust checks pass (39 passed, one ignored). These are
+deterministic software checks, not sustained-load or physical-latency evidence. See [scope](evidence/native-shared-mixer.json).
+
 ## Mac cue output adapter — development after 0.13.33
 
 A Mac AudioQueue output adapter now selects an explicit output UID, verifies its

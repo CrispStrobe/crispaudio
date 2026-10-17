@@ -295,6 +295,28 @@ opened by these tests. Real AudioQueue creation/conversion/timestamps, audible
 latency, sustained load and physical hot-plug behavior remain unqualified. The
 adapter is not connected to app commands or the installed recording workflow.
 
+## Shared cue/backing mixer (internal)
+
+`native_input::mix::Mixer` sums up to 16 scheduled cue lanes with worker-prepared
+stereo backing blocks on one contiguous output clock. Each cue has linear level,
+stereo balance and optional mono averaging, independent of backing levels. Valid
+control updates interpolate the mixing matrix over 64 frames, including mono
+changes. The exclusive render owner applies updates; no shared mutex is introduced.
+Float headroom is preserved without an implicit limiter.
+
+Construction/destruction allocate off callback. Render handles at most 512 frames
+and 16 bounded schedulers, with fixed scratch storage and no helper/file work.
+Individual cue faults mute that lane while backing and other cues continue. A
+missing, mismatched or non-finite backing block, output clock gap, invalid buffer
+or non-finite sum latches whole-mix silence and cancels cue consumers. Intentional
+backing silence/EOF is explicit. The recording owner must react to a whole-mix
+fault; silence alone does not establish valid project alignment or stop capture.
+
+This portable mixer is not yet connected to the Mac queue. Backing worker handoff,
+hardware-anchor binding, coordinated capture preparation/arming, persisted clip
+placement and physical latency/load qualification remain open. Tests use generated
+PCM and synchronous pass-through cue workers, with no physical devices.
+
 ## Checks
 
 Portable tests cover overflow isolation, incomplete-take recovery, invalid samples,
