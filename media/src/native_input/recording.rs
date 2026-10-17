@@ -60,7 +60,8 @@ impl Metadata {
         }
     }
 }
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TakeInfo {
     pub frames: u64,
     pub first_input_frame: u64,

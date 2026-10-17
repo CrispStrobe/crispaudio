@@ -177,6 +177,36 @@ dry stereo WAV completes. Partial-open failure and a helper registered after sta
 cancellation also close. This is software lifecycle qualification with generated
 PCM; no output scheduler, physical device, deadline or sustained-load claim.
 
+## Recording groups
+
+`session::group::Group` validates the whole input list before file/device creation:
+unique track IDs, valid channel/context limits, at most 16 inputs, two cue inserts
+per input/eight per group, and a combined 32-million-frame decoded-source budget.
+Each group owns its cue budget. Inputs open sequentially; a later startup failure
+stops earlier inputs and retains their recovery files. This is startup rollback,
+not synchronized hardware start.
+
+Group stop closes every capture before joining any file worker. Individual clean
+WAVs can finish, but they are not a committed group until all inputs succeed.
+The owner writes/syncs a complete manifest to private staging, publishes
+`completed.json` atomically without overwrite and syncs its directory. A failed
+input yields an incomplete group with every available per-input result. Cancel,
+Drop and a raw input fault stop all inputs, checkpoint and retain their originals.
+Cue faults remain isolated from dry takes. `plan.json` and per-take metadata retain
+group/track association for recovery after interrupted startup or capture.
+
+`load_completed()` accepts the whole manifest or returns no clips. It checks
+bounded schema/path/ID/source limits, regular files, WAV formats, frame counts and
+physical file lengths. Missing/truncated clips invalidate the whole set. This is
+reconciliation for app-owned storage, not cryptographic authentication or a hostile
+filesystem boundary. If the directory sync fails after manifest publication, the
+error explicitly reports a visible manifest with uncertain durability; reconcile
+it instead of deleting takes or blindly retrying publication.
+
+This layer returns a group result eligible for one future project transaction.
+Actual project insertion/Undo, sample-accurate input/backing alignment, native
+output scheduling and hardware/load qualification are still pending.
+
 ## Checks
 
 Portable tests cover overflow isolation, incomplete-take recovery, invalid samples,

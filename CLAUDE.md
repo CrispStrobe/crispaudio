@@ -993,3 +993,21 @@ suppress queued/in-flight wet output, stop helpers and join DSP before file join
 Do not run helper open/process on the capture or file thread. The returned native
 CueOutput needs a native consumer; do not route PCM through JS. Generated AU/VST3
 checks verify failure isolation and exact dry files, not end-to-end latency/load.
+
+### Native recording groups (development after 0.13.33)
+
+`session::group::Group` owns up to16 Sessions on the creating control thread.
+Preflight validates ALL configs, unique IDs, total<=8 cue inserts and total max
+frames<=32M BEFORE files/capture. Budget private to group; sequential startup
+rolls back earlier captures on a later failure. Do not claim synchronized start.
+Stop is two-phase: stop every capture, then join files. Poll uses Session.check_at
+without a per-input abort/join so a raw fault quiesces the entire group first.
+Cancel/drop retains all recoverable originals. Clean per-input WAVs are private
+artifacts until an atomic, no-overwrite completed.json commits the whole set.
+plan.json + per-take context retain group/track association. load_completed accepts
+all clips or none and checks bounded schema/paths/IDs plus regular WAV metadata/
+physical lengths. A post-link directory-sync failure can leave a complete visible
+manifest with uncertain durability; reconcile rather than deleting originals.
+Project insertion/Undo and physical clock/output alignment are NOT implemented by
+this manifest layer. Neither atomic visibility nor process-exit checks prove
+power-loss durability. Filesystem work belongs outside audio callbacks.

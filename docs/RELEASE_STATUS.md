@@ -18,6 +18,39 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Native recording groups — development after 0.13.33
+
+A native group coordinator now validates all inputs before opening any, rolls back
+partial startup and stops every capture before joining file workers. Individual
+WAVs remain private recording artifacts until every input succeeds and the owner
+atomically publishes a complete, no-overwrite group manifest. Interrupted/failed
+groups retain their originals and per-input recovery outcomes. Restart loading
+accepts all referenced clips or returns no clips; it rejects missing/truncated
+files, bad paths, duplicate tracks/audio paths and incompatible metadata.
+
+All 75 focused native-input checks pass with the explicit SDK VST3 fixture and
+both subprocess support cases. The full media suite passes 242 with 14 ignored;
+app Rust passes 39 with one hardware case ignored, and Python release checks pass 21. New group checks cover startup rollback, stop
+failure, raw faults/cancel/drop, cue-fault isolation, whole-group budgets,
+publication collisions and malformed/symlink audio references. A subprocess exits
+without destructors between individual take completions: one complete WAV remains,
+but no complete group is accepted. Normal two-input stop retains both 31-frame
+partial tails and reopens two exact 159-frame takes.
+[Group evidence](evidence/native-recording-groups.json).
+
+Inputs still open sequentially: this does not establish synchronized hardware
+start or sample alignment. A post-publication directory-sync failure can leave a
+fully formed visible manifest with uncertain durability; restart reconciliation
+handles that state. Actual project insertion/Undo, native output scheduling and
+input/backing clock mapping remain pending. No physical input/output queue, app
+bundle/install, permission prompt, Apple upload or release tag. Installed 0.13.33
+is unchanged. Obsolete local executable caches were pruned, preserving the newest
+eight and active/recent executables; free space rose from 1.8 to 6.4 GiB.
+
+Preceding `92bbbf3` general CI `39000521269` was queued and iOS CI `39000521226`
+pending at the initial refresh. The preceding `dafad14` runs were cancelled.
+These remote states do not establish validation of this group increment.
+
 ## Native cue ownership — development after 0.13.33
 
 The recording owner can now prepare and own a separate native cue worker. Each

@@ -51,8 +51,10 @@ session owner now creates files on its worker before opening capture, enforces a
 while retaining interrupted takes. It now optionally owns a native cue worker,
 reserves up to two inserts per input from a shared eight-insert group budget and
 kills registered helpers on cancellation/overflow. Cue failure mutes wet packets
-while dry files continue. Grouped publication and output scheduling/clock mapping
-remain before native recording app integration.
+while dry files continue. A group coordinator now validates all inputs up front,
+rolls back partial startup, stops all captures before file joins and gates the whole
+result with an atomic completion manifest. Native output scheduling/clock mapping
+and project insertion/Undo remain before native recording app integration.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

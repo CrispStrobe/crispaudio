@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-17",
+  "kind": "native-recording-groups",
+  "applicationVersion": "0.13.33",
+  "connectedToInstalledRecorder": false,
+  "hardwareInputQueueOpened": false,
+  "hardwareOutputOpened": false,
+  "limits": {
+    "maxInputs": 16,
+    "maxCueInsertsPerInput": 2,
+    "maxCueInsertsPerGroup": 8,
+    "maxCombinedConfiguredFrames": 32000000,
+    "manifestBytes": 524288
+  },
+  "lifecycle": {
+    "admission": "all IDs, channel/context/source/cue limits validated before filesystem/device work; cue budget private to group",
+    "startup": "sequential opening; later failure cancels/joins already-started inputs",
+    "stop": "quiesce all captures before any file-worker completion join",
+    "publication": "sync whole manifest in staging; atomic no-overwrite hardlink to completed.json; sync directory",
+    "failure": "no partial group result; retain every available per-input outcome and original",
+    "recovery": "plan.json and per-take group/track context; load_completed returns all clips or error",
+    "postLinkSyncError": "manifest can remain visible with uncertain durability; explicit error requires reconciliation"
+  },
+  "tests": {
+    "focusedNativeWithExplicitSdkVst3AndChildSupport": {
+      "passed": 75,
+      "failed": 0,
+      "ignored": 0
+    },
+    "fullMediaLibrary": {
+      "passed": 242,
+      "failed": 0,
+      "ignored": 14
+    },
+    "releasePythonChecks": {
+      "passed": 21,
+      "failed": 0
+    },
+    "newGroupChecks": {
+      "withChildSupport": 12,
+      "defaultPassed": 11,
+      "defaultIgnored": 1
+    },
+    "normalStop": "two exact 159-frame stereo takes including 31-frame tails; every capture finish asserts no earlier take.wav is published",
+    "startupRollback": [
+      "second capture factory fails after first records128frames",
+      "second cue rack fails before second capture opens; first is cancelled"
+    ],
+    "failures": [
+      "later stop fails; first clean WAV retained but no complete group manifest",
+      "raw fault/cancel/Drop stops all inputs and retains recoverable128-frame prefixes",
+      "cue consumer disconnect leaves complete dry group",
+      "duplicate IDs, invalid late config and combined source/cue budgets rejected before opening",
+      "existing manifest preserved on collision"
+    ],
+    "restart": [
+      "all-or-none reload",
+      "missing/truncated audio rejected",
+      "duplicate tracks/audio paths including dot aliases rejected",
+      "traversing paths, frame mismatch and known manifest/audio symlinks rejected"
+    ],
+    "abruptExit": "parent executes ignored child support fixture; child completes first take then process::exit(0) skips remaining Group/Session/Recorder Drop; parent finds one take.wav, no completed.json and rejects whole-group reload; no claim for uncheckpointed second PCM",
+    "formatAndAbi": "changed Rust rustfmt, git diff --check and Mac SDK C syntax-only ABI checks",
+    "appRustLibrary": {
+      "passed": 39,
+      "failed": 0,
+      "ignored": 1
+    }
+  },
+  "qualificationLimits": [
+    "Group results are eligible for a future project transaction; actual project insertion/Undo is not integrated",
+    "Sequential startup and stored host origins do not prove hardware synchronization or sample-accurate input/backing alignment",
+    "No physical capture/output, native output scheduler, underrun/deadline or sustained-load qualification",
+    "No power-loss, full/slow-drive or long-session streaming qualification",
+    "App-owned storage assumed; not a hostile filesystem or cryptographic authentication boundary",
+    "Installed app remains Web Audio capture with buffered native cue"
+  ],
+  "localCacheCleanup": {
+    "obsoleteExecutableFilesRemoved": 148,
+    "apparentMiB": 4687,
+    "keptNewest": 8,
+    "additionalProtections": [
+      "active executable paths",
+      "files modified within one hour",
+      "exact CrispAudio executable hash names and Mach-O header"
+    ],
+    "freeGiBBefore": 1.8,
+    "freeGiBAfterImmediateCheck": 6.4,
+    "manifest": "/tmp/crispaudio-group-pruned-old-executables.json",
+    "installedAppOrProjectDataChanged": false
+  }
+}

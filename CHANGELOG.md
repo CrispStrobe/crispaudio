@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+- Add a native recording-group coordinator with whole-group preflight, startup rollback, retained recovery files and atomic completion manifests. Failed groups do not return a partial clip set. Native app recording integration remains pending.
+
 - Extend native recording ownership to the cue worker and AU/VST3 helpers, with a shared recording-group stream budget. Cue faults mute wet output while dry recording continues; cancellation joins workers and releases helpers. App/output integration remains pending.
 
 - Add a native dry-recording session owner with device/callback watchdog checks, worker cleanup and retained recovery files after cancellation or failure. This is an internal foundation; the installed recording workflow is unchanged.

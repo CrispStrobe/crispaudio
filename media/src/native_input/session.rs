@@ -17,6 +17,7 @@ use std::{
 };
 
 pub mod cue;
+pub mod group;
 use cue::{CueConfig, Owner as CueOwner};
 
 /// Matches the current decoded native graph source limit; this is not a
@@ -255,6 +256,15 @@ impl<C: Capture> Session<C> {
         self.poll_at(Instant::now())
     }
     fn poll_at(&mut self, now: Instant) -> Result<Report> {
+        match self.check_at(now) {
+            Ok(report) => Ok(report),
+            Err(reason) => {
+                self.abort(reason.clone());
+                Err(reason)
+            }
+        }
+    }
+    fn check_at(&mut self, now: Instant) -> Result<Report> {
         if let Some(cue) = self.cue.as_mut() {
             cue.reap();
         }
@@ -279,7 +289,6 @@ impl<C: Capture> Session<C> {
                 .then(|| "Native input callbacks stalled".into())
         };
         if let Some(reason) = reason {
-            self.abort(reason.clone());
             return Err(reason);
         }
         Ok(report)
@@ -312,19 +321,22 @@ impl<C: Capture> Session<C> {
         self.abort("Recording cancelled".into());
         self.outcome.take().unwrap()
     }
+    // Group stop quiesces every capture before joining any file worker.
+    fn stop_capture(&mut self) -> Option<Command> {
+        self.capture.take().map(|capture| match capture.finish() {
+            Ok(report) if report.fault.is_none() => Command::Finish(report.frames),
+            Ok(report) => {
+                self.dry.cancel();
+                Command::Abort(format!("Native capture fault at stop: {:?}", report.fault))
+            }
+            Err(reason) => {
+                self.dry.cancel();
+                Command::Abort(reason)
+            }
+        })
+    }
     pub fn stop(mut self) -> Outcome {
-        if let Some(capture) = self.capture.take() {
-            let command = match capture.finish() {
-                Ok(report) if report.fault.is_none() => Command::Finish(report.frames),
-                Ok(report) => {
-                    self.dry.cancel();
-                    Command::Abort(format!("Native capture fault at stop: {:?}", report.fault))
-                }
-                Err(reason) => {
-                    self.dry.cancel();
-                    Command::Abort(reason)
-                }
-            };
+        if let Some(command) = self.stop_capture() {
             self.join(command);
         }
         self.outcome.take().unwrap()
