@@ -45,9 +45,11 @@ stop/disposal guards. Synthetic callbacks and read-only inventory pass; no physi
 capture or new UI mode is qualified. A native dry-file worker now checkpoints float
 WAV and a checksummed block index, gates complete publication on clean EOF/counts,
 and recovers verified prefixes after interruption. Callback-to-file tests retain
-partial stop tails and exact dry samples after an AU cue helper fails. Next connect
-the recording owner/watchdog and output scheduling/clock mapping before claiming
-a native recording workflow in the app.
+partial stop tails and exact dry samples after an AU cue helper fails. A dry capture
+session owner now creates files on its worker before opening capture, enforces a
+32-million-frame source budget, checks devices/callback progress and joins shutdown
+while retaining interrupted takes. Cue worker/helper budgets, grouped publication
+and output scheduling/clock mapping remain before native recording app integration.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

@@ -18,6 +18,36 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Native dry recording owner — development after 0.13.33
+
+A control-thread session now owns dry capture and a separate file worker. Files
+are created before opening capture. Device/format checks, dry faults, unexpected
+worker exit and a callback-progress timeout end capture with recovery information.
+Stop accepts the final partial buffer, closes capture and verifies the final frame
+count before publication. Cancel/drop joins the worker and retains originals.
+The current decoded-source budget caps each take at 32 million frames.
+
+All 52 focused native-input checks pass, including the explicit SDK VST3 fixture.
+The full media suite passes 221 with 12 ignored; app Rust passes 39 with one ignored;
+Python release checks pass 21. A new composition test uses the real Mac callback
+and stop/dispose code with a simulated queue: the owner publishes all 159 frames,
+including the 31-frame stop tail, after capture disposal. Other owner tests cover
+startup/layout rejection, cancellation/drop, callback progress/stalls, device loss,
+raw faults, file-budget failure and stop errors/count mismatches.
+[Owner evidence](evidence/native-recording-owner.json).
+
+No physical input/output queue was opened and no permission prompt was requested.
+This owner is dry-only and not connected to app commands/UI. Cue helper ownership
+and group stream budgets, grouped atomic clip publication, native output scheduling
+and input/backing clock synchronization remain next. Filesystem stalls can delay
+shutdown; sustained load, physical devices and long-session streaming remain
+unqualified. Installed 0.13.33 is unchanged; no Apple upload or release tag.
+
+The preceding file-worker commit `d9edc0d` passed
+[iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38998491507).
+Its [general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38998491514)
+was still queued at this checkpoint; neither run qualifies this subsequent change.
+
 ## Native dry-file worker — development after 0.13.33
 
 Native recording now has a file worker for float WAV and a checksummed block

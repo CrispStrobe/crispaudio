@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+- Add a native dry-recording session owner with device/callback watchdog checks, worker cleanup and retained recovery files after cancellation or failure. This is an internal foundation; the installed recording workflow is unchanged.
+
 - Add native dry-file checkpointing and prefix recovery. Completion requires clean capture closure and matching frame counts; interrupted takes retain their originals. Software integration covers partial stop buffers and dry WAV recording after a cue plug-in fails. App integration remains pending.
 - Add an internal Mac capture adapter with explicit device/channel mapping, permission checks, input clocks and safe shutdown. It remains outside the installed recording workflow pending native file/output integration and hardware qualification.
 - Add internal native input queues and an AU/VST3 worker with independent dry capture and cue fault handling. Hardware capture and recording UI integration remain pending; the installed recorder is unchanged.

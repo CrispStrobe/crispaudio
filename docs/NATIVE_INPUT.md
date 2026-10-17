@@ -123,6 +123,34 @@ actual capture callback (fake queue/generated PCM) to real file writes, retainin
 the partial stop tail and a complete dry WAV after a real AU helper is killed.
 No hardware input or output queue is opened. [File-worker evidence](evidence/native-recording-files.json).
 
+## Dry recording owner
+
+`session::Session` coordinates a single dry capture on its creating control thread
+and a dedicated file worker. It is deliberately neither Send nor Sync. Durable
+file creation finishes before capture opens. The Mac entry point validates file
+channels against the selected input map, uses an explicit device UID and requires
+existing microphone authorization. It never requests permission or changes a
+system device. This owner disables unused cue ingress; native cue/helper ownership
+is a separate pending step.
+
+Call `poll()` at least every 100 ms. It checks dry faults, unexpected worker exit,
+device availability/format and a configurable callback-progress timeout. The
+timeout includes startup; progress resets it. Detection depends on the control
+thread being scheduled. A fault stops capture and joins the file worker, retaining
+a terminal incomplete outcome with its recovery directory.
+
+`stop()` synchronously closes capture before the file worker drains its final
+partial buffers and verifies the final frame count. `cancel()` and Drop stop
+capture, retain queued valid PCM, checkpoint and join without completed publication.
+Startup/open failures also join the worker and return any retained directory.
+Filesystem stalls can delay joining; this is not a hard real-time stop guarantee.
+No original is deleted. The owner caps takes at 32 million frames to match current
+in-memory native graph source limits. Larger streamed sessions remain pending.
+
+This is internal software infrastructure. Grouped atomic clip publication, cue
+helper/stream budgets, native output scheduling and input/backing clock alignment
+remain required before app commands, a native recording mode or hardware acceptance.
+
 ## Checks
 
 Portable tests cover overflow isolation, incomplete-take recovery, invalid samples,

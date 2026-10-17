@@ -10,6 +10,7 @@ use crate::{native_graph::Stereo, Result};
 pub mod macos;
 pub mod plugins;
 pub mod recording;
+pub mod session;
 use std::{
     cell::{Cell, UnsafeCell},
     marker::PhantomData,

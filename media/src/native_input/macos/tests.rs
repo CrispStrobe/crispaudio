@@ -591,3 +591,60 @@ fn overlapping_callbacks_fault_without_aliasing_input_writer() {
     assert!(dry.pop().is_none());
     assert!(!state.entered.load(Ordering::Acquire));
 }
+
+#[test]
+fn session_owner_joins_real_callback_tail_and_disposes_before_complete_publication() {
+    use crate::native_input::session::{Config, Outcome, Session};
+    let root = tempfile::tempdir().unwrap();
+    // Keep fake queue ownership outside Session through stop and any unwind.
+    let queue = Arc::new(FakeQueue::default());
+    let session = Session::start(
+        root.path(),
+        Config {
+            channels: 1,
+            max_frames: 48000,
+            context: serde_json::json!({"track":"mac-owner"}),
+            callback_timeout: std::time::Duration::from_secs(1),
+        },
+        |writer| {
+            let state = State::new(writer, 1, ChannelMap::Mono(0), enqueue)?;
+            state.phase.store(RUNNING, Ordering::Release);
+            queue
+                .state
+                .store((&*state as *const State) as usize, Ordering::Relaxed);
+            let capture = Capture {
+                queue: queue.pointer(),
+                state: Some(state),
+                device: InputDevice {
+                    uid: "fixture".into(),
+                    label: "Synthetic input".into(),
+                    channels: 1,
+                    nominal_rate: RATE,
+                    is_default: false,
+                },
+                ops: QueueOps { stop, dispose },
+            };
+            Fixture::new(1, 128, 0., 100).send(capture.state.as_ref().unwrap(), &queue);
+            *queue.pending.lock().unwrap() = Some(Fixture::new(1, 31, 128., 200));
+            Ok(capture)
+        },
+    )
+    .unwrap();
+    let Outcome::Complete(take) = session.stop() else {
+        panic!("Expected complete take")
+    };
+    assert_eq!(queue.stops.load(Ordering::Relaxed), 1);
+    assert_eq!(queue.disposals.load(Ordering::Relaxed), 1);
+    assert_eq!(take.info.frames, 159);
+    assert_eq!(take.info.context["track"], "mac-owner");
+    let actual = hound::WavReader::open(take.path)
+        .unwrap()
+        .samples::<f32>()
+        .map(|v| v.unwrap())
+        .collect::<Vec<_>>();
+    let expected = (0..128)
+        .chain(0..31)
+        .map(|n| n as f32 * 0.001)
+        .collect::<Vec<_>>();
+    assert_eq!(actual, expected);
+}

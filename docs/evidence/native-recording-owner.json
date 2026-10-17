@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-17",
+  "kind": "native-dry-recording-owner",
+  "applicationVersion": "0.13.33",
+  "connectedToInstalledRecorder": false,
+  "hardwareInputQueueOpened": false,
+  "hardwareOutputOpened": false,
+  "owner": {
+    "controlThread": "capture start/poll/stop/drop; Session is !Send and !Sync",
+    "fileThread": "durable creation, draining, checkpoint and final publication",
+    "maxTakeFrames": 32000000,
+    "cue": "unused ingress disabled; no cue helper/output ownership",
+    "pollRequirement": "at least every 100 ms; configurable callback timeout includes startup",
+    "shutdown": "quiesce capture, send finish/abort, join file worker; storage stalls may delay shutdown"
+  },
+  "tests": {
+    "focusedWithExplicitSdkVst3FixtureAndChildSupport": {
+      "passed": 52,
+      "failed": 0,
+      "ignored": 0
+    },
+    "fullMediaLibrary": {
+      "passed": 221,
+      "failed": 0,
+      "ignored": 12
+    },
+    "appRustLibrary": {
+      "passed": 39,
+      "failed": 0,
+      "ignored": 1
+    },
+    "releasePythonChecks": {
+      "passed": 21,
+      "failed": 0
+    },
+    "ownerCases": [
+      "durable metadata exists before capture factory",
+      "exact mono/stereo frame counts, input/host origin and context",
+      "cancel/drop retains and recovers queued PCM",
+      "callback progress resets timeout; startup and later stalls stop capture",
+      "device loss/raw overflow stop and join automatically",
+      "file budget failure faults ingress and releases capture",
+      "stop error/fault/count mismatch never publishes complete",
+      "failed open retains files; invalid config/layout never opens capture"
+    ],
+    "macComposition": "actual Rust capture callback, report, finish and fake queue stop/dispose through Session<Capture>; 128 initial +31 partial stop frames are exact in completed mono WAV; stop/dispose count each 1",
+    "formatAndAbi": "changed Rust files rustfmt check, git diff --check, Mac SDK C syntax-only ABI check"
+  },
+  "qualificationLimits": [
+    "No physical capture, output, conversion or latency qualification",
+    "No end-to-end app/native recording mode",
+    "No cue worker/helper stream budgets or independent cue output",
+    "No grouped atomic clip publication, native output scheduling or input/backing clock mapping",
+    "No slow/full-drive, sustained-load, power-loss or long-session streaming qualification",
+    "Watchdog requires control-thread polling; shutdown joins can wait for storage",
+    "Installed app remains on Web Audio recording and buffered native cue"
+  ]
+}

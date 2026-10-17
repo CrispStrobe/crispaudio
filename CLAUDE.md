@@ -958,3 +958,22 @@ and must run only with its explicit test directory; normal CI ignores the helper
 but executes its parent test. Native input readers now leave drained EOF clean,
 while active/unread abandonment still faults. Fault::Storage=8 stops raw writes.
 No app command/UI owner is connected yet. See docs/NATIVE_INPUT.md.
+
+
+### Native dry recording owner (development after 0.13.33)
+
+`native_input::session::Session` is !Send/!Sync and owns capture on its creating
+control thread plus a dedicated Recorder file worker. Durable creation completes
+before the device factory runs; startup errors can retain a recovery directory.
+`start_macos` checks file/map channel agreement, uses explicit UID and existing
+permission only. There is no permission prompt or device fallback. This owner is
+dry-only: unused cue ingress is disabled. Do not claim helper ownership or native
+cue/output scheduling. Poll at least every 100 ms for device/fault/callback checks;
+timeout includes startup and resets on callback progress, not file progress.
+A poll fault aborts capture and joins files, with a terminal outcome available.
+Stop quiesces capture before final drain and exact frame-count publication.
+Cancel/drop preserves queued valid PCM, attempts checkpoint and joins the worker.
+Do not delete interrupted directories. Filesystem stalls can delay shutdown.
+The per-take cap is 32,000,000 frames, matching native decoded-source limits;
+this is not long-session streaming. No app commands/UI integration yet. Next add
+cue/helper stream budgets, grouped atomic publication and native output/clock sync.
