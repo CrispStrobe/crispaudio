@@ -1033,3 +1033,34 @@ an empty read that predates EOF. Generated tests wait off callback for helpers;
 no hardware anchor/deadline/physical latency qualification follows. Next implement
 device-bound output, real clock anchor/backing mapping/persisted placements and
 full-path timing before app/native recording integration.
+
+### Mac cue output adapter (development after 0.13.33)
+
+`native_input::macos::playback::Output` is a !Send/!Sync control-thread owner, still
+outside app commands/UI. Uses explicit output UID, 48k float stereo client format,
+real AudioQueue timeline, three silent512-frame priming buffers. No system default
+or nominal-rate mutation, fallback or permission prompt. Read-only output inventory
+shares bounded CoreAudio input inventory parsing. Requires >=2 physical channels;
+actual device conversion/layout qualification remains pending.
+Clock must be valid sample+host in QUEUE-relative client frames; never substitute
+device absolute frames or callback arrival time. Timeline nonnull enables actual
+discontinuity reporting. Publish stable initial anchor; arm uses atomics and binds
+scheduler before first render. Fixed queue lookahead means delay config alone is
+not a roundtrip latency promise. Prepare capture/helpers and arm before ring fills.
+Atomic entered guard precedes BOTH PCM and Data mutable borrows (overlap may reuse
+same buffer). State.timeline is AtomicPtr; no &mut State survives callback setup/
+Start. Callback makes bounded native clock/enqueue calls, no app locks/helpers/IO.
+On fault, submit zeros until poll closes queue; queued hardware audio isn't claimed
+instantly muted. Stop-induced query/cancel errors do not become new playback faults.
+Poll regularly for device/nominal-format, callback AND hardware-frame progress;
+stalled clock with busy callbacks must still timeout. Session poll separately
+reaps cancelled cue helpers; raw recording stays independent. Telemetry snapshots
+are not atomic whole reports; cue played_frames counts rendered PCM, not acoustics.
+Failed setup uses explicit complete_setup cleanup, preserving original+cleanup
+errors instead of hiding disposal failure in Drop. Stop failure still attempts
+Dispose(true). Dispose failure retains Box<State>, no callback UAF; explicit
+error+retained fault report, not a successful-release claim.
+Only fake-queue tests reclaim a leak after proving their own quiescence. No physical
+queue/conversion/timestamp/latency/long/load acceptance from synthetic tests.
+Next shared backing/cue mixer and persisted input/backing/project placements,
+coherent owner/startup, full-path timing, then app integration/physical acceptance.

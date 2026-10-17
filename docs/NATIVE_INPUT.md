@@ -243,9 +243,57 @@ Cue worker EOF now rechecks input after acquiring the producer's close flag. Thi
 retains a final packet published between an empty read and close. Scheduler EOF
 uses the same ordering; concurrent final-publication checks retain short tails.
 
-Still pending: device-bound output adapter, trustworthy hardware output anchor,
-input/backing/project clock mapping and persisted clip placement, drift correction
-where needed, full-path timing/load checks and app integration.
+The Mac output adapter below supplies a queue/host-anchor path. Physical anchor
+qualification, input/backing/project mapping and persisted clip placement, drift
+correction, full-path timing/load checks and app integration remain pending.
+
+## Mac device-bound cue output
+
+`macos::playback::Output` opens a fixed 48 kHz float stereo AudioQueue on an explicit
+output UID. It reads output inventory/nominal format and never changes the system
+default or device rate. Setup verifies the client format, creates a real queue
+timeline and primes three silent 512-frame buffers. It stays silent until a valid
+queue sample/host pair is observed and the caller explicitly calls `arm()`.
+Capture/rack preparation and arming must be coordinated before cue buffering fills.
+
+The queue sample clock is relative to queue start; it is not the absolute device
+sample clock or a looping project playhead. The callback requires both valid
+sample and host timestamps, rejects timeline discontinuities, backward clock
+observations and excessive accumulated output/host drift, and binds the scheduler
+before its first render. The published anchor is stable. The SDK's timeline and
+clock signatures/constants are checked by the C ABI fixture.
+
+Callback state is guarded before any mutable PCM or scheduler borrow, including
+when overlapping callbacks supply the same buffer. The callback makes bounded
+clock-query/enqueue calls and uses fixed buffers and atomics; it does not perform
+helper IPC, file work, allocation or application locking. Normal stop suppresses
+clock errors/cue cancellation caused by shutdown. Faulted callbacks submit silence
+until control polling stops the queue. This is not a guarantee of immediate mute
+of audio already queued in hardware.
+
+Call `poll()` regularly (at least every 100 ms). It checks device availability and
+nominal format, callback progress **and** advancing queue time. A busy callback
+with a frozen hardware clock still times out. Errors stop/dispose the queue and
+cancel cue status; session polling separately kills/reaps cue helpers. Dry capture
+continues. Reports are atomic telemetry snapshots; cue frame counts describe
+rendered data, not measured acoustic playback. `Output` is not Send/Sync and must
+be controlled on its creating thread.
+
+Failed setup explicitly closes the partially prepared output and preserves both
+the original error and any cleanup error. Stop always attempts synchronous disposal
+even if stopping fails. Callback state and scheduler are released only after
+disposal establishes quiescence. Failed
+disposal intentionally retains state to avoid a late-callback use-after-free and
+returns an explicit error; a retained fault report stays readable. This does not
+claim the OS queue was released successfully.
+
+Tests invoke the actual Rust callback/clock/scheduler/lifecycle against fake queue
+operations and generated timestamps/PCM. Real one/two-insert AU and SDK VST3 racks
+release their stream reservations after a callback underrun while an exact
+384-frame dry WAV completes. Inventory queries are read-only; no hardware queue is
+opened by these tests. Real AudioQueue creation/conversion/timestamps, audible
+latency, sustained load and physical hot-plug behavior remain unqualified. The
+adapter is not connected to app commands or the installed recording workflow.
 
 ## Checks
 

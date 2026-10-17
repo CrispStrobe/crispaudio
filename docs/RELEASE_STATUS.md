@@ -18,6 +18,39 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Mac cue output adapter — development after 0.13.33
+
+A Mac AudioQueue output adapter now selects an explicit output UID, verifies its
+48 kHz float stereo client format and primes three silent buffers. It creates a
+real queue timeline, requires valid queue sample/host timestamps, and stays silent
+until clock readiness and explicit arming. Callback/scheduler faults, device/format
+changes and stalled callback or hardware-frame progress trigger shutdown. It does
+not change the system default or nominal rate. Dry recording remains independent.
+
+All 107 focused native-input checks pass with explicit SDK VST3 and subprocess
+fixtures. The full media suite passes 272 with 16 ignored; app Rust passes 39
+with one hardware case ignored, and Python release checks pass 21. Adapter tests invoke the actual Rust callback with simulated queue
+operations, covering exact scheduling/arming, invalid clocks and timeline gaps,
+watchdogs, device loss, overlap on the same PCM pointer, stop races and disposal
+errors. Setup failures preserve original and cleanup errors. Failed disposal retains
+callback state and reports uncertain release rather than allowing use-after-free.
+Actual one/two AU and SDK VST3 racks close after a callback/scheduler underrun while
+an exact 384-frame dry stereo WAV completes. The C fixture checks output timeline,
+clock and construction signatures against the selected Mac SDK.
+[Adapter evidence](evidence/native-output-adapter.json).
+
+No hardware input/output queue was opened. Inventory checks are read-only; queues,
+timestamps and PCM are simulated in callback tests. Actual queue creation/device
+conversion, audible latency, sustained load and physical hot-plug remain unqualified.
+The adapter is not connected to app commands or installed recording. Shared cue/
+backing mixing, input/backing/project clock mapping and persisted placements,
+drift correction and coherent owner/app integration remain next. Installed 0.13.33
+is unchanged; no bundle/install, permission prompt, Apple upload or release tag.
+
+Preceding `701fc33` general CI `39003165534` was queued and iOS CI `39003165532`
+pending at the initial refresh; both older `4dc299b` runs were cancelled. No remote
+green result is claimed for this output adapter increment.
+
 ## Native cue scheduling — development after 0.13.33
 
 A native cue consumer now maps host tick differences to signed 48 kHz output

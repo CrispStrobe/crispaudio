@@ -25,3 +25,15 @@ _Static_assert(kAudioDevicePropertyStreamConfiguration == 0x736c6179, "Input cha
 _Static_assert(kAudioDevicePropertyNominalSampleRate == 0x6e737274, "Input sample rate");
 _Static_assert(kAudioDevicePropertyDeviceIsAlive == 0x6c69766e, "Input device liveness");
 _Static_assert(kAudioHardwarePropertyDefaultInputDevice == 0x64496e20, "Default input property");
+
+/* Output uses a real queue timeline, not a NULL timeline that cannot report
+ * discontinuities. Verify these signatures as well as the shared PCM layouts. */
+_Static_assert(kAudioHardwarePropertyDefaultOutputDevice == 0x644f7574, "Default output property");
+_Static_assert(kAudioObjectPropertyScopeOutput == 0x6f757470, "Output scope");
+_Static_assert(__builtin_types_compatible_p(__typeof__(&AudioQueueCreateTimeline),
+    OSStatus (*)(AudioQueueRef, AudioQueueTimelineRef *)), "Create timeline ABI");
+_Static_assert(__builtin_types_compatible_p(__typeof__(&AudioQueueGetCurrentTime),
+    OSStatus (*)(AudioQueueRef, AudioQueueTimelineRef, AudioTimeStamp *, Boolean *)), "Queue clock ABI");
+_Static_assert(__builtin_types_compatible_p(__typeof__(&AudioQueueNewOutput),
+    OSStatus (*)(const AudioStreamBasicDescription *, AudioQueueOutputCallback, void *,
+                 CFRunLoopRef, CFStringRef, UInt32, AudioQueueRef *)), "New output ABI");

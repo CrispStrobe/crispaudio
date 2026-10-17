@@ -560,3 +560,24 @@ fn concurrent_final_publication_is_drained_before_clean_cue_eof() {
         assert!(output.status().closed());
     }
 }
+
+#[test]
+fn hardware_anchor_binds_before_first_render_and_cannot_retime_running_pcm() {
+    let mut f = fixture(config());
+    let bound = ClockMap::new(clock().timebase(), BASE, 1000);
+    f.output.bind_clock(bound, 1000).unwrap();
+    send(&mut f, 0, BASE, &[[0.5; 2]; 128]);
+    let mut block = [[9.; 2]; 160];
+    assert_eq!(f.output.render(1000, &mut block).fault, None);
+    assert_eq!(&block[..32], &[[0.; 2]; 32]);
+    assert_eq!(&block[32..], &[[0.5; 2]; 128]);
+    assert_eq!(f.output.bind_clock(clock(), 0), Err(Fault::OutputClock));
+    assert_eq!(f.output.report().played_frames, 128);
+    let mut f = fixture(config());
+    assert_eq!(
+        f.output.bind_clock(clock(), i64::MAX),
+        Err(Fault::ClockRange)
+    );
+    let mut block = [[9.; 2]; 64];
+    assert_eq!(f.output.render(0, &mut block).fault, None);
+}

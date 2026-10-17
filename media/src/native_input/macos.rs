@@ -1,6 +1,7 @@
 //! App-local Mac input queue. Not connected to recording commands/UI yet.
 //! All setup, stopping and disposal belong on its owning control thread.
 mod devices;
+pub mod playback;
 use super::{Fault, InputWriter, Status, CUE_SLOTS, DRY_SLOTS, MAX_FRAMES};
 use crate::Result;
 pub use devices::{list_inputs, InputDevice};

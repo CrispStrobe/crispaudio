@@ -1,0 +1,116 @@
+{
+  "date": "2026-10-17",
+  "kind": "native-mac-cue-output-adapter",
+  "applicationVersion": "0.13.33",
+  "connectedToInstalledRecorder": false,
+  "hardwareInputQueueOpened": false,
+  "hardwareOutputQueueOpened": false,
+  "routing": {
+    "selection": "explicit CoreAudio output UID; read-only inventory",
+    "clientFormat": "48000 Hz float32 interleaved stereo",
+    "physicalChannels": "requires at least2; physical conversion/layout unqualified",
+    "changesSystemDefault": false,
+    "changesDeviceNominalRate": false,
+    "permissionPrompt": false
+  },
+  "startup": {
+    "primingBuffers": 3,
+    "framesPerBuffer": 512,
+    "primingPcm": "silence",
+    "timeline": "real AudioQueueCreateTimeline; nonnull timeline passed to GetCurrentTime",
+    "readiness": "valid queue-relative sample and host fields; stable initial anchor published atomically",
+    "arm": "explicit control atomic; binds scheduler clock before first render",
+    "errorCleanup": "explicit shutdown reports original setup plus any cleanup error"
+  },
+  "callback": {
+    "state": "UnsafeCell Data under entered atomic guard before any mutable PCM/Data borrow, including same-buffer overlap",
+    "operations": [
+      "bounded AudioQueue clock query/enqueue",
+      "fixed512-frame PCM buffer",
+      "integer clock/scheduler checks",
+      "atomic telemetry/cue cancellation"
+    ],
+    "noApplication": [
+      "allocation",
+      "locks",
+      "helper IPC/destruction",
+      "file I/O"
+    ],
+    "failure": "submit silent buffers until control poll stops queue; no immediate acoustic mute guarantee for previously queued audio"
+  },
+  "lifetime": {
+    "controlThread": "Output is !Send/!Sync; start/arm/poll/stop/drop on creator thread",
+    "watchdog": "regular poll observes both callback count and hardware-frame progress; hardware clock freeze times out despite busy callbacks",
+    "device": "selected UID availability, physical channel count and nominal rate checked on control thread",
+    "disposal": "always attempts Dispose(true) after Stop(true), including stop failure; only then release callback state",
+    "failedDisposal": "retain state to prevent UAF; explicit error and retained report; no successful-release claim",
+    "helperCleanup": "queue fault cancels cue status; Session.poll separately stops/reaps helpers while dry files continue"
+  },
+  "tests": {
+    "focusedNativeWithExplicitSdkVst3AndChildSupport": {
+      "passed": 107,
+      "failed": 0,
+      "ignored": 0
+    },
+    "fullMediaLibrary": {
+      "passed": 272,
+      "failed": 0,
+      "ignored": 16
+    },
+    "releasePythonChecks": {
+      "passed": 21,
+      "failed": 0
+    },
+    "newCases": {
+      "adapterWithExplicitSdkVst3": 14,
+      "portableClockBind": 1,
+      "defaultPassed": 14,
+      "defaultIgnored": 1
+    },
+    "adapterCases": [
+      "silent startup and clock readiness before arm",
+      "512 wet frames scheduled exactly after primed queue lead; normal stop/dispose",
+      "timeline discontinuity, missing host flags, backward time, excess output drift and clock-query failure silence",
+      "invalid layout and enqueue failure",
+      "no callbacks and busy callbacks with frozen clock both timeout",
+      "advancing hardware frames reset watchdog; device loss stops/disposes",
+      "stop error still disposes; dispose error retains readable state and prohibits rearm",
+      "setup before queue creation performs no stop/dispose",
+      "setup error reports original plus stop/dispose failure and retains uncertain state",
+      "same PCM pointer overlapping callback returns before mutable borrow",
+      "stop inside clock query suppresses spurious error and reenqueue",
+      "read-only output inventory and invalid UID preflight without queue creation"
+    ],
+    "nativeHelperComposition": {
+      "formats": [
+        "Apple AUBandpass AU",
+        "explicit SDK ADelay VST3"
+      ],
+      "rackSizes": [
+        1,
+        2
+      ],
+      "chain": "generated128-frame capture to real native cue worker; actual output callback with fake timeline triggers scheduler underrun; Session.poll closes helpers; two more128-frame dry blocks persist",
+      "dryFramesPerCase": 384,
+      "dryExact": true,
+      "budgetReleased": true,
+      "outputDisposedOnce": true
+    },
+    "portableBind": "new queue anchor binds before first render; rebind after rendering and startup-clock overflow rejected without retiming",
+    "sdkAbi": "ASBD/Buffer/Timestamp layouts/constants plus NewOutput/CreateTimeline/GetCurrentTime function signatures syntax-checked with selected Mac SDK",
+    "appRustLibrary": {
+      "passed": 39,
+      "failed": 0,
+      "ignored": 1
+    }
+  },
+  "qualificationLimits": [
+    "Actual AudioQueueNewOutput/Start/device conversion are not exercised by fake operations",
+    "No real sample/host anchor, acoustic playback/round-trip latency or physical hot-plug qualification",
+    "No sustained-load/deadline benchmark; tests wait off callback for generated helper data",
+    "No shared cue/backing mixer or input/backing/project mapping/persisted clip placement",
+    "No drift resampling/correction or independent-device synchronization guarantee",
+    "No new app recording commands/UI/project insertion/Undo integration",
+    "A failed disposal intentionally retains memory and does not prove OS resources released"
+  ]
+}

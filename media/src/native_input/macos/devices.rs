@@ -1,4 +1,4 @@
-//! Read-only CoreAudio input inventory. Never changes defaults or device rates.
+//! Read-only CoreAudio input/output inventory. Never changes defaults or rates.
 use crate::Result;
 use std::ffi::{c_char, c_void};
 
@@ -150,11 +150,19 @@ fn channel_count(data: &[u8]) -> Result<u32> {
     Ok(channels)
 }
 pub fn list_inputs() -> Result<Vec<InputDevice>> {
+    list(true)
+}
+/// Same inventory fields as an input, for an explicitly selected output UID.
+pub type OutputDevice = InputDevice;
+pub fn list_outputs() -> Result<Vec<OutputDevice>> {
+    list(false)
+}
+fn list(input: bool) -> Result<Vec<InputDevice>> {
     let data = bytes(1, address(b"dev#", false))?;
     if data.len() % 4 != 0 {
         return Err("Invalid input device inventory".into());
     }
-    let default = number(1, b"dIn ")?;
+    let default = number(1, if input { b"dIn " } else { b"dOut" })?;
     let mut devices = Vec::new();
     for value in data.chunks_exact(4) {
         let object = u32::from_ne_bytes(value.try_into().unwrap());
@@ -163,7 +171,11 @@ pub fn list_inputs() -> Result<Vec<InputDevice>> {
             if number(object, b"livn")? != 1 {
                 return Ok(None);
             }
-            let channels = channel_count(&bytes(object, address(b"slay", true))?)?;
+            let mut stream_address = address(b"slay", true);
+            if !input {
+                stream_address.scope = u32::from_be_bytes(*b"outp");
+            }
+            let channels = channel_count(&bytes(object, stream_address)?)?;
             if channels == 0 {
                 return Ok(None);
             }
@@ -197,6 +209,16 @@ pub(super) fn resolve(uid: &str) -> Result<InputDevice> {
         .into_iter()
         .find(|device| device.uid == uid)
         .ok_or("Selected input device is unavailable".into())
+}
+
+pub(super) fn resolve_output(uid: &str) -> Result<OutputDevice> {
+    if uid.is_empty() || uid.len() > 4096 || uid.contains('\0') {
+        return Err("Invalid output device UID".into());
+    }
+    list_outputs()?
+        .into_iter()
+        .find(|device| device.uid == uid)
+        .ok_or("Selected output device is unavailable".into())
 }
 
 #[cfg(test)]

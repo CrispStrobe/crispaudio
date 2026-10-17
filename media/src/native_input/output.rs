@@ -149,6 +149,29 @@ impl Scheduler {
             drift: 0,
         })
     }
+    /// Hardware adapter handoff, only before the first render. No allocation or
+    /// helper work: the callback binds a freshly observed queue clock once.
+    pub fn bind_clock(
+        &mut self,
+        clock: ClockMap,
+        start_frame: i64,
+    ) -> std::result::Result<(), Fault> {
+        if self.next_output != self.config.start_frame
+            || self.origin.is_some()
+            || self.pending.is_some()
+            || self.phase != Phase::Waiting
+        {
+            return Err(Fault::OutputClock);
+        }
+        let deadline = start_frame
+            .checked_add(self.config.startup_grace_frames as i64)
+            .ok_or(Fault::ClockRange)?;
+        self.config.clock = clock;
+        self.config.start_frame = start_frame;
+        self.next_output = start_frame;
+        self.startup_deadline = deadline;
+        Ok(())
+    }
     pub fn report(&self) -> Report {
         self.report_with(0)
     }
