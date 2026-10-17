@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-17",
+  "kind": "native-dry-recording-files",
+  "applicationVersion": "0.13.33",
+  "connectedToInstalledRecorder": false,
+  "hardwareInputQueueOpened": false,
+  "hardwareOutputOpened": false,
+  "format": {"sampleRate": 48000, "sampleFormat": "float32 WAV", "channels": [1, 2]},
+  "artifacts": ["audio.partial.wav", "take.json", "blocks.bin", "take.wav after clean completion"],
+  "blockIndex": {"headerBytes": 16, "recordBytes": 32, "maxRecords": 2097152, "checksum": "FNV-1a 64; accidental corruption only"},
+  "completionGates": ["producer closed", "all queued packets drained", "no dry fault", "nonempty audio", "owner frame count matches", "no-replace publication"],
+  "checkpointOrder": ["WAV header/buffer flush", "WAV sync_all", "index flush", "index sync_all"],
+  "tests": {
+    "focusedWithExplicitSdkVst3FixtureAndChildSupport": {"passed": 43, "failed": 0, "ignored": 0},
+    "fullMediaLibrary": {"passed": 212, "failed": 0, "ignored": 12},
+    "appRustLibrary": {"passed": 39, "failed": 0, "ignored": 1},
+    "releasePythonChecks": {"passed": 21, "failed": 0},
+    "ignoredChildFixture": "The normal suite ignores the support test itself, but its parent executes it in a subprocess",
+    "exactPcm": "mono/stereo, headroom and negative zero; saved frame/host origin and context retained",
+    "automaticCheckpoint": "48128 frames readable before finish, with synced block index",
+    "abruptExit": "159 checkpointed stereo frames recovered after child process exit without destructors/finalization; buffered tail not guessed",
+    "corruption": "damaged RIFF/data lengths, torn index, truncated audio, checksum corruption and invalid block clocks/layouts",
+    "failure": "raw overflow, frame limit, real read-only index write error, live/empty/mismatched-count finish rejected",
+    "publication": "existing files/symlinks preserved; recovery cancellation and metadata/index mismatch publish nothing",
+    "macCaptureComposition": "generated callback input and fake AudioQueue operations; 128 initial +31 partial stop frames persist",
+    "actualAuFailure": "killed AUBandpass helper mutes cue while 12288 dry stereo frames persist exactly to a completed WAV",
+    "shutdownStatus": "drained EOF stays clean; active/unread abandonment faults; unfinished file worker cancels"
+  },
+  "qualificationLimits": [
+    "No physical capture, device conversion or audio output qualification",
+    "File operations ran on local temporary test storage, not a slow/full drive",
+    "Process exit is not a power-loss test; uncheckpointed data is not guaranteed durable",
+    "No recording owner/watchdog, backing/output clock synchronization or recording UI integration",
+    "No independent cue output, wet capture, RF64 or long-session paging implementation",
+    "The installed app remains on Web Audio recording and its buffered native cue"
+  ]
+}

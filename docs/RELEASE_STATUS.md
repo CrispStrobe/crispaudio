@@ -18,6 +18,35 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Native dry-file worker — development after 0.13.33
+
+Native recording now has a file worker for float WAV and a checksummed block
+index, with periodic ordered syncing. A complete take requires a closed/drained,
+fault-free producer and matching owner frame count. Interrupted files remain
+recoverable; prefix recovery ignores torn WAV length fields, verifies whole
+blocks and always labels its output incomplete. Existing files are never replaced.
+
+All 43 focused checks pass with the explicit SDK VST3 fixture and subprocess
+support case. The full media suite passes 212 with 12 fixture/platform cases
+ignored. Its parent recovery test still executes the ignored child support case
+in a separate process, which exits without destructors and recovers 159 durable
+frames. Mac software composition retains a partial stop tail and records 12,288
+exact dry stereo frames after a real AU cue helper is killed.
+App Rust checks pass 39 with one hardware case ignored; the 21 Python release
+checks pass. No new frontend or iOS simulator run is claimed for this increment.
+[File-worker evidence](evidence/native-recording-files.json).
+
+These are generated callback inputs, fake AudioQueue operations and real local
+file/helper processes. No microphone or output queue was opened. Slow/full-drive,
+power-loss and physical-device behavior remain unqualified. The recording owner,
+watchdog and native backing/output clock integration are next. No new installed
+app version, Apple upload or release tag; installed 0.13.33 is unchanged.
+
+The preceding adapter commit `8bf8a9f` passed
+[general CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38994968839) and
+[iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38994968833).
+Those runs precede this file-worker increment.
+
 ## Mac capture adapter — development after 0.13.33
 
 The native input foundation now has a Mac AudioQueue adapter bound to an explicit

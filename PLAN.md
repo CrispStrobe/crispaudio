@@ -42,9 +42,12 @@ without WebKit. This is not wired to hardware capture or the recording UI; insta
 0.13.33 remains unchanged. A Mac device-bound capture adapter now adds permission
 preflight, channel mapping, timestamp validation, raw peak meters and synchronous
 stop/disposal guards. Synthetic callbacks and read-only inventory pass; no physical
-capture or new UI mode is qualified. Next connect its recording owner/watchdog,
-native dry persistence and output scheduling/clock mapping before claiming a
-native recording path.
+capture or new UI mode is qualified. A native dry-file worker now checkpoints float
+WAV and a checksummed block index, gates complete publication on clean EOF/counts,
+and recovers verified prefixes after interruption. Callback-to-file tests retain
+partial stop tails and exact dry samples after an AU cue helper fails. Next connect
+the recording owner/watchdog and output scheduling/clock mapping before claiming
+a native recording workflow in the app.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

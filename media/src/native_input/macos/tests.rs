@@ -441,6 +441,99 @@ struct Gate {
     entered: Barrier,
     leave: Barrier,
 }
+#[test]
+fn capture_finish_tail_is_persisted_by_the_native_file_worker() {
+    use crate::native_input::recording::{Recorder, Step as FileStep};
+    let root = tempfile::tempdir().unwrap();
+    let (capture, queue, dry, _) = fixture(1, ChannelMap::Mono(0));
+    let state = capture.state.as_ref().unwrap();
+    let mut files = Recorder::create(
+        root.path(),
+        dry,
+        1,
+        4096,
+        serde_json::json!({"trackId":"voice"}),
+    )
+    .unwrap();
+    Fixture::new(1, 128, -256., 100).send(state, &queue);
+    assert_eq!(files.step().unwrap(), FileStep::Written);
+    *queue.pending.lock().unwrap() = Some(Fixture::new(1, 31, -128., 200));
+    let report = capture.finish().unwrap();
+    assert_eq!(report.fault, None);
+    let take = files.finish(report.frames).unwrap();
+    assert_eq!(take.info.frames, 159);
+    assert_eq!(take.info.first_input_frame, 0);
+    assert_eq!(take.info.first_host_time, 100);
+    let actual = hound::WavReader::open(&take.path)
+        .unwrap()
+        .samples::<f32>()
+        .map(|v| v.unwrap())
+        .collect::<Vec<_>>();
+    let expected = (0..128)
+        .chain(0..31)
+        .map(|frame| frame as f32 * 0.001)
+        .collect::<Vec<_>>();
+    assert_eq!(actual, expected);
+}
+#[test]
+fn real_cue_helper_failure_does_not_change_or_interrupt_recorded_wav() {
+    use crate::native_input::{
+        plugins::{PluginConfig, PluginRack},
+        recording::Recorder,
+        CueWorker, Step as CueStep,
+    };
+    let root = tempfile::tempdir().unwrap();
+    let plugins = crate::apple::plugin("plugin-scan", "{}").unwrap();
+    let id = plugins
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["name"] == "AUBandpass")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap();
+    let mut handles = Vec::new();
+    let rack = PluginRack::open(
+        &[PluginConfig {
+            id: id.into(),
+            state: String::new(),
+            parameters: serde_json::json!({"0":1000}),
+            bypass: false,
+        }],
+        |h| handles.push(h),
+    )
+    .unwrap();
+    let (capture, queue, dry, cue) = fixture(2, ChannelMap::Stereo(0, 1));
+    let (mut fx, mut output) = CueWorker::new(cue, rack);
+    let mut files = Recorder::create(root.path(), dry, 2, 48000, serde_json::json!({})).unwrap();
+    let mut expected = Vec::new();
+    for block in 0..24 {
+        let mut input = Fixture::new(2, 512, (block * 512) as f64, 100 + block * 1000);
+        expected.extend_from_slice(&input._pcm);
+        input.send(capture.state.as_ref().unwrap(), &queue);
+        if block < 8 {
+            assert_eq!(fx.step(), CueStep::Processed);
+            let wet = output.pop().unwrap();
+            assert_ne!(wet.samples()[0], [input._pcm[0], input._pcm[1]]);
+        } else if block == 8 {
+            handles[0].stop();
+            assert_eq!(fx.step(), CueStep::Fault(Fault::Processor));
+            assert!(output.pop().is_none());
+        }
+        files.step().unwrap();
+    }
+    let report = capture.finish().unwrap();
+    assert_eq!(report.frames, 12288);
+    assert_eq!(report.fault, None);
+    let take = files.finish(report.frames).unwrap();
+    let actual = hound::WavReader::open(&take.path)
+        .unwrap()
+        .samples::<f32>()
+        .map(|v| v.unwrap())
+        .collect::<Vec<_>>();
+    assert_eq!(actual, expected);
+    assert!(handles.iter().all(|h| !h.is_alive()));
+}
 unsafe extern "C" fn blocked_enqueue(
     queue: Queue,
     _: *mut Buffer,

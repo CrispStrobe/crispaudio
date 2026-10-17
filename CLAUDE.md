@@ -942,3 +942,19 @@ device checks/watchdog, clock mapping and native dry/output integration.
 Mac tests use synthetic callback buffers and fake queue operations, not devices.
 Fake queue ownership must outlive Capture even on assertion unwinding. ABI C
 fixture is syntax-only against the installed SDK; no hardware/latency claim.
+
+### Native file worker (development after 0.13.33)
+
+`native_input::recording::Recorder` belongs on a file worker, never a callback.
+Create its persistent take directory before capture. Float WAV plus immutable
+metadata/checksummed block index retain raw samples and input/host origins.
+Checkpoints sync WAV before index; ~1 s of accepted frames, not a wall-clock timer.
+Finish requires closed/drained/fault-free ingress and matching owner frame count;
+publication is a no-replace hard link. Abandoned recorders checkpoint best effort
+and cancel; original files remain. Recovery ignores mutable WAV lengths, copies
+verified whole blocks only and always reports incomplete. Index hashes are FNV64
+for accidental corruption, not authentication. The subprocess fixture skips Drop
+and must run only with its explicit test directory; normal CI ignores the helper
+but executes its parent test. Native input readers now leave drained EOF clean,
+while active/unread abandonment still faults. Fault::Storage=8 stops raw writes.
+No app command/UI owner is connected yet. See docs/NATIVE_INPUT.md.

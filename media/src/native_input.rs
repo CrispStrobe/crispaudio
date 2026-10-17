@@ -2,12 +2,14 @@
 //!
 //! A single callback writer copies into independent dry/cue SPSC queues. Only
 //! the cue worker runs DSP. Construction and destruction belong off the callback.
-//! The Mac hardware adapter lives in `macos`; disk capture and output scheduling
-//! are not integrated yet. Empty input queues are normal, not underruns.
+//! The Mac adapter lives in `macos`, dry-file persistence in `recording`. The
+//! recording owner/output scheduler are not integrated yet. Empty input queues
+//! are normal, not underruns.
 use crate::{native_graph::Stereo, Result};
 #[cfg(target_os = "macos")]
 pub mod macos;
 pub mod plugins;
+pub mod recording;
 use std::{
     cell::{Cell, UnsafeCell},
     marker::PhantomData,
@@ -31,6 +33,7 @@ pub enum Fault {
     Processor = 5,
     Cancelled = 6,
     Device = 7,
+    Storage = 8,
 }
 
 #[derive(Clone, Copy)]
@@ -92,7 +95,8 @@ impl<const N: usize> Status<N> {
             4 => Some(Fault::Disconnected),
             5 => Some(Fault::Processor),
             6 => Some(Fault::Cancelled),
-            _ => Some(Fault::Device),
+            7 => Some(Fault::Device),
+            _ => Some(Fault::Storage),
         }
     }
     pub fn closed(&self) -> bool {
@@ -171,7 +175,11 @@ impl<const N: usize> Reader<N> {
 }
 impl<const N: usize> Drop for Reader<N> {
     fn drop(&mut self) {
-        self.status().fail(Fault::Disconnected);
+        if !self.queue.closed.load(Ordering::Acquire)
+            || self.queue.read.load(Ordering::Relaxed) != self.queue.write.load(Ordering::Acquire)
+        {
+            self.status().fail(Fault::Disconnected);
+        }
     }
 }
 
@@ -333,6 +341,35 @@ impl<P: Processor> Drop for CueWorker<P> {
 mod tests {
     use super::*;
     use std::{sync::atomic::AtomicUsize, thread};
+
+    #[test]
+    fn drained_eof_is_clean_but_abandoned_active_or_pending_input_faults() {
+        for mode in 0..4 {
+            let (mut writer, mut reader) = queue::<8>();
+            let status = reader.status();
+            if mode >= 2 {
+                assert!(writer.push(&Packet {
+                    length: 1,
+                    ..Packet::default()
+                }));
+            }
+            if mode == 3 {
+                reader.pop().unwrap();
+            }
+            if mode != 0 {
+                drop(writer);
+            }
+            drop(reader);
+            assert_eq!(
+                status.fault(),
+                if mode == 0 || mode == 2 {
+                    Some(Fault::Disconnected)
+                } else {
+                    None
+                }
+            );
+        }
+    }
 
     struct Gain {
         drops: Arc<AtomicUsize>,

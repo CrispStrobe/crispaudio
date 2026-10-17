@@ -74,12 +74,54 @@ callback. Output underrun detection belongs to the output scheduler.
 The dry consumer must keep draining during monitor-only operation too; retaining
 packets without a consumer deliberately faults the dry path when its queue fills.
 
-Next connect the adapter to a recording owner with device-loss/permission handling,
-callback watchdog and transport clock mapping. A native dry writer must retain
-partial recordings on failure. Then connect a native output scheduler with startup buffering, measured latency,
+Next connect the adapter and file worker to a recording owner with device-loss/
+permission handling, callback watchdog and transport clock mapping. Then connect
+a native output scheduler with startup buffering, measured latency,
 input/output clock drift handling and fault silence before exposing this in the UI.
 Independent cue outputs/backing mixes and wet capture retaining dry originals
 follow that integration. Existing Web Audio recording remains available meanwhile.
+
+## Native dry files
+
+`native_input::recording::Recorder` owns the dry reader on a separate file worker.
+Create it in an app-owned durable folder before opening input. It writes 48 kHz
+float WAV, preserving headroom; mono stores the already mapped left channel.
+Take limits respect RIFF32 sizes and a bounded block-index count. The owner must
+choose its frame budget and interpret the saved project/track context.
+
+Each unique take folder retains `audio.partial.wav`, immutable `take.json` and
+`blocks.bin`. The append-only index binds the metadata and checksums whole audio
+blocks, including input frame position and host ticks. Checkpoints update/flush
+the WAV, sync its file, then flush/sync the index roughly once per accepted second.
+Directory entries are synced on Unix. This bounds buffering but does not promise
+power-loss survival beyond a successful checkpoint or qualify slow storage.
+The callback never writes or syncs files. A storage failure faults dry ingress;
+the owner must stop capture and close its other resources promptly.
+
+`finish(expected_frames)` requires a closed, drained, fault-free dry producer,
+nonempty audio and an exact owner count of recorded frames. Only then does it
+publish `take.wav` without replacing any file. The published WAV and partial name
+are hard links to the same audio, not duplicate PCM storage. Completed originals
+and recovery files are retained. Dropping an unfinished recorder marks cancellation
+and attempts a final checkpoint; it never publishes a completed take. A drained
+input reader at producer EOF closes cleanly; abandoning active/pending input faults.
+
+`recover()` copies only verified whole blocks into a fresh WAV. It checks bounded
+metadata, index/sample checksums and clock continuity, ignoring possibly torn WAV
+length fields. A corrupt/partial block stops prefix recovery; unindexed audio is
+not guessed. It leaves every original intact and never replaces an output file or
+follows a known source symlink. Cancellation or failed publication retains source
+files. Recovered takes are always marked **incomplete**, even with a clean index;
+the index alone cannot establish that capture ended normally. Checksums detect
+accidental corruption and are not cryptographic authentication.
+
+Software checks cover exact mono/stereo data, automatic checkpoints, malformed
+WAV lengths, torn/corrupt index/audio, overflow, take limits, real OS write failure,
+publication collisions and cancellation. A subprocess exits without destructors
+to test recovery of its checkpointed prefix. Mac composition tests connect the
+actual capture callback (fake queue/generated PCM) to real file writes, retaining
+the partial stop tail and a complete dry WAV after a real AU helper is killed.
+No hardware input or output queue is opened. [File-worker evidence](evidence/native-recording-files.json).
 
 ## Checks
 
