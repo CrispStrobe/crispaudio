@@ -9,6 +9,7 @@
 use crate::{native_graph::Stereo, Result};
 #[cfg(target_os = "macos")]
 pub mod macos;
+pub mod output;
 pub mod plugins;
 pub mod recording;
 pub mod session;
@@ -259,6 +260,14 @@ impl CueOutput {
     pub fn status(&self) -> Status<CUE_SLOTS> {
         self.0.status()
     }
+    /// Snapshot for the sole consumer. Concurrent publication may add packets.
+    pub fn queued_packets(&self) -> usize {
+        self.0
+            .queue
+            .write
+            .load(Ordering::Acquire)
+            .wrapping_sub(self.0.queue.read.load(Ordering::Relaxed))
+    }
     pub fn pop(&mut self) -> Option<Packet> {
         if self.status().fault().is_some() {
             return None;
@@ -301,8 +310,15 @@ impl<P: Processor> CueWorker<P> {
         if let Some(fault) = self.output.status().fault().or(self.input.status().fault()) {
             return self.fault(fault);
         }
-        let Some(mut packet) = self.input.pop() else {
-            return if self.input.status().closed() {
+        let mut packet = self.input.pop();
+        let closed = packet.is_none() && self.input.status().closed();
+        if packet.is_none() && closed {
+            // Acquiring EOF also acquires the producer's final packet. The first
+            // empty read may predate that publication; never discard a stop tail.
+            packet = self.input.pop();
+        }
+        let Some(mut packet) = packet else {
+            return if closed {
                 self.processor.take();
                 self.output.queue.closed.store(true, Ordering::Release);
                 Step::Ended

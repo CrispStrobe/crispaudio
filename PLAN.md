@@ -53,8 +53,10 @@ reserves up to two inserts per input from a shared eight-insert group budget and
 kills registered helpers on cancellation/overflow. Cue failure mutes wet packets
 while dry files continue. A group coordinator now validates all inputs up front,
 rolls back partial startup, stops all captures before file joins and gates the whole
-result with an atomic completion manifest. Native output scheduling/clock mapping
-and project insertion/Undo remain before native recording app integration.
+result with an atomic completion manifest. A cue scheduler now provides bounded
+startup, partial-packet consumption, silence on underrun and integer host-clock
+mapping/drift detection. Device-bound output, hardware clock anchors, backing/project
+placement and project insertion/Undo remain before native recording app integration.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

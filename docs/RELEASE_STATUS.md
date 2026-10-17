@@ -18,6 +18,37 @@ Preceding main c1ec01a (0.13.21) passed both [general CI](https://github.com/Cri
 and [iOS CI](https://github.com/CrispStrobe/crispaudio/actions/runs/38911051851).
 This does not claim remote validation for the subsequent scope-cleanup commit.
 
+## Native cue scheduling — development after 0.13.33
+
+A native cue consumer now maps host tick differences to signed 48 kHz output
+frames with integer arithmetic. It preserves partial packets, bounds startup
+silence, and keeps timestamp jitter from inserting gaps. Late data, underrun,
+excess drift, bad clocks and exhausted packet-read budget latch a silent block;
+session polling reaps cue helpers while dry recording continues. A clean-EOF
+publication race is fixed in both the cue worker and scheduler, retaining final
+packets published after an initial empty queue read.
+
+All 92 focused native-input checks pass with explicit SDK VST3 and subprocess
+fixtures. The full media suite passes 258 with 15 ignored; app Rust passes 39
+with one hardware case ignored, and Python release checks pass 21. New checks cover exact impulse/negative-zero PCM through unequal blocks
+and EOF, signed/large-uptime clock math, bounded startup, late/underrun suppression,
+small jitter, accumulated synthetic 20 ppm drift, concurrent packet-read bounds
+and 128 concurrent final-publication iterations. With one/two actual AU and VST3
+inserts, a scheduler underrun closes the cue rack/reservation while an exact
+384-frame dry stereo WAV still completes. No input/output device queue is opened.
+[Scheduler evidence](evidence/native-cue-scheduler.json).
+
+This is software scheduling qualification. Tests wait for helper replies off
+callback and do not establish real-time throughput or audible latency. A hardware
+output adapter and trustworthy output sample/host anchor are still required,
+followed by input/backing/project mapping, persisted clip placements, drift
+correction where necessary and full-path timing/app integration. Installed 0.13.33
+is unchanged; no bundle/install, physical audio check, Apple upload or release tag.
+
+The preceding group commit `4dc299b` general CI `39001569390` and iOS CI
+`39001569362` were still queued at the initial refresh. No remote green result
+is claimed for this subsequent scheduler increment.
+
 ## Native recording groups — development after 0.13.33
 
 A native group coordinator now validates all inputs before opening any, rolls back

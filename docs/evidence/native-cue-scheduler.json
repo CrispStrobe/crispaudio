@@ -1,0 +1,101 @@
+{
+  "date": "2026-10-17",
+  "kind": "native-cue-scheduler",
+  "applicationVersion": "0.13.33",
+  "connectedToInstalledRecorder": false,
+  "hardwareInputQueueOpened": false,
+  "hardwareOutputOpened": false,
+  "clock": {
+    "rate": 48000,
+    "domain": "signed non-looping output frames",
+    "math": "subtract u64 host epochs before i128 rational scaling; quantize delta nearest with ties away from zero",
+    "anchor": "caller-supplied established output sample/host pair; Mac timebase query alone is insufficient",
+    "drift": "compare accumulated input sample advance to rounded host advance; mute beyond configured tolerance; no resampling"
+  },
+  "scheduler": {
+    "validCallbackFrames": [
+      1,
+      512
+    ],
+    "maxPacketsPerCallback": 8,
+    "transportDelayFrames": [
+      1,
+      4096
+    ],
+    "startupGraceFrames": [
+      1,
+      48000
+    ],
+    "maxDriftFrames": [
+      1,
+      512
+    ],
+    "pluginDelay": "additional to configured transport delay",
+    "failure": "zero whole callback block; preserve earlier played count; latch detailed fault; atomically cancel only cue; owner kills helpers off callback",
+    "invalidCallerBuffers": "cleared in full and rejected; hardware adapter must bound sizes before calling",
+    "eof": "acquire producer close then recheck empty; drain final queued packet"
+  },
+  "tests": {
+    "focusedNativeWithExplicitSdkVst3AndChildSupport": {
+      "passed": 92,
+      "failed": 0,
+      "ignored": 0
+    },
+    "fullMediaLibrary": {
+      "passed": 258,
+      "failed": 0,
+      "ignored": 15
+    },
+    "releasePythonChecks": {
+      "passed": 21,
+      "failed": 0
+    },
+    "newCases": {
+      "focusedWithExplicitSdkVst3": 17,
+      "defaultPassed": 16,
+      "defaultIgnored": 1
+    },
+    "impulse": "384 exact stereo frames including headroom/negative-zero bits at configured32-frame transport delay; unequal31/128/1/256/64-frame output callbacks and partial EOF",
+    "clockMath": "u64-large epochs, 125/3 nanoseconds-per-tick ratio, negative preroll, half-frame deltas, invalid ratio/range and one-hour virtual advance",
+    "drift": "bounded +2/-2 frame jitter keeps PCM contiguous; generated20ppm input/host discrepancy exceeds4-frame tolerance at250368 input frames, mutes with drift5 while dry stays exact",
+    "failures": [
+      "bounded empty and far-future startup",
+      "late first packet never slips output clock",
+      "whole-block rollback on mid-block underrun",
+      "already-rendered earlier blocks remain counted",
+      "output clock gaps, invalid caller sizes and upstream cancellation",
+      "malformed input sample/host clocks and overflow",
+      "concurrently refilled tiny-packet queue consumes exactly8 packets before fault; no callback wait",
+      "exact8-packet clean EOF needs no ninth pop"
+    ],
+    "eofRace": "128 actual producer-thread final128+31-frame publications against cue worker; all159 wet/dry frames retained and EOF clean",
+    "nativeOwnerComposition": {
+      "formats": [
+        "Apple AUBandpass AU",
+        "explicit SDK ADelay VST3"
+      ],
+      "rackSizes": [
+        1,
+        2
+      ],
+      "trigger": "scheduler underrun atomically cancels cue; session poll closes rack and releases all slots",
+      "dryFramesPerCase": 384,
+      "dryExact": true,
+      "physicalDevicesOpened": false
+    },
+    "formatAndAbi": "changed Rust rustfmt, git diff --check and Mac SDK C syntax-only ABI checks",
+    "appRustLibrary": {
+      "passed": 39,
+      "failed": 0,
+      "ignored": 1
+    }
+  },
+  "qualificationLimits": [
+    "No device-bound hardware output adapter or established physical output anchor",
+    "No input/backing/project clock mapping or persisted arrangement clip placement",
+    "No resampling/drift correction or independent-device synchronization guarantee",
+    "No end-to-end real-time throughput, audible round-trip latency, sustained load or physical device qualification",
+    "Software tests wait off callback for native helper readiness/replies; test frame delays are not shipped latency presets",
+    "No new installed recording mode or app/project insertion/Undo integration"
+  ]
+}

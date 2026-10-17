@@ -112,6 +112,16 @@ impl HostTimebase {
             denominator: info.denominator,
         })
     }
+    /// Build an integer map from an explicitly established output clock anchor.
+    /// Querying the timebase alone does not establish that hardware anchor.
+    pub fn clock_map(self, host: u64, output_frame: i64) -> super::output::ClockMap {
+        super::output::ClockMap::new(
+            super::output::Timebase::new(self.numerator, self.denominator)
+                .expect("validated Mac timebase"),
+            host,
+            output_frame,
+        )
+    }
     /// Convert a tick *difference*, not the absolute host epoch, to seconds.
     pub fn seconds(self, ticks: u64) -> f64 {
         ticks as f64 * self.numerator as f64 / self.denominator as f64 / 1_000_000_000.

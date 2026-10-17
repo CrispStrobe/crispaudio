@@ -207,6 +207,46 @@ This layer returns a group result eligible for one future project transaction.
 Actual project insertion/Undo, sample-accurate input/backing alignment, native
 output scheduling and hardware/load qualification are still pending.
 
+## Cue scheduling and host-clock math
+
+`output::ClockMap` maps hardware host ticks to a signed, non-looping 48 kHz output
+frame clock. It subtracts epochs before scaling with integer arithmetic and rounds
+to the nearest frame; negative positions support preroll. The anchor must come
+from an established output sample/host relationship. Callback arrival time, a
+looping arrangement playhead or querying the Mac timebase alone is insufficient.
+The Mac timebase adapter can construct a map but does not establish an anchor.
+
+`output::Scheduler` consumes one native `CueOutput`. For valid adapter buffers of
+1–512 frames, each render reads at most eight packets and copies/zeros bounded
+PCM, with no allocation, locks, helper IPC, file work or helper destruction. It
+handles partial packets and clean EOF. The first host timestamp fixes the cue
+origin plus a configured transport delay; reported plug-in delay is additional.
+Following packets stay contiguous. Small timestamp jitter does not insert gaps.
+
+Startup silence has a frame deadline, including a first packet dated too far in
+the future. Late data, underrun, excess accumulated input/host drift, malformed
+clocks, packet-read budget exhaustion and upstream failure latch silence. A fault
+clears the whole current block, suppresses later replay and atomically cancels
+cue ingress. Session polling closes helpers off the callback; dry recording keeps
+running. Successfully rendered earlier blocks remain counted. Invalid caller
+buffers are cleared in full and rejected; hardware adapters must bound buffer
+sizes before calling this path.
+
+The scheduler detects drift; it does not resample or promise independent-device
+synchronization. Startup/delay/drift limits are explicit internal test/configuration
+values, not new shipped latency settings. Software tests use generated data and
+wait for helpers off callback before rendering. Exact impulse/frame checks,
+20 ppm synthetic drift detection and AU/VST3 failure cleanup do not measure
+real-time throughput, device conversion or audible round-trip latency.
+
+Cue worker EOF now rechecks input after acquiring the producer's close flag. This
+retains a final packet published between an empty read and close. Scheduler EOF
+uses the same ordering; concurrent final-publication checks retain short tails.
+
+Still pending: device-bound output adapter, trustworthy hardware output anchor,
+input/backing/project clock mapping and persisted clip placement, drift correction
+where needed, full-path timing/load checks and app integration.
+
 ## Checks
 
 Portable tests cover overflow isolation, incomplete-take recovery, invalid samples,

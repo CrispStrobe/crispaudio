@@ -1011,3 +1011,25 @@ manifest with uncertain durability; reconcile rather than deleting originals.
 Project insertion/Undo and physical clock/output alignment are NOT implemented by
 this manifest layer. Neither atomic visibility nor process-exit checks prove
 power-loss durability. Filesystem work belongs outside audio callbacks.
+
+### Native cue scheduler (development after 0.13.33)
+
+`native_input::output` is a portable cue consumer and integer host-clock map, not
+an opened output queue or an app recording mode. ClockMap anchor MUST describe
+an established non-looping output frame/host pair; callback arrival/project loop
+position/timebase query alone is not that anchor. Subtract ticks before integer
+scaling; no float absolute epochs. Scheduler consumes <=8 packets per valid
+1..512-frame callback, holds partial packets and uses a fixed first host origin
+plus configured delay. Plugin delay is additional. Bounds/rates are explicit,
+not shipped latency presets. Small timestamp jitter does not create gaps; excess
+accumulated drift mutes instead of silently resampling/repositioning dry clips.
+Fault clears WHOLE block and atomically cancels cue; session poll kills/reaps
+helpers off callback while dry files continue. Detailed scheduler fault remains
+separate from cue Status::Cancelled. Invalid caller buffers clear in full; adapter
+must validate/bound its buffers first. Construct/drop scheduler off callback.
+Cue worker/scheduler EOF must acquire closed THEN recheck empty: final publication
+can race the initial empty pop. Never close helpers or discard a final tail from
+an empty read that predates EOF. Generated tests wait off callback for helpers;
+no hardware anchor/deadline/physical latency qualification follows. Next implement
+device-bound output, real clock anchor/backing mapping/persisted placements and
+full-path timing before app/native recording integration.
