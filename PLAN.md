@@ -1,6 +1,24 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for source candidate 0.13.47 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for source candidate 0.13.48 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.48 adds an **internal, hidden native source-audition adapter** using the
+existing native-owned output clock, warm latency-aligned bypass and exclusive
+transport owner. It isolates a bounded full-clip source plan, preserves mono
+listening level, accepts live parameter/monitor updates and handles stale/cancel/
+output-change/EOF ownership. No source-editor control has been enabled.
+
+The new actual-helper parity gate found unresolved differences between AU stream
+processing and the existing source helper render: mono bandpass and mono/stereo
+peak limiter. VST3 delay matches exactly; all six static bypass cases match the
+source exactly. Next: isolate AU channel/configuration/initialization/history
+semantics and establish a common preview/Apply contract before wiring the UI.
+Then qualify real-time clock/updates/loops/faults and selected-device ownership,
+connect the shared Source Editor transport with compact controls, and retain the
+rendered fallback. See the [handoff](docs/WORK_HANDOFF.md#native-source-audition-foundation--01348-checkpoint)
+and [sanitized evidence](docs/evidence/native-source-plan.json). This checkpoint
+is software groundwork and a recorded acceptance blocker, not native source
+playback availability, hardware acceptance or an Apple submission.
 
 0.13.47 adds bounded ordered source chains: up to six high/low-pass, level and
 clipper stages, individual bypass, compact reorder controls and versioned recipe

@@ -161,3 +161,13 @@ Continuous comparison currently uses in-memory audio. Long-file streaming,
 broader live source FX chains/native streaming and further restoration
 (spectral healing, drift tracking and varied-material qualification) remain work
 in the [audio-workstation roadmap](DAW_GAP_ANALYSIS.md).
+
+
+## Native streaming development status
+
+Source **Auto preview** still renders through the helper. The internal 0.13.48
+native-clock source adapter is not exposed in this editor. Its actual-helper
+comparison found AU mono-layout and limiter-amplitude differences that must be
+resolved before enabling streaming or claiming preview/Apply parity. The
+[engineering handoff](WORK_HANDOFF.md#native-source-audition-foundation--01348-checkpoint)
+records the reproduction, exact limits and next acceptance steps.

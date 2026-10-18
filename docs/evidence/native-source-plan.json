@@ -1,0 +1,117 @@
+{
+  "version": "0.13.48",
+  "date": "2026-10-18",
+  "featureAvailableInSourceEditor": false,
+  "parityAccepted": false,
+  "scope": "Internal source plan vs existing helper-rendered Prepare, actual helper DSP, production offline graph; no realtime source/UI qualification",
+  "physicalAudio": false,
+  "fixtures": "Generated 48 kHz mono/stereo impulses and tones; explicit saved state plus parameter overrides",
+  "results": [
+    {
+      "bypassError": 0,
+      "format": "VST3",
+      "name": "ADelay",
+      "channels": 1,
+      "frames": 16384,
+      "latencySamples": 0,
+      "helperLatencySeconds": 0,
+      "error": 0,
+      "peak": 0.5,
+      "first": 5050,
+      "stateSupplied": true,
+      "estimatedBytes": 655440
+    },
+    {
+      "bypassError": 0,
+      "format": "AU",
+      "name": "AUBandpass",
+      "channels": 1,
+      "frames": 16384,
+      "latencySamples": 0,
+      "helperLatencySeconds": 0,
+      "error": 0.011098691262304783,
+      "peak": 0.10462240874767303,
+      "first": 4090,
+      "stateSupplied": true,
+      "estimatedBytes": 655440
+    },
+    {
+      "bypassError": 0,
+      "format": "AU",
+      "name": "AUPeakLimiter",
+      "channels": 1,
+      "frames": 16384,
+      "latencySamples": 192,
+      "helperLatencySeconds": 0.004000000189989805,
+      "error": 0.14158914983272552,
+      "peak": 0.3539728820323944,
+      "first": 4090,
+      "stateSupplied": true,
+      "estimatedBytes": 655440
+    },
+    {
+      "bypassError": 0,
+      "format": "VST3",
+      "name": "ADelay",
+      "channels": 2,
+      "frames": 16384,
+      "latencySamples": 0,
+      "helperLatencySeconds": 0,
+      "error": 0,
+      "peak": 0.5,
+      "first": 5050,
+      "stateSupplied": true,
+      "estimatedBytes": 655440
+    },
+    {
+      "bypassError": 0,
+      "format": "AU",
+      "name": "AUBandpass",
+      "channels": 2,
+      "frames": 16384,
+      "latencySamples": 0,
+      "helperLatencySeconds": 0,
+      "error": 1.1606928555331638e-38,
+      "peak": 0.10462240874767303,
+      "first": 4090,
+      "stateSupplied": true,
+      "estimatedBytes": 655440
+    },
+    {
+      "bypassError": 0,
+      "format": "AU",
+      "name": "AUPeakLimiter",
+      "channels": 2,
+      "frames": 16384,
+      "latencySamples": 192,
+      "helperLatencySeconds": 0.004000000189989805,
+      "error": 0.14158914983272552,
+      "peak": 0.3539728820323944,
+      "first": 4090,
+      "stateSupplied": true,
+      "estimatedBytes": 655440
+    }
+  ],
+  "helperCleanup": {
+    "sessions": 0,
+    "children": 0,
+    "packets": 102
+  },
+  "helperSessionsOpened": 18,
+  "strictCommand": "node scripts/test-native-source-plan.mjs",
+  "characterizationEnvironment": "CRISPAUDIO_NATIVE_SOURCE_CHARACTERIZE=1",
+  "strictGate": "Fails while any helper-render vs stream maximum absolute sample error is >= 2e-6; characterization success does not accept parity",
+  "checks": {
+    "focusedTests": 50,
+    "focusedFiles": 3,
+    "productionBuild": "passed",
+    "lint": "passed",
+    "releaseChecks": 24
+  },
+  "remaining": [
+    "Resolve AU mono layout/first-pass/initialization and limiter amplitude discrepancy without relaxing parity",
+    "Qualify realtime source-owned clock, updates, loop/history, faults, cancellation and selected output routing",
+    "Integrate compact opt-in shared Source Editor transport only after qualification; keep rendered fallback",
+    "Define mono/stereo Apply channel semantics, headroom, state capture and original/one-Undo recipe retention"
+  ]
+}

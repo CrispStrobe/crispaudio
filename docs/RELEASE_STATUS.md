@@ -4481,3 +4481,38 @@ are fixture observations, not timing/resident-memory guarantees. No Tauri/WebKit
 or physical listening claim. [Sanitized evidence](evidence/source-effect-chain.json).
 Full frontend suite was not rerun; historical broad-run timeout/retry remains at
 its checkpoint. No native rebuild, installation or Apple upload.
+
+
+## Native source audition foundation — 0.13.48 source candidate
+
+Internal `NativeSourceAudition` prepares an isolated, bounded full-clip source
+project for the existing native-owned Mac clock. It reuses latency-compensated
+warm bypass and exclusive output ownership, applies live controls to one session,
+closes on output changes/EOF/fault/cancel and rejects stale preparation/updates.
+Mono is duplicated before the arrangement panner to preserve source level. The
+source-editor UI is **not connected**; native Auto preview remains helper-rendered.
+No native helper logic/build, app installation, tag or Apple upload changed.
+
+Validation passed: **50 focused tests / 3 files** (source adapter, shared playback
+controller and snapshot lifecycle), production build, full lint, and **24 release
+checks**. The build retains its existing chunk/dynamic-import notices. The full
+frontend suite was not rerun; prior broad timeout/retry remains at its checkpoint.
+
+The new actual-helper comparison is **not accepted**. The strict optional gate
+fails for mono AU bandpass (maximum absolute error about 0.01110) and AU peak
+limiter in mono/stereo (about 0.14159) relative to existing source helper rendering.
+VST3 delay matches exactly in both channel layouts; stereo bandpass differs only
+by about 1.16e-38; all six static bypass cases match the source exactly. Limiter
+reports 192 samples and compensated onset is correct. These results do not explain
+the amplitude difference, establish real-time parity or qualify the selected device.
+The characterization option records `parityAccepted:false`; it does not waive the
+strict gate. All 18 stream sessions/helpers were reaped (102 packets, zero remaining).
+[Sanitized evidence](evidence/native-source-plan.json) and
+[next work](WORK_HANDOFF.md#native-source-audition-foundation--01348-checkpoint).
+
+Before exposing the control, resolve AU format/channel/initialization/history and
+preview/Apply behavior, then qualify native-clock continuous updates, aligned
+bypass, loops/cursor, faults, device changes and source UI cancellation. Keep mono
+output/channel semantics, saved state, monitor headroom, original retention and
+one-Undo Apply explicit. Both existing app sessions are preserved. Physical N5
+and the pending .41 human speech check remain open; no hardware action occurred.

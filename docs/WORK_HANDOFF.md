@@ -21,7 +21,9 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.47 adds bounded ordered source
+The installed baseline remains 0.13.33. Source 0.13.48 adds hidden native source
+audition groundwork and records an AU preview/Apply parity blocker; start at the
+latest checkpoint below. Source 0.13.47 adds bounded ordered source
 effect chains; see the latest checkpoint below. Source 0.13.46 adds automatic bounded
 live-filter waveform snapshots; see the latest checkpoint below. Source 0.13.45 adds a bounded continuous
 built-in source filter; see the latest checkpoint below. Source 0.13.44 extends Mix A/B to frozen live mixer values, with baked fields
@@ -671,3 +673,84 @@ are fixture observations, not timing/resident-memory guarantees. No Tauri/WebKit
 or physical listening claim. [Sanitized evidence](evidence/source-effect-chain.json).
 Full frontend suite was not rerun; historical broad-run timeout/retry remains at
 its checkpoint. No native rebuild, installation or Apple upload.
+
+
+## Native source audition foundation — 0.13.48 checkpoint
+
+`NativeSourceAudition.ts` is internal and **not wired into SourceEditor**. It
+builds a private full-clip project with one enabled AU/VST3 insert, unity clip/
+track gains and no arrangement FX, fades, automation or output limiter. Input is
+mono/stereo, 8–192 kHz, at least 2048 output frames and at most 120 seconds, also
+subject to a 256 MiB allocation estimate (five stereo float copies at the larger
+source/resampled length). Invalid PCM/effect/control values reject before native
+ownership. Window PCM and effect state are copied before asynchronous work;
+original sources and the editable project are untouched. This is an allocation
+estimate, not a resident-memory ceiling or responsiveness qualification.
+
+The first comparison exposed the arrangement's -3 dB center-pan treatment of mono
+sources. The adapter now duplicates mono before stereo balance, preserving its
+source level. This does **not** establish that a mono plug-in and a dual-mono
+stereo instance sound identical: AU bandpass currently demonstrates a difference.
+
+The adapter reuses `NativePlaybackController`, the native output clock, existing
+warm dry history/latency compensation and the backend's exclusive playback/input
+owner. Default-device resolution follows the selected macOS output. It stops on
+output-change events, cancellation, natural end and faults; restarts wait for old
+preparation/cleanup. Parameters, bypass and attenuating monitor gain update the
+same session; edits during preparation are published when it becomes ready. A
+late failed update cannot stop a replacement. `NativePlaybackController.play`
+now accepts an optional source/project validity predicate and passes it through
+snapshot upload/start. The eventual UI owner must supply Abort/current identity,
+poll and stop on recording/arrangement start, source/selection changes and close.
+No persistent state capture or Apply behavior is implemented by this adapter.
+
+### Acceptance blocker and next implementation
+
+`scripts/test-native-source-plan.mjs` compares actual repo-built helper renders
+(the existing source Prepare path) with the production offline native graph of
+the new plan. It uses generated 48 kHz mono/stereo impulses/tones and saved state;
+Node pipes replace Tauri IPC. No native output queue, microphone, user bundle or
+real-time scheduling is used. Default execution is a **strict gate and currently
+fails**. `CRISPAUDIO_NATIVE_SOURCE_CHARACTERIZE=1` emits measurements while keeping
+`parityAccepted:false`; a successful characterization run is not parity acceptance.
+Private helper/fixture/browser locations belong in ignored handover files.
+
+Measured maximum absolute differences: VST3 ADelay **0** in mono/stereo, stereo
+AUBandpass about **1.16e-38**, mono AUBandpass about **0.01110**, and mono/stereo
+AUPeakLimiter about **0.14159**. Limiter reports **192 samples** and its compensated
+onset is correct; VST3 delay has the independently expected 960-frame delay with
+explicit 0.02 parameters. All six static bypass comparisons have **zero error**.
+Every fixture session/helper is closed. The limiter amplitude discrepancy remains
+unexplained; do not infer a particular cause or loosen the parity threshold.
+[Sanitized measurements](evidence/native-source-plan.json).
+
+Continue in this order:
+1. Isolate AU source-render vs stream channel layout, format/parameter/state
+   initialization and first-pass history. Compare the original-channel helper
+   path with the stereo graph before choosing mono semantics. Inspect
+   `media/apple/Plugins.swift` (`processPlugin` and `streamPluginBody`). Fix the
+   cause or implement a shared stream-based Prepare path with explicit saved-state,
+   sample-rate/channel, crop/tail and original-retention behavior. Keep the strict
+   gate; extend it to changed parameters, rates and retained-state-only cases.
+2. Qualify native-owned real-time source playback with an isolated silent/null
+   output harness: first/looped pass, continuous edits, aligned warm dry/wet,
+   latency changes, cursor/end, output changes, preparation/stop races and failures.
+   Existing timeline qualification does not establish source preview/Apply parity.
+3. Wire a compact opt-in source preview control into the **shared Source Editor
+   Play/Stop**, with explicit rendered fallback. Preserve selected output, audio
+   owner exclusion, lifecycle cancellation, no double processing, and one-Undo
+   Apply retaining original/recipe. Initially restrict ranges/channels/topology to
+   qualified cases. If a mono insert creates stereo output, define its audition,
+   saved-source and channel-selection behavior before enabling it. Preserve monitor
+   headroom for hot source/plug-in output. Add UI tests
+   for recording, selection/project/source changes, another preview and unmount.
+4. Continue broader built-ins, state-aware recipe recall, seamless topology,
+   waveform extremes/load/resident-memory, restoration/freeze gaps and physical
+   N5 as already scoped. The unanswered .41 speech check stays pending; do not
+   repeat it or operate the user's hardware/app sessions.
+
+Validation: **50 focused tests / 3 files**, production build, full lint and
+**24 release checks** pass; details are recorded in RELEASE_STATUS. The optional native comparison
+**has an open strict parity failure**; characterization records rather than
+accepts it. No source UI behavior, native helper code/build, installed bundle,
+hardware, tag or Apple submission changed. Both original app sessions are kept.

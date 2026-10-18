@@ -46,18 +46,19 @@ export class NativePlaybackController {
   if(this.cycle&&frame>=this.last)frame=this.first+(frame-this.first)%(this.last-this.first);else frame=Math.min(this.last,frame);
   return frame/48000;
  }
- play(project:TimelineProject,sources:Map<string,AudioSource>,position:number,start:number,end:number,cycle:boolean,muted=false){
+ play(project:TimelineProject,sources:Map<string,AudioSource>,position:number,start:number,end:number,cycle:boolean,muted=false,isCurrent?:()=>boolean){
+  if(isCurrent&&!isCurrent())return Promise.reject(interrupted());
   const key=nativeLiveStructureKey(project),frame=Math.round(position*48000);
   if(this.playback&&this.statusValue?.phase==='paused'&&this.key===key&&this.sources&&renderedSourcesMatch(this.sources,sources)&&this.first===Math.round(start*48000)&&this.last===Math.round(end*48000)&&this.cycle===cycle&&Math.abs(this.statusValue.frame-frame)<=1){
    return this.playback.pause(false).then(()=>this.poll());
   }
   const previous=this.stop();const generation=++this.generation,controller=new AbortController();this.preparing=controller;
-  const check=()=>{controller.signal.throwIfAborted();if(generation!==this.generation)throw interrupted();};
+  const check=()=>{controller.signal.throwIfAborted();if(generation!==this.generation||isCurrent&&!isCurrent())throw interrupted();};
   this.first=Math.round(start*48000);this.last=Math.round(end*48000);this.cycle=cycle;
   this.statusValue={phase:'preparing',frame,clockTimeMs:0,renderedFrames:0,callbacks:0,fault:0,peaks:[0,0],appliedRevision:0};this.onChange();
   const task=(async()=>{let snapshot:NativeTimelineSnapshot|undefined;
   try{
-   await previous;check();snapshot=await NativeTimelineSnapshot.create(project,sources,{signal:controller.signal});check();
+   await previous;check();snapshot=await NativeTimelineSnapshot.create(project,sources,{signal:controller.signal,isCurrent});check();
    const playback=await snapshot.startPlayback({startFrame:frame,endFrame:this.last,cycle,loopStartFrame:this.first,muted});check();
    this.snapshot=snapshot;this.playback=playback;this.key=key;this.sources=new Map(sources);this.preparing=undefined;await this.poll();
   }catch(error){await snapshot?.close().catch(()=>{});if(this.preparing===controller)this.preparing=undefined;if(generation===this.generation){this.statusValue=undefined;this.onChange();}throw generation===this.generation?error:interrupted();}
