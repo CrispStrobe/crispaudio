@@ -1,0 +1,22 @@
+[package]
+name = "crispaudio-source-clock-check"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+crispaudio-media = { path = "../../media", features = ["native-engine"] }
+serde_json = "1.0"
+
+[features]
+native-validation = []
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.dev.package.crispaudio-media]
+opt-level = 3
+
+[profile.dev.package.rustfft]
+opt-level = 3

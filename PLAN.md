@@ -1,6 +1,26 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for source candidate 0.13.49 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for source candidate 0.13.50 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.50 adds isolated **null-output source-worker qualification**. Production
+native worker/DSP, the bounded PCM consumer and cursor publisher are shared with
+a standalone Mac test driver that traps AudioQueue creation and device inventory.
+Fifteen native tests pass: latency-aligned first/last samples, live controls on one
+helper, retained delay history across loops, worker pause/control/resume, changed
+latency/fault silence, cancellation and cleanup. A pre-cancelled owner now avoids
+starting an insert. This uses a synthetic clock, not a physical output device.
+Native source audition now explicitly admits **48 kHz only**; its offline plan
+remains rate-generic. See [evidence](docs/evidence/native-source-null.json).
+
+Next: integrate a compact opt-in native source mode into the shared Source Editor
+Play/Stop, retaining rendered fallback and admitting only qualified full-clip,
+rate/channel cases. Join ownership transitions, validate saved-state/first-pass
+Prepare/Apply behavior, monitor headroom and mono/stereo output semantics, and
+cover real UI cancellation/fault/device-change paths. Native source UI remains
+hidden. Core Audio timestamps, actual device routing/hotplug, WebKit, physical
+latency/listening and sustained load remain separate acceptance. Broader FX,
+recipe recall, waveform/restoration/freeze work stays scoped below.
+[Current handoff](docs/WORK_HANDOFF.md#native-source-null-output-qualification--01350-checkpoint).
 
 0.13.49 resolves the measured AU source-render parity blocker: complete bounded
 file reads preserve the requested window, silent input padding drains pending
@@ -11,13 +31,11 @@ tiny clips, quantum edges, offsets and saved-state-only cases. See
 [evidence](docs/evidence/au-source-window.json). Existing source Prepare/Apply
 benefits when built with the new helper; running installed apps are unchanged.
 
-Next: qualify the hidden native source adapter's native-owned clock, live
-parameters/bypass, loops/history, cursor/end, cancellation/faults and selected
-output before wiring compact opt-in controls into the shared Source Editor
-Play/Stop. Native-owned playback runs at 48 kHz: define matching resampling/Apply
-semantics or restrict the first UI slice to 48 kHz sources. Per-rate offline tests
-do not establish cross-rate native playback equivalence. Preserve rendered
-fallback, mono/stereo semantics, headroom, saved state, originals and one Undo.
+0.13.50 adds the bounded null-output worker checks above and enforces 48 kHz
+source-playback admission. The actual output device and shared Source Editor UI
+still need their acceptance. Per-rate offline tests do not establish cross-rate
+native playback/Apply equivalence. Preserve rendered fallback, channel semantics,
+headroom, saved state, originals and one Undo.
 [Current handoff](docs/WORK_HANDOFF.md#au-source-window-fidelity--01349-checkpoint).
 
 0.13.48 adds an **internal, hidden native source-audition adapter** using the

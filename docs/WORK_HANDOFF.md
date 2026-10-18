@@ -21,7 +21,9 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.49 fixes AU source-window
+The installed baseline remains 0.13.33. Source 0.13.50 adds hardware-free native
+source-worker qualification and enforces 48 kHz audition admission; start at the
+latest checkpoint below. Source 0.13.49 fixes AU source-window
 fidelity and clears the measured offline parity blocker; start at the latest
 checkpoint below. Source 0.13.48 adds the hidden native source-audition adapter.
 Source 0.13.47 adds bounded ordered source
@@ -839,3 +841,72 @@ not an installed update, native source UI activation or Apple submission.
    waveform load/resident-memory and remaining restoration/freeze cases. Physical
    N5 and the unanswered .41 speech check remain separate and pending. Do not
    repeat the hardware question or operate the user's active app sessions.
+
+
+## Native source null-output qualification — 0.13.50 checkpoint
+
+The production worker, PCM consumer and cursor publisher in
+`src-tauri/src/native_audio_clock/live.rs` are shared with a test-only output driver.
+The normal `run` entry point still opens its selected hardware AudioQueue with two
+buffers. The null driver is not a runtime option or Tauri command; it is reached
+only by tests in `live/null_tests.rs`. The standalone
+[scripts/native-source-clock](../scripts/native-source-clock/README.md) executable
+imports these production modules, replaces device inventory with a panic and
+AudioQueue creation with an abort tripwire. It builds current repository helpers
+through the media crate and avoids a Tauri app/bundle rebuild. Reuse the existing
+Cargo target; standalone build output is ignored.
+
+Null consumption uses a nominal 512-frame / 48 kHz cadence and two synthetic
+pending buffers. The real native worker, graph, helper transport and real-time
+process/scheduling modes run unchanged. Cursor mapping uses the shared publisher,
+including finite end and nonzero loop starts. It does not observe hardware time.
+An already-cancelled worker now exits before scheduling/starting an insert; the
+new pre-cancel test verifies no stream or output opens and shutdown completes.
+
+**15 native tests pass**, including seven actual-helper cases: exact 16,385-frame
+first/last samples through a 192-frame-latency AU (error 0), live parameter/bypass/
+monitor changes with one helper, a 96-frame VST3 delay retaining history over six
+loops, held worker/cursor and accepted controls during pause, helper-loss/cancel
+cleanup, latency-change rejection with latched zero output, and pre-cancelled
+preparation. Shared tests cover malformed/reentrant consumer calls, ring wrap,
+concurrent publication, dry history, parameter restore and clock/end mapping.
+Every owned helper is joined/closed. These are short known fixtures and steady
+control windows, not general plug-in, click-free-transition or load guarantees.
+[Portable evidence](evidence/native-source-null.json).
+
+`NativeSourceAudition.play` now rejects non-48-kHz sources **before PCM allocation
+or upload**. `nativeSourcePlan` remains 8–192 kHz for offline qualification, but
+native-owned playback resamples to 48 kHz while existing helper Apply runs at the
+source rate. A future common-rate contract may broaden admission. Do not remove
+the guard merely because the per-rate offline cases pass. **51 focused frontend
+tests / 3 files**, production build, full lint, Rust format checks and **24 release
+checks** pass. Full frontend and full Tauri app Cargo suites were not rerun. No
+source-editor streaming control or installed app was changed.
+
+Continue in this order:
+1. Connect an opt-in native mode to **shared Source Editor Play/Stop** with short
+   localized controls/help and rendered fallback. Initially admit 48 kHz full-clip
+   cases only; define stereo effects on mono sources before enabling that case.
+   Keep waveform/analysis expectations explicit (existing native snapshots are
+   rendered), source originals intact, and Apply one Undo step.
+2. Join the native owner before recording, arrangement or another preview takes
+   over. Cover preparation/close/replacement races, source/project/range/channel
+   edits, locks, Apply/Reset, device-change events and unmount in actual UI tests.
+   Existing adapter unit tests and the null driver do not test this Tauri/UI wiring.
+   Use isolated null-backed IPC/UI tests with queue/device traps; the existing
+   muted native Live harness still opens an AudioQueue.
+   Ensure first-pass saved state/parameters match Prepare, capture state only under
+   a defined quiescence contract, and preserve monitor headroom. Qualify real-time
+   vs offline process-mode differences before widening plug-in/rate support.
+3. Qualify actual Core Audio timestamps and device UID selection/change/hotplug,
+   hardware pause/resume, WebKit, physical latency/listening and sustained load in
+   an isolated candidate when appropriate. Null output does not cover these. Keep
+   the existing unanswered .41 speech question and physical N5 separate; do not
+   operate or rebuild the user's active bundles to obtain these results.
+4. Continue broader built-ins, retained-base recipe recall, seamless topology,
+   waveform extremes/resident memory and the restoration/freeze cases already
+   scoped in this handoff and DAW_GAP_ANALYSIS. Preserve the CometBeat and
+   CrisperWeaver product boundaries.
+
+No installed bundle replacement/re-sign/relaunch, hardware action, tag or Apple
+upload. Private compiler/fixture locations and process details stay ignored.

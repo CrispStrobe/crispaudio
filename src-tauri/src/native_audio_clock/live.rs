@@ -123,6 +123,54 @@ struct Output {
     ring: Arc<Ring>,
     end: Option<u64>,
 }
+impl Output {
+    /// The sole bounded PCM consumer. Hardware and null-output qualification use
+    /// this exact path; neither DSP nor control operations run here.
+    fn fill(&self, output: &mut [f32]) {
+        if output.len() != SAMPLES {
+            output.fill(0.);
+            self.ring.fail(2);
+            return;
+        }
+        output.fill(0.);
+        if self
+            .entered
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
+        {
+            self.ring.fail(3);
+        } else {
+            // The CAS above grants this consumer exclusive access until release.
+            let data = unsafe { &mut *self.data.get() };
+            let count = self.end.map_or(FRAMES, |end| {
+                end.saturating_sub(data.queued).min(FRAMES as u64) as usize
+            });
+            if count > 0 && data.consumer.fill(output) {
+                output[count * 2..].fill(0.);
+                let mut peaks = [0f32; 2];
+                for (index, sample) in output.chunks_exact(2).take(count).enumerate() {
+                    for ch in 0..2 {
+                        peaks[ch] = peaks[ch].max(sample[ch].abs());
+                    }
+                    if data.captured_count < 256 && sample.iter().any(|v| v.abs() > 1e-6) {
+                        data.captured[data.captured_count] = Captured {
+                            frame: data.queued + index as u64,
+                            left: sample[0],
+                            right: sample[1],
+                        };
+                        data.captured_count += 1;
+                    }
+                }
+                for (ch, peak) in peaks.iter().enumerate() {
+                    self.control.peaks[ch].store(peak.to_bits(), Ordering::Release);
+                }
+            }
+            data.queued += FRAMES as u64;
+            self.entered.store(false, Ordering::Release);
+        }
+        self.control.callbacks.fetch_add(1, Ordering::Relaxed);
+    }
+}
 unsafe extern "C" fn callback(user: *mut c_void, queue: Queue, buffer: *mut Buffer) {
     let state = &*(user as *const Output);
     if buffer.is_null() || (*buffer).capacity as usize != SAMPLES * 4 || (*buffer).data.is_null() {
@@ -130,42 +178,7 @@ unsafe extern "C" fn callback(user: *mut c_void, queue: Queue, buffer: *mut Buff
         return;
     }
     let output = std::slice::from_raw_parts_mut((*buffer).data.cast::<f32>(), SAMPLES);
-    output.fill(0.);
-    if state
-        .entered
-        .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
-        .is_err()
-    {
-        state.ring.fail(3);
-    } else {
-        let data = &mut *state.data.get();
-        let count = state.end.map_or(FRAMES, |end| {
-            end.saturating_sub(data.queued).min(FRAMES as u64) as usize
-        });
-        if count > 0 && data.consumer.fill(output) {
-            output[count * 2..].fill(0.);
-            let mut peaks = [0f32; 2];
-            for (index, sample) in output.chunks_exact(2).take(count).enumerate() {
-                for ch in 0..2 {
-                    peaks[ch] = peaks[ch].max(sample[ch].abs());
-                }
-                if data.captured_count < 256 && sample.iter().any(|v| v.abs() > 1e-6) {
-                    data.captured[data.captured_count] = Captured {
-                        frame: data.queued + index as u64,
-                        left: sample[0],
-                        right: sample[1],
-                    };
-                    data.captured_count += 1;
-                }
-            }
-            for (ch, peak) in peaks.iter().enumerate() {
-                state.control.peaks[ch].store(peak.to_bits(), Ordering::Release);
-            }
-        }
-        data.queued += FRAMES as u64;
-        state.entered.store(false, Ordering::Release);
-    }
-    state.control.callbacks.fetch_add(1, Ordering::Relaxed);
+    state.fill(output);
     (*buffer).size = (SAMPLES * 4) as u32;
     if !state.ring.stop.load(Ordering::Acquire)
         && AudioQueueEnqueueBuffer(queue, buffer, 0, std::ptr::null()) != 0
@@ -204,6 +217,43 @@ pub fn run(
     muted: bool,
     control: Arc<LiveControl>,
 ) -> Result<Value, String> {
+    run_with_output(
+        snapshot,
+        start,
+        end,
+        cycle,
+        loop_start,
+        muted,
+        control,
+        2,
+        |state| {
+            play_device(
+                state,
+                &device,
+                start,
+                end,
+                cycle,
+                loop_start.unwrap_or(start),
+                muted,
+            )
+        },
+    )
+}
+
+fn run_with_output<F>(
+    snapshot: Arc<crispaudio_media::native_snapshot::Snapshot>,
+    start: u32,
+    end: u32,
+    cycle: bool,
+    loop_start: Option<u32>,
+    muted: bool,
+    control: Arc<LiveControl>,
+    queue_buffers: usize,
+    output: F,
+) -> Result<Value, String>
+where
+    F: FnOnce(&Output) -> Result<(), String>,
+{
     struct Finished(Arc<LiveControl>);
     impl Drop for Finished {
         fn drop(&mut self) {
@@ -231,6 +281,9 @@ pub fn run(
     let worker_ring = shared.clone();
     let handle = thread::spawn(move || -> Result<(), String> {
         let result = (|| {
+            if worker_control.stop.stop.load(Ordering::Acquire) {
+                return Ok(());
+            }
             // Scheduling priority follows audio work even when the window is hidden.
             if unsafe { pthread_set_qos_class_self_np(0x21, 0) } != 0 {
                 return Err("Cannot schedule native audio worker".into());
@@ -372,163 +425,7 @@ pub fn run(
         if control.stop.stop.load(Ordering::Acquire) {
             return Ok(());
         }
-        let format = Format {
-            rate: 48000.,
-            id: u32::from_be_bytes(*b"lpcm"),
-            flags: 1 | 8,
-            bytes_packet: 8,
-            frames_packet: 1,
-            bytes_frame: 8,
-            channels: 2,
-            bits: 32,
-            reserved: 0,
-        };
-        let mut raw = std::ptr::null_mut();
-        check(unsafe {
-            AudioQueueNewOutput(
-                &format,
-                callback,
-                (&*state as *const Output as *mut Output).cast(),
-                std::ptr::null(),
-                std::ptr::null(),
-                0,
-                &mut raw,
-            )
-        })?;
-        let queue = AudioQueue(raw, shared.clone());
-        let uid = std::ffi::CString::new(device.as_str()).map_err(|_| "Invalid output UID")?;
-        let name = unsafe { CFStringCreateWithCString(std::ptr::null(), uid.as_ptr(), 0x08000100) };
-        if name.is_null() {
-            return Err("Cannot create output UID".into());
-        }
-        let bound = unsafe {
-            AudioQueueSetProperty(
-                queue.0,
-                u32::from_be_bytes(*b"aqcd"),
-                (&name as *const *const c_void).cast(),
-                std::mem::size_of_val(&name) as u32,
-            )
-        };
-        unsafe { CFRelease(name) };
-        check(bound)?;
-        let mut volume = if muted {
-            0.
-        } else {
-            f32::from_bits(control.volume.load(Ordering::Acquire))
-        };
-        check(unsafe { AudioQueueSetParameter(queue.0, 1, volume) })?;
-        for _ in 0..2 {
-            let mut buffer = std::ptr::null_mut();
-            check(unsafe { AudioQueueAllocateBuffer(queue.0, (SAMPLES * 4) as u32, &mut buffer) })?;
-            unsafe {
-                callback(
-                    (&*state as *const Output as *mut Output).cast(),
-                    queue.0,
-                    buffer,
-                )
-            };
-        }
-        let mut paused = control.paused.load(Ordering::Acquire);
-        if !paused {
-            check(unsafe { AudioQueueStart(queue.0, std::ptr::null()) })?;
-        }
-        control
-            .phase
-            .store(if paused { 2 } else { 1 }, Ordering::Release);
-        let mut device_check = Instant::now();
-        let mut last_clock = Instant::now();
-        let mut previous_sample = f64::NEG_INFINITY;
-        while !control.stop.stop.load(Ordering::Acquire) {
-            let fault = shared.fault.load(Ordering::Acquire);
-            if fault != 0 {
-                control.fault.store(fault, Ordering::Release);
-                return Err(format!("Native playback fault ({fault})"));
-            }
-            let desired = control.paused.load(Ordering::Acquire);
-            if paused != desired {
-                check(unsafe {
-                    if desired {
-                        AudioQueuePause(queue.0)
-                    } else {
-                        AudioQueueStart(queue.0, std::ptr::null())
-                    }
-                })?;
-                paused = desired;
-                last_clock = Instant::now();
-                control
-                    .phase
-                    .store(if paused { 2 } else { 1 }, Ordering::Release);
-            }
-            let desired = if muted {
-                0.
-            } else {
-                f32::from_bits(control.volume.load(Ordering::Acquire))
-            };
-            if volume != desired {
-                check(unsafe { AudioQueueSetParameter(queue.0, 1, desired) })?;
-                volume = desired;
-            }
-            let mut stamp = Timestamp::default();
-            let mut discontinuity = 0u8;
-            if !paused
-                && unsafe {
-                    AudioQueueGetCurrentTime(
-                        queue.0,
-                        std::ptr::null(),
-                        &mut stamp,
-                        &mut discontinuity,
-                    )
-                } == 0
-                && stamp.flags & 1 != 0
-                && stamp.sample.is_finite()
-            {
-                if discontinuity != 0 || stamp.sample < previous_sample {
-                    shared.fail(7);
-                    return Err(format!("Native device clock discontinuity: previous={previous_sample}, current={}, paused={paused}",stamp.sample));
-                }
-                if stamp.sample > previous_sample {
-                    last_clock = Instant::now();
-                    previous_sample = stamp.sample;
-                }
-                let elapsed = stamp.sample.max(0.) as u64;
-                let absolute = start as u64 + elapsed;
-                let position = if cycle && absolute >= end as u64 {
-                    cycle_start as u64
-                        + (absolute - cycle_start as u64) % (end - cycle_start) as u64
-                } else {
-                    absolute.min(end as u64)
-                };
-                control.position.store(position, Ordering::Release);
-                control.position_time.store(
-                    SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap_or_default()
-                        .as_millis() as u64,
-                    Ordering::Release,
-                );
-                if count.is_some_and(|n| elapsed >= n) {
-                    control.phase.store(3, Ordering::Release);
-                    break;
-                }
-            }
-            if !paused && last_clock.elapsed() > Duration::from_secs(2) {
-                shared.fail(8);
-            }
-            if device_check.elapsed() > Duration::from_millis(500) {
-                if !crate::commands::audio_output::list_audio_outputs()?
-                    .iter()
-                    .any(|d| d.id == device)
-                {
-                    shared.fail(9);
-                }
-                device_check = Instant::now();
-            }
-            thread::sleep(Duration::from_millis(2));
-        }
-        // Dispose synchronously before reading callback-owned capture storage.
-        check(unsafe { AudioQueueSetParameter(queue.0, 1, 0.) })?;
-        drop(queue);
-        Ok(())
+        output(&state)
     })();
     let cancelled =
         control.stop.stop.load(Ordering::Acquire) && shared.fault.load(Ordering::Acquire) == 0;
@@ -553,12 +450,190 @@ pub fn run(
         .iter()
         .map(|sample| json!({"frame":sample.frame,"left":sample.left,"right":sample.right}))
         .collect::<Vec<_>>();
-    let summary = json!({"status":control.status(),"samples":captured,"muted":muted,"helpersClosed":control.stop.helper.lock().unwrap().iter().all(|h|!h.is_alive()),"ringSlots":SLOTS,"queueBuffers":2});
+    let summary = json!({"status":control.status(),"samples":captured,"muted":muted,"helpersClosed":control.stop.helper.lock().unwrap().iter().all(|h|!h.is_alive()),"ringSlots":SLOTS,"queueBuffers":queue_buffers});
     if !cancelled {
         rendered?;
         result?;
     }
     Ok(summary)
+}
+
+fn publish_clock(
+    control: &LiveControl,
+    start: u32,
+    end: u32,
+    cycle: bool,
+    cycle_start: u32,
+    elapsed: u64,
+) -> bool {
+    let absolute = start as u64 + elapsed;
+    let position = if cycle && absolute >= end as u64 {
+        cycle_start as u64 + (absolute - cycle_start as u64) % (end - cycle_start) as u64
+    } else {
+        absolute.min(end as u64)
+    };
+    control.position.store(position, Ordering::Release);
+    control.position_time.store(
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64,
+        Ordering::Release,
+    );
+    let ended = !cycle && elapsed >= (end - start) as u64;
+    if ended {
+        control.phase.store(3, Ordering::Release);
+    }
+    ended
+}
+
+fn play_device(
+    state: &Output,
+    device: &str,
+    start: u32,
+    end: u32,
+    cycle: bool,
+    cycle_start: u32,
+    muted: bool,
+) -> Result<(), String> {
+    let control = &state.control;
+    let shared = &state.ring;
+    let format = Format {
+        rate: 48000.,
+        id: u32::from_be_bytes(*b"lpcm"),
+        flags: 1 | 8,
+        bytes_packet: 8,
+        frames_packet: 1,
+        bytes_frame: 8,
+        channels: 2,
+        bits: 32,
+        reserved: 0,
+    };
+    let mut raw = std::ptr::null_mut();
+    check(unsafe {
+        AudioQueueNewOutput(
+            &format,
+            callback,
+            (&*state as *const Output as *mut Output).cast(),
+            std::ptr::null(),
+            std::ptr::null(),
+            0,
+            &mut raw,
+        )
+    })?;
+    let queue = AudioQueue(raw, shared.clone());
+    let uid = std::ffi::CString::new(device).map_err(|_| "Invalid output UID")?;
+    let name = unsafe { CFStringCreateWithCString(std::ptr::null(), uid.as_ptr(), 0x08000100) };
+    if name.is_null() {
+        return Err("Cannot create output UID".into());
+    }
+    let bound = unsafe {
+        AudioQueueSetProperty(
+            queue.0,
+            u32::from_be_bytes(*b"aqcd"),
+            (&name as *const *const c_void).cast(),
+            std::mem::size_of_val(&name) as u32,
+        )
+    };
+    unsafe { CFRelease(name) };
+    check(bound)?;
+    let mut volume = if muted {
+        0.
+    } else {
+        f32::from_bits(control.volume.load(Ordering::Acquire))
+    };
+    check(unsafe { AudioQueueSetParameter(queue.0, 1, volume) })?;
+    for _ in 0..2 {
+        let mut buffer = std::ptr::null_mut();
+        check(unsafe { AudioQueueAllocateBuffer(queue.0, (SAMPLES * 4) as u32, &mut buffer) })?;
+        unsafe {
+            callback(
+                (&*state as *const Output as *mut Output).cast(),
+                queue.0,
+                buffer,
+            )
+        };
+    }
+    let mut paused = control.paused.load(Ordering::Acquire);
+    if !paused {
+        check(unsafe { AudioQueueStart(queue.0, std::ptr::null()) })?;
+    }
+    control
+        .phase
+        .store(if paused { 2 } else { 1 }, Ordering::Release);
+    let mut device_check = Instant::now();
+    let mut last_clock = Instant::now();
+    let mut previous_sample = f64::NEG_INFINITY;
+    while !control.stop.stop.load(Ordering::Acquire) {
+        let fault = shared.fault.load(Ordering::Acquire);
+        if fault != 0 {
+            control.fault.store(fault, Ordering::Release);
+            return Err(format!("Native playback fault ({fault})"));
+        }
+        let desired = control.paused.load(Ordering::Acquire);
+        if paused != desired {
+            check(unsafe {
+                if desired {
+                    AudioQueuePause(queue.0)
+                } else {
+                    AudioQueueStart(queue.0, std::ptr::null())
+                }
+            })?;
+            paused = desired;
+            last_clock = Instant::now();
+            control
+                .phase
+                .store(if paused { 2 } else { 1 }, Ordering::Release);
+        }
+        let desired = if muted {
+            0.
+        } else {
+            f32::from_bits(control.volume.load(Ordering::Acquire))
+        };
+        if volume != desired {
+            check(unsafe { AudioQueueSetParameter(queue.0, 1, desired) })?;
+            volume = desired;
+        }
+        let mut stamp = Timestamp::default();
+        let mut discontinuity = 0u8;
+        if !paused
+            && unsafe {
+                AudioQueueGetCurrentTime(queue.0, std::ptr::null(), &mut stamp, &mut discontinuity)
+            } == 0
+            && stamp.flags & 1 != 0
+            && stamp.sample.is_finite()
+        {
+            if discontinuity != 0 || stamp.sample < previous_sample {
+                shared.fail(7);
+                return Err(format!("Native device clock discontinuity: previous={previous_sample}, current={}, paused={paused}",stamp.sample));
+            }
+            if stamp.sample > previous_sample {
+                last_clock = Instant::now();
+                previous_sample = stamp.sample;
+            }
+            let elapsed = stamp.sample.max(0.) as u64;
+            if publish_clock(control, start, end, cycle, cycle_start, elapsed) {
+                break;
+            }
+        }
+        if !paused && last_clock.elapsed() > Duration::from_secs(2) {
+            shared.fail(8);
+        }
+        if device_check.elapsed() > Duration::from_millis(500) {
+            if !crate::commands::audio_output::list_audio_outputs()?
+                .iter()
+                .any(|d| d.id == device)
+            {
+                shared.fail(9);
+            }
+            device_check = Instant::now();
+        }
+        thread::sleep(Duration::from_millis(2));
+    }
+    // Dispose synchronously before reading callback-owned capture storage.
+    check(unsafe { AudioQueueSetParameter(queue.0, 1, 0.) })?;
+    drop(queue);
+    Ok(())
 }
 
 #[cfg(test)]
@@ -595,3 +670,7 @@ mod tests {
             .is_none());
     }
 }
+
+#[cfg(test)]
+#[path = "live/null_tests.rs"]
+mod null_tests;

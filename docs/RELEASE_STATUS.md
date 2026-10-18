@@ -4550,3 +4550,33 @@ Apply behavior for other source rates. Next: source clock/loop/parameter/fault/
 device qualification, explicit resampling semantics and compact shared editor
 transport integration as scoped in the latest WORK_HANDOFF. Existing app sessions
 and the pending .41 human check remain untouched. No tag or Apple upload occurred.
+
+
+## Native source null-output qualification — 0.13.50 source candidate
+
+The production native playback worker, PCM consumer and cursor publisher now
+support a test-only null driver through a shared internal function. Normal app
+playback keeps its hardware AudioQueue path. The standalone Mac test crate has no
+Tauri UI and traps AudioQueue creation/device inventory; no user output or input
+is opened. Native source audition now rejects non-48-kHz input before allocation/
+upload, retaining rate-generic offline plans. A pre-cancelled worker avoids
+starting an insert.
+
+**15 native tests pass**, including actual AU/VST3 real-time-mode helper DSP:
+latency-aligned first/last samples in a 16,385-frame render (error 0), live controls
+with one helper, delay history across six loops, worker pause/control/resume,
+cancellation/helper loss, changed-latency fault silence and cancelled startup.
+Shared ring/consumer/clock tests pass, including nonzero cycle starts. Helpers are
+joined/reaped. **51 focused frontend tests / 3 files**, production build, full lint,
+Rust formatting and **24 release checks** pass. Full frontend/Tauri app suites were
+not rerun; the preceding broad-run timeout remains historical, not current green.
+[Sanitized evidence](evidence/native-source-null.json).
+
+The driver models callback cadence and queued buffers. It does not qualify actual
+AudioQueue timestamps/pause, selected-device routing/hotplug, physical latency or
+listening, WebKit/Tauri integration or sustained load. The source streaming UI is
+still hidden. Next: compact shared editor integration with owned transitions,
+state/first-pass Apply parity, mono/stereo policy and monitor headroom, followed
+by the stated platform/device acceptance. Both existing app sessions and the
+pending .41 human check remain untouched. No installed app update, tag or Apple
+upload was made.

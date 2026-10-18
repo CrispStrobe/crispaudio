@@ -171,7 +171,10 @@ file reads, missing end samples and an implicit-mixer mono level change. The
 original strict source-plan comparison now passes; 52 actual AU window cases at
 8–192 kHz match stream DSP exactly. Silent input padding drains processing while
 output remains the original clip length; following source audio is not included.
-These offline comparisons do not qualify native-owned real-time playback, live
-edits, looping, selected devices or its fixed-48-kHz resampling/Apply semantics.
-The [engineering handoff](WORK_HANDOFF.md#au-source-window-fidelity--01349-checkpoint)
+0.13.50 also checks the production real-time worker and DSP through an isolated
+null consumer, including controls, loop history and cleanup. The source streaming
+UI remains hidden; actual device timing/routing and editor lifecycle are still
+open. Native source audition admits 48 kHz only until matching resampling/Apply
+semantics are defined. The null clock does not establish physical acceptance.
+The [engineering handoff](WORK_HANDOFF.md#native-source-null-output-qualification--01350-checkpoint)
 records the measured scope and next acceptance steps.

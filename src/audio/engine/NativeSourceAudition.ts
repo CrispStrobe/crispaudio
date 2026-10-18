@@ -45,7 +45,9 @@ export function nativeSourcePlan(input:NativeSourceInput,levelDb=0){
  * checked at every async boundary; an AbortSignal cancels a pending start.
  * Starting without a device override uses the selected macOS default output.
  * Output changes stop the audition; restarting resolves the new selected device.
- * No plugin-state capture or Apply parity is implied by this transport adapter. */
+ * Playback currently admits only 48 kHz sources; the offline plan remains
+ * rate-generic for qualification. No plugin-state capture or Apply parity is
+ * implied by this transport adapter. */
 export class NativeSourceAudition {
  private project?:TimelineProject;
  private generation=0;
@@ -68,6 +70,7 @@ export class NativeSourceAudition {
  async play(input:NativeSourceInput,options:Options={}){
   const previous=this.stop(),generation=++this.generation;
   options.signal?.throwIfAborted();if(options.isCurrent&&!options.isCurrent())throw interrupted();
+  if(input.sampleRate!==48000)throw new Error('Native source preview currently requires 48 kHz audio');
   const plan=nativeSourcePlan(input,options.levelDb),check=()=>{options.signal?.throwIfAborted();if(generation!==this.generation||options.isCurrent&&!options.isCurrent())throw interrupted();};
   const abort=()=>{if(generation===this.generation)void this.stop();};
   options.signal?.addEventListener('abort',abort,{once:true});

@@ -83,3 +83,8 @@ it('stops an invalidated owner on polling and rejects invalid controls without n
 });
 
 it('duplicates mono into stereo before the timeline panner to preserve source audition unity',()=>{const channel=new Float32Array(4800).fill(.5),plan=nativeSourcePlan({...input(),channels:[channel]}),source=[...plan.sources.values()][0];expect(source.channels).toBe(2);expect(source.buffer.getChannelData(0)).toEqual(channel);expect(source.buffer.getChannelData(1)).toEqual(channel);expect(source.buffer.getChannelData(0)).not.toBe(source.buffer.getChannelData(1));expect(plan.estimatedBytes).toBe((4800+2)*2*4*5);});
+
+it('rejects cross-rate native audition before allocation/upload while keeping offline plans rate-generic',async()=>{
+ const {audio}=owner(),f=input();f.sampleRate=44100;const allocation=vi.fn();vi.stubGlobal('AudioBuffer',allocation);
+ await expect(audio.play(f)).rejects.toThrow('requires 48 kHz');expect(allocation).not.toHaveBeenCalled();expect(create).not.toHaveBeenCalled();expect(audio.active).toBe(false);
+});

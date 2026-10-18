@@ -1,0 +1,81 @@
+{
+  "version": "0.13.50",
+  "date": "2026-10-18",
+  "output": "Null consumer: nominal 512-frame / 48 kHz cadence with two synthetic pending buffers",
+  "hardwareOpened": false,
+  "driver": "scripts/native-source-clock",
+  "productionCode": [
+    "src-tauri/src/native_audio_clock/live.rs worker, PCM consumer and cursor publisher",
+    "media native graph and realtime AU/VST3 stream helpers"
+  ],
+  "guard": "Standalone driver traps AudioQueue creation and device inventory; released app has no null-mode switch",
+  "nativeTests": 15,
+  "actualHelperTests": 7,
+  "sharedPureTests": 8,
+  "records": {
+    "SOURCE_NULL_CLOSE": {
+      "cancel": "joined",
+      "hardware": false,
+      "helperFault": "joined"
+    },
+    "SOURCE_NULL_CYCLE": {
+      "cycles": 6,
+      "effectDelayFrames": 96,
+      "hardware": false,
+      "helperInstances": 1,
+      "historyRetained": true,
+      "outputImpulses": 5
+    },
+    "SOURCE_NULL_FINITE": {
+      "frames": 16385,
+      "hardware": false,
+      "helpersClosed": true,
+      "maxError": 0.0
+    },
+    "SOURCE_NULL_LATENCY_FAULT": {
+      "changedLatencyRejected": true,
+      "faultOutputSilent": true,
+      "hardware": false,
+      "helpersClosed": true
+    },
+    "SOURCE_NULL_CONTROLS": {
+      "frames": 48000,
+      "hardware": false,
+      "helperInstances": 1,
+      "helpersClosed": true,
+      "updates": 3
+    },
+    "SOURCE_NULL_PAUSE": {
+      "clockHeld": true,
+      "hardware": false,
+      "pausedControlApplied": true,
+      "workerHeld": true
+    },
+    "SOURCE_NULL_PRE_CANCEL": {
+      "hardware": false,
+      "insertOpened": false,
+      "outputOpened": false
+    }
+  },
+  "frontend": {
+    "focusedTests": 51,
+    "files": 3,
+    "build": "passed",
+    "lint": "passed",
+    "releaseChecks": 24
+  },
+  "admission": {
+    "nativeSourcePlaybackSampleRate": 48000,
+    "offlinePlanRates": [
+      8000,
+      192000
+    ],
+    "sourceEditorStreamingExposed": false
+  },
+  "limits": [
+    "Synthetic clock and buffer consumption; no AudioQueue timestamps, device UID/selection/hotplug or hardware pause/resume qualification",
+    "No Tauri/WebKit/source-editor integration, physical latency/listening or sustained-load acceptance",
+    "Static/steady control windows and known Apple bandpass/limiter plus Steinberg ADelay fixtures; no universal plug-in or transition-click guarantee",
+    "Original-rate Apply vs fixed-48-kHz playback resampling remains undefined; native audition rejects other rates before allocation/upload"
+  ]
+}

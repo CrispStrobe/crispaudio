@@ -1,5 +1,6 @@
 //! Native-owned Mac audio clock with bounded callback buffers.
 //! No WebKit PCM deadlines or process-global device changes.
+#[path = "native_audio_clock/live.rs"]
 pub mod live;
 use crispaudio_media::plugin_stream::{PluginStream, StreamStop, StreamTransport};
 use serde_json::{json, Value};
