@@ -1,6 +1,7 @@
 # Recording cue mix
 
-Open the arrow beside Record, expand **Input**, then **Cue mix**. Connect the input
+In the default **Compatible** mode, open the arrow beside Record, expand **Input**,
+then **Cue mix**. Connect the input
 and enable **Monitor microphone**. The input meter shows the raw signal. Cue level
 starts at **−12 dB**; type a value or drag the fader. Pan and Mono affect only the
 cue. Recorded takes remain dry and keep their original placement.
@@ -25,8 +26,8 @@ reported plug-in latencies: at 48 kHz, **85.3 ms for either one or two inserts**
 Version 0.13.33 removes the second bridge buffer that previously made a two-insert
 cue add 170.7 ms before plug-in latency. The displayed FX delay
 excludes device/input/output latency. This buffered path is unsuitable for tight
-real-time performance. A [Rust input/worker foundation](NATIVE_INPUT.md) is under
-development; hardware capture and output integration remain pending. A plug-in
+real-time performance. The separate [native recording preview](NATIVE_INPUT.md) now connects native
+capture/output; physical hardware qualification remains pending. A plug-in
 fault or missed deadline mutes the cue and closes its streams; raw recording
 continues through the independent capture worklet. Re-enable monitoring to retry.
 
@@ -59,3 +60,31 @@ stays unchanged, injects a transport fault while dry capture continues, and chec
 cue controls, one Undo, project reopen and German 390 px layout. That fixture
 bridge is separate from production Tauri IPC. No physical microphone or audible
 speaker test is performed by these checks.
+
+## Native recording preview (Mac, 0.13.34)
+
+Under **Input → Mode**, choose **Native · Preview**. Select the input device,
+mono/stereo channel map and **Monitor output**. This output selection affects the
+native recording session without changing the system default. Missing explicitly
+selected devices are reported; they do not silently fall back to another device.
+Native routes are saved separately from browser IDs; templates retain default input.
+
+Press the usual Record button. Meters remain visible outside this panel. Native
+workers own accompaniment, count-in, pre-roll, loop passes and capture timing;
+GUI stalls do not supply sample positions. Stop loads the whole completed group
+before inserting any takes, with one Undo. Original dry WAVs remain on disk even
+if alignment, loading or project-change checks fail. Rate-converted sources retain
+original-file provenance. Stop during preparation/count-in cancels without empty
+project clips. Closing the settings panel alone does not stop recording.
+
+Native timing correction is in its collapsed **Timing** section. It is independent
+of compatible calibration and of cue/plug-in buffering. Positive corrections move
+native takes later. Zero is uncalibrated until measured. Actual round-trip latency
+and independent-device drift correction are not qualified by software checks.
+
+This preview requires existing microphone authorization; the compatible Connect
+button can request access. Cue settings are frozen while recording; live backing
+balance and broader cue controls remain follow-up work. Interrupted captures retain
+verified raw audio, but automatic aligned crash recovery needs a durable output
+clock ledger. The existing compatible path remains available while these checks
+and physical-device acceptance are completed.

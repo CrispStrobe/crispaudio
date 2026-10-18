@@ -20,6 +20,10 @@ export type BitDepth = (typeof BIT_DEPTHS)[number];
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 interface SettingsState {
+  nativeRecording:boolean;
+  nativeRecordingOutput:string;
+  setNativeRecording:(enabled:boolean)=>void;
+  setNativeRecordingOutput:(uid:string)=>void;
   waveformMode:'normalized'|'level';
   setWaveformMode:(mode:'normalized'|'level')=>void;
   nativePlaybackMode:'live'|'rendered';
@@ -61,6 +65,10 @@ function applyTheme(theme: Theme) {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
+      nativeRecording:false,
+      nativeRecordingOutput:'',
+      setNativeRecording:(nativeRecording)=>set({nativeRecording}),
+      setNativeRecordingOutput:(nativeRecordingOutput)=>set({nativeRecordingOutput}),
       waveformMode:'normalized',
       setWaveformMode:(waveformMode)=>set({waveformMode}),
       nativePlaybackMode:'live',
@@ -99,7 +107,7 @@ export const useSettingsStore = create<SettingsState>()(
       merge: (persisted, current) => {
         const saved = { ...(persisted as Record<string, unknown>) };
         for (const key of ['ttsServerUrl', 'ttsDefaultVoice', 'ttsDefaultBackend']) delete saved[key];
-        return { ...current, ...saved };
+        return { ...current, ...saved, nativeRecording:saved.nativeRecording===true, nativeRecordingOutput:typeof saved.nativeRecordingOutput==='string'?saved.nativeRecordingOutput:'' };
       },
       onRehydrateStorage: () => (state) => {
         if (state?.language) i18n.changeLanguage(state.language);

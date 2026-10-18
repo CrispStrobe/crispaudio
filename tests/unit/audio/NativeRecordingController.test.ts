@@ -1,0 +1,53 @@
+import {beforeEach,expect,it,vi} from 'vitest';
+import {NativeRecordingController,NativeRecordingFailure,nativeRecordingOptions,type NativeRecordingSpec} from '../../../src/audio/plugins/NativeRecordingController';
+import {useProjectStore} from '../../../src/stores/projectStore';
+import {serializeProject,deserializeProject} from '../../../src/lib/projectFile';
+import type {NativeRecordingManifest} from '../../../src/lib/nativeRecordingTakes';
+import type {TimelineProject} from '../../../src/types/audio';
+const mocks=vi.hoisted(()=>({create:vi.fn(),startRecording:vi.fn(),snapshotClose:vi.fn(),recordingClose:vi.fn(),status:vi.fn(),readFile:vi.fn(),invoke:vi.fn(),encode:vi.fn()}));
+vi.mock('../../../src/audio/plugins/NativeTimelineSnapshot',()=>({NativeTimelineSnapshot:{create:mocks.create}}));
+vi.mock('@tauri-apps/plugin-fs',()=>({readFile:mocks.readFile}));
+vi.mock('@tauri-apps/api/core',()=>({invoke:mocks.invoke}));
+vi.mock('../../../src/lib/wavExport',()=>({encodeAudioBufferWav:mocks.encode}));
+const inventory={permission:'Authorized' as const,devices:[{uid:'native-mic',label:'Mac microphone',channels:2,nominalRate:48000,isDefault:true}]};
+const outputs=[{id:'native-speakers',label:'Speakers',isDefault:true}];
+function buffer(rate=48000):AudioBuffer{return {sampleRate:rate,numberOfChannels:1,length:rate,duration:1,getChannelData:()=>new Float32Array(rate)}as AudioBuffer;}
+function project():TimelineProject{return {...useProjectStore.getInitialState().project,id:'native-project',sampleRate:48000,duration:0,tracks:['a','b'].map(id=>({id,name:id,volume:1,pan:0,solo:false,muted:false,recordArmed:true,segments:[],recordingInput:{deviceId:'browser-opaque',channel:'mono' as const,monitor:false,countIn:0,latencyMs:500}}))};}
+function spec():NativeRecordingSpec{const state=useProjectStore.getState();return {project:state.project,sources:state.sources,targets:state.project.tracks.map(track=>({trackId:track.id,input:track.recordingInput!})),cursor:0,loop:false,crossfade:0,output:'',current:()=>useProjectStore.getState(),context:{decodeAudioData:vi.fn(async()=>buffer())}as unknown as BaseAudioContext,takeName:'Take',sourceName:'Recorded audio'};}
+function manifest():NativeRecordingManifest{return {version:2,clips:['a','b'].map(id=>({track_id:id,audio:`native-take-${id}/take.wav`,info:{frames:48000,sample_rate:48000,channels:1}})),timing:{version:1,intent:{projectId:'native-project',corrections:{a:{frames:0,basis:'unqualified'},b:{frames:0,basis:'unqualified'}}},placements:['a','b'].map(trackId=>({trackId,pass:0,projectStartFrame:24000,sourceOffsetFrames:12000,frames:24000}))}};}
+beforeEach(()=>{vi.clearAllMocks();useProjectStore.getState().loadProjectState(project(),new Map());useProjectStore.temporal.getState().clear();mocks.create.mockResolvedValue({startRecording:mocks.startRecording,close:mocks.snapshotClose});mocks.startRecording.mockResolvedValue({status:mocks.status,close:mocks.recordingClose});mocks.snapshotClose.mockResolvedValue(undefined);mocks.recordingClose.mockResolvedValue({phase:'complete',directory:'/managed/native-group-generated',manifest:manifest()});mocks.readFile.mockResolvedValue(new Uint8Array(32));mocks.invoke.mockResolvedValue('/managed/derived.wav');mocks.encode.mockResolvedValue({arrayBuffer:async()=>new ArrayBuffer(16)});});
+it('resolves native UIDs independently of browser IDs and never reuses legacy calibration',()=>{
+ const s=spec(),options=nativeRecordingOptions(s,inventory,outputs);expect(options.inputs.map(input=>input.device)).toEqual(['native-mic','native-mic']);expect(options.inputs.map(input=>input.correction)).toEqual([{frames:0,basis:'unqualified'},{frames:0,basis:'unqualified'}]);expect(options.device).toBe('native-speakers');expect(options.maxFrames*2).toBeLessThanOrEqual(32000000);
+ s.targets[0].input={...s.targets[0].input,native:{device:'native-mic',channels:[1],correctionFrames:-48},monitor:true,monitorLevelDb:-6,monitorPan:.25,monitorMono:true};const next=nativeRecordingOptions(s,inventory,outputs);expect(next.inputs[0]).toMatchObject({channels:[1],correction:{frames:-48,basis:'manual'},cue:{pan:.25,mono:true}});expect(next.inputs[0].cue!.gain).toBeCloseTo(10**(-6/20));
+});
+it('maps count-in, pre-roll and loops to one bounded native frame axis',()=>{
+ const s=spec();s.project={...s.project,music:{tempo:120,numerator:4,denominator:4,origin:0,ruler:'seconds',grid:'off',metronome:false,clickLevel:.5}};s.window={start:4,end:8};s.loop=true;s.targets[0].input={...s.targets[0].input,countIn:1,countInBars:1,preRollBars:1};const options=nativeRecordingOptions(s,inventory,outputs);expect(options).toMatchObject({projectStartFrame:96000,recordStartFrame:192000,recordEndFrame:384000,cycle:true,leadFrames:144000,countInFrames:96000});
+});
+it('rejects unavailable explicit routes, channels and permission without silent fallback',()=>{
+ const s=spec();for(const bad of ['gone','browser-opaque']){s.targets[0].input={...s.targets[0].input,native:{device:bad,channels:[0]}};expect(()=>nativeRecordingOptions(s,inventory,outputs)).toThrow('nativeInputMissing');}
+ s.targets[0].input={...s.targets[0].input,native:{device:'',channels:[2]}};expect(()=>nativeRecordingOptions(s,inventory,outputs)).toThrow('nativeChannels');s.targets[0].input.native!.channels=[0,0];expect(()=>nativeRecordingOptions(s,inventory,outputs)).toThrow('nativeChannels');
+ s.targets[0].input.native!.channels=[0];s.output='gone';expect(()=>nativeRecordingOptions(s,inventory,outputs)).toThrow('nativeOutputMissing');s.output='';expect(()=>nativeRecordingOptions(s,{...inventory,permission:'Denied'},outputs)).toThrow('nativePermission');
+});
+it('loads every original before one project/Undo publication and preserves exact native positions on save/reopen',async()=>{
+ const s=spec();s.project.tracks[0].recordingInput!.native={device:'native-mic',channels:[0],correctionFrames:0};const controller=new NativeRecordingController(s);await controller.start(nativeRecordingOptions(s,inventory,outputs));expect(mocks.create.mock.calls[0][0].duration).toBeGreaterThan(0);expect(s.project.duration).toBe(0);
+ const result=await controller.stop();expect(mocks.readFile).toHaveBeenCalledTimes(2);expect(mocks.recordingClose).toHaveBeenCalledWith(false);expect(result.next!.project.tracks.map(track=>track.takes![0].startTime)).toEqual([.5,.5]);expect(result.next!.project.tracks[0].takes![0].sourceOffset).toBe(.25);expect(useProjectStore.getState().project).toBe(s.project);expect(mocks.invoke).not.toHaveBeenCalled();
+ useProjectStore.setState(result.next!);expect(useProjectStore.temporal.getState().pastStates).toHaveLength(1);useProjectStore.temporal.getState().undo();expect(useProjectStore.getState().project).toBe(s.project);useProjectStore.temporal.getState().redo();expect(useProjectStore.getState().project).toBe(result.next!.project);
+ const saved=serializeProject(result.next!.project,result.next!.sources,'portable'),reopened=await deserializeProject(saved,{decodeAudioData:async()=>buffer()}as unknown as BaseAudioContext);expect(reopened.project.tracks.map(track=>track.takes)).toEqual(result.next!.project.tracks.map(track=>track.takes));expect(reopened.project.tracks[0].recordingInput!.native).toEqual(s.project.tracks[0].recordingInput!.native);
+});
+it('retains raw provenance when decoding at the project rate resamples native WAVs',async()=>{
+ const s=spec();s.project.sampleRate=44100;s.context={decodeAudioData:vi.fn(async()=>buffer(44100))}as unknown as BaseAudioContext;
+ const controller=new NativeRecordingController(s);await controller.start(nativeRecordingOptions(s,inventory,outputs));const result=await controller.stop();expect(mocks.encode).toHaveBeenCalledTimes(2);for(const source of result.next!.sources.values()){expect(source.sampleRate).toBe(44100);expect(source.filePath).toBe('/managed/derived.wav');expect(source.provenance).toMatchObject({offset:0,rate:1});expect(source.provenance!.path).toMatch(/native-take-[ab]\/take.wav$/);}
+});
+it('a missing second file or project change preserves originals and inserts no partial group',async()=>{
+ const s=spec(),controller=new NativeRecordingController(s);await controller.start(nativeRecordingOptions(s,inventory,outputs));mocks.readFile.mockResolvedValueOnce(new Uint8Array(32)).mockRejectedValueOnce(new Error('missing WAV'));
+ await expect(controller.stop()).rejects.toMatchObject({message:'missing WAV',directory:'/managed/native-group-generated'});expect(useProjectStore.getState().project).toBe(s.project);expect(useProjectStore.temporal.getState().pastStates).toHaveLength(0);
+ const second=new NativeRecordingController(s);await second.start(nativeRecordingOptions(s,inventory,outputs));useProjectStore.setState({project:{...s.project,name:'changed'}});await expect(second.stop()).rejects.toMatchObject({message:'recording.projectChanged',directory:'/managed/native-group-generated'});expect(useProjectStore.getState().sources.size).toBe(0);
+});
+it('cancel during pending start closes a late native session without inserting or reading files',async()=>{
+ const s=spec(),controller=new NativeRecordingController(s);let release!:(value:unknown)=>void;mocks.startRecording.mockImplementation(()=>new Promise(resolve=>{release=resolve;}));
+ const starting=controller.start(nativeRecordingOptions(s,inventory,outputs));const failure=expect(starting).rejects.toMatchObject({name:'AbortError'});await vi.waitFor(()=>expect(mocks.startRecording).toHaveBeenCalled());const stop=controller.stop(true);release({close:mocks.recordingClose,status:mocks.status});await failure;await stop;expect(mocks.snapshotClose).toHaveBeenCalled();expect(mocks.readFile).not.toHaveBeenCalled();expect(useProjectStore.getState().project).toBe(s.project);
+});
+it('fault results retain the recovery directory and malformed paths never get read',async()=>{
+ const s=spec(),first=new NativeRecordingController(s);await first.start(nativeRecordingOptions(s,inventory,outputs));mocks.recordingClose.mockResolvedValueOnce({phase:'fault',error:'clock drift',directory:'/managed/raw-group'});await expect(first.stop()).rejects.toBeInstanceOf(NativeRecordingFailure);expect(mocks.readFile).not.toHaveBeenCalled();
+ const bad=manifest();bad.clips[1].audio='../private.wav';mocks.recordingClose.mockResolvedValueOnce({phase:'complete',directory:'/managed/native-group-generated',manifest:bad});const second=new NativeRecordingController(s);await second.start(nativeRecordingOptions(s,inventory,outputs));await expect(second.stop()).rejects.toMatchObject({message:'recording.timingInvalid',directory:'/managed/native-group-generated'});expect(mocks.readFile).not.toHaveBeenCalled();
+});

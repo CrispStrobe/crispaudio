@@ -1119,3 +1119,17 @@ not wired to this mode yet; preserve the working legacy recorder.
 intent: delay/count-in, preroll, looping with retained DSP history and separate
 monitor clicks. It compensates graph latency before publishing frame zero.
 Physical timing/latency and startup cancellation responsiveness remain unqualified.
+
+### Native recording UI preview (0.13.34 candidate)
+
+TimelineRecording now branches to NativeRecordingController only on Mac with the
+opt-in settings preference; Compatible remains default. NativeRecordingSetup uses
+CoreAudio inventory, separate input.native UID/channels/correctionFrames and app
+monitor-output preference. Never reinterpret browser deviceId or latencyMs.
+Controller freezes source/project ownership, supports empty backing, native status
+meters/cursor and pending-start cancellation. It reads all validated group WAVs,
+normalizes project rate with original provenance, then returns one existing
+publishNativeRecordingGroup transaction. UI commits once. Project changes/load
+failures retain originals without partial publication; unmount cancels. Native
+route fields validate on reopen; portable track templates omit device routing.
+N4 controls/recovery and N5 physical checks remain open in WORK_HANDOFF.md.

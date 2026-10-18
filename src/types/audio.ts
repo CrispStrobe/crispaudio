@@ -220,6 +220,6 @@ export interface CaptionTrack extends VideoTrack {burnIn:boolean;style:TitleStyl
 
 export interface TitlePreset {id:string;name:string;text:string;duration:number;style:TitleStyle;composition:PictureComposition}
 
-export interface RecordingInput {deviceId:string;channel:'mono'|'right'|'stereo';monitor:boolean;monitorLevelDb?:number;monitorPan?:number;monitorMono?:boolean;monitorFx?:boolean;countIn:number;countInBars?:number;preRollBars?:number;latencyMs:number}
+export interface RecordingInput {native?:{device:string;channels:number[];correctionFrames?:number};deviceId:string;channel:'mono'|'right'|'stereo';monitor:boolean;monitorLevelDb?:number;monitorPan?:number;monitorMono?:boolean;monitorFx?:boolean;countIn:number;countInBars?:number;preRollBars?:number;latencyMs:number}
 export interface RecordingTake {inactive?:boolean;originalPlacement?:{startTime:number;sourceOffset:number;duration:number};id:string;name:string;sourceId:string;sourceOffset:number;startTime:number;duration:number;pass:number;capturedAt:string;droppedFrames:number;notes:string[];latencyMs:number}
 export interface CompRegion {id:string;takeId:string;start:number;end:number;crossfade:number}

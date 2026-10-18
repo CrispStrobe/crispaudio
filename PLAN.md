@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for local 0.13.33. This section is the current plan.
+Updated 2026-10-18, for candidate 0.13.34 (installed baseline 0.13.33). This section is the current plan.
 Start with [the engineering handoff](docs/WORK_HANDOFF.md) for scoped tasks N1–N5,
 acceptance criteria and the remaining accepted product backlog.
 The implementation records below are historical; their old missing-feature lists
@@ -69,8 +69,10 @@ Session/group preparation now completes files and cue racks before any capture
 opens. A whole-run owner now coordinates readiness/arming/polling and gates complete
 group publication on successful output/backing finalization. Validated timing manifests and an atomic editor take/Undo adapter are now
 implemented internally. Owner-scoped Mac app commands and a typed client are now implemented, along with
-native-clock lead-in, metronome and loop backing. Recording UI integration, aligned
-crash recovery and physical qualification remain open. See the handoff for the precise continuation.
+native-clock lead-in, metronome and loop backing. The 0.13.34 candidate now connects the compact recording UI, native meters,
+explicit routing and atomic project insertion. Compatible stays the default. Live
+backing balance, pending-helper cancellation qualification, aligned crash recovery
+and physical acceptance remain open. See the handoff for the precise continuation.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

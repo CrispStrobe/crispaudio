@@ -1,3 +1,8 @@
+import {NativeRecordingSetup} from './NativeRecordingSetup';
+import {NativeRecordingController,NativeRecordingFailure,nativeRecordingOptions} from '../../audio/plugins/NativeRecordingController';
+import {NativeTimelineRecording,type NativeRecordingOptions,type NativeRecordingStatus} from '../../audio/plugins/NativeTimelineRecording';
+import {playbackOutputs} from '../../lib/audioOutput';
+import {useSettingsStore} from '../../stores/settingsStore';
 import {useProjectGesture} from '../../hooks/useProjectGesture';
 import {ParamSlider} from '../shared/ParamSlider';
 import {recordingLeadIn} from '../../lib/recordingLeadIn';
@@ -33,8 +38,11 @@ import {NumberField} from './NumberField';
 import type {RecordingInput,TimelineProject,AudioSource} from '../../types/audio';
 const defaultInput=defaultRecordingInput;
 interface Session {leadClick?:TimelineMetronome;recordStart?:number;recordFrame?:number;click?:TimelineMetronome;backing?:AudioBuffer;sources:Map<string,AudioSource>;snapshot:TimelineProject;targets:{trackId:string;input:RecordingInput;capture:TimelineCapture}[];passes:CapturePass[];window?:{start:number;end:number};loop:boolean;controller:AbortController;stopping:boolean;frame:number;retainPreview:boolean}
+interface NativeSession {phase:NativeRecordingStatus['phase'];controller:NativeRecordingController;snapshot:TimelineProject;targets:{trackId:string;input:RecordingInput}[];selectedId:string;options?:NativeRecordingOptions;timer?:ReturnType<typeof setInterval>;polling:boolean;stopping?:Promise<void>;faults:Set<string>}
 export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngine|null>;audio:AudioEngineHandle}){
  const {t}=useTranslation(),project=useProjectStore(s=>s.project),recording=useUIStore(s=>s.timelineRecording),[open,setOpen]=useState(false),[takesOpen,setTakesOpen]=useState(false),[trackId,setTrackId]=useState(''),[devices,setDevices]=useState<MediaDeviceInfo[]>([]),[connected,setConnected]=useState(false),[monitoring,setMonitoring]=useState(false),[cueLatency,setCueLatency]=useState(0),[busy,setBusy]=useState(false),[error,setError]=useState(''),[peak,setPeak]=useState(0),[channels,setChannels]=useState(0),[remaining,setRemaining]=useState(0),[leadPhase,setLeadPhase]=useState<'delay'|'count'|'preRoll'>(),[preparingBacking,setPreparingBacking]=useState(false),[allArmed,setAllArmed]=useState(false),[punch,setPunch]=useState(false),[loop,setLoop]=useState(false),[crossfade,setCrossfade]=useState(.04),[calibration,setCalibration]=useState<{milliseconds:number;confidence:number}>();
+ const nativeEnabled=useSettingsStore(s=>s.nativeRecording),nativeMode=nativeEnabled&&isNativeMac();
+ const nativeSession=useRef<NativeSession|null>(null);
  const cueGesture=useProjectGesture();
  const owner=useRef<RecordingPreviewOwner|null>(null),preferred=useRef('');
  const capture=useRef<TimelineCapture|null>(null),session=useRef<Session|null>(null),mounted=useRef(true),finish=useRef<()=>Promise<void>>(async()=>{}),calibrationController=useRef<AbortController|null>(null);
@@ -43,9 +51,23 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
  useEffect(()=>{let previous=useProjectStore.getState().project;return useProjectStore.subscribe(state=>{if(state.project===previous)return;previous=state.project;if(owner.current&&!session.current&&!previewMatches(owner.current,state.project,preferred.current)){useRecordingMeterStore.getState().clear(owner.current.trackId);capture.current?.disconnect();capture.current=null;owner.current=null;setConnected(false);setMonitoring(false);setPeak(0);setChannels(0);}else if(owner.current&&!session.current&&capture.current){const target=state.project.tracks.find(t=>t.id===owner.current!.trackId);if(target){const nextInput=target.recordingInput??defaultInput;capture.current.configureCue(nextInput,target.nativeEffects,reason=>{setMonitoring(false);setCueLatency(0);setError(t(reason));});if(!nextInput.monitor){void capture.current.monitoring(false);setMonitoring(false);setCueLatency(0);}}}});},[t]);
  const refresh=async()=>{const devices=await navigator.mediaDevices.enumerateDevices();if(mounted.current)setDevices(devices.filter(d=>d.kind==='audioinput'));};
  const disconnect=()=>{useRecordingMeterStore.getState().clear(owner.current?.trackId);calibrationController.current?.abort();capture.current?.disconnect();capture.current=null;owner.current=null;setConnected(false);setMonitoring(false);setPeak(0);setChannels(0);};
- const configure=(patch:Partial<RecordingInput>)=>{if(!track||recording)return;if('deviceId' in patch||'channel' in patch||'monitorFx' in patch)disconnect();useProjectStore.getState().updateTrack(track.id,{recordingInput:{...input,...patch}});};
+ const configure=(patch:Partial<RecordingInput>)=>{if(!track||recording)return;if('deviceId' in patch||'channel' in patch||'monitorFx' in patch||'native' in patch)disconnect();useProjectStore.getState().updateTrack(track.id,{recordingInput:{...input,...patch}});};
  const connect=async()=>{if(!track||track.locked||track.kind==='bus')throw new Error('recording.locked');capture.current?.disconnect();const recorder=new TimelineCapture(audio.getContext(),audio.masterGain,(peak,channels)=>{if(mounted.current){useRecordingMeterStore.getState().update(track.id,peak,channels);setPeak(peak);setChannels(channels);}},reason=>{if(mounted.current)setError(t(reason));void finish.current();});capture.current=recorder;owner.current=previewOwner(project,track.id,input);try{if(input.monitor&&input.monitorFx&&!isNativeMac())throw new Error('recording.cueMac');recorder.configureCue(input,track.nativeEffects,reason=>{if(mounted.current){setMonitoring(false);setCueLatency(0);setError(t(reason));}});await recorder.connect(input.deviceId,input.channel);}catch(error){recorder.disconnect();if(capture.current===recorder)disconnect();throw error;}if(capture.current!==recorder||!previewMatches(owner.current,useProjectStore.getState().project,trackId)){recorder.disconnect();return;}try{await recorder.monitoring(input.monitor);}catch(error){recorder.disconnect();if(capture.current===recorder)disconnect();throw error;}if(capture.current!==recorder||!previewMatches(owner.current,useProjectStore.getState().project,trackId)){recorder.disconnect();return;}if(mounted.current){setCueLatency(recorder.monitorLatency());setConnected(true);setMonitoring(input.monitor);await refresh();}};
  const stopRecording=useCallback(async()=>{
+  const native=nativeSession.current;
+  if(native){
+   if(native.stopping){if(!mounted.current)void native.controller.stop(true);return native.stopping;}
+   native.stopping=(async()=>{
+    clearInterval(native.timer);useProjectStore.getState().setIsPlaying(false);if(mounted.current)setBusy(true);
+    try{const cancel=!mounted.current||native.phase==='preparing'||native.phase==='lead';const result=await native.controller.stop(cancel);if(result.next&&mounted.current&&!cancel)useProjectStore.setState({...result.next,isPlaying:false});}
+    catch(error){if(mounted.current)setError(t(error instanceof Error?error.message:String(error))+(error instanceof NativeRecordingFailure&&error.directory?' · '+error.directory:''));}
+    finally{
+     for(const target of native.targets)useRecordingMeterStore.getState().clear(target.trackId);
+     if(nativeSession.current===native)nativeSession.current=null;useUIStore.setState({timelineRecording:false,nativePreviewStatus:'idle'});
+     if(mounted.current){setBusy(false);setRemaining(0);setLeadPhase(undefined);setPeak(0);setChannels(0);setMonitoring(false);}
+    }
+   })();return native.stopping;
+  }
   const active=session.current;if(!active||active.stopping)return;active.stopping=true;active.leadClick?.stop();active.leadClick=undefined;active.click?.stop();active.click=undefined;active.controller.abort();cancelAnimationFrame(active.frame);useProjectStore.getState().setIsPlaying(false);engine.current?.stop();
   const usable=active.recordFrame!==undefined&&audio.getContext().currentTime*audio.getContext().sampleRate>active.recordFrame+.01*audio.getContext().sampleRate;
   const savedPaths:string[]=[];
@@ -76,6 +98,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
   }
  },[engine,audio,crossfade,t]);
  useEffect(()=>{finish.current=stopRecording;},[stopRecording]);
+ useEffect(()=>{const stop=()=>{if(nativeSession.current)void finish.current();};window.addEventListener('crispaudio-transport-stop',stop);return()=>window.removeEventListener('crispaudio-transport-stop',stop);},[]);
  const calibrate=async()=>{
   if(recording||!track)return;setBusy(true);setError('');setCalibration(undefined);const controller=new AbortController();calibrationController.current=controller;let tone:AudioBufferSourceNode|undefined;const snapshot=project;
   try{
@@ -93,6 +116,42 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
   let snapshot=useProjectStore.getState().project,selectedId:string,targets:ReturnType<typeof recordingTargets>;
   try{const state=useProjectStore.getState();let chosen=quickRecordingTrack(snapshot,preferred.current,selectionTrackIds(snapshot,state.selection).find(id=>snapshot.tracks.some(t=>t.id===id&&t.kind!=='bus')));if(!chosen){state.addTrack(t('recording.newTrack'));chosen=useProjectStore.getState().project.tracks.at(-1)!;}selectedId=chosen.id;if(!chosen.recordArmed)useProjectStore.getState().updateTrack(selectedId,{recordArmed:true});snapshot=useProjectStore.getState().project;preferred.current=selectedId;setTrackId(selectedId);targets=recordingTargets(snapshot,selectedId,allArmed);}catch(e){setError(t(e instanceof Error?e.message:String(e)));return;}
   setError('');setBusy(true);useProjectStore.getState().setIsPlaying(false);useUIStore.setState({timelineRecording:true});
+  if(nativeMode){
+   disconnect();engine.current.stop();
+   const window=(punch||loop)?snapshot.editRange:undefined;
+   const spec={project:snapshot,sources:useProjectStore.getState().sources,targets,cursor:useProjectStore.getState().playheadPosition,window,loop,crossfade,output:useSettingsStore.getState().nativeRecordingOutput,current:()=>useProjectStore.getState(),context:audio.getContext(),takeName:t('recording.take'),sourceName:t('recording.captured')};
+   const controller=new NativeRecordingController(spec);
+   const active:NativeSession={phase:'preparing',controller,snapshot,targets,selectedId,polling:false,faults:new Set()};nativeSession.current=active;
+   try{
+    if((punch||loop)&&!window)throw new Error('recording.rangeRequired');
+    await engine.current.closeNativeOwned();
+    if(nativeSession.current!==active||active.stopping)return;
+    const [inventory,outputs]=await Promise.all([NativeTimelineRecording.inputs(),playbackOutputs()]);
+    if(nativeSession.current!==active||active.stopping)return;
+    const options=nativeRecordingOptions(spec,inventory,outputs.devices);active.options=options;
+    await controller.start(options);
+    if(nativeSession.current!==active||active.stopping)return;
+    useProjectStore.getState().setIsPlaying(true);
+    const tick=async()=>{
+     if(nativeSession.current!==active||active.stopping||active.polling)return;
+     if(useProjectStore.getState().project!==snapshot||!useProjectStore.getState().isPlaying){void finish.current();return;}
+     active.polling=true;
+     try{
+      const status=await controller.status();if(nativeSession.current!==active||active.stopping)return;active.phase=status.phase;
+      for(const input of status.inputs??[]){useRecordingMeterStore.getState().update(input.trackId,Math.max(...input.peaks),input.channels);if(input.trackId===selectedId&&mounted.current){setPeak(Math.max(...input.peaks));setChannels(input.channels);}if(input.cueFault&&!active.faults.has(input.trackId)){active.faults.add(input.trackId);if(mounted.current)setError(t('recording.nativeCueFault'));}}
+      if(Number.isFinite(status.frame))useProjectStore.getState().setPlayheadPosition(status.frame!/48000);
+      if(mounted.current){setBusy(status.phase==='preparing'||status.phase==='lead');setMonitoring(status.phase==='recording'&&targets.some(target=>target.input.monitor));
+       const elapsed=status.elapsedFrames??0,until=options.leadFrames+options.recordStartFrame-options.projectStartFrame;
+       setRemaining(status.phase==='lead'?Math.max(0,Math.ceil((until-elapsed)/48000)):0);setLeadPhase(elapsed<options.leadFrames?(elapsed<options.leadFrames-options.countInFrames?'delay':'count'):'preRoll');
+      }
+      if(status.phase==='complete'||status.phase==='fault')void finish.current();
+     }catch(error){if(!active.stopping){if(mounted.current)setError(t(error instanceof Error?error.message:String(error)));void finish.current();}}
+     finally{active.polling=false;}
+    };
+    active.timer=setInterval(()=>void tick(),80);void tick();
+   }catch(error){if(mounted.current&&!(error instanceof DOMException&&error.name==='AbortError'))setError(t(error instanceof Error?error.message:String(error)));await finish.current();}
+   return;
+  }
   const controller=new AbortController();const active:Session={snapshot,sources:new Map(useProjectStore.getState().sources),targets:targets.map(target=>({...target,capture:target.trackId===selectedId&&previewMatches(owner.current,snapshot,selectedId)&&capture.current?.connected()?capture.current:new TimelineCapture(audio.getContext(),audio.masterGain,(peak,channels)=>{if(mounted.current){useRecordingMeterStore.getState().update(target.trackId,peak,channels);if(target.trackId===selectedId){setPeak(peak);setChannels(channels);}}},reason=>{if(mounted.current)setError(t(reason));void finish.current();})})),passes:[],window:(punch||loop)?snapshot.editRange:undefined,loop,controller,stopping:false,frame:0,retainPreview:!!capture.current?.connected()&&previewMatches(owner.current,snapshot,selectedId)};session.current=active;
   try{
    if((punch||loop)&&!active.window)throw new Error('recording.rangeRequired');
@@ -134,7 +193,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
  };
  useEffect(()=>{const show=(event?:Event)=>{const id=event instanceof CustomEvent&&typeof event.detail==='string'?event.detail:undefined;if(id&&!useUIStore.getState().timelineRecording){if(id!==preferred.current){capture.current?.disconnect();useRecordingMeterStore.getState().clear(owner.current?.trackId);capture.current=null;owner.current=null;setConnected(false);setMonitoring(false);setPeak(0);setChannels(0);}preferred.current=id;setTrackId(id);}setOpen(true);};const key=(e:KeyboardEvent)=>{if(!isNativeMac()&&(e.ctrlKey||e.metaKey)&&e.shiftKey&&e.code==='KeyR'&&!textEditing()&&!menuBlocked()){e.preventDefault();show();}};window.addEventListener('crispaudio-recording',show);document.addEventListener('keydown',key);return()=>{window.removeEventListener('crispaudio-recording',show);document.removeEventListener('keydown',key);};},[]);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;calibrationController.current?.abort();void finish.current().finally(()=>{capture.current?.disconnect();useRecordingMeterStore.getState().clear();});};},[]);
- useEffect(()=>{const interrupted=()=>{if(calibrationController.current){calibrationController.current.abort();capture.current?.disconnect();setConnected(false);setMonitoring(false);setError(t('recording.deviceChanged'));}if(session.current){setError(t('recording.deviceChanged'));void finish.current();}else {disconnect();void refresh().catch(()=>{});}};navigator.mediaDevices?.addEventListener('devicechange',interrupted);return()=>navigator.mediaDevices?.removeEventListener('devicechange',interrupted);},[t]);
+ useEffect(()=>{const interrupted=()=>{if(calibrationController.current){calibrationController.current.abort();capture.current?.disconnect();setConnected(false);setMonitoring(false);setError(t('recording.deviceChanged'));}if(session.current||nativeSession.current){setError(t('recording.deviceChanged'));void finish.current();}else {disconnect();void refresh().catch(()=>{});}};navigator.mediaDevices?.addEventListener('devicechange',interrupted);return()=>navigator.mediaDevices?.removeEventListener('devicechange',interrupted);},[t]);
  return <><div data-recording-controls className="flex items-center gap-1 shrink-0"><div className="recording-actions"><ToolButton data-help="record" icon={recording?Square:Circle} label={t(recording?'recording.stop':hasNativeEffects(project)&&!isNativeMac()?'nativePreview.macOnly':'recording.start')} className={`recording-start${recording?' animate-pulse':''}`} aria-pressed={recording} disabled={!recording&&(busy||hasNativeEffects(project)&&!isNativeMac())} onClick={()=>void record()}/><ToolButton data-help-command="recording" icon={ChevronDown} label={t('recording.settings')} className="recording-settings" aria-haspopup="dialog" aria-expanded={open} onClick={()=>{setOpen(true);void refresh().catch(()=>{});}}/></div><RecordingInputMeter/>{(remaining>0||busy)&&<output role="status" data-recording-phase={leadPhase} className="text-xs text-red-300 tabular-nums">{remaining?t(`recording.lead_${leadPhase??'delay'}`,{seconds:remaining}):t(preparingBacking?'recording.preparingBacking':'recording.preparing')}</output>}{error&&!open&&<p role="alert" className="max-w-40 truncate text-xs text-amber-300" title={error}>{error}</p>}</div>{open&&<FloatingInspector onClose={()=>{setOpen(false);setTakesOpen(false);if(calibrationController.current)disconnect();}} title={t('recording.title')}>
   <div className="space-y-3 text-sm">
    <label className="block">{t('recording.track')}<div className="flex gap-2"><select className="bg-gray-800 min-h-11 min-w-0 flex-1 rounded px-2" disabled={recording||busy} aria-label={t('recording.track')} value={track?.id??''} onChange={e=>{disconnect();setTakesOpen(false);setTrackId(e.target.value);}}>{project.tracks.filter(t=>t.kind!=='bus').map(t=><option key={t.id} value={t.id} disabled={t.locked}>{t.name}</option>)}</select><ToolButton icon={Plus} label={t('recording.newTrack')} disabled={recording||busy} onClick={()=>{useProjectStore.getState().addTrack(t('recording.newTrack'));setTrackId(useProjectStore.getState().project.tracks.at(-1)!.id);disconnect();}}/></div></label>
@@ -143,10 +202,13 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
     <div className="h-1.5 rounded bg-gray-800 overflow-hidden" aria-hidden="true"><div className={peak>.98?'h-full bg-red-400':'h-full bg-emerald-400'} style={{width:`${Math.max(0,Math.min(100,(20*Math.log10(Math.max(peak,1e-6))+60)/60*100))}%`}}/></div>
     {(allArmed||punch||loop||monitoring)&&<div className="flex flex-wrap gap-2 text-xs text-amber-300">{allArmed&&<span>{t('recording.multiShort',{count:project.tracks.filter(t=>t.kind!=='bus'&&t.recordArmed).length})}</span>}{punch&&<span>{t('recording.punchShort')}</span>}{loop&&<span>{t('recording.loopShort')}</span>}{monitoring&&<span>{t('recording.monitorShort')}</span>}</div>}
     <details data-recording-section="input"><summary className="min-h-11 content-center cursor-pointer border-t border-gray-800">{t('recording.inputSetup')}</summary><div className="space-y-3 pt-2">
+    {isNativeMac()&&<NativeRecordingSetup input={input} disabled={recording||busy} onChange={configure} onError={setError} onEngineChange={disconnect}/>}
+    {!nativeMode&&<>
     <label className="block">{t('recording.device')}<select className="bg-gray-800 w-full min-h-11" disabled={recording||busy} value={input.deviceId} onChange={e=>configure({deviceId:e.target.value})}><option value="">{t('recording.defaultInput')}</option>{devices.map(d=><option key={d.deviceId} value={d.deviceId}>{d.label||t('recording.unnamedDevice')}</option>)}</select></label>
     <label className="block">{t('recording.channel')}<select className="bg-gray-800 w-full min-h-11" disabled={recording||busy} value={input.channel} onChange={e=>configure({channel:e.target.value as InputMode})}>{(['mono','right','stereo'] as const).map(channel=><option key={channel} value={channel}>{t(`recording.${channel}`)}</option>)}</select></label>
     <div className="flex gap-2"><button className="timeline-tool" disabled={recording||busy} onClick={()=>void (async()=>{setError('');setBusy(true);try{if(connected)disconnect();else{await audio.resume();await connect();}}catch(e){setError(t(e instanceof Error?e.message:String(e)));}finally{setBusy(false);}})()}>{t(connected?'recording.disconnect':'recording.connect')}</button></div>
     <label className="flex min-h-11 items-center gap-2"><input type="checkbox" disabled={!connected||recording||busy} checked={connected&&monitoring} onChange={e=>{const enabled=e.target.checked;void (async()=>{setBusy(true);try{if(enabled&&input.monitorFx&&!isNativeMac())throw new Error('recording.cueMac');useProjectStore.getState().updateTrack(track.id,{recordingInput:{...input,monitor:enabled}});const recorder=capture.current;await recorder?.monitoring(enabled);if(!recorder||capture.current!==recorder||!previewMatches(owner.current,useProjectStore.getState().project,trackId))return;setMonitoring(enabled);setCueLatency(recorder.monitorLatency());}catch(reason){setMonitoring(false);setError(t(reason instanceof Error?reason.message:String(reason)));}finally{setBusy(false);}})();}}/>{t('recording.monitor')}</label>
+    </>}
     <details data-recording-section="cue"><summary className="min-h-11 content-center cursor-pointer">{t('recording.cue')}</summary><div className="space-y-2">
     <div className="flex justify-end"><InfoButton label={t('recording.cue')}><p>{t('recording.cueHelp')}</p></InfoButton></div>
     <fieldset disabled={recording||busy} className="space-y-2">
@@ -156,9 +218,11 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
     <label className="flex min-h-11 items-center gap-2"><input type="checkbox" disabled={!input.monitorFx&&!track.nativeEffects?.some(effect=>effect.enabled)} checked={input.monitorFx??false} onChange={e=>configure({monitorFx:e.target.checked})}/>{t('recording.cueFx')}</label>
     </fieldset>{connected&&monitoring&&<output className="text-xs text-gray-400" data-cue-latency>{t('recording.cueLatency',{milliseconds:cueLatency.toFixed(1)})}</output>}
     </div></details>
+    {!nativeMode&&<>
     <details data-recording-section="timing"><summary className="min-h-11 content-center cursor-pointer">{t('recording.timing')}</summary>
     {(['latencyMs'] as const).map(key=><label key={key} className="flex items-center justify-between gap-2">{t(`recording.${key}`)}<NumberField disabled={recording||busy} label={t(`recording.${key}`)} min={key==='latencyMs'?-500:0} value={input[key]} step={key==='latencyMs'?1:1} onCommit={v=>{if(v>(key==='latencyMs'?2000:10))return false;configure({[key]:v});return true;}}/></label>)}
     <button className="timeline-tool" disabled={recording||busy} onClick={()=>void calibrate()}>{t('recording.calibrate')}</button>{calibration&&<div className="space-y-2 text-xs"><p>{calibration.milliseconds.toFixed(2)} ms · {Math.round(calibration.confidence*100)}%</p><button className="timeline-tool" onClick={()=>{configure({latencyMs:calibration.milliseconds});setCalibration(undefined);}}>{t('recording.applyCalibration')}</button></div>}<HelpDetails><p className="text-xs text-gray-400">{t('recording.calibrationHelp')}</p></HelpDetails></details>
+    </>}
     </div></details>
     <details data-recording-section="options"><summary className="min-h-11 content-center cursor-pointer border-t border-gray-800">{t('recording.options')}</summary><div className="space-y-3 pt-2">
      <div className="flex justify-end"><InfoButton label={t('recording.leadHelpTitle')}><p>{t('recording.leadHelp')}</p></InfoButton></div>

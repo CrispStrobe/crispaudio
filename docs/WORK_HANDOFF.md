@@ -19,7 +19,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed/local software baseline is 0.13.33. It includes timeline/video editing,
+The installed baseline remains 0.13.33; source/local candidate 0.13.34 adds the
+opt-in native recording preview described below. The established baseline includes timeline/video editing,
 recording/takes/comping, compact recording controls and meters, source restoration,
 FX-aware segment waveforms within documented limits, native Mac AU/VST3 playback
 and a buffered native cue rack. The [README](../README.md) describes user features.
@@ -27,8 +28,9 @@ Do not reintroduce ASR/TTS creation or composition/instrument sequencing: these
 belong to CrisperWeaver and CometBeat respectively. Imported audio/transcripts stay
 editable. Existing MIDI utilities do not imply a MIDI expansion roadmap.
 
-Native recording work after 0.13.33 has internal app commands/client code,
-but **is not selectable in the recording UI**:
+Native recording is now selectable on Mac under **Input → Mode → Native · Preview**
+in the 0.13.34 candidate. Compatible remains the default. Physical qualification
+and the remaining N4 tasks below are still open:
 
 | Foundation | Code entry point | Verified scope |
 |---|---|---|
@@ -47,8 +49,8 @@ but **is not selectable in the recording UI**:
 opens, retaining recoverable files on abandonment. `session::monitored` now owns group/output/backing readiness, arming, polling and
 ordered shutdown. Capture stops before output cleanup and file joins; backing/clock
 failures prevent complete publication. Version 2 group manifests now contain validated frame placements. The editor
-adapter converts the complete set into one project transaction; app commands/UI
-do not call it yet. None of this
+adapter now converts the complete set into one project transaction from the
+recording UI, after every raw WAV has loaded and project identity is rechecked. None of this
 establishes physical latency, sustained-load stability or independent-device sync.
 See [NATIVE_INPUT.md](NATIVE_INPUT.md) for contracts and evidence links.
 
@@ -69,7 +71,7 @@ and ramp over 64 frames. Cue-only errors remain isolated; backing or hardware
 clock failures latch whole-output silence. The shared mixer binds all lanes to
 the observed hardware clock before its first render. The legacy one-cue entry
 point remains supported. This is software integration, not physical qualification
-or a shipped latency promise; see N5 before enabling it in the app.
+or a shipped latency promise; see N5 before making it the default.
 
 ### N2 — Preparation, arming and failure ownership (implemented internally)
 
@@ -121,14 +123,15 @@ the recording root. The backing worker now uses the frozen timing intent for
 silent delay, count-in, preroll and loop passes, retaining graph DSP history and
 compensating plug-in latency. Monitor clicks are separate from dry files/exports.
 
-Still required before N4 is complete:
+The 0.13.34 preview now connects Record/settings/meters and native-clock playhead
+reports. It resolves explicit UIDs separately from browser IDs, keeps separate
+native corrections, freezes the backing snapshot, handles pending-start Stop and
+teardown, loads all WAVs with retained resampling provenance, then publishes one
+editor transaction. Empty projects get a positive frozen graph duration without
+changing the editor project. EN/DE layout and generated lifecycle checks pass.
 
-- Connect the existing Record/settings/meter UI to the new commands. Persist native
-  UID/channel selections separately from browser IDs and keep legacy latency
-  compensation separate. Preserve the working recording path during rollout.
-- Load all returned WAVs, normalize project rate with original provenance retained,
-  and publish through the whole-group editor adapter once. Guard project changes,
-  stop/cancel during preparation, late replies, faults and component teardown.
+Remaining N4 work:
+
 - Persist output activation/progress for aligned crash recovery; provide bounded
   recovery discovery/reconciliation without treating untimed raw files as aligned.
 - Keep immediate Record/Stop, persistent GUI meters and a small settings dropdown.
@@ -180,19 +183,16 @@ No new patent conclusion or distribution restriction is introduced by this check
 
 ## Verification at the code checkpoint
 
-The timing checkpoint adds nine Rust and five frontend tests. Full media suite:
-**308 passed, 16 ignored**. Explicit native-input suite including SDK VST3 and
-child-process fixtures: **143 passed**. Frontend: **2025 passed across 208 files**;
-full lint and production build pass. SDK C ABI syntax and changed formatting/diff
-checks pass. See [timing scope](evidence/native-recording-timing.json) and the
-[preceding ownership scope](evidence/native-monitored-recording.json).
-The subsequent command/transport checkpoint passes **313 media tests (16 ignored)**
-and **46 app Rust tests (one hardware test ignored)**, including seven new command/
-ownership checks and five backing transport checks. Typed-client lifecycle tests,
-lint and production build pass; see [command scope](evidence/native-recording-commands.json).
-No physical microphone/output was opened. Simulator, bundle, installation
-and Apple upload were not rerun for these unused UI paths. Installed 0.13.33
-is unchanged; the earlier app Rust result (39 passed, one ignored) is historical.
+The 0.13.34 UI preview passes **2045 frontend tests across 211 files**, **46 app Rust
+tests (one hardware case ignored)**, 21 release-check tests, full lint and production
+build. The Mac debug bundle passes local ad-hoc sandbox/helper signing checks.
+Generated-device browser review passes EN 1100×800 and DE 820×650 with no horizontal
+inspector overflow and timing collapsed. See [preview evidence](evidence/native-recording-ui-preview.json).
+
+The previous media checkpoint passed 313 tests (16 ignored); media code did not
+change in this UI increment. The earlier timing checkpoint explicitly ran SDK
+VST3/subprocess fixtures. No physical mic/output, simulator, installation or Apple
+upload was performed. Installed 0.13.33 is preserved; candidate 0.13.34 is separate.
 
 Portable commands (use a configured Rust toolchain):
 

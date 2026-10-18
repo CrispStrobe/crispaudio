@@ -1558,7 +1558,6 @@
     "cueInvalid": "Ungültige Monitoreinstellungen oder mehr als zwei aktivierte native Effekte.",
     "cueFault": "Nativer Monitor nach einem Plug-in-Fehler gestoppt. Die trockene Aufnahme bleibt erhalten. Zum Wiederholen Monitoring neu verbinden.",
     "cueMac": "Natives Eingangsmonitoring benötigt die Mac-App. Für trockenes Monitoring die nativen Monitoreffekte ausschalten.",
-
     "countInBars": "Einzählen",
     "preRollBars": "Vorlauf",
     "bars_one": "{{count}} Takt",
@@ -1651,7 +1650,24 @@
     "timing": "Timing und Kalibrierung",
     "preparingBacking": "Begleitung vorbereiten",
     "backingBudget": "Die Begleitung mit nativen Effekten überschreitet das Vorbereitungslimit. Kürze die Sitzung oder exportiere einen Begleitmix in eine neue Sitzung.",
-    "nativeHelp": "Native Effekte werden vor der Aufnahme als fester Begleitmix vorbereitet. Begleitung und Eingang nutzen dieselbe Audiouhr. Takes bleiben unbearbeitet; Spureffekte wirken bei der Wiedergabe. Der Monitormix bietet eigene Pegel-, Panorama-/Mono-Regler und optional gepufferte native Spureffekte. Änderungen am Arrangement stoppen die Aufnahme."
+    "nativeHelp": "Native Effekte werden vor der Aufnahme als fester Begleitmix vorbereitet. Begleitung und Eingang nutzen dieselbe Audiouhr. Takes bleiben unbearbeitet; Spureffekte wirken bei der Wiedergabe. Der Monitormix bietet eigene Pegel-, Panorama-/Mono-Regler und optional gepufferte native Spureffekte. Änderungen am Arrangement stoppen die Aufnahme.",
+    "engine": "Modus",
+    "compatible": "Kompatibel",
+    "nativePreview": "Nativ · Vorschau",
+    "nativeOutput": "Abhörausgabe",
+    "defaultOutput": "Systemstandard",
+    "unavailableDevice": "Gerät nicht verfügbar",
+    "refreshDevices": "Geräte aktualisieren",
+    "nativeCorrection": "Zeitversatz (ms)",
+    "nativeCorrectionHelp": "Zusätzliche native Platzierungskorrektur: Positive Werte verschieben Aufnahmen nach hinten. Sie ist unabhängig von der Kalibrierung der kompatiblen Aufnahme und von Abhör- oder Plug-in-Verzögerungen. Null gilt bis zur Messung als unkalibriert.",
+    "nativePermission": "Mikrofonzugriff erforderlich. Über „Verbinden“ bei der kompatiblen Aufnahme erlauben oder CrispAudio in macOS unter Datenschutz & Sicherheit → Mikrofon freigeben.",
+    "nativeOutputMissing": "Die gewählte native Ausgabe ist nicht verfügbar. In den Aufnahmeeinstellungen eine andere Ausgabe wählen.",
+    "nativeInputMissing": "Der gewählte native Eingang ist nicht verfügbar. In den Aufnahmeeinstellungen einen anderen Eingang wählen.",
+    "nativeChannels": "Die gewählten Eingangskanäle sind nicht verfügbar. Aufnahmeeinstellungen prüfen.",
+    "nativeEngineHelp": "Die native Aufnahme nutzt ausdrücklich gewählte Mac-Geräte und eine eigene Audiouhr. Die Hardware-Prüfung läuft noch. Die kompatible Aufnahme bleibt verfügbar. Die Ausgabeauswahl hier gilt nur für native Aufnahmen. Zum Mithören möglichst Kopfhörer nutzen. Unterbrochene native Aufnahmen behalten bisher das Roh-Audio; eine automatisch zeitlich ausgerichtete Wiederherstellung gibt es noch nicht.",
+    "nativeCueFault": "Das Mithören eines Eingangs wurde angehalten. Die Rohaufnahme läuft weiter.",
+    "nativeMono": "Mono",
+    "nativeStereo": "Stereo"
   },
   "retime": {
     "title": "Tempo / Tonhöhe",

@@ -5,6 +5,36 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Native recording UI preview — 0.13.34 candidate
+
+Mac Input settings now offer Compatible (default) and Native · Preview. Native
+uses explicit CoreAudio input/channel maps and an app-local monitor output; saved
+native correction is separate from browser IDs and compatible calibration. The
+existing Record/Stop button and persistent meters drive either path. Advanced
+native timing stays collapsed; short EN/DE labels and contextual info are used.
+
+`NativeRecordingController` owns snapshot/start/stop/loading on the frontend.
+Native status supplies playhead/meter reports; browser clocks never place takes.
+A complete group loads before one editor transaction. Project-rate conversion
+retains original WAV provenance. Stale projects, decode failures and invalid paths
+insert no partial group; originals remain available. Pending-start/lead-in Stop and
+unmount cancel without late publication. Blank sessions work through a positive
+frozen backing duration without changing the editor project.
+
+The full frontend suite passes 2045 tests across 211 files; lint and production
+build pass. Generated lifecycle tests cover immediate Record without a dialog,
+meters/playhead, Stop/preparation/teardown and single Undo; controller tests cover
+UID resolution, count-in/loops, complete loading, provenance, reopen and failures.
+English 1100×800 and German 820×650 browser layout checks pass with generated device
+inventory and no hardware audio. A Mac debug candidate is built and its sandbox/
+helper signing layout is checked with local ad-hoc signatures. Installed 0.13.33
+is preserved; no physical capture/output or Apple upload is claimed.
+
+N4 still requires live independent backing/cue controls, preparation-cancellation
+qualification and durable in-run clock recovery. Physical timing/latency/load,
+external-device and iOS acceptance remain N5. Native mode remains opt-in.
+[Preview evidence](evidence/native-recording-ui-preview.json).
+
 ## Native recording commands and backing transport — development after 0.13.33
 
 Mac app commands now own recording on a dedicated control thread. Explicit

@@ -6,29 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
-- Add internal Mac recording commands with a dedicated control thread, explicit input/output routing, GUI meter reports, cue controls and retained-file results. Coordinate native playback ownership and cleanup on window/snapshot close or app exit. Add native-clock count-in, pre-roll and loop accompaniment; recording UI activation and physical checks remain pending.
+## 0.13.34 — 2026-10-18 (local preview)
 
-- Add internal native timing manifests with checksummed clock validation, lead-in/punch/loop placement, explicit compensation and drift rejection. Preserve raw originals on alignment failure and validate timing again on reopen. Add a whole-group editor adapter with one-action Undo/Redo and save/reopen coverage; app recording integration remains pending.
-
-- Connect the internal shared native mixer to Mac output with bounded worker-prepared backing audio, coherent cue-control updates and separate cue/backing fault handling. Split whole-group file/rack preparation from capture start and coordinate readiness, arming and shutdown; backing/output failure prevents complete take publication. Native app recording integration and physical qualification remain pending.
-
-- Consolidate engineering handoff, remaining task dependencies and acceptance criteria; keep machine-specific paths and evidence locations in ignored local notes.
-
-- Add an internal shared cue/backing mixer with independent level, stereo balance and mono controls, smooth control changes and isolated cue failures. Backing or clock failures latch silence for owner shutdown. Hardware/app integration remains pending.
-
-- Add an internal Mac cue output adapter with explicit device routing, silent priming and arming, a queue timeline, clock/device watchdogs and guarded disposal. Callback faults retain dry recordings; hardware and app integration remain pending.
-
-- Add an internal native cue scheduler with integer host-clock mapping, bounded startup and silence on late data, underrun or excessive drift. Scheduler failure releases cue helpers while dry recording continues. Preserve final cue packets when publication races EOF. Hardware output/app integration remains pending.
-
-- Add a native recording-group coordinator with whole-group preflight, startup rollback, retained recovery files and atomic completion manifests. Failed groups do not return a partial clip set. Native app recording integration remains pending.
-
-- Extend native recording ownership to the cue worker and AU/VST3 helpers, with a shared recording-group stream budget. Cue faults mute wet output while dry recording continues; cancellation joins workers and releases helpers. App/output integration remains pending.
-
-- Add a native dry-recording session owner with device/callback watchdog checks, worker cleanup and retained recovery files after cancellation or failure. This is an internal foundation; the installed recording workflow is unchanged.
-
-- Add native dry-file checkpointing and prefix recovery. Completion requires clean capture closure and matching frame counts; interrupted takes retain their originals. Software integration covers partial stop buffers and dry WAV recording after a cue plug-in fails. App integration remains pending.
-- Add an internal Mac capture adapter with explicit device/channel mapping, permission checks, input clocks and safe shutdown. It remains outside the installed recording workflow pending native file/output integration and hardware qualification.
-- Add internal native input queues and an AU/VST3 worker with independent dry capture and cue fault handling. Hardware capture and recording UI integration remain pending; the installed recorder is unchanged.
+- Add an opt-in Mac native recording mode to the existing Record/Stop controls and persistent input meters. Choose CoreAudio inputs/channels and a separate monitor output under Input; the compatible recorder remains the default.
+- Keep native device selection and placement correction separate from browser IDs and compatible calibration. Advanced timing stays collapsed with contextual information.
+- Render native accompaniment, count-in, pre-roll and loop passes on bounded workers, with static AU/VST3 cue racks and separate dry capture. Native clocks drive take placement; monitoring delay is not applied as placement compensation.
+- Load complete recording groups atomically, retaining original WAV provenance after project-rate conversion. Add all takes with one Undo action; reject stale projects and incomplete groups without losing originals.
+- Cancel pending starts and clean up window/snapshot ownership. Hardware latency/load qualification, independent backing mix controls and aligned crash recovery remain pending; native mode is a preview.
 
 ## 0.13.33 — 2026-10-16
 

@@ -42,3 +42,7 @@ it('validates saved cue settings without changing legacy inputs',()=>{
  const p=project();p.tracks[0].recordingInput={deviceId:'',channel:'mono',monitor:false,countIn:0,latencyMs:0,monitorLevelDb:-18,monitorPan:.5,monitorMono:true,monitorFx:true};expect(validRecording(p)).toBe(true);
  for(const patch of [{monitorLevelDb:1},{monitorLevelDb:NaN},{monitorPan:2},{monitorMono:'true'},{monitorFx:1}])expect(validRecording({...p,tracks:[{...p.tracks[0],recordingInput:{...p.tracks[0].recordingInput,...patch} as typeof p.tracks[0]['recordingInput']}]})).toBe(false);
 });
+it('validates saved native routing separately from browser input and legacy calibration',()=>{
+ const p=project();p.tracks[0].recordingInput={deviceId:'browser-opaque',channel:'mono',monitor:false,countIn:0,latencyMs:500,native:{device:'native-uid',channels:[0,1],correctionFrames:-48}};expect(validRecording(p)).toBe(true);
+ for(const native of [{device:'uid',channels:[]},{device:'uid',channels:[0,0]},{device:'uid',channels:[32]},{device:'uid',channels:[.5]},{device:'bad\0uid',channels:[0]},{device:'uid',channels:[0],correctionFrames:48001},{device:'uid',channels:[0],correctionFrames:NaN}]){const recordingInput={...p.tracks[0].recordingInput,native};expect(validRecording({...p,tracks:[{...p.tracks[0],recordingInput}]})).toBe(false);}
+});

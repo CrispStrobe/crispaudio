@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-18",
+  "version": "0.13.34",
+  "scope": "Opt-in Mac native recording UI and complete-group editor controller",
+  "installedVersion": "0.13.33",
+  "installedRecordingChanged": false,
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "checks": {
+    "frontend": {
+      "passed": 2045,
+      "files": 211,
+      "log": "crispaudio-recording-ui-full-final.log"
+    },
+    "focused": {
+      "passed": 29,
+      "files": 5,
+      "log": "crispaudio-recording-ui-final-targeted.log"
+    },
+    "lint": "passed",
+    "productionBuild": "passed",
+    "macDebugBundle": "passed",
+    "signing": "Local ad-hoc sandbox/helper preflight; no Store signing claim",
+    "layout": {
+      "scope": "Browser with generated CoreAudio device inventory; no audio",
+      "cases": [
+        "English 1100x800",
+        "German 820x650"
+      ],
+      "horizontalOverflow": false,
+      "advancedTimingCollapsed": true
+    },
+    "appRust": {
+      "passed": 46,
+      "ignored": 1,
+      "log": "crispaudio-recording-ui-app-final.log"
+    },
+    "releaseTests": {
+      "passed": 21,
+      "log": "crispaudio-recording-ui-release-tests.log"
+    }
+  },
+  "coverage": [
+    "Immediate Record/Stop without opening a dialog or browser capture",
+    "Native meter and playhead reports",
+    "Explicit UID/channel routing with no unavailable-device fallback",
+    "Separate native correction and legacy calibration",
+    "Native count-in/preroll/loop options and bounded source admission",
+    "Whole-group loading, one Undo/Redo and save/reopen",
+    "Project-rate decoding retains original WAV provenance",
+    "Missing WAV/project change/invalid path retains originals without partial insertion",
+    "Pending start, lead-in and teardown cancellation without late publication"
+  ],
+  "limitations": [
+    "Installed app preserved; candidate not launched or physically qualified",
+    "Live independent backing/cue controls remain pending",
+    "Aligned crash recovery needs durable output activation/progress ledger",
+    "Pending helper cancellation responsiveness and physical latency/load not qualified",
+    "No simulator run, Apple upload or release tag"
+  ]
+}

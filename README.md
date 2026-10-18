@@ -103,12 +103,18 @@ Select a clip and open **Source Editor** for detailed work on its source window.
 
 Record directly into an audio track, with device/channel selection and optional
 input monitoring. Under **Input → Cue mix**, adjust cue level, pan/mono and, on
-Mac, optional native track inserts. Cue changes leave recorded takes dry. Native
-monitoring is buffered (85.3 ms per input rack at 48 kHz, plus plug-in latency); its delay is
+Mac, optional native track inserts. Cue changes leave recorded takes dry. In the
+default **Compatible** mode, native insert monitoring is buffered (85.3 ms per input rack at 48 kHz, plus plug-in latency); its delay is
 shown. The cue uses the current playback output. Add an audible bar-based count-in or project-audio pre-roll,
 with both kept outside the published take. Recording options also include punch
 ranges, loop takes and simultaneous capture into up to eight armed tracks. Input calibration can
 measure a real return path, or you can enter a known correction.
+
+On Mac, **Input → Mode → Native · Preview** uses a native audio clock, explicit
+input channels and a separate monitor output. The existing Record button and
+meters work in either mode. Native placement correction is separate from compatible
+calibration. Hardware timing/load checks and aligned crash recovery remain pending;
+keep using Compatible for established workflows until the preview is qualified.
 
 Audition an original take or listen to its comp through the project mix. Choose
 parts of different takes, edit region boundaries and crossfades, replace or remove

@@ -1545,7 +1545,6 @@
     "cueInvalid": "Cue settings are invalid, or more than two native inserts are enabled.",
     "cueFault": "Native cue stopped after a plug-in error. Dry recording is unaffected. Reconnect monitoring to retry.",
     "cueMac": "Native input monitoring requires the Mac app. Turn native cue inserts off to monitor dry.",
-
     "countInBars": "Count-in",
     "preRollBars": "Pre-roll",
     "bars_one": "{{count}} bar",
@@ -1638,7 +1637,24 @@
     "timing": "Timing and calibration",
     "preparingBacking": "Preparing accompaniment",
     "backingBudget": "The native-effects accompaniment exceeds the recording preparation limit. Shorten the session or export a backing mix to a new session.",
-    "nativeHelp": "Native effects are prepared as a fixed wet accompaniment before recording. Accompaniment and input share one audio clock. Takes stay dry; track effects apply on playback. Cue mix offers separate level, pan/mono and optional buffered native track inserts. Editing the arrangement stops recording."
+    "nativeHelp": "Native effects are prepared as a fixed wet accompaniment before recording. Accompaniment and input share one audio clock. Takes stay dry; track effects apply on playback. Cue mix offers separate level, pan/mono and optional buffered native track inserts. Editing the arrangement stops recording.",
+    "engine": "Mode",
+    "compatible": "Compatible",
+    "nativePreview": "Native · Preview",
+    "nativeOutput": "Monitor output",
+    "defaultOutput": "System default",
+    "unavailableDevice": "Unavailable device",
+    "refreshDevices": "Refresh devices",
+    "nativeCorrection": "Placement offset (ms)",
+    "nativeCorrectionHelp": "Additional native placement adjustment: positive values move recordings later. This is separate from compatible recording calibration and monitoring or plug-in delay. Zero is uncalibrated until measured.",
+    "nativePermission": "Microphone access is required. Use the compatible recorder’s Connect button to grant access, or enable CrispAudio in macOS Privacy & Security → Microphone.",
+    "nativeOutputMissing": "The chosen native output is unavailable. Select another output in recording settings.",
+    "nativeInputMissing": "The chosen native input is unavailable. Select another input in recording settings.",
+    "nativeChannels": "The chosen input channels are unavailable. Check recording settings.",
+    "nativeEngineHelp": "Native recording uses explicit Mac devices and its own audio clock. Hardware qualification is still in progress. The compatible recorder remains available. Output selection here affects native recording only. Monitoring is best used with headphones. Interrupted native recordings currently retain raw audio; automatic aligned recovery is not available yet.",
+    "nativeCueFault": "Monitoring stopped for an input. Dry recording continues.",
+    "nativeMono": "Mono",
+    "nativeStereo": "Stereo"
   },
   "retime": {
     "title": "Speed / pitch",
