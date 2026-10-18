@@ -19,7 +19,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33; source/local candidate 0.13.34 adds the
+The installed baseline remains 0.13.33; source/local candidate 0.13.35 adds the
 opt-in native recording preview described below. The established baseline includes timeline/video editing,
 recording/takes/comping, compact recording controls and meters, source restoration,
 FX-aware segment waveforms within documented limits, native Mac AU/VST3 playback
@@ -29,7 +29,7 @@ belong to CrisperWeaver and CometBeat respectively. Imported audio/transcripts s
 editable. Existing MIDI utilities do not imply a MIDI expansion roadmap.
 
 Native recording is now selectable on Mac under **Input → Mode → Native · Preview**
-in the 0.13.34 candidate. Compatible remains the default. Physical qualification
+in the 0.13.35 candidate. Compatible remains the default. Physical qualification
 and the remaining N4 tasks below are still open:
 
 | Foundation | Code entry point | Verified scope |
@@ -130,14 +130,21 @@ teardown, loads all WAVs with retained resampling provenance, then publishes one
 editor transaction. Empty projects get a positive frozen graph duration without
 changing the editor project. EN/DE layout and generated lifecycle checks pass.
 
+The 0.13.35 preview adds live Monitor mix. Backing/output attenuation and each
+prepared cue's level, balance and mono are ephemeral for the recording run. They
+do not modify project history or saved takes. Rapid edits are coalesced, native
+updates ramp over 64 frames, and initial mute applies before first mixed PCM.
+Mute/last-level state survives closing settings; muted faders remain editable.
+
 Remaining N4 work:
 
 - Persist output activation/progress for aligned crash recovery; provide bounded
   recovery discovery/reconciliation without treating untimed raw files as aligned.
 - Keep immediate Record/Stop, persistent GUI meters and a small settings dropdown.
   Advanced routing/inserts remain collapsed; show measured/configured delays
-  honestly. Add independent cue/backing mix, headphone routing and monitoring
-  controls without adding a wall of text. Wet capture must retain dry originals.
+  honestly. Explicit monitor output and independent backing/cue controls are now
+  implemented; hardware routing/latency acceptance remains N5. Wet capture must
+  retain dry originals.
 - Qualification must include cancellation while helpers are opening, independent
   cue/backing levels and recorded WAV inspection. Preparation checks cancellation
   between bounded helper/graph startup steps; it is not an instant-cancel promise.
@@ -183,16 +190,20 @@ No new patent conclusion or distribution restriction is introduced by this check
 
 ## Verification at the code checkpoint
 
-The 0.13.34 UI preview passes **2045 frontend tests across 211 files**, **46 app Rust
-tests (one hardware case ignored)**, 21 release-check tests, full lint and production
-build. The Mac debug bundle passes local ad-hoc sandbox/helper signing checks.
-Generated-device browser review passes EN 1100×800 and DE 820×650 with no horizontal
-inspector overflow and timing collapsed. See [preview evidence](evidence/native-recording-ui-preview.json).
+The 0.13.35 live mix preview passes **2054 frontend tests across 212 files**,
+**314 media tests (16 ignored)** and **46 app Rust tests (one hardware case ignored)**.
+Full lint and production build pass. The Mac debug candidate passes local ad-hoc
+sandbox/helper signing checks and the release-check suite passes 21 tests.
+Generated monitor UI review passes EN1100×800, DE820×650 and DE390×800, including
+typed levels and no horizontal overflow. This is component layout, not iOS/native
+hardware acceptance. See [live mix evidence](evidence/native-recording-monitor-mix.json).
 
-The previous media checkpoint passed 313 tests (16 ignored); media code did not
-change in this UI increment. The earlier timing checkpoint explicitly ran SDK
-VST3/subprocess fixtures. No physical mic/output, simulator, installation or Apple
-upload was performed. Installed 0.13.33 is preserved; candidate 0.13.34 is separate.
+The raw/cue callback test checks independent levels, exact muted start, ramps,
+invalid-update rejection and unchanged raw PCM. No microphone/output device was
+opened. Installed 0.13.33 is preserved; candidate 0.13.35 is separate. Aligned crash
+recovery and physical qualification remain open. Optional SDK VST3 checks were
+explicitly qualified at the earlier timing checkpoint; their prerequisites remain
+separate from this increment.
 
 Portable commands (use a configured Rust toolchain):
 

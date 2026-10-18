@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## 0.13.35 — 2026-10-18 (local preview)
+
+- Add a collapsed live Monitor mix during native recording: independent backing/output faders and mute, plus level, balance and mono for prepared input cues.
+- Keep monitoring edits separate from the saved project, dry samples and take placement. Faders accept typed values; mute remembers the previous level, including edits while muted and closing/reopening settings.
+- Coalesce rapid control updates and apply native gain changes with 64-frame ramps. Initial mute is effective before the first mixed sample. Compatible recording remains unchanged; physical qualification and aligned crash recovery remain pending.
+
 ## 0.13.34 — 2026-10-18 (local preview)
 
 - Add an opt-in Mac native recording mode to the existing Record/Stop controls and persistent input meters. Choose CoreAudio inputs/channels and a separate monitor output under Input; the compatible recorder remains the default.

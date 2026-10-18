@@ -858,3 +858,83 @@ fn shared_backing_only_output_binds_without_a_dummy_cue() {
     assert_eq!(fixture.report().fault, None);
     fixture.close().unwrap();
 }
+
+#[test]
+fn live_monitor_levels_are_independent_ramped_and_muted_before_first_pcm() {
+    let (cue, mut writer, mut dry, mut worker) = cue_blocks(1.);
+    let (_backing, pcm) =
+        backing::Worker::start(Duration::from_secs(1), |_| Ok((BackingTone, 8192))).unwrap();
+    let (mut fixture, queue) = shared_fixture(
+        vec![(
+            cue,
+            mix::Controls {
+                gain: 1.,
+                pan: 0.,
+                mono: false,
+            },
+        )],
+        Some(pcm),
+    );
+    let mut buffer = BufferFixture::new();
+    fixture
+        .set_monitor_levels(MonitorLevels {
+            backing: 1.,
+            output: 0.,
+        })
+        .unwrap();
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    fixture.arm().unwrap();
+    queue.time(512);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(*buffer.pcm, [[0.; 2]; 512]);
+    // The cue and backing clocks advanced normally while globally muted.
+    assert_eq!(fixture.report().cues[0].unwrap().played_frames, 512);
+    fixture
+        .set_monitor_levels(MonitorLevels {
+            backing: 0.,
+            output: 1.,
+        })
+        .unwrap();
+    queue.time(1024);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert!((buffer.pcm[0][0] - (1. + 0.25 * 63. / 64.) / 64.).abs() < 1e-6);
+    assert_eq!(buffer.pcm[63..], [[1.; 2]; 449]);
+    // Backing attenuation did not alter cue level. Global attenuation affects both.
+    fixture
+        .set_monitor_levels(MonitorLevels {
+            backing: 1.,
+            output: 0.5,
+        })
+        .unwrap();
+    queue.time(1536);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(buffer.pcm[63..], [[0.625; 2]; 449]);
+    assert_eq!(fixture.report().fault, None);
+    for levels in [
+        MonitorLevels {
+            backing: f32::NAN,
+            output: 1.,
+        },
+        MonitorLevels {
+            backing: 1.,
+            output: 1.01,
+        },
+        MonitorLevels {
+            backing: -0.1,
+            output: 0.,
+        },
+    ] {
+        assert!(fixture.set_monitor_levels(levels).is_err());
+    }
+    assert!(writer.push(1536, BASE + 1536, &[[1.; 2]; 512]));
+    assert_eq!(worker.step(), Step::Processed);
+    let raw = dry.pop().unwrap();
+    assert!(raw.samples().iter().all(|sample| *sample == [1.; 2]));
+    queue.time(2048);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(*buffer.pcm, [[0.625; 2]; 512]);
+    fixture.close().unwrap();
+    assert!(fixture
+        .set_monitor_levels(MonitorLevels::default())
+        .is_err());
+}

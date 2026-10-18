@@ -6,7 +6,7 @@ import {publishNativeRecordingGroup,type NativeRecordingManifest} from '../../li
 import {computeWaveformPeaks} from '../utils/audioBufferUtils';
 import {encodeAudioBufferWav} from '../../lib/wavExport';
 import {NativeTimelineSnapshot} from './NativeTimelineSnapshot';
-import {NativeTimelineRecording,type NativeInputInventory,type NativeRecordingOptions} from './NativeTimelineRecording';
+import {NativeTimelineRecording,checkNativeCue,checkNativeMonitorLevels,type NativeCueControls,type NativeMonitorLevels,type NativeInputInventory,type NativeRecordingOptions} from './NativeTimelineRecording';
 import type {PlaybackDevice} from '../../lib/audioOutput';
 const RATE=48000;
 const aborted=()=>new DOMException('Native recording cancelled','AbortError');
@@ -53,10 +53,18 @@ export class NativeRecordingController {
  private starting?:Promise<void>;
  private closing?:Promise<{directory?:string;next?:ReturnType<typeof publishNativeRecordingGroup>}>;
  private cancelled=false;
+ private monitorMix:NativeMonitorLevels={backing:1,output:1};
+ private lastMix:NativeMonitorLevels={backing:1,output:1};
+ private lastCueGains=new Map<string,number>();
+ private cueOverrides=new Map<string,NativeCueControls>();
+ private pendingMix?:NativeMonitorLevels;
+ private pendingCues=new Map<string,NativeCueControls>();
+ private updating?:Promise<void>;
  constructor(spec:NativeRecordingSpec){this.spec={...spec,sources:new Map(spec.sources)};}
  start(options:NativeRecordingOptions){
   if(this.closing)return Promise.reject(aborted());
   if(this.starting)return this.starting;
+  if(options.monitorMix){checkNativeMonitorLevels(options.monitorMix);this.monitorMix={...options.monitorMix};for(const key of ['backing','output'] as const)if(this.monitorMix[key]>0)this.lastMix[key]=this.monitorMix[key];}
   this.starting=this.prepare(options);return this.starting;
  }
  private async prepare(options:NativeRecordingOptions){
@@ -68,11 +76,51 @@ export class NativeRecordingController {
    const backing={...spec.project,duration:Math.max(spec.project.duration,(options.recordEndFrame??options.recordStartFrame+48000)/RATE)};
    this.snapshot=await NativeTimelineSnapshot.create(backing,spec.sources,{signal:controller.signal,isCurrent});
    controller.signal.throwIfAborted();
-   this.recorder=await this.snapshot.startRecording(options);
+   this.recorder=await this.snapshot.startRecording({...options,monitorMix:{...this.monitorMix},inputs:options.inputs.map(input=>({...input,...(input.cue?{cue:this.cueOverrides.get(input.trackId)??input.cue}:{})}))});
    controller.signal.throwIfAborted();
+   this.pendingMix={...this.monitorMix};await this.flushControls();
   }catch(error){await this.snapshot?.close().catch(()=>{});throw error;}
  }
  status(){return this.recorder&&!this.closing?this.recorder.status():Promise.reject(aborted());}
+ /** Monitor state survives closing/reopening settings for this run only. */
+ monitorState(){return {mix:{...this.monitorMix},lastMix:{...this.lastMix},lastCueGains:Object.fromEntries(this.spec.targets.map(({trackId,input})=>[trackId,this.lastCueGains.get(trackId)??10**((input.monitorLevelDb??-12)/20)])),cues:Object.fromEntries(this.spec.targets.map(({trackId,input})=>[trackId,{...(this.cueOverrides.get(trackId)??{gain:10**((input.monitorLevelDb??-12)/20),pan:input.monitorPan??0,mono:input.monitorMono??false})}]))};}
+ async mix(levels:NativeMonitorLevels){
+  if(this.closing)throw aborted();checkNativeMonitorLevels(levels);
+  this.monitorMix={...levels};for(const key of ['backing','output'] as const)if(levels[key]>0)this.lastMix[key]=levels[key];this.pendingMix={...levels};await this.flushControls();
+ }
+ /** Adjust the fader while muted without unmuting its output. */
+ async mixLevel(key:'backing'|'output',value:number){
+  if(this.closing)throw aborted();const levels={...this.monitorMix,[key]:value};checkNativeMonitorLevels(levels);
+  if(this.monitorMix[key]===0&&value>0){this.lastMix[key]=value;return;}
+  await this.mix(levels);
+ }
+ async cueLevel(track:string,gain:number){
+  if(this.closing)throw aborted();const controls=this.monitorState().cues[track];
+  if(!controls||!this.spec.targets.some(target=>target.trackId===track&&target.input.monitor))throw new Error('Unknown cue track');
+  checkNativeCue({...controls,gain});
+  if(controls.gain===0&&gain>0){this.lastCueGains.set(track,gain);return;}
+  await this.cue(track,{...controls,gain});
+ }
+ async cue(track:string,controls:NativeCueControls){
+  if(this.closing)throw aborted();checkNativeCue(controls);
+  if(!this.spec.targets.some(target=>target.trackId===track&&target.input.monitor))throw new Error('Unknown cue track');
+  if(controls.gain>0)this.lastCueGains.set(track,controls.gain);
+  this.cueOverrides.set(track,{...controls});this.pendingCues.set(track,{...controls});await this.flushControls();
+ }
+ private flushControls():Promise<void>{
+  if(!this.recorder||this.closing)return Promise.resolve();
+  if(this.updating)return this.updating;
+  this.updating=(async()=>{
+   while(!this.closing&&(this.pendingMix||this.pendingCues.size)){
+    const mix=this.pendingMix,cues=[...this.pendingCues];this.pendingMix=undefined;this.pendingCues.clear();
+    if(mix)await this.recorder!.mix(mix);
+    for(const [track,controls] of cues){if(this.closing)break;await this.recorder!.cue(track,controls);}
+   }
+  })().catch(error=>{this.pendingMix=undefined;this.pendingCues.clear();throw error;}).finally(()=>{
+   this.updating=undefined;
+   if(!this.closing&&(this.pendingMix||this.pendingCues.size))return this.flushControls();
+  });return this.updating;
+ }
  /** No browser timestamp is used to stop or place native samples. */
  stop(cancel=false){
   if(cancel){this.cancelled=true;this.controller.abort();}
@@ -84,6 +132,7 @@ export class NativeRecordingController {
   let directory:string|undefined;
   try{
    try{await this.starting;}catch(error){if(this.cancelled||error instanceof DOMException&&error.name==='AbortError')return {};throw error;}
+   await this.updating?.catch(()=>{});
    const result=await this.recorder?.close(this.cancelled);
    directory=result?.directory;
    await this.snapshot?.close();

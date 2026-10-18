@@ -4,6 +4,7 @@ fn project() -> Value {
 }
 fn options() -> Options {
     Options {
+        monitor_mix: MonitorLevels::default(),
         device: "output-uid".into(),
         project_start_frame: 100,
         record_start_frame: 200,
@@ -30,6 +31,24 @@ fn options() -> Options {
 fn preflight_rejects_partial_groups_bad_routes_and_legacy_compensation() {
     validate(&options(), &project()).unwrap();
     let mut cases = Vec::new();
+    for levels in [
+        MonitorLevels {
+            backing: f32::NAN,
+            output: 1.,
+        },
+        MonitorLevels {
+            backing: 1.,
+            output: 1.01,
+        },
+        MonitorLevels {
+            backing: -0.1,
+            output: 0.,
+        },
+    ] {
+        let mut o = options();
+        o.monitor_mix = levels;
+        cases.push(o);
+    }
     let mut o = options();
     o.inputs.clear();
     cases.push(o);

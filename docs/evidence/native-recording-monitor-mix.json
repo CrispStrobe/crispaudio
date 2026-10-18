@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-18",
+  "version": "0.13.35",
+  "scope": "Live native monitoring controls with unchanged dry capture and take placement",
+  "installedVersion": "0.13.33",
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "checks": {
+    "frontend": {
+      "passed": 2054,
+      "files": 212,
+      "log": "crispaudio-live-monitor-frontend-final.log"
+    },
+    "media": {
+      "passed": 314,
+      "ignored": 16,
+      "log": "crispaudio-live-monitor-media.log"
+    },
+    "appRust": {
+      "passed": 46,
+      "ignored": 1,
+      "log": "crispaudio-live-monitor-app-final.log"
+    },
+    "lint": "passed",
+    "productionBuild": "passed",
+    "macDebugBundle": "passed",
+    "signing": "Local ad-hoc sandbox/helper preflight",
+    "releaseTests": 21,
+    "layout": {
+      "scope": "Standalone browser component with generated targets; no recorder started",
+      "cases": [
+        "EN1100x800",
+        "DE820x650",
+        "DE390x800"
+      ],
+      "numericEditing": true,
+      "horizontalOverflow": false
+    }
+  },
+  "coverage": [
+    "Independent backing/global attenuation and per-input cue level/balance/mono",
+    "Exact muted start and 64-frame changes through actual callback with fake queue",
+    "Invalid levels rejected without replacing previous targets",
+    "Raw PCM unchanged after live control updates",
+    "One in-flight coalesced control batch and latest cue values",
+    "No project/Undo edits or native placement remap",
+    "Mute/fader memory survives panel reopen; muted faders stay editable",
+    "Prepared-input-only cue controls and unique slider IDs during recording"
+  ],
+  "limitations": [
+    "Native preview still opt-in; candidate not launched/installed",
+    "No physical monitoring latency, hardware/load or iOS acceptance",
+    "No aligned crash recovery ledger yet",
+    "Cue faults require a fresh recording/rack preparation; no live rack restart",
+    "Optional SDK VST3 cases retain explicit prerequisites; no new physical claim"
+  ]
+}

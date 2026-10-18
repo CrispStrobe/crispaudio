@@ -4,7 +4,7 @@ import {useProjectStore} from '../../../src/stores/projectStore';
 import {serializeProject,deserializeProject} from '../../../src/lib/projectFile';
 import type {NativeRecordingManifest} from '../../../src/lib/nativeRecordingTakes';
 import type {TimelineProject} from '../../../src/types/audio';
-const mocks=vi.hoisted(()=>({create:vi.fn(),startRecording:vi.fn(),snapshotClose:vi.fn(),recordingClose:vi.fn(),status:vi.fn(),readFile:vi.fn(),invoke:vi.fn(),encode:vi.fn()}));
+const mocks=vi.hoisted(()=>({create:vi.fn(),startRecording:vi.fn(),snapshotClose:vi.fn(),recordingClose:vi.fn(),mix:vi.fn(),cue:vi.fn(),status:vi.fn(),readFile:vi.fn(),invoke:vi.fn(),encode:vi.fn()}));
 vi.mock('../../../src/audio/plugins/NativeTimelineSnapshot',()=>({NativeTimelineSnapshot:{create:mocks.create}}));
 vi.mock('@tauri-apps/plugin-fs',()=>({readFile:mocks.readFile}));
 vi.mock('@tauri-apps/api/core',()=>({invoke:mocks.invoke}));
@@ -15,7 +15,7 @@ function buffer(rate=48000):AudioBuffer{return {sampleRate:rate,numberOfChannels
 function project():TimelineProject{return {...useProjectStore.getInitialState().project,id:'native-project',sampleRate:48000,duration:0,tracks:['a','b'].map(id=>({id,name:id,volume:1,pan:0,solo:false,muted:false,recordArmed:true,segments:[],recordingInput:{deviceId:'browser-opaque',channel:'mono' as const,monitor:false,countIn:0,latencyMs:500}}))};}
 function spec():NativeRecordingSpec{const state=useProjectStore.getState();return {project:state.project,sources:state.sources,targets:state.project.tracks.map(track=>({trackId:track.id,input:track.recordingInput!})),cursor:0,loop:false,crossfade:0,output:'',current:()=>useProjectStore.getState(),context:{decodeAudioData:vi.fn(async()=>buffer())}as unknown as BaseAudioContext,takeName:'Take',sourceName:'Recorded audio'};}
 function manifest():NativeRecordingManifest{return {version:2,clips:['a','b'].map(id=>({track_id:id,audio:`native-take-${id}/take.wav`,info:{frames:48000,sample_rate:48000,channels:1}})),timing:{version:1,intent:{projectId:'native-project',corrections:{a:{frames:0,basis:'unqualified'},b:{frames:0,basis:'unqualified'}}},placements:['a','b'].map(trackId=>({trackId,pass:0,projectStartFrame:24000,sourceOffsetFrames:12000,frames:24000}))}};}
-beforeEach(()=>{vi.clearAllMocks();useProjectStore.getState().loadProjectState(project(),new Map());useProjectStore.temporal.getState().clear();mocks.create.mockResolvedValue({startRecording:mocks.startRecording,close:mocks.snapshotClose});mocks.startRecording.mockResolvedValue({status:mocks.status,close:mocks.recordingClose});mocks.snapshotClose.mockResolvedValue(undefined);mocks.recordingClose.mockResolvedValue({phase:'complete',directory:'/managed/native-group-generated',manifest:manifest()});mocks.readFile.mockResolvedValue(new Uint8Array(32));mocks.invoke.mockResolvedValue('/managed/derived.wav');mocks.encode.mockResolvedValue({arrayBuffer:async()=>new ArrayBuffer(16)});});
+beforeEach(()=>{vi.clearAllMocks();useProjectStore.getState().loadProjectState(project(),new Map());useProjectStore.temporal.getState().clear();mocks.create.mockResolvedValue({startRecording:mocks.startRecording,close:mocks.snapshotClose});mocks.startRecording.mockResolvedValue({status:mocks.status,mix:mocks.mix,cue:mocks.cue,close:mocks.recordingClose});mocks.snapshotClose.mockResolvedValue(undefined);mocks.mix.mockResolvedValue(undefined);mocks.cue.mockResolvedValue(undefined);mocks.recordingClose.mockResolvedValue({phase:'complete',directory:'/managed/native-group-generated',manifest:manifest()});mocks.readFile.mockResolvedValue(new Uint8Array(32));mocks.invoke.mockResolvedValue('/managed/derived.wav');mocks.encode.mockResolvedValue({arrayBuffer:async()=>new ArrayBuffer(16)});});
 it('resolves native UIDs independently of browser IDs and never reuses legacy calibration',()=>{
  const s=spec(),options=nativeRecordingOptions(s,inventory,outputs);expect(options.inputs.map(input=>input.device)).toEqual(['native-mic','native-mic']);expect(options.inputs.map(input=>input.correction)).toEqual([{frames:0,basis:'unqualified'},{frames:0,basis:'unqualified'}]);expect(options.device).toBe('native-speakers');expect(options.maxFrames*2).toBeLessThanOrEqual(32000000);
  s.targets[0].input={...s.targets[0].input,native:{device:'native-mic',channels:[1],correctionFrames:-48},monitor:true,monitorLevelDb:-6,monitorPan:.25,monitorMono:true};const next=nativeRecordingOptions(s,inventory,outputs);expect(next.inputs[0]).toMatchObject({channels:[1],correction:{frames:-48,basis:'manual'},cue:{pan:.25,mono:true}});expect(next.inputs[0].cue!.gain).toBeCloseTo(10**(-6/20));
@@ -50,4 +50,30 @@ it('cancel during pending start closes a late native session without inserting o
 it('fault results retain the recovery directory and malformed paths never get read',async()=>{
  const s=spec(),first=new NativeRecordingController(s);await first.start(nativeRecordingOptions(s,inventory,outputs));mocks.recordingClose.mockResolvedValueOnce({phase:'fault',error:'clock drift',directory:'/managed/raw-group'});await expect(first.stop()).rejects.toBeInstanceOf(NativeRecordingFailure);expect(mocks.readFile).not.toHaveBeenCalled();
  const bad=manifest();bad.clips[1].audio='../private.wav';mocks.recordingClose.mockResolvedValueOnce({phase:'complete',directory:'/managed/native-group-generated',manifest:bad});const second=new NativeRecordingController(s);await second.start(nativeRecordingOptions(s,inventory,outputs));await expect(second.stop()).rejects.toMatchObject({message:'recording.timingInvalid',directory:'/managed/native-group-generated'});expect(mocks.readFile).not.toHaveBeenCalled();
+});
+
+it('live monitor controls preserve project/Undo, survive reopening and remember muted faders',async()=>{
+ const s=spec();s.targets[0].input.monitor=true;const original=JSON.stringify(s.project),controller=new NativeRecordingController(s);await controller.start(nativeRecordingOptions(s,inventory,outputs));
+ await controller.mix({backing:.5,output:.25});await controller.cue('a',{gain:.4,pan:-.25,mono:true});
+ await controller.mix({backing:0,output:.25});await controller.cue('a',{gain:0,pan:-.25,mono:true});
+ const calls=mocks.mix.mock.calls.length,cueCalls=mocks.cue.mock.calls.length;await controller.mixLevel('backing',.2);await controller.cueLevel('a',.1);
+ const state=controller.monitorState();expect(state.mix).toEqual({backing:0,output:.25});expect(state.lastMix.backing).toBe(.2);expect(state.cues.a).toEqual({gain:0,pan:-.25,mono:true});expect(state.lastCueGains.a).toBe(.1);
+ expect(mocks.mix).toHaveBeenCalledTimes(calls);expect(mocks.cue).toHaveBeenCalledTimes(cueCalls);
+ expect(JSON.stringify(s.project)).toBe(original);expect(useProjectStore.temporal.getState().pastStates).toHaveLength(0);
+ await controller.mix({...state.mix,backing:state.lastMix.backing});await controller.cue('a',{...state.cues.a,gain:state.lastCueGains.a});
+ expect(mocks.mix).toHaveBeenLastCalledWith({backing:.2,output:.25});expect(mocks.cue).toHaveBeenLastCalledWith('a',{gain:.1,pan:-.25,mono:true});await controller.stop(true);
+});
+it('coalesces rapid monitor changes to the newest value with one in-flight request',async()=>{
+ const s=spec();s.targets[0].input.monitor=true;const controller=new NativeRecordingController(s);await controller.start(nativeRecordingOptions(s,inventory,outputs));mocks.mix.mockClear();
+ let release!:()=>void;mocks.mix.mockImplementationOnce(()=>new Promise<void>(resolve=>{release=resolve;}));
+ const first=controller.mix({backing:.2,output:1});const updates=[.3,.4,.5,.6].map(backing=>controller.mix({backing,output:.8}));
+ const one=controller.cue('a',{gain:.2,pan:-.5,mono:false}),two=controller.cue('a',{gain:.3,pan:.5,mono:true});
+ expect(mocks.mix).toHaveBeenCalledTimes(1);release();await Promise.all([first,...updates,one,two]);
+ expect(mocks.mix.mock.calls.map(call=>call[0])).toEqual([{backing:.2,output:1},{backing:.6,output:.8}]);expect(mocks.cue).toHaveBeenCalledTimes(1);expect(mocks.cue).toHaveBeenLastCalledWith('a',{gain:.3,pan:.5,mono:true});await controller.stop(true);
+});
+it('monitor errors and invalid controls do not stop dry recording or modify pending takes',async()=>{
+ const s=spec(),controller=new NativeRecordingController(s);await controller.start(nativeRecordingOptions(s,inventory,outputs));
+ await expect(controller.mix({backing:NaN,output:1})).rejects.toThrow('Invalid native monitor levels');await expect(controller.cue('a',{gain:1,pan:0,mono:false})).rejects.toThrow('Unknown cue track');
+ mocks.mix.mockRejectedValueOnce(new Error('monitor unavailable'));await expect(controller.mix({backing:.5,output:1})).rejects.toThrow('monitor unavailable');expect(mocks.recordingClose).not.toHaveBeenCalled();
+ await controller.mix({backing:.3,output:1});const result=await controller.stop();expect(result.next!.project.tracks[0].takes![0].startTime).toBe(.5);await expect(controller.mix({backing:1,output:1})).rejects.toMatchObject({name:'AbortError'});
 });

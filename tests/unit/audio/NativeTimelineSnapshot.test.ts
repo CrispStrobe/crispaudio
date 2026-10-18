@@ -105,3 +105,9 @@ it('still joins an owned recording when snapshot registry close fails',async()=>
  await snapshot.startRecording(recordingOptions);await expect(snapshot.close()).rejects.toThrow('registry unavailable');
  expect(invoke).toHaveBeenCalledWith('native_recording_close',{session:'recording',cancel:true});
 });
+it('sends validated monitor attenuation and rejects controls after recording close',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create(f.p,f.sources);invoke.mockImplementation(async(cmd:string)=>cmd==='native_recording_start'?'recording':undefined);
+ const recording=await snapshot.startRecording({...recordingOptions,monitorMix:{backing:.5,output:0}});await recording.mix({backing:.25,output:.75});expect(invoke).toHaveBeenCalledWith('native_recording_mix',{session:'recording',levels:{backing:.25,output:.75}});
+ const before=invoke.mock.calls.length;await expect(recording.mix({backing:-1,output:1})).rejects.toThrow('Invalid native monitor levels');await expect(recording.mix({backing:1,output:Infinity})).rejects.toThrow('Invalid native monitor levels');expect(invoke.mock.calls).toHaveLength(before);
+ await recording.close();await expect(recording.mix({backing:1,output:1})).rejects.toMatchObject({name:'AbortError'});await snapshot.close();
+});

@@ -1,5 +1,4 @@
-//! App-local stereo output queue for the native cue scheduler. Not wired to app
-//! commands. Start/arm/poll/stop/drop only on its creating control thread.
+//! App-local output for native recording; physical qualification remains pending. Start/arm/poll/stop/drop only on its creating control thread.
 pub use super::devices::{list_outputs, OutputDevice};
 use super::*;
 use crate::native_input::{
@@ -78,6 +77,88 @@ extern "C" {
         discontinuity: *mut u8,
     ) -> i32;
 }
+/// Monitor-only attenuation, independent of the saved graph and dry files.
+#[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct MonitorLevels {
+    pub backing: f32,
+    pub output: f32,
+}
+impl Default for MonitorLevels {
+    fn default() -> Self {
+        Self {
+            backing: 1.,
+            output: 1.,
+        }
+    }
+}
+impl MonitorLevels {
+    pub fn validate(self) -> Result<()> {
+        if [self.backing, self.output]
+            .iter()
+            .any(|value| !value.is_finite() || !(0. ..=1.).contains(value))
+        {
+            Err("Invalid native monitor levels".into())
+        } else {
+            Ok(())
+        }
+    }
+    fn bits(self) -> u64 {
+        self.backing.to_bits() as u64 | ((self.output.to_bits() as u64) << 32)
+    }
+    fn from_bits(bits: u64) -> Self {
+        Self {
+            backing: f32::from_bits(bits as u32),
+            output: f32::from_bits((bits >> 32) as u32),
+        }
+    }
+}
+struct Ramp {
+    current: f32,
+    target: f32,
+    remaining: usize,
+}
+impl Ramp {
+    fn new(value: f32) -> Self {
+        Self {
+            current: value,
+            target: value,
+            remaining: 0,
+        }
+    }
+    fn set(&mut self, value: f32) {
+        if value != self.target {
+            self.target = value;
+            self.remaining = 64;
+        }
+    }
+    fn next(&mut self) -> f32 {
+        if self.remaining > 0 {
+            self.current += (self.target - self.current) / self.remaining as f32;
+            self.remaining -= 1;
+            if self.remaining == 0 {
+                self.current = self.target;
+            }
+        }
+        self.current
+    }
+}
+struct MonitorRamps {
+    backing: Ramp,
+    output: Ramp,
+}
+impl MonitorRamps {
+    fn new(levels: MonitorLevels) -> Self {
+        Self {
+            backing: Ramp::new(levels.backing),
+            output: Ramp::new(levels.output),
+        }
+    }
+    fn set(&mut self, levels: MonitorLevels) {
+        self.backing.set(levels.backing);
+        self.output.set(levels.output);
+    }
+}
 enum RenderSource {
     Cue(Scheduler),
     Shared {
@@ -111,6 +192,7 @@ impl RenderSource {
         first: i64,
         output: &mut [crate::native_graph::Stereo],
         state: &State,
+        backing_gain: &mut Ramp,
     ) -> std::result::Result<(), Fault> {
         match self {
             Self::Cue(cue) => {
@@ -139,6 +221,11 @@ impl RenderSource {
                     reader
                         .render(&mut pcm[..output.len()])
                         .map_err(|_| Fault::Backing)?;
+                    for sample in &mut pcm[..output.len()] {
+                        let gain = backing_gain.next();
+                        sample[0] *= gain;
+                        sample[1] *= gain;
+                    }
                     mix::Backing::Audio {
                         first_frame: first,
                         samples: &pcm[..output.len()],
@@ -189,6 +276,7 @@ impl LaneReport {
     }
 }
 struct Data {
+    monitor: MonitorRamps,
     source: RenderSource,
     next: i64,
     clock: Option<ClockMap>,
@@ -204,6 +292,7 @@ struct State {
     backing_status: Option<Status<{ backing::SLOTS }>>,
     shared: bool,
     controls: [AtomicU64; mix::MAX_INPUTS],
+    monitor_levels: AtomicU64,
     lanes: [LaneReport; mix::MAX_INPUTS],
     ops: Ops,
     timeline: AtomicPtr<c_void>,
@@ -357,6 +446,7 @@ impl State {
         Ok(Box::new(Self {
             shared: matches!(&source, RenderSource::Shared { .. }),
             data: UnsafeCell::new(Data {
+                monitor: MonitorRamps::new(MonitorLevels::default()),
                 source,
                 next: PRIME_FRAMES,
                 clock: None,
@@ -369,6 +459,7 @@ impl State {
             cue_status,
             backing_status,
             controls: initial.map(AtomicU64::new),
+            monitor_levels: AtomicU64::new(MonitorLevels::default().bits()),
             lanes: std::array::from_fn(|_| LaneReport::new()),
             ops,
             timeline: AtomicPtr::new(std::ptr::null_mut()),
@@ -548,6 +639,10 @@ unsafe extern "C" fn callback(user: *mut c_void, queue: Queue, buffer: *mut Buff
                             if !data.bound {
                                 match data.source.bind(clock, data.next) {
                                     Ok(()) => {
+                                        // A muted start must never ramp down from unity.
+                                        data.monitor = MonitorRamps::new(MonitorLevels::from_bits(
+                                            state.monitor_levels.load(Ordering::Acquire),
+                                        ));
                                         data.bound = true;
                                         state.mixed_frame.store(data.next, Ordering::Relaxed);
                                         state.mixed_ready.store(true, Ordering::Release);
@@ -556,7 +651,20 @@ unsafe extern "C" fn callback(user: *mut c_void, queue: Queue, buffer: *mut Buff
                                 }
                             }
                             if state.fault.load(Ordering::Acquire) == 0 {
-                                let result = data.source.render(data.next, output, state);
+                                data.monitor.set(MonitorLevels::from_bits(
+                                    state.monitor_levels.load(Ordering::Acquire),
+                                ));
+                                let result = data.source.render(
+                                    data.next,
+                                    output,
+                                    state,
+                                    &mut data.monitor.backing,
+                                );
+                                for sample in output.iter_mut() {
+                                    let gain = data.monitor.output.next();
+                                    sample[0] *= gain;
+                                    sample[1] *= gain;
+                                }
                                 if state.phase.load(Ordering::Acquire) == RUNNING {
                                     if let Err(fault) = result {
                                         state.fail(fault);
@@ -783,6 +891,23 @@ impl Output {
             return Err("Cue controls require shared output".into());
         }
         state.controls[index].store(control_bits(control), Ordering::Release);
+        Ok(())
+    }
+    /// Coherent latest-value handoff; 64-frame ramps on the audio callback.
+    /// Initial values take effect before first mixed PCM, including exact mute.
+    pub fn set_monitor_levels(&self, levels: MonitorLevels) -> Result<()> {
+        levels.validate()?;
+        let state = self
+            .state
+            .as_ref()
+            .ok_or("Native output disposed unsuccessfully")?;
+        if !state.shared
+            || state.phase.load(Ordering::Acquire) != RUNNING
+            || state.fault.load(Ordering::Acquire) != 0
+        {
+            return Err("Native monitor output is unavailable".into());
+        }
+        state.monitor_levels.store(levels.bits(), Ordering::Release);
         Ok(())
     }
     pub fn poll(&mut self) -> Result<Report> {

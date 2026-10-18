@@ -1,3 +1,4 @@
+import {NativeRecordingMix} from './NativeRecordingMix';
 import {NativeRecordingSetup} from './NativeRecordingSetup';
 import {NativeRecordingController,NativeRecordingFailure,nativeRecordingOptions} from '../../audio/plugins/NativeRecordingController';
 import {NativeTimelineRecording,type NativeRecordingOptions,type NativeRecordingStatus} from '../../audio/plugins/NativeTimelineRecording';
@@ -38,11 +39,11 @@ import {NumberField} from './NumberField';
 import type {RecordingInput,TimelineProject,AudioSource} from '../../types/audio';
 const defaultInput=defaultRecordingInput;
 interface Session {leadClick?:TimelineMetronome;recordStart?:number;recordFrame?:number;click?:TimelineMetronome;backing?:AudioBuffer;sources:Map<string,AudioSource>;snapshot:TimelineProject;targets:{trackId:string;input:RecordingInput;capture:TimelineCapture}[];passes:CapturePass[];window?:{start:number;end:number};loop:boolean;controller:AbortController;stopping:boolean;frame:number;retainPreview:boolean}
-interface NativeSession {phase:NativeRecordingStatus['phase'];controller:NativeRecordingController;snapshot:TimelineProject;targets:{trackId:string;input:RecordingInput}[];selectedId:string;options?:NativeRecordingOptions;timer?:ReturnType<typeof setInterval>;polling:boolean;stopping?:Promise<void>;faults:Set<string>}
+interface NativeSession {id:string;phase:NativeRecordingStatus['phase'];controller:NativeRecordingController;snapshot:TimelineProject;targets:{trackId:string;input:RecordingInput}[];selectedId:string;options?:NativeRecordingOptions;timer?:ReturnType<typeof setInterval>;polling:boolean;stopping?:Promise<void>;faults:Set<string>}
 export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngine|null>;audio:AudioEngineHandle}){
  const {t}=useTranslation(),project=useProjectStore(s=>s.project),recording=useUIStore(s=>s.timelineRecording),[open,setOpen]=useState(false),[takesOpen,setTakesOpen]=useState(false),[trackId,setTrackId]=useState(''),[devices,setDevices]=useState<MediaDeviceInfo[]>([]),[connected,setConnected]=useState(false),[monitoring,setMonitoring]=useState(false),[cueLatency,setCueLatency]=useState(0),[busy,setBusy]=useState(false),[error,setError]=useState(''),[peak,setPeak]=useState(0),[channels,setChannels]=useState(0),[remaining,setRemaining]=useState(0),[leadPhase,setLeadPhase]=useState<'delay'|'count'|'preRoll'>(),[preparingBacking,setPreparingBacking]=useState(false),[allArmed,setAllArmed]=useState(false),[punch,setPunch]=useState(false),[loop,setLoop]=useState(false),[crossfade,setCrossfade]=useState(.04),[calibration,setCalibration]=useState<{milliseconds:number;confidence:number}>();
  const nativeEnabled=useSettingsStore(s=>s.nativeRecording),nativeMode=nativeEnabled&&isNativeMac();
- const nativeSession=useRef<NativeSession|null>(null);
+ const nativeSession=useRef<NativeSession|null>(null),[liveNativeSession,setLiveNativeSession]=useState<NativeSession|null>(null);
  const cueGesture=useProjectGesture();
  const owner=useRef<RecordingPreviewOwner|null>(null),preferred=useRef('');
  const capture=useRef<TimelineCapture|null>(null),session=useRef<Session|null>(null),mounted=useRef(true),finish=useRef<()=>Promise<void>>(async()=>{}),calibrationController=useRef<AbortController|null>(null);
@@ -64,7 +65,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
     finally{
      for(const target of native.targets)useRecordingMeterStore.getState().clear(target.trackId);
      if(nativeSession.current===native)nativeSession.current=null;useUIStore.setState({timelineRecording:false,nativePreviewStatus:'idle'});
-     if(mounted.current){setBusy(false);setRemaining(0);setLeadPhase(undefined);setPeak(0);setChannels(0);setMonitoring(false);}
+     if(mounted.current){setLiveNativeSession(null);setBusy(false);setRemaining(0);setLeadPhase(undefined);setPeak(0);setChannels(0);setMonitoring(false);}
     }
    })();return native.stopping;
   }
@@ -111,7 +112,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
   finally{try{tone?.stop();}catch{/* Tone may have ended. */}tone?.disconnect();if(calibrationController.current===controller)calibrationController.current=null;if(mounted.current)setBusy(false);}
  };
  const record=async()=>{
-  if(session.current||recording){await finish.current();return;}if(busy||!engine.current)return;
+  if(session.current||nativeSession.current||recording){await finish.current();return;}if(busy||!engine.current)return;
   if(hasNativeEffects(useProjectStore.getState().project)&&!isNativeMac()){setError(t('nativePreview.macOnly'));setOpen(true);return;}
   let snapshot=useProjectStore.getState().project,selectedId:string,targets:ReturnType<typeof recordingTargets>;
   try{const state=useProjectStore.getState();let chosen=quickRecordingTrack(snapshot,preferred.current,selectionTrackIds(snapshot,state.selection).find(id=>snapshot.tracks.some(t=>t.id===id&&t.kind!=='bus')));if(!chosen){state.addTrack(t('recording.newTrack'));chosen=useProjectStore.getState().project.tracks.at(-1)!;}selectedId=chosen.id;if(!chosen.recordArmed)useProjectStore.getState().updateTrack(selectedId,{recordArmed:true});snapshot=useProjectStore.getState().project;preferred.current=selectedId;setTrackId(selectedId);targets=recordingTargets(snapshot,selectedId,allArmed);}catch(e){setError(t(e instanceof Error?e.message:String(e)));return;}
@@ -121,7 +122,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
    const window=(punch||loop)?snapshot.editRange:undefined;
    const spec={project:snapshot,sources:useProjectStore.getState().sources,targets,cursor:useProjectStore.getState().playheadPosition,window,loop,crossfade,output:useSettingsStore.getState().nativeRecordingOutput,current:()=>useProjectStore.getState(),context:audio.getContext(),takeName:t('recording.take'),sourceName:t('recording.captured')};
    const controller=new NativeRecordingController(spec);
-   const active:NativeSession={phase:'preparing',controller,snapshot,targets,selectedId,polling:false,faults:new Set()};nativeSession.current=active;
+   const active:NativeSession={id:crypto.randomUUID(),phase:'preparing',controller,snapshot,targets,selectedId,polling:false,faults:new Set()};nativeSession.current=active;setLiveNativeSession(active);
    try{
     if((punch||loop)&&!window)throw new Error('recording.rangeRequired');
     await engine.current.closeNativeOwned();
@@ -201,6 +202,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
     <div className="flex gap-3 items-center"><label className="flex gap-2 min-h-11 items-center flex-1"><input type="checkbox" disabled={recording||busy||track.locked} checked={track.recordArmed??false} onChange={e=>useProjectStore.getState().updateTrack(track.id,{recordArmed:e.target.checked})}/>{t('recording.arm')}</label><output aria-label={t('recording.inputLevel')} className="text-xs tabular-nums text-gray-400">{peak?`${(20*Math.log10(peak)).toFixed(1)} dBFS`:'−∞'} · {channels} ch</output></div>
     <div className="h-1.5 rounded bg-gray-800 overflow-hidden" aria-hidden="true"><div className={peak>.98?'h-full bg-red-400':'h-full bg-emerald-400'} style={{width:`${Math.max(0,Math.min(100,(20*Math.log10(Math.max(peak,1e-6))+60)/60*100))}%`}}/></div>
     {(allArmed||punch||loop||monitoring)&&<div className="flex flex-wrap gap-2 text-xs text-amber-300">{allArmed&&<span>{t('recording.multiShort',{count:project.tracks.filter(t=>t.kind!=='bus'&&t.recordArmed).length})}</span>}{punch&&<span>{t('recording.punchShort')}</span>}{loop&&<span>{t('recording.loopShort')}</span>}{monitoring&&<span>{t('recording.monitorShort')}</span>}</div>}
+    {liveNativeSession&&<NativeRecordingMix key={liveNativeSession.id} controller={liveNativeSession.controller} targets={liveNativeSession.targets.map(target=>({...target,name:liveNativeSession.snapshot.tracks.find(track=>track.id===target.trackId)?.name??target.trackId}))} selectedId={liveNativeSession.selectedId} disabled={!!liveNativeSession.stopping||liveNativeSession.phase==='preparing'} onError={message=>{if(mounted.current&&nativeSession.current===liveNativeSession&&!liveNativeSession.stopping)setError(message);}}/>}
     <details data-recording-section="input"><summary className="min-h-11 content-center cursor-pointer border-t border-gray-800">{t('recording.inputSetup')}</summary><div className="space-y-3 pt-2">
     {isNativeMac()&&<NativeRecordingSetup input={input} disabled={recording||busy} onChange={configure} onError={setError} onEngineChange={disconnect}/>}
     {!nativeMode&&<>
@@ -209,7 +211,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
     <div className="flex gap-2"><button className="timeline-tool" disabled={recording||busy} onClick={()=>void (async()=>{setError('');setBusy(true);try{if(connected)disconnect();else{await audio.resume();await connect();}}catch(e){setError(t(e instanceof Error?e.message:String(e)));}finally{setBusy(false);}})()}>{t(connected?'recording.disconnect':'recording.connect')}</button></div>
     <label className="flex min-h-11 items-center gap-2"><input type="checkbox" disabled={!connected||recording||busy} checked={connected&&monitoring} onChange={e=>{const enabled=e.target.checked;void (async()=>{setBusy(true);try{if(enabled&&input.monitorFx&&!isNativeMac())throw new Error('recording.cueMac');useProjectStore.getState().updateTrack(track.id,{recordingInput:{...input,monitor:enabled}});const recorder=capture.current;await recorder?.monitoring(enabled);if(!recorder||capture.current!==recorder||!previewMatches(owner.current,useProjectStore.getState().project,trackId))return;setMonitoring(enabled);setCueLatency(recorder.monitorLatency());}catch(reason){setMonitoring(false);setError(t(reason instanceof Error?reason.message:String(reason)));}finally{setBusy(false);}})();}}/>{t('recording.monitor')}</label>
     </>}
-    <details data-recording-section="cue"><summary className="min-h-11 content-center cursor-pointer">{t('recording.cue')}</summary><div className="space-y-2">
+    {!liveNativeSession&&<details data-recording-section="cue"><summary className="min-h-11 content-center cursor-pointer">{t('recording.cue')}</summary><div className="space-y-2">
     <div className="flex justify-end"><InfoButton label={t('recording.cue')}><p>{t('recording.cueHelp')}</p></InfoButton></div>
     <fieldset disabled={recording||busy} className="space-y-2">
     <ParamSlider label={t('recording.cueLevel')} min={-60} max={0} step={.1} value={input.monitorLevelDb??-12} unit="dB" liveNumber onInteractionStart={cueGesture.begin} onInteractionEnd={cueGesture.end} onChange={monitorLevelDb=>configure({monitorLevelDb})}/>
@@ -217,7 +219,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
     <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={input.monitorMono??false} onChange={e=>configure({monitorMono:e.target.checked})}/>{t('recording.cueMono')}</label>
     <label className="flex min-h-11 items-center gap-2"><input type="checkbox" disabled={!input.monitorFx&&!track.nativeEffects?.some(effect=>effect.enabled)} checked={input.monitorFx??false} onChange={e=>configure({monitorFx:e.target.checked})}/>{t('recording.cueFx')}</label>
     </fieldset>{connected&&monitoring&&<output className="text-xs text-gray-400" data-cue-latency>{t('recording.cueLatency',{milliseconds:cueLatency.toFixed(1)})}</output>}
-    </div></details>
+    </div></details>}
     {!nativeMode&&<>
     <details data-recording-section="timing"><summary className="min-h-11 content-center cursor-pointer">{t('recording.timing')}</summary>
     {(['latencyMs'] as const).map(key=><label key={key} className="flex items-center justify-between gap-2">{t(`recording.${key}`)}<NumberField disabled={recording||busy} label={t(`recording.${key}`)} min={key==='latencyMs'?-500:0} value={input[key]} step={key==='latencyMs'?1:1} onCommit={v=>{if(v>(key==='latencyMs'?2000:10))return false;configure({[key]:v});return true;}}/></label>)}

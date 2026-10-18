@@ -10,7 +10,7 @@ import type {AudioEngineHandle} from '../../../src/hooks/useAudioEngine';
 const mocks=vi.hoisted(()=>({start:vi.fn(),status:vi.fn(),stop:vi.fn(),inputs:vi.fn(),outputs:vi.fn(),options:vi.fn(),capture:vi.fn()}));
 vi.mock('react-i18next',async importOriginal=>({...await importOriginal<typeof import('react-i18next')>(),useTranslation:()=>({t:(key:string)=>key})}));
 vi.mock('../../../src/lib/nativeMenu',()=>({isNativeMac:()=>true,menuBlocked:()=>false,textEditing:()=>false}));
-vi.mock('../../../src/audio/plugins/NativeRecordingController',()=>({NativeRecordingController:class{start=mocks.start;status=mocks.status;stop=mocks.stop;},NativeRecordingFailure:class extends Error{},nativeRecordingOptions:mocks.options}));
+vi.mock('../../../src/audio/plugins/NativeRecordingController',()=>({NativeRecordingController:class{start=mocks.start;status=mocks.status;stop=mocks.stop;monitorState(){return {mix:{backing:1,output:1},lastMix:{backing:1,output:1},lastCueGains:{voice:.25},cues:{voice:{gain:.25,pan:0,mono:false}}};}},NativeRecordingFailure:class extends Error{},nativeRecordingOptions:mocks.options}));
 vi.mock('../../../src/audio/plugins/NativeTimelineRecording',()=>({NativeTimelineRecording:{inputs:mocks.inputs}}));
 vi.mock('../../../src/lib/audioOutput',()=>({playbackOutputs:mocks.outputs}));
 vi.mock('../../../src/audio/engine/TimelineCapture',()=>({TimelineCapture:class{constructor(){mocks.capture();}}}));
@@ -41,4 +41,12 @@ it('transport Stop also cancels preparation before the native start command',asy
 });
 it('Stop during native helper preparation cancels quietly instead of publishing empty takes',async()=>{
  mocks.status.mockResolvedValue({phase:'preparing'});renderRecording();fireEvent.click(screen.getByRole('button',{name:'recording.start'}));await waitFor(()=>expect(mocks.status).toHaveBeenCalled());fireEvent.click(screen.getByRole('button',{name:'recording.stop'}));await waitFor(()=>expect(useUIStore.getState().timelineRecording).toBe(false));expect(mocks.stop).toHaveBeenCalledWith(true);expect(useProjectStore.temporal.getState().pastStates).toHaveLength(0);
+});
+it('offers one live cue section with unique slider IDs while recording',async()=>{
+ renderRecording();fireEvent.click(screen.getByRole('button',{name:'recording.start'}));await waitFor(()=>expect(mocks.status).toHaveBeenCalled());fireEvent.click(screen.getByRole('button',{name:'recording.settings'}));
+ expect(document.querySelector('[data-recording-section="live-mix"]')).toBeInTheDocument();expect(document.querySelector('[data-recording-section="cue"]')).not.toBeInTheDocument();const ids=[...document.querySelectorAll('[data-floating-inspector] input[id]')].map(input=>input.id);expect(new Set(ids).size).toBe(ids.length);
+ fireEvent.click(screen.getByRole('button',{name:'recording.stop'}));await waitFor(()=>expect(useUIStore.getState().timelineRecording).toBe(false));
+});
+it('keeps ownership when a UI flag resets and stops the existing native run instead of opening another',async()=>{
+ renderRecording();fireEvent.click(screen.getByRole('button',{name:'recording.start'}));await waitFor(()=>expect(mocks.status).toHaveBeenCalled());act(()=>useUIStore.setState({timelineRecording:false}));fireEvent.click(screen.getByRole('button',{name:'recording.start'}));await waitFor(()=>expect(mocks.stop).toHaveBeenCalledWith(false));expect(mocks.start).toHaveBeenCalledTimes(1);
 });

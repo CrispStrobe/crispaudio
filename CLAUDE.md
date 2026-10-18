@@ -1133,3 +1133,15 @@ publishNativeRecordingGroup transaction. UI commits once. Project changes/load
 failures retain originals without partial publication; unmount cancels. Native
 route fields validate on reopen; portable track templates omit device routing.
 N4 controls/recovery and N5 physical checks remain open in WORK_HANDOFF.md.
+
+### Ephemeral native monitor controls (0.13.35)
+
+NativeRecordingController owns last/current mix and cue overrides per run, outside
+project state. Keep sliders available while muted; restore remembered levels on
+unmute and retain state when the settings component unmounts. Coalesce frontend
+updates with one in-flight batch and <=8 pending cue IDs; never queue PCM in GUI.
+Native actor stores sparse controls, then Output::set_monitor_levels hands coherent
+backing/output targets across AtomicU64. Audio callback ramps 64frames; initial
+mute is installed at first bind without a unity ramp. Raw queues/files and saved
+graph levels are untouched. Live controls replace the frozen cue section during
+recording to avoid duplicate controls/slider IDs. Recovery/N5 remain open.

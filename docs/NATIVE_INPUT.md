@@ -468,3 +468,28 @@ N4 still requires live independent backing/cue controls, preparation-cancellatio
 qualification and durable in-run clock recovery. Physical timing/latency/load,
 external-device and iOS acceptance remain N5. Native mode remains opt-in.
 [Preview evidence](evidence/native-recording-ui-preview.json).
+
+## Native live monitor mix — 0.13.35 candidate
+
+Native recording now offers a collapsed live Monitor mix with backing/output
+attenuation, mute and per-prepared-input cue gain/balance/mono. Edits live in the
+run's controller and leave the project, Undo history, raw samples and take clocks
+unchanged. Closing settings retains the mix; a new run starts from saved presets.
+Muted faders can be adjusted, and unmute restores their remembered level.
+
+One in-flight frontend control batch coalesces new values, while the actor hands
+coherent monitor targets to output atomics. The callback ramps changes over 64
+frames; initial levels are installed before first mixed PCM, including exact mute.
+Backing includes monitor clicks; output gain applies to backing plus cues. No
+GUI lock, plug-in call or file write was added to the output callback.
+
+Validation: 2054 frontend tests/212 files, 314 media tests (16 ignored), 46 app Rust
+tests (one hardware case ignored), 21 release checks, full lint and production
+build pass. Fake-queue callback checks include independent gain, ramps, muted start,
+invalid controls and unchanged raw PCM. Generated monitor UI passes EN1100×800,
+DE820×650 and DE390×800 with numeric editing/no horizontal overflow. The Mac debug
+candidate passes local ad-hoc sandbox/helper signing checks; installed 0.13.33 is
+preserved. No physical mic/output, iOS simulator, installation or Apple upload.
+
+Aligned crash recovery, helper-opening cancellation qualification and N5 physical
+latency/load/device checks remain pending. [Mix evidence](evidence/native-recording-monitor-mix.json).

@@ -1667,7 +1667,14 @@
     "nativeEngineHelp": "Die native Aufnahme nutzt ausdrücklich gewählte Mac-Geräte und eine eigene Audiouhr. Die Hardware-Prüfung läuft noch. Die kompatible Aufnahme bleibt verfügbar. Die Ausgabeauswahl hier gilt nur für native Aufnahmen. Zum Mithören möglichst Kopfhörer nutzen. Unterbrochene native Aufnahmen behalten bisher das Roh-Audio; eine automatisch zeitlich ausgerichtete Wiederherstellung gibt es noch nicht.",
     "nativeCueFault": "Das Mithören eines Eingangs wurde angehalten. Die Rohaufnahme läuft weiter.",
     "nativeMono": "Mono",
-    "nativeStereo": "Stereo"
+    "nativeStereo": "Stereo",
+    "liveMix": "Abhörmischung",
+    "liveMixHelp": "Diese Regler ändern nur das Mithören. Begleit- und Ausgabepegel ändern weder das Projekt noch die aufgenommenen Samples. Eingangspegel, Panorama und Mono gelten für Eingänge, deren Mithören vor der Aufnahme aktiviert wurde. Stummschalten hält die Aufnahme nicht an; danach wird der vorherige Pegel wiederhergestellt. Zur Begleitung zählen auch Einzähl- und Metronomklicks.",
+    "mix_backing": "Begleitung",
+    "mix_output": "Ausgabe",
+    "mixMute": "Stumm",
+    "mixTrack": "Abgehörte Spur",
+    "mixNoCue": "Zum Mithören diesen Eingang vor der Aufnahme aktivieren."
   },
   "retime": {
     "title": "Tempo / Tonhöhe",

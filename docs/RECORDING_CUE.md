@@ -83,8 +83,27 @@ native takes later. Zero is uncalibrated until measured. Actual round-trip laten
 and independent-device drift correction are not qualified by software checks.
 
 This preview requires existing microphone authorization; the compatible Connect
-button can request access. Cue settings are frozen while recording; live backing
-balance and broader cue controls remain follow-up work. Interrupted captures retain
+button can request access. Routing and insert selection are frozen while recording. In 0.13.35, expand
+**Monitor mix** for live listening controls; these do not modify saved cue presets. Interrupted captures retain
 verified raw audio, but automatic aligned crash recovery needs a durable output
 clock ledger. The existing compatible path remains available while these checks
 and physical-device acceptance are completed.
+
+## Live Monitor mix (native preview, 0.13.35)
+
+While recording, open the arrow beside Record and expand **Monitor mix**. Adjust
+**Backing** (including count-in/metronome clicks) and **Output** separately. Choose
+a monitored track for cue level, balance and mono. An input must have monitoring
+enabled before Record; this panel does not open new inputs or restart failed racks.
+Cue faults still leave dry recording running; stop/start to prepare a fresh rack.
+
+Type a number or use a fader. Mute keeps the native clocks, cue consumption and
+recording running. Faders remain editable while muted; unmute restores that level.
+Closing/reopening settings retains the current mix for this recording run. Starting
+a new run uses saved presets. These controls do not create project Undo entries,
+change arrangement playback/export levels or alter recorded samples/placement.
+
+Native attenuation changes ramp over 64 frames after the callback receives them;
+that ramp is not a physical latency promise. Rapid frontend edits are coalesced
+and the audio callback reads atomic targets without GUI locks. Actual monitoring
+latency, hardware output routing and sustained-load behavior still need N5 checks.

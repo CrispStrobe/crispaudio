@@ -112,8 +112,10 @@ measure a real return path, or you can enter a known correction.
 
 On Mac, **Input → Mode → Native · Preview** uses a native audio clock, explicit
 input channels and a separate monitor output. The existing Record button and
-meters work in either mode. Native placement correction is separate from compatible
-calibration. Hardware timing/load checks and aligned crash recovery remain pending;
+meters work in either mode. During native recording, **Monitor mix** adjusts backing
+and output levels, mute and each prepared input cue without changing the project
+or dry recordings. Type exact fader values; muted faders remember their level.
+Native placement correction is separate from compatible calibration. Hardware timing/load checks and aligned crash recovery remain pending;
 keep using Compatible for established workflows until the preview is qualified.
 
 Audition an original take or listen to its comp through the project mix. Choose

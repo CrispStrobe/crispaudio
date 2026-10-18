@@ -9,7 +9,7 @@ use crispaudio_media::{
         },
         macos::{
             self,
-            playback::{self, Output},
+            playback::{self, MonitorLevels, Output},
             ChannelMap, HostTimebase,
         },
         mix,
@@ -92,6 +92,8 @@ pub struct Input {
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Options {
+    #[serde(default)]
+    pub monitor_mix: MonitorLevels,
     pub device: String,
     pub project_start_frame: u32,
     pub record_start_frame: u32,
@@ -108,6 +110,7 @@ fn valid_id(value: &str) -> bool {
     !value.is_empty() && value.len() <= 128 && !value.chars().any(char::is_control)
 }
 fn validate(options: &Options, project: &Value) -> Result<(), String> {
+    options.monitor_mix.validate()?;
     let mut ids = HashSet::new();
     if !valid_id(project["id"].as_str().unwrap_or(""))
         || options.device.is_empty()
@@ -169,6 +172,7 @@ struct Control {
     status: Mutex<Value>,
     /// Sparse control-thread updates only. The output callback uses atomics.
     updates: Mutex<BTreeMap<String, CueControls>>,
+    monitor_mix: Mutex<MonitorLevels>,
 }
 impl Control {
     fn new() -> Self {
@@ -176,6 +180,7 @@ impl Control {
             action: AtomicUsize::new(0),
             status: Mutex::new(json!({"phase":"preparing"})),
             updates: Mutex::new(BTreeMap::new()),
+            monitor_mix: Mutex::new(MonitorLevels::default()),
         }
     }
     fn cancelled(&self) -> bool {
@@ -437,6 +442,7 @@ fn run(
             watchdog_timeout: Duration::from_secs(2),
         },
     )?;
+    output.set_monitor_levels(*control.monitor_mix.lock().unwrap())?;
     let mut prepared = monitored::Prepared::new(prepared, output, Some(backing));
     let deadline = Instant::now() + Duration::from_secs(2);
     while !prepared.ready()? {
@@ -475,6 +481,9 @@ fn run(
             Ok(reports) => reports,
             Err(_) => return Ok(outcome(run.cancel())),
         };
+        run.output()
+            .unwrap()
+            .set_monitor_levels(*control.monitor_mix.lock().unwrap())?;
         for (id, update) in std::mem::take(&mut *control.updates.lock().unwrap()) {
             let index = cue_ids
                 .iter()
@@ -571,6 +580,7 @@ pub fn native_recording_start(
         control: Arc::new(Control::new()),
         worker: Mutex::new(None),
     });
+    *session.control.monitor_mix.lock().unwrap() = options.monitor_mix;
     let control = session.control.clone();
     let token = id.clone();
     let worker = thread::Builder::new()
@@ -621,6 +631,18 @@ pub fn native_recording_cue(
         .lock()
         .unwrap()
         .insert(track, controls);
+    Ok(())
+}
+#[tauri::command]
+pub fn native_recording_mix(
+    window: tauri::WebviewWindow,
+    state: tauri::State<NativeRecording>,
+    session: String,
+    levels: MonitorLevels,
+) -> Result<(), String> {
+    levels.validate()?;
+    let active = state.get(window.label(), &session)?;
+    *active.control.monitor_mix.lock().unwrap() = levels;
     Ok(())
 }
 #[tauri::command]

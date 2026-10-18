@@ -1654,7 +1654,14 @@
     "nativeEngineHelp": "Native recording uses explicit Mac devices and its own audio clock. Hardware qualification is still in progress. The compatible recorder remains available. Output selection here affects native recording only. Monitoring is best used with headphones. Interrupted native recordings currently retain raw audio; automatic aligned recovery is not available yet.",
     "nativeCueFault": "Monitoring stopped for an input. Dry recording continues.",
     "nativeMono": "Mono",
-    "nativeStereo": "Stereo"
+    "nativeStereo": "Stereo",
+    "liveMix": "Monitor mix",
+    "liveMixHelp": "These controls affect listening only. Backing and output levels do not alter the project or recorded samples. Cue level, pan and mono apply to inputs enabled for monitoring before Record. Muting keeps recording running; unmuting restores the previous level. Backing includes count-in and metronome clicks.",
+    "mix_backing": "Backing",
+    "mix_output": "Output",
+    "mixMute": "Mute",
+    "mixTrack": "Monitored track",
+    "mixNoCue": "Enable input monitoring before Record to use this cue."
   },
   "retime": {
     "title": "Speed / pitch",
