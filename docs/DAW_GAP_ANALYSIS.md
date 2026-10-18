@@ -32,7 +32,9 @@ creation remain with CometBeat and CrisperWeaver. Physical device/platform check
 Effect-aware segment waveforms are implemented through the bounded 0.13.24
 continuous-refresh checkpoint; continue the execution order below.
 
-Source checkpoint 0.13.51 adds the outgoing native-source close/join barrier
+Source checkpoint 0.13.52 defines repeatable first-pass plug-in render/recipe state
+and invalidates stale prepared results after parameter edits. Source 0.13.51 adds
+the outgoing native-source close/join barrier
 before recording, arrangement and other audition paths. Native streaming source
 controls are still hidden. The next acceptance remains shared Play/Stop, reverse
 ownership transitions, saved-state/first-pass Apply parity, mono/stereo/headroom

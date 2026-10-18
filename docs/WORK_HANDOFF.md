@@ -21,7 +21,9 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.51 adds the shared source-preview
+The installed baseline remains 0.13.33. Source 0.13.52 fixes source plug-in
+first-pass state and stale prepared results; see the latest checkpoint below.
+Source 0.13.51 adds the shared source-preview
 close/join barrier; see the latest checkpoint below. Source 0.13.50 adds hardware-free native
 source-worker qualification and enforces 48 kHz audition admission; start at the
 latest checkpoint below. Source 0.13.49 fixes AU source-window
@@ -953,3 +955,46 @@ Tauri IPC or physical-device qualification was performed for this change.
 [Source ownership evidence](evidence/native-source-owner.json).
 No native app build/install, audio hardware, tag or Apple upload. Both running
 sessions and the pending .41 human question remain unchanged.
+
+
+## Source plug-in first-pass state — 0.13.52 checkpoint
+
+`SourcePluginEffects` now treats the state returned by effect selection
+(`plugin-info`) as the stable starting state. Each render copies the current
+parameters and that base before awaiting work. Render-returned state may include
+processing history; it no longer seeds another preview or the saved recipe.
+The recipe stores the request's base state plus its explicit parameters, reported
+latency and identity. Apply still commits the prepared PCM, retains the original
+and adds one Undo step. Old recipe metadata remains readable; no format migration
+or automatic reprocessing is introduced. Selecting saved settings passes both
+state and parameters to `plugin-info` rather than trusting state alone.
+
+A parameter edit aborts the current job and invalidates the old plug-in draft
+immediately, so Apply cannot silently commit earlier parameter values. Late
+metadata/errors cannot replace newer work. Publication checks cancellation,
+parent selection validity, project identity, recording and source-buffer identity.
+Disable/unmount cancel pending work; received preview files are removed in finally.
+EN/DE help describes Auto preview as repeated rendering. The browser regression
+now checks immediate stale-Apply removal, stable request/recipe state and replay
+of the saved recipe against applied PCM. It waits for bypass rendering to finish
+before inspecting Apply and uses accessible button locators. Initial harness
+attempts needed that wait/locator fix and explicit focus with canonical decimal
+input; the final AU/VST3 runs enforce the requested values before proceeding.
+
+Validation: **2,188 frontend tests / 231 files** pass (two workers, 20-second
+per-test ceiling), including **13 source plug-in component cases**. Production
+frontend build, full lint, the changed browser-script lint and **24 release
+checks** pass. Backend source is unchanged; Rust suites were not rerun. The actual
+AU/VST3 browser checks above are offline helper qualification, not native IPC or
+physical audio acceptance.
+[First-pass evidence](evidence/source-plugin-first-pass.json). Native streaming UI is still hidden: the remaining
+work is shared opt-in Play/Stop, reverse owner joining/exclusion, 48 kHz full-clip
+stereo admission, monitor headroom, live/original controls and a null-backed IPC/UI
+bridge with queue/device traps. This checkpoint defines rendered first-pass state;
+it does not establish plug-in realtime/offline equivalence or state capture from
+a running graph. Mono/stereo policy, source/range/channel/lock/reset/Apply/unmount
+UI invalidation and real device/WebKit/load/N5 acceptance remain as scoped in .51.
+Broader recipe recall from retained originals, source FX, waveform/scale,
+restoration and freeze tasks remain accepted and open.
+
+No installed app replacement, native build, physical audio action or Apple upload.

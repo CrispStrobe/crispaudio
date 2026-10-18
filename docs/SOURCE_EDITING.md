@@ -185,3 +185,14 @@ and outputs are joined before arrangement, recording or another audition starts.
 Cancelled requests cannot begin playing after that wait. The editor's native
 streaming controls still await UI/state/headroom qualification; **Auto preview**
 continues to render. See the [latest handoff](WORK_HANDOFF.md#native-source-ownership-handoff--01351-checkpoint).
+
+
+## Repeatable external-effect previews
+
+From 0.13.52, each preview starts from the effect's restored state and the current
+parameter values. Rendering again does not continue the previous render's DSP
+history. Changing a parameter clears the old prepared result; render again or
+use **Auto preview** before Apply. Apply commits that prepared audio and saves its
+starting state and parameters with the edit history. Saved effects restore both
+state and explicit parameters when selected again. This is metadata recall on the
+current source, not automatic reprocessing from the retained original.

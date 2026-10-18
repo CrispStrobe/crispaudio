@@ -1,6 +1,15 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for source candidate 0.13.51 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for source candidate 0.13.52 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.52 defines the source plug-in **first-pass recipe**: every helper render
+starts from the state restored during effect selection plus an immutable snapshot
+of current parameters. Post-render state never seeds the next render. Saved
+parameters are restored with saved state; changing parameters immediately clears
+the old prepared result and cancels its job. Late metadata/audio cannot replace
+newer work, including source-buffer replacement without a project mutation.
+Native source streaming controls remain hidden pending shared transport/UI
+qualification. [Latest handoff](docs/WORK_HANDOFF.md#source-plug-in-first-pass-state--01352-checkpoint).
 
 0.13.51 adds a shared source-preview ownership barrier. Native source upload
 reserves ownership immediately; replacement, Stop and unmount retain its output

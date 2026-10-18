@@ -4604,3 +4604,35 @@ Both existing app sessions remain untouched. No native build/install, device
 operation, release tag or Apple upload. Prior 0.13.50 iOS CI passed; its general
 CI was still queued at the pre-push check. Current commit CI is separate from
 local validation. [Sanitized evidence](evidence/native-source-owner.json).
+
+
+## Source plug-in first-pass state — 0.13.52 source candidate
+
+Every source plug-in preview now starts from a stable restored state and a copied
+set of current parameters. Rendering no longer feeds post-render state into the
+next preview or saved recipe. Saved selections restore explicit parameters too.
+Parameter edits immediately invalidate the old Apply result and cancel pending
+work; stale metadata, errors and audio cannot replace a newer preparation.
+
+Muted browser checks with actual Apple AUBandpass and Steinberg ADelay helpers
+pass scan, parameter editing, immediate stale-Apply removal, repeated starting
+state, bypass, Apply, saved state, original retention and one Undo. Re-rendering
+each saved recipe reproduces all 48,000 applied mono samples with **zero error**.
+These are generated 48 kHz fixtures using offline helpers and a mocked desktop
+bridge; native output/recording IPC is trapped. They do not qualify native source
+streaming, hardware, WebKit, arbitrary plug-ins or realtime/offline parity.
+Initial harness attempts required correct bypass completion/locators and explicit
+focus/canonical decimal entry; final checks assert the exact requested values.
+See [evidence](evidence/source-plugin-first-pass.json) and the
+[remaining UI scope](WORK_HANDOFF.md#source-plug-in-first-pass-state--01352-checkpoint).
+
+Native source controls remain hidden. Existing app sessions are untouched; no
+native build/install, hardware action, release tag or Apple upload. Previous
+0.13.51 CI and iOS CI both passed; current commit CI is separate from local checks.
+
+Validation: **2,188 frontend tests / 231 files** pass (two workers, 20-second
+per-test ceiling), including **13 source plug-in component cases**. Production
+frontend build, full lint, the changed browser-script lint and **24 release
+checks** pass. Backend source is unchanged; Rust suites were not rerun. The actual
+AU/VST3 browser checks above are offline helper qualification, not native IPC or
+physical audio acceptance.

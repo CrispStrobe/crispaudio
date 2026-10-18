@@ -1,0 +1,91 @@
+{
+  "version": "0.13.52",
+  "date": "2026-10-18",
+  "scope": "Source plug-in rendered first-pass state and stale-result ownership",
+  "hardwareOpened": false,
+  "nativeSourceUiEnabled": false,
+  "contract": {
+    "renderBase": "State restored by plugin-info, retained across helper renders",
+    "parameters": "Immutable per-request copy of current controls; saved controls restored with state",
+    "recipe": "Request base state plus explicit parameters, identity and reported latency",
+    "apply": "Already prepared PCM, retained original and one Undo step; no automatic reprocessing"
+  },
+  "checks": [
+    "parameter edits cancel jobs and immediately clear old plugin drafts",
+    "late metadata/results/errors cannot replace newer work",
+    "cancel/disable/unmount/recording/project/source/selection invalidation",
+    "source-buffer identity checked even without project mutation",
+    "automatic preview debounces to newest controls"
+  ],
+  "actualHelperBrowser": [
+    {
+      "nativeScan": "passed",
+      "nativeParameterPreview": "passed",
+      "bypass": "passed",
+      "processedSourceCommit": "passed",
+      "savedPluginState": "passed",
+      "stableFirstPassState": "passed",
+      "staleApplyCleared": "passed",
+      "savedRecipeReplay": {
+        "maxError": 0,
+        "frames": 48000,
+        "channels": 1
+      },
+      "originalAndUndo": "passed",
+      "format": "AU",
+      "fixture": "Apple AUBandpass"
+    },
+    {
+      "nativeScan": "passed",
+      "nativeParameterPreview": "passed",
+      "bypass": "passed",
+      "processedSourceCommit": "passed",
+      "savedPluginState": "passed",
+      "stableFirstPassState": "passed",
+      "staleApplyCleared": "passed",
+      "savedRecipeReplay": {
+        "maxError": 0,
+        "frames": 48000,
+        "channels": 1
+      },
+      "originalAndUndo": "passed",
+      "format": "VST3",
+      "fixture": "Steinberg ADelay"
+    }
+  ],
+  "qualificationLimits": [
+    "Generated 48 kHz mono fixtures only",
+    "Mocked desktop bridge and offline helper jobs; native output and recording IPC rejected",
+    "No native streaming controls, real output, microphone, WebKit or sustained load",
+    "No arbitrary-plugin deterministic rendering, realtime/offline equivalence or running-state capture claim"
+  ],
+  "validation": {
+    "componentCases": 13,
+    "productionBuild": "passed",
+    "fullLint": "passed",
+    "changedBrowserScriptLint": "passed",
+    "releaseChecks": 24,
+    "rustTests": "not rerun; backend source unchanged",
+    "fullFrontend": {
+      "passed": 2188,
+      "files": 231,
+      "workers": 2,
+      "testTimeoutMs": 20000,
+      "durationSeconds": 375.95
+    }
+  },
+  "remaining": [
+    "Compact shared native source Play/Stop with rendered fallback",
+    "Reverse owner joining and recording/other-preview exclusion",
+    "Initial 48 kHz full-clip stereo admission and mono/stereo/headroom policy",
+    "Live controls/original comparison and first-pass native/Prepare equivalence",
+    "Null-backed isolated IPC/UI bridge with queue/device traps",
+    "Project/range/channel/lock/reset/Apply/unmount source UI lifecycle",
+    "Core Audio device/time, WebKit, physical listening and load/N5 acceptance"
+  ],
+  "distribution": {
+    "installedAppsUpdated": false,
+    "releaseTag": false,
+    "appleUpload": false
+  }
+}
