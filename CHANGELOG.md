@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## 0.13.36 — 2026-10-18 (internal recovery checkpoint)
+
+- Persist native recording timing on a bounded disk worker during capture, using observed output hardware progress rather than the queued tail.
+- Add managed-directory discovery and conservative, all-input recovery commands. Copy only verified whole audio blocks within the saved clock extent; retain all originals and label recovered groups incomplete.
+- Recheck recovered PCM, clocks and placements on reopen. Recovery is idempotent and excludes simultaneous native recording. The compact recovery/import UI and completed-group reconciliation remain pending.
+
 ## 0.13.35 — 2026-10-18 (local preview)
 
 - Add a collapsed live Monitor mix during native recording: independent backing/output faders and mute, plus level, balance and mono for prepared input cues.

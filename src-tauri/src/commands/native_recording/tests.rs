@@ -279,3 +279,24 @@ fn run_identity_does_not_repeat_when_process_counter_restarts() {
             .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_'));
     }
 }
+
+#[test]
+fn recovery_reservation_excludes_recording_and_other_recovery_until_worker_exits() {
+    let state = NativeRecording::default();
+    let lease = state.reserve_recovery().unwrap();
+    assert!(state.recovering.load(Ordering::Acquire));
+    assert!(state.reserve_recovery().is_err());
+    drop(lease);
+    assert!(!state.recovering.load(Ordering::Acquire));
+    *state.active.lock().unwrap() = Some(Arc::new(Session {
+        owner: "main".into(),
+        id: "run".into(),
+        snapshot: "snapshot".into(),
+        cues: HashSet::new(),
+        control: Arc::new(Control::new()),
+        worker: Mutex::new(None),
+    }));
+    assert!(state.reserve_recovery().is_err());
+    state.shutdown();
+    assert!(state.reserve_recovery().is_ok());
+}

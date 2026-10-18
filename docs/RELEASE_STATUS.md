@@ -5,6 +5,30 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Native interrupted recording recovery — 0.13.36 internal candidate
+
+Native recording now saves output timing while capture is running. Preparation saves an immutable plan; a bounded disk
+worker writes atomic checksummed progress checkpoints;
+callback and UI threads do no ledger I/O. Recovery uses observed hardware progress,
+not speculative queued audio. It copies only verified whole blocks, requires all
+planned inputs and independently verifies timing before publishing one derived
+result. Original files remain untouched. Recovered groups stay labelled incomplete
+and can be reopened/reused without creating another audio copy.
+
+Mac managed-data discovery/recovery commands exclude concurrent native recording.
+Discovery is bounded to 512 entries/64 candidates and reports truncation. Recovery
+review/import controls, completed-group reconciliation, duplicate-import receipts,
+pagination and owned recovery cancellation remain open; this is internal software,
+not a finished user recovery workflow. Physical N5 qualification is still pending.
+
+Validation: 323 media tests (16 ignored), 47 app Rust tests (one hardware case
+ignored), 21 release checks, production build and local Mac sandbox/helper signing
+checks pass. A child process exits without cleanup before two-input recovery;
+fixtures verify placement, raw preservation, corrupt/torn data, drift and bounds.
+Frontend UI code is unchanged from 0.13.35; its prior full suite was 2054/212 files.
+Installed 0.13.33 is preserved. No microphone/output, simulator, install or Apple
+upload. [Recovery evidence](evidence/native-recording-crash-recovery.json).
+
 ## Native live monitor mix — 0.13.35 candidate
 
 Native recording now offers a collapsed live Monitor mix with backing/output

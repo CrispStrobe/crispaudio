@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-18",
+  "version": "0.13.36",
+  "scope": "Internal durable output timing and all-input aligned-prefix recovery; review/import UI pending",
+  "installedVersion": "0.13.33",
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "checks": {
+    "media": {
+      "passed": 323,
+      "ignored": 16,
+      "log": "crispaudio-recovery-media-final.log"
+    },
+    "appRust": {
+      "passed": 47,
+      "ignored": 1,
+      "log": "crispaudio-recovery-app-final.log"
+    },
+    "release": {
+      "passed": 21,
+      "log": "crispaudio-recovery-release.log"
+    },
+    "frontend": {
+      "scope": "Unchanged component sources; prior 0.13.35 full suite only",
+      "passed": 2054,
+      "files": 212,
+      "rerun": false
+    },
+    "productionBuild": "passed",
+    "macDebugBundle": "passed",
+    "signing": "Local ad-hoc sandbox/helper preflight"
+  },
+  "coverage": [
+    "Child process exits without cleanup; durable raw/clock checkpoints recover both inputs",
+    "Observed hardware extent instead of queued output tail",
+    "Sample-exact offsets, loop passes, verified whole-block truncation",
+    "Corrupt PCM, torn/altered ledger, source drift, missing inputs and cancelled recovery",
+    "No modification to original raw files",
+    "Recovered receipt remains incomplete and independently verifies on reopen",
+    "Repeated recovery reuses derived audio",
+    "Managed IDs, known symlink rejection, bounded discovery",
+    "Native recording/recovery exclusion and worker write failure"
+  ],
+  "limits": [
+    "No compact recovery review/import UI or duplicate-import receipt yet",
+    "Completed recording manifests require separate reconciliation",
+    "Discovery stops at 512 root entries or 64 candidates; pagination pending",
+    "App recovery worker currently finishes after inspector closure; owned cancellation pending",
+    "No checkpoint means no aligned recovery; raw-only originals remain",
+    "Physical sample placement, long/load/background/hot-plug and iOS acceptance pending"
+  ]
+}

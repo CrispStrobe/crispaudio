@@ -29,7 +29,7 @@ use std::{
     collections::{BTreeMap, HashSet},
     path::PathBuf,
     sync::{
-        atomic::{AtomicU64, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
         Arc, Mutex,
     },
     thread::{self, JoinHandle},
@@ -210,8 +210,27 @@ struct Session {
 pub struct NativeRecording {
     active: Mutex<Option<Arc<Session>>>,
     sequence: AtomicU64,
+    recovering: Arc<AtomicBool>,
+}
+struct RecoveryLease(Arc<AtomicBool>);
+impl Drop for RecoveryLease {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
+    }
 }
 impl NativeRecording {
+    fn reserve_recovery(&self) -> Result<RecoveryLease, String> {
+        let active = self.active.lock().unwrap();
+        if active.is_some()
+            || self
+                .recovering
+                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+                .is_err()
+        {
+            return Err("Close native recording or recovery first".into());
+        }
+        Ok(RecoveryLease(self.recovering.clone()))
+    }
     fn get(&self, owner: &str, id: &str) -> Result<Arc<Session>, String> {
         self.active
             .lock()
@@ -393,6 +412,11 @@ fn run(
         error.reason
     })?;
     retained(&control, prepared.directory());
+    let mut ledger = crispaudio_media::native_input::recovery::Ledger::create(
+        prepared.directory(),
+        intent.clone(),
+        prepared.recovery_inputs(),
+    )?;
     control.check()?;
     let backing_snapshot = snapshot.clone(); // Retain the decoded-source budget lease.
     let (backing, reader) = backing::Worker::recording(
@@ -469,6 +493,7 @@ fn run(
             macos::Capture::start(&input.device, map, writer)
         })
         .map_err(|error| error.reason)?;
+    let mut last_checkpoint = None;
     loop {
         let action = control.action.load(Ordering::Acquire);
         if action == CANCEL {
@@ -494,6 +519,15 @@ fn run(
                 .set_cue_controls(index, update.checked()?)?;
         }
         let output = run.output().unwrap().report();
+        ledger.check()?;
+        if last_checkpoint.is_none_or(|last: Instant| last.elapsed() >= Duration::from_secs(1)) {
+            if let Some(snapshot) =
+                crispaudio_media::native_input::timing::Snapshot::from_progress(&output)?
+            {
+                ledger.checkpoint(snapshot)?;
+                last_checkpoint = Some(Instant::now());
+            }
+        }
         let elapsed = output
             .first_mixed_frame
             .map(|first| output.hardware_frame - first);
@@ -554,7 +588,7 @@ pub fn native_recording_start(
     options: Options,
 ) -> Result<String, String> {
     let mut slot = state.active.lock().unwrap();
-    if slot.is_some() {
+    if slot.is_some() || state.recovering.load(Ordering::Acquire) {
         return Err("Close existing native recording first".into());
     }
     let frozen = snapshots.get(window.label(), &snapshot)?;
@@ -601,6 +635,46 @@ pub fn native_recording_start(
     *session.worker.lock().unwrap() = Some(worker);
     *slot = Some(session);
     Ok(id)
+}
+/// App-data managed IDs only; never accepts a filesystem path from WebKit.
+#[tauri::command]
+pub async fn native_recording_discover(
+    window: tauri::WebviewWindow,
+    state: tauri::State<'_, NativeRecording>,
+) -> Result<Value, String> {
+    let lease = state.reserve_recovery()?;
+    let root = window
+        .app_handle()
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("recordings");
+    tauri::async_runtime::spawn_blocking(move || {
+        let _lease = lease;
+        crispaudio_media::native_input::recovery::discover(&root)
+            .and_then(|result| serde_json::to_value(result).map_err(|e| e.to_string()))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+pub async fn native_recording_recover(
+    window: tauri::WebviewWindow,
+    state: tauri::State<'_, NativeRecording>,
+    group: String,
+) -> Result<Value, String> {
+    let lease = state.reserve_recovery()?;
+    let root = window
+        .app_handle()
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("recordings");
+    tauri::async_runtime::spawn_blocking(move || {
+        let _lease = lease;
+        let (directory,result) = crispaudio_media::native_input::recovery::recover(&root,&group,&AtomicBool::new(false))?;
+        Ok(json!({"phase":"recovered","incomplete":result.incomplete,"directory":directory,"manifest":result.manifest,"reasons":result.reasons}))
+    }).await.map_err(|e|e.to_string())?
 }
 #[tauri::command]
 pub fn native_recording_status(

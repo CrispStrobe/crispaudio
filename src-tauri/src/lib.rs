@@ -131,6 +131,10 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             commands::native_recording::native_recording_mix,
             #[cfg(target_os = "macos")]
+            commands::native_recording::native_recording_discover,
+            #[cfg(target_os = "macos")]
+            commands::native_recording::native_recording_recover,
+            #[cfg(target_os = "macos")]
             commands::native_recording::native_recording_close,
             #[cfg(target_os = "macos")]
             commands::native_recording::native_recording_inputs,

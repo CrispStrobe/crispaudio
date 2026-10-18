@@ -14,6 +14,7 @@ pub mod mix;
 pub mod output;
 pub mod plugins;
 pub mod recording;
+pub mod recovery;
 pub mod session;
 pub mod timing;
 use std::{

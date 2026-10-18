@@ -165,6 +165,27 @@ pub struct Prepared<C: Capture> {
     writers: Vec<InputWriter>,
 }
 impl<C: Capture> Prepared<C> {
+    /// Immutable app-owned take names for a crash-recovery plan, before capture.
+    pub fn recovery_inputs(&self) -> Vec<(String, String)> {
+        self.group
+            .as_ref()
+            .unwrap()
+            .inputs
+            .iter()
+            .map(|(id, session)| {
+                (
+                    id.clone(),
+                    session
+                        .recovery_directory()
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_owned(),
+                )
+            })
+            .collect()
+    }
     pub fn directory(&self) -> &Path {
         self.group.as_ref().unwrap().directory()
     }

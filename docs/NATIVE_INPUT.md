@@ -493,3 +493,32 @@ preserved. No physical mic/output, iOS simulator, installation or Apple upload.
 
 Aligned crash recovery, helper-opening cancellation qualification and N5 physical
 latency/load/device checks remain pending. [Mix evidence](evidence/native-recording-monitor-mix.json).
+
+## In-run recovery ledger — 0.13.36 internal checkpoint
+
+`recovery::Ledger` prepares immutable managed group/input names and timing Intent
+before capture. Output activation, fixed clock anchor and observed hardware
+progress are saved on a dedicated disk worker, with one replaceable pending slot.
+The actor offers the first usable snapshot, then roughly one per second. File and
+directory sync plus atomic replacement preserve the previous checkpoint on a torn
+write; a checksum detects accidental metadata alteration. A ledger failure faults
+the owner while raw files remain available. Audio callbacks perform no ledger I/O.
+
+`recovery::discover` reads bounded metadata only: at most 512 root entries and 64
+candidates, with a truncated flag. Candidate does not mean verified audio. Mac app
+commands accept managed group IDs in app data, never caller filesystem paths, and
+reserve recovery against recording/other recovery while blocking I/O runs off UI.
+
+`recovery::recover` copies verified whole raw blocks strictly within the durable
+hardware extent, checks input drift, and requires every planned input. Derived
+WAVs retain matching metadata/index for independent timing verification. Publication
+is one atomic derived-directory rename; all originals remain intact. The receipt
+always says incomplete; it is not a clean completed-recording marker. Reopening
+rechecks the copied PCM and derived placement. Repeated recovery reuses that result.
+No durable checkpoint yields raw-only recovery, never inferred alignment. The tail
+can lose checkpoint cadence plus raw-file flush lag and a partial block.
+
+The compact review/import UI, completed-group reconciliation, duplicate-import
+receipts, discovery pagination and owned recovery cancellation remain N4 work.
+Actual process-exit and fake-clock tests are software evidence only; N5 physical
+latency, load, background and device-change acceptance remains pending.

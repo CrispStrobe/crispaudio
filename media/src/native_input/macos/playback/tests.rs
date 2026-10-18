@@ -938,3 +938,49 @@ fn live_monitor_levels_are_independent_ramped_and_muted_before_first_pcm() {
         .set_monitor_levels(MonitorLevels::default())
         .is_err());
 }
+
+#[test]
+fn recovery_snapshot_uses_observed_hardware_progress_and_refuses_unhealthy_output() {
+    let cue = output::Report {
+        phase: output::Phase::Waiting,
+        fault: None,
+        copied_frames: 0,
+        played_frames: 0,
+        drift_frames: 0,
+    };
+    let mut report = Report {
+        callbacks: 10,
+        queued_frames: 8192,
+        hardware_frame: 3072,
+        clock: Some(ClockMap::new(
+            output::Timebase::new(1_000_000_000, 48000).unwrap(),
+            BASE,
+            0,
+        )),
+        armed: true,
+        first_mixed_frame: Some(2048),
+        stopped: false,
+        fault: None,
+        cue,
+        cues: [None; mix::MAX_INPUTS],
+    };
+    let snapshot = crate::native_input::timing::Snapshot::from_progress(&report)
+        .unwrap()
+        .unwrap();
+    assert_eq!(snapshot.end_queued_frame, 3072);
+    assert_eq!(snapshot.first_mixed_frame, 2048);
+    report.hardware_frame = 2048;
+    assert!(
+        crate::native_input::timing::Snapshot::from_progress(&report)
+            .unwrap()
+            .is_none()
+    );
+    report.hardware_frame = 9000;
+    assert!(crate::native_input::timing::Snapshot::from_progress(&report).is_err());
+    report.hardware_frame = 3072;
+    report.fault = Some(Fault::Clock);
+    assert!(crate::native_input::timing::Snapshot::from_progress(&report).is_err());
+    report.fault = None;
+    report.stopped = true;
+    assert!(crate::native_input::timing::Snapshot::from_progress(&report).is_err());
+}

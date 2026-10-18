@@ -19,7 +19,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33; source/local candidate 0.13.35 adds the
+The installed baseline remains 0.13.33; source/local candidate 0.13.36 adds the
 opt-in native recording preview described below. The established baseline includes timeline/video editing,
 recording/takes/comping, compact recording controls and meters, source restoration,
 FX-aware segment waveforms within documented limits, native Mac AU/VST3 playback
@@ -29,7 +29,7 @@ belong to CrisperWeaver and CometBeat respectively. Imported audio/transcripts s
 editable. Existing MIDI utilities do not imply a MIDI expansion roadmap.
 
 Native recording is now selectable on Mac under **Input → Mode → Native · Preview**
-in the 0.13.35 candidate. Compatible remains the default. Physical qualification
+in the 0.13.36 candidate. Compatible remains the default. Physical qualification
 and the remaining N4 tasks below are still open:
 
 | Foundation | Code entry point | Verified scope |
@@ -136,10 +136,39 @@ do not modify project history or saved takes. Rapid edits are coalesced, native
 updates ramp over 64 frames, and initial mute applies before first mixed PCM.
 Mute/last-level state survives closing settings; muted faders remain editable.
 
+The 0.13.36 internal recovery backend adds `native_input/recovery.rs` and app
+commands `native_recording_discover` / `native_recording_recover`. A plan is synced
+before capture; a single latest-value disk worker atomically replaces a checksummed
+output checkpoint about once a second, starting after first observed mixed PCM.
+The extent is observed hardware progress, strictly smaller than the speculative
+queued tail. Slow fsync does not block the recording actor or audio callback.
+Recovery copies complete checksummed blocks within that extent to `recovered-v1`,
+verifies all input clocks/placements and writes `recovered.json`, never a clean
+`completed.json`. Originals remain untouched; all inputs must succeed. Reopen
+revalidates PCM/index/timing. Existing derived results are reused, not recopied.
+No checkpoint, no valid window, missing input or mismatched run means no aligned
+publication. Saved host epochs are interpreted only within their frozen run.
+This does not establish physical device accuracy or guarantee a zero-loss tail.
+
 Remaining N4 work:
 
-- Persist output activation/progress for aligned crash recovery; provide bounded
-  recovery discovery/reconciliation without treating untimed raw files as aligned.
+- **Next: recovery UI and reconciliation.** The 0.13.36 internal backend now
+  persists in-run output timing and recovers verified aligned prefixes (details
+  below). Add a compact collapsed Recovery section/menu action, typed client and
+  explicit preview/import. Filter by project ID, show missing/locked/unarmed
+  targets, label takes incomplete, load every WAV before one editor transaction
+  and one Undo. Preserve project-reference guards during async decode/resampling.
+  Reuse the native loading/provenance adapter; do not duplicate timestamp maths.
+- Reconcile `completed.json` groups separately: a crash after backend completion
+  but before editor insertion needs no raw-prefix salvage. Validate with
+  `group::load_completed`, avoid duplicate insertion across save/reopen, and keep
+  recovery receipt identity out of private machine paths. Add import receipts or
+  project provenance before marking anything handled; Undo must remain possible.
+- Discovery currently caps at 512 root entries/64 candidates and reports
+  `truncated`; add bounded pagination before claiming arbitrary archive coverage.
+  Rejected/no-ledger groups remain raw-only and must never be auto-aligned.
+  Recovery commands currently finish a bounded worker even if the inspector
+  closes; add owned cancellation/status before exposing long recovery operations.
 - Keep immediate Record/Stop, persistent GUI meters and a small settings dropdown.
   Advanced routing/inserts remain collapsed; show measured/configured delays
   honestly. Explicit monitor output and independent backing/cue controls are now
@@ -189,6 +218,18 @@ The codec assessment is recorded in [MEDIA_FORMATS_AND_LICENSES.md](MEDIA_FORMAT
 No new patent conclusion or distribution restriction is introduced by this checkpoint.
 
 ## Verification at the code checkpoint
+
+The 0.13.36 recovery backend passes **323 media tests (16 ignored)** and
+**47 app Rust tests (one hardware case ignored)**. The new cases include a child
+process exiting without cleanup, sample-exact two-input recovery and loop placement,
+corrupt PCM/torn ledgers, drift-limited prefixes, missing inputs, cancellation,
+unchanged originals, repeated recovery/reopen, managed-path/symlink rejection,
+bounded discovery and recovery/capture exclusion. Release checks pass 21 tests.
+Frontend component sources are unchanged; the prior 2054/212-file result below
+belongs to 0.13.35. Production build and local Mac bundle/signing checks pass.
+No physical mic/output, simulator, installation or Apple upload. See
+[recovery evidence](evidence/native-recording-crash-recovery.json).
+
 
 The 0.13.35 live mix preview passes **2054 frontend tests across 212 files**,
 **314 media tests (16 ignored)** and **46 app Rust tests (one hardware case ignored)**.

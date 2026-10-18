@@ -492,7 +492,49 @@ pub(super) fn visit_verified_clocks(
 /// RIFF/data lengths, leaves all recovery files intact and never replaces output.
 /// Recovery is always marked incomplete, even if every indexed block verifies.
 pub fn recover(directory: &Path, output: &Path, cancel: &AtomicBool) -> Result<RecoveredTake> {
+    recover_inner(directory, output, cancel, None)
+}
+/// Recovery-only copy into a fresh take directory. Keep a matching verified index
+/// so the ordinary timing verifier can independently recheck every retained block.
+pub(super) fn recover_aligned(
+    directory: &Path,
+    destination: &Path,
+    cancel: &AtomicBool,
+    clock: super::output::ClockMap,
+    end: i64,
+    drift: u32,
+) -> Result<RecoveredTake> {
+    recover_inner(
+        directory,
+        &destination.join(COMPLETE),
+        cancel,
+        Some((destination, clock, end, drift)),
+    )
+}
+fn recover_inner(
+    directory: &Path,
+    output: &Path,
+    cancel: &AtomicBool,
+    aligned: Option<(&Path, super::output::ClockMap, i64, u32)>,
+) -> Result<RecoveredTake> {
     let (meta, mut index) = open_index(directory)?;
+    if aligned.is_some() && meta.max_frames > 32_000_000 {
+        return Err("Recording recovery source budget exceeded".into());
+    }
+    let mut copied_index = if let Some((destination, _, _, _)) = aligned {
+        // Bound and re-encode the already validated metadata, preserving its
+        // matching index hash. The source itself is never edited.
+        let bytes = serde_json::to_vec(&meta).map_err(|e| e.to_string())?;
+        let mut metadata = create(&destination.join(META))?;
+        io(metadata.write_all(&bytes))?;
+        io(metadata.sync_all())?;
+        let mut file = create(&destination.join(INDEX))?;
+        io(file.write_all(MAGIC))?;
+        io(file.write_all(&hash(&[&bytes]).to_le_bytes()))?;
+        Some(file)
+    } else {
+        None
+    };
     let mut source = BufReader::new(regular(&directory.join(AUDIO))?);
     io(source.seek(SeekFrom::Start(meta.data_offset)))?;
     let staged = crate::export_staging::directory(output)?;
@@ -505,6 +547,7 @@ pub fn recover(directory: &Path, output: &Path, cancel: &AtomicBool) -> Result<R
     let mut blocks = 0u64;
     let mut first = None;
     let mut next = None;
+    let mut last_host = None;
     let stopped_reason = loop {
         if cancel.load(Ordering::Acquire) {
             return Err("Recording recovery cancelled".into());
@@ -545,11 +588,33 @@ pub fn recover(directory: &Path, output: &Path, cancel: &AtomicBool) -> Result<R
         {
             break Some("Audio block checksum or sample validation failed".into());
         }
+        if let Some((_, clock, limit, drift)) = aligned {
+            let mapped = clock.frame_at(host).ok_or("Recovery clock overflow")?;
+            let (origin_frame, origin_host) = first.unwrap_or((frame, host));
+            let origin = clock
+                .frame_at(origin_host)
+                .ok_or("Recovery clock overflow")?;
+            if last_host.is_some_and(|last| last >= host)
+                || ((mapped as i128 - origin as i128) - (frame - origin_frame) as i128).abs()
+                    > drift as i128
+            {
+                break Some("Recovery input/output drift exceeds limit".into());
+            }
+            // Whole blocks only, strictly within durable observed hardware
+            // progress; later dry PCM remains available in the originals.
+            if mapped as i128 + length as i128 > limit as i128 {
+                break Some("Durable output timing boundary".into());
+            }
+        }
         for bytes in pcm[..bytes].chunks_exact(4) {
             wave.write_sample(f32::from_le_bytes(bytes.try_into().unwrap()))
                 .map_err(|e| e.to_string())?;
         }
         first.get_or_insert((frame, host));
+        last_host = Some(host);
+        if let Some(index) = copied_index.as_mut() {
+            io(index.write_all(&record))?;
+        }
         next = end;
         frames += length as u64;
         blocks += 1;
@@ -557,6 +622,9 @@ pub fn recover(directory: &Path, output: &Path, cancel: &AtomicBool) -> Result<R
     let info = info(&meta, frames, first)?;
     wave.finalize().map_err(|e| e.to_string())?;
     io(sync.sync_all())?;
+    if let Some(index) = copied_index.as_ref() {
+        io(index.sync_all())?;
+    }
     if cancel.load(Ordering::Acquire) {
         return Err("Recording recovery cancelled".into());
     }

@@ -1145,3 +1145,17 @@ backing/output targets across AtomicU64. Audio callback ramps 64frames; initial
 mute is installed at first bind without a unity ramp. Raw queues/files and saved
 graph levels are untouched. Live controls replace the frozen cue section during
 recording to avoid duplicate controls/slider IDs. Recovery/N5 remain open.
+
+### Durable native recovery (0.13.36)
+
+`native_input::recovery::Ledger` owns a latest-value disk worker; never move its
+fsync/JSON work into callback or WebKit. Create the immutable plan before capture.
+Only healthy armed output after first observed mixed PCM supplies checkpoints;
+use hardware progress, never queued tail or browser time. Reject anchor/timebase
+changes and regression. Saved host ticks belong only to that frozen run/boot scope.
+Recovery derives fresh indexed WAVs in an atomic all-input directory, verifies
+placements through the ordinary timing verifier and always labels them incomplete.
+Never overwrite originals or synthesize a clean completed.json. Known symlinks and
+unmanaged IDs are refused; app-owned directories are not an adversarial FS boundary.
+Recovery's separate native reservation excludes active capture. Compact import UI,
+completed-group reconciliation, pagination and owned cancellation are still N4.

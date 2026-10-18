@@ -171,7 +171,7 @@ impl Snapshot {
         snapshot.clock()?;
         Ok(snapshot)
     }
-    fn clock(&self) -> Result<ClockMap> {
+    pub(super) fn clock(&self) -> Result<ClockMap> {
         let host = self
             .anchor_host
             .parse::<u64>()
@@ -188,6 +188,29 @@ impl Snapshot {
             host,
             self.anchor_frame,
         ))
+    }
+    #[cfg(target_os = "macos")]
+    pub fn from_progress(report: &super::macos::playback::Report) -> Result<Option<Self>> {
+        if report.stopped || !report.armed || report.fault.is_some() {
+            return Err("Recording output progress is not healthy".into());
+        }
+        let Some(first) = report.first_mixed_frame else {
+            return Ok(None);
+        };
+        if report.hardware_frame <= first {
+            return Ok(None);
+        }
+        if report.hardware_frame as u64 > report.queued_frames {
+            return Err("Recording hardware exceeds queued output".into());
+        }
+        // For recovery the extent is observed hardware progress, not speculative
+        // queued tail. The persisted field name remains shared with clean stop.
+        Self::new(
+            report.clock.ok_or("Recording output has no clock")?,
+            first,
+            report.hardware_frame as u64,
+        )
+        .map(Some)
     }
     #[cfg(target_os = "macos")]
     pub fn from_output(report: &super::macos::playback::Report) -> Result<Self> {
