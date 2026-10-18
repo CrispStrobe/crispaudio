@@ -1,0 +1,69 @@
+{
+  "version": "0.13.43",
+  "date": "2026-10-18",
+  "scope": "Generated PCM, built-in effects, muted headless Chromium and real offline rendering; no physical listening/native plug-in DSP claim.",
+  "checks": {
+    "parity": {
+      "maxError": 0,
+      "tailPeak": 0.0083004767075181,
+      "loaded": [
+        {
+          "mode": "linked",
+          "error": 0,
+          "retained": true
+        },
+        {
+          "mode": "portable",
+          "error": 0,
+          "retained": true
+        }
+      ],
+      "migration": {
+        "marker": "kept",
+        "legacyError": "VersionError"
+      },
+      "recoveryError": 0,
+      "recoveryRetainsOriginal": true,
+      "frames": 81601,
+      "undo": 1,
+      "activeTrackEffects": 0
+    },
+    "cancellation": [
+      "cancel",
+      "project",
+      "source",
+      "recording"
+    ],
+    "german390": {
+      "overflow": false,
+      "width": 316
+    },
+    "physicalAudio": false,
+    "nativePluginDSP": false
+  },
+  "limits": [
+    "Pre-fader independent audio tracks only; no buses, ducking, linked or grouped clips",
+    "Manual tail 0\u201330 seconds; at most 10 minutes from project zero / 256 MiB stereo float PCM",
+    "Frozen render and originals retained, including after thaw for Undo",
+    "Project format 5 and recovery database version 3 protect against older clients",
+    "AU/VST3 freeze parity, streaming, frozen-package remapping and further topology remain pending"
+  ],
+  "validation": {
+    "frontend": {
+      "passed": 2100,
+      "files": 219
+    },
+    "focused": {
+      "passed": 57,
+      "files": 7
+    },
+    "releasePython": {
+      "passed": 24
+    },
+    "productionBuild": "passed",
+    "finalTypecheck": "passed",
+    "fullAndChangedFileLint": "passed",
+    "nativeRebuild": false,
+    "physicalListening": false
+  }
+}

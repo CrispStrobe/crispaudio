@@ -2428,5 +2428,20 @@
     "matching": "Matching…",
     "matched": "Matched",
     "matchUnavailable": "Unavailable"
+  },
+  "freeze": {
+    "title": "Freeze track",
+    "thaw": "Thaw track",
+    "frozen": "Frozen",
+    "tail": "Tail (s)",
+    "rendering": "Rendering…",
+    "unsupported": "Use an unlocked, unarmed audio track without ducking or linked/grouped clips.",
+    "tailInvalid": "Choose a tail from 0 to 30 seconds.",
+    "budget": "Freeze supports up to 10 minutes from project zero and 256 MiB of rendered stereo PCM.",
+    "missing": "Original audio is missing or shorter than its clip.",
+    "changed": "The project changed. Try again.",
+    "failed": "The track could not be frozen.",
+    "help": "Renders clips, fades, gain automation and saved track effects before the fader. Original clips and racks stay available for Thaw. Volume, pan, mute and solo remain live in the mixer; routing and pan automation are retained. Buses, master effects and sends are not baked. Choose enough tail for delays/reverb; 0 cuts at the last clip. Frozen clips, effects and gain automation stay locked until Thaw. Cancel or project changes discard the render. Offline DSP may continue after cancellation; a file already written is retained. Freezing adds audio on disk and in memory; Thaw retains it for Undo. Thaw before importing frozen track packages. Native inserts use their saved state; no automatic tail detection.",
+    "info": "Freeze help"
   }
 }

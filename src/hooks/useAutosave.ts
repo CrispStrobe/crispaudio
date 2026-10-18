@@ -9,7 +9,7 @@ import { cacheRecovery, loadRecovery } from '../lib/recovery';
 
 import { useEffect, useRef } from 'react';
 import { useProjectStore } from '../stores/projectStore';
-import { serializeProject, deserializeProject } from '../lib/projectFile';
+import { serializeProject, deserializeProject, projectSourceIds } from '../lib/projectFile';
 
 const AUTOSAVE_KEY = 'crispaudio-autosave';
 const AUTOSAVE_INTERVAL_MS = 30_000; // 30 seconds
@@ -43,7 +43,7 @@ export function useAutosave() {
         project,
       };
       if ('__TAURI_INTERNALS__' in window) {
-        const used = new Set(project.tracks.flatMap((track) => track.segments.map((segment) => segment.sourceId)));
+        const used = projectSourceIds(project);
         const sources = new Map([...useProjectStore.getState().sources].filter(([id]) => used.has(id)));
         if (sources.size === used.size && [...sources.values()].every((source) => source.filePath)) {
           data.linked = serializeProject(project, sources, 'linked');
@@ -90,7 +90,7 @@ export function restoreAutosave(): boolean {
     const raw = localStorage.getItem(AUTOSAVE_KEY);
     if (!raw) return false;
     const data: AutosaveData = JSON.parse(raw);
-    if(!validProjectNativeEffects(data.project)||!validMixVersions(data.project))return false;
+    if(!validProjectNativeEffects(data.project)||!validMixVersions(data.project)||data.project.tracks.some(t=>t.freeze))return false;
     useProjectStore.getState().loadProjectState(data.project, new Map());
     return true;
   } catch {

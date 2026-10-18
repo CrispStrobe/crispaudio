@@ -24,6 +24,7 @@ import {useTimelineMetronome} from '../../hooks/useTimelineMetronome';
 import {DeliveryControls} from './DeliveryControls';
 import {SourceTranscriptControls} from './SourceTranscriptControls';
 import {MulticamControls} from './MulticamControls';
+import {TrackFreezeControls} from './TrackFreezeControls';
 import {SourceEditor} from './SourceEditor';
 import {ClipRetimeControls} from './ClipRetimeControls';
 import {TimelineRecording} from './TimelineRecording';
@@ -66,7 +67,7 @@ import React, {
   useState,
 } from 'react';
 import {
-  Lock, Unlock,
+  Lock, Unlock, Snowflake,
   Trash2,
   ZoomIn,
   ZoomOut,
@@ -168,13 +169,14 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
           onChange={(e) => updateTrack(track.id, { name: e.target.value })}
           className="flex-1 min-w-0 bg-transparent text-xs font-medium text-gray-200 focus:outline-none focus:bg-gray-700 rounded px-1 py-0.5"
         />
+        {track.freeze&&<Snowflake size={14} className="shrink-0 text-cyan-300" aria-label={t('freeze.frozen')}><title>{t('freeze.frozen')}</title></Snowflake>}
         <TrackHeaderMenu trackId={track.id}/>
       </div>
 
       <div className={`track-mixer flex items-center gap-1 ${trackHeight<56?'hidden':''}`}>
         {track.kind!=='bus'&&<button type="button" className={`track-arm-mixer hidden items-center justify-center shrink-0 w-8 h-8 rounded text-xs ${track.recordArmed?'text-red-400':'text-gray-500'}`} disabled={recording||track.locked} data-help-command="recording" aria-label={`${track.name}: ${t('recording.arm')}`} aria-pressed={track.recordArmed??false} onClick={()=>updateTrack(track.id,{recordArmed:!track.recordArmed})}>R</button>}
         {/* Mute */}
-        <button disabled={recording||track.locked}
+        <button disabled={recording||(track.locked&&!track.freeze)}
           type="button"
           onClick={() => updateTrack(track.id, { muted: !track.muted })}
           className={`flex items-center justify-center shrink-0 w-8 h-8 rounded text-xs font-bold transition-colors ${
@@ -190,7 +192,7 @@ const TrackHeader: React.FC<TrackHeaderProps> = React.memo(function TrackHeader(
         </button>
 
         {/* Solo */}
-        <button disabled={recording||track.locked}
+        <button disabled={recording||(track.locked&&!track.freeze)}
           type="button"
           onClick={() => updateTrack(track.id, { solo: !track.solo })}
           className={`flex items-center justify-center shrink-0 w-8 h-8 rounded text-xs font-bold transition-colors ${
@@ -645,7 +647,7 @@ export const TimelinePanel: React.FC = () => {
         <DeliveryControls launcher={false}/>
         <TrackFiles context={() => audioEngine.getContext()} onError={setProjectError} launcher={false}/>
         <AutoSyncTracks onError={setProjectError} launcher={false}/>
-        <SourceEditor/>
+        <SourceEditor/><TrackFreezeControls/>
         <ClipRetimeControls launcher={false}/>
         <MulticamControls launcher={false}/>
         <SourceTranscriptControls launcher={false}/>

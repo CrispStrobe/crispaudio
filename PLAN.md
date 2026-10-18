@@ -1,6 +1,14 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for source candidate 0.13.42 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for source candidate 0.13.43 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.43 adds bounded reversible track freeze: pre-fader clip/track DSP, an explicit
+0–30-second tail, retained originals/racks, locked baked content, live mixer level/
+pan/mute/solo, thaw and single-step Undo. Linked/portable reopen retains both
+views; cancellation/project changes discard in-flight results. Initial limits:
+10 minutes from zero / 256 MiB, no buses/ducked or linked/grouped clips. See
+[freeze scope](docs/TRACK_FREEZE.md). Native/physical parity, streaming freeze,
+linked/grouped editing, bus/sidechain freeze and frozen-package remapping remain.
 
 0.13.42 adds opt-in source A/B loudness matching: cancellable integrated
 K-weighted mono/stereo analysis, attenuation only, shared sample-peak headroom
@@ -8,7 +16,7 @@ and per-voice crossfades. Saved PCM/Apply/Undo are unchanged. Scope is measurabl
 0.4–120-second selections; unsupported/silent comparisons remain ordinary audition.
 See [source restoration](docs/RESTORATION.md). The isolated native preview remains
 0.13.41; its human speech check and N5 qualification are still pending.
-Next independent work: reversible freeze and full live source FX; broader
+Next independent work: full live source FX and remaining freeze cases; broader
 restoration detection/healing/drift tracking remains scoped below.
 Start with [the engineering handoff](docs/WORK_HANDOFF.md) for scoped tasks N1–N5,
 acceptance criteria and the remaining accepted product backlog.

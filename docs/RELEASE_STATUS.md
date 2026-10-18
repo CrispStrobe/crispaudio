@@ -4342,3 +4342,24 @@ Validation: **2090 frontend tests / 217 files**, production build, lint and
 checks pass, including rapid matched switching and German 390 px layout.
 [Sanitized evidence](evidence/source-audition-matching.json). No native rebuild,
 installation or physical audio qualification was performed for this frontend change.
+
+## Reversible track freeze — 0.13.43 source candidate
+
+Adds bounded pre-fader audio-track freeze/thaw with explicit tail, retained
+original clips/sources/racks, live mixer values and one-Undo changes. Project
+format 5 preserves frozen metadata; older formats remain for thawed projects.
+Linked/portable reopen and stale/cancel guards are covered by software checks.
+See [supported cases and storage limits](TRACK_FREEZE.md).
+
+Installed 0.13.33 and isolated native preview 0.13.41 remain unchanged. No native
+rebuild, installation, Apple upload or physical recording/device qualification is
+part of this frontend checkpoint. AU/VST3 freeze parity remains separate work.
+
+Validation for 0.13.43: **2100 frontend tests / 219 files**, production build,
+final typecheck, lint and **24 Python release checks** pass. Focused freeze/
+autosave/project checks pass **57 tests / 7 files**. Muted browser checks cover
+built-in PCM parity, linked/portable/IndexedDB reopen, version-2-to-3 cache
+migration with retained records and legacy-client rejection, forced autosave,
+Undo/Redo, stale/cancel cases and German 390 px layout.
+[Sanitized evidence](evidence/track-freeze.json). No native rebuild or physical
+listening claim.

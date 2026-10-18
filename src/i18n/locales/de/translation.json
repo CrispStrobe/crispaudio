@@ -2441,5 +2441,20 @@
     "matching": "Abgleich…",
     "matched": "Angeglichen",
     "matchUnavailable": "Nicht verfügbar"
+  },
+  "freeze": {
+    "title": "Spur einfrieren",
+    "thaw": "Spur auftauen",
+    "frozen": "Eingefroren",
+    "tail": "Nachklang (s)",
+    "rendering": "Berechnung…",
+    "unsupported": "Eine entsperrte, nicht scharfgeschaltete Audiospur ohne Ducking oder verknüpfte/gruppierte Segmente wählen.",
+    "tailInvalid": "Nachklang zwischen 0 und 30 Sekunden wählen.",
+    "budget": "Einfrieren unterstützt bis zu 10 Minuten ab Projektbeginn und 256 MiB gerendertes Stereo-PCM.",
+    "missing": "Originalaudio fehlt oder ist kürzer als sein Segment.",
+    "changed": "Das Projekt wurde geändert. Erneut versuchen.",
+    "failed": "Die Spur konnte nicht eingefroren werden.",
+    "help": "Rendert Segmente, Blenden, Pegelautomation und gespeicherte Spureffekte vor dem Fader. Originalsegmente und Effekte bleiben zum Auftauen erhalten. Pegel, Panorama, Stumm und Solo bleiben im Mixer bedienbar; Routing und Panoramaautomation bleiben erhalten. Busse, Mastereffekte und Sends werden nicht eingerechnet. Genug Nachklang für Delay/Hall wählen; 0 endet am letzten Segment. Eingefrorene Segmente, Effekte und Pegelautomation bleiben bis zum Auftauen gesperrt. Abbrechen oder Projektänderungen verwerfen das Ergebnis. Offline-DSP kann nach Abbruch weiterlaufen; bereits geschriebene Dateien bleiben erhalten. Einfrieren benötigt zusätzlichen Speicher und Platz auf dem Datenträger; Auftauen behält das Ergebnis für Undo. Eingefrorene Spurpakete vor dem Import auftauen. Native Effekte nutzen ihren gespeicherten Zustand; keine automatische Nachklangerkennung.",
+    "info": "Hilfe zum Einfrieren"
   }
 }

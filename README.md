@@ -158,6 +158,11 @@ Your templates stay on this device. On touch, use the Edit ribbon or Track Setti
   selections of 0.4–120 seconds. Measure LUFS
   and estimated true peak, then review a loudness adjustment before applying it.
 
+To reduce track processing, use **Freeze track** in the track’s **…** menu or
+**Track Settings**. Choose a tail for delay/reverb. Clips and effects stay available
+through **Thaw track**; mixer level/pan/mute/solo remain live. Both actions support
+Undo. [Supported tracks, storage and limits](docs/TRACK_FREEZE.md).
+
 On macOS, discover AU/VST3 effects and add them to clip, track, bus or master
 racks. **Live** playback keeps native effects running through pause and loops.
 Reordering effects rebuilds the processing chain, including effects of the same type.

@@ -19,7 +19,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.42 adds optional monitor-only
+The installed baseline remains 0.13.33. Source 0.13.43 adds bounded [reversible track freeze](TRACK_FREEZE.md).
+Source 0.13.42 adds optional monitor-only
 source A/B loudness matching (see [limits](RESTORATION.md)); no live app was replaced.
 The isolated preview remains 0.13.41 and adds the
 opt-in native recording preview described below. The established baseline includes timeline/video editing,
@@ -250,7 +251,7 @@ feature parity with ocenaudio, Ardour, REAPER or other mature applications.
 | Source FX and restoration | Full live source FX; click detection, spectral healing/inpainting and de-hum drift tracking | Retain originals; cancellable preview, one-Undo Apply; quantify signal damage and improvement and listen to varied real recordings |
 | Effect-aware waveforms | Native inserts, longer clips, scalable caches and clearly scoped track/bus/master display | Reject stale renders; bounded memory/work; explain preview scope; preserve responsive continuous edits |
 | Monitor/routing depth | Arbitrary input maps, independent headphone mixes, PFL/AFL, dim/mono and retained-dry wet capture | Explicit feedback-safe routing and measured delay; fixture tests followed by actual hardware |
-| Freeze/render in place | Reversible clip/track render, tails, routing semantics and DSP release | Source/rack retained; unfreeze restores state; audible/export parity and Undo/reopen |
+| Freeze/render in place | 0.13.43 implements bounded pre-fader audio-track freeze/thaw, manual tail and retained routing/originals. Remaining: clip/bus/ducked/linked/grouped freeze, streaming, frozen-package remapping and physical native parity | See [scope](TRACK_FREEZE.md); retain originals/racks, prevent double processing, release DSP, stale/cancel guards and Undo/reopen |
 | Asset/session efficiency | Searchable file/region audition, portable/session templates, versions/tabs and relinking | Portable projects, missing-media recovery and complete-session acceptance; existing local track/FX templates retained |
 | Plug-in UX and automation | Custom Mac plug-in windows, wider built-in live controls, fewer restarts, stronger event timing | Helper/window cleanup, saved-state roundtrip, live/export agreement and bounded scheduling |
 | Recorded-audio timing | Tempo maps, transient/warp markers and grouped timing edits | Defined phase-coherent multitrack behavior; no composition/sequencer expansion |
@@ -376,3 +377,56 @@ Validation: **2090 frontend tests / 217 files**, production build, lint and
 checks pass, including rapid matched switching and German 390 px layout.
 [Sanitized evidence](evidence/source-audition-matching.json). No native rebuild,
 installation or physical audio qualification was performed for this frontend change.
+
+## Reversible track freeze checkpoint — 0.13.43
+
+Track right-click/ellipsis and Track Settings open a small tail/Freeze dialog, with
+help behind (i). Thaw restores baked fields while preserving current live mixer
+values. Frozen content cannot be unlocked, edited, armed, rerouted or have its
+sources replaced through direct store commits. Temporal Undo/Redo still restores
+complete snapshots. Original sample rate is protected until thaw.
+
+The render includes segments, fades, pre-insert gain automation and saved built-in/
+native track racks, before volume/pan/output/sends. Retained freeze metadata is
+structurally validated; normal source/retime/MIDI/take/effect validation runs on
+both active and restored views at project load. Original source IDs participate
+in project reference collection. Corrupt/missing frozen or retained audio fails
+reopen. Track packages retain source IDs but frozen-package import is explicitly
+blocked until full identifier/routing remapping is implemented.
+
+Next: qualify AU/VST3 freeze with explicit software fixtures and saved-state,
+latency, tail and reopen parity; then full live source FX. Further freeze work:
+streaming/budgets, clip/bus/ducked tracks, linked/grouped edit semantics and package
+remapping. No native-device qualification, automatic cleanup or whole-roadmap
+completion is claimed. Preserve running app sessions and the pending N5 check.
+
+Frozen saves use project format 5; legacy formats remain unchanged when no freeze
+is present. Native-state metadata in originals still validates, but does not make
+an original rack active. Frozen projects bypass the disk-only native-video fast
+path (which accepts version 3), keeping the normal app render path. Older-app and
+standalone media CLI freeze editing is not supported/qualified.
+
+Autosave collects render and retained original source IDs. Recovery cache version 3
+preserves the existing stores while preventing older clients from ignoring frozen
+metadata. Layout-only restore refuses frozen sessions; linked or cached audio is
+required. Shared validation checks render dimensions and original clip coverage
+before freeze publication, save, recovery or thaw.
+
+The generated built-in-effects fixture has exact before/after output equality,
+including pre-fader sends, buses and master processing. Linked, portable and
+IndexedDB recovery reopen also match exactly in that fixture. This is not arbitrary
+plug-in or physical listening evidence. [Checked results](evidence/track-freeze.json).
+
+Additional bounded follow-ups: allow saved Mix A/B restores to change only the
+live frozen-track mixer fields while guarding baked fields; localize the frozen
+track-package import guard; provide a specific preflight message for sub-10-ms
+zero-tail renders. They do not affect the tested independent-track render path.
+
+Validation for 0.13.43: **2100 frontend tests / 219 files**, production build,
+final typecheck, lint and **24 Python release checks** pass. Focused freeze/
+autosave/project checks pass **57 tests / 7 files**. Muted browser checks cover
+built-in PCM parity, linked/portable/IndexedDB reopen, version-2-to-3 cache
+migration with retained records and legacy-client rejection, forced autosave,
+Undo/Redo, stale/cancel cases and German 390 px layout.
+[Sanitized evidence](evidence/track-freeze.json). No native rebuild or physical
+listening claim.

@@ -1,3 +1,4 @@
+import {frozenTrackChangeAllowed} from '../lib/trackFreeze';
 import {retainedClipAutomation} from '../lib/nativeAutomationEdits';
 import {replaceNativeEffects} from '../lib/nativeEffects';
 import {pictureTrackId} from '../lib/pictureComposition';
@@ -184,9 +185,10 @@ export const useProjectStore = create<ProjectState>()(
         const next = typeof partial === 'function' ? partial(before) : partial;
         if (before && (!next.project || next.project.id === before.project.id)) {
           const blocked = before.project.tracks.find(track => {
-            if (!track.locked) return false;
+            if (!track.locked&&!track.freeze) return false;
             const after = next.project?.tracks.find(t => t.id === track.id) ?? (!next.project ? track : undefined);
             if (!after) return true;
+            if(track.freeze){if(next.project&&next.project.sampleRate!==before.project.sampleRate||!frozenTrackChangeAllowed(track,after))return true;return !!next.sources&&[...track.segments,...track.freeze.original.segments].some(clip=>before.sources.get(clip.sourceId)!==next.sources?.get(clip.sourceId));}
             if (JSON.stringify(track.automation) !== JSON.stringify(after.automation) || JSON.stringify(track.panAutomation) !== JSON.stringify(after.panAutomation)) return true;
             if ([...(track.effects??[]),...(after.effects??[])].some(hasEffectAutomation)&&JSON.stringify(track.effects)!==JSON.stringify(after.effects))return true;
             if (['nativeEffects','output','sends','ducking','takes','compVersions','compRegions','compBaseSegments'].some(key=>JSON.stringify(track[key as keyof TimelineTrack])!==JSON.stringify(after[key as keyof TimelineTrack])))return true;

@@ -1,3 +1,4 @@
+import {validTrackFreezes,retainedFreezeProject} from './trackFreeze';
 import {validNativeRecordingImports} from './nativeRecordingImports';
 import {restoreProjectResources} from './resourceAccess';
 import {hasNativeEffects,hasStoredNativeEffects,validProjectNativeEffects} from './nativeEffects';
@@ -31,6 +32,7 @@ import {
 
 const FORMAT = 'crispaudio-project';
 const VERSION = 4;
+const FREEZE_VERSION = 5;
 
 interface SerializedSource {
   id: string;
@@ -75,6 +77,7 @@ export function serializeProject(
 ): string {
   if(!validNativeRecordingImports(project))throw new Error('Invalid native recording import receipts');
   if(!validProjectNativeEffects(project))throw new Error('Invalid native effect rack');
+  validateFrozenProjectAudio(project,sources);
   const serializedSources: SerializedSource[] = Array.from(
     sources.values(),
   ).map((src) => ({
@@ -91,7 +94,7 @@ export function serializeProject(
 
   const doc: SerializedProject = {
     format: FORMAT,
-    version: hasStoredNativeEffects(project)?VERSION:3,
+    version: project.tracks.some(t=>t.freeze)?FREEZE_VERSION:hasStoredNativeEffects(project)?VERSION:3,
     project,
     sources: serializedSources,
   };
@@ -103,7 +106,7 @@ export function serializeProject(
  * Muted/unreferenced sources need no files; solo overrides stored mute state.
  */
 export function linkedRenderDocument(project: TimelineProject, sources: Map<string, AudioSource>): SerializedProject | null {
-  if (hasNativeEffects(project)||project.sampleRate !== 48000) return null;
+  if (hasNativeEffects(project)||project.tracks.some(t=>t.freeze)||project.sampleRate !== 48000) return null;
   const ids = new Set(audibleTracks(project.tracks).flatMap(track => track.segments.map(clip => clip.sourceId)));
   const linked: SerializedSource[] = [];
   for (const id of ids) {
@@ -114,6 +117,38 @@ export function linkedRenderDocument(project: TimelineProject, sources: Map<stri
   }
   return { format: FORMAT, version: hasStoredNativeEffects(project)?VERSION:3,
     project: { ...project, duration: Math.max(project.duration, timelineDuration(project)) }, sources: linked };
+}
+
+function validateProjectMetadata(project:TimelineProject,serializedSources:SerializedSource[],version:number){
+  if(!validNativeRecordingImports(project))throw new Error('Invalid native recording import receipts');
+  if(!validMixVersions(project))throw new Error('Invalid mix versions');
+  if(!validProjectNativeEffects(project))throw new Error('Invalid native effect rack');
+  if(version<VERSION&&hasStoredNativeEffects(project))throw new Error('Native effect racks require project version 4');
+  if(!validTrackFolders(project))throw new Error('Invalid track folders');
+  if(!validProjectMidi(project))throw new Error('Invalid MIDI pattern');
+  if(project.music!==undefined&&!validMusic(project.music))throw new Error('Invalid musical clock');
+  if(project.video&&(!validPictureTracks(project.video)||project.video.clips?.some(c=>!validPicture(c.composition))))throw new Error('Invalid picture tracks or composition');
+  if (project.video?.clips?.some(clip => !validVideoTransform(clip.transform))) throw new Error('Invalid picture orientation');
+  if (project.video?.clips?.some(clip => !validVideoColor(clip.colorCorrection))) throw new Error('Invalid video colour settings');
+
+  if(!validGraphics(project.video))throw new Error('Invalid graphics or captions');
+  if(!validSourceTranscripts(project,new Set(serializedSources.map(s=>s.id))))throw new Error('Invalid source transcript or sections');
+  if(!validMulticam(project))throw new Error('Invalid multicam groups');
+  if(!validRetime(project,new Set(serializedSources.map(s=>s.id))))throw new Error('Invalid retime settings or original source');
+  if(project.tracks.some(t=>(t.segments??[]).some(c=>c.sourceEdit&&(!serializedSources.some(s=>s.id===c.sourceEdit!.sourceId)||!Number.isFinite(c.sourceEdit.offset)||c.sourceEdit.offset<0||!Array.isArray(c.sourceEdit.operations)||c.sourceEdit.operations.length>64))))throw new Error('Invalid retained source edit');
+  if(!validRecording(project,new Set(serializedSources.map(s=>s.id))))throw new Error('Invalid recording takes or inputs');
+  routingOrder(project.tracks);
+
+  if (project.masterVolume !== undefined && (!Number.isFinite(project.masterVolume) || project.masterVolume < 0)) throw new Error('Invalid master volume');
+
+  if(project.tracks.some(track=>track.automation!==undefined&&(!Array.isArray(track.automation)||track.automation.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value<0))))throw new Error('Invalid gain automation');
+
+  if(project.tracks.some(track=>track.panAutomation!==undefined&&(!Array.isArray(track.panAutomation)||track.panAutomation.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value< -1||p.value>1))))throw new Error('Invalid pan automation');
+
+  if([...(project.masterEffects??[]),...project.tracks.flatMap(t=>[...(t.effects??[]),...t.segments.flatMap(c=>c.effects??[])])].some(e=>!validEffectAutomation(e)))throw new Error('Invalid effect automation');
+
+  if(!validOutputLimiter(project.outputLimiter))throw new Error('Invalid output limiter');
+
 }
 
 /**
@@ -129,38 +164,14 @@ export async function deserializeProject(
   if (doc.format !== FORMAT || !doc.project || !Array.isArray(doc.sources)) {
     throw new Error('Not a valid CrispAudio project file');
   }
-  if (doc.version !== 1 && doc.version !== 2 && doc.version !== 3 && doc.version !== VERSION) {
+  if (doc.version !== 1 && doc.version !== 2 && doc.version !== 3 && doc.version !== VERSION && doc.version !== FREEZE_VERSION) {
     throw new Error('Unsupported CrispAudio project version');
   }
 
-  if(!validNativeRecordingImports(doc.project))throw new Error('Invalid native recording import receipts');
-  if(!validMixVersions(doc.project))throw new Error('Invalid mix versions');
-  if(!validProjectNativeEffects(doc.project))throw new Error('Invalid native effect rack');
-  if(doc.version!==VERSION&&hasStoredNativeEffects(doc.project))throw new Error('Native effect racks require project version 4');
-  if(!validTrackFolders(doc.project))throw new Error('Invalid track folders');
-  if(!validProjectMidi(doc.project))throw new Error('Invalid MIDI pattern');
-  if(doc.project.music!==undefined&&!validMusic(doc.project.music))throw new Error('Invalid musical clock');
-  if(doc.project.video&&(!validPictureTracks(doc.project.video)||doc.project.video.clips?.some(c=>!validPicture(c.composition))))throw new Error('Invalid picture tracks or composition');
-  if (doc.project.video?.clips?.some(clip => !validVideoTransform(clip.transform))) throw new Error('Invalid picture orientation');
-  if (doc.project.video?.clips?.some(clip => !validVideoColor(clip.colorCorrection))) throw new Error('Invalid video colour settings');
-
-  if(!validGraphics(doc.project.video))throw new Error('Invalid graphics or captions');
-  if(!validSourceTranscripts(doc.project,new Set(doc.sources.map(s=>s.id))))throw new Error('Invalid source transcript or sections');
-  if(!validMulticam(doc.project))throw new Error('Invalid multicam groups');
-  if(!validRetime(doc.project,new Set(doc.sources.map(s=>s.id))))throw new Error('Invalid retime settings or original source');
-  if(doc.project.tracks.some(t=>(t.segments??[]).some(c=>c.sourceEdit&&(!doc.sources!.some(s=>s.id===c.sourceEdit!.sourceId)||!Number.isFinite(c.sourceEdit.offset)||c.sourceEdit.offset<0||!Array.isArray(c.sourceEdit.operations)||c.sourceEdit.operations.length>64))))throw new Error('Invalid retained source edit');
-  if(!validRecording(doc.project,new Set(doc.sources.map(s=>s.id))))throw new Error('Invalid recording takes or inputs');
-  routingOrder(doc.project.tracks);
-
-  if (doc.project.masterVolume !== undefined && (!Number.isFinite(doc.project.masterVolume) || doc.project.masterVolume < 0)) throw new Error('Invalid master volume');
-
-  if(doc.project.tracks.some(track=>track.automation!==undefined&&(!Array.isArray(track.automation)||track.automation.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value<0))))throw new Error('Invalid gain automation');
-
-  if(doc.project.tracks.some(track=>track.panAutomation!==undefined&&(!Array.isArray(track.panAutomation)||track.panAutomation.some(p=>!p||!validAutomationCurve(p)||!Number.isFinite(p.time)||p.time<0||!Number.isFinite(p.value)||p.value< -1||p.value>1))))throw new Error('Invalid pan automation');
-
-  if([...(doc.project.masterEffects??[]),...doc.project.tracks.flatMap(t=>[...(t.effects??[]),...t.segments.flatMap(c=>c.effects??[])])].some(e=>!validEffectAutomation(e)))throw new Error('Invalid effect automation');
-
-  if(!validOutputLimiter(doc.project.outputLimiter))throw new Error('Invalid output limiter');
+  if(doc.project.tracks.some(t=>t.freeze)&&doc.version!==FREEZE_VERSION)throw new Error('Frozen tracks require project version 5');
+  if(!validTrackFreezes(doc.project,new Set(doc.sources.map(s=>s.id))))throw new Error('Invalid frozen track');
+  validateProjectMetadata(doc.project,doc.sources,doc.version!);
+  if(doc.project.tracks.some(t=>t.freeze))validateProjectMetadata(retainedFreezeProject(doc.project),doc.sources,doc.version!);
 
   const replacements=new Map<string,string>();
   if(locateMissing && doc.project.video && '__TAURI_INTERNALS__' in window){
@@ -218,12 +229,24 @@ export async function deserializeProject(
     }
   }
 
+  validateFrozenProjectAudio(doc.project,sources);
   return { project: doc.project, sources };
+}
+
+/** Shared load/cache checks: a frozen render is not recoverable without its originals. */
+export function validateFrozenProjectAudio(project:TimelineProject,sources:Map<string,AudioSource>){
+ if(!validTrackFreezes(project,new Set(sources.keys())))throw new Error('Invalid frozen track');
+ if(!project.tracks.some(t=>t.freeze))return;
+ const metadata=[...sources.values()].map(source=>({id:source.id,name:source.name,sampleRate:source.sampleRate,channels:source.channels,duration:source.duration}));
+ validateProjectMetadata(project,metadata,FREEZE_VERSION);
+ validateProjectMetadata(retainedFreezeProject(project),metadata,FREEZE_VERSION);
+ if([...projectSourceIds(project)].some(id=>!sources.has(id)))throw new Error('Missing retained freeze audio');
+ for(const track of project.tracks){const f=track.freeze;if(f){const buffer=sources.get(f.sourceId)!.buffer;if(buffer.length!==f.frames||buffer.sampleRate!==f.sampleRate||buffer.numberOfChannels!==2)throw new Error('Invalid frozen audio format');for(const clip of f.original.segments){const original=sources.get(clip.sourceId)!.buffer;if(Math.round((clip.sourceOffset+clip.duration)*original.sampleRate)>original.length)throw new Error('Missing retained freeze audio');}}}
 }
 
 /** Include alternate takes and originals, without importing another project's source map. */
 export function projectSourceIds(project:TimelineProject):Set<string>{
  const ids=new Set<string>();
- for(const track of project.tracks){for(const clip of [...track.segments,...(track.compBaseSegments??[])]){ids.add(clip.sourceId);if(clip.sourceEdit){ids.add(clip.sourceEdit.sourceId);if(clip.sourceEdit.retime?.original.sourceId)ids.add(clip.sourceEdit.retime.original.sourceId);}if(clip.retime?.original.sourceId)ids.add(clip.retime.original.sourceId);}for(const take of track.takes??[])ids.add(take.sourceId);}
+ for(const track of project.tracks){for(const clip of [...track.segments,...(track.compBaseSegments??[]),...(track.freeze?.original.segments??[])]){ids.add(clip.sourceId);if(clip.sourceEdit){ids.add(clip.sourceEdit.sourceId);if(clip.sourceEdit.retime?.original.sourceId)ids.add(clip.sourceEdit.retime.original.sourceId);}if(clip.retime?.original.sourceId)ids.add(clip.retime.original.sourceId);}for(const take of track.takes??[])ids.add(take.sourceId);}
  for(const record of project.sourceTranscripts??[])ids.add(record.sourceId);return ids;
 }

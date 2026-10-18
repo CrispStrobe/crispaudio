@@ -54,6 +54,7 @@ export interface TimelineProject {
 }
 
 export interface TimelineTrack {
+  freeze?:import('../lib/trackFreeze').TrackFreeze;
   waveformMode?: 'normalized' | 'level';
   nativeEffects?:NativeEffect[];
   recordArmed?:boolean;

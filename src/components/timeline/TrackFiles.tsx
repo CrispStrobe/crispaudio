@@ -5,7 +5,7 @@ import { FolderInput, Archive } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProjectStore } from '../../stores/projectStore';
-import { serializeProject, deserializeProject } from '../../lib/projectFile';
+import { serializeProject, deserializeProject, projectSourceIds } from '../../lib/projectFile';
 import { openProjectFile, saveProjectFile } from '../../lib/projectIO';
 import { timelineDuration } from '../../lib/timelineView';
 import { Modal } from '../common/Modal';
@@ -19,6 +19,7 @@ export function TrackFiles({ context, onError, launcher = true }: { launcher?: b
     try {
       const json = await openProjectFile(); if (!json) return;
       const incoming = await deserializeProject(json, context());
+      if(incoming.project.tracks.some(t=>t.freeze))throw new Error('Thaw frozen tracks before importing a track package.');
       const remap = new Map([...incoming.sources.keys()].map(id => [id, crypto.randomUUID()]));
       const sources = new Map([...incoming.sources].map(([id, source]) => [remap.get(id)!, {...source, id:remap.get(id)!}]));
       const groups=new Map<string,string>();
@@ -35,7 +36,7 @@ export function TrackFiles({ context, onError, launcher = true }: { launcher?: b
       const state=useProjectStore.getState();
       const project={...state.project,id:crypto.randomUUID(),name:`${state.project.name} tracks`,tracks:tracks.filter(track=>selected.includes(track.id)),video:undefined,masterEffects:[]};
       project.duration=timelineDuration(project);
-      const used=new Set(project.tracks.flatMap(track=>track.segments.map(clip=>clip.sourceId)));
+      const used=projectSourceIds(project);
       if (await saveProjectFile(serializeProject(project,new Map([...state.sources].filter(([id])=>used.has(id))),'portable'),project.name)) setShow(false);
     } catch(err) {onError(String(err));} finally {setBusy(false);}
   };

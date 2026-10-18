@@ -1,17 +1,18 @@
 import {validProjectNativeEffects} from './nativeEffects';
 import {validMixVersions} from './mixVersions';
-import {projectSourceIds} from './projectFile';
+import {projectSourceIds,validateFrozenProjectAudio} from './projectFile';
 import type { AudioSource, TimelineProject } from '../types/audio';
 import { encodeSourceBufferWav } from './wavExport';
 import { computeWaveformPeaks } from '../audio/utils/audioBufferUtils';
 interface RecoverySource {id:string;name:string;path?:string;sampleRate:number;channels:number;provenance?:AudioSource['provenance']}
 interface Snapshot {project:TimelineProject;sources:RecoverySource[];savedAt:string}
-// Version 2 preserves existing stores and prevents older apps ignoring native rack state.
-function database():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const request=indexedDB.open('crispaudio-recovery',2);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('audio'))request.result.createObjectStore('audio');if(!request.result.objectStoreNames.contains('snapshot'))request.result.createObjectStore('snapshot');};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
+// Version 3 preserves stores and prevents older apps treating frozen snapshots as editable tracks.
+function database():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const request=indexedDB.open('crispaudio-recovery',3);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('audio'))request.result.createObjectStore('audio');if(!request.result.objectStoreNames.contains('snapshot'))request.result.createObjectStore('snapshot');};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
 function request<T>(store:IDBObjectStore,key:IDBValidKey):Promise<T>{return new Promise((resolve,reject)=>{const read=store.get(key);read.onsuccess=()=>resolve(read.result as T);read.onerror=()=>reject(read.error);});}
 function transactionDone(tx:IDBTransaction):Promise<void>{return new Promise((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error??new Error('Recovery transaction aborted'));});}
 export async function cacheRecovery(project:TimelineProject,sources:Map<string,AudioSource>):Promise<void>{
   if(!validProjectNativeEffects(project)||!validMixVersions(project))throw new Error('Invalid native effect rack or mix versions');
+  validateFrozenProjectAudio(project,sources);
   const db=await database();try{
     const used=projectSourceIds(project),metadata:RecoverySource[]=[];
     for(const id of used){
@@ -47,6 +48,7 @@ export async function loadRecovery(ctx:BaseAudioContext):Promise<{project:Timeli
       const buffer=await decoder.decodeAudioData(bytes);
       sources.set(source.id,{...source,buffer,filePath:source.path,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels,duration:buffer.duration,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))});
     }
+    validateFrozenProjectAudio(snapshot.project,sources);
     return {project:snapshot.project,sources};
   }finally{db.close();}
 }

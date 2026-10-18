@@ -107,3 +107,11 @@ is not the next major product milestone. Native input DSP and paging/streaming a
 authorized, substantial projects with their own acceptance criteria. Keep each
 checkpoint reviewable and preserve earlier work. Composition and ASR/TTS model UI
 remain excluded. Public release/upload remains gated by validation and the release task.
+
+## Reversible track freeze update — 0.13.43
+
+Bounded pre-fader audio-track freeze/thaw now retains original clips/racks and
+routing, with a manual tail, live mixer values and Undo/reopen support. This closes
+the independent audio-track foundation, not clip/bus/sidechain freeze or streaming.
+See [supported cases and remaining limits](TRACK_FREEZE.md). Native physical and
+sustained-load qualification remains separate.
