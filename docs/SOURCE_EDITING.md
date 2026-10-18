@@ -21,14 +21,26 @@ original** in Cleanup returns to the retained recording after an applied source
 edit. These are separate actions. Enable **Match loudness** beside Original/Preview for optional monitor-only
 matching; see the limits below.
 
-## Adjust a filter while listening
+## Build a source-effect chain
 
-Expand **Live filter**, enable it and press the editor's Play button. High-pass,
+Expand **Live effects**, enable it and press the editor's Play button. High-pass,
 low-pass and output sliders update the same running graph; their numbers accept
 exact entry and touch scrubbing. Original/Preview switches smoothly without
-restarting. These are two fixed-Q Butterworth filters and an attenuating output
+restarting. Start with two fixed-Q Butterworth filters and an attenuating output
 control, separate from arrangement FX. Enabling this tool replaces an unapplied
 draft; apply a previous edit first to combine operations.
+
+Use **Arrange effects** to turn those controls into an ordered list. Add up to six
+high-pass, low-pass, level or clipper effects; duplicates are allowed. Expand one
+row to edit its value, use its checkbox for live bypass, and arrows to move it.
+Adding/removing/moving an active effect stops audition; press Play again. Numeric
+and bypass changes keep the current voice and graph. The final row cannot be
+removed, but it can be bypassed or the whole chain disabled.
+
+Order matters: lowering level before a clipper reduces how much it clips; lowering
+level afterward turns down the already clipped signal. The clipper caps peaks at
+its ceiling, with no lookahead or oversampling. It can add distortion and aliasing;
+use the output limiter/metering workflow for delivery requirements.
 
 **Prepare** stops audition and makes a fixed waveform preview. Compare it, optionally
 match its loudness, then Apply for one Undo step with the original retained.
@@ -57,13 +69,20 @@ waits for background work before allocating its own render. Validation/copy loop
 yield to the UI. Drawing also runs in cancellable slices and publishes a complete
 frame; an active browser offline graph itself cannot be forcibly stopped.
 These are first-pass static snapshots: they do not trace loop history or instantaneous
-parameter smoothing. Native source streams and ordered chains remain separate work.
+parameter smoothing. Native source streams, broader insert types and seamless topology changes remain
+separate work.
 
 Prepare supports mono/stereo selections at 8–192 kHz, up to 120 seconds selected
 and a 256 MiB allocation estimate including the full source-window copy. Select one
 channel when editing a multichannel source. Cancellation discards late output;
 Web Audio offline rendering itself can continue until completion. Selection,
 settings, source/project changes, recording and closing discard stale work.
+
+Chain Apply stores a version-1 ordered recipe (stable stage IDs, type, enabled
+state and numeric value) with the derived source. Project reopen plays that
+printed PCM; the recipe is not applied a second time or loaded as a new active
+chain automatically. Applying another chain processes the current source. Use
+Undo or Restore original before rebuilding from unprocessed audio.
 
 ## Keep an edit
 
@@ -139,6 +158,6 @@ still need a helper render; this is not a new continuously running native FX gra
 Processing preserves the source window's length, so extend it first for effect tails.
 
 Continuous comparison currently uses in-memory audio. Long-file streaming,
-arbitrary live source FX chains/native streaming and further restoration
+broader live source FX chains/native streaming and further restoration
 (spectral healing, drift tracking and varied-material qualification) remain work
 in the [audio-workstation roadmap](DAW_GAP_ANALYSIS.md).

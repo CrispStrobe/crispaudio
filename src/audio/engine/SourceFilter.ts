@@ -1,15 +1,23 @@
+import {createSourceChain,sourceChainAtRate} from './SourceChain';
+import type {SourceChainRecipe} from '../../lib/sourceChainRecipe';
 import {sampleRanges,type SampleRange} from '../../lib/sourceEditing';
 
-export interface SourceFilterSettings {highpass:number;lowpass:number;gainDb:number}
+export interface SourceFilterSettings {highpass:number;lowpass:number;gainDb:number;chain?:SourceChainRecipe}
 export const DEFAULT_SOURCE_FILTER:SourceFilterSettings={highpass:80,lowpass:16000,gainDb:0};
+export function legacySourceChain(settings:SourceFilterSettings):SourceChainRecipe {
+ return {version:1,stages:[{id:'filter-highpass',kind:'highpass',enabled:true,value:settings.highpass},{id:'filter-lowpass',kind:'lowpass',enabled:true,value:settings.lowpass},{id:'filter-level',kind:'gain',enabled:true,value:settings.gainDb}]};
+}
+
 export function sourceFilterSettings(settings:SourceFilterSettings,rate:number):SourceFilterSettings {
  if(!Number.isFinite(rate)||rate<8000||rate>192000||!Number.isFinite(settings.highpass)||!Number.isFinite(settings.lowpass)||!Number.isFinite(settings.gainDb)||settings.highpass<20||settings.highpass>2000||settings.lowpass<200||settings.lowpass>20000||settings.gainDb< -24||settings.gainDb>0)throw new Error('sourceEditor.invalidPcm');
- return {...settings,highpass:Math.min(settings.highpass,rate*.49),lowpass:Math.min(settings.lowpass,rate*.49)};
+ return {...settings,...(settings.chain?{chain:sourceChainAtRate(settings.chain,rate)}:{}),highpass:Math.min(settings.highpass,rate*.49),lowpass:Math.min(settings.lowpass,rate*.49)};
 }
 
 /** One persistent, zero-lookahead graph. Bypass keeps both filter histories running. */
 export function createSourceFilter(ctx:BaseAudioContext,output:AudioNode,settings:SourceFilterSettings,bypass=false){
- const values=sourceFilterSettings(settings,ctx.sampleRate),input=ctx.createGain(),high=ctx.createBiquadFilter(),low=ctx.createBiquadFilter(),level=ctx.createGain(),wet=ctx.createGain(),dry=ctx.createGain();
+ const values=sourceFilterSettings(settings,ctx.sampleRate);
+ if(values.chain){const graph=createSourceChain(ctx,output,values.chain,bypass);return {...graph,update:(next:SourceFilterSettings,original=false)=>{if(!next.chain)throw new Error('sourceChain.topology');graph.update(sourceChainAtRate(next.chain,ctx.sampleRate),original);}};}
+ const input=ctx.createGain(),high=ctx.createBiquadFilter(),low=ctx.createBiquadFilter(),level=ctx.createGain(),wet=ctx.createGain(),dry=ctx.createGain();
  high.type='highpass';low.type='lowpass';// Web Audio pass-filter Q is expressed in dB.
  high.Q.value=low.Q.value=20*Math.log10(Math.SQRT1_2);
  high.frequency.value=values.highpass;low.frequency.value=values.lowpass;level.gain.value=10**(values.gainDb/20);wet.gain.value=bypass?0:1;dry.gain.value=bypass?1:0;

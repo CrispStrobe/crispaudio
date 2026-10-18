@@ -2297,7 +2297,8 @@
     "dehum": "De-hum",
     "spectral": "Spectral attenuation",
     "declip": "Declip",
-    "filter": "Filter"
+    "filter": "Filter",
+    "chain": "Effects"
   },
   "sourcePlugins": {
     "title": "External effects",
@@ -2449,21 +2450,40 @@
     "short": "Choose a tail so the render lasts at least 10 ms."
   },
   "sourceFilter": {
-    "title": "Live filter",
+    "title": "Live effects",
     "enabled": "Enabled",
     "prepare": "Prepare",
     "highpass": "High-pass",
     "lowpass": "Low-pass",
     "level": "Output",
     "limit": "Select up to 120 seconds of mono/stereo audio. The edit also needs to fit within 256 MiB.",
-    "help": "Enable, then press Play above. Adjust the filters while listening; Original/Preview switches smoothly without restarting. The waveform updates after a short pause in adjustments. Updating/Source labels mean the current filter snapshot is not displayed yet. Automatic waveform previews use a 64 MiB allocation budget; Prepare supports larger edits and creates a fixed preview for analysis, loudness matching and Apply. Only selected samples/channels change; original audio is retained. Disjoint ranges play consecutively through the same filter; tails outside the selection are omitted. Looping keeps the filter history. Native plug-ins use a separate rendered preview.",
+    "help": "Enable and press Play above. Parameters and checkboxes stay live. Arrange/add up to six effects; arrows set their order. Adding, removing or moving an active effect stops audition—press Play again.\n\nOriginal/Preview switches smoothly. The waveform follows after a brief pause; Updating/Source labels mean no current snapshot is shown. Automatic previews have a 64 MiB allocation estimate. Prepare supports larger edits and makes the fixed preview for analysis, loudness matching and Apply. Only selected samples/channels change; originals remain.\n\nSeparate ranges run consecutively through the same chain. Tails outside the selection are omitted; looping retains history. The clipper limits peaks without lookahead or oversampling and can add distortion/aliasing. Native plug-ins have a separate rendered preview.",
     "waveform": {
-      "ready": "Filter preview",
+      "ready": "Effects preview",
       "updating": "Updating…",
       "limited": "Source · preview limit",
       "error": "Source · preview unavailable",
       "source": "Source",
       "original": "Original"
     }
+  },
+  "sourceChain": {
+    "highpass": "High-pass",
+    "lowpass": "Low-pass",
+    "gain": "Level",
+    "clipper": "Clipper",
+    "frequency": "Frequency",
+    "level": "Level",
+    "ceiling": "Ceiling",
+    "parameter": "{{name}} {{number}}",
+    "enable": "Enable effect {{number}}: {{name}}",
+    "up": "Move effect {{number}} up",
+    "down": "Move effect {{number}} down",
+    "remove": "Remove effect {{number}}",
+    "addKind": "Effect to add",
+    "add": "Add effect",
+    "arrange": "Arrange effects",
+    "invalid": "Invalid source effect chain",
+    "topology": "Stop audition before changing effect order"
   }
 }

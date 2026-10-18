@@ -2310,7 +2310,8 @@
     "dehum": "Entbrummen",
     "spectral": "Spektral absenken",
     "declip": "Clipping reparieren",
-    "filter": "Filter"
+    "filter": "Filter",
+    "chain": "Effekte"
   },
   "sourcePlugins": {
     "title": "Externe Effekte",
@@ -2462,21 +2463,40 @@
     "short": "Einen Nachklang wählen, sodass die Berechnung mindestens 10 ms umfasst."
   },
   "sourceFilter": {
-    "title": "Live-Filter",
+    "title": "Live-Effekte",
     "enabled": "Aktiv",
     "prepare": "Vorbereiten",
     "highpass": "Hochpass",
     "lowpass": "Tiefpass",
     "level": "Ausgang",
     "limit": "Bis zu 120 Sekunden Mono-/Stereo-Audio auswählen. Die Bearbeitung muss außerdem in 256 MiB passen.",
-    "help": "Aktivieren, dann oben abspielen. Filter beim Hören ändern; Original/Vorschau wechselt weich ohne Neustart. Die Wellenform folgt nach einer kurzen Bedienpause. Aktualisiert/Quelle bedeutet, dass noch keine aktuelle Filtervorschau angezeigt wird. Automatische Wellenformvorschauen nutzen ein Speicherbudget von 64 MiB; Vorbereiten erlaubt größere Bearbeitungen und erzeugt eine feste Vorschau für Analyse, Lautheitsabgleich und Anwenden. Nur ausgewählte Samples/Kanäle ändern sich; das Original bleibt erhalten. Getrennte Bereiche laufen nacheinander durch denselben Filter; Nachklang außerhalb der Auswahl entfällt. Beim Wiederholen bleibt der Filterzustand erhalten. Native Plug-ins nutzen eine separate berechnete Vorschau.",
+    "help": "Aktivieren und oben abspielen. Parameter und Häkchen bleiben live. Bis zu sechs Effekte anordnen/hinzufügen; Pfeile setzen die Reihenfolge. Hinzufügen, Entfernen oder Verschieben eines aktiven Effekts stoppt die Vorschau—danach erneut abspielen.\n\nOriginal/Vorschau wechselt weich. Die Wellenform folgt nach kurzer Pause; Aktualisiert/Quelle bedeutet, dass keine aktuelle Effektvorschau angezeigt wird. Automatische Vorschauen nutzen ein Speicherbudget von 64 MiB. Vorbereiten erlaubt größere Bearbeitungen und erzeugt die feste Vorschau für Analyse, Lautheitsabgleich und Anwenden. Nur ausgewählte Samples/Kanäle ändern sich; Originale bleiben erhalten.\n\nGetrennte Bereiche laufen nacheinander durch dieselbe Kette. Nachklang endet an der Auswahlgrenze; beim Wiederholen bleibt der Verlauf erhalten. Der Clipper begrenzt Spitzen ohne Vorschauverzögerung oder Überabtastung; Verzerrungen/Aliasing sind möglich. Native Plug-ins nutzen eine separate berechnete Vorschau.",
     "waveform": {
-      "ready": "Filtervorschau",
+      "ready": "Effektvorschau",
       "updating": "Aktualisiert…",
       "limited": "Quelle · Vorschaulimit",
       "error": "Quelle · Vorschau nicht verfügbar",
       "source": "Quelle",
       "original": "Original"
     }
+  },
+  "sourceChain": {
+    "highpass": "Hochpass",
+    "lowpass": "Tiefpass",
+    "gain": "Pegel",
+    "clipper": "Clipper",
+    "frequency": "Frequenz",
+    "level": "Pegel",
+    "ceiling": "Grenze",
+    "parameter": "{{name}} {{number}}",
+    "enable": "Effekt {{number}} aktivieren: {{name}}",
+    "up": "Effekt {{number}} nach oben",
+    "down": "Effekt {{number}} nach unten",
+    "remove": "Effekt {{number}} entfernen",
+    "addKind": "Effekt hinzufügen",
+    "add": "Effekt hinzufügen",
+    "arrange": "Effekte anordnen",
+    "invalid": "Ungültige Quellen-Effektkette",
+    "topology": "Vor Änderung der Effektreihenfolge die Vorschau stoppen"
   }
 }

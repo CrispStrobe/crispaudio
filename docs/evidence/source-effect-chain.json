@@ -1,0 +1,288 @@
+{
+  "version": "0.13.47",
+  "date": "2026-10-18",
+  "scope": "Muted Chromium, generated audio only. No native app/WebKit, hardware, signing or Apple submission.",
+  "commands": [
+    "node scripts/test-source-chain.mjs",
+    "CRISPAUDIO_SOURCE_CHAIN_QUALIFY=1 node scripts/qualify-source-filter-waveform.mjs"
+  ],
+  "browser": {
+    "dsp": {
+      "ceilingRampError": 5.359854549167459e-08,
+      "order": [
+        0.25118863582611084,
+        0.1258925348520279
+      ],
+      "expected": [
+        0.251188643150958,
+        0.1258925411794167
+      ],
+      "rates": [
+        {
+          "rate": 8000,
+          "maxError": 0,
+          "excludedError": 0
+        },
+        {
+          "rate": 44100,
+          "maxError": 0,
+          "excludedError": 0
+        },
+        {
+          "rate": 48000,
+          "maxError": 0,
+          "excludedError": 0
+        },
+        {
+          "rate": 96000,
+          "maxError": 0,
+          "excludedError": 0
+        },
+        {
+          "rate": 192000,
+          "maxError": 0,
+          "excludedError": 0
+        }
+      ],
+      "stageBypass": 0.40094977617263794,
+      "expectedStageBypass": 0.4009497869018178,
+      "globalBypass": 0.800000011920929
+    },
+    "applied": {
+      "original": "chain-source",
+      "operation": {
+        "type": "chain",
+        "channel": -1,
+        "ranges": [
+          {
+            "start": 0,
+            "end": 192000
+          }
+        ],
+        "targetDb": -1,
+        "chain": {
+          "version": 1,
+          "stages": [
+            {
+              "id": "filter-highpass",
+              "kind": "highpass",
+              "enabled": true,
+              "value": 80
+            },
+            {
+              "id": "filter-lowpass",
+              "kind": "lowpass",
+              "enabled": true,
+              "value": 16000
+            },
+            {
+              "id": "2ea5b521-246f-4fd2-8d4b-9441edb61914",
+              "kind": "clipper",
+              "value": -6,
+              "enabled": true
+            },
+            {
+              "id": "filter-level",
+              "kind": "gain",
+              "enabled": true,
+              "value": -6
+            }
+          ]
+        }
+      },
+      "undo": 1
+    },
+    "reopen": [
+      {
+        "mode": "linked",
+        "maxError": 0,
+        "retainedOriginal": true,
+        "chain": {
+          "version": 1,
+          "stages": [
+            {
+              "id": "filter-highpass",
+              "kind": "highpass",
+              "enabled": true,
+              "value": 80
+            },
+            {
+              "id": "filter-lowpass",
+              "kind": "lowpass",
+              "enabled": true,
+              "value": 16000
+            },
+            {
+              "id": "2ea5b521-246f-4fd2-8d4b-9441edb61914",
+              "kind": "clipper",
+              "value": -6,
+              "enabled": true
+            },
+            {
+              "id": "filter-level",
+              "kind": "gain",
+              "enabled": true,
+              "value": -6
+            }
+          ]
+        },
+        "invalidVersionRejected": true
+      },
+      {
+        "mode": "portable",
+        "maxError": 0,
+        "retainedOriginal": true,
+        "chain": {
+          "version": 1,
+          "stages": [
+            {
+              "id": "filter-highpass",
+              "kind": "highpass",
+              "enabled": true,
+              "value": 80
+            },
+            {
+              "id": "filter-lowpass",
+              "kind": "lowpass",
+              "enabled": true,
+              "value": 16000
+            },
+            {
+              "id": "2ea5b521-246f-4fd2-8d4b-9441edb61914",
+              "kind": "clipper",
+              "value": -6,
+              "enabled": true
+            },
+            {
+              "id": "filter-level",
+              "kind": "gain",
+              "enabled": true,
+              "value": -6
+            }
+          ]
+        },
+        "invalidVersionRejected": true
+      }
+    ],
+    "topologyStops": true,
+    "valuesAndBypassKeepVoice": true,
+    "recordingClosesChain": true,
+    "sixStageLimit": true,
+    "automaticPreparedWaveformMatch": true,
+    "undoRedo": true,
+    "german390": {
+      "width": 316,
+      "overflow": false
+    },
+    "physicalAudio": false
+  },
+  "performance": {
+    "rendering": {
+      "baselineHeartbeatGapMs": 11.700000047683716,
+      "longTasks": [],
+      "rate": 48000,
+      "seconds": 20,
+      "channels": 2,
+      "budgetBytes": 67108864,
+      "allocationEstimateBytes": 38400000,
+      "maxActive": 1,
+      "maxNativeActive": 1,
+      "starts": [
+        -2,
+        -9
+      ],
+      "finished": [
+        {
+          "gainDb": -2,
+          "ms": 180.80000007152557
+        },
+        {
+          "gainDb": -9,
+          "ms": 160.20000004768372
+        }
+      ],
+      "published": [
+        {
+          "gainDb": -9,
+          "channels": 2,
+          "frames": 960000
+        }
+      ],
+      "elapsedMs": 371.7000000476837,
+      "maxHeartbeatGapMs": 20.200000047683716,
+      "overBudgetRejected": true,
+      "peakResidentMemoryMeasured": false,
+      "chainStages": 6,
+      "nativeSetupCalls": {
+        "OfflineAudioContext constructor": {
+          "count": 2,
+          "maxMs": 0.6,
+          "totalMs": 0.7
+        },
+        "createBuffer": {
+          "count": 2,
+          "maxMs": 0.6,
+          "totalMs": 0.7
+        },
+        "createBufferSource": {
+          "count": 2,
+          "maxMs": 0,
+          "totalMs": 0
+        },
+        "createGain": {
+          "count": 68,
+          "maxMs": 0.1,
+          "totalMs": 0.5
+        },
+        "createBiquadFilter": {
+          "count": 4,
+          "maxMs": 1.2,
+          "totalMs": 1.3
+        },
+        "copyToChannel": {
+          "count": 4,
+          "maxMs": 1.1,
+          "totalMs": 3.5
+        },
+        "startRendering": {
+          "count": 2,
+          "maxMs": 0.1,
+          "totalMs": 0.2
+        },
+        "getChannelData": {
+          "count": 2,
+          "maxMs": 0.1,
+          "totalMs": 0.1
+        }
+      }
+    },
+    "editor": {
+      "seconds": 20,
+      "elapsedMs": 448.2000000476837,
+      "maxHeartbeatGapMs": 61.5,
+      "longTasksMs": [],
+      "projectUnchanged": true,
+      "undo": 0,
+      "status": "ready"
+    },
+    "chainMode": true
+  },
+  "validation": {
+    "focusedTests": 53,
+    "focusedFiles": 10,
+    "productionBuild": "pass",
+    "lint": "full run plus final changed-file checks pass",
+    "releaseChecks": 24,
+    "legacyFilterWaveformBrowserRegression": "pass",
+    "fullFrontendSuite": "not rerun; preceding broad-run timeout/retry remains documented"
+  },
+  "limits": [
+    "One to six high-pass, low-pass, attenuating gain or clipper stages. Static topology; adding/removing/reordering an active effect stops audition.",
+    "Value and bypass changes preserve the voice/graph. Reciprocal ceiling ramps keep quiet-signal error within 1e-7 absolute in this fixture.",
+    "Clipper is a non-oversampled hard peak cap, not a lookahead or true-peak limiter; it can add distortion and aliasing.",
+    "No appended tail or automatic edge fade. Joined selections, first-pass snapshots, loop history and resampling limitations remain.",
+    "The versioned recipe is audit metadata on printed PCM; it is not automatically recalled/replayed as an active rack.",
+    "Linked-mode tests use embedded fallback for generated sources without file paths; native filesystem/bookmark paths are not qualified here.",
+    "Allocation estimates exclude browser/native overhead; OS resident peak and sustained/multi-device responsiveness are not measured."
+  ]
+}

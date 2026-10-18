@@ -21,7 +21,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.46 adds automatic bounded
+The installed baseline remains 0.13.33. Source 0.13.47 adds bounded ordered source
+effect chains; see the latest checkpoint below. Source 0.13.46 adds automatic bounded
 live-filter waveform snapshots; see the latest checkpoint below. Source 0.13.45 adds a bounded continuous
 built-in source filter; see the latest checkpoint below. Source 0.13.44 extends Mix A/B to frozen live mixer values, with baked fields
 protected, localized package errors and short-render preflight.
@@ -595,3 +596,78 @@ cross-device responsiveness or resident-memory guarantees. Broader sustained,
 Tauri/WebKit and OS memory profiling remain open. [Sanitized results](evidence/source-filter-waveform.json).
 Full frontend suite was not rerun; the preceding broad timeout/retry remains
 recorded at its checkpoint. Both original running app sessions remain intact.
+
+
+## Ordered source chains — 0.13.47 checkpoint
+
+`sourceChainRecipe.ts` defines a version-1 ordered recipe of 1–6 stages, each with
+stable ID, kind, enabled flag and value. Supported kinds are highpass/lowpass
+(Butterworth Q), attenuating gain and hard clipper ceiling. IDs are unique and
+bounded; kinds, count, version and finite parameter ranges are validated. Topology
+keys use structured serialization, so separator-containing IDs cannot collide.
+`SourceEdit.operations[].chain` stores the recipe on type `chain`; legacy filter
+parameter records remain valid. Save/load and the shared recovery/freeze guard
+validate active, comp-base and frozen retained source recipes. Project format is
+unchanged because the clip plays derived PCM; older apps need not rerender recipe
+metadata. Unsupported chain versions are rejected by current readers.
+
+`SourceChain.ts` builds one static Web Audio graph, retaining bypassed stage
+history. Value/bypass changes smooth AudioParams without replacing the voice or
+nodes. Structural changes stop source audition in the host; direct graph topology
+updates reject before mutation. No seamless graph replacement/state transfer is
+claimed. Allocation failure disconnects owned nodes; Stop/recording/source changes
+and unmount use existing graph ownership. The clipper uses gain → non-oversampled
+identity WaveShaper clamp → reciprocal gain. Reciprocal exponential ramps avoid
+boosting below-threshold audio during ceiling edits, including rapid changes. It
+is a nonlinear peak cap, not a
+lookahead/true-peak limiter. Changing order can change audio. No added lookahead,
+appended tails or automatic selection-edge fades. Concatenated ranges and first/
+looped-pass differences follow the existing source preview policy.
+
+`SourceChainControls.tsx` adds a compact list, one expanded value at a time, bypass,
+up/down/remove icons and an add selector. Arrange converts current filter values;
+Add can convert and append in one action. Max six, at least one stage; keyboard and
+touch use ordinary buttons, with no drag-only dependency. Existing automatic
+64 MiB waveform budget and explicit 256 MiB / 120-second Prepare budget remain.
+Display PCM never feeds back into the live chain. Apply retains original audio and
+records the whole chain in one Undo step. Saved recipes are audit metadata, not
+an automatic active rack on reopen: current audio is already printed. Recall/edit
+from a retained base needs explicit design to avoid double processing.
+
+Next, in order:
+1. Persistent native source streaming: respect the selected output device and
+   existing audio ownership; bound stream/clock lifecycle, align dry/wet latency,
+   update parameters without helper rerenders, isolate fault/cancel,
+   and verify offline Apply parity. Native source Auto preview is still rendered.
+2. Broader built-in chains: EQ/dynamics and time effects need parameter schemas,
+   latency/tail policy and real DSP/render tests. Seamless add/remove/reorder needs
+   bounded parallel graphs, fades and state-history policy; do not just reconnect
+   an active graph. Add presets/recall only with explicit retained-base semantics.
+3. Continue repeated-drag/source-window extremes, sustained load, WebKit/iOS and
+   OS resident-memory measurements. Keep physical N5, the existing .41 human
+   question and remaining freeze/restoration topology/detection work separate.
+
+No native rebuild, hardware action, installed app replacement, tag or Apple upload.
+Both user app sessions remain preserved; private machine details stay ignored.
+
+Validation: **53 focused tests / 10 files**, production build, lint (full plus final
+changed-file checks), **24 release checks**, the new muted chain GUI/DSP harness
+and the legacy filter/waveform browser regression pass.
+
+At 8, 44.1, 48, 96 and 192 kHz, audition/Prepare have **zero sample difference** and
+excluded ranges/channels remain exact. Independent gain/clip-order expectations,
+per-stage/global bypass and quiet-signal rapid ceiling ramps pass; the latter's
+maximum absolute error is about 5.36e-8 against a 1e-7 float tolerance. Automatic/
+prepared canvas pixels match. One-Undo Apply, Undo/Redo, recipe order/original
+retention, linked/portable embedded-source reopen, unsupported-version rejection,
+recording-start node cleanup and German 390 px six-stage layout pass.
+
+The generated 20-second stereo six-stage fixture admits **38,400,000 estimated
+bytes** and keeps one offline graph in flight while publishing only newest settings.
+The checked latest render took about **160 ms**, full editor update **448 ms**
+including debounce; no browser long tasks were observed after warmup. Maximum
+heartbeat gaps were about 20.2 ms for rendering and 61.5 ms in the editor. These
+are fixture observations, not timing/resident-memory guarantees. No Tauri/WebKit
+or physical listening claim. [Sanitized evidence](evidence/source-effect-chain.json).
+Full frontend suite was not rerun; historical broad-run timeout/retry remains at
+its checkpoint. No native rebuild, installation or Apple upload.

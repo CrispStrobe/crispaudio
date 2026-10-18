@@ -1,6 +1,13 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for source candidate 0.13.46 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for source candidate 0.13.47 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.47 adds bounded ordered source chains: up to six high/low-pass, level and
+clipper stages, individual bypass, compact reorder controls and versioned recipe
+metadata. Values/bypass stay live; structural edits stop audition. The existing
+serialized waveform/Prepare/one-Undo Apply path retains originals. Next: persistent
+native source streaming with aligned bypass/latency and fault/cancel ownership;
+broader chain types, seamless topology edits and recipe recall remain scoped.
 
 0.13.46 adds versioned automatic live-filter waveform snapshots. Rendering is
 debounced, serialized and limited to a 64 MiB allocation estimate; stale work is

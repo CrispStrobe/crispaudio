@@ -1,3 +1,4 @@
+import {validProjectSourceChains} from './sourceChainRecipe';
 import {validTrackFreezes,retainedFreezeProject} from './trackFreeze';
 import {validNativeRecordingImports} from './nativeRecordingImports';
 import {restoreProjectResources} from './resourceAccess';
@@ -75,6 +76,7 @@ export function serializeProject(
   sources: Map<string, AudioSource>,
   mode: 'portable' | 'linked' = 'portable',
 ): string {
+  if(!validProjectSourceChains(project))throw new Error('Invalid source effect chain');
   if(!validNativeRecordingImports(project))throw new Error('Invalid native recording import receipts');
   if(!validProjectNativeEffects(project))throw new Error('Invalid native effect rack');
   validateFrozenProjectAudio(project,sources);
@@ -106,6 +108,7 @@ export function serializeProject(
  * Muted/unreferenced sources need no files; solo overrides stored mute state.
  */
 export function linkedRenderDocument(project: TimelineProject, sources: Map<string, AudioSource>): SerializedProject | null {
+  if(!validProjectSourceChains(project))throw new Error('Invalid source effect chain');
   if (hasNativeEffects(project)||project.tracks.some(t=>t.freeze)||project.sampleRate !== 48000) return null;
   const ids = new Set(audibleTracks(project.tracks).flatMap(track => track.segments.map(clip => clip.sourceId)));
   const linked: SerializedSource[] = [];
@@ -120,6 +123,7 @@ export function linkedRenderDocument(project: TimelineProject, sources: Map<stri
 }
 
 function validateProjectMetadata(project:TimelineProject,serializedSources:SerializedSource[],version:number){
+  if(!validProjectSourceChains(project))throw new Error('Invalid source effect chain');
   if(!validNativeRecordingImports(project))throw new Error('Invalid native recording import receipts');
   if(!validMixVersions(project))throw new Error('Invalid mix versions');
   if(!validProjectNativeEffects(project))throw new Error('Invalid native effect rack');
@@ -233,8 +237,9 @@ export async function deserializeProject(
   return { project: doc.project, sources };
 }
 
-/** Shared load/cache checks: a frozen render is not recoverable without its originals. */
+/** Shared load/cache checks for source recipes and retained frozen originals. */
 export function validateFrozenProjectAudio(project:TimelineProject,sources:Map<string,AudioSource>){
+ if(!validProjectSourceChains(project))throw new Error('Invalid source effect chain');
  if(!validTrackFreezes(project,new Set(sources.keys())))throw new Error('Invalid frozen track');
  if(!project.tracks.some(t=>t.freeze))return;
  const metadata=[...sources.values()].map(source=>({id:source.id,name:source.name,sampleRate:source.sampleRate,channels:source.channels,duration:source.duration}));

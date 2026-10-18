@@ -4442,3 +4442,42 @@ cross-device responsiveness or resident-memory guarantees. Broader sustained,
 Tauri/WebKit and OS memory profiling remain open. [Sanitized results](evidence/source-filter-waveform.json).
 Full frontend suite was not rerun; the preceding broad timeout/retry remains
 recorded at its checkpoint. Both original running app sessions remain intact.
+
+
+## Ordered source chains — 0.13.47 source candidate
+
+Source Editor's Live effects now supports up to six ordered high/low-pass, level
+and clipper stages, individual live bypass and compact reorder controls. Parameter
+changes preserve the voice; structural edits stop audition. Automatic waveform
+snapshots and Prepare use the same graph. Apply retains originals and a versioned
+ordered recipe in one Undo step. Reopen plays printed PCM without replaying the
+chain. [Workflow and limits](SOURCE_EDITING.md).
+
+Save/load/recovery validation covers active and frozen/comp retained metadata.
+Unknown versions, duplicate IDs, invalid values and excessive stage counts reject.
+The clipper is a non-oversampled peak cap; no true-peak/latency-compensated native
+stream, seamless topology switch, broader insert family or recipe recall claim.
+Installed 0.13.33 and isolated native preview 0.13.41 remain unchanged. No native
+rebuild, physical listening, signing or Apple submission.
+
+Validation: **53 focused tests / 10 files**, production build, lint (full plus final
+changed-file checks), **24 release checks**, the new muted chain GUI/DSP harness
+and the legacy filter/waveform browser regression pass.
+
+At 8, 44.1, 48, 96 and 192 kHz, audition/Prepare have **zero sample difference** and
+excluded ranges/channels remain exact. Independent gain/clip-order expectations,
+per-stage/global bypass and quiet-signal rapid ceiling ramps pass; the latter's
+maximum absolute error is about 5.36e-8 against a 1e-7 float tolerance. Automatic/
+prepared canvas pixels match. One-Undo Apply, Undo/Redo, recipe order/original
+retention, linked/portable embedded-source reopen, unsupported-version rejection,
+recording-start node cleanup and German 390 px six-stage layout pass.
+
+The generated 20-second stereo six-stage fixture admits **38,400,000 estimated
+bytes** and keeps one offline graph in flight while publishing only newest settings.
+The checked latest render took about **160 ms**, full editor update **448 ms**
+including debounce; no browser long tasks were observed after warmup. Maximum
+heartbeat gaps were about 20.2 ms for rendering and 61.5 ms in the editor. These
+are fixture observations, not timing/resident-memory guarantees. No Tauri/WebKit
+or physical listening claim. [Sanitized evidence](evidence/source-effect-chain.json).
+Full frontend suite was not rerun; historical broad-run timeout/retry remains at
+its checkpoint. No native rebuild, installation or Apple upload.
