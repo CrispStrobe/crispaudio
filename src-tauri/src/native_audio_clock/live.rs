@@ -674,3 +674,7 @@ mod tests {
 #[cfg(test)]
 #[path = "live/null_tests.rs"]
 mod null_tests;
+
+#[cfg(test)]
+#[path = "live/null_bridge.rs"]
+pub mod null_bridge;

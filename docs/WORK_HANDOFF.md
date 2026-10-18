@@ -1,6 +1,6 @@
 # Engineering checkpoint and remaining work
 
-Updated 2026-10-18. This is the entry point for a fresh agent. The active product
+Updated 2026-10-19. This is the entry point for a fresh agent. The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -21,7 +21,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.52 fixes source plug-in
+The installed baseline remains 0.13.33. Source 0.13.53 adds isolated browser-to-Rust
+null-bridge qualification; see the latest checkpoint below. Source 0.13.52 fixes source plug-in
 first-pass state and stale prepared results; see the latest checkpoint below.
 Source 0.13.51 adds the shared source-preview
 close/join barrier; see the latest checkpoint below. Source 0.13.50 adds hardware-free native
@@ -998,3 +999,57 @@ Broader recipe recall from retained originals, source FX, waveform/scale,
 restoration and freeze tasks remain accepted and open.
 
 No installed app replacement, native build, physical audio action or Apple upload.
+
+
+## Native source browser null bridge — 0.13.53 checkpoint
+
+The standalone native-source driver now has an explicit ignored stdin server.
+`live/null_bridge.rs` is test-only; it calls the shared production worker/fill/
+clock publisher with two synthetic pending blocks and no hardware queue. Normal
+app builds have no null mode or command. Queue creation aborts and device inventory
+panics in the standalone executable. The server admits one bounded stereo 48 kHz
+source, one explicitly trusted master fixture, muted output and no device override.
+Production `Snapshots` validates CPS1 uploads; `LiveControl` and real-time AU/VST3
+helper processing are unchanged. Command dispatch and fixed owner identity are
+test doubles, not the app's Tauri command/window registry.
+
+[scripts/fixtures/nativeSourceBridge.mjs](../scripts/fixtures/nativeSourceBridge.mjs)
+uses a bounded JSON-line child-process wire with per-command/shutdown deadlines.
+[scripts/test-native-source-bridge.mjs](../scripts/test-native-source-bridge.mjs)
+serves a blank browser fixture, imports the real `NativeSourceAudition` and runs
+its upload/control/close path. The app's CPS1 binary packet is unchanged; only the
+test wire wraps it in a JSON byte array. EOF joins an abandoned active preview and
+reports zero sessions, snapshots and bytes. Request/response limits are 2 MiB and
+test sources at most ten seconds. Pure server tests reject untrusted/nested native
+racks, unsupported/hardware commands and malformed/incomplete uploads. Portable
+setup is in the [driver README](../scripts/native-source-clock/README.md).
+
+Validation: **19 standalone Rust tests** pass: seven actual-helper cases, eight
+shared pure cases, three new admission/upload cases and the inactive opt-in server
+entry. **44 focused frontend tests / 3 files**, production build, full lint, Rust
+format checks and **24 release checks** pass. Full frontend and full Tauri app
+suites were not rerun; .52's 2,188 frontend tests / 231 files remain prior evidence.
+The final browser run opened 13 native sessions, joined every worker/helper and
+finished with zero sessions, snapshots and retained PCM bytes, including an active
+preview abandoned at EOF. Both AU and VST3 passed live controls/warm bypass/monitor
+level, replacement/external handoff, output change, cancellation at held upload
+and late-start replies, helper fault and finite end.
+[Bridge evidence](evidence/native-source-bridge.json).
+This bridge qualifies the frontend adapter with production DSP; it does not yet
+qualify the actual Source Editor controls, Tauri commands/window ownership,
+WebKit, Core Audio timestamps/routing/hotplug or physical/load N5. No native app
+bundle was built or replaced; both active sessions remain preserved.
+
+Continue with shared Source Editor Play/Stop and a compact opt-in native mode,
+using this bridge for the actual editor UI tests. Start with full-clip stereo
+48 kHz cases. Join/stop the arrangement before source start, exclude recording and
+other previews, and retain .51 outgoing-source ownership. Lift selected plug-in
+configuration (stable base state plus copied parameters from .52) without feeding
+running DSP history into Prepare/Apply. Define monitor-only headroom/limiter policy
+and Original/Preview behavior, retain originals and one Undo, and label live native
+waveform/analysis limitations. Test pending-start replacement, source/project/
+range/channel/lock changes, Reset/Apply, output change and unmount in the actual
+editor. Keep rendered fallback and visible failures; do not silently fall back after
+a native fault or enable unsupported rate/channel cases. Broader plug-in/process-
+mode equivalence, mono output semantics, seamless topology, recipe recall,
+waveform/scale, restoration/freeze and the platform/device checks remain open.

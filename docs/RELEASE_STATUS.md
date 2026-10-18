@@ -1,4 +1,4 @@
-# Distribution and platform status — 2026-10-18
+# Distribution and platform status — 2026-10-19
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4636,3 +4636,34 @@ frontend build, full lint, the changed browser-script lint and **24 release
 checks** pass. Backend source is unchanged; Rust suites were not rerun. The actual
 AU/VST3 browser checks above are offline helper qualification, not native IPC or
 physical audio acceptance.
+
+
+## Native source browser null bridge — 0.13.53 source candidate
+
+A test-only stdin server now connects the browser's production source adapter and
+CPS1 upload to the production Rust snapshot registry, controls, worker and AU/VST3
+DSP. It retains the standalone AudioQueue/device traps, admits bounded trusted
+fixtures and rejects hardware routing or recording commands. Normal app builds
+have no null mode or bridge command. EOF joins an abandoned active preview; Node
+command/shutdown deadlines and owned process-group cleanup bound fixture failures.
+
+Validation: **19 standalone Rust tests** pass: seven actual-helper cases, eight
+shared pure cases, three new admission/upload cases and the inactive opt-in server
+entry. **44 focused frontend tests / 3 files**, production build, full lint, Rust
+format checks and **24 release checks** pass. Full frontend and full Tauri app
+suites were not rerun; .52's 2,188 frontend tests / 231 files remain prior evidence.
+The final browser run opened 13 native sessions, joined every worker/helper and
+finished with zero sessions, snapshots and retained PCM bytes, including an active
+preview abandoned at EOF. Both AU and VST3 passed live controls/warm bypass/monitor
+level, replacement/external handoff, output change, cancellation at held upload
+and late-start replies, helper fault and finite end.
+
+[Sanitized evidence](evidence/native-source-bridge.json). This is browser-to-Rust
+child-process IPC with simulated dispatch/owner/queue time, not actual Source
+Editor UI, Tauri window/command registry, WebKit or physical/Core Audio acceptance.
+Shared controls, monitor policy, reverse ownership and editor lifecycle remain
+in the [latest handoff](WORK_HANDOFF.md#native-source-browser-null-bridge--01353-checkpoint).
+
+Both running app sessions are preserved. No native app bundle build/install,
+hardware action, tag or Apple upload. Previous .52 general CI passed and iOS CI
+was still in progress at the pre-push check; current commit CI is separate.

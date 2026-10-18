@@ -1,0 +1,144 @@
+{
+  "version": "0.13.53",
+  "date": "2026-10-19",
+  "hardwareOpened": false,
+  "nativeSourceUiEnabled": false,
+  "bridge": {
+    "testExecutable": "scripts/native-source-clock",
+    "wire": "Bounded JSON-line stdin/stdout child-process IPC; production CPS1 packet wrapped only by test wire",
+    "production": [
+      "NativeSourceAudition and NativePlaybackController",
+      "NativeTimelineSnapshot CPS1 upload",
+      "Rust Snapshots registry and LiveControl",
+      "Native realtime worker, PCM consumer, clock publisher and AU/VST3 DSP"
+    ],
+    "simulated": [
+      "Command dispatch and fixed owner identity",
+      "512-frame/48-kHz cadence with two synthetic pending buffers"
+    ],
+    "guards": [
+      "AudioQueueNewOutput abort trap",
+      "Device inventory panic trap",
+      "Explicit trusted fixture IDs and one master native insert",
+      "Muted only; no device override or recording implementation",
+      "Single stereo 48-kHz source, at most ten seconds",
+      "2-MiB request/response bounds",
+      "Command/shutdown deadlines; process-group cleanup on failure",
+      "Worker join verifies every helper is closed; EOF checks zero retained resources"
+    ]
+  },
+  "browserResult": {
+    "rows": [
+      {
+        "format": "AU",
+        "name": "AUPeakLimiter",
+        "liveControls": true,
+        "warmBypass": true,
+        "monitorLevel": true,
+        "replacementJoined": true,
+        "externalHandoff": true,
+        "outputChangeStopped": true,
+        "cancelledStart": true,
+        "pendingUploadJoined": true,
+        "lateStartJoined": true,
+        "helperFaultJoined": true,
+        "finiteEndedOnce": true
+      },
+      {
+        "format": "VST3",
+        "name": "ADelay",
+        "liveControls": true,
+        "warmBypass": true,
+        "monitorLevel": true,
+        "replacementJoined": true,
+        "externalHandoff": true,
+        "outputChangeStopped": true,
+        "cancelledStart": true,
+        "pendingUploadJoined": true,
+        "lateStartJoined": true,
+        "helperFaultJoined": true,
+        "finiteEndedOnce": true
+      }
+    ],
+    "stats": {
+      "bytes": 0,
+      "closed": 12,
+      "hardware": false,
+      "sessions": 0,
+      "snapshots": 0,
+      "started": 12
+    },
+    "activeBeforeEof": {
+      "bytes": 768000,
+      "closed": 12,
+      "hardware": false,
+      "sessions": 1,
+      "snapshots": 1,
+      "started": 13
+    },
+    "hardware": false,
+    "scope": "Browser production source adapter and snapshot binary upload through test dispatch to production realtime worker/DSP; synthetic null clock",
+    "joinedSummaries": 10,
+    "commands": {
+      "bridge_stats": 13,
+      "native_recording_inputs": 1,
+      "native_playback_start": 15,
+      "native_snapshot_begin": 15,
+      "native_snapshot_write": 80,
+      "native_snapshot_seal": 13,
+      "native_playback_status": 182,
+      "native_playback_update": 13,
+      "native_snapshot_close": 14,
+      "native_playback_close": 12,
+      "bridge_fault": 2
+    },
+    "allHelpersClosed": true,
+    "eof": {
+      "bytes": 0,
+      "closed": 13,
+      "hardware": false,
+      "sessions": 0,
+      "snapshots": 0,
+      "started": 13
+    }
+  },
+  "validation": {
+    "standaloneRust": {
+      "passed": 19,
+      "actualHelperTests": 7,
+      "sharedPureTests": 8,
+      "newAdmissionUploadTests": 3,
+      "optInServerEntryInactiveInOrdinaryRun": 1
+    },
+    "focusedFrontend": {
+      "passed": 44,
+      "files": 3
+    },
+    "productionBuild": "passed",
+    "fullLint": "passed",
+    "rustFormatting": "passed",
+    "releaseChecks": 24,
+    "fullFrontend": "Not rerun; preceding 0.13.52 baseline was 2188 tests / 231 files",
+    "fullTauriAppTests": "Not rerun; standalone compiles the production clock/core modules"
+  },
+  "limits": [
+    "No actual Source Editor UI activation or UI qualification",
+    "No Tauri command/window ownership or recording-exclusive registry qualification",
+    "No WebKit, Core Audio output/device/timestamp, physical listening, latency or sustained-load acceptance",
+    "Short trusted fixtures only; not arbitrary plugin/process-mode/rate support"
+  ],
+  "next": [
+    "Shared compact opt-in source Play/Stop and rendered fallback",
+    "Lift stable plugin selection/state/parameters without feeding running state into Apply",
+    "Reverse arrangement owner join and recording/other-preview exclusion",
+    "Initial 48-kHz full-clip stereo admission and monitor-only headroom policy",
+    "Original/live controls and explicit waveform/analysis behavior",
+    "Actual editor lifecycle/range/channel/project/lock/reset/Apply/unmount tests using this bridge",
+    "Separate platform/device/N5 qualification"
+  ],
+  "distribution": {
+    "installedAppsUpdated": false,
+    "releaseTag": false,
+    "appleUpload": false
+  }
+}

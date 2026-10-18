@@ -39,3 +39,55 @@ creation, timestamps, pause/resume, device selection or hotplug, physical latenc
 listening, WebKit/Tauri IPC or sustained load. Source-editor integration remains
 separate. Native source audition currently admits 48 kHz input only; per-rate
 helper comparisons do not establish matching resampling and Apply semantics.
+
+## Browser-to-Rust null bridge
+
+The ignored `bridge::source_bridge_server` test becomes a JSON-line stdin server
+only with `CRISPAUDIO_SOURCE_BRIDGE=1` and an explicit JSON list of trusted fixture
+plug-in IDs. The Node fixture supplies these automatically. With no opt-in it
+returns immediately, so the normal `--include-ignored` command never waits on stdin.
+The regular executable still exits with instructions; no app command, runtime
+null setting or listening port is added.
+
+Build the test executable with fault injection enabled, reusing the existing target:
+
+```sh
+CARGO_TARGET_DIR="$PWD/src-tauri/target" CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 \
+cargo test --manifest-path scripts/native-source-clock/Cargo.toml \
+  --features native-validation --locked --no-run
+```
+
+Cargo prints the test executable path. Set `CRISPAUDIO_TEST_NULL_BRIDGE` to that
+explicit path. The browser check also requires `CRISPAUDIO_PLAYWRIGHT_MODULE`,
+`CRISPAUDIO_CHROME_EXECUTABLE`, current repository-built
+`CRISPAUDIO_TEST_MEDIA_HELPER` / `CRISPAUDIO_TEST_VST3_HELPER`, and the trusted
+`CRISPAUDIO_TEST_PLUGIN_FOLDER` containing `adelay.vst3`. With an isolated Vite
+server already running:
+
+```sh
+CRISPAUDIO_TEST_URL=http://127.0.0.1:5197 \
+node scripts/test-native-source-bridge.mjs
+```
+
+The fixture serves a blank page, imports the production `NativeSourceAudition`,
+uploads its production CPS1 packets and drives the production Rust snapshot
+registry, live controls, worker and helper DSP. Only command dispatch, owner
+identity and queue time are simulated. The test wire wraps binary packets in JSON
+arrays; this does not change the app's binary upload. Requests/responses are
+bounded to 2 MiB, sources to one stereo 48 kHz buffer of at most ten seconds,
+and effects to one explicitly trusted master fixture insert. Output must be
+muted, device overrides and unsupported commands are rejected, and AudioQueue /
+inventory traps remain installed. The driver has no recording implementation.
+
+Checks include live control application, latency-aligned warm bypass/monitor
+level, replacement and external ownership handoff, output-change stop, cancellation
+with replies held at actual upload/start boundaries, helper failure and finite end.
+An active preview is deliberately abandoned at EOF; the driver joins it and
+reports zero sessions, snapshots and retained bytes before exit. The Node fixture
+has per-command/shutdown deadlines and reaps its owned process group on failure.
+Pure Rust checks exercise command admission and malformed/incomplete upload cleanup.
+
+This is real browser-to-Rust child-process IPC with production DSP, **not Tauri
+command/window ownership, WebKit, actual Source Editor UI, Core Audio or hardware
+qualification**. Reuse it when integrating shared source controls; do not claim
+that those UI/platform paths have already passed.

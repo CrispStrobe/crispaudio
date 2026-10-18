@@ -39,3 +39,6 @@ fn main() {
     eprintln!("Use cargo test --manifest-path scripts/native-source-clock/Cargo.toml -- --include-ignored --test-threads=1 --nocapture on macOS");
     std::process::exit(2);
 }
+
+#[cfg(all(test, target_os = "macos"))]
+mod bridge;

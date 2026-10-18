@@ -1,6 +1,15 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for source candidate 0.13.52 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.53 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.53 adds a bounded **browser-to-Rust null bridge** for the production source
+adapter, CPS1 snapshot upload, native worker and real-time AU/VST3 DSP. Test-only
+command dispatch and synthetic queue time are isolated from the app; queue and
+device-inventory traps remain. The bridge enables frontend lifecycle qualification
+without rebuilding installed apps or opening audio hardware. It is not Tauri
+command/window ownership, WebKit or Source Editor UI acceptance. Shared compact
+native controls remain the next implementation, with first-pass state from .52
+and owner joining from .51. [Latest handoff](docs/WORK_HANDOFF.md#native-source-browser-null-bridge--01353-checkpoint).
 
 0.13.52 defines the source plug-in **first-pass recipe**: every helper render
 starts from the state restored during effect selection plus an immutable snapshot

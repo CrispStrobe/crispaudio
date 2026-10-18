@@ -196,3 +196,10 @@ use **Auto preview** before Apply. Apply commits that prepared audio and saves i
 starting state and parameters with the edit history. Saved effects restore both
 state and explicit parameters when selected again. This is metadata recall on the
 current source, not automatic reprocessing from the retained original.
+
+
+Version 0.13.53 adds a development-only browser/Rust null bridge for testing the
+native source adapter with actual AU/VST3 DSP and no audio hardware. It does not
+activate native streaming in the editor. Shared controls, monitor headroom,
+state/Apply and actual editor/platform acceptance remain in the
+[latest handoff](WORK_HANDOFF.md#native-source-browser-null-bridge--01353-checkpoint).

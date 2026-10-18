@@ -32,6 +32,11 @@ creation remain with CometBeat and CrisperWeaver. Physical device/platform check
 Effect-aware segment waveforms are implemented through the bounded 0.13.24
 continuous-refresh checkpoint; continue the execution order below.
 
+Source checkpoint 0.13.53 adds a hardware-free browser/Rust bridge for source
+adapter lifecycle and production DSP qualification. Shared Source Editor controls
+are still pending; this is not Tauri/window, WebKit or physical acceptance.
+See the [latest handoff](WORK_HANDOFF.md#native-source-browser-null-bridge--01353-checkpoint).
+
 Source checkpoint 0.13.52 defines repeatable first-pass plug-in render/recipe state
 and invalidates stale prepared results after parameter edits. Source 0.13.51 adds
 the outgoing native-source close/join barrier
