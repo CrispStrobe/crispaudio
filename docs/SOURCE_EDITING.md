@@ -21,6 +21,34 @@ original** in Cleanup returns to the retained recording after an applied source
 edit. These are separate actions. Enable **Match loudness** beside Original/Preview for optional monitor-only
 matching; see the limits below.
 
+## Adjust a filter while listening
+
+Expand **Live filter**, enable it and press the editor's Play button. High-pass,
+low-pass and output sliders update the same running graph; their numbers accept
+exact entry and touch scrubbing. Original/Preview switches smoothly without
+restarting. These are two fixed-Q Butterworth filters and an attenuating output
+control, separate from arrangement FX. Enabling this tool replaces an unapplied
+draft; apply a previous edit first to combine operations.
+
+**Prepare** stops audition and makes a fixed waveform preview. Compare it, optionally
+match its loudness, then Apply for one Undo step with the original retained.
+The live waveform/analysis remain the source until preparation; sliders do not
+continually regenerate waveform PCM. Native AU/VST3 **Auto preview** still performs
+helper renders and is separate from this continuous built-in filter.
+
+Processing joins selected ranges in order through one filter, then writes only
+those samples/channels back. It starts with empty filter history and truncates
+output at the selection end; no automatic edge fade or extra tail is added.
+Looping retains filter history across cycles, so its later passes can differ from
+the first prepared pass. Cutoffs cap below the source Nyquist frequency. Audition
+runs at the device context rate, so resampling can differ from source-rate rendering.
+
+Prepare supports mono/stereo selections at 8–192 kHz, up to 120 seconds selected
+and a 256 MiB allocation estimate including the full source-window copy. Select one
+channel when editing a multichannel source. Cancellation discards late output;
+Web Audio offline rendering itself can continue until completion. Selection,
+settings, source/project changes, recording and closing discard stale work.
+
 ## Keep an edit
 
 **Apply** creates a derived source and one Undo step. The original audio remains
@@ -95,6 +123,6 @@ still need a helper render; this is not a new continuously running native FX gra
 Processing preserves the source window's length, so extend it first for effect tails.
 
 Continuous comparison currently uses in-memory audio. Long-file streaming,
-full live source FX and further restoration
+arbitrary live source FX chains/native streaming and further restoration
 (spectral healing, drift tracking and varied-material qualification) remain work
 in the [audio-workstation roadmap](DAW_GAP_ANALYSIS.md).

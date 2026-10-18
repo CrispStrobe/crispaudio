@@ -4384,3 +4384,28 @@ export caching; rerunning that entire export file alone with the same limit
 passed all **11 tests**. This suggests load sensitivity, not a reproduced functional
 failure; do not describe the broad run as entirely green. Details are in the
 [native freeze evidence](evidence/native-track-freeze.json).
+
+
+## Continuous source filter — 0.13.45 source candidate
+
+Source Editor now has a persistent built-in high/low-pass filter with attenuating
+output, live editable numbers and smooth Original/Preview. Preparing a fixed
+preview uses the same graph and preserves excluded samples/channels; Apply retains
+the original and creates one Undo step. Native Auto preview remains rendered.
+[Workflow and limits](SOURCE_EDITING.md). Waveform updates while dragging,
+arbitrary chains and native source streaming are still pending.
+
+Installed 0.13.33 and isolated native preview 0.13.41 remain running and unchanged.
+No native rebuild, hardware check or Apple submission. About's web fallback now
+matches source 0.13.45; installed native builds report their own bundle version.
+
+Validation: **34 focused tests / 6 files**, production build, lint and **24 release
+checks** pass. Muted browser qualification checks exact audition/static-render PCM
+at 8, 44.1, 48, 96 and 192 kHz, an independent Butterworth response expectation,
+live parameter updates with one voice/two persistent filters, smooth bypass,
+unchanged excluded samples/channels, cancelled late renders, one-Undo Apply,
+linked/portable reopen, graph cleanup and German 390 px layout. The existing
+source A/B/matching browser regression also passes. [Sanitized results](evidence/source-live-filter.json).
+Full frontend suite was not rerun; the preceding checkpoint's timeout/retry remains
+recorded above. These checks do not establish physical listening quality or native
+app/WebKit acceptance.

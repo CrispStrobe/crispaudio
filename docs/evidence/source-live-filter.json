@@ -1,0 +1,110 @@
+{
+  "version": "0.13.45",
+  "date": "2026-10-18",
+  "scope": "Muted Chromium Web Audio; generated PCM only. No native app, physical audio, microphone or Apple submission.",
+  "command": "node scripts/test-source-live-filter.mjs",
+  "results": {
+    "pcm": {
+      "expectedRms": 0.06986920995724333,
+      "measuredRms": 0.06986920589049117,
+      "rates": [
+        {
+          "rate": 8000,
+          "maxError": 0
+        },
+        {
+          "rate": 44100,
+          "maxError": 0
+        },
+        {
+          "rate": 96000,
+          "maxError": 0
+        },
+        {
+          "rate": 192000,
+          "maxError": 0
+        }
+      ],
+      "maxError": 0,
+      "unselectedError": 0,
+      "gainRatio": 0.2511886418579892,
+      "expectedGainRatio": 0.251188643150958,
+      "bypassError": 0,
+      "lateCancelled": true
+    },
+    "continuousControls": {
+      "voices": 1,
+      "filters": 2,
+      "unchanged": true,
+      "undo": 0
+    },
+    "applied": {
+      "retained": "filter-source",
+      "operation": {
+        "type": "filter",
+        "channel": -1,
+        "ranges": [
+          {
+            "start": 0,
+            "end": 192000
+          }
+        ],
+        "targetDb": -1,
+        "parameters": {
+          "highpass": 600,
+          "lowpass": 16000,
+          "gainDb": -9
+        }
+      },
+      "sources": 2,
+      "undo": 1,
+      "changed": true
+    },
+    "reopen": [
+      {
+        "mode": "linked",
+        "maxError": 0,
+        "originalPresent": true,
+        "parameters": {
+          "highpass": 600,
+          "lowpass": 16000,
+          "gainDb": -9
+        }
+      },
+      {
+        "mode": "portable",
+        "maxError": 0,
+        "originalPresent": true,
+        "parameters": {
+          "highpass": 600,
+          "lowpass": 16000,
+          "gainDb": -9
+        }
+      }
+    ],
+    "oneUndo": true,
+    "recordingTimelineCloseCleanup": true,
+    "german390": {
+      "width": 316,
+      "overflow": false
+    },
+    "physicalAudio": false
+  },
+  "validation": {
+    "focusedTests": 34,
+    "focusedFiles": 6,
+    "productionBuild": "pass",
+    "lint": "pass",
+    "releaseChecks": 24,
+    "existingSourceAuditionBrowserRegression": "pass",
+    "fullFrontendSuite": "not rerun for this checkpoint; preceding 0.13.44 broad run had one timeout, isolated file retry passed"
+  },
+  "limits": [
+    "Built-in high-pass/low-pass/output only; native source Auto preview remains helper-rendered.",
+    "Waveform PCM updates on Prepare, not continuously on slider changes.",
+    "Static render starts with empty filter history, with no appended tail or edge fade; looped audition retains filter history.",
+    "Resampling live contexts can differ from source-rate offline rendering.",
+    "Prepare limits: 8–192 kHz, mono/stereo selection, 120 seconds and 256 MiB allocation estimate.",
+    "Abort discards late results; OfflineAudioContext itself is not forcibly terminated."
+  ]
+}

@@ -2309,7 +2309,8 @@
     "repair": "Klick reparieren",
     "dehum": "Entbrummen",
     "spectral": "Spektral absenken",
-    "declip": "Clipping reparieren"
+    "declip": "Clipping reparieren",
+    "filter": "Filter"
   },
   "sourcePlugins": {
     "title": "Externe Effekte",
@@ -2326,7 +2327,8 @@
     "processing": "Effekt berechnen…",
     "value": "Wert",
     "folder": "VST3-Ordner…",
-    "skipped": "{{count}} Plug-ins übersprungen"
+    "skipped": "{{count}} Plug-ins übersprungen",
+    "autoPreview": "Auto-Vorschau"
   },
   "nativeRack": {
     "rangeChanged": "Das Plug-in meldet einen anderen Wertebereich. Die gespeicherte Kurve vor einem neuen Durchlauf leeren.",
@@ -2458,5 +2460,15 @@
     "info": "Hilfe zum Einfrieren",
     "package": "Eingefrorene Spuren vor dem Import des Spurpakets auftauen.",
     "short": "Einen Nachklang wählen, sodass die Berechnung mindestens 10 ms umfasst."
+  },
+  "sourceFilter": {
+    "title": "Live-Filter",
+    "enabled": "Aktiv",
+    "prepare": "Vorbereiten",
+    "highpass": "Hochpass",
+    "lowpass": "Tiefpass",
+    "level": "Ausgang",
+    "limit": "Bis zu 120 Sekunden Mono-/Stereo-Audio auswählen. Die Bearbeitung muss außerdem in 256 MiB passen.",
+    "help": "Aktivieren, dann oben abspielen. Filter beim Hören ändern; Original/Vorschau wechselt weich ohne Neustart. Vorbereiten erzeugt eine feste Vorschau für Wellenform, Lautheitsabgleich und Anwenden. Nur ausgewählte Samples/Kanäle ändern sich; das Original bleibt erhalten. Getrennte Bereiche laufen nacheinander durch denselben Filter; Nachklang außerhalb der Auswahl entfällt. Beim Wiederholen bleibt der Filterzustand erhalten. Native Plug-ins nutzen eine separate berechnete Vorschau."
   }
 }

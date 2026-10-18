@@ -19,7 +19,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.44 extends Mix A/B to frozen live mixer values, with baked fields
+The installed baseline remains 0.13.33. Source 0.13.45 adds a bounded continuous
+built-in source filter; see the latest checkpoint below. Source 0.13.44 extends Mix A/B to frozen live mixer values, with baked fields
 protected, localized package errors and short-render preflight.
 Source 0.13.43 adds bounded [reversible track freeze](TRACK_FREEZE.md).
 Source 0.13.42 adds optional monitor-only
@@ -481,3 +482,52 @@ export caching; rerunning that entire export file alone with the same limit
 passed all **11 tests**. This suggests load sensitivity, not a reproduced functional
 failure; do not describe the broad run as entirely green. Details are in the
 [native freeze evidence](evidence/native-track-freeze.json).
+
+
+## Continuous source filter — 0.13.45 checkpoint
+
+`SourceFilter.ts` owns the persistent high-pass → low-pass → attenuating level
+chain and smooth dry/wet bypass. `SourceLiveFilter.tsx` provides one collapsed
+EN/DE section with editable slider numbers. SourceEditor routes its existing
+source audition through the graph, updates parameters without replacing voices,
+and closes every graph on Stop, end, source replacement, recording, arrangement
+playback and unmount. Filter audition excludes click-repair context. Other preview
+tools supersede the live filter. Native source controls now say Auto preview and
+omit the duplicate numeric field beside each already editable slider.
+
+Prepare stops audition, renders the same static graph, scatters joined selections
+back into a source copy and publishes only if source/project/selection/settings,
+recording and preview-generation guards still match. Cancel discards late output;
+OfflineAudioContext itself is not forcibly terminated. Apply retains original PCM
+and numeric recipe metadata in the existing one-Undo source edit path. No format
+change. Source-rate rendering and a resampling live context need not be identical;
+loops preserve filter history, unlike the first prepared pass. No automatic edge
+fade/tail extension. Bounds: 8–192 kHz, mono/stereo selected channels, 120 seconds,
+256 MiB estimated copies. Waveform/analysis update after Prepare, not each slider.
+
+Next source tasks, in order:
+1. Add versioned/cancellable background snapshots for live-filter waveforms; never
+   overwrite a newer setting/selection or publish preview PCM into the project.
+   Measure latency, peak memory and UI responsiveness on bounded larger fixtures.
+2. Generalize the graph to a small ordered built-in chain with explicit dry/wet,
+   latency/tail handling and render parity; keep compact controls and retained
+   originals. Test disjoint selections, first/looped passes and resampling rates.
+3. Add a persistent native source stream with latency-aligned dry/wet comparison,
+   live parameter updates, helper fault/cancel cleanup and offline Apply parity.
+   Reuse native graph ownership/contracts; do not rename rendered previews as Live.
+4. Continue restoration detection/healing/drift qualification and the scoped freeze
+   cases above. Physical N5 and the existing user question remain pending.
+
+No native rebuild, app replacement, physical playback/mic check, tag or Apple
+submission is part of this source checkpoint. Both running sessions stay intact.
+
+Validation: **34 focused tests / 6 files**, production build, lint and **24 release
+checks** pass. Muted browser qualification checks exact audition/static-render PCM
+at 8, 44.1, 48, 96 and 192 kHz, an independent Butterworth response expectation,
+live parameter updates with one voice/two persistent filters, smooth bypass,
+unchanged excluded samples/channels, cancelled late renders, one-Undo Apply,
+linked/portable reopen, graph cleanup and German 390 px layout. The existing
+source A/B/matching browser regression also passes. [Sanitized results](evidence/source-live-filter.json).
+Full frontend suite was not rerun; the preceding checkpoint's timeout/retry remains
+recorded above. These checks do not establish physical listening quality or native
+app/WebKit acceptance.

@@ -2296,7 +2296,8 @@
     "repair": "Repair click",
     "dehum": "De-hum",
     "spectral": "Spectral attenuation",
-    "declip": "Declip"
+    "declip": "Declip",
+    "filter": "Filter"
   },
   "sourcePlugins": {
     "title": "External effects",
@@ -2313,7 +2314,8 @@
     "processing": "Processing effect…",
     "value": "value",
     "folder": "VST3 folder…",
-    "skipped": "{{count}} plugins skipped"
+    "skipped": "{{count}} plugins skipped",
+    "autoPreview": "Auto preview"
   },
   "nativeRack": {
     "rangeChanged": "This plug-in reports a different parameter range. Clear the saved curve before recording a new pass.",
@@ -2445,5 +2447,15 @@
     "info": "Freeze help",
     "package": "Thaw frozen tracks before importing a track package.",
     "short": "Choose a tail so the render lasts at least 10 ms."
+  },
+  "sourceFilter": {
+    "title": "Live filter",
+    "enabled": "Enabled",
+    "prepare": "Prepare",
+    "highpass": "High-pass",
+    "lowpass": "Low-pass",
+    "level": "Output",
+    "limit": "Select up to 120 seconds of mono/stereo audio. The edit also needs to fit within 256 MiB.",
+    "help": "Enable, then press Play above. Adjust the filters while listening; Original/Preview switches smoothly without restarting. Prepare creates a fixed preview for the waveform, loudness matching and Apply. Only selected samples/channels change; original audio is retained. Disjoint ranges play consecutively through the same filter; tails outside the selection are omitted. Looping keeps the filter history. Native plug-ins use a separate rendered preview."
   }
 }
