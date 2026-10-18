@@ -115,3 +115,9 @@ routing, with a manual tail, live mixer values and Undo/reopen support. This clo
 the independent audio-track foundation, not clip/bus/sidechain freeze or streaming.
 See [supported cases and remaining limits](TRACK_FREEZE.md). Native physical and
 sustained-load qualification remains separate.
+
+The 0.13.44 follow-up qualifies single saved-state AU/VST3 track inserts through
+the production offline graph and a test helper bridge, including nonzero plug-in
+latency and linked/portable thaw. Frozen Mix A/B live values are now restorable.
+This does not qualify arbitrary native chains, physical outputs or native WebKit.
+See [the checked native fixtures](evidence/native-track-freeze.json).

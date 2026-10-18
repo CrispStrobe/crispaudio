@@ -1,29 +1,19 @@
 import type {AudioSegment,AudioSource,TimelineProject,TimelineTrack} from '../types/audio';
+import {thawTrack} from './frozenTrackState';
+export {thawTrack,retainedFreezeProject,frozenTrackChangeAllowed} from './frozenTrackState';
 import {captureMix,validMixVersion} from './mixVersions';
 
 export const FREEZE_FIELDS=['segments','effects','nativeEffects','automation','fadeInDuration','fadeOutDuration','fadeInCurve','fadeOutCurve'] as const;
 export type FrozenTrackOriginal=Pick<TimelineTrack,typeof FREEZE_FIELDS[number]>;
 export interface TrackFreeze {version:1;sourceId:string;frames:number;sampleRate:number;tail:number;original:FrozenTrackOriginal}
 const pickOriginal=(track:TimelineTrack):FrozenTrackOriginal=>Object.fromEntries(FREEZE_FIELDS.map(key=>[key,structuredClone(track[key])])) as FrozenTrackOriginal;
-export function thawTrack(track:TimelineTrack):TimelineTrack {
- if(!track.freeze)throw new Error('freeze.changed');
- return {...track,...structuredClone(track.freeze.original),freeze:undefined,locked:false};
-}
-export function retainedFreezeProject(project:TimelineProject):TimelineProject {return {...project,tracks:project.tracks.map(t=>t.freeze?thawTrack(t):t)};}
-/** Frozen content is immutable; only these monitor/mix-independent fields remain live. */
-export function frozenTrackChangeAllowed(before:TimelineTrack,after:TimelineTrack|undefined):boolean {
- if(!after)return false;
- if(!after.freeze)return JSON.stringify(after)===JSON.stringify(thawTrack(before));
- const live=['name','muted','solo','volume','pan','waveformMode'] as const;
- const expected={...before};for(const key of live)Object.assign(expected,{[key]:after[key]});
- return JSON.stringify(expected)===JSON.stringify(after);
-}
 export function prepareTrackFreeze(project:TimelineProject,trackId:string,sources:Map<string,AudioSource>,tail:number){
  const track=project.tracks.find(t=>t.id===trackId);
  if(!track||track.freeze||track.locked||track.recordArmed||track.kind==='bus'||track.ducking||!track.segments.length||track.segments.some(c=>c.linkGroup||c.editGroup))throw new Error('freeze.unsupported');
  if(!Number.isFinite(tail)||tail<0||tail>30)throw new Error('freeze.tailInvalid');
  const rate=project.sampleRate,end=Math.max(...track.segments.map(c=>c.startTime+c.duration));
  const frames=Math.ceil((end+tail)*rate);
+ if(frames<Math.ceil(rate*.01))throw new Error('freeze.short');
  if(!Number.isFinite(rate)||rate<8000||rate>192000||!Number.isSafeInteger(frames)||frames<=0||frames>rate*600||frames*8>256*1024*1024)throw new Error('freeze.budget');
  for(const clip of track.segments){const source=sources.get(clip.sourceId);if(!source||!Number.isFinite(clip.startTime)||clip.startTime<0||!Number.isFinite(clip.duration)||clip.duration<=0||!Number.isFinite(clip.sourceOffset)||clip.sourceOffset<0||Math.round((clip.sourceOffset+clip.duration)*source.sampleRate)>source.buffer.length)throw new Error('freeze.missing');}
  // Render before fader/pan/routing. Track gain automation is upstream of inserts.

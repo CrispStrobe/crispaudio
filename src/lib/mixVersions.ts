@@ -1,3 +1,4 @@
+import {frozenTrackChangeAllowed} from './frozenTrackState';
 import {validNativeEffects} from './nativeEffects';
 import {validDucking} from '../audio/dsp/ducking';
 import type {TimelineProject,TimelineTrack,AudioSegment,EffectConfig} from '../types/audio';
@@ -29,7 +30,7 @@ export function validMixVersions(project:TimelineProject){const versions=project
 /** Preview/application never changes clip geometry, names, folders or source references. */
 export function mixProject(project:TimelineProject,version:MixVersion,protectLocks=true):TimelineProject{
  if(!validMixVersion(version)||version.signature!==mixSignature(project))throw new Error('mixReview.changed');
- const tracks=project.tracks.map(track=>{const saved=version.tracks.find(t=>t.id===track.id);if(!saved||saved.clips.length!==track.segments.length)throw new Error('mixReview.changed');const next=applyFields(track,trackFields,saved.state);next.segments=track.segments.map(clip=>{const c=saved.clips.find(c=>c.id===clip.id);if(!c)throw new Error('mixReview.changed');return applyFields(clip,clipFields,c.state);});if(protectLocks&&track.locked&&(JSON.stringify(pick(track,trackFields))!==JSON.stringify(pick(next,trackFields))||JSON.stringify(track.segments.map(c=>pick(c,clipFields)))!==JSON.stringify(next.segments.map(c=>pick(c,clipFields)))))throw new Error('mixReview.locked');return next;});
+ const tracks=project.tracks.map(track=>{const saved=version.tracks.find(t=>t.id===track.id);if(!saved||saved.clips.length!==track.segments.length)throw new Error('mixReview.changed');const next=applyFields(track,trackFields,saved.state);next.segments=track.segments.map(clip=>{const c=saved.clips.find(c=>c.id===clip.id);if(!c)throw new Error('mixReview.changed');return applyFields(clip,clipFields,c.state);});if(protectLocks&&track.locked&&(track.freeze?!frozenTrackChangeAllowed(track,next):(JSON.stringify(pick(track,trackFields))!==JSON.stringify(pick(next,trackFields))||JSON.stringify(track.segments.map(c=>pick(c,clipFields)))!==JSON.stringify(next.segments.map(c=>pick(c,clipFields))))))throw new Error('mixReview.locked');return next;});
  routingOrder(tracks);
  const next={...project,tracks,masterEffects:structuredClone(version.masterEffects),nativeEffects:structuredClone(version.nativeEffects),masterVolume:version.masterVolume,outputLimiter:structuredClone(version.outputLimiter)};
  return JSON.stringify(captureMix(next))===JSON.stringify(captureMix(project))?project:next;

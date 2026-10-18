@@ -57,6 +57,42 @@ including pre-fader sends, buses and master processing. Linked, portable and
 IndexedDB recovery reopen also match exactly in that fixture. This is not arbitrary
 plug-in or physical listening evidence. [Checked results](evidence/track-freeze.json).
 
-Mix A/B restore currently treats a frozen track as locked; use its live mixer
-controls, or thaw before restoring a different saved mix. Very short sources with
-zero tail can fall below the offline renderer's 10 ms minimum; add a short tail.
+Saved Mix A/B versions can restore frozen-track volume, pan, mute and solo.
+Changes to baked processing, routing or clip gain remain blocked until thaw.
+For very short sources, choose a tail so the rendered duration is at least 10 ms;
+the dialog reports this before starting an unsupported zero-tail render.
+
+## Checked native inserts
+
+At 48 kHz, generated stereo impulse/tone fixtures using the actual repo-built
+helpers produce exact before/after freeze equality for SDK **ADelay**, Apple
+**AUBandpass** and **AUPeakLimiter**. Saved-state-only restore, linked/portable
+reopen, thaw and post-clip delay tails are checked. The limiter reports 96 samples
+of latency; the test verifies compensation preserves impulse position. All 15
+helper sessions are closed and reaped after 150 packet exchanges.
+
+The harness uses a Node pipe bridge in place of Tauri IPC and the real production
+browser offline graph. It does not qualify native WebKit, signed builds, physical
+listening, arbitrary plug-ins, mixed chains, parameter automation or sustained
+load. [Native freeze results](evidence/native-track-freeze.json).
+
+A further state-only limiter run uses nondefault attack/release and −3 dB pre-gain.
+Reported latency changes from 96 to **192 samples**; the impulse remains at frame
+4090 and peak matches the independent −3 dB expectation. Freeze, linked/portable
+reopen and thaw again have zero sample difference. Its seven additional helper
+sessions close after 54 packet exchanges. See the nondefault run in the evidence.
+
+To reproduce the optional checks, run the development server on port 5197 (or set
+`CRISPAUDIO_TEST_URL`), then set `CRISPAUDIO_TEST_MEDIA_HELPER`,
+`CRISPAUDIO_TEST_VST3_HELPER`, `CRISPAUDIO_TEST_PLUGIN_FOLDER`,
+`CRISPAUDIO_PLAYWRIGHT_MODULE` and `CRISPAUDIO_CHROME_EXECUTABLE` to your local
+current helper/fixture/browser installations. Run:
+
+```sh
+node scripts/test-native-track-freeze.mjs
+CRISPAUDIO_NATIVE_FREEZE_CASE='AU limiter nonzero latency' CRISPAUDIO_NATIVE_FREEZE_NONDEFAULT=1 node scripts/test-native-track-freeze.mjs
+```
+
+The second invocation checks nondefault limiter state and changed latency. The
+harness is optional and requires macOS Audio Units plus the SDK fixture; it does
+not download plug-ins or operate a microphone/speaker device.

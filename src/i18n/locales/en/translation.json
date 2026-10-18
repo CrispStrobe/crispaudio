@@ -2442,6 +2442,8 @@
     "changed": "The project changed. Try again.",
     "failed": "The track could not be frozen.",
     "help": "Renders clips, fades, gain automation and saved track effects before the fader. Original clips and racks stay available for Thaw. Volume, pan, mute and solo remain live in the mixer; routing and pan automation are retained. Buses, master effects and sends are not baked. Choose enough tail for delays/reverb; 0 cuts at the last clip. Frozen clips, effects and gain automation stay locked until Thaw. Cancel or project changes discard the render. Offline DSP may continue after cancellation; a file already written is retained. Freezing adds audio on disk and in memory; Thaw retains it for Undo. Thaw before importing frozen track packages. Native inserts use their saved state; no automatic tail detection.",
-    "info": "Freeze help"
+    "info": "Freeze help",
+    "package": "Thaw frozen tracks before importing a track package.",
+    "short": "Choose a tail so the render lasts at least 10 ms."
   }
 }

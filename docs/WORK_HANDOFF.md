@@ -19,7 +19,9 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.43 adds bounded [reversible track freeze](TRACK_FREEZE.md).
+The installed baseline remains 0.13.33. Source 0.13.44 extends Mix A/B to frozen live mixer values, with baked fields
+protected, localized package errors and short-render preflight.
+Source 0.13.43 adds bounded [reversible track freeze](TRACK_FREEZE.md).
 Source 0.13.42 adds optional monitor-only
 source A/B loudness matching (see [limits](RESTORATION.md)); no live app was replaced.
 The isolated preview remains 0.13.41 and adds the
@@ -430,3 +432,52 @@ migration with retained records and legacy-client rejection, forced autosave,
 Undo/Redo, stale/cancel cases and German 390 px layout.
 [Sanitized evidence](evidence/track-freeze.json). No native rebuild or physical
 listening claim.
+
+## Native freeze follow-up — 0.13.44
+
+Frozen live state guards now live in a small dependency-free module, shared by
+store protection and Mix A/B restore. Captured mix values can restore volume, pan,
+mute and solo in one Undo without changing baked racks, clip gain or routing.
+Package import guidance is localized. Sub-10-ms renders receive a specific
+preflight error before allocating/rendering; add a short tail. This completes
+the three small follow-ups listed at the preceding checkpoint.
+
+The optional native harness is `scripts/test-native-track-freeze.mjs`, using
+`scripts/fixtures/nativeFreezeBridge.mjs`. Supply explicit repo-built AU/VST3
+helper paths, an SDK fixture folder, Playwright and Chromium through environment
+variables. The bridge calls actual helper binaries, requires offline mode, bounds
+packets/deadlines and kills/reaps only its own processes. It replaces Tauri IPC:
+this is not native app/WebKit/signing/deadline or physical-device qualification.
+
+Fixtures use saved state with no parameter overrides: SDK ADelay, Apple AUBandpass
+and Apple AUPeakLimiter (nonzero reported latency). Compare production-graph wet
+output with pre-fader freeze, then linked/portable reopen and thaw. Check sample
+placement, post-clip delay tail, retained state and zero remaining helper sessions.
+ADelay stores delay as float32 and floors it to samples; expected positions use
+that quantization, not ideal double precision.
+
+Next: full live source FX; extend native freeze qualification to mixed insert
+chains, parameter automation, fault/cancel injection, more material/rates and
+actual Tauri/WebKit. Remaining freeze topology/storage work stays in the backlog.
+Do not infer completed N5 recording, physical listening or Store distribution.
+
+The checked 0.13.44 native fixture has **zero sample difference** for all three
+plug-ins before/after freeze and linked/portable thaw/reopen. ADelay tail peak is
+0.2; AUPeakLimiter reports 96-sample latency and its impulse stays at frame 4090.
+All 15 helper processes are reaped; registry is empty after 150 packet exchanges.
+[Sanitized results](evidence/native-track-freeze.json). These are 48 kHz generated
+fixtures over the test bridge, not native-app or physical acceptance.
+
+A further state-only limiter run uses nondefault attack/release and −3 dB pre-gain.
+Reported latency changes from 96 to **192 samples**; the impulse remains at frame
+4090 and peak matches the independent −3 dB expectation. Freeze, linked/portable
+reopen and thaw again have zero sample difference. Its seven additional helper
+sessions close after 54 packet exchanges. See the nondefault run in the evidence.
+
+Validation for 0.13.44: focused **25 tests / 4 files**, production build, lint,
+**24 release checks**, native helper fixtures and the muted GUI regression pass.
+The broad frontend run had **2101 passes and one 20-second timeout** in Timeline
+export caching; rerunning that entire export file alone with the same limit
+passed all **11 tests**. This suggests load sensitivity, not a reproduced functional
+failure; do not describe the broad run as entirely green. Details are in the
+[native freeze evidence](evidence/native-track-freeze.json).

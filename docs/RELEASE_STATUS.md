@@ -4363,3 +4363,24 @@ migration with retained records and legacy-client rejection, forced autosave,
 Undo/Redo, stale/cancel cases and German 390 px layout.
 [Sanitized evidence](evidence/track-freeze.json). No native rebuild or physical
 listening claim.
+
+## Native freeze qualification — 0.13.44 source candidate
+
+Actual repo-built helpers and the production browser offline graph pass saved-
+state freeze/thaw, latency, tail and linked/portable reopen checks for SDK ADelay,
+Apple AUBandpass and AUPeakLimiter. All three fixtures have zero sample difference;
+all helper sessions/processes close. [Evidence](evidence/native-track-freeze.json).
+The Node test bridge replaces Tauri IPC: signed-app/WebKit, physical audio,
+arbitrary plug-ins, chains, automation and sustained-load checks remain separate.
+
+Mix A/B now restores frozen live mixer values while guarding baked fields. Short
+renders receive explicit minimum-tail guidance; frozen package errors are localized.
+Both running app sessions remain unchanged; no native rebuild or Apple upload.
+
+Validation for 0.13.44: focused **25 tests / 4 files**, production build, lint,
+**24 release checks**, native helper fixtures and the muted GUI regression pass.
+The broad frontend run had **2101 passes and one 20-second timeout** in Timeline
+export caching; rerunning that entire export file alone with the same limit
+passed all **11 tests**. This suggests load sensitivity, not a reproduced functional
+failure; do not describe the broad run as entirely green. Details are in the
+[native freeze evidence](evidence/native-track-freeze.json).

@@ -19,7 +19,7 @@ export function TrackFiles({ context, onError, launcher = true }: { launcher?: b
     try {
       const json = await openProjectFile(); if (!json) return;
       const incoming = await deserializeProject(json, context());
-      if(incoming.project.tracks.some(t=>t.freeze))throw new Error('Thaw frozen tracks before importing a track package.');
+      if(incoming.project.tracks.some(t=>t.freeze))throw new Error(t('freeze.package'));
       const remap = new Map([...incoming.sources.keys()].map(id => [id, crypto.randomUUID()]));
       const sources = new Map([...incoming.sources].map(([id, source]) => [remap.get(id)!, {...source, id:remap.get(id)!}]));
       const groups=new Map<string,string>();

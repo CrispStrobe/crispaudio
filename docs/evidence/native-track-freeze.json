@@ -1,0 +1,290 @@
+{
+  "version": "0.13.44",
+  "date": "2026-10-18",
+  "scope": "Actual repo-built helper DSP and production Chromium offline render graph; Node pipe bridge replaces Tauri IPC. No hardware playback/capture, WebKit or signed-app qualification.",
+  "checks": {
+    "results": [
+      {
+        "name": "VST3 delay state-only",
+        "freezeError": 0,
+        "first": 5049,
+        "peak": 0.5,
+        "tailPeak": 0.20000000298023224,
+        "frames": 33600,
+        "reopened": [
+          {
+            "mode": "linked",
+            "frozenError": 0,
+            "thawError": 0,
+            "stateRetained": true
+          },
+          {
+            "mode": "portable",
+            "frozenError": 0,
+            "thawError": 0,
+            "stateRetained": true
+          }
+        ],
+        "activeNativeAfterFreeze": false,
+        "stateOnly": true
+      },
+      {
+        "name": "AU bandpass state-only",
+        "freezeError": 0,
+        "first": 4090,
+        "peak": 0.1266978681087494,
+        "tailPeak": 0.010678285732865334,
+        "frames": 33600,
+        "reopened": [
+          {
+            "mode": "linked",
+            "frozenError": 0,
+            "thawError": 0,
+            "stateRetained": true
+          },
+          {
+            "mode": "portable",
+            "frozenError": 0,
+            "thawError": 0,
+            "stateRetained": true
+          }
+        ],
+        "activeNativeAfterFreeze": false,
+        "stateOnly": true
+      },
+      {
+        "name": "AU limiter nonzero latency",
+        "freezeError": 0,
+        "first": 4090,
+        "peak": 0.5,
+        "tailPeak": 0,
+        "frames": 33600,
+        "reopened": [
+          {
+            "mode": "linked",
+            "frozenError": 0,
+            "thawError": 0,
+            "stateRetained": true
+          },
+          {
+            "mode": "portable",
+            "frozenError": 0,
+            "thawError": 0,
+            "stateRetained": true
+          }
+        ],
+        "activeNativeAfterFreeze": false,
+        "stateOnly": true
+      }
+    ],
+    "physicalAudio": false,
+    "transport": "Node pipe bridge replaces Tauri IPC; actual repo-built helpers and production browser offline graph",
+    "helperStats": {
+      "sessions": 0,
+      "children": 0,
+      "packets": 150,
+      "opened": [
+        {
+          "format": "VST3",
+          "latencySamples": 0,
+          "stateSupplied": false,
+          "parameterCount": 2
+        },
+        {
+          "format": "AU",
+          "latencySamples": 0,
+          "stateSupplied": false,
+          "parameterCount": 2
+        },
+        {
+          "format": "AU",
+          "latencySamples": 96,
+          "stateSupplied": false,
+          "parameterCount": 3
+        },
+        {
+          "format": "VST3",
+          "latencySamples": 0,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "VST3",
+          "latencySamples": 0,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "VST3",
+          "latencySamples": 0,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "VST3",
+          "latencySamples": 0,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 0,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 0,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 0,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 0,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 96,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 96,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 96,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 96,
+          "stateSupplied": true,
+          "parameterCount": 0
+        }
+      ]
+    }
+  },
+  "limits": [
+    "48 kHz generated stereo fixtures; saved state without parameter overrides",
+    "Single native track insert: SDK ADelay, Apple AUBandpass, Apple AUPeakLimiter",
+    "ADelay float32 delay floors to 959 frames at requested 0.02 seconds; first impulse at 4090 + 959",
+    "Mixed chains, automation, injected faults/cancellation, rates/material and native Tauri/WebKit remain separate qualification"
+  ],
+  "nondefaultLimiter": {
+    "results": [
+      {
+        "name": "AU limiter nonzero latency",
+        "freezeError": 0,
+        "first": 4090,
+        "peak": 0.3539728820323944,
+        "tailPeak": 0,
+        "frames": 33600,
+        "reopened": [
+          {
+            "mode": "linked",
+            "frozenError": 0,
+            "thawError": 0,
+            "stateRetained": true
+          },
+          {
+            "mode": "portable",
+            "frozenError": 0,
+            "thawError": 0,
+            "stateRetained": true
+          }
+        ],
+        "activeNativeAfterFreeze": false,
+        "stateOnly": true
+      }
+    ],
+    "nondefaultLimiter": true,
+    "physicalAudio": false,
+    "transport": "Node pipe bridge replaces Tauri IPC; actual repo-built helpers and production browser offline graph",
+    "helperStats": {
+      "sessions": 0,
+      "children": 0,
+      "packets": 54,
+      "opened": [
+        {
+          "format": "VST3",
+          "latencySamples": 0,
+          "stateSupplied": false,
+          "parameterCount": 2
+        },
+        {
+          "format": "AU",
+          "latencySamples": 0,
+          "stateSupplied": false,
+          "parameterCount": 2
+        },
+        {
+          "format": "AU",
+          "latencySamples": 192,
+          "stateSupplied": false,
+          "parameterCount": 3
+        },
+        {
+          "format": "AU",
+          "latencySamples": 192,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 192,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 192,
+          "stateSupplied": true,
+          "parameterCount": 0
+        },
+        {
+          "format": "AU",
+          "latencySamples": 192,
+          "stateSupplied": true,
+          "parameterCount": 0
+        }
+      ]
+    }
+  },
+  "validation": {
+    "focused": {
+      "passed": 25,
+      "files": 4
+    },
+    "frontendBroad": {
+      "passed": 2101,
+      "failed": 1,
+      "files": 219,
+      "failure": "Timeline panelExport encoding/cache test exceeded 20-second timeout under concurrent load"
+    },
+    "isolatedRetry": {
+      "file": "tests/unit/components/panelExport.test.tsx",
+      "passed": 11,
+      "timeoutMs": 20000
+    },
+    "productionBuild": "passed",
+    "lint": "passed",
+    "releasePython": {
+      "passed": 24
+    },
+    "uiRegression": "passed, including autosave/recovery/cancel/Undo/German390",
+    "nativeAppRebuild": false
+  }
+}

@@ -1,13 +1,19 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for source candidate 0.13.43 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for source candidate 0.13.44 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.44 completes frozen-track Mix A/B restore for live mixer values while
+protecting baked fields, plus localized package guidance and a 10 ms minimum
+render preflight. Native AU/VST3 freeze qualification uses explicit repo-built
+helpers through a test-only pipe bridge and the production browser offline graph;
+see the next handoff entry for checked evidence and remaining platform limits.
 
 0.13.43 adds bounded reversible track freeze: pre-fader clip/track DSP, an explicit
 0–30-second tail, retained originals/racks, locked baked content, live mixer level/
 pan/mute/solo, thaw and single-step Undo. Linked/portable reopen retains both
 views; cancellation/project changes discard in-flight results. Initial limits:
 10 minutes from zero / 256 MiB, no buses/ducked or linked/grouped clips. See
-[freeze scope](docs/TRACK_FREEZE.md). Native/physical parity, streaming freeze,
+[freeze scope](docs/TRACK_FREEZE.md). Further native/Tauri/physical parity, streaming freeze,
 linked/grouped editing, bus/sidechain freeze and frozen-package remapping remain.
 
 0.13.42 adds opt-in source A/B loudness matching: cancellable integrated
