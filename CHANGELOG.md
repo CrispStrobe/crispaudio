@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+- Add internal native timing manifests with checksummed clock validation, lead-in/punch/loop placement, explicit compensation and drift rejection. Preserve raw originals on alignment failure and validate timing again on reopen. Add a whole-group editor adapter with one-action Undo/Redo and save/reopen coverage; app recording integration remains pending.
+
 - Connect the internal shared native mixer to Mac output with bounded worker-prepared backing audio, coherent cue-control updates and separate cue/backing fault handling. Split whole-group file/rack preparation from capture start and coordinate readiness, arming and shutdown; backing/output failure prevents complete take publication. Native app recording integration and physical qualification remain pending.
 
 - Consolidate engineering handoff, remaining task dependencies and acceptance criteria; keep machine-specific paths and evidence locations in ignored local notes.

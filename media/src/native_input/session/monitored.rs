@@ -28,6 +28,17 @@ impl MonitorOutput for crate::native_input::macos::playback::Output {
         }
     }
 }
+/// A timed output returns its actual stopped clock/activation snapshot. No
+/// placement is inferred by a caller from control-thread or callback arrival.
+pub trait TimedMonitorOutput: MonitorOutput {
+    fn stop_timed(self) -> Result<crate::native_input::timing::Snapshot>;
+}
+#[cfg(target_os = "macos")]
+impl TimedMonitorOutput for crate::native_input::macos::playback::Output {
+    fn stop_timed(self) -> Result<crate::native_input::timing::Snapshot> {
+        crate::native_input::timing::Snapshot::from_output(&Self::stop(self)?)
+    }
+}
 // Capture callbacks are already quiescent when this runs. Always stop output and
 // backing even if one fails. Worker Drop kills registered helpers and joins.
 fn cleanup<O: MonitorOutput>(
@@ -197,6 +208,28 @@ impl<C: Capture, O: MonitorOutput> Run<C, O> {
     pub fn cancel(mut self) -> group::GroupOutcome {
         self.abort("Native recording cancelled".into());
         self.outcome.take().unwrap()
+    }
+    pub fn stop_timed(mut self, intent: crate::native_input::timing::Intent) -> group::GroupOutcome
+    where
+        O: TimedMonitorOutput,
+    {
+        if self.outcome.is_none() {
+            let _ = self.poll();
+        }
+        if let Some(outcome) = self.outcome.take() {
+            return outcome;
+        }
+        let (output, mut backing) = (self.output.take(), self.backing.take());
+        self.group.take().unwrap().stop_timed(intent, || {
+            let health = backing.as_mut().map_or(Ok(()), backing::Worker::poll);
+            let stopped = output.unwrap().stop_timed();
+            drop(backing);
+            match (health, stopped) {
+                (Err(a), Err(b)) => Err(format!("{a}; {b}")),
+                (Err(reason), _) | (_, Err(reason)) => Err(reason),
+                (Ok(()), Ok(snapshot)) => Ok(snapshot),
+            }
+        })
     }
     pub fn stop(mut self) -> group::GroupOutcome {
         if self.outcome.is_none() {

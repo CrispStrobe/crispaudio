@@ -7,7 +7,7 @@ use crate::Result;
 pub use devices::{list_inputs, InputDevice};
 use std::{
     cell::UnsafeCell,
-    ffi::{c_char, c_void, CString},
+    ffi::{c_char, c_void, CStr, CString},
     sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering},
 };
 
@@ -90,6 +90,13 @@ pub struct HostTimebase {
 #[link(name = "System")]
 extern "C" {
     fn mach_timebase_info(info: *mut MachTimebase) -> i32;
+    fn sysctlbyname(
+        name: *const c_char,
+        old: *mut c_void,
+        old_len: *mut usize,
+        new: *mut c_void,
+        new_len: usize,
+    ) -> i32;
 }
 #[repr(C)]
 struct MachTimebase {
@@ -111,6 +118,55 @@ impl HostTimebase {
         Ok(Self {
             numerator: info.numerator,
             denominator: info.denominator,
+        })
+    }
+    /// Read-only boot identity plus a unique caller-owned run token. This does
+    /// not open audio, prompt for permission or establish an output frame anchor.
+    pub fn recording_context(self, run: &str) -> Result<super::timing::Context> {
+        if run.is_empty()
+            || run.len() > 64
+            || !run
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+        {
+            return Err("Invalid native recording run identity".into());
+        }
+        let name = CString::new("kern.bootsessionuuid").unwrap();
+        let mut bytes = [0u8; 128];
+        let mut length = bytes.len();
+        if unsafe {
+            sysctlbyname(
+                name.as_ptr(),
+                bytes.as_mut_ptr().cast(),
+                &mut length,
+                std::ptr::null_mut(),
+                0,
+            )
+        } != 0
+            || length == 0
+            || length > bytes.len()
+        {
+            return Err("Cannot read native recording boot identity".into());
+        }
+        let boot = CStr::from_bytes_with_nul(&bytes[..length])
+            .map_err(|_| "Invalid boot identity response")?
+            .to_str()
+            .map_err(|_| "Invalid boot identity text")?;
+        if boot.len() != 36
+            || boot.bytes().enumerate().any(|(i, b)| {
+                if [8, 13, 18, 23].contains(&i) {
+                    b != b'-'
+                } else {
+                    !b.is_ascii_hexdigit()
+                }
+            })
+        {
+            return Err("Invalid boot identity value".into());
+        }
+        Ok(super::timing::Context {
+            scope: format!("{boot}:{run}"),
+            numerator: self.numerator,
+            denominator: self.denominator,
         })
     }
     /// Build an integer map from an explicitly established output clock anchor.

@@ -1052,8 +1052,8 @@ Cue worker/scheduler EOF must acquire closed THEN recheck empty: final publicati
 can race the initial empty pop. Never close helpers or discard a final tail from
 an empty read that predates EOF. Generated tests wait off callback for helpers;
 no hardware anchor/deadline/physical latency qualification follows. Device-bound
-shared output is implemented below; persisted placements and full-path timing
-remain before app/native recording integration.
+shared output and persisted placements are implemented internally; app wiring and
+physical full-path timing remain unqualified.
 
 ### Mac cue output adapter (development after 0.13.33)
 
@@ -1086,3 +1086,19 @@ queue/conversion/timestamp/latency/long/load acceptance from synthetic tests.
 Shared backing/cue output and a coordinated owner are now implemented above.
 Next: persisted input/backing/project placements, full-path timing, app integration
 and physical acceptance.
+
+### Native timing manifests and editor adapter (development after 0.13.33)
+
+`native_input::timing` freezes the complete Intent in each raw take context before
+capture. Integer host mapping uses an opaque boot/run scope, explicit timebase and
+the output first-mixed frame, distinct from its priming clock anchor. Corrections
+are explicit per input (unqualified zero/manual/measured), never cue/plugin delay
+or legacy Web Audio latency. Every raw clock/PCM block is checked; excess drift
+rejects alignment. Original WAV offsets survive preroll/punch/loop splitting.
+Manifest v1 remains untimed; v2 requires timing and recomputes it on reopen.
+Alignment failure retains originals and publishes no complete aligned group.
+`nativeRecordingTakes.ts` validates sources/project identity and prepares one
+existing recording-group transaction; callers must commit it once. App commands
+and recording UI are not wired yet. Mid-record output-clock persistence is still
+needed for aligned crash recovery; raw prefix recovery alone does not qualify it.
+See [handoff](docs/WORK_HANDOFF.md) for N4/N5 and current evidence.

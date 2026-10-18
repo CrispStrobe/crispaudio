@@ -1625,6 +1625,7 @@
     "inactive": "Position entfernt; Original erhalten",
     "restorePass": "Originaldurchgang am Abspielkopf wiederherstellen",
     "allArmed": "Alle vorbereiteten Spuren ({{count}})",
+    "timingInvalid": "Aufnahmezeit konnte nicht geprüft werden; die Originale bleiben erhalten.",
     "groupCount": "Bereite eine bis acht Audiospuren vor.",
     "groupHelp": "Alle vorbereiteten Spuren nutzen ihre eigenen Eingangs-, Kanal-, Monitoring- und Latenzeinstellungen, den längsten Vorlauf und eine gemeinsame Projektuhr. Aufnahmen werden zusammen in einem Rückgängig-Schritt übernommen. Unterschiedliche Geräte können Taktdrift haben; prüfe die Ausrichtung mit deiner Hardware.",
     "auditionTake": "Rohe Aufnahme anhören",

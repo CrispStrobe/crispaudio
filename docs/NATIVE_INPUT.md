@@ -389,3 +389,30 @@ against generated buffers and fake queue operations; read-only device/permission
 queries are real. No input queue is opened. The C fixture
 `scripts/fixtures/native-input-abi.c` checks FFI layouts and constants against the
 selected Mac SDK using syntax-only compilation. [Adapter evidence](evidence/native-capture-adapter.json).
+
+## Validated timing and project adapter — development after 0.13.33
+
+The internal timing path now persists a complete pre-capture intent with boot/run
+scope, integer timebase, project/punch/loop windows and separate explicit placement
+corrections. Output activation is the first mixed frame after arming, distinct
+from its stable priming clock anchor. Raw block clocks and PCM checksums are
+verified before placement; excessive drift rejects alignment without silently
+resampling. Lead-in/punch/loop splits retain original source offsets.
+
+Manifest v2 requires timing; v1 remains readable as untimed raw audio. Reopen
+recomputes v2 timing from verified originals. Alignment failure retains the dry
+files and withholds complete group publication. The editor adapter validates the
+whole group and original project identity, then prepares one existing take/comp
+transaction with Undo/Redo and save/reopen coverage. App commands/UI do not call
+this adapter yet; the installed recorder is unchanged.
+
+Activation/progress clocks are finalized only at clean stop. Verified raw prefix
+recovery therefore does not yet provide aligned interrupted-session recovery; a
+durable in-run output-clock ledger remains required. Physical clock accuracy,
+independent-device correction, round-trip latency and load tests remain open.
+
+Validation: 143 focused native tests including SDK VST3/subprocess fixtures;
+308 media tests passed, 16 ignored; 2025 frontend tests across 208 files; full lint,
+production build and SDK C ABI syntax checks passed. No physical input/output,
+app Rust build, simulator, bundle or installation was run for this checkpoint.
+[Timing evidence](evidence/native-recording-timing.json).

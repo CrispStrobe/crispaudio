@@ -394,10 +394,7 @@ fn read_record(reader: &mut impl Read, record: &mut [u8; 32]) -> Result<usize> {
     }
     Ok(offset)
 }
-/// Copy verified whole blocks to a fresh float WAV. Ignores the source's mutable
-/// RIFF/data lengths, leaves all recovery files intact and never replaces output.
-/// Recovery is always marked incomplete, even if every indexed block verifies.
-pub fn recover(directory: &Path, output: &Path, cancel: &AtomicBool) -> Result<RecoveredTake> {
+fn open_index(directory: &Path) -> Result<(Metadata, BufReader<File>)> {
     let mut manifest = regular(&directory.join(META))?;
     if io(manifest.metadata())?.len() > 32768 {
         return Err("Recording metadata exceeds limit".into());
@@ -415,6 +412,87 @@ pub fn recover(directory: &Path, output: &Path, cancel: &AtomicBool) -> Result<R
     if &header[..8] != MAGIC || header[8..] != hash(&[&metadata]).to_le_bytes() {
         return Err("Native recording metadata/index mismatch".into());
     }
+    Ok((meta, index))
+}
+
+/// Verify a COMPLETE recording's metadata, index and every PCM checksum before
+/// trusting its clock observations. Visitor calls may precede a later error;
+/// callers must not publish partial results. All I/O belongs off callback.
+pub(super) fn visit_verified_clocks(
+    directory: &Path,
+    expected: &TakeInfo,
+    mut visit: impl FnMut(u64, u64, usize) -> Result<()>,
+) -> Result<()> {
+    if expected.frames == 0 || expected.frames > 32_000_000 {
+        return Err("Invalid recording verification budget".into());
+    }
+    let (meta, mut index) = open_index(directory)?;
+    let wave = hound::WavReader::new(BufReader::new(regular(&directory.join(COMPLETE))?))
+        .map_err(|e| e.to_string())?;
+    if wave.spec() != meta.spec() || wave.duration() as u64 != expected.frames {
+        return Err("Complete recording format mismatch".into());
+    }
+    let mut source = wave.into_inner();
+    if io(source.stream_position())? != meta.data_offset
+        || io(source.get_ref().metadata())?.len()
+            != meta.data_offset + expected.frames * meta.channels as u64 * 4
+    {
+        return Err("Complete recording layout mismatch".into());
+    }
+    let (mut frames, mut blocks, mut first, mut next, mut last_host) =
+        (0u64, 0u64, None, None, None);
+    loop {
+        let mut record = [0u8; 32];
+        let count = read_record(&mut index, &mut record)?;
+        if count == 0 {
+            break;
+        }
+        if count != 32 {
+            return Err("Partial recording clock index".into());
+        }
+        let frame = u64::from_le_bytes(record[..8].try_into().unwrap());
+        let host = u64::from_le_bytes(record[8..16].try_into().unwrap());
+        let length = u32::from_le_bytes(record[16..20].try_into().unwrap()) as usize;
+        let bytes = u32::from_le_bytes(record[20..24].try_into().unwrap()) as usize;
+        let end = frame.checked_add(length as u64);
+        if !(1..=MAX_FRAMES).contains(&length)
+            || bytes != length * meta.channels as usize * 4
+            || end.is_none()
+            || next.is_some_and(|next| next != frame)
+            || last_host.is_some_and(|last| last >= host)
+            || frames + length as u64 > expected.frames
+            || frames + length as u64 > meta.max_frames
+            || blocks >= MAX_BLOCKS
+        {
+            return Err("Invalid complete recording clock index".into());
+        }
+        let mut pcm = [0u8; MAX_FRAMES * 8];
+        io(source.read_exact(&mut pcm[..bytes]))?;
+        if record[24..] != hash(&[&record[..24], &pcm[..bytes]]).to_le_bytes()
+            || pcm[..bytes]
+                .chunks_exact(4)
+                .any(|b| !f32::from_le_bytes(b.try_into().unwrap()).is_finite())
+        {
+            return Err("Complete recording checksum mismatch".into());
+        }
+        visit(frame, host, length)?;
+        first.get_or_insert((frame, host));
+        next = end;
+        last_host = Some(host);
+        frames += length as u64;
+        blocks += 1;
+    }
+    if info(&meta, frames, first)? != *expected {
+        return Err("Complete recording metadata mismatch".into());
+    }
+    Ok(())
+}
+
+/// Copy verified whole blocks to a fresh float WAV. Ignores the source's mutable
+/// RIFF/data lengths, leaves all recovery files intact and never replaces output.
+/// Recovery is always marked incomplete, even if every indexed block verifies.
+pub fn recover(directory: &Path, output: &Path, cancel: &AtomicBool) -> Result<RecoveredTake> {
+    let (meta, mut index) = open_index(directory)?;
     let mut source = BufReader::new(regular(&directory.join(AUDIO))?);
     io(source.seek(SeekFrom::Start(meta.data_offset)))?;
     let staged = crate::export_staging::directory(output)?;

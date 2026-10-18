@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-18",
+  "scope": "Internal validated native timing manifests and atomic editor take adapter",
+  "installedRecordingChanged": false,
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "checks": {
+    "nativeInput": {
+      "passed": 143,
+      "ignored": 0,
+      "log": "crispaudio-timing-native-qualified.log",
+      "includes": [
+        "SDK VST3",
+        "AU",
+        "child-process fixtures"
+      ]
+    },
+    "media": {
+      "passed": 308,
+      "ignored": 16,
+      "log": "crispaudio-timing-media-qualified.log"
+    },
+    "frontend": {
+      "passed": 2025,
+      "files": 208,
+      "log": "crispaudio-timing-frontend-full.log"
+    },
+    "lint": "passed",
+    "productionBuild": "passed",
+    "sdkCAbi": "passed",
+    "newRustTests": 9,
+    "newFrontendTests": 5
+  },
+  "coverage": [
+    "Output activation distinct from priming anchor",
+    "Frozen boot/run/timebase intent and explicit correction basis",
+    "Checksummed raw block clock validation and drift rejection",
+    "Lead-in, preroll, punch and loop source-offset placement",
+    "Versioned all-or-none manifest publication and validated reopen",
+    "Project/source identity rejection, one transaction, Undo/Redo and portable save/reopen"
+  ],
+  "limitations": [
+    "App commands/UI not connected",
+    "No durable mid-record output-clock ledger: crash recovery remains raw-prefix only",
+    "Physical timing, latency, load and independent-device correction unqualified",
+    "No new app Rust/simulator/bundle/install/Apple validation"
+  ]
+}

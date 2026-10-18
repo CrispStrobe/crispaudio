@@ -53,6 +53,8 @@ pub struct Clip {
 pub struct Manifest {
     pub version: u32,
     pub clips: Vec<Clip>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timing: Option<crate::native_input::timing::Timing>,
 }
 #[derive(Debug)]
 pub enum GroupOutcome {
@@ -411,7 +413,39 @@ impl<C: Capture> Group<C> {
     }
     /// Quiesce every capture, finish output/backing, THEN join files and publish.
     /// Failure of external finalization makes every take incomplete.
-    pub fn stop_with(mut self, cleanup: impl FnOnce() -> Result<()>) -> GroupOutcome {
+    pub fn stop_with(self, cleanup: impl FnOnce() -> Result<()>) -> GroupOutcome {
+        self.finish_with(cleanup, |_, _| Ok(None))
+    }
+    /// Verify all input clocks and derive placements after files finish, BEFORE
+    /// publishing the group marker. Untimed v1 groups remain backward-compatible.
+    pub fn stop_timed(
+        self,
+        intent: crate::native_input::timing::Intent,
+        cleanup: impl FnOnce() -> Result<crate::native_input::timing::Snapshot>,
+    ) -> GroupOutcome {
+        let snapshot = std::cell::RefCell::new(None);
+        self.finish_with(
+            || {
+                snapshot.replace(Some(cleanup()?));
+                Ok(())
+            },
+            |directory, clips| {
+                let snapshot = snapshot.borrow();
+                crate::native_input::timing::build(
+                    directory,
+                    clips,
+                    &intent,
+                    snapshot.as_ref().ok_or("Recording output clock missing")?,
+                )
+                .map(Some)
+            },
+        )
+    }
+    fn finish_with(
+        mut self,
+        cleanup: impl FnOnce() -> Result<()>,
+        finalize: impl FnOnce(&Path, &[Clip]) -> Result<Option<crate::native_input::timing::Timing>>,
+    ) -> GroupOutcome {
         if let Some(mut outcome) = self.outcome.take() {
             if let Err(error) = cleanup() {
                 if let GroupOutcome::Incomplete { reason, .. } = &mut outcome {
@@ -470,7 +504,12 @@ impl<C: Capture> Group<C> {
                     info: take.info.clone(),
                 });
             }
-            let manifest = Manifest { version: 1, clips };
+            let timing = finalize(&self.directory, &clips)?;
+            let manifest = Manifest {
+                version: if timing.is_some() { 2 } else { 1 },
+                clips,
+                timing,
+            };
             publish(&self.directory, &manifest)?;
             Ok(manifest)
         })();
@@ -513,7 +552,12 @@ pub fn load_completed(directory: &Path) -> Result<Manifest> {
         return Err("Recording group manifest too large".into());
     }
     let manifest: Manifest = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
-    if manifest.version != 1 || manifest.clips.is_empty() || manifest.clips.len() > MAX_INPUTS {
+    if !matches!(
+        (manifest.version, manifest.timing.is_some()),
+        (1, false) | (2, true)
+    ) || manifest.clips.is_empty()
+        || manifest.clips.len() > MAX_INPUTS
+    {
         return Err("Invalid recording group manifest".into());
     }
     let mut ids = HashSet::new();
@@ -568,6 +612,9 @@ pub fn load_completed(directory: &Path) -> Result<Manifest> {
         {
             return Err("Truncated group audio".into());
         }
+    }
+    if let Some(timing) = &manifest.timing {
+        crate::native_input::timing::verify(directory, &manifest.clips, timing)?;
     }
     Ok(manifest)
 }

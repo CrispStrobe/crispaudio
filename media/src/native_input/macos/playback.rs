@@ -43,6 +43,8 @@ pub struct Report {
     pub hardware_frame: i64,
     pub clock: Option<ClockMap>,
     pub armed: bool,
+    /// Queue-relative first mixed frame, distinct from the initial clock anchor.
+    pub first_mixed_frame: Option<i64>,
     pub stopped: bool,
     pub fault: Option<Fault>,
     /// First lane (legacy cue-only reports); use cues for a shared mix.
@@ -211,6 +213,8 @@ struct State {
     queued: AtomicU64,
     hardware: AtomicI64,
     anchor_ready: AtomicBool,
+    mixed_ready: AtomicBool,
+    mixed_frame: AtomicI64,
     anchor_host: AtomicU64,
     anchor_frame: AtomicI64,
     fault: AtomicUsize,
@@ -374,6 +378,8 @@ impl State {
             queued: AtomicU64::new(PRIME_FRAMES as u64),
             hardware: AtomicI64::new(0),
             anchor_ready: AtomicBool::new(false),
+            mixed_ready: AtomicBool::new(false),
+            mixed_frame: AtomicI64::new(0),
             anchor_host: AtomicU64::new(0),
             anchor_frame: AtomicI64::new(0),
             fault: AtomicUsize::new(0),
@@ -434,6 +440,10 @@ impl State {
             hardware_frame: self.hardware.load(Ordering::Acquire),
             clock,
             armed: self.armed.load(Ordering::Acquire),
+            first_mixed_frame: self
+                .mixed_ready
+                .load(Ordering::Acquire)
+                .then(|| self.mixed_frame.load(Ordering::Acquire)),
             stopped: self.phase.load(Ordering::Acquire) == CLOSED,
             fault,
             cue: self.lanes[0].get(),
@@ -537,7 +547,11 @@ unsafe extern "C" fn callback(user: *mut c_void, queue: Queue, buffer: *mut Buff
                         if state.armed.load(Ordering::Acquire) {
                             if !data.bound {
                                 match data.source.bind(clock, data.next) {
-                                    Ok(()) => data.bound = true,
+                                    Ok(()) => {
+                                        data.bound = true;
+                                        state.mixed_frame.store(data.next, Ordering::Relaxed);
+                                        state.mixed_ready.store(true, Ordering::Release);
+                                    }
                                     Err(_) => state.fail(Fault::Clock),
                                 }
                             }

@@ -4,6 +4,7 @@
 #include <AudioToolbox/AudioToolbox.h>
 #include <CoreAudio/CoreAudio.h>
 #include <stddef.h>
+#include <sys/sysctl.h>
 
 _Static_assert(sizeof(void *) == 8, "Mac input FFI requires a 64-bit target");
 _Static_assert(sizeof(AudioStreamBasicDescription) == 40, "ASBD layout");
@@ -37,3 +38,7 @@ _Static_assert(__builtin_types_compatible_p(__typeof__(&AudioQueueGetCurrentTime
 _Static_assert(__builtin_types_compatible_p(__typeof__(&AudioQueueNewOutput),
     OSStatus (*)(const AudioStreamBasicDescription *, AudioQueueOutputCallback, void *,
                  CFRunLoopRef, CFStringRef, UInt32, AudioQueueRef *)), "New output ABI");
+
+/* Native recording context reads this value; it never writes kernel state. */
+_Static_assert(__builtin_types_compatible_p(__typeof__(&sysctlbyname),
+    int (*)(const char *, void *, size_t *, void *, size_t)), "Boot identity query ABI");

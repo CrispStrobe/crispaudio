@@ -762,11 +762,13 @@ fn shared_callback_mixes_backing_two_cues_and_atomic_ramped_controls() {
     let mut buffer = BufferFixture::new();
     buffer.send(fixture.state.as_ref().unwrap(), &queue);
     assert_eq!(*buffer.pcm, [[0.; 2]; 512]);
+    assert_eq!(fixture.report().first_mixed_frame, None);
     fixture.arm().unwrap();
     queue.time(512);
     buffer.send(fixture.state.as_ref().unwrap(), &queue);
     assert_eq!(*buffer.pcm, [[3.25; 2]; 512]);
     assert_eq!(fixture.report().fault, None);
+    assert_eq!(fixture.report().first_mixed_frame, Some(2048));
     assert!(fixture.set_cue_controls(2, controls).is_err());
     assert!(fixture
         .set_cue_controls(

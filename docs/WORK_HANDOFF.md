@@ -14,7 +14,7 @@ historical records, not a current completion checklist.
 2. Check `git status`, the current commit and GitHub workflow results. Preserve
    existing user changes, installed sessions and original media. Never commit
    credentials, personal paths, private recordings or signing material.
-3. Continue task N3 below; N1/N2 are implemented as internal software paths. Keep architecture changes bounded and reviewable;
+3. Continue task N4 below; N1–N3 are implemented as internal software paths. Keep architecture changes bounded and reviewable;
    update the acceptance evidence and this handoff at each checkpoint.
 
 ## What is ready
@@ -45,15 +45,17 @@ Native recording work after 0.13.33 is **internal, not connected to the app**:
 `Session::prepare` and `Group::prepare` now create files/cue racks before capture
 opens, retaining recoverable files on abandonment. `session::monitored` now owns group/output/backing readiness, arming, polling and
 ordered shutdown. Capture stops before output cleanup and file joins; backing/clock
-failures prevent complete publication. The group manifest is not a
-project transaction and contains no qualified arrangement placement. None of this
+failures prevent complete publication. Version 2 group manifests now contain validated frame placements. The editor
+adapter converts the complete set into one project transaction; app commands/UI
+do not call it yet. None of this
 establishes physical latency, sustained-load stability or independent-device sync.
 See [NATIVE_INPUT.md](NATIVE_INPUT.md) for contracts and evidence links.
 
 ## Next implementation sequence
 
-N1/N2 are implemented as internal software paths. Timing, app integration and
-hardware qualification (N3–N5) stay open. Dependencies and
+N1–N3 are implemented internally. App integration and hardware qualification
+(N4–N5) stay open; aligned interrupted-session recovery also needs a durable
+output-clock ledger before it can be qualified. Dependencies and
 completion boundaries are explicit; none of this enables the installed recording
 path by itself.
 
@@ -84,18 +86,28 @@ Sequential physical device opens, queue lead/conversion, real clock accuracy,
 round-trip delay, drift correction and deadline/load qualification are not thereby
 established. Do not turn the internal constants into shipped latency claims.
 
-### N3 — Persist timing and commit takes to the project
+### N3 — Timing and atomic project adapter (implemented internally)
 
-- Persist input/host/output/project anchors, timebase and boot/session context,
-  pre-roll/punch/loop pass placement and the meaning of compensation values.
-- Distinguish input capture timing from cue/plugin/output delay; monitoring delay
-  is not automatically recording-position compensation. Detect clock drift; define
-  a correction strategy or reject unsupported device combinations explicitly.
-- Convert a validated whole-group manifest into one project insertion/Undo action;
-  support save/reopen and interrupted-session reconciliation without losing originals.
-- Done when generated impulse/clock traces verify sample placement, negative
-  pre-roll, multiple takes and loop boundaries, drift rejection, Undo and reopen.
-  Keep recovery-format changes versioned/backward-compatible.
+`native_input/timing.rs` stamps the complete intent before capture: boot/run scope,
+integer timebase, project/record windows, lead-in, loop semantics and explicit
+per-input correction. The output snapshot distinguishes its stable clock anchor
+from the first frame actually mixed after arming. Placement verifies every raw
+block clock and PCM checksum, rejects excessive drift and splits loop passes while
+retaining original source offsets. Cue/plugin delay and legacy Web Audio latency
+are never applied as recording-position compensation.
+
+Manifest v2 requires validated timing; v1 remains readable as untimed raw audio.
+Failed alignment retains originals without publishing a complete aligned group.
+Reopen recomputes timing from the checked original files. The frontend adapter
+validates the complete group, decoded sources and original project identity, then
+uses the existing one-transaction take/comp publisher. Tests cover Undo/Redo and
+portable save/reopen. App integration still belongs to N4.
+
+Crash recovery currently guarantees verified raw prefixes, not aligned project
+recovery: activation/progress clocks are only finalized at clean stop. Persist a
+trusted output-clock ledger during recording before enabling aligned interrupted
+session reconciliation. Independent-device correction is not implemented; drift
+is rejected. Physical accuracy remains N5.
 
 ### N4 — App integration and native recording UX
 
@@ -147,13 +159,15 @@ No new patent conclusion or distribution restriction is introduced by this check
 
 ## Verification at the code checkpoint
 
-The shared-output/recording-owner checkpoint adds 21 tests. Full media suite:
-**299 passed, 16 ignored**. Explicit native-input suite, including SDK VST3 and
-child-process fixtures: **134 passed**. Formatting/diff, changed JSON and Markdown
-link checks pass. See [scope](evidence/native-monitored-recording.json).
-No microphone/output device was opened. No frontend, app Rust, simulator, bundle,
-installation or Apple upload was rerun for this unused internal media increment;
-the earlier app Rust result (39 passed, one ignored) is historical.
+The timing checkpoint adds nine Rust and five frontend tests. Full media suite:
+**308 passed, 16 ignored**. Explicit native-input suite including SDK VST3 and
+child-process fixtures: **143 passed**. Frontend: **2025 passed across 208 files**;
+full lint and production build pass. SDK C ABI syntax and changed formatting/diff
+checks pass. See [timing scope](evidence/native-recording-timing.json) and the
+[preceding ownership scope](evidence/native-monitored-recording.json).
+No physical microphone/output was opened. App Rust, simulator, bundle, installation
+and Apple upload were not rerun for these unused internal paths. Installed 0.13.33
+is unchanged; the earlier app Rust result (39 passed, one ignored) is historical.
 
 Portable commands (use a configured Rust toolchain):
 

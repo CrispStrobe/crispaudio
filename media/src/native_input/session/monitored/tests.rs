@@ -288,3 +288,73 @@ fn backing_worker_failure_stops_the_active_group_without_a_complete_marker() {
     assert_eq!(state.closes.get(), 1);
     assert_incomplete(run.stop(), "backing");
 }
+
+impl TimedMonitorOutput for Output {
+    fn stop_timed(self) -> Result<crate::native_input::timing::Snapshot> {
+        MonitorOutput::stop(self)?;
+        crate::native_input::timing::Snapshot::new(
+            crate::native_input::output::ClockMap::new(
+                crate::native_input::output::Timebase::new(1_000_000_000, 48000)?,
+                0,
+                0,
+            ),
+            64,
+            1024,
+        )
+    }
+}
+#[test]
+fn timed_owner_returns_a_verified_v2_group_that_reopens_with_positions() {
+    use crate::native_input::timing::{Basis, Context, Correction, Intent};
+    let root = tempfile::tempdir().unwrap();
+    let state = Rc::new(State::default());
+    state.ready.set(true);
+    let intent = Intent {
+        context: Context {
+            scope: "boot/run-test".into(),
+            numerator: 1_000_000_000,
+            denominator: 48000,
+        },
+        project_id: "test-project".into(),
+        lead_frames: 0,
+        project_start_frame: 0,
+        record_start_frame: 0,
+        record_end_frame: None,
+        cycle: false,
+        max_drift_frames: 4,
+        corrections: ["track-0", "track-1"]
+            .into_iter()
+            .map(|id| {
+                (
+                    id.into(),
+                    Correction {
+                        frames: 0,
+                        basis: Basis::Unqualified,
+                    },
+                )
+            })
+            .collect(),
+    };
+    let mut inputs = specs();
+    intent.stamp(&mut inputs).unwrap();
+    let (group, _) = group::Group::prepare(root.path(), inputs).unwrap();
+    let run = Prepared::new(group, Output(state.clone(), None), None)
+        .start(open(state.clone(), Rc::new(Cell::new(false))))
+        .unwrap();
+    let group::GroupOutcome::Complete {
+        directory,
+        manifest,
+    } = run.stop_timed(intent)
+    else {
+        panic!("expected timed group")
+    };
+    assert_eq!(state.closes.get(), 1);
+    assert_eq!(manifest.version, 2);
+    let timing = manifest.timing.unwrap();
+    assert_eq!(timing.placements.len(), 2);
+    assert_eq!(timing.placements[0].project_start_frame, 36);
+    assert_eq!(
+        group::load_completed(&directory).unwrap().timing.unwrap(),
+        timing
+    );
+}
