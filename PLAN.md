@@ -1,6 +1,15 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for candidate 0.13.41 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for source candidate 0.13.42 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.42 adds opt-in source A/B loudness matching: cancellable integrated
+K-weighted mono/stereo analysis, attenuation only, shared sample-peak headroom
+and per-voice crossfades. Saved PCM/Apply/Undo are unchanged. Scope is measurable
+0.4–120-second selections; unsupported/silent comparisons remain ordinary audition.
+See [source restoration](docs/RESTORATION.md). The isolated native preview remains
+0.13.41; its human speech check and N5 qualification are still pending.
+Next independent work: reversible freeze and full live source FX; broader
+restoration detection/healing/drift tracking remains scoped below.
 Start with [the engineering handoff](docs/WORK_HANDOFF.md) for scoped tasks N1–N5,
 acceptance criteria and the remaining accepted product backlog.
 The implementation records below are historical; their old missing-feature lists

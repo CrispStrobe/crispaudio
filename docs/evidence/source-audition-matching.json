@@ -1,0 +1,102 @@
+{
+  "version": "0.13.42",
+  "date": "2026-10-18",
+  "scope": "Generated PCM and muted headless Chromium; no physical listening or native plugin DSP qualification.",
+  "checks": {
+    "pcm": {
+      "first": 0.2,
+      "second": 0.4,
+      "maxError": 1.760429763075777e-08,
+      "maxStep": 0.00019375979900360107,
+      "samples": [
+        [
+          0.1,
+          0.11999999731779099
+        ],
+        [
+          0.2,
+          0.14000000059604645
+        ],
+        [
+          0.205,
+          0.10575000196695328
+        ],
+        [
+          0.21,
+          0.07100000232458115
+        ],
+        [
+          0.3,
+          0.07999999821186066
+        ],
+        [
+          0.4,
+          0.09000000357627869
+        ],
+        [
+          0.405,
+          0.13574999570846558
+        ],
+        [
+          0.41,
+          0.18199999630451202
+        ],
+        [
+          0.6,
+          0.11999999731779099
+        ]
+      ]
+    },
+    "rapid": {
+      "maxUnityError": 3.2782554615362614e-08
+    },
+    "matchedPcm": {
+      "original": 1,
+      "preview": 0.25,
+      "maxError": 1.4901161193847656e-08
+    },
+    "live": {
+      "voices": 6,
+      "phaseError": 0,
+      "playing": true,
+      "unchanged": true,
+      "undo": 0
+    },
+    "recordingStops": true,
+    "sourceReplacementStops": true,
+    "timelinePlaybackStops": true,
+    "closeStops": true,
+    "resetKeepsPlayback": true,
+    "german390": {
+      "overflow": false,
+      "width": 316
+    },
+    "matchedComparison": true,
+    "matchRecalculationStops": true,
+    "physicalAudio": false,
+    "nativePluginDSP": false
+  },
+  "limits": [
+    "Mono/stereo, 0.4\u2013120 seconds; selected audition including repair context",
+    "Attenuation only, shared sample-peak headroom before master; no true-peak limiter",
+    "Silence, sub-gate, short and unsupported-channel comparisons remain ordinary audition",
+    "Matching never changes saved PCM or project/Undo state"
+  ],
+  "validation": {
+    "frontend": {
+      "passed": 2090,
+      "files": 217
+    },
+    "focused": {
+      "passed": 14,
+      "files": 2
+    },
+    "releasePython": {
+      "passed": 24
+    },
+    "productionBuild": "passed",
+    "lint": "passed",
+    "nativeRebuild": false,
+    "physicalListening": false
+  }
+}

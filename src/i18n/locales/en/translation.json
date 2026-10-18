@@ -2419,9 +2419,14 @@
     "dehumHelp": "Choose the measured mains frequency (usually 50 or 60 Hz). Narrow offline notch filters suppress the fundamental and chosen harmonics. Width and harmonic count are under Advanced. Filtering uses source context and 5 ms transitions inside selection edges; unselected audio is unchanged. Wanted audio at those frequencies is also reduced. Frequency drift and short edge selections can limit suppression.",
     "spectralHelp": "Select time ranges in the source waveform, then drag vertically in the spectrogram or enter low/high frequencies. Prepare attenuates that band; it does not invent missing audio. A 2048-point FFT sets the frequency/time resolution, with soft frequency edges and 5 ms time transitions. The plot joins selected time ranges and shows the first chosen channel. Reduce unneeded frequencies carefully to avoid removing wanted sound.",
     "declipHelp": "Set the ceiling to the flat-top level of hard clipping, not the desired output peak. Cubic reconstruction estimates same-polarity clipped runs up to 2 ms using two clean neighbours on both sides. Long, edge or unsuitable peaks are skipped. Unclipped samples stay unchanged. It cannot undo heavy distortion or restore lost transients, and reconstructed peaks may exceed 0 dBFS; float source audio retains that headroom. The level uses percent of full scale: 100% is 0 dBFS; 50% is half amplitude. Runs must contain at least two flat samples; small integer-PCM full-scale rounding is accepted.",
-    "limits": "Preview first, compare Original/Preview, then Apply for one Undo. Preparation runs in a cancellable worker. Changing source, selection, settings or recording state cancels it. Each preview replaces the current draft; apply first to combine edits. Audition level is independent of saved audio and shared by Original/Preview. Hot restoration previews lower it for headroom; adjust it under Audition. This is not loudness matching.",
+    "limits": "Preview first, compare Original/Preview, then Apply for one Undo. Preparation runs in a cancellable worker. Changing source, selection, settings or recording state cancels it. Each preview replaces the current draft; apply first to combine edits. Audition level is independent of saved audio and shared by Original/Preview. Hot restoration previews lower it for headroom; adjust it under Audition. Enable Match loudness beside Original/Preview for a level-matched comparison.",
     "update": "Prepare to update preview",
     "audition": "Audition",
-    "level": "Audition level"
+    "level": "Audition level",
+    "match": "Match loudness",
+    "matchHelp": "Matches integrated K-weighted loudness for the selected mono/stereo audition, including repair context. The louder version is lowered; shared sample-peak headroom stays below −1 dBFS before the master. No saved audio changes. Requires 0.4–120 seconds and measurable audio in both versions. Not a true-peak limiter or a guarantee of equal perceived loudness. New previews cancel and recalculate matching; Play is available when ready.",
+    "matching": "Matching…",
+    "matched": "Matched",
+    "matchUnavailable": "Unavailable"
   }
 }

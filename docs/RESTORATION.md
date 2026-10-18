@@ -12,7 +12,16 @@ eight channels at 8–192 kHz, with at most 30 seconds selected. Split/trim a sh
 clip window first when needed. Saved time, channel count and unselected samples
 remain unchanged. Audition level under **Audition** affects both A/B versions,
 separately from saved audio. Hot sources/previews lower monitor level for sample-peak
-headroom; this is not automatic loudness matching or a true-peak limiter.
+headroom. For an optional automatic comparison, enable **Match loudness** beside
+Original/Preview. It measures integrated K-weighted loudness of the chosen
+mono/stereo audition (including click-repair context), attenuates the louder
+version and applies shared sample-peak headroom below −1 dBFS before the master.
+Each voice crossfades at its own matched gain. New previews stop audition and
+cancel/recalculate the match; press Play when ready. Matching never alters Apply,
+exported PCM or project/Undo state. It requires 0.4–120 seconds and measurable
+audio in both versions; silence, sub-gate audio and more than two selected
+channels show Unavailable and retain ordinary audition. This is not a true-peak
+limiter or a guarantee of equal perceived loudness.
 
 ## De-hum
 
@@ -82,3 +91,10 @@ dedicated restoration suites is claimed. See [the gap inventory](DAW_GAP_ANALYSI
 
 Integer-PCM full-scale plateaus are accepted within a small ceiling tolerance;
 non-flat ordinary peaks and isolated single-sample candidates are skipped.
+
+Source loudness matching also has generated-tone and cancellation fixtures. Muted
+browser checks exercise the real controls, recalculation, retained project/Undo
+state and German touch layout. Offline rapid matched switching stays within
+1.5 × 10⁻⁸ of the synthetic reference in the checked fixture. See
+[matching evidence](evidence/source-audition-matching.json); this is software
+evidence, not physical listening or arbitrary-material perceptual qualification.

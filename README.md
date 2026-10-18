@@ -153,7 +153,9 @@ Your templates stay on this device. On touch, use the Edit ribbon or Track Setti
 - Shape envelopes with points, Linear/Step curves, easing curves and Bézier handles.
   Copy and stretch compatible envelopes. Read follows existing automation;
   Touch/Latch/Write record passes for review. Clip/master FX have automation inspectors.
-- Compare saved **Mix A/B** versions with optional loudness matching. Measure LUFS
+- Compare saved **Mix A/B** versions with optional loudness matching. Source
+  Original/Preview also offers monitor-only matching for measurable mono/stereo
+  selections of 0.4–120 seconds. Measure LUFS
   and estimated true peak, then review a loudness adjustment before applying it.
 
 On macOS, discover AU/VST3 effects and add them to clip, track, bus or master

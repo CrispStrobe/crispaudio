@@ -19,7 +19,9 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33; source/isolated preview 0.13.41 adds the
+The installed baseline remains 0.13.33. Source 0.13.42 adds optional monitor-only
+source A/B loudness matching (see [limits](RESTORATION.md)); no live app was replaced.
+The isolated preview remains 0.13.41 and adds the
 opt-in native recording preview described below. The established baseline includes timeline/video editing,
 recording/takes/comping, compact recording controls and meters, source restoration,
 FX-aware segment waveforms within documented limits, native Mac AU/VST3 playback
@@ -245,7 +247,7 @@ feature parity with ocenaudio, Ardour, REAPER or other mature applications.
 
 | Track | Work still required | Acceptance boundary |
 |---|---|---|
-| Source FX and restoration | Full live source FX; automatic A/B loudness matching; click detection, spectral healing/inpainting and de-hum drift tracking | Retain originals; cancellable preview, one-Undo Apply; quantify signal damage and improvement and listen to varied real recordings |
+| Source FX and restoration | Full live source FX; click detection, spectral healing/inpainting and de-hum drift tracking | Retain originals; cancellable preview, one-Undo Apply; quantify signal damage and improvement and listen to varied real recordings |
 | Effect-aware waveforms | Native inserts, longer clips, scalable caches and clearly scoped track/bus/master display | Reject stale renders; bounded memory/work; explain preview scope; preserve responsive continuous edits |
 | Monitor/routing depth | Arbitrary input maps, independent headphone mixes, PFL/AFL, dim/mono and retained-dry wet capture | Explicit feedback-safe routing and measured delay; fixture tests followed by actual hardware |
 | Freeze/render in place | Reversible clip/track render, tails, routing semantics and DSP release | Source/rack retained; unfreeze restores state; audible/export parity and Undo/reopen |
@@ -352,3 +354,25 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib --locked -- --test-threads
 Hardware/optional plug-in fixtures remain separate tests with explicit prerequisites.
 Do not rerun audio-producing tests or overwrite user sessions merely to refresh a
 handoff. Check live CI instead of inheriting historical green claims.
+
+## Source A/B matching checkpoint — 0.13.42
+
+Optional matching is beside Original/Preview for all source drafts, including
+cleanup, restoration and completed native plug-in previews. Cancellable analysis
+uses the selected mono/stereo ranges and repair context, with a 0.4–120-second
+budget. It attenuates the louder version, shares sample-peak headroom and gives
+each crossfading voice its own gain; saved source data and Apply stay independent.
+New drafts stop audition until recalculation completes. Silent/sub-gate, short and
+multichannel comparisons show Unavailable. No true-peak limiting or universal
+perceptual matching claim. Physical listening remains separate.
+
+Next: reversible track freeze with original routing/FX retained, explicit thaw,
+one Undo, linked/portable reopen and stale-render cancellation; then full live
+source FX and further restoration selection/detection/healing. Preserve the native
+qualification preview and user session; follow N5 protocol on a human result.
+
+Validation: **2090 frontend tests / 217 files**, production build, lint and
+**24 Python release checks** pass. Muted browser controls and real offline PCM
+checks pass, including rapid matched switching and German 390 px layout.
+[Sanitized evidence](evidence/source-audition-matching.json). No native rebuild,
+installation or physical audio qualification was performed for this frontend change.

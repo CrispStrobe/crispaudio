@@ -18,7 +18,8 @@ what you hear while typing or scrubbing; Escape restores the initial value.
 
 Here, **Original** means the clip's current source before this draft. **Restore
 original** in Cleanup returns to the retained recording after an applied source
-edit. These are separate actions. Comparison does not automatically match loudness.
+edit. These are separate actions. Enable **Match loudness** beside Original/Preview for optional monitor-only
+matching; see the limits below.
 
 ## Keep an edit
 
@@ -71,7 +72,12 @@ reconstruction. Choose settings, prepare, compare Original/Preview and apply.
 Parameters are retained with the derived source. Preparation can be cancelled;
 selection/source/settings changes discard in-flight work. Expand **Audition** for
 a separate editable listening level shared by A/B. Hot float sources get sample-peak
-headroom; this changes monitoring only, without automatic loudness matching.
+headroom; this changes monitoring only. **Match loudness** beside Original/Preview
+compares integrated loudness and attenuates the louder version, with shared
+sample-peak headroom. It supports measurable mono/stereo selections of
+0.4–120 seconds. New previews cancel/recalculate and stop audition; press Play
+when ready. Silence, short selections and multichannel comparisons show
+Unavailable. Saved PCM is unchanged.
 
 Frequency selection uses a logarithmic graph with matching mouse/touch band dragging
 and exact numeric bounds. Cancellation restores the previous band.
@@ -89,6 +95,6 @@ still need a helper render; this is not a new continuously running native FX gra
 Processing preserves the source window's length, so extend it first for effect tails.
 
 Continuous comparison currently uses in-memory audio. Long-file streaming,
-automatic loudness matching, full live source FX and further restoration
+full live source FX and further restoration
 (spectral healing, drift tracking and varied-material qualification) remain work
 in the [audio-workstation roadmap](DAW_GAP_ANALYSIS.md).

@@ -4322,3 +4322,23 @@ replace `MAC_PROFILE_BASE64` in GitHub secrets. Run the workflow in dry-run mode
 before authorizing an upload. No workflow was dispatched or Apple upload attempted
 for this checkpoint. Native third-party plugin hosting also needs a signed,
 sandboxed Store-build acceptance pass; local ad-hoc testing does not establish it.
+
+## Source audition matching — 0.13.42 source candidate
+
+Adds optional monitor-only loudness matching beside source Original/Preview.
+Integrated K-weighted mono/stereo analysis attenuates the louder version and
+shares sample-peak headroom. Each voice carries its own gain across rapid
+crossfades. New previews cancel/recalculate and stop audition until Play.
+Scope: measurable 0.4–120-second selections, including repair context. Silence,
+short selections and multichannel comparisons fall back to ordinary audition.
+Saved PCM, export and Apply are unchanged. See [limits](RESTORATION.md).
+
+Neither running app has been replaced: installed baseline remains 0.13.33;
+isolated native qualification preview remains 0.13.41, with human speech and
+N5 checks pending. This source checkpoint is not an Apple upload.
+
+Validation: **2090 frontend tests / 217 files**, production build, lint and
+**24 Python release checks** pass. Muted browser controls and real offline PCM
+checks pass, including rapid matched switching and German 390 px layout.
+[Sanitized evidence](evidence/source-audition-matching.json). No native rebuild,
+installation or physical audio qualification was performed for this frontend change.

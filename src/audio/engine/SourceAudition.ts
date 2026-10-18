@@ -10,31 +10,33 @@ export class SourceAudition {
  private duration=0;
  private looping=false;
  private buffer?:AudioBuffer;
+ private level=1;
  private ctx:BaseAudioContext;
  private output:AudioNode;
  private ended:()=>void;
  constructor(ctx:BaseAudioContext,output:AudioNode,ended:()=>void=()=>{}){this.ctx=ctx;this.output=output;this.ended=ended;}
  get playing(){return !!this.voice;}
  position(at=this.ctx.currentTime){const elapsed=Math.max(0,at-this.origin);return this.looping&&this.duration?elapsed%this.duration:Math.min(this.duration,elapsed);}
- start(buffer:AudioBuffer,loop=false,scheduledAt?:number){this.stop();const at=scheduledAt??this.ctx.currentTime;if(!buffer.length||!Number.isFinite(at)||at<0)throw new Error('Invalid source audition');this.origin=Math.max(at,this.ctx.currentTime);this.duration=buffer.duration;this.looping=loop;this.buffer=buffer;this.voice=this.create(buffer,at,0,1);}
+ start(buffer:AudioBuffer,loop=false,scheduledAt?:number,level=1){if(!Number.isFinite(level)||level<0||level>1)throw new Error('Invalid source audition level');this.stop();this.level=level;const at=scheduledAt??this.ctx.currentTime;if(!buffer.length||!Number.isFinite(at)||at<0)throw new Error('Invalid source audition');this.origin=Math.max(at,this.ctx.currentTime);this.duration=buffer.duration;this.looping=loop;this.buffer=buffer;this.voice=this.create(buffer,at,0,level);}
  setLoop(loop:boolean){if(this.looping===loop)return;const at=this.ctx.currentTime,offset=this.position(at);this.origin=at-offset;this.looping=loop;if(this.voice)this.voice.source.loop=loop;}
- replace(buffer:AudioBuffer){
-  if(buffer===this.buffer)return;
+ replace(buffer:AudioBuffer,level=1){
+  if(!Number.isFinite(level)||level<0||level>1)throw new Error('Invalid source audition level');
+  if(buffer===this.buffer&&level===this.level)return;
   if(!this.voice){return;}
   if(buffer.length!==this.buffer?.length||buffer.sampleRate!==this.buffer.sampleRate||buffer.numberOfChannels!==this.buffer.numberOfChannels)throw new Error('Mismatched source audition');
   const at=this.ctx.currentTime,offset=this.position(at);
   if(!this.looping&&offset>=this.duration){this.stop();this.ended();return;}
   const old=this.voice,next=this.create(buffer,at,offset,0),fade=.01;
-  next.gain.gain.linearRampToValueAtTime(1,at+fade);next.to=1;next.end=at+fade;
+  next.gain.gain.linearRampToValueAtTime(level,at+fade);next.to=level;next.end=at+fade;
   this.retired.add(old);
-  // Anchor every still-fading voice, so rapid switches retain unity total gain.
+  // Anchor every still-fading voice, so rapid switches retain the continuous gain envelope.
   for(const voice of this.retired){
    const fraction=voice.end>voice.at?Math.min(1,Math.max(0,(at-voice.at)/(voice.end-voice.at))):1;
    const held=voice.from+(voice.to-voice.from)*fraction;
    voice.gain.gain.cancelScheduledValues(at);voice.gain.gain.setValueAtTime(held,at);voice.gain.gain.linearRampToValueAtTime(0,at+fade);
    voice.at=at;voice.from=held;voice.to=0;voice.end=at+fade;voice.source.stop(at+fade);
   }
-  this.voice=next;this.buffer=buffer;
+  this.voice=next;this.buffer=buffer;this.level=level;
   // Bound retained graph nodes even if a hidden window delays onended delivery.
   if(this.retired.size>8)this.dispose(this.retired.values().next().value!);
  }
