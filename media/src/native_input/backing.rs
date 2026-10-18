@@ -320,3 +320,6 @@ impl Reader {
 
 #[cfg(test)]
 mod tests;
+
+/// Native-clock recording lead-in, loop and monitor-only click rendering.
+pub mod transport;

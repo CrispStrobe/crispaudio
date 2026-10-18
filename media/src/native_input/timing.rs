@@ -94,7 +94,7 @@ fn valid_id(id: &str) -> bool {
     !id.is_empty() && id.len() <= 128 && !id.chars().any(char::is_control)
 }
 impl Intent {
-    fn validate(&self, ids: &[&str]) -> Result<()> {
+    pub(crate) fn validate(&self, ids: &[&str]) -> Result<()> {
         Timebase::new(self.context.numerator, self.context.denominator)?;
         if !valid_id(&self.context.scope)
             || !valid_id(&self.project_id)

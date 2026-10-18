@@ -68,8 +68,9 @@ through fixed queues, with atomic cue control handoff and whole-mixer clock bind
 Session/group preparation now completes files and cue racks before any capture
 opens. A whole-run owner now coordinates readiness/arming/polling and gates complete
 group publication on successful output/backing finalization. Validated timing manifests and an atomic editor take/Undo adapter are now
-implemented internally. App commands/UI integration, aligned crash recovery and
-physical qualification remain open. See the handoff for the precise continuation.
+implemented internally. Owner-scoped Mac app commands and a typed client are now implemented, along with
+native-clock lead-in, metronome and loop backing. Recording UI integration, aligned
+crash recovery and physical qualification remain open. See the handoff for the precise continuation.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

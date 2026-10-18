@@ -416,3 +416,25 @@ Validation: 143 focused native tests including SDK VST3/subprocess fixtures;
 production build and SDK C ABI syntax checks passed. No physical input/output,
 app Rust build, simulator, bundle or installation was run for this checkpoint.
 [Timing evidence](evidence/native-recording-timing.json).
+
+## Native recording commands and backing transport — development after 0.13.33
+
+Mac app commands now own recording on a dedicated control thread. Explicit
+CoreAudio UIDs/channel maps, app-owned storage, native timing, meter reports and
+sparse cue updates cross the IPC boundary; WebKit does not feed PCM or drive
+capture timing. A shared reservation excludes concurrent native playback output.
+Owner/token checks protect controls; snapshot/window close and exit cancel/join.
+Errors retain originals and report their recovery directory. A typed snapshot
+client prevents concurrent transports and cleans up late starts.
+
+The worker now follows the same frozen timing intent for silent delay, audible
+count-in, preroll and loops, including native graph latency compensation and
+retained DSP history. Click onsets use an arithmetic musical clock, remain
+independent of render-block size and stay outside dry recordings/exports.
+
+Software checks pass: 313 media tests (16 ignored), 46 app Rust tests (one hardware
+case ignored), plus typed-client lifecycle/cleanup tests, lint and production
+build. The installed app is unchanged. No physical input/output, simulator,
+bundle or installation was run. The visible recording controls are not wired to
+this mode yet. Independent backing controls, aligned crash recovery and hardware
+qualification remain pending. [Command evidence](evidence/native-recording-commands.json).

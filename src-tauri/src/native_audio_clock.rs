@@ -166,6 +166,15 @@ fn prepare_graph(
     sources: std::collections::HashMap<String, Source>,
     control: &Control,
 ) -> Result<Graph, String> {
+    prepare_recording_graph(project, sources, &|helper| control.register(helper))
+}
+/// Shared graph factory for playback and worker-owned recording accompaniment.
+/// Registration must interrupt a helper even while its handshake is pending.
+pub(crate) fn prepare_recording_graph(
+    project: &Value,
+    sources: std::collections::HashMap<String, Source>,
+    register: &dyn Fn(StreamStop),
+) -> Result<Graph, String> {
     let music = &project["music"];
     let transport: StreamTransport=serde_json::from_value(json!({"samplePosition":0,"projectPosition":0,
         "tempo":music.get("tempo").unwrap_or(&json!(120)),"numerator":music.get("numerator").unwrap_or(&json!(4)),
@@ -174,7 +183,7 @@ fn prepare_graph(
     Graph::prepare(project, sources, |entry| {
         let stream = PluginStream::open_with_stop(
             &json!({"id":entry["pluginId"],"sampleRate":48000,"channels":2,"processMode":"realtime","parameters":entry["parameters"],"state":entry["state"]}),
-            |helper| control.register(helper),
+            register,
         )?;
         let latency = stream.info["latencySamples"]
             .as_u64()

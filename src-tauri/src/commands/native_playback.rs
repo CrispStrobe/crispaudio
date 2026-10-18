@@ -3,7 +3,7 @@ use crate::native_audio_clock::live::{self, LiveControl};
 use crispaudio_media::native_snapshot::Snapshots;
 use serde_json::{json, Value};
 use std::sync::{
-    atomic::{AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicU64, Ordering},
     Arc, Mutex,
 };
 
@@ -19,8 +19,25 @@ struct Session {
 pub struct NativePlayback {
     active: Mutex<Option<Arc<Session>>>,
     sequence: AtomicU64,
+    recording: Arc<AtomicBool>,
+}
+/// Reservation shares the playback start lock; no two native owners can open
+/// output concurrently. Retain until recording workers and queues have closed.
+pub(crate) struct RecordingLease(Arc<AtomicBool>);
+impl Drop for RecordingLease {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
+    }
 }
 impl NativePlayback {
+    pub(crate) fn reserve_recording(&self) -> Result<RecordingLease, String> {
+        let active = self.active.lock().unwrap();
+        if active.is_some() || self.recording.swap(true, Ordering::AcqRel) {
+            return Err("Close existing native audio first".into());
+        }
+        Ok(RecordingLease(self.recording.clone()))
+    }
+
     fn get(&self, owner: &str, id: &str) -> Result<Arc<Session>, String> {
         let slot = self.active.lock().unwrap();
         slot.as_ref()
@@ -83,8 +100,8 @@ pub fn native_playback_start(
     muted: Option<bool>,
 ) -> Result<String, String> {
     let mut slot = state.active.lock().unwrap();
-    if slot.is_some() {
-        return Err("Close existing native playback first".into());
+    if slot.is_some() || state.recording.load(Ordering::Acquire) {
+        return Err("Close existing native audio first".into());
     }
     let snapshot_id = snapshot.clone();
     let snapshot = snapshots.get(window.label(), &snapshot)?;

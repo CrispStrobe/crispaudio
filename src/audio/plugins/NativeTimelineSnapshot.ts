@@ -1,4 +1,5 @@
 import {invoke} from '@tauri-apps/api/core';
+import {NativeTimelineRecording,type NativeRecordingOptions} from './NativeTimelineRecording';
 import type {TimelineProject,AudioSource} from '../../types/audio';
 import {NativeTimelinePlayback,type NativePlaybackOptions} from './NativeTimelinePlayback';
 const interrupted=()=>new DOMException('Native timeline snapshot cancelled or superseded','AbortError');
@@ -7,6 +8,7 @@ export interface NativeRangeCapture {kind:'native-snapshot-clock';frames:number;
 /** Frozen, bounded PCM upload for native-owned Mac playback. */
 export class NativeTimelineSnapshot {
  private closed=false;private active?:Promise<NativeRangeCapture>;private closing?:Promise<void>;
+ private recording?:NativeTimelineRecording;private startingRecording?:Promise<NativeTimelineRecording>;
  private playback?:NativeTimelinePlayback;private starting?:Promise<NativeTimelinePlayback>;
  private readonly id:string;private readonly durationFrames:number;private readonly isCurrent?:()=>boolean;
  private constructor(id:string,durationFrames:number,isCurrent?:()=>boolean){this.id=id;this.durationFrames=durationFrames;this.isCurrent=isCurrent;}
@@ -37,13 +39,13 @@ export class NativeTimelineSnapshot {
  }
  /** Silent, finite native range capture; no production transport activation. */
  captureRange(startFrame:number,endFrame:number):Promise<NativeRangeCapture>{
-  if(this.closed)return Promise.reject(interrupted());if(this.isCurrent&&!this.isCurrent())return this.close().then(()=>{throw interrupted();});if(this.active||this.playback||this.starting)return Promise.reject(new Error('Native snapshot capture already active'));
+  if(this.closed)return Promise.reject(interrupted());if(this.isCurrent&&!this.isCurrent())return this.close().then(()=>{throw interrupted();});if(this.active||this.playback||this.starting||this.recording||this.startingRecording)return Promise.reject(new Error('Native snapshot capture already active'));
   if(!Number.isSafeInteger(startFrame)||!Number.isSafeInteger(endFrame)||startFrame<0||endFrame>this.durationFrames||endFrame-startFrame<2048||endFrame-startFrame>480000)return Promise.reject(new Error('Invalid native capture range'));
   const task=invoke<NativeRangeCapture>('native_snapshot_capture',{snapshot:this.id,startFrame,endFrame});this.active=task;
   return task.finally(()=>{if(this.active===task)this.active=undefined;});
  }
  startPlayback(options:NativePlaybackOptions):Promise<NativeTimelinePlayback>{
-  if(this.closed)return Promise.reject(interrupted());if(this.active||this.playback||this.starting)return Promise.reject(new Error('Native snapshot playback already active'));
+  if(this.closed)return Promise.reject(interrupted());if(this.active||this.playback||this.starting||this.recording||this.startingRecording)return Promise.reject(new Error('Native snapshot playback already active'));
   if(!Number.isSafeInteger(options.startFrame)||!Number.isSafeInteger(options.endFrame)||options.startFrame<0||options.endFrame>this.durationFrames||options.startFrame>=options.endFrame)return Promise.reject(new Error('Invalid native playback range'));
   if(this.isCurrent&&!this.isCurrent())return this.close().then(()=>{throw interrupted();});
   const task=(async()=>{
@@ -52,5 +54,29 @@ export class NativeTimelineSnapshot {
    this.playback=playback;return playback;
   })();this.starting=task;return task.finally(()=>{if(this.starting===task)this.starting=undefined;});
  }
- close():Promise<void>{if(this.closing)return this.closing;this.closed=true;this.closing=(async()=>{await invoke('native_snapshot_close',{snapshot:this.id});await this.starting?.catch(()=>{});await this.playback?.close();await this.active?.catch(()=>{});})();return this.closing;}
+ /** Recording shares this snapshot's source lease and exclusive transport owner. */
+ startRecording(options:NativeRecordingOptions):Promise<NativeTimelineRecording>{
+  if(this.closed)return Promise.reject(interrupted());
+  if(this.active||this.playback||this.starting||this.recording||this.startingRecording)return Promise.reject(new Error('Native snapshot transport already active'));
+  if(this.isCurrent&&!this.isCurrent())return this.close().then(()=>{throw interrupted();});
+  const task=(async()=>{
+   const recording=await NativeTimelineRecording.open(this.id,options,()=>{this.recording=undefined;});
+   if(this.closed||(this.isCurrent&&!this.isCurrent())){await recording.close(true);throw interrupted();}
+   this.recording=recording;return recording;
+  })();this.startingRecording=task;
+  return task.finally(()=>{if(this.startingRecording===task)this.startingRecording=undefined;});
+ }
+ close():Promise<void>{
+  if(this.closing)return this.closing;this.closed=true;
+  this.closing=(async()=>{
+   const failures:unknown[]=[];
+   const finish=async(task:Promise<unknown>|undefined,abortExpected=false)=>{try{await task;}catch(error){if(!abortExpected||!(error instanceof DOMException&&error.name==='AbortError'))failures.push(error);}};
+   // A failed registry close must still stop/join its owned audio session.
+   await finish(invoke('native_snapshot_close',{snapshot:this.id}));
+   await finish(this.starting,true);await finish(this.startingRecording,true);
+   await finish(this.recording?.close(true));await finish(this.playback?.close());
+   await this.active?.catch(()=>{});
+   if(failures.length)throw failures[0];
+  })();return this.closing;
+ }
 }

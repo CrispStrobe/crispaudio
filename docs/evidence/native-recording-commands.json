@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-18",
+  "scope": "Internal Mac recording commands, typed client and native backing transport",
+  "installedRecordingChanged": false,
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "checks": {
+    "media": {
+      "passed": 313,
+      "ignored": 16,
+      "log": "crispaudio-recording-transport-media.log"
+    },
+    "appRust": {
+      "passed": 46,
+      "ignored": 1,
+      "log": "crispaudio-recording-actor-app.log"
+    },
+    "transportFocused": {
+      "passed": 5,
+      "log": "crispaudio-recording-transport-focused.log"
+    },
+    "clientLifecycle": {
+      "passed": 24,
+      "files": 3,
+      "log": "crispaudio-recording-client-tests.log"
+    },
+    "productionBuild": "passed",
+    "lint": "passed",
+    "sdkCAbi": "passed including getentropy"
+  },
+  "coverage": [
+    "Independent graph reference for latency/preroll and loop backing",
+    "Block-invariant arithmetic count-in/metronome and half-open loop onsets",
+    "Invalid plan/control/routing admission and retained original directory",
+    "Owner/token/snapshot cancellation, joined shutdown and exclusive native output reservation",
+    "Typed client transport exclusivity, late-start cleanup and stop result",
+    "Registry close failure still joins recording"
+  ],
+  "limitations": [
+    "Recording UI is not wired to these commands",
+    "No new hardware, bundle/install or physical latency claim",
+    "Preparation cancellation is checked between bounded startup steps, not instant",
+    "Independent backing mix controls and durable in-run clock ledger remain pending",
+    "Optional SDK VST3 cases remain ignored in this command checkpoint; preceding timing checkpoint ran them explicitly"
+  ]
+}

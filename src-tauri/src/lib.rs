@@ -36,6 +36,9 @@ pub fn run() {
                 #[cfg(target_os = "macos")]
                 {
                     window
+                        .state::<commands::native_recording::NativeRecording>()
+                        .close_owner(window.label());
+                    window
                         .state::<commands::native_playback::NativePlayback>()
                         .close_owner(window.label());
                     window
@@ -84,6 +87,7 @@ pub fn run() {
     #[cfg(target_os = "macos")]
     let builder = builder
         .manage(commands::native_playback::NativePlayback::default())
+        .manage(commands::native_recording::NativeRecording::default())
         .manage(crispaudio_media::native_snapshot::Snapshots::default());
     #[cfg(desktop)]
     let builder = builder.on_menu_event(|app, event| {
@@ -118,6 +122,16 @@ pub fn run() {
             commands::native_playback::native_playback_volume,
             #[cfg(target_os = "macos")]
             commands::native_playback::native_playback_close,
+            #[cfg(target_os = "macos")]
+            commands::native_recording::native_recording_start,
+            #[cfg(target_os = "macos")]
+            commands::native_recording::native_recording_status,
+            #[cfg(target_os = "macos")]
+            commands::native_recording::native_recording_cue,
+            #[cfg(target_os = "macos")]
+            commands::native_recording::native_recording_close,
+            #[cfg(target_os = "macos")]
+            commands::native_recording::native_recording_inputs,
             native_menu::configure_native_menu,
             commands::midi::list_midi_inputs,
             commands::midi::connect_midi_input,
@@ -173,6 +187,8 @@ pub fn run() {
         if matches!(event, tauri::RunEvent::Exit) {
             #[cfg(target_os = "macos")]
             {
+                app.state::<commands::native_recording::NativeRecording>()
+                    .shutdown();
                 app.state::<commands::native_playback::NativePlayback>()
                     .shutdown();
                 app.state::<crispaudio_media::native_snapshot::Snapshots>()

@@ -27,7 +27,8 @@ Do not reintroduce ASR/TTS creation or composition/instrument sequencing: these
 belong to CrisperWeaver and CometBeat respectively. Imported audio/transcripts stay
 editable. Existing MIDI utilities do not imply a MIDI expansion roadmap.
 
-Native recording work after 0.13.33 is **internal, not connected to the app**:
+Native recording work after 0.13.33 has internal app commands/client code,
+but **is not selectable in the recording UI**:
 
 | Foundation | Code entry point | Verified scope |
 |---|---|---|
@@ -109,14 +110,34 @@ trusted output-clock ledger during recording before enabling aligned interrupted
 session reconciliation. Independent-device correction is not implemented; drift
 is rejected. Physical accuracy remains N5.
 
-### N4 — App integration and native recording UX
+### N4 — App integration and native recording UX (in progress)
 
-- Add app commands and select the native path only where its platform/routing
-  contract is supported; preserve the working recording path during rollout.
+The Mac commands and typed snapshot client now exist. A dedicated control thread
+owns queues, group/backing preparation, meters, sparse cue updates and timed stop.
+Native playback/recording share an output reservation. Window/snapshot close and
+app shutdown cancel/join the owner; raw originals and their directory survive
+failure. Routes use explicit CoreAudio UIDs and channel indices; the backend owns
+the recording root. The backing worker now uses the frozen timing intent for
+silent delay, count-in, preroll and loop passes, retaining graph DSP history and
+compensating plug-in latency. Monitor clicks are separate from dry files/exports.
+
+Still required before N4 is complete:
+
+- Connect the existing Record/settings/meter UI to the new commands. Persist native
+  UID/channel selections separately from browser IDs and keep legacy latency
+  compensation separate. Preserve the working recording path during rollout.
+- Load all returned WAVs, normalize project rate with original provenance retained,
+  and publish through the whole-group editor adapter once. Guard project changes,
+  stop/cancel during preparation, late replies, faults and component teardown.
+- Persist output activation/progress for aligned crash recovery; provide bounded
+  recovery discovery/reconciliation without treating untimed raw files as aligned.
 - Keep immediate Record/Stop, persistent GUI meters and a small settings dropdown.
   Advanced routing/inserts remain collapsed; show measured/configured delays
   honestly. Add independent cue/backing mix, headphone routing and monitoring
   controls without adding a wall of text. Wet capture must retain dry originals.
+- Qualification must include cancellation while helpers are opening, independent
+  cue/backing levels and recorded WAV inspection. Preparation checks cancellation
+  between bounded helper/graph startup steps; it is not an instant-cancel promise.
 - Done when desktop/touch tests cover arm/record/stop/cancel, device selection,
   cue fault recovery, compact layout, save/reopen and one-action group Undo.
 
@@ -165,8 +186,12 @@ child-process fixtures: **143 passed**. Frontend: **2025 passed across 208 files
 full lint and production build pass. SDK C ABI syntax and changed formatting/diff
 checks pass. See [timing scope](evidence/native-recording-timing.json) and the
 [preceding ownership scope](evidence/native-monitored-recording.json).
-No physical microphone/output was opened. App Rust, simulator, bundle, installation
-and Apple upload were not rerun for these unused internal paths. Installed 0.13.33
+The subsequent command/transport checkpoint passes **313 media tests (16 ignored)**
+and **46 app Rust tests (one hardware test ignored)**, including seven new command/
+ownership checks and five backing transport checks. Typed-client lifecycle tests,
+lint and production build pass; see [command scope](evidence/native-recording-commands.json).
+No physical microphone/output was opened. Simulator, bundle, installation
+and Apple upload were not rerun for these unused UI paths. Installed 0.13.33
 is unchanged; the earlier app Rust result (39 passed, one ignored) is historical.
 
 Portable commands (use a configured Rust toolchain):

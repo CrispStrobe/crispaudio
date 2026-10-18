@@ -172,6 +172,11 @@ pub struct Run<C: Capture, O: MonitorOutput> {
     outcome: Option<group::GroupOutcome>,
 }
 impl<C: Capture, O: MonitorOutput> Run<C, O> {
+    /// Control-thread inspection/atomic cue updates only; output stays owned by
+    /// this run and cannot be stopped independently of capture.
+    pub fn output(&self) -> Option<&O> {
+        self.output.as_ref()
+    }
     pub fn outcome(&self) -> Option<&group::GroupOutcome> {
         self.outcome.as_ref()
     }

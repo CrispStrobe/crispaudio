@@ -17,3 +17,6 @@ pub mod native_playback;
 pub mod native_snapshot;
 
 pub mod resources;
+
+#[cfg(target_os = "macos")]
+pub mod native_recording;

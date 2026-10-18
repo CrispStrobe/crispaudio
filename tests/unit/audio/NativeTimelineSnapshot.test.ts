@@ -72,3 +72,36 @@ it('sends monitor-only music settings on live updates and explicitly clears miss
  await playback.update({...f.p,music:undefined});
  expect(invoke).toHaveBeenLastCalledWith('native_playback_update',expect.objectContaining({controls:expect.objectContaining({music:null})}));await snapshot.close();
 });
+
+const recordingOptions={device:'output-uid',projectStartFrame:0,recordStartFrame:0,cycle:false,leadFrames:0,countInFrames:0,maxFrames:480000,inputs:[{trackId:'t',device:'input-uid',channels:[0],monitorFx:false,correction:{frames:0,basis:'unqualified' as const}}]};
+it('owns one native recording, routes sparse controls and cancels before releasing its snapshot',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create(f.p,f.sources);
+ invoke.mockImplementation(async(cmd:string)=>cmd==='native_recording_start'?'recording':cmd==='native_recording_status'?{phase:'recording',frame:4800}:cmd==='native_recording_close'?{phase:'fault',directory:'recordings/native-group-generated',error:'cancelled'}:undefined);
+ const recording=await snapshot.startRecording(recordingOptions);
+ expect(invoke).toHaveBeenCalledWith('native_recording_start',{snapshot:'snapshot',options:recordingOptions});
+ await expect(snapshot.captureRange(0,48000)).rejects.toThrow(/active/);await expect(snapshot.startPlayback({startFrame:0,endFrame:48000})).rejects.toThrow(/active/);await expect(snapshot.startRecording(recordingOptions)).rejects.toThrow(/active/);
+ expect(await recording.status()).toMatchObject({phase:'recording',frame:4800});await recording.cue('t',{gain:.5,pan:-.2,mono:true});
+ expect(invoke).toHaveBeenCalledWith('native_recording_cue',{session:'recording',track:'t',controls:{gain:.5,pan:-.2,mono:true}});
+ const before=invoke.mock.calls.length;await expect(recording.cue('t',{gain:NaN,pan:0,mono:false})).rejects.toThrow('Invalid native cue controls');expect(invoke.mock.calls).toHaveLength(before);
+ await snapshot.close();await recording.close();expect(invoke.mock.calls.filter(call=>call[0]==='native_recording_close')).toHaveLength(1);expect(invoke).toHaveBeenCalledWith('native_recording_close',{session:'recording',cancel:true});await expect(recording.status()).rejects.toMatchObject({name:'AbortError'});
+});
+it('waits for a late recording start and cancels it after snapshot closure',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create(f.p,f.sources);let release!:(id:string)=>void;
+ invoke.mockImplementation((cmd:string)=>cmd==='native_recording_start'?new Promise(resolve=>{release=resolve;}):Promise.resolve());
+ const task=snapshot.startRecording(recordingOptions),failure=expect(task).rejects.toMatchObject({name:'AbortError'});
+ let finished=false;const closing=snapshot.close().then(()=>{finished=true;});await Promise.resolve();expect(finished).toBe(false);
+ release('late-recording');await failure;await closing;expect(invoke).toHaveBeenCalledWith('native_recording_close',{session:'late-recording',cancel:true});expect(finished).toBe(true);
+});
+it('returns a stopped recording result once and permits another transport afterwards',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create(f.p,f.sources),result={phase:'complete',directory:'recordings/native-group-generated',manifest:{version:2}};
+ invoke.mockImplementation(async(cmd:string)=>cmd==='native_recording_start'?'recording':cmd==='native_recording_close'?result:cmd==='native_playback_start'?'playback':undefined);
+ const recording=await snapshot.startRecording(recordingOptions),first=recording.close();expect(recording.close()).toBe(first);expect(await first).toEqual(result);
+ expect(invoke).toHaveBeenCalledWith('native_recording_close',{session:'recording',cancel:false});await expect(recording.cue('t',{gain:1,pan:0,mono:false})).rejects.toMatchObject({name:'AbortError'});
+ const playback=await snapshot.startPlayback({startFrame:0,endFrame:48000});await playback.close();await snapshot.close();
+});
+it('still joins an owned recording when snapshot registry close fails',async()=>{
+ const f=fixture(),snapshot=await NativeTimelineSnapshot.create(f.p,f.sources);
+ invoke.mockImplementation(async(cmd:string)=>{if(cmd==='native_recording_start')return 'recording';if(cmd==='native_snapshot_close')throw new Error('registry unavailable');});
+ await snapshot.startRecording(recordingOptions);await expect(snapshot.close()).rejects.toThrow('registry unavailable');
+ expect(invoke).toHaveBeenCalledWith('native_recording_close',{session:'recording',cancel:true});
+});

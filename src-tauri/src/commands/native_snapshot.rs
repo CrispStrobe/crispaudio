@@ -43,6 +43,7 @@ pub fn native_snapshot_close(
     window: tauri::WebviewWindow,
     snapshots: tauri::State<crispaudio_media::native_snapshot::Snapshots>,
     playback: tauri::State<NativePlayback>,
+    recording: tauri::State<super::native_recording::NativeRecording>,
     snapshot: String,
 ) -> Result<(), String> {
     #[cfg(feature = "native-validation")]
@@ -51,6 +52,7 @@ pub fn native_snapshot_close(
     }
     snapshots.close(window.label(), &snapshot)?;
     playback.cancel_snapshot(window.label(), &snapshot);
+    recording.cancel_snapshot(window.label(), &snapshot);
     Ok(())
 }
 #[tauri::command]

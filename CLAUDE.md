@@ -1102,3 +1102,20 @@ existing recording-group transaction; callers must commit it once. App commands
 and recording UI are not wired yet. Mid-record output-clock persistence is still
 needed for aligned crash recovery; raw prefix recovery alone does not qualify it.
 See [handoff](docs/WORK_HANDOFF.md) for N4/N5 and current evidence.
+
+### Native recording commands (development after 0.13.33)
+
+`commands/native_recording.rs` constructs/drops all !Send Mac queues on one actor
+thread, polling every20ms independently of GUI timers. State stores only Send
+control/status/join handles. NativePlayback's recording lease shares its start
+lock and excludes concurrent native output owners. Keep the lease until queues
+and workers close. Inputs use explicit CoreAudio UIDs/channel indices; all raw
+files live below app-owned recordings. No microphone prompt, global default or
+sample-rate mutation occurs. Stop finalizes timed v2; faults/cancel retain files.
+Actor owns window/snapshot/exit cleanup. NativeTimelineSnapshot/Recording clients
+handle late starts, exclusive transport and close/join. Recording controls are
+not wired to this mode yet; preserve the working legacy recorder.
+`backing::Worker::recording` renders finite admitted PCM from the frozen timing
+intent: delay/count-in, preroll, looping with retained DSP history and separate
+monitor clicks. It compensates graph latency before publishing frame zero.
+Physical timing/latency and startup cancellation responsiveness remain unqualified.
