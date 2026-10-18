@@ -4580,3 +4580,27 @@ state/first-pass Apply parity, mono/stereo policy and monitor headroom, followed
 by the stated platform/device acceptance. Both existing app sessions and the
 pending .41 human check remain untouched. No installed app update, tag or Apple
 upload was made.
+
+
+## Native source ownership handoff — 0.13.51 source candidate
+
+Source previews now reserve an internal lease before uploading. Stop, replacement
+and release retain the native close/join barrier, including late uploads and
+rejected replacement requests. Arrangement playback, recording/permission and
+other editor audition/input paths await it. Generation and cancellation checks
+prevent a stopped request from starting after the wait. This prepares outgoing
+source handoff; native source controls remain hidden. Reverse ownership, actual
+IPC/UI, saved-state/Apply and channel/headroom policy still need their scoped
+acceptance in the [latest handoff](WORK_HANDOFF.md#native-source-ownership-handoff--01351-checkpoint).
+
+Validation: **2,175 frontend tests / 230 files** pass (two workers, 20-second
+per-test ceiling), including **70 focused tests / 6 files** for ownership,
+source audition, recording and transport. Production frontend build, full lint
+and **24 release checks** pass. Rust/backend source is unchanged; the 0.13.50
+15-test null-driver result remains prior evidence, not a new run. No browser,
+Tauri IPC or physical-device qualification was performed for this change.
+
+Both existing app sessions remain untouched. No native build/install, device
+operation, release tag or Apple upload. Prior 0.13.50 iOS CI passed; its general
+CI was still queued at the pre-push check. Current commit CI is separate from
+local validation. [Sanitized evidence](evidence/native-source-owner.json).

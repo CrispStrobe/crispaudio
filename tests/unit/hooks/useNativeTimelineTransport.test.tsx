@@ -1,3 +1,4 @@
+import {nativeSourceOwner} from '../../../src/audio/engine/NativeSourceOwner';
 import {DEFAULT_MUSIC} from '../../../src/lib/musicalTime';
 import {afterEach,it,expect,vi} from 'vitest';
 import {act,cleanup,renderHook} from '@testing-library/react';
@@ -56,4 +57,15 @@ it('updates click enable and level without restarting native playback, including
  act(()=>useProjectStore.temporal.getState().undo());
  expect(playNativeOwned).toHaveBeenCalledTimes(1);expect(updateMix).toHaveBeenLastCalledWith(project);
  expect(closeNativeOwned).not.toHaveBeenCalled();
+});
+
+it.each(['continue','stop','unmount'] as const)('joins source cleanup before native arrangement start: %s',async action=>{
+ useUIStore.setState({timelineRecording:false});const initial=useProjectStore.getInitialState();
+ useProjectStore.setState({...initial,project:{...initial.project,duration:4}});
+ let release!:()=>void;const close=vi.fn(()=>new Promise<void>(resolve=>{release=resolve;}));nativeSourceOwner.reserve(close);
+ const playNativeOwned=vi.fn().mockResolvedValue(undefined),engine={playNativeOwned,updateMix:vi.fn(),closeNativeOwned:vi.fn(async()=>{}),pauseNativeOwned:vi.fn(async()=>{})} as unknown as TimelineEngine;
+ const hook=renderHook(()=>useNativeTimelineTransport({current:engine},true));
+ await act(async()=>useProjectStore.getState().setIsPlaying(true));expect(close).toHaveBeenCalledOnce();expect(playNativeOwned).not.toHaveBeenCalled();
+ if(action==='stop')act(()=>useProjectStore.getState().setIsPlaying(false));if(action==='unmount')hook.unmount();
+ await act(async()=>release());expect(playNativeOwned).toHaveBeenCalledTimes(action==='continue'?1:0);hook.unmount();
 });

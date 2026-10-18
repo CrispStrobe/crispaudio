@@ -1,3 +1,4 @@
+import {nativeSourceOwner} from '../audio/engine/NativeSourceOwner';
 import i18n from '../i18n';
 import {useEffect,type RefObject} from 'react';
 import type {TimelineEngine} from '../audio/engine/TimelineEngine';
@@ -27,7 +28,11 @@ export function useNativeTimelineTransport(engineRef:RefObject<TimelineEngine|nu
    if(first>=last){state.setIsPlaying(false);return;}
    if(state.loopEnabled&&Math.round((last-first)*48000)<2048){fail(new Error(i18n.t('nativePreview.shortLoop')));return;}
    useUIStore.setState({nativePreviewStatus:'rendering'});
-   void engine.playNativeOwned(state.project,state.sources,time,first,last,state.loopEnabled,fail).then(()=>{
+   void (async()=>{
+    await nativeSourceOwner.stop();
+    if(disposed||token!==request||!useProjectStore.getState().isPlaying||useUIStore.getState().timelineRecording)return;
+    await engine.playNativeOwned(state.project,state.sources,time,first,last,state.loopEnabled,fail);
+   })().then(()=>{
     if(disposed||token!==request)return;
     engine.updateMix(useProjectStore.getState().project);
    }).catch(error=>{if(token===request)fail(error);});

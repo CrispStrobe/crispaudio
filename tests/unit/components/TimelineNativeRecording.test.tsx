@@ -1,3 +1,4 @@
+import {nativeSourceOwner} from '../../../src/audio/engine/NativeSourceOwner';
 import {beforeEach,expect,it,vi} from 'vitest';
 import {act,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {TimelineRecording} from '../../../src/components/timeline/TimelineRecording';
@@ -61,4 +62,14 @@ it('transport Stop while permission is pending releases its late stream without 
  let release!:(value:unknown)=>void;const stop=vi.fn(),get=vi.fn(()=>new Promise(resolve=>{release=resolve;}));
  vi.stubGlobal('navigator',{mediaDevices:{getUserMedia:get,enumerateDevices:vi.fn(async()=>[]),addEventListener:vi.fn(),removeEventListener:vi.fn()}});mocks.inputs.mockResolvedValue({permission:'Undetermined',devices:[]});
  try{renderRecording();fireEvent.click(screen.getByRole('button',{name:'recording.start'}));await waitFor(()=>expect(get).toHaveBeenCalled());act(()=>window.dispatchEvent(new Event('crispaudio-transport-stop')));await waitFor(()=>expect(useUIStore.getState().timelineRecording).toBe(false));await act(async()=>release({getTracks:()=>[{stop}]}));await waitFor(()=>expect(stop).toHaveBeenCalledTimes(1));expect(mocks.start).not.toHaveBeenCalled();expect(mocks.status).not.toHaveBeenCalled();}finally{vi.unstubAllGlobals();}
+});
+
+it.each([false,true])('joins source output before permission/inventory/native recording, respecting Stop=%s',async cancel=>{
+ let release!:()=>void;nativeSourceOwner.reserve(()=>new Promise<void>(resolve=>{release=resolve;}));
+ renderRecording();fireEvent.click(screen.getByRole('button',{name:'recording.start'}));
+ await act(async()=>{await Promise.resolve();});expect(mocks.inputs).not.toHaveBeenCalled();expect(mocks.start).not.toHaveBeenCalled();
+ if(cancel)act(()=>window.dispatchEvent(new Event('crispaudio-transport-stop')));
+ await act(async()=>release());
+ if(cancel){await waitFor(()=>expect(useUIStore.getState().timelineRecording).toBe(false));expect(mocks.inputs).not.toHaveBeenCalled();expect(mocks.start).not.toHaveBeenCalled();}
+ else {await waitFor(()=>expect(mocks.status).toHaveBeenCalled());fireEvent.click(screen.getByRole('button',{name:'recording.stop'}));await waitFor(()=>expect(useUIStore.getState().timelineRecording).toBe(false));}
 });

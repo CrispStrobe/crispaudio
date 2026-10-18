@@ -1,3 +1,4 @@
+import {nativeSourceOwner} from '../audio/engine/NativeSourceOwner';
 import {useNativeTimelineTransport} from './useNativeTimelineTransport';
 import {useSettingsStore} from '../stores/settingsStore';
 import {hasNativeEffects} from '../lib/nativeEffects';
@@ -106,6 +107,7 @@ export function useTimelineTransport(engineRef: RefObject<TimelineEngine | null>
     };
     document.addEventListener('visibilitychange', onVisibility);
     void (async()=>{
+      await nativeSourceOwner.stop();if(cancelled)return;
       await audio.resume();
       if(native){
         if(!isNativeMac())throw new Error(i18n.t('nativePreview.macOnly'));

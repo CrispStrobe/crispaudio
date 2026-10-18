@@ -1,3 +1,4 @@
+import {nativeSourceOwner} from '../../../src/audio/engine/NativeSourceOwner';
 import {useSettingsStore} from '../../../src/stores/settingsStore';
 vi.mock('../../../src/lib/nativeMenuPlatform',()=>({isNativeMac:()=>true}));
 import {useUIStore} from '../../../src/stores/uiStore';
@@ -122,4 +123,12 @@ it('drops stale rendered audio after a project edit during preparation',async()=
  let release!:(value:AudioBuffer)=>void;engine.renderMixRange.mockImplementationOnce(()=>new Promise(resolve=>{release=resolve;}));native();const hook=await start();
  await act(async()=>useProjectStore.setState({project:{...useProjectStore.getState().project,masterVolume:.4}}));await act(async()=>release(rendered));
  expect(engine.playRenderedPreview).not.toHaveBeenCalled();expect(useProjectStore.getState().isPlaying).toBe(false);expect(useUIStore.getState().nativePreviewStatus).toBe('idle');hook.unmount();
+});
+
+it.each([false,true])('joins source cleanup before compatible arrangement, respecting cancellation=%s',async cancel=>{
+ let release!:()=>void;nativeSourceOwner.reserve(()=>new Promise<void>(resolve=>{release=resolve;}));
+ const resume=vi.fn(async()=>{}),hook=renderHook(()=>useTimelineTransport(engineRef,{...audio,resume}));
+ await act(async()=>useProjectStore.getState().setIsPlaying(true));expect(resume).not.toHaveBeenCalled();expect(engine.play).not.toHaveBeenCalled();
+ if(cancel)act(()=>useProjectStore.getState().setIsPlaying(false));
+ await act(async()=>release());expect(resume).toHaveBeenCalledTimes(cancel?0:1);expect(engine.play).toHaveBeenCalledTimes(cancel?0:1);hook.unmount();
 });

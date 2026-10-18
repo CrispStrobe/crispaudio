@@ -21,7 +21,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.50 adds hardware-free native
+The installed baseline remains 0.13.33. Source 0.13.51 adds the shared source-preview
+close/join barrier; see the latest checkpoint below. Source 0.13.50 adds hardware-free native
 source-worker qualification and enforces 48 kHz audition admission; start at the
 latest checkpoint below. Source 0.13.49 fixes AU source-window
 fidelity and clears the measured offline parity blocker; start at the latest
@@ -910,3 +911,45 @@ Continue in this order:
 
 No installed bundle replacement/re-sign/relaunch, hardware action, tag or Apple
 upload. Private compiler/fixture locations and process details stay ignored.
+
+
+## Native source ownership handoff — 0.13.51 checkpoint
+
+`NativeSourceOwner` reserves a source preview before upload and synchronously
+revokes an outgoing owner. Its retained promise joins pending preparation and
+output cleanup even after the component releases its lease. A stale release
+cannot remove the replacement owner. A cleanup error keeps admission closed
+rather than opening an overlapping output; reload is required after such an
+unrecoverable join failure. The coordinator itself has no device APIs.
+
+`NativeSourceAudition` registers its existing Stop/close implementation with that
+owner, checks its lease during preparation and joins old output even when a
+replacement request fails validation. Arrangement (native and compatible), native
+and compatible recording, input preview/calibration, rendered source audition,
+takes and Mix A/B now await the barrier. Existing generation/abort/project checks
+suppress cancelled starts after the wait. Native Record waits before inventory
+and microphone authorization; the controller also checks before snapshot upload.
+This handles an outgoing source owner; it is not a universal audio-owner manager.
+Reverse transitions still require the source UI to stop/join the arrangement and
+exclude active recording/other previews before reserving a source.
+
+The native source UI remains hidden. Continue with compact shared Play/Stop and
+rendered fallback, initially 48 kHz full-clip qualified stereo sources. Define
+stereo-effect/mono output and headroom policies, original/preview and live controls,
+and first-pass saved-state Prepare/Apply parity before activation. Wire source
+project/range/channel/lock/reset/Apply/unmount invalidation and test actual UI
+through a null-backed isolated IPC bridge with AudioQueue/device traps. The Rust
+null driver tests DSP/core, not Tauri IPC; the old muted live harness opens real
+hardware and must not substitute for that bridge. Then qualify Core Audio clocks,
+UID routing/hotplug, WebKit and physical/load N5 separately. Broader accepted
+restoration, recipe recall, waveform/scale and freeze work remains scoped above.
+
+Validation: **2,175 frontend tests / 230 files** pass (two workers, 20-second
+per-test ceiling), including **70 focused tests / 6 files** for ownership,
+source audition, recording and transport. Production frontend build, full lint
+and **24 release checks** pass. Rust/backend source is unchanged; the 0.13.50
+15-test null-driver result remains prior evidence, not a new run. No browser,
+Tauri IPC or physical-device qualification was performed for this change.
+[Source ownership evidence](evidence/native-source-owner.json).
+No native app build/install, audio hardware, tag or Apple upload. Both running
+sessions and the pending .41 human question remain unchanged.

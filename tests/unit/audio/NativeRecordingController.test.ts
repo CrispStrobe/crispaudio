@@ -1,3 +1,4 @@
+import {nativeSourceOwner} from '../../../src/audio/engine/NativeSourceOwner';
 import {beforeEach,expect,it,vi} from 'vitest';
 import {NativeRecordingController,NativeRecordingFailure,nativeRecordingOptions,type NativeRecordingSpec} from '../../../src/audio/plugins/NativeRecordingController';
 import {useProjectStore} from '../../../src/stores/projectStore';
@@ -76,4 +77,13 @@ it('monitor errors and invalid controls do not stop dry recording or modify pend
  await expect(controller.mix({backing:NaN,output:1})).rejects.toThrow('Invalid native monitor levels');await expect(controller.cue('a',{gain:1,pan:0,mono:false})).rejects.toThrow('Unknown cue track');
  mocks.mix.mockRejectedValueOnce(new Error('monitor unavailable'));await expect(controller.mix({backing:.5,output:1})).rejects.toThrow('monitor unavailable');expect(mocks.recordingClose).not.toHaveBeenCalled();
  await controller.mix({backing:.3,output:1});const result=await controller.stop();expect(result.next!.project.tracks[0].takes![0].startTime).toBe(.5);await expect(controller.mix({backing:1,output:1})).rejects.toMatchObject({name:'AbortError'});
+});
+
+it.each([false,true])('joins source output before native recording preparation, respecting cancellation=%s',async cancel=>{
+ let release!:()=>void;nativeSourceOwner.reserve(()=>new Promise<void>(resolve=>{release=resolve;}));
+ const s=spec(),controller=new NativeRecordingController(s),starting=controller.start(nativeRecordingOptions(s,inventory,outputs));
+ const result=cancel?expect(starting).rejects.toMatchObject({name:'AbortError'}):starting;
+ await Promise.resolve();expect(mocks.create).not.toHaveBeenCalled();expect(mocks.startRecording).not.toHaveBeenCalled();
+ const stopped=cancel?controller.stop(true):undefined;release();await result;await stopped;
+ expect(mocks.create).toHaveBeenCalledTimes(cancel?0:1);expect(mocks.startRecording).toHaveBeenCalledTimes(cancel?0:1);if(!cancel)await controller.stop(true);
 });

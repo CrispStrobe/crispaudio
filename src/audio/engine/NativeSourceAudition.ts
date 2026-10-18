@@ -1,3 +1,4 @@
+import {nativeSourceOwner,type NativeSourceLease} from './NativeSourceOwner';
 import {validNativeEffects} from '../../lib/nativeEffects';
 import type {AudioSource,NativeEffect,TimelineProject} from '../../types/audio';
 import {NativePlaybackController} from '../plugins/NativePlaybackController';
@@ -49,6 +50,7 @@ export function nativeSourcePlan(input:NativeSourceInput,levelDb=0){
  * rate-generic for qualification. No plugin-state capture or Apply parity is
  * implied by this transport adapter. */
 export class NativeSourceAudition {
+ private lease?:NativeSourceLease;
  private project?:TimelineProject;
  private generation=0;
  private current?:()=>boolean;
@@ -69,17 +71,24 @@ export class NativeSourceAudition {
  private check(){if(this.current&&!this.current())throw interrupted();}
  async play(input:NativeSourceInput,options:Options={}){
   const previous=this.stop(),generation=++this.generation;
-  options.signal?.throwIfAborted();if(options.isCurrent&&!options.isCurrent())throw interrupted();
-  if(input.sampleRate!==48000)throw new Error('Native source preview currently requires 48 kHz audio');
-  const plan=nativeSourcePlan(input,options.levelDb),check=()=>{options.signal?.throwIfAborted();if(generation!==this.generation||options.isCurrent&&!options.isCurrent())throw interrupted();};
+  // Even rejected replacement requests must join the old output before the
+  // caller can fall back to rendered playback. Validate before allocating PCM.
+  let plan:ReturnType<typeof nativeSourcePlan>;
+  try{
+   options.signal?.throwIfAborted();if(options.isCurrent&&!options.isCurrent())throw interrupted();
+   if(input.sampleRate!==48000)throw new Error('Native source preview currently requires 48 kHz audio');
+   plan=nativeSourcePlan(input,options.levelDb);
+  }catch(error){await previous;throw error;}
+  const lease=nativeSourceOwner.reserve(()=>this.stop());this.lease=lease;
+  const check=()=>{options.signal?.throwIfAborted();if(generation!==this.generation||!lease.isCurrent()||options.isCurrent&&!options.isCurrent())throw interrupted();};
   const abort=()=>{if(generation===this.generation)void this.stop();};
   options.signal?.addEventListener('abort',abort,{once:true});
   window.addEventListener('crispaudio-output-changed',abort);
   this.detach=()=>{options.signal?.removeEventListener('abort',abort);window.removeEventListener('crispaudio-output-changed',abort);};
   this.current=options.isCurrent;this.project=plan.project;
   try{
-   await previous;check();
-   await this.controller.play(plan.project,plan.sources,0,0,plan.project.duration,options.loop??false,options.muted??false,()=>generation===this.generation&&!options.signal?.aborted&&(!options.isCurrent||options.isCurrent()));check();
+   await Promise.all([previous,lease.ready]);check();
+   await this.controller.play(plan.project,plan.sources,0,0,plan.project.duration,options.loop??false,options.muted??false,()=>generation===this.generation&&lease.isCurrent()&&!options.signal?.aborted&&(!options.isCurrent||options.isCurrent()));check();
    // Controls may have changed during upload/preparation. Publish the latest set
    // without opening a replacement helper or changing saved state/topology.
    if(this.project)await this.controller.update(this.project);check();
@@ -99,5 +108,5 @@ export class NativeSourceAudition {
   try{this.check();await this.controller.poll();if(generation===this.generation)this.check();}
   catch(error){if(generation!==this.generation)return;await this.stop();this.events.fault(error);}
  }
- stop(){this.generation++;this.detach?.();this.detach=undefined;this.current=undefined;this.project=undefined;return this.controller.stop();}
+ stop(){this.generation++;this.detach?.();this.detach=undefined;this.current=undefined;this.project=undefined;const lease=this.lease;this.lease=undefined;const closing=this.controller.stop();lease?.release(closing);return closing;}
 }

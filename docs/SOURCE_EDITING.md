@@ -178,3 +178,10 @@ open. Native source audition admits 48 kHz only until matching resampling/Apply
 semantics are defined. The null clock does not establish physical acceptance.
 The [engineering handoff](WORK_HANDOFF.md#native-source-null-output-qualification--01350-checkpoint)
 records the measured scope and next acceptance steps.
+
+
+Version 0.13.51 adds source-preview ownership handoff internally: pending uploads
+and outputs are joined before arrangement, recording or another audition starts.
+Cancelled requests cannot begin playing after that wait. The editor's native
+streaming controls still await UI/state/headroom qualification; **Auto preview**
+continues to render. See the [latest handoff](WORK_HANDOFF.md#native-source-ownership-handoff--01351-checkpoint).

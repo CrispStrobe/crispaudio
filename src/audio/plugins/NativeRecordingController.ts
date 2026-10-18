@@ -1,3 +1,4 @@
+import {nativeSourceOwner} from '../engine/NativeSourceOwner';
 import {readFile} from '@tauri-apps/plugin-fs';
 import {invoke} from '@tauri-apps/api/core';
 import type {AudioSource,RecordingInput,TimelineProject} from '../../types/audio';
@@ -71,6 +72,8 @@ export class NativeRecordingController {
   const {spec,controller}=this;
   const isCurrent=()=>!controller.signal.aborted&&spec.current().project===spec.project;
   try{
+   await nativeSourceOwner.stop();controller.signal.throwIfAborted();
+   if(!isCurrent())throw aborted();
    // Empty sessions still need a positive native graph duration; extending the
    // frozen backing does not mutate the editor project or allocate silence PCM.
    const backing={...spec.project,duration:Math.max(spec.project.duration,(options.recordEndFrame??options.recordStartFrame+48000)/RATE)};

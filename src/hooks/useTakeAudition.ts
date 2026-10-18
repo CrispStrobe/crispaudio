@@ -1,3 +1,4 @@
+import {nativeSourceOwner} from '../audio/engine/NativeSourceOwner';
 import {TimelineEngineContext} from '../components/timeline/timelineEngineContext';
 import {useEffect,useRef,useState,useCallback,useContext} from 'react';
 import {useAudioEngine} from './useAudioEngine';
@@ -12,7 +13,7 @@ export function useTakeAudition(project:TimelineProject,disabled:boolean){
  useEffect(()=>useProjectStore.subscribe(state=>{if(state.isPlaying)stop();}),[stop]);
  const play=async(id:string,snapshot:TimelineProject,start:number,end:number)=>{
   if(disabled)return;if(playing===id){stop();return;}stop();const token=generation.current;
-  mainEngine?.current?.stop();useProjectStore.getState().setIsPlaying(false);await audio.resume();if(token!==generation.current)return;
+  mainEngine?.current?.stop();useProjectStore.getState().setIsPlaying(false);await nativeSourceOwner.stop();if(token!==generation.current)return;await audio.resume();if(token!==generation.current)return;
   const engine=new TimelineEngine(audio.getContext(),audio.masterGain);preview.current=engine;
   try{engine.setSources(useProjectStore.getState().sources);await engine.prepare(snapshot);if(token!==generation.current){engine.stop();return;}engine.play(snapshot,start,end);setPlaying(id);timer.current=setTimeout(stop,Math.max(0,end-start)*1000+100);}catch(error){stop();throw error;}
  };

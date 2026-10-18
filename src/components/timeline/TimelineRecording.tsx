@@ -1,3 +1,4 @@
+import {nativeSourceOwner} from '../../audio/engine/NativeSourceOwner';
 import {authorizeNativeRecording} from '../../audio/plugins/NativeRecordingPermission';
 import {NativeRecordingRecovery} from './NativeRecordingRecovery';
 import {NativeRecordingMix} from './NativeRecordingMix';
@@ -56,7 +57,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
  const refresh=async()=>{const devices=await navigator.mediaDevices.enumerateDevices();if(mounted.current)setDevices(devices.filter(d=>d.kind==='audioinput'));};
  const disconnect=()=>{useRecordingMeterStore.getState().clear(owner.current?.trackId);calibrationController.current?.abort();capture.current?.disconnect();capture.current=null;owner.current=null;setConnected(false);setMonitoring(false);setPeak(0);setChannels(0);};
  const configure=(patch:Partial<RecordingInput>)=>{if(!track||recording)return;if('deviceId' in patch||'channel' in patch||'monitorFx' in patch||'native' in patch)disconnect();useProjectStore.getState().updateTrack(track.id,{recordingInput:{...input,...patch}});};
- const connect=async()=>{if(!track||track.locked||track.kind==='bus')throw new Error('recording.locked');capture.current?.disconnect();const recorder=new TimelineCapture(audio.getContext(),audio.masterGain,(peak,channels)=>{if(mounted.current){useRecordingMeterStore.getState().update(track.id,peak,channels);setPeak(peak);setChannels(channels);}},reason=>{if(mounted.current)setError(t(reason));void finish.current();});capture.current=recorder;owner.current=previewOwner(project,track.id,input);try{if(input.monitor&&input.monitorFx&&!isNativeMac())throw new Error('recording.cueMac');recorder.configureCue(input,track.nativeEffects,reason=>{if(mounted.current){setMonitoring(false);setCueLatency(0);setError(t(reason));}});await recorder.connect(input.deviceId,input.channel);}catch(error){recorder.disconnect();if(capture.current===recorder)disconnect();throw error;}if(capture.current!==recorder||!previewMatches(owner.current,useProjectStore.getState().project,trackId)){recorder.disconnect();return;}try{await recorder.monitoring(input.monitor);}catch(error){recorder.disconnect();if(capture.current===recorder)disconnect();throw error;}if(capture.current!==recorder||!previewMatches(owner.current,useProjectStore.getState().project,trackId)){recorder.disconnect();return;}if(mounted.current){setCueLatency(recorder.monitorLatency());setConnected(true);setMonitoring(input.monitor);await refresh();}};
+ const connect=async()=>{if(!track||track.locked||track.kind==='bus')throw new Error('recording.locked');capture.current?.disconnect();const recorder=new TimelineCapture(audio.getContext(),audio.masterGain,(peak,channels)=>{if(mounted.current){useRecordingMeterStore.getState().update(track.id,peak,channels);setPeak(peak);setChannels(channels);}},reason=>{if(mounted.current)setError(t(reason));void finish.current();});capture.current=recorder;owner.current=previewOwner(project,track.id,input);try{await nativeSourceOwner.stop();if(!mounted.current||capture.current!==recorder||useProjectStore.getState().project!==project){recorder.disconnect();return;}if(input.monitor&&input.monitorFx&&!isNativeMac())throw new Error('recording.cueMac');recorder.configureCue(input,track.nativeEffects,reason=>{if(mounted.current){setMonitoring(false);setCueLatency(0);setError(t(reason));}});await recorder.connect(input.deviceId,input.channel);}catch(error){recorder.disconnect();if(capture.current===recorder)disconnect();throw error;}if(capture.current!==recorder||!previewMatches(owner.current,useProjectStore.getState().project,trackId)){recorder.disconnect();return;}try{await recorder.monitoring(input.monitor);}catch(error){recorder.disconnect();if(capture.current===recorder)disconnect();throw error;}if(capture.current!==recorder||!previewMatches(owner.current,useProjectStore.getState().project,trackId)){recorder.disconnect();return;}if(mounted.current){setCueLatency(recorder.monitorLatency());setConnected(true);setMonitoring(input.monitor);await refresh();}};
  const stopRecording=useCallback(async()=>{
   const native=nativeSession.current;
   if(native){
@@ -106,6 +107,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
  const calibrate=async()=>{
   if(recording||!track)return;setBusy(true);setError('');setCalibration(undefined);const controller=new AbortController();calibrationController.current=controller;let tone:AudioBufferSourceNode|undefined;const snapshot=project;
   try{
+   await nativeSourceOwner.stop();controller.signal.throwIfAborted();
    await audio.resume();if(!capture.current?.connected())await connect();controller.signal.throwIfAborted();await capture.current!.monitoring(false);setMonitoring(false);
    const ctx=audio.getContext(),reference=calibrationSignal(ctx.sampleRate),buffer=ctx.createBuffer(1,reference.length,ctx.sampleRate);buffer.copyToChannel(reference,0);const when=ctx.currentTime+.2;
    capture.current!.start();tone=ctx.createBufferSource();tone.buffer=buffer;tone.connect(audio.masterGain);tone.start(when);
@@ -128,6 +130,8 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
    const active:NativeSession={id:crypto.randomUUID(),phase:'preparing',controller,snapshot,targets,selectedId,polling:false,faults:new Set()};nativeSession.current=active;setLiveNativeSession(active);
    try{
     if((punch||loop)&&!window)throw new Error('recording.rangeRequired');
+    await nativeSourceOwner.stop();
+    if(nativeSession.current!==active||active.stopping)return;
     await engine.current.closeNativeOwned();
     if(nativeSession.current!==active||active.stopping)return;
     const [inventory,outputs]=await Promise.all([NativeTimelineRecording.inputs(),playbackOutputs()]);
@@ -162,6 +166,7 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
   try{
    if((punch||loop)&&!active.window)throw new Error('recording.rangeRequired');
    const lead=recordingLeadIn(active.snapshot,active.targets.map(target=>target.input),useProjectStore.getState().playheadPosition,active.window,active.loop);active.recordStart=lead.takeStart;
+   await nativeSourceOwner.stop();controller.signal.throwIfAborted();
    await audio.resume();
    await Promise.all(active.targets.map(target=>target.capture.monitoring(false)));controller.signal.throwIfAborted();
    if(hasNativeEffects(active.snapshot)){if(mounted.current)setPreparingBacking(true);active.backing=await prepareRecordingBacking(engine.current,audio.getContext(),active.snapshot,active.sources,controller.signal);if(mounted.current)setPreparingBacking(false);}

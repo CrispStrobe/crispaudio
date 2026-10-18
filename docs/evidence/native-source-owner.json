@@ -1,0 +1,50 @@
+{
+  "version": "0.13.51",
+  "date": "2026-10-18",
+  "scope": "Frontend outgoing native source ownership and close/join handoff",
+  "hardwareOpened": false,
+  "nativeSourceUiEnabled": false,
+  "coverage": [
+    "reservation before upload; synchronous revocation",
+    "replacement readiness waits for previous output cleanup",
+    "detached and stale release retain cleanup without clearing replacement owner",
+    "reentrant self-release without self-wait",
+    "failed cleanup blocks later admission",
+    "late upload closed without starting output",
+    "rejected replacement rate joins old output",
+    "native/compatible arrangement cancellation while joining",
+    "native recording controller cancellation before snapshot upload",
+    "recording UI joins before inventory and microphone authorization"
+  ],
+  "validation": {
+    "focused": {
+      "passed": 70,
+      "files": 6
+    },
+    "fullFrontend": {
+      "passed": 2175,
+      "files": 230,
+      "workers": 2,
+      "testTimeoutMs": 20000
+    },
+    "productionBuild": "passed",
+    "lint": "passed",
+    "releaseChecks": 24,
+    "rustTests": "not rerun; backend code unchanged",
+    "browserOrTauriIpc": "not run"
+  },
+  "remaining": [
+    "shared Source Editor native Play/Stop controls and rendered fallback",
+    "reverse handoff must join arrangement and exclude recording/other previews",
+    "48 kHz full-clip admission and explicit mono/stereo/headroom policy",
+    "saved-state first-pass Prepare/Apply equivalence",
+    "project/range/channel/lock/reset/Apply/unmount UI invalidation",
+    "isolated null-backed IPC/UI harness with queue/device traps",
+    "Core Audio timestamps, selected UID/hotplug, WebKit, physical listening and load qualification"
+  ],
+  "distribution": {
+    "installedAppsUpdated": false,
+    "releaseTag": false,
+    "appleUpload": false
+  }
+}

@@ -1,3 +1,4 @@
+import {nativeSourceOwner} from '../../../src/audio/engine/NativeSourceOwner';
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {NativeSourceAudition,nativeSourcePlan} from '../../../src/audio/engine/NativeSourceAudition';
 import type {NativeEffect,TimelineProject} from '../../../src/types/audio';
@@ -87,4 +88,28 @@ it('duplicates mono into stereo before the timeline panner to preserve source au
 it('rejects cross-rate native audition before allocation/upload while keeping offline plans rate-generic',async()=>{
  const {audio}=owner(),f=input();f.sampleRate=44100;const allocation=vi.fn();vi.stubGlobal('AudioBuffer',allocation);
  await expect(audio.play(f)).rejects.toThrow('requires 48 kHz');expect(allocation).not.toHaveBeenCalled();expect(create).not.toHaveBeenCalled();expect(audio.active).toBe(false);
+});
+
+it('joins a source output before another source instance can upload or start',async()=>{
+ const a=session(),b=session();let release!:()=>void;
+ a.snapshot.close.mockImplementationOnce(()=>new Promise<void>(resolve=>{release=resolve;}));
+ create.mockResolvedValueOnce(a.snapshot).mockResolvedValueOnce(b.snapshot);
+ const first=owner().audio,second=owner().audio;await first.play(input());
+ const opening=second.play(input());await vi.waitFor(()=>expect(a.snapshot.close).toHaveBeenCalledOnce());
+ expect(first.active).toBe(false);expect(create).toHaveBeenCalledOnce();release();await opening;
+ expect(create).toHaveBeenCalledTimes(2);expect(second.active).toBe(true);
+});
+it('revokes an uploading source and exposes its late cleanup to other consumers',async()=>{
+ const f=session();let release!:(value:typeof f.snapshot)=>void;
+ create.mockImplementationOnce(()=>new Promise(resolve=>{release=resolve;}));
+ const audio=owner().audio,opening=audio.play(input()),failure=expect(opening).rejects.toMatchObject({name:'AbortError'});
+ await vi.waitFor(()=>expect(create).toHaveBeenCalledOnce());
+ let joined=false;const stopped=nativeSourceOwner.stop().then(()=>{joined=true;});await Promise.resolve();expect(joined).toBe(false);
+ release(f.snapshot);await failure;await stopped;expect(f.snapshot.startPlayback).not.toHaveBeenCalled();expect(f.snapshot.close).toHaveBeenCalledOnce();
+});
+it('waits for prior output cleanup even when a replacement rate is rejected',async()=>{
+ const f=session();let release!:()=>void;f.snapshot.close.mockImplementationOnce(()=>new Promise<void>(resolve=>{release=resolve;}));
+ create.mockResolvedValue(f.snapshot);const audio=owner().audio;await audio.play(input());
+ let rejected=false;const failure=audio.play({...input(),sampleRate:44100}).catch(error=>{rejected=true;expect(error.message).toContain('requires 48 kHz');});
+ await vi.waitFor(()=>expect(f.snapshot.close).toHaveBeenCalledOnce());expect(rejected).toBe(false);release();await failure;expect(rejected).toBe(true);
 });

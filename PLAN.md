@@ -1,6 +1,15 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for source candidate 0.13.50 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for source candidate 0.13.51 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.51 adds a shared source-preview ownership barrier. Native source upload
+reserves ownership immediately; replacement, Stop and unmount retain its output
+close/join promise. Arrangement playback, recording (including permission),
+source/take/Mix A/B audition and input preview/calibration await that barrier.
+Cancellation while waiting suppresses late starts. Even a rejected replacement
+rate waits for the old output to close before rendered fallback can proceed.
+This is frontend lifecycle integration, not activation of native source controls.
+[Latest handoff](docs/WORK_HANDOFF.md#native-source-ownership-handoff--01351-checkpoint).
 
 0.13.50 adds isolated **null-output source-worker qualification**. Production
 native worker/DSP, the bounded PCM consumer and cursor publisher are shared with
