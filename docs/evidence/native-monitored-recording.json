@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-18",
+  "scope": "Internal shared Mac output, bounded backing worker and coordinated recording owner",
+  "installedRecordingChanged": false,
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "checks": {
+    "nativeInput": {
+      "passed": 134,
+      "ignored": 0,
+      "log": "crispaudio-monitored-native-final.log",
+      "includes": [
+        "AU",
+        "SDK VST3",
+        "child-process support fixtures"
+      ]
+    },
+    "media": {
+      "passed": 299,
+      "ignored": 16,
+      "log": "crispaudio-monitored-media-final.log"
+    },
+    "newTests": 21
+  },
+  "coverage": [
+    "Worker backpressure, partial-block consumption, clean EOF and deadline-miss silence",
+    "Worker preparation errors/timeouts/panics, off-callback destruction and cancellation",
+    "Graph project range and native-latency preroll match independent graph renders",
+    "Atomic whole-mixer clock binding and inability to retime rendered PCM",
+    "Actual Mac output callback with fake queue operations: two cues/backing, coherent ramped control updates, cue isolation, backing loss and EOF",
+    "Group preparation before any capture, abandoned preparation, failed-rack and capture startup rollback",
+    "Coordinated owner: readiness gate, arming failure, successful stop and atomic manifest",
+    "Raw/output loss, cancellation, finalization errors and Drop quiesce captures before output cleanup",
+    "Active monitored run handles an actual backing-worker render failure without publishing complete dry takes"
+  ],
+  "limitations": [
+    "No app commands/recording UI or project placement/Undo integration",
+    "Physical clock accuracy, latency, load/background/hot-plug and independent-device correction unqualified",
+    "Current decoded-source/frame limits apply; bounded queue is not long-session disk streaming",
+    "App Rust/frontend/simulator/bundle not rerun for this unused internal media increment"
+  ]
+}

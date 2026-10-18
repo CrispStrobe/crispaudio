@@ -19,7 +19,7 @@ Twenty-one additional tests pass: full media **299 passed, 16 ignored**; explici
 native-input **134 passed**, including AU/VST3 fixtures. The working installed
 0.13.33 app is unchanged. No physical input/output, frontend/app build, simulator,
 installation or Apple submission is claimed for this internal checkpoint.
-[Evidence](evidence/native-recording-owner.json); [next tasks](WORK_HANDOFF.md).
+[Evidence](evidence/native-monitored-recording.json); [next tasks](WORK_HANDOFF.md).
 
 ## Wrap-up checkpoint — 2026-10-17
 

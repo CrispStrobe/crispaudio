@@ -150,7 +150,7 @@ No new patent conclusion or distribution restriction is introduced by this check
 The shared-output/recording-owner checkpoint adds 21 tests. Full media suite:
 **299 passed, 16 ignored**. Explicit native-input suite, including SDK VST3 and
 child-process fixtures: **134 passed**. Formatting/diff, changed JSON and Markdown
-link checks pass. See [scope](evidence/native-recording-owner.json).
+link checks pass. See [scope](evidence/native-monitored-recording.json).
 No microphone/output device was opened. No frontend, app Rust, simulator, bundle,
 installation or Apple upload was rerun for this unused internal media increment;
 the earlier app Rust result (39 passed, one ignored) is historical.
