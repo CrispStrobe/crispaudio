@@ -14,12 +14,15 @@ historical records, not a current completion checklist.
 2. Check `git status`, the current commit and GitHub workflow results. Preserve
    existing user changes, installed sessions and original media. Never commit
    credentials, personal paths, private recordings or signing material.
-3. Continue task N4 below; N1–N3 are implemented as internal software paths. Keep architecture changes bounded and reviewable;
-   update the acceptance evidence and this handoff at each checkpoint.
+3. Continue the latest scoped source checkpoint below while physical native checks
+   wait. N1–N3 are implemented internally; N4/N5 still require their stated
+   platform/device acceptance. Keep architecture changes bounded and reviewable;
+   update the evidence and this handoff at each checkpoint.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.45 adds a bounded continuous
+The installed baseline remains 0.13.33. Source 0.13.46 adds automatic bounded
+live-filter waveform snapshots; see the latest checkpoint below. Source 0.13.45 adds a bounded continuous
 built-in source filter; see the latest checkpoint below. Source 0.13.44 extends Mix A/B to frozen live mixer values, with baked fields
 protected, localized package errors and short-render preflight.
 Source 0.13.43 adds bounded [reversible track freeze](TRACK_FREEZE.md).
@@ -531,3 +534,64 @@ source A/B/matching browser regression also passes. [Sanitized results](evidence
 Full frontend suite was not rerun; the preceding checkpoint's timeout/retry remains
 recorded above. These checks do not establish physical listening quality or native
 app/WebKit acceptance.
+
+
+## Live-filter waveform snapshots — 0.13.46 checkpoint
+
+`useSourceFilterWaveform.ts` keeps display-only PCM separate from audition/draft,
+analysis, project and Undo. Request identity includes settings, channels/ranges,
+channel, rate and project/source-map identity. Results display only for an exact
+current request; Original bypass restores source immediately. Pending, unsupported,
+over-budget and failed snapshots show labelled source fallback. `LatestPreview`
+debounces 150 ms, permits one actual in-flight task and one latest replacement,
+and waits for settlement even when Abort cannot stop Web Audio's native DSP.
+Prepare pauses the queue and waits before allocating its render. Validation/copy
+loops now check cancellation and yield between 64K-sample chunks when an 8 ms
+work budget expires. The canvas inputs/selections are memoized so slider/playhead
+rerenders do not repeatedly scan unchanged PCM. `drawSourceWaveform.ts` also
+draws in cancellable 8 ms work slices to a temporary canvas and publishes only a
+complete current frame; snapshot readiness includes drawing completion. This avoids
+large redraws blocking the slider/transport while keeping zoom/selection geometry.
+
+Automatic admission uses a **64 MiB allocation estimate** (including source-window
+copy and scratch); explicit Prepare keeps the existing 256 MiB / 120-second bounds.
+No global/resident-memory ceiling is claimed. Unselected channels/ranges remain
+exact. Snapshots use the same static graph as Prepare, with empty initial history;
+they do not visualize each loop's accumulated filter history, changing smoothing
+transients or resampling differences. Analysis remains source-based until Prepare.
+No project format, native logic, installation or Apple submission change.
+
+Next source tasks:
+1. Add a bounded ordered built-in source chain with compact controls, explicit
+   bypass, latency/tail policy, retained originals and one-Undo Apply. Check DSP
+   parity at several rates, disjoint selections and first/looped passes. Persist
+   recipe order explicitly; the current single-filter parameter record cannot
+   encode an ordered chain.
+2. Add persistent native source streams with latency-aligned dry/wet, live
+   parameter updates, fault/cancel ownership and offline Apply parity. Native
+   source Auto preview remains rendered until those contracts are qualified.
+3. Extend waveform qualification to source/window extremes, repeated edits and
+   actual Tauri/WebKit on supported platforms. Measure OS resident peak memory
+   and sustained responsiveness; allocation estimates exclude browser/native
+   overhead. Native graphs cannot be forcibly stopped by Abort.
+4. Continue restoration detection/healing/drift and remaining freeze topology/
+   automation/fault cases. The existing .41 speech question and physical N5 remain
+   pending; preserve both user app sessions and do not repeat hardware actions.
+
+Validation: **40 focused tests / 7 files**, production build, lint (full run plus
+final changed-file checks), **24 release checks**, muted live-filter GUI and
+source A/B regression checks pass. Automatic and prepared canvas frames match;
+Original restores source pixels; excluded PCM, retained originals, one-Undo Apply,
+linked/portable reopen, unsupported multichannel fallback and German 390 px layout
+pass. Cancelled drawing never publishes a partial/stale frame.
+
+A generated 20-second 48 kHz stereo fixture admits **38,400,000 estimated bytes**,
+runs at most one offline graph, and publishes only final settings after a burst.
+The checked latest render took about **67 ms**; the full editor update took about
+**362 ms**, including debounce. Neither measured phase recorded a browser long
+task after warmup. Maximum heartbeat gaps were 13.4 ms for rendering and 61 ms
+for the editor check. These are observations from one generated fixture, not
+cross-device responsiveness or resident-memory guarantees. Broader sustained,
+Tauri/WebKit and OS memory profiling remain open. [Sanitized results](evidence/source-filter-waveform.json).
+Full frontend suite was not rerun; the preceding broad timeout/retry remains
+recorded at its checkpoint. Both original running app sessions remain intact.

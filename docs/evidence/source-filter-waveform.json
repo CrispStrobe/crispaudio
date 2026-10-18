@@ -1,0 +1,271 @@
+{
+  "version": "0.13.46",
+  "date": "2026-10-18",
+  "scope": "Muted Chromium; generated PCM only. No native app/WebKit, physical audio, mic, signing or Apple submission.",
+  "commands": [
+    "node scripts/test-source-live-filter.mjs",
+    "node scripts/qualify-source-filter-waveform.mjs",
+    "node scripts/test-source-audition.mjs"
+  ],
+  "browser": {
+    "pcm": {
+      "expectedRms": 0.06986920995724333,
+      "measuredRms": 0.06986920589049117,
+      "rates": [
+        {
+          "rate": 8000,
+          "maxError": 0
+        },
+        {
+          "rate": 44100,
+          "maxError": 0
+        },
+        {
+          "rate": 96000,
+          "maxError": 0
+        },
+        {
+          "rate": 192000,
+          "maxError": 0
+        }
+      ],
+      "maxError": 0,
+      "unselectedError": 0,
+      "gainRatio": 0.2511886418579892,
+      "expectedGainRatio": 0.251188643150958,
+      "bypassError": 0,
+      "lateCancelled": true
+    },
+    "continuousControls": {
+      "voices": 1,
+      "filters": 2,
+      "unchanged": true,
+      "undo": 0
+    },
+    "automaticWaveform": true,
+    "unsupportedChannelGuards": true,
+    "automaticMatchesPreparedCanvas": true,
+    "originalRestoresSourceCanvas": true,
+    "applied": {
+      "retained": "filter-source",
+      "operation": {
+        "type": "filter",
+        "channel": -1,
+        "ranges": [
+          {
+            "start": 0,
+            "end": 192000
+          }
+        ],
+        "targetDb": -1,
+        "parameters": {
+          "highpass": 600,
+          "lowpass": 16000,
+          "gainDb": -9
+        }
+      },
+      "sources": 2,
+      "undo": 1,
+      "changed": true
+    },
+    "reopen": [
+      {
+        "mode": "linked",
+        "maxError": 0,
+        "originalPresent": true,
+        "parameters": {
+          "highpass": 600,
+          "lowpass": 16000,
+          "gainDb": -9
+        }
+      },
+      {
+        "mode": "portable",
+        "maxError": 0,
+        "originalPresent": true,
+        "parameters": {
+          "highpass": 600,
+          "lowpass": 16000,
+          "gainDb": -9
+        }
+      }
+    ],
+    "oneUndo": true,
+    "recordingTimelineCloseCleanup": true,
+    "german390": {
+      "width": 316,
+      "overflow": false
+    },
+    "physicalAudio": false
+  },
+  "performance": {
+    "rendering": {
+      "baselineHeartbeatGapMs": 11.200000047683716,
+      "longTasks": [],
+      "calls": [
+        {
+          "operation": "OfflineAudioContext constructor",
+          "ms": 0.10000002384185791
+        },
+        {
+          "operation": "createBuffer",
+          "ms": 0.2999999523162842
+        },
+        {
+          "operation": "createBufferSource",
+          "ms": 0.10000002384185791
+        },
+        {
+          "operation": "createGain",
+          "ms": 0.10000002384185791
+        },
+        {
+          "operation": "createBiquadFilter",
+          "ms": 0.10000002384185791
+        },
+        {
+          "operation": "createBiquadFilter",
+          "ms": 0
+        },
+        {
+          "operation": "createGain",
+          "ms": 0
+        },
+        {
+          "operation": "createGain",
+          "ms": 0
+        },
+        {
+          "operation": "createGain",
+          "ms": 0
+        },
+        {
+          "operation": "copyToChannel",
+          "ms": 1
+        },
+        {
+          "operation": "copyToChannel",
+          "ms": 0.8999999761581421
+        },
+        {
+          "operation": "startRendering",
+          "ms": 0.10000002384185791
+        },
+        {
+          "operation": "OfflineAudioContext constructor",
+          "ms": 0.10000002384185791
+        },
+        {
+          "operation": "createBuffer",
+          "ms": 0
+        },
+        {
+          "operation": "createBufferSource",
+          "ms": 0.10000002384185791
+        },
+        {
+          "operation": "createGain",
+          "ms": 0
+        },
+        {
+          "operation": "createBiquadFilter",
+          "ms": 0
+        },
+        {
+          "operation": "createBiquadFilter",
+          "ms": 0
+        },
+        {
+          "operation": "createGain",
+          "ms": 0
+        },
+        {
+          "operation": "createGain",
+          "ms": 0
+        },
+        {
+          "operation": "createGain",
+          "ms": 0
+        },
+        {
+          "operation": "copyToChannel",
+          "ms": 0.8000000715255737
+        },
+        {
+          "operation": "copyToChannel",
+          "ms": 0.3999999761581421
+        },
+        {
+          "operation": "startRendering",
+          "ms": 0.10000002384185791
+        },
+        {
+          "operation": "getChannelData",
+          "ms": 0
+        },
+        {
+          "operation": "getChannelData",
+          "ms": 0.10000002384185791
+        }
+      ],
+      "rate": 48000,
+      "seconds": 20,
+      "channels": 2,
+      "budgetBytes": 67108864,
+      "allocationEstimateBytes": 38400000,
+      "maxActive": 1,
+      "maxNativeActive": 1,
+      "starts": [
+        -2,
+        -9
+      ],
+      "finished": [
+        {
+          "gainDb": -2,
+          "ms": 65.70000004768372
+        },
+        {
+          "gainDb": -9,
+          "ms": 67.20000004768372
+        }
+      ],
+      "published": [
+        {
+          "gainDb": -9,
+          "channels": 2,
+          "frames": 960000
+        }
+      ],
+      "elapsedMs": 258.5,
+      "maxHeartbeatGapMs": 13.399999976158142,
+      "overBudgetRejected": true,
+      "peakResidentMemoryMeasured": false
+    },
+    "editor": {
+      "seconds": 20,
+      "elapsedMs": 362,
+      "maxHeartbeatGapMs": 61,
+      "longTasksMs": [],
+      "projectUnchanged": true,
+      "undo": 0,
+      "status": "ready"
+    }
+  },
+  "validation": {
+    "focusedTests": 40,
+    "focusedFiles": 7,
+    "productionBuild": "pass",
+    "lint": "full run plus final changed-file checks pass",
+    "releaseChecks": 24,
+    "existingSourceAuditionBrowserRegression": "pass",
+    "fullFrontendSuite": "not rerun; 0.13.44 broad-run timeout and isolated passing retry remain documented"
+  },
+  "limits": [
+    "Automatic waveform snapshots debounce 150 ms and use a 64 MiB allocation estimate. Prepare keeps the 256 MiB/120-second bounds.",
+    "One actual background render and one latest replacement; Prepare waits for settlement. Abort does not forcibly stop native OfflineAudioContext DSP.",
+    "Validation/copy and temporary-canvas drawing yield to the UI; only a complete current frame is published.",
+    "Snapshots represent a static first pass, not loop history, dynamic smoothing transients or different live/source resampling clocks.",
+    "Analysis and saved PCM change only through the existing Prepare/Apply workflow.",
+    "Browser/native overhead and OS resident peak memory are not measured; timing observations are fixture-specific, not cross-device deadlines."
+  ]
+}

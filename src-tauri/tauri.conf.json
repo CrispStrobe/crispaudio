@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "CrispAudio",
-  "version": "0.13.45",
+  "version": "0.13.46",
   "identifier": "com.crispstrobe.crispaudio",
   "build": {
     "frontendDist": "../dist",

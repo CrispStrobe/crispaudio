@@ -81,8 +81,9 @@ Select a clip and open **Source Editor** for detailed work on its source window.
   Source audition plays source audio; timeline FX belong to arrangement playback.
   Native source previews update after their render finishes.
 - Enable **Live filter**, then press Play to adjust high-pass, low-pass and output
-  while listening. Original/Preview switches smoothly. **Prepare** creates a
-  waveform preview for loudness matching and Apply; originals remain available.
+  while listening. The waveform follows adjustments automatically within its preview
+  budget; Original/Preview switches smoothly. **Prepare** creates a fixed preview
+  for analysis, loudness matching and Apply; originals remain available.
 - Open **Channels & repair** to invert polarity, swap L/R, average stereo into
   both channels, or copy one side to the other. These work on the selected ranges.
 - Repair an isolated click by selecting its damaged samples (up to 1 ms). Choose

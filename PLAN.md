@@ -1,6 +1,13 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for source candidate 0.13.45 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for source candidate 0.13.46 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.46 adds versioned automatic live-filter waveform snapshots. Rendering is
+debounced, serialized and limited to a 64 MiB allocation estimate; stale work is
+discarded and source-only fallback is labelled. Prepare waits for background work.
+Audio continues through the persistent graph; analysis/Apply still use Prepare.
+Next: bounded ordered built-in chains, native source streaming and broader
+performance/resident-memory qualification. See the handoff for acceptance tasks.
 
 0.13.45 adds a continuous built-in source filter: high/low-pass and attenuating
 output update in the playing graph, with smooth Original/Preview switching.
@@ -30,7 +37,7 @@ and per-voice crossfades. Saved PCM/Apply/Undo are unchanged. Scope is measurabl
 See [source restoration](docs/RESTORATION.md). The isolated native preview remains
 0.13.41; its human speech check and N5 qualification are still pending.
 Next independent work: extend source filters to live chains/native streaming and
-versioned background waveform previews, plus remaining freeze cases; broader
+broader waveform performance qualification, plus remaining freeze cases; broader
 restoration detection/healing/drift tracking remains scoped below.
 Start with [the engineering handoff](docs/WORK_HANDOFF.md) for scoped tasks N1–N5,
 acceptance criteria and the remaining accepted product backlog.

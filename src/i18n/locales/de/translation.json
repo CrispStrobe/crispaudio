@@ -2469,6 +2469,14 @@
     "lowpass": "Tiefpass",
     "level": "Ausgang",
     "limit": "Bis zu 120 Sekunden Mono-/Stereo-Audio auswählen. Die Bearbeitung muss außerdem in 256 MiB passen.",
-    "help": "Aktivieren, dann oben abspielen. Filter beim Hören ändern; Original/Vorschau wechselt weich ohne Neustart. Vorbereiten erzeugt eine feste Vorschau für Wellenform, Lautheitsabgleich und Anwenden. Nur ausgewählte Samples/Kanäle ändern sich; das Original bleibt erhalten. Getrennte Bereiche laufen nacheinander durch denselben Filter; Nachklang außerhalb der Auswahl entfällt. Beim Wiederholen bleibt der Filterzustand erhalten. Native Plug-ins nutzen eine separate berechnete Vorschau."
+    "help": "Aktivieren, dann oben abspielen. Filter beim Hören ändern; Original/Vorschau wechselt weich ohne Neustart. Die Wellenform folgt nach einer kurzen Bedienpause. Aktualisiert/Quelle bedeutet, dass noch keine aktuelle Filtervorschau angezeigt wird. Automatische Wellenformvorschauen nutzen ein Speicherbudget von 64 MiB; Vorbereiten erlaubt größere Bearbeitungen und erzeugt eine feste Vorschau für Analyse, Lautheitsabgleich und Anwenden. Nur ausgewählte Samples/Kanäle ändern sich; das Original bleibt erhalten. Getrennte Bereiche laufen nacheinander durch denselben Filter; Nachklang außerhalb der Auswahl entfällt. Beim Wiederholen bleibt der Filterzustand erhalten. Native Plug-ins nutzen eine separate berechnete Vorschau.",
+    "waveform": {
+      "ready": "Filtervorschau",
+      "updating": "Aktualisiert…",
+      "limited": "Quelle · Vorschaulimit",
+      "error": "Quelle · Vorschau nicht verfügbar",
+      "source": "Quelle",
+      "original": "Original"
+    }
   }
 }

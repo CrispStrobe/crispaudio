@@ -21,3 +21,10 @@ it('checks cancellation and memory/duration/channel budgets before allocating of
  await expect(renderSourceFilter(Array.from({length:3},()=>new Float32Array(10)),[{start:0,end:10}],-1,48000,DEFAULT_SOURCE_FILTER,new AbortController().signal)).rejects.toThrow('sourceFilter.limit');
  await expect(renderSourceFilter([new Float32Array(10)],[{start:0,end:10}],2,48000,DEFAULT_SOURCE_FILTER,new AbortController().signal)).rejects.toThrow('sourceEditor.select');
 });
+
+it('cancels chunked source validation before allocating an offline graph and preserves source PCM',async()=>{
+ const input=new Float32Array(200000).fill(.25),controller=new AbortController(),rendering=renderSourceFilter([input],[{start:0,end:input.length}],-1,48000,DEFAULT_SOURCE_FILTER,controller.signal);controller.abort();await expect(rendering).rejects.toMatchObject({name:'AbortError'});expect(input.every(v=>v===.25)).toBe(true);
+});
+it('rejects nonfinite selected PCM during chunked validation before creating an offline context',async()=>{
+ const input=new Float32Array(200000);input[150000]=NaN;await expect(renderSourceFilter([input],[{start:0,end:input.length}],-1,48000,DEFAULT_SOURCE_FILTER,new AbortController().signal)).rejects.toThrow('sourceEditor.invalidPcm');
+});

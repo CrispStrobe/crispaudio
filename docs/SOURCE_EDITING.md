@@ -32,8 +32,12 @@ draft; apply a previous edit first to combine operations.
 
 **Prepare** stops audition and makes a fixed waveform preview. Compare it, optionally
 match its loudness, then Apply for one Undo step with the original retained.
-The live waveform/analysis remain the source until preparation; sliders do not
-continually regenerate waveform PCM. Native AU/VST3 **Auto preview** still performs
+The waveform follows adjustments after a short pause (150 ms debounce). A small
+label distinguishes a current filter snapshot, updating work and source-only
+fallback. Original immediately restores the source waveform; returning to Preview
+uses the current matching snapshot. Automatic snapshots never change playback,
+project state, saved PCM or Undo. Analysis stays on source audio until Prepare.
+Native AU/VST3 **Auto preview** still performs
 helper renders and is separate from this continuous built-in filter.
 
 Processing joins selected ranges in order through one filter, then writes only
@@ -42,6 +46,18 @@ output at the selection end; no automatic edge fade or extra tail is added.
 Looping retains filter history across cycles, so its later passes can differ from
 the first prepared pass. Cutoffs cap below the source Nyquist frequency. Audition
 runs at the device context rate, so resampling can differ from source-rate rendering.
+
+Automatic waveform rendering uses a **64 MiB allocation estimate**, including the
+full source-window copy and render scratch. Over-budget/unsupported windows show
+source audio with a label; shorten the clip window or use Prepare. Only one
+background render runs at a time, with one pending latest request. Changing
+settings/source/selection discards stale output immediately. Recording and
+arrangement playback suspend automatic work. Prepare cancels and
+waits for background work before allocating its own render. Validation/copy loops
+yield to the UI. Drawing also runs in cancellable slices and publishes a complete
+frame; an active browser offline graph itself cannot be forcibly stopped.
+These are first-pass static snapshots: they do not trace loop history or instantaneous
+parameter smoothing. Native source streams and ordered chains remain separate work.
 
 Prepare supports mono/stereo selections at 8–192 kHz, up to 120 seconds selected
 and a 256 MiB allocation estimate including the full source-window copy. Select one

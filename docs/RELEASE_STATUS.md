@@ -4409,3 +4409,36 @@ source A/B/matching browser regression also passes. [Sanitized results](evidence
 Full frontend suite was not rerun; the preceding checkpoint's timeout/retry remains
 recorded above. These checks do not establish physical listening quality or native
 app/WebKit acceptance.
+
+
+## Live-filter waveform snapshots — 0.13.46 source candidate
+
+Source Editor now updates the waveform after live-filter adjustments without
+restarting or double-processing playback. Current, updating and source fallback
+states are labelled. Automatic jobs debounce and run one at a time with a 64 MiB
+allocation estimate; stale results cannot replace current selections/settings.
+Prepare waits for active background work and retains its larger edit budget.
+Analysis/Undo/saved PCM are unaffected by automatic snapshots. See
+[workflow and limits](SOURCE_EDITING.md).
+
+Installed 0.13.33 and isolated native preview 0.13.41 remain unchanged. No native
+rebuild, physical listening/mic test, release tag or Apple submission. Full chains,
+native source streaming and resident-memory/platform qualification remain open.
+
+Validation: **40 focused tests / 7 files**, production build, lint (full run plus
+final changed-file checks), **24 release checks**, muted live-filter GUI and
+source A/B regression checks pass. Automatic and prepared canvas frames match;
+Original restores source pixels; excluded PCM, retained originals, one-Undo Apply,
+linked/portable reopen, unsupported multichannel fallback and German 390 px layout
+pass. Cancelled drawing never publishes a partial/stale frame.
+
+A generated 20-second 48 kHz stereo fixture admits **38,400,000 estimated bytes**,
+runs at most one offline graph, and publishes only final settings after a burst.
+The checked latest render took about **67 ms**; the full editor update took about
+**362 ms**, including debounce. Neither measured phase recorded a browser long
+task after warmup. Maximum heartbeat gaps were 13.4 ms for rendering and 61 ms
+for the editor check. These are observations from one generated fixture, not
+cross-device responsiveness or resident-memory guarantees. Broader sustained,
+Tauri/WebKit and OS memory profiling remain open. [Sanitized results](evidence/source-filter-waveform.json).
+Full frontend suite was not rerun; the preceding broad timeout/retry remains
+recorded at its checkpoint. Both original running app sessions remain intact.
