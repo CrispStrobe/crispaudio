@@ -672,8 +672,14 @@ pub async fn native_recording_recover(
         .join("recordings");
     tauri::async_runtime::spawn_blocking(move || {
         let _lease = lease;
+        let directory=crispaudio_media::native_input::recovery::managed_group(&root,&group)?;
+        if directory.join("completed.json").symlink_metadata().is_ok() {
+            let manifest=group::load_completed(&directory)?;
+            if manifest.version!=2{return Err("Recording has no verified timing".into());}
+            return Ok(json!({"phase":"complete","incomplete":false,"group":group,"directory":directory,"manifest":manifest,"reasons":[]}));
+        }
         let (directory,result) = crispaudio_media::native_input::recovery::recover(&root,&group,&AtomicBool::new(false))?;
-        Ok(json!({"phase":"recovered","incomplete":result.incomplete,"directory":directory,"manifest":result.manifest,"reasons":result.reasons}))
+        Ok(json!({"phase":"recovered","incomplete":result.incomplete,"group":group,"directory":directory,"manifest":result.manifest,"reasons":result.reasons}))
     }).await.map_err(|e|e.to_string())?
 }
 #[tauri::command]

@@ -107,3 +107,20 @@ Native attenuation changes ramp over 64 frames after the callback receives them;
 that ramp is not a physical latency promise. Rapid frontend edits are coalesced
 and the audio callback reads atomic targets without GUI locks. Actual monitoring
 latency, hardware output routing and sustained-load behavior still need N5 checks.
+
+## Recover retained native takes (Mac preview)
+
+Open recording settings and expand **Recovery**. **Find recordings** searches
+retained native groups for the current project. Arm their target tracks, then use
+**Review** to verify files and prepare all audio. **Import takes** inserts the whole
+group with one Undo action. Stop playback before reviewing or importing.
+
+Interrupted takes contain verified aligned prefixes and are labelled incomplete;
+the tail can be missing. Fully finished recordings are validated separately. Run
+receipts are saved with the project to prevent duplicate insertion; Undo removes
+the import and its receipt. Originals stay on disk. For older portable projects
+without receipts/source provenance, compare existing takes before importing.
+
+Search is currently bounded; a message indicates omitted older entries. Closing
+settings cancels frontend loading/import, although backend file verification can
+finish in the background. No usable timing means no automatic aligned recovery.

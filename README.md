@@ -115,8 +115,12 @@ input channels and a separate monitor output. The existing Record button and
 meters work in either mode. During native recording, **Monitor mix** adjusts backing
 and output levels, mute and each prepared input cue without changing the project
 or dry recordings. Type exact fader values; muted faders remember their level.
-Native placement correction is separate from compatible calibration. Hardware timing/load checks and aligned crash recovery remain pending;
-keep using Compatible for established workflows until the preview is qualified.
+Native placement correction is separate from compatible calibration. In recording
+settings, expand **Recovery**, find retained recordings, then **Review → Import takes**.
+Interrupted takes are labelled incomplete; fully finished recordings are reconciled
+separately. Import adds the whole group with one Undo action and saves a duplicate
+check with the project. Originals remain on disk. Hardware timing/load checks are
+still pending; keep using Compatible for established workflows until qualification.
 
 Audition an original take or listen to its comp through the project mix. Choose
 parts of different takes, edit region boundaries and crossfades, replace or remove

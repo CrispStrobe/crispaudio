@@ -522,3 +522,31 @@ The compact review/import UI, completed-group reconciliation, duplicate-import
 receipts, discovery pagination and owned recovery cancellation remain N4 work.
 Actual process-exit and fake-clock tests are software evidence only; N5 physical
 latency, load, background and device-change acceptance remains pending.
+
+## Recovery review/import — 0.13.37 preview
+
+The Mac recording inspector now offers a collapsed Recovery section. Discovery
+includes metadata for both interrupted groups and v2 completed markers. Explicit
+Review calls the backend: completed markers use `group::load_completed` (including
+full timing/PCM validation); interrupted groups use conservative prefix recovery.
+A corrupt completed marker never falls back to raw salvage. Candidate metadata
+alone is not evidence that audio is valid.
+
+The typed client verifies candidate/result identity and uses the shared native
+source loader for all WAVs and rate conversion. The loader checks the decoded
+240 MiB group budget before reading, including a higher project-rate conversion. Review prepares audio without
+editing. Explicit Import requires the same project reference and available armed,
+unlocked targets, then publishes once through the ordinary take/Undo adapter.
+Interrupted takes have an incomplete name/note. Closing or changing projects aborts
+frontend loading and discards late results; backend file verification may finish.
+
+Portable bounded `nativeRecordingImports` run IDs are committed in the same project
+transaction as takes and validated on save/reopen. Undo removes both; unused source
+buffers retained for Redo do not count as an import. Ordinary new native recordings
+also add receipts. A used-source path check helps older linked projects, but legacy
+portable projects without receipts/provenance cannot prove prior import identity.
+No disk acknowledgement is written before editor insertion or project save.
+
+Discovery pagination and owned backend recovery jobs/cancellation remain open.
+The UI uses existing recording menu/settings access and short EN/DE controls;
+advanced explanations stay behind (i). No physical device acceptance is implied.

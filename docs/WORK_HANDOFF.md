@@ -19,7 +19,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33; source/local candidate 0.13.36 adds the
+The installed baseline remains 0.13.33; source/local candidate 0.13.37 adds the
 opt-in native recording preview described below. The established baseline includes timeline/video editing,
 recording/takes/comping, compact recording controls and meters, source restoration,
 FX-aware segment waveforms within documented limits, native Mac AU/VST3 playback
@@ -29,7 +29,7 @@ belong to CrisperWeaver and CometBeat respectively. Imported audio/transcripts s
 editable. Existing MIDI utilities do not imply a MIDI expansion roadmap.
 
 Native recording is now selectable on Mac under **Input → Mode → Native · Preview**
-in the 0.13.36 candidate. Compatible remains the default. Physical qualification
+in the 0.13.37 candidate. Compatible remains the default. Physical qualification
 and the remaining N4 tasks below are still open:
 
 | Foundation | Code entry point | Verified scope |
@@ -150,25 +150,35 @@ No checkpoint, no valid window, missing input or mismatched run means no aligned
 publication. Saved host epochs are interpreted only within their frozen run.
 This does not establish physical device accuracy or guarantee a zero-loss tail.
 
+The 0.13.37 Mac preview now provides a collapsed Recovery section in recording
+settings, with explicit Find → Review → Import. It filters project IDs, checks
+missing/locked/unarmed targets, loads every WAV through the shared native loader,
+and performs one guarded editor transaction. Incomplete takes have a distinct name
+and retained note. Complete manifests go through `group::load_completed`, never raw
+salvage. Metadata-only discovery is not PCM verification. Review does not edit.
+
+`project.nativeRecordingImports` stores bounded portable run IDs in the same
+transaction as takes. Undo removes both; save/reopen retains the receipt. New normal
+native captures also write receipts. Path fallback considers only currently used
+sources, not orphan buffers retained for Redo. Older portable projects without
+receipts or source provenance cannot prove whether a historical group was imported;
+review existing takes before importing those. No on-disk acknowledgement is written
+before project insertion/save, and originals remain available.
+
 Remaining N4 work:
 
-- **Next: recovery UI and reconciliation.** The 0.13.36 internal backend now
-  persists in-run output timing and recovers verified aligned prefixes (details
-  below). Add a compact collapsed Recovery section/menu action, typed client and
-  explicit preview/import. Filter by project ID, show missing/locked/unarmed
-  targets, label takes incomplete, load every WAV before one editor transaction
-  and one Undo. Preserve project-reference guards during async decode/resampling.
-  Reuse the native loading/provenance adapter; do not duplicate timestamp maths.
-- Reconcile `completed.json` groups separately: a crash after backend completion
-  but before editor insertion needs no raw-prefix salvage. Validate with
-  `group::load_completed`, avoid duplicate insertion across save/reopen, and keep
-  recovery receipt identity out of private machine paths. Add import receipts or
-  project provenance before marking anything handled; Undo must remain possible.
 - Discovery currently caps at 512 root entries/64 candidates and reports
   `truncated`; add bounded pagination before claiming arbitrary archive coverage.
   Rejected/no-ledger groups remain raw-only and must never be auto-aligned.
   Recovery commands currently finish a bounded worker even if the inspector
-  closes; add owned cancellation/status before exposing long recovery operations.
+  closes; add owned cancellation/status and expose progress for long verification. Closing the current review aborts frontend
+  loading/import, while bounded backend verification may finish in the background.
+- Avoid accumulating derived rate-conversion WAVs on repeated Review/close. The
+  shared loader currently persists converted audio before project insertion;
+  preserve originals and Undo references while adding explicit-import persistence
+  or a stable managed conversion cache plus safe orphan collection. Test repeated
+  review at a non-48 kHz project rate, cancellation, linked/portable reopen and
+  native playback before claiming disk-neutral review.
 - Keep immediate Record/Stop, persistent GUI meters and a small settings dropdown.
   Advanced routing/inserts remain collapsed; show measured/configured delays
   honestly. Explicit monitor output and independent backing/cue controls are now
@@ -218,6 +228,15 @@ The codec assessment is recorded in [MEDIA_FORMATS_AND_LICENSES.md](MEDIA_FORMAT
 No new patent conclusion or distribution restriction is introduced by this checkpoint.
 
 ## Verification at the code checkpoint
+
+The 0.13.37 review/import preview passes **2064 frontend tests/214 files** with
+four workers and a 20-second per-test ceiling, **324 media tests (16 ignored)** and
+**47 app Rust tests (one hardware case ignored)**. Focused post-budget loader/recovery checks pass 17 tests. Full lint, production build and local Mac ad-hoc sandbox/helper
+preflight pass. Generated recovery component review covers EN1100×800, DE820×650
+and DE390×800 with no horizontal overflow. This is software/layout evidence only;
+no microphone/output or installation was performed. Installed 0.13.33 is preserved.
+See [review/import evidence](evidence/native-recording-recovery-ui.json).
+
 
 The 0.13.36 recovery backend passes **323 media tests (16 ignored)** and
 **47 app Rust tests (one hardware case ignored)**. The new cases include a child

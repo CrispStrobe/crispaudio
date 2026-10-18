@@ -5,6 +5,32 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Native recovery review/import — 0.13.37 candidate
+
+Recording settings now offer a collapsed Mac Recovery section: Find → Review →
+Import. Review verifies/loads every WAV before explicit all-input insertion. The
+current project, armed/unlocked targets and whole group must remain valid. One
+Undo removes the imported takes and their receipt; portable run receipts survive
+save/reopen and guard repeated imports. New ordinary native recordings add the same
+receipts. Sources retained solely for Redo do not block a fresh import after Undo.
+
+Completed recording manifests are reconciled through full completed-group
+validation, separately from interrupted prefixes. Incomplete takes keep their label
+and note. Originals stay untouched, and no disk acknowledgement is written before
+project insertion/save. Legacy portable projects without receipts/provenance have
+no reliable historical duplicate identity; compare existing takes before importing.
+
+Validation: 2064 frontend tests/214 files (four workers, 20-second per-test ceiling),
+324 media tests (16 ignored), 47 app Rust tests (one hardware case ignored), full
+lint and production build pass. Focused post-budget loader/recovery checks pass 17 tests.
+Generated recovery UI review passes EN1100×800, DE820×650 and DE390×800 without
+horizontal overflow. The local Mac candidate passes ad-hoc sandbox/helper preflight.
+Installed 0.13.33 is preserved; no microphone/output, simulator, install or Apple
+upload. [Review/import evidence](evidence/native-recording-recovery-ui.json).
+
+Discovery pagination, owned backend recovery cancellation/progress, helper-opening
+cancellation qualification and N5 physical acceptance remain pending.
+
 ## Native interrupted recording recovery — 0.13.36 internal candidate
 
 Native recording now saves output timing while capture is running. Preparation saves an immutable plan; a bounded disk

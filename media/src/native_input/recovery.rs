@@ -307,6 +307,8 @@ impl Drop for Ledger {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Candidate {
+    pub kind: String,
+    pub import_id: String,
     pub group: String,
     pub project_id: String,
     pub tracks: Vec<String>,
@@ -349,10 +351,70 @@ pub fn discover(root: &Path) -> Result<Discovery> {
         }
         let path = entry.path();
         if path.join("completed.json").symlink_metadata().is_ok() {
+            // Discovery is metadata-only. Full PCM/clock verification happens
+            // when the user explicitly reviews this candidate.
+            let completed = (|| -> Result<Candidate> {
+                directory(&path)?;
+                let manifest: serde_json::Value = read(&path.join("completed.json"))?;
+                let timing = &manifest["timing"];
+                let clips = manifest["clips"]
+                    .as_array()
+                    .ok_or("Invalid completed recording clips")?;
+                let tracks = clips
+                    .iter()
+                    .map(|c| {
+                        c["track_id"]
+                            .as_str()
+                            .map(str::to_owned)
+                            .ok_or("Invalid completed track".to_string())
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+                let project_id = timing["intent"]["projectId"]
+                    .as_str()
+                    .ok_or("Missing completed project")?
+                    .to_owned();
+                let import_id = timing["intent"]["context"]["scope"]
+                    .as_str()
+                    .ok_or("Missing completed run")?
+                    .to_owned();
+                let output_end_frame = timing["output"]["endQueuedFrame"]
+                    .as_i64()
+                    .ok_or("Missing completed extent")?;
+                let valid_id = |id: &str| {
+                    !id.is_empty() && id.len() <= 128 && !id.chars().any(char::is_control)
+                };
+                if manifest["version"] != 2
+                    || timing["version"] != 1
+                    || tracks.is_empty()
+                    || tracks.len() > 16
+                    || tracks.iter().collect::<HashSet<_>>().len() != tracks.len()
+                    || tracks.iter().any(|id| !valid_id(id))
+                    || !valid_id(&project_id)
+                    || !valid_id(&import_id)
+                    || output_end_frame < 0
+                {
+                    return Err("Invalid completed recording metadata".into());
+                }
+                Ok(Candidate {
+                    kind: "complete".into(),
+                    import_id,
+                    group: name,
+                    project_id,
+                    tracks,
+                    output_end_frame,
+                    recovered: false,
+                })
+            })();
+            match completed {
+                Ok(candidate) => result.candidates.push(candidate),
+                Err(_) => result.rejected += 1,
+            }
             continue;
         }
         match load_checkpoint(&path) {
             Ok(c) => result.candidates.push(Candidate {
+                kind: "interrupted".into(),
+                import_id: c.plan.intent.context.scope,
                 group: name,
                 project_id: c.plan.intent.project_id,
                 tracks: c.plan.inputs.into_iter().map(|(id, _)| id).collect(),

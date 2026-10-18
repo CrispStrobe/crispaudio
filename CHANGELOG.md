@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## 0.13.37 — 2026-10-18 (local preview)
+
+- Add a collapsed Recovery section in Mac recording settings: find recordings for the current project, review verified files, then explicitly import all takes with one Undo action. Show unavailable targets and mark interrupted takes incomplete.
+- Reconcile complete recording manifests separately from interrupted raw prefixes. Keep file loading and sample-rate provenance shared with ordinary native recording.
+- Save portable run receipts with native takes to prevent repeated imports after save/reopen. Undo removes the receipt with the takes; unused buffers retained for Redo do not block reimport. Originals are retained.
+- Check the decoded memory budget before loading recovery audio, including conversion to a higher project sample rate.
+- Discovery pagination, owned backend recovery cancellation and physical recording qualification remain pending.
+
 ## 0.13.36 — 2026-10-18 (internal recovery checkpoint)
 
 - Persist native recording timing on a bounded disk worker during capture, using observed output hardware progress rather than the queued tail.

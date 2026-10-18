@@ -1,3 +1,5 @@
+import {projectSourceIds} from './projectFile';
+import {validNativeImportId,validNativeRecordingImports} from './nativeRecordingImports';
 import type {AudioSource,RecordingTake,TimelineProject} from '../types/audio';
 import {publishRecordingGroup,type PreparedRecording} from './recordingGroup';
 
@@ -6,7 +8,7 @@ import {publishRecordingGroup,type PreparedRecording} from './recordingGroup';
 export interface NativeRecordingManifest {
  version:number;
  clips:{track_id:string;audio:string;info:{frames:number;sample_rate:number;channels:number}}[];
- timing?:{version:number;intent:{projectId:string;corrections:Record<string,{frames:number;basis:string}>};placements:{trackId:string;pass:number;projectStartFrame:number;sourceOffsetFrames:number;frames:number}[]};
+ timing?:{version:number;intent:{context?:{scope:string};projectId:string;corrections:Record<string,{frames:number;basis:string}>};placements:{trackId:string;pass:number;projectStartFrame:number;sourceOffsetFrames:number;frames:number}[]};
 }
 const RATE=48000,MAX_FRAMES=32000000,MAX_PROJECT=0xffffffff;
 const integer=(value:number,max:number)=>Number.isSafeInteger(value)&&value>=0&&value<=max;
@@ -44,8 +46,18 @@ export function prepareNativeRecordingGroup(directory:string,manifest:NativeReco
 }
 /** Return one complete editor transaction. Caller performs ONE setState, keeping
  * project-change/lock checks and source retention for Undo/Redo in the shared path. */
-export function publishNativeRecordingGroup(directory:string,manifest:NativeRecordingManifest,loaded:Map<string,AudioSource>,snapshot:TimelineProject,current:TimelineProject,existing:Map<string,AudioSource>,takeName:string,crossfade:number,window?:{start:number;end:number}){
+export function publishNativeRecordingGroup(directory:string,manifest:NativeRecordingManifest,loaded:Map<string,AudioSource>,snapshot:TimelineProject,current:TimelineProject,existing:Map<string,AudioSource>,takeName:string,crossfade:number,window?:{start:number;end:number},incomplete=false){
  const prepared=prepareNativeRecordingGroup(directory,manifest,loaded,takeName);
+ const key=manifest.timing?.intent.context?.scope;
+ if(!validNativeRecordingImports(current)||key!==undefined&&!validNativeImportId(key))invalid();
+ if(key&&current.nativeRecordingImports?.includes(key))throw new Error('recording.recoveryAlreadyImported');
+ if(key&&(current.nativeRecordingImports?.length??0)>=4096)throw new Error('recording.recoveryReceiptLimit');
+ const paths=new Set(manifest.clips.map(clip=>`${directory.replace(/\/+$/,'')}/${clip.audio}`));
+ const used=projectSourceIds(current);
+ if([...existing.values()].some(source=>used.has(source.id)&&paths.has(source.provenance?.path??source.filePath??'')))throw new Error('recording.recoveryAlreadyImported');
  if(manifest.timing!.intent.projectId!==snapshot.id)throw new Error('recording.projectChanged');
- return publishRecordingGroup(snapshot,current,existing,prepared,crossfade,window);
+ if(incomplete)for(const item of prepared)for(const take of item.takes)take.notes.push('Recovered incomplete recording');
+ const result=publishRecordingGroup(snapshot,current,existing,prepared,crossfade,window);
+ if(key)result.project={...result.project,nativeRecordingImports:[...(current.nativeRecordingImports??[]),key]};
+ return result;
 }

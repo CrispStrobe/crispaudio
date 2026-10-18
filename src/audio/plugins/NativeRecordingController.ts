@@ -138,7 +138,7 @@ export class NativeRecordingController {
    await this.snapshot?.close();
    if(this.cancelled||!result)return {directory};
    if(result.phase!=='complete'||!directory||!result.manifest)throw new Error(result.error??'recording.timingInvalid');
-   const loaded=await this.load(directory,result.manifest);
+   const loaded=await loadNativeRecordingSources(directory,result.manifest,{...this.spec,sampleRate:this.spec.project.sampleRate},this.controller.signal);
    if(this.cancelled)return {directory};
    const {spec}=this,current=spec.current();
    const next=publishNativeRecordingGroup(directory,result.manifest,loaded,spec.project,current.project,current.sources,spec.takeName,spec.crossfade,spec.window);
@@ -146,29 +146,34 @@ export class NativeRecordingController {
   }catch(error){throw new NativeRecordingFailure(error instanceof Error?error.message:String(error),directory);}
   finally{await this.snapshot?.close().catch(()=>{});}
  }
- private async load(directory:string,manifest:NativeRecordingManifest){
-  if(manifest.version!==2||!Array.isArray(manifest.clips)||manifest.clips.length!==this.spec.targets.length||manifest.clips.length>8)throw new Error('recording.timingInvalid');
-  let frames=0;const tracks=new Set<string>();
+}
+
+export async function loadNativeRecordingSources(directory:string,manifest:NativeRecordingManifest,spec:{targets:{trackId:string}[];context:BaseAudioContext;sampleRate:number;sourceName:string},signal?:AbortSignal){
+  if(manifest.version!==2||!Array.isArray(manifest.clips)||manifest.clips.length!==spec.targets.length||manifest.clips.length>8)throw new Error('recording.timingInvalid');
+  if(!Number.isFinite(spec.sampleRate)||spec.sampleRate<=0)throw new Error('recording.timingInvalid');
+  let frames=0,decodedBytes=0;const tracks=new Set<string>();
   for(const clip of manifest.clips){
-   if(!clip||!this.spec.targets.some(target=>target.trackId===clip.track_id)||tracks.has(clip.track_id)||!/^native-take-[^/\\\p{Cc}]+\/take\.wav$/u.test(clip.audio)||!clip.info||!Number.isSafeInteger(clip.info.frames)||clip.info.frames<=0||clip.info.sample_rate!==RATE||![1,2].includes(clip.info.channels))throw new Error('recording.timingInvalid');
+   if(!clip||!spec.targets.some(target=>target.trackId===clip.track_id)||tracks.has(clip.track_id)||!/^native-take-[^/\\\p{Cc}]+\/take\.wav$/u.test(clip.audio)||!clip.info||!Number.isSafeInteger(clip.info.frames)||clip.info.frames<=0||clip.info.sample_rate!==RATE||![1,2].includes(clip.info.channels))throw new Error('recording.timingInvalid');
+   decodedBytes+=clip.info.frames*clip.info.channels*4*Math.max(1,spec.sampleRate/RATE);
+   if(decodedBytes>240*1024*1024)throw new Error('recording.recoveryBudget');
    tracks.add(clip.track_id);frames+=clip.info.frames;if(frames>32000000)throw new Error('recording.timingInvalid');
   }
   const loaded=new Map<string,AudioSource>();
   for(const clip of manifest.clips){
-   if(this.cancelled)throw aborted();
+   signal?.throwIfAborted();
    const originalPath=`${directory.replace(/\/+$/,'')}/${clip.audio}`,bytes=await readFile(originalPath);
+   signal?.throwIfAborted();
    if(bytes.byteLength>clip.info.frames*clip.info.channels*4+65536)throw new Error('recording.timingInvalid');
-   let buffer=await this.spec.context.decodeAudioData(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer);
+   let buffer=await spec.context.decodeAudioData(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer);
    if(Math.abs(buffer.duration-clip.info.frames/RATE)>1/buffer.sampleRate||buffer.numberOfChannels!==clip.info.channels)throw new Error('recording.timingInvalid');
-   if(buffer.sampleRate!==this.spec.project.sampleRate){
-    const offline=new OfflineAudioContext(buffer.numberOfChannels,Math.round(buffer.duration*this.spec.project.sampleRate),this.spec.project.sampleRate),node=offline.createBufferSource();node.buffer=buffer;node.connect(offline.destination);node.start();buffer=await offline.startRendering();
+   if(buffer.sampleRate!==spec.sampleRate){
+    const offline=new OfflineAudioContext(buffer.numberOfChannels,Math.round(buffer.duration*spec.sampleRate),spec.sampleRate),node=offline.createBufferSource();node.buffer=buffer;node.connect(offline.destination);node.start();buffer=await offline.startRendering();
    }
-   if(this.cancelled)throw aborted();
+   signal?.throwIfAborted();
    let filePath=originalPath;
    if(buffer.sampleRate!==RATE){const wav=await encodeAudioBufferWav(buffer,32);filePath=await invoke<string>('persist_recording',new Uint8Array(await wav.arrayBuffer()));}
-   const source:AudioSource={id:crypto.randomUUID(),name:this.spec.sourceName,buffer,duration:buffer.duration,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels,filePath,...(filePath!==originalPath?{provenance:{path:originalPath,offset:0,rate:1}}:{}),peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))};
+   const source:AudioSource={id:crypto.randomUUID(),name:spec.sourceName,buffer,duration:buffer.duration,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels,filePath,...(filePath!==originalPath?{provenance:{path:originalPath,offset:0,rate:1}}:{}),peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))};
    loaded.set(clip.track_id,source);
   }
   return loaded;
  }
-}

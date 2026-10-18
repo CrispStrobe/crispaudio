@@ -1,3 +1,4 @@
+import {validNativeRecordingImports} from './nativeRecordingImports';
 import {restoreProjectResources} from './resourceAccess';
 import {hasNativeEffects,hasStoredNativeEffects,validProjectNativeEffects} from './nativeEffects';
 import {validMixVersions} from './mixVersions';
@@ -72,6 +73,7 @@ export function serializeProject(
   sources: Map<string, AudioSource>,
   mode: 'portable' | 'linked' = 'portable',
 ): string {
+  if(!validNativeRecordingImports(project))throw new Error('Invalid native recording import receipts');
   if(!validProjectNativeEffects(project))throw new Error('Invalid native effect rack');
   const serializedSources: SerializedSource[] = Array.from(
     sources.values(),
@@ -131,6 +133,7 @@ export async function deserializeProject(
     throw new Error('Unsupported CrispAudio project version');
   }
 
+  if(!validNativeRecordingImports(doc.project))throw new Error('Invalid native recording import receipts');
   if(!validMixVersions(doc.project))throw new Error('Invalid mix versions');
   if(!validProjectNativeEffects(doc.project))throw new Error('Invalid native effect rack');
   if(doc.version!==VERSION&&hasStoredNativeEffects(doc.project))throw new Error('Native effect racks require project version 4');

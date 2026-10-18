@@ -8,6 +8,7 @@ export interface NativeParameterCurve {min:number;max:number;points:GainPoint[]}
 export interface NativeEffect {parameterAutomation?:Record<string,NativeParameterCurve>;instanceId:string;pluginId:string;name:string;format:'AU'|'VST3';enabled:boolean;bypass:boolean;parameters:Record<string,number>;state:string}
 
 export interface TimelineProject {
+  nativeRecordingImports?:string[];
   nativeEffects?:NativeEffect[];
   trackFolders?:TrackFolder[];
   mixVersions?:Partial<Record<import('../lib/mixVersions').MixSlot,import('../lib/mixVersions').MixVersion>>;

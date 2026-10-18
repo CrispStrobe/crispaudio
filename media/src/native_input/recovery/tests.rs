@@ -366,3 +366,42 @@ fn reopened_recovery_rejects_changed_pcm_and_receipt_mapping() {
         assert!(load_recovered(&source).is_err());
     }
 }
+
+#[test]
+fn complete_candidate_without_ledger_is_reviewed_by_full_manifest_verification() {
+    let root = tempfile::tempdir().unwrap();
+    let source = fixture(root.path(), 0, false, false);
+    let (derived, result) =
+        recover(root.path(), "native-group-fixture", &AtomicBool::new(false)).unwrap();
+    let complete = root.path().join("native-group-complete");
+    fs::rename(&derived, &complete).unwrap();
+    fs::write(
+        complete.join("completed.json"),
+        serde_json::to_vec(&result.manifest).unwrap(),
+    )
+    .unwrap();
+    let found = discover(root.path()).unwrap();
+    let candidate = found
+        .candidates
+        .iter()
+        .find(|c| c.group == "native-group-complete")
+        .unwrap();
+    assert_eq!(candidate.kind, "complete");
+    assert_eq!(candidate.import_id, "boot-fixture/run-one");
+    super::super::session::group::load_completed(&complete).unwrap();
+    let clip = &result.manifest.clips[0];
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .open(complete.join(&clip.audio))
+        .unwrap();
+    file.seek(SeekFrom::End(-4)).unwrap();
+    file.write_all(&[0; 4]).unwrap();
+    assert!(super::super::session::group::load_completed(&complete).is_err());
+    // Metadata remains a candidate, never a claim of verified PCM.
+    assert!(discover(root.path())
+        .unwrap()
+        .candidates
+        .iter()
+        .any(|c| c.group == "native-group-complete"));
+    assert!(source.exists());
+}

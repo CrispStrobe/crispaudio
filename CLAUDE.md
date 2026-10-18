@@ -1159,3 +1159,16 @@ Never overwrite originals or synthesize a clean completed.json. Known symlinks a
 unmanaged IDs are refused; app-owned directories are not an adversarial FS boundary.
 Recovery's separate native reservation excludes active capture. Compact import UI,
 completed-group reconciliation, pagination and owned cancellation are still N4.
+
+### Native recovery review/import (0.13.37)
+
+NativeRecordingRecovery is a collapsed Mac recording section, not an automatic
+startup import. Discovery reads metadata only; Review verifies backend clocks/PCM
+and uses shared loadNativeRecordingSources before explicit Import. A project change,
+close, playback or unavailable target must not publish a partial group. Keep
+publishNativeRecordingGroup as one editor/Undo transaction. Portable bounded
+nativeRecordingImports run IDs live in project state and validate on save/reopen;
+Undo removes them with takes. Path fallback scans only projectSourceIds, never all
+cached sources (Undo retains orphans for Redo). Complete marker groups require
+load_completed, even when invalid; never fall back to raw salvage. Current backend
+verification has no owned cancellation yet; frontend AbortSignal discards late work.

@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-18",
+  "version": "0.13.37",
+  "scope": "Compact native recovery review/import, complete-group reconciliation and portable duplicate receipts",
+  "installedVersion": "0.13.33",
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "checks": {
+    "frontend": {
+      "passed": 2064,
+      "files": 214,
+      "workers": 4,
+      "testTimeoutMs": 20000,
+      "log": "crispaudio-recovery-ui-frontend-final-all.log"
+    },
+    "focusedAfterMemoryGuard": {
+      "passed": 17,
+      "files": 2,
+      "log": "crispaudio-recovery-ui-memory-final.log"
+    },
+    "finalComponent": {
+      "passed": 4,
+      "log": "crispaudio-recovery-ui-component-final.log"
+    },
+    "media": {
+      "passed": 324,
+      "ignored": 16,
+      "log": "crispaudio-recovery-ui-media-final.log"
+    },
+    "appRust": {
+      "passed": 47,
+      "ignored": 1,
+      "log": "crispaudio-recovery-ui-app-final.log"
+    },
+    "release": {
+      "passed": 21,
+      "log": "crispaudio-recovery-ui-release.log"
+    },
+    "lint": "passed",
+    "productionBuild": "passed",
+    "macDebugBundle": "passed",
+    "signing": "Local ad-hoc sandbox/helper preflight",
+    "layout": {
+      "scope": "Generated standalone component; no IPC or audio devices",
+      "cases": [
+        "EN1100x800",
+        "DE820x650",
+        "DE390x800"
+      ],
+      "horizontalOverflow": false
+    }
+  },
+  "coverage": [
+    "Explicit Find/Review/Import; collapsed advanced UI and unavailable targets",
+    "All files loaded and prepared before one editor/Undo transaction",
+    "Incomplete names/notes separated from completed manifest reconciliation",
+    "Full PCM/timing verification for complete groups without a recovery ledger",
+    "Portable run receipts survive save/reopen; Undo/Redo matches takes",
+    "Unused source buffers retained for Redo do not block reimport after Undo",
+    "Late closed/cancelled/foreign/stale review cannot publish",
+    "Backend result identity and managed IDs validated",
+    "Decoded memory budget, including higher project sample rates, checked before audio reads"
+  ],
+  "limitations": [
+    "Discovery capped at 512 root entries and 64 candidates; pagination pending",
+    "Frontend cancellation discards late work; owned backend cancellation/status pending",
+    "Older portable projects without receipts/provenance cannot prove historical duplicate identity",
+    "Physical input/output/load/latency/hot-plug, iOS and helper-opening cancellation remain unqualified",
+    "Candidate not launched/installed or submitted to Apple",
+    "Repeated non-48 kHz review can persist conversion WAVs before import; conversion reuse/deferred persistence and safe orphan collection pending"
+  ]
+}
