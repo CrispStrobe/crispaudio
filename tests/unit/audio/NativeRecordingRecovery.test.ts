@@ -13,7 +13,7 @@ function manifest():NativeRecordingManifest{return {version:2,clips:['a','b'].ma
 function result(kind:'complete'|'interrupted'='interrupted'):RecoveryResult{return {group:'native-group-fixture',phase:kind==='complete'?'complete':'recovered',incomplete:kind==='interrupted',directory:'/managed/native-group-fixture'+(kind==='interrupted'?'/recovered-v1':''),manifest:manifest(),reasons:[]};}
 const context={decodeAudioData:vi.fn(async()=>buffer())}as unknown as BaseAudioContext;
 function backend(value:RecoveryResult=result()){
- mocks.invoke.mockImplementation(async command=>command==='native_recording_discover'?{candidates:[candidate()],scanned:1,rejected:0,truncated:false}:command==='native_recording_recovery_start'?'job-one':command==='native_recording_recovery_status'?{phase:'complete',blocks:4}:command==='native_recording_recovery_close'?value:command==='persist_recording'?'/managed/converted.wav':undefined);
+ mocks.invoke.mockImplementation(async command=>command==='native_recording_discover'?{candidates:[candidate()],scanned:1,rejected:0,truncated:false}:command==='native_recording_recovery_start'?'job-one':command==='native_recording_recovery_status'?{phase:'complete',blocks:4}:command==='native_recording_recovery_close'?value:command==='persist_recording'||command==='recording_conversion_write'?'/managed/converted.wav':undefined);
 }
 beforeEach(()=>{vi.clearAllMocks();mocks.encode.mockResolvedValue({arrayBuffer:async()=>new ArrayBuffer(64)});const base=useProjectStore.getInitialState().project;useProjectStore.getState().loadProjectState({...base,sampleRate:48000,id:'recovery-project',tracks:['a','b'].map(id=>({id,name:id,segments:[],recordArmed:true,volume:1,pan:0,muted:false,solo:false}))},new Map());useProjectStore.temporal.getState().clear();mocks.readFile.mockResolvedValue(new Uint8Array(64));backend();});
 it('reviews every file without editor changes, imports one incomplete group with one Undo and portable receipt',async()=>{
@@ -69,14 +69,14 @@ it('keeps repeated rate-converted reviews in memory and persists only on explici
  try{
   const first=await recovery.review(candidate(),snapshot,context,'Recovered',new AbortController().signal);await recovery.review(candidate(),snapshot,context,'Recovered',new AbortController().signal);
   expect(mocks.invoke.mock.calls.filter(([name])=>name==='persist_recording')).toHaveLength(0);expect([...first.loaded.values()].every(s=>!s.filePath&&s.provenance?.path.endsWith('/take.wav'))).toBe(true);
-  const aborted=new AbortController();aborted.abort();await expect(recovery.prepareImport(first,()=>snapshot,aborted.signal)).rejects.toMatchObject({name:'AbortError'});expect(mocks.invoke.mock.calls.filter(([name])=>name==='persist_recording')).toHaveLength(0);
-  const prepared=await recovery.prepareImport(first,()=>useProjectStore.getState().project,new AbortController().signal);expect(mocks.invoke.mock.calls.filter(([name])=>name==='persist_recording')).toHaveLength(2);expect([...first.loaded.values()].every(s=>!s.filePath)).toBe(true);
-  const next=recovery.insert(prepared,snapshot,new Map(),'Recovered',0);expect([...next.sources.values()].every(s=>s.filePath==='/managed/converted.wav'&&s.provenance?.path.endsWith('/take.wav'))).toBe(true);
+  const aborted=new AbortController();aborted.abort();await expect(recovery.importTakes(first,()=>useProjectStore.getState(),()=>{throw new Error('Must not publish');},'Recovered',0,aborted.signal)).rejects.toMatchObject({name:'AbortError'});expect(mocks.invoke.mock.calls.filter(([name])=>name==='persist_recording')).toHaveLength(0);
+  await recovery.importTakes(first,()=>useProjectStore.getState(),next=>useProjectStore.setState(next),'Recovered',0,new AbortController().signal);expect(mocks.invoke.mock.calls.filter(([name])=>name==='recording_conversion_write')).toHaveLength(2);expect([...first.loaded.values()].every(s=>!s.filePath)).toBe(true);
+  const next=useProjectStore.getState();expect([...next.sources.values()].every(s=>s.filePath==='/managed/converted.wav'&&s.provenance?.path.endsWith('/take.wav'))).toBe(true);
   const linked=serializeProject(next.project,next.sources,'linked');expect(JSON.parse(linked).sources.every((s:{path:string})=>s.path==='/managed/converted.wav')).toBe(true);
   const portable=serializeProject(next.project,next.sources);expect(JSON.parse(portable).sources.every((s:{wav?:string})=>s.wav)).toBe(true);
   const decoder={sampleRate:44100,decodeAudioData:async()=>converted}as unknown as BaseAudioContext;
   const original=Object.getOwnPropertyDescriptor(window,'__TAURI_INTERNALS__');Object.defineProperty(window,'__TAURI_INTERNALS__',{value:{},configurable:true});
   try{for(const text of [linked,portable]){const reopened=await deserializeProject(text,decoder);expect([...reopened.sources.values()].every(s=>s.sampleRate===44100&&s.provenance?.path.endsWith('/take.wav'))).toBe(true);expect(reopened.project.nativeRecordingImports).toEqual(['boot/run-one']);}}finally{if(original)Object.defineProperty(window,'__TAURI_INTERNALS__',original);else Reflect.deleteProperty(window,'__TAURI_INTERNALS__');}
-  await expect(recovery.prepareImport(first,()=>({...snapshot}),new AbortController().signal)).rejects.toThrow('projectChanged');
+  await expect(recovery.importTakes(first,()=>({...useProjectStore.getState(),project:{...snapshot}}),()=>{},'Recovered',0,new AbortController().signal)).rejects.toThrow('projectChanged');
  }finally{vi.unstubAllGlobals();}
 });

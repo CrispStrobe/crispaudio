@@ -1,5 +1,5 @@
 import {invoke} from '@tauri-apps/api/core';
-import {encodeAudioBufferWav} from '../../lib/wavExport';
+import {importRecoveredTakes} from './NativeRecordingConversionImport';
 import type {AudioSource,TimelineProject} from '../../types/audio';
 import type {NativeRecordingManifest} from '../../lib/nativeRecordingTakes';
 import {publishNativeRecordingGroup,prepareNativeRecordingGroup} from '../../lib/nativeRecordingTakes';
@@ -54,17 +54,7 @@ export const NativeRecordingRecovery={
   signal.throwIfAborted();prepareNativeRecordingGroup(result.directory,result.manifest,loaded,sourceName);
   return {candidate,result,loaded,snapshot};
  },
- async prepareImport(review:RecoveryReview,current:()=>TimelineProject,signal:AbortSignal){
-  const loaded=new Map(review.loaded);
-  const check=()=>{signal.throwIfAborted();if(current()!==review.snapshot)throw new Error('recording.projectChanged');};check();
-  for(const [id,source] of loaded){
-   if(source.buffer.sampleRate===48000||source.filePath)continue;
-   check();const wav=await encodeAudioBufferWav(source.buffer,32,signal);check();
-   const filePath=await invoke<string>('persist_recording',new Uint8Array(await wav.arrayBuffer()));check();
-   if(typeof filePath!=='string'||!filePath)invalid();loaded.set(id,{...source,filePath});
-  }
-  return {...review,loaded};
- },
+ importTakes:importRecoveredTakes,
  insert(review:RecoveryReview,current:TimelineProject,sources:Map<string,AudioSource>,takeName:string,crossfade:number){
   const {result,snapshot,loaded}=review;
   if([...loaded.values()].some(source=>source.buffer.sampleRate!==48000&&!source.filePath))throw new Error('recording.recoveryReview');

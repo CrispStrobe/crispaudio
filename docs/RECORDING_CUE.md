@@ -134,3 +134,11 @@ It closes registered processes and joins workers before returning; it also close
 helpers registered after cancellation. It retains unfinished dry originals and
 never inserts a partial recording. Filesystem calls may delay shutdown. This is
 separate from physical microphone/output timing qualification.
+
+## Recovery conversion files
+
+The 0.13.40 native preview stages recovery-import conversions separately from dry
+originals. Cancelling or failing preparation cleans up that import's owned files;
+successful imports keep their files through Undo/Redo and project reopen. A later
+import retries abandoned pending cleanup. Older files without ownership receipts
+are kept. See [native conversion contracts](NATIVE_INPUT.md#owned-import-conversions--01340).

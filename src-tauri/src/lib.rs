@@ -44,6 +44,10 @@ pub fn run() {
                     window
                         .state::<crispaudio_media::native_snapshot::Snapshots>()
                         .close_owner(window.label());
+                    // Audio owners close before potentially blocking file cleanup.
+                    window
+                        .state::<commands::recording_conversions::ConversionFiles>()
+                        .close_owner(window.label());
                 }
                 window
                     .state::<commands::plugins::PluginStreams>()
@@ -88,6 +92,7 @@ pub fn run() {
     let builder = builder
         .manage(commands::native_playback::NativePlayback::default())
         .manage(commands::native_recording::NativeRecording::default())
+        .manage(commands::recording_conversions::ConversionFiles::default())
         .manage(crispaudio_media::native_snapshot::Snapshots::default());
     #[cfg(desktop)]
     let builder = builder.on_menu_event(|app, event| {
@@ -175,6 +180,14 @@ pub fn run() {
             native_files::read_opened_file,
             native_files::stage_share_file,
             native_files::persist_recording,
+            #[cfg(target_os = "macos")]
+            commands::recording_conversions::recording_conversion_begin,
+            #[cfg(target_os = "macos")]
+            commands::recording_conversions::recording_conversion_write,
+            #[cfg(target_os = "macos")]
+            commands::recording_conversions::recording_conversion_protect,
+            #[cfg(target_os = "macos")]
+            commands::recording_conversions::recording_conversion_finish,
             media::desktop_media_available,
             media::probe_media,
             media::cancel_media_job,
@@ -204,6 +217,9 @@ pub fn run() {
                 app.state::<commands::native_playback::NativePlayback>()
                     .shutdown();
                 app.state::<crispaudio_media::native_snapshot::Snapshots>()
+                    .shutdown();
+                // Audio owners close before potentially blocking file cleanup.
+                app.state::<commands::recording_conversions::ConversionFiles>()
                     .shutdown();
             }
             app.state::<commands::plugins::PluginStreams>().shutdown();

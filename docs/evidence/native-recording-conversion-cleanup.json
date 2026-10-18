@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-18",
+  "version": "0.13.40",
+  "platform": "macOS arm64",
+  "scope": "Owned recovery conversion staging, durable protection and bounded abandoned-transaction cleanup",
+  "installedVersion": "0.13.33",
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "checks": {
+    "frontend": {
+      "passed": 2076,
+      "files": 215,
+      "workers": 4,
+      "testTimeoutMs": 20000,
+      "log": "crispaudio-conversion-cleanup-frontend.log"
+    },
+    "focused": {
+      "passed": 22,
+      "files": 3,
+      "log": "crispaudio-conversion-cleanup-focused-final.log"
+    },
+    "appRust": {
+      "passed": 59,
+      "ignored": 1,
+      "log": "crispaudio-conversion-cleanup-app-lifecycle.log"
+    },
+    "mediaBaseline": {
+      "version": "0.13.39",
+      "passed": 334,
+      "ignored": 16,
+      "note": "Media source unchanged; app tests cover the shared original-WAV validation refactor",
+      "evidence": "native-recording-startup-cancel.json"
+    },
+    "release": {
+      "passed": 21,
+      "log": "crispaudio-conversion-cleanup-release.log"
+    },
+    "lint": "passed",
+    "productionBuild": "passed",
+    "macDebugBundle": {
+      "status": "passed",
+      "log": "crispaudio-conversion-cleanup-bundle-lifecycle.log"
+    },
+    "signing": {
+      "status": "Local ad-hoc sandbox/helper preflight passed",
+      "log": "crispaudio-conversion-cleanup-signing-lifecycle.log"
+    },
+    "layout": "No markup/style changes; no repeat screenshot review"
+  },
+  "coverage": [
+    "Failure after earlier files are staged rolls back the owned transaction",
+    "Cancellation during a late write and successful retry without partial editor publication",
+    "Project/playback changes after protection prevent publication and abort conversions",
+    "Successful conversion import is one Undo transaction; retained paths survive Undo/Redo",
+    "Synchronous publication/subscriber errors conservatively retain potentially referenced files",
+    "Lost finalization acknowledgement preserves successful editor state",
+    "Real exclusive filesystem leases exclude another store instance from live staging",
+    "Abandoned pending transactions are collected after lease release",
+    "Durable abort releases its registry lease even when deletion fails; a later collector can retry",
+    "Collection advances beyond a 256-entry page without accumulating an archive list",
+    "Unknown files, malformed receipts, symlinks, foreign owners and unreceipted directories are preserved",
+    "Window/exit cleanup retains protected files; original recordings stay outside the conversion root",
+    "Converted source provenance and linked/portable reopen remain covered",
+    "Window/exit lifecycle closes audio owners before conversion file cleanup"
+  ],
+  "limitations": [
+    "Retained or uncertain publication is never inferred to be unreferenced",
+    "Legacy unreceipted conversions require future reference-aware asset management",
+    "Interrupted creation or final cleanup can leave a small unknown transaction directory",
+    "Active filesystem calls, cleanup errors or unknown directory contents may delay/prevent deletion",
+    "Known symlinks are rejected; app-owned filesystem checks are not a hostile mutation boundary",
+    "Live-directory collection is bounded but is not a snapshot; later cycles may be required",
+    "N5 physical recording/load/device/iOS qualification remains pending",
+    "Candidate not installed/launched or submitted to Apple"
+  ]
+}

@@ -19,7 +19,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33; source/local candidate 0.13.39 adds the
+The installed baseline remains 0.13.33; source/local candidate 0.13.40 adds the
 opt-in native recording preview described below. The established baseline includes timeline/video editing,
 recording/takes/comping, compact recording controls and meters, source restoration,
 FX-aware segment waveforms within documented limits, native Mac AU/VST3 playback
@@ -29,7 +29,7 @@ belong to CrisperWeaver and CometBeat respectively. Imported audio/transcripts s
 editable. Existing MIDI utilities do not imply a MIDI expansion roadmap.
 
 Native recording is now selectable on Mac under **Input → Mode → Native · Preview**
-in the 0.13.39 candidate. Compatible remains the default. Physical qualification
+in the 0.13.40 candidate. Compatible remains the default. Physical qualification
 and the remaining N4 tasks below are still open:
 
 | Foundation | Code entry point | Verified scope |
@@ -177,11 +177,15 @@ current page and closes the cursor at EOF, refresh, project/window close. Starti
 native recording invalidates the idle cursor. Refresh after archive changes; this
 is a bounded live iterator, not a durable snapshot of a mutating directory.
 
-Rate-converted Review is now memory-only. Explicit Import encodes/persists any
-converted WAVs, checks project/cancel/playback again, then commits all takes and
-receipts once. Repeated Review/close creates no converted WAVs. Original provenance
-and linked/portable reopen are tested. Cancel during a disk write can leave a
-converted file from that failed explicit import, with no editor insertion.
+Rate-converted Review is memory-only. The 0.13.40 Import coordinator owns a backend
+conversion transaction, stages all WAVs, checks project/cancel/playback, protects
+files durably, then publishes takes/receipts once without an intervening await.
+Failure before publication aborts all owned conversions; an active write finishes
+before cleanup. Successful publication, or a synchronous subscriber throwing after
+publication starts, retains files for unsaved state and Undo. Lost finalization is
+safe: pending/aborted work is eligible for later bounded collection; retained work
+is conservatively protected. Original provenance and linked/portable reopen remain
+unchanged. Old unreceipted conversions cannot be collected automatically.
 
 Remaining N4 work:
 
@@ -190,11 +194,16 @@ Remaining N4 work:
   reservation release. Silent blocked subprocess fixtures and partial-group raw
   reopen cover this software boundary. Active filesystem calls and unregistered
   blocking work can delay shutdown; real device/load behavior remains N5.
-- **Next: safe owned conversion cleanup.** Collect converted files left by failed/cancelled explicit Import
-  (and historical pre-0.13.38 Review). Use owned creation/commit receipts or staging
-  transactions, never guess from age/path or delete files referenced by projects,
-  Undo, pending review or recovery. Test retry, partial group failure, cancellation,
-  linked/portable reopen and native playback. Normal repeated Review is now fixed.
+- Owned recovery conversion cleanup is implemented in 0.13.40. The backend stages
+  new files separately from originals, binds tokens to the owning window, and holds
+  filesystem leases against collection. Cancellation/failure before publication
+  aborts the whole conversion transaction. Protection is durable before editor/Undo
+  publication. Pending or explicitly aborted transactions are collected in bounded
+  pages on later imports; live writers and retained files stay protected.
+- Keep legacy unreceipted files and uncertain publication outcomes. No path/age
+  heuristic can prove they are absent from unsaved, external or Undo projects.
+  Reference-aware retained-asset/legacy cleanup belongs to the asset/session track,
+  with an explicit reference catalog and review boundary; it does not block N5.
 - Keep immediate Record/Stop, persistent GUI meters and a small settings dropdown.
   Advanced routing/inserts remain collapsed; show measured/configured delays
   honestly. Explicit monitor output and independent backing/cue controls are now
@@ -211,7 +220,9 @@ Remaining N4 work:
   switching, sleep/wake and hot-plug. External interfaces/webcams, commercial
   plug-ins and physical iOS require those devices/platforms to be available.
 - Replay complete audio-only, audio/video and recording/comping sessions; inspect
-  saved/exported files, not only previews. Test signed/sandboxed relaunch and access.
+  saved/exported files, not only previews. Include rate-converted recovery Import,
+  linked/portable reopen and audible native playback; verify Undo/Redo retain files.
+  Test signed/sandboxed relaunch and access.
 - Refresh Apple processing/group/review status before any submission. Main pushes
   run CI; they do not submit to Apple. The recorded submission is 0.13.0/build 14;
   later local versions are not thereby distributed. Release/tag/upload actions
@@ -241,6 +252,17 @@ The codec assessment is recorded in [MEDIA_FORMATS_AND_LICENSES.md](MEDIA_FORMAT
 No new patent conclusion or distribution restriction is introduced by this checkpoint.
 
 ## Verification at the code checkpoint
+
+The 0.13.40 conversion-transaction checkpoint passes **2076 frontend tests/215 files**,
+**59 app Rust tests (one hardware case ignored)**, 22 focused tests/3 files, lint and
+21 release checks. It exercises partial group failure,
+late-write cancellation, retry, project/playback changes, single Undo/Redo retention,
+publication subscriber errors and lost finalization acknowledgements. Native checks
+cover real filesystem locks, bounded collector continuation, invalid receipts,
+symlinks/unknown contents, window/exit cleanup and retained files across fresh
+store instances. See [conversion evidence](evidence/native-recording-conversion-cleanup.json)
+for counts and packaging results. Production build, Mac debug bundle and local
+ad-hoc sandbox/helper preflight pass.
 
 The 0.13.39 helper-start cancellation preview passes **334 media tests (16 ignored)**
 and **52 app Rust tests (one hardware case ignored)**, plus 21 release checks. It adds silent subprocess checks for

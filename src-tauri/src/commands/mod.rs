@@ -20,3 +20,6 @@ pub mod resources;
 
 #[cfg(target_os = "macos")]
 pub mod native_recording;
+
+#[cfg(target_os = "macos")]
+pub mod recording_conversions;

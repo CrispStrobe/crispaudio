@@ -5,6 +5,26 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Owned recovery conversions — 0.13.40 candidate
+
+New recovery-import conversions use window-owned transactions with filesystem
+leases and durable pending/retained/abort receipts. Failed, cancelled or stale
+preparation removes its derived files before any editor insertion. Successful or
+uncertain publication is protected for project/Undo references. Later imports
+advance bounded cleanup of abandoned pending/aborted transactions; active writers,
+retained files, symlinks and unreceipted legacy files stay untouched.
+
+The installed 0.13.33 session is preserved. This checkpoint opens no audio devices
+and performs no installation, simulator run or Apple upload. Physical N5 acceptance
+remains next; legacy/retained asset cleanup requires future reference-aware tooling.
+
+Validation: 2076 frontend tests/215 files, 22 focused recovery/import tests/3 files,
+59 app Rust tests (one hardware case ignored), full lint and 21 release checks pass.
+Media source is unchanged; the previous 334-test media run remains the baseline.
+[Conversion cleanup evidence](evidence/native-recording-conversion-cleanup.json)
+records coverage and packaging status. Production build, Mac debug bundle and
+local ad-hoc sandbox/helper preflight pass; this is not Store signing/submission.
+
 ## Native helper-start cancellation — 0.13.39 candidate
 
 Stop/Cancel now reaches cue/backing readiness waits during helper opening. The

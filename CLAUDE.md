@@ -1183,10 +1183,11 @@ Discovery owns one bounded iterator; project/cursor/owner must match. Each page 
 <=512 entries/64 candidates; UI replaces its page, never builds an unlimited list.
 Close cursors at EOF/refresh/window or project close; native recording invalidates
 idle cursors. Directory mutation requires refresh, not a snapshot guarantee.
-Review never persists converted audio. prepareImport performs encoding/persistence
-only on explicit Import, then the usual guarded one-action insertion/receipt. Pass
-AbortSignal to the encoder; recheck playback before commit. Failure may leave a
-conversion file but never partial project state. Owned orphan collection remains.
+Review never persists converted audio. The .38 prepareImport split (superseded by
+the owned .40 importTakes coordinator below) performed encoding/persistence
+only on explicit Import, then guarded one-action insertion/receipt. That split
+could leave a conversion after failure; the .40 transaction flow below supersedes
+it. Pass AbortSignal to the encoder and recheck playback before publication.
 
 ### Native helper-start cancellation (0.13.39)
 
@@ -1200,3 +1201,22 @@ File-worker creation/flush still joins after an active filesystem call; arbitrar
 unregistered blocking code cannot be interrupted. Non-cancellable public wrappers
 remain for existing callers. Silent /bin/cat pipe fixtures exercise blocked startup
 and late registration without opening devices or environment-wide helper overrides.
+
+### Owned recovery conversions (0.13.40)
+
+Use NativeRecordingRecovery.importTakes/importRecoveredTakes for explicit import;
+do not restore the old prepareImport + caller publication split. The coordinator
+stages all conversions, durably protects them, checks fresh state and calls one
+synchronous publication callback. Mark publicationStarted BEFORE calling the store:
+a subscriber can throw after setState/Undo mutation. Such files must stay retained.
+A finally finishes with keep=true after publication starts, abort otherwise.
+
+Mac recording_conversions.rs owns tokens per window, holds flock leases and limits
+each transaction to eight files/256 MiB. Original persist_recording is unchanged.
+Only receipted pending/aborted transactions with known regular leaves are collected,
+in <=256-entry pages on later begins. Never delete retained files based on current
+project/age/path; Undo, unsaved and other projects may reference them. Do not infer
+ownership of pre-0.13.40 files in recordings. Collection/command I/O runs off UI and
+audio threads; active file writes finish before rollback. Bind lifecycle cleanup
+in main window destruction/app exit AFTER audio owners close; file cleanup must
+not delay capture shutdown. Protect precedes observable editor references.

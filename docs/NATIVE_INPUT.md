@@ -599,3 +599,40 @@ retained raw file after cancellation. These tests open no microphone or output;
 they do not establish device timing or arbitrary third-party plug-in behavior.
 An active filesystem call, OS scheduling or unregistered blocking code may delay
 cleanup; cancellation is not a hard real-time guarantee.
+
+## Owned import conversions — 0.13.40
+
+Recovery Review keeps converted audio in memory. `importRecoveredTakes` owns the
+entire explicit Import: begin → write all converted WAVs → protect → synchronous
+editor publication → finish. The final project/playback/abort check and single
+publication have no intervening await. The backend transaction token is scoped to
+its window; no deletion command accepts a path. Files live under an app-owned
+`native-recording-conversions-v1` directory, separate from native dry originals.
+
+Each transaction holds an exclusive non-blocking filesystem lease. Pending,
+retained and explicit-abort receipts are versioned and bound to its token. WAVs,
+receipts and directory entries are synced before protection is acknowledged.
+Cancellation/failure before publication records abort and removes known derived
+files. An active write and its cleanup serialize off the UI/audio callbacks.
+Window/exit cleanup removes pending work and retains protected work. A lost final
+acknowledgement cannot cause already published files to be deleted. If a store
+subscriber throws after publication starts, conservatively retain conversions:
+project state or Undo may already reference them.
+
+Each later conversion Import advances a collector through at most 256 entries.
+It only removes unlocked, validly receipted pending/aborted transactions with known
+regular leaf files. No recursive deletion, symlink traversal, arbitrary paths or
+age guesses. Unexpected contents and malformed ownership are preserved. Explicit
+abort receipts allow a later retry after a cleanup failure; filesystem errors can
+still leave files until a future pass. A live iterator is not a snapshot of a
+changing directory, and another refresh cycle may be needed.
+
+Successful/uncertain publication is never inferred to be orphaned, even after Undo.
+Legacy conversions in the originals folder have no ownership proof and stay intact.
+Collecting those or unused retained assets requires future reference-aware asset
+management. Interrupted creation or final cleanup can leave a small unreceipted
+transaction directory; collection deliberately leaves unknown directories alone.
+Known symlinks are rejected; these app-owned filesystem checks do not establish
+a boundary against hostile concurrent directory mutation. Ordinary recording persistence is unchanged; these transactions cover recovery
+Import conversions. This work adds no audio-device access or physical timing
+qualification.

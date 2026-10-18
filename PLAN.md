@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for candidate 0.13.39 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for candidate 0.13.40 (installed baseline 0.13.33). This section is the current plan.
 Start with [the engineering handoff](docs/WORK_HANDOFF.md) for scoped tasks N1–N5,
 acceptance criteria and the remaining accepted product backlog.
 The implementation records below are historical; their old missing-feature lists
@@ -76,8 +76,11 @@ interrupted-group recovery commands. Version 0.13.37 adds compact review/import,
 portable import receipts. Version 0.13.38 adds owned recovery progress/cancellation,
 bounded project-filtered discovery pages and converted-file persistence on explicit
 Import. Version 0.13.39 interrupts cue/backing startup on Stop/Cancel and tests
-blocked subprocess cleanup, including late registration. Failed-import orphan
-collection and physical acceptance remain open. See the handoff for the precise continuation.
+blocked subprocess cleanup, including late registration. Version 0.13.40 stages
+new recovery conversions with owned rollback/retention receipts and bounded
+abandoned-transaction cleanup. Physical acceptance remains N5. Unreceipted legacy
+files and uncertain successful publication are retained, pending reference-aware
+asset management rather than heuristic deletion. See the handoff for the precise continuation.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

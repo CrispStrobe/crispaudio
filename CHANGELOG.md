@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## 0.13.40 — 2026-10-18 (local preview)
+
+- Stage recovery-import conversions in owned transactions. Failed preparation, cancellation or stale projects roll back their converted WAVs without touching native originals or changing the editor.
+- Protect converted files before the single editor/Undo transaction. Successful or uncertain publication stays retained, including when a synchronous store subscriber throws after state changes.
+- Use durable ownership/abort receipts and filesystem leases to retry abandoned pending cleanup on later imports. Collection is bounded and skips active writers, retained files, unknown contents and symlinks. Legacy unreceipted conversions remain untouched.
+
 ## 0.13.39 — 2026-10-18 (local preview)
 
 - Stop or Cancel now interrupts native cue/backing readiness waits while helpers open, rather than waiting for the startup deadline. Registered helpers are killed and reaped, workers joined, and cue stream reservations released before preparation returns.

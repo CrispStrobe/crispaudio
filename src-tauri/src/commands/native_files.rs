@@ -128,17 +128,7 @@ pub async fn persist_recording(app: AppHandle, request: Request<'_>) -> Result<S
 }
 fn write_recording(folder: &Path, bytes: &[u8]) -> Result<String, String> {
     use std::io::Write;
-    if bytes.len() > 256 * 1024 * 1024 {
-        return Err("Recording exceeds the 256 MiB file budget".into());
-    }
-    let reader = hound::WavReader::new(std::io::Cursor::new(bytes)).map_err(|e| e.to_string())?;
-    let spec = reader.spec();
-    if !(1..=2).contains(&spec.channels)
-        || !(8000..=192000).contains(&spec.sample_rate)
-        || reader.duration() == 0
-    {
-        return Err("Invalid recording layout".into());
-    }
+    validate_recording(bytes)?;
     std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
     let stamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -156,6 +146,20 @@ fn write_recording(folder: &Path, bytes: &[u8]) -> Result<String, String> {
         return Err(error.to_string());
     }
     Ok(path.to_string_lossy().into_owned())
+}
+pub(super) fn validate_recording(bytes: &[u8]) -> Result<(), String> {
+    if bytes.len() > 256 * 1024 * 1024 {
+        return Err("Recording exceeds the 256 MiB file budget".into());
+    }
+    let reader = hound::WavReader::new(std::io::Cursor::new(bytes)).map_err(|e| e.to_string())?;
+    let spec = reader.spec();
+    if !(1..=2).contains(&spec.channels)
+        || !(8000..=192000).contains(&spec.sample_rate)
+        || reader.duration() == 0
+    {
+        return Err("Invalid recording layout".into());
+    }
+    Ok(())
 }
 #[cfg(test)]
 mod recording_tests {
