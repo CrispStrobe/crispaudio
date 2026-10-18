@@ -5,6 +5,22 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Shared native output and recording owner — 2026-10-18
+
+Internal Mac output now consumes the shared cue mixer and bounded worker-prepared
+backing. Control updates are coherent atomic snapshots with short ramps. The
+whole-run owner prepares files/racks before capture, waits for the output clock,
+arms after input startup and quiesces captures before output/backing cleanup and
+file joins. Clock/backing/finalization faults retain incomplete recovery data and
+prevent a complete group manifest. Sequential hardware starts are not synchronized
+merely by this software sequencing.
+
+Twenty-one additional tests pass: full media **299 passed, 16 ignored**; explicit
+native-input **134 passed**, including AU/VST3 fixtures. The working installed
+0.13.33 app is unchanged. No physical input/output, frontend/app build, simulator,
+installation or Apple submission is claimed for this internal checkpoint.
+[Evidence](evidence/native-recording-owner.json); [next tasks](WORK_HANDOFF.md).
+
 ## Wrap-up checkpoint — 2026-10-17
 
 The current code checkpoint is `962cc74` (internal shared native mixer); installed
@@ -311,7 +327,7 @@ Smaller 256/512-frame per-insert candidates missed deadlines and are not shipped
 These are bounded generated-input checks, not physical input, commercial plug-in,
 background, long-session or heavy-load qualification.
 
-Final frontend **2,020 tests pass in 207 files**. Lint, TypeScript/web build and 21
+Final frontend **2,021 tests pass in 207 files**. Lint, TypeScript/web build and 21
 release checks pass. The existing cue browser test verifies actual capture/native
 worklets, real AU DSP through a separate Node fixture bridge, dry signal retention,
 transport-fault isolation, level/pan/mono, inspector numeric edit/one Undo, reopen

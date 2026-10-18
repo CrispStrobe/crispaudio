@@ -3,6 +3,7 @@
 pub use super::devices::{list_outputs, OutputDevice};
 use super::*;
 use crate::native_input::{
+    backing, mix,
     output::{self, ClockMap, Scheduler},
     CueOutput,
 };
@@ -24,6 +25,8 @@ pub enum Fault {
     Stalled = 6,
     Scheduler = 7,
     Setup = 8,
+    Mixer = 9,
+    Backing = 10,
 }
 #[derive(Clone, Copy)]
 pub struct Config {
@@ -42,7 +45,9 @@ pub struct Report {
     pub armed: bool,
     pub stopped: bool,
     pub fault: Option<Fault>,
+    /// First lane (legacy cue-only reports); use cues for a shared mix.
     pub cue: output::Report,
+    pub cues: [Option<output::Report>; mix::MAX_INPUTS],
 }
 type CurrentTime = unsafe extern "C" fn(Queue, *const c_void, *mut Timestamp, *mut u8) -> i32;
 #[derive(Clone, Copy)]
@@ -71,8 +76,118 @@ extern "C" {
         discontinuity: *mut u8,
     ) -> i32;
 }
+enum RenderSource {
+    Cue(Scheduler),
+    Shared {
+        mixer: mix::Mixer,
+        backing: Option<backing::Reader>,
+        pcm: [crate::native_graph::Stereo; MAX_FRAMES],
+        applied: [u64; mix::MAX_INPUTS],
+    },
+}
+fn control_bits(control: mix::Controls) -> u64 {
+    (control.gain.to_bits() as u64 & 0x7fff_ffff)
+        | ((control.mono as u64) << 31)
+        | ((control.pan.to_bits() as u64) << 32)
+}
+fn controls(bits: u64) -> mix::Controls {
+    mix::Controls {
+        gain: f32::from_bits(bits as u32 & 0x7fff_ffff),
+        mono: bits & (1 << 31) != 0,
+        pan: f32::from_bits((bits >> 32) as u32),
+    }
+}
+impl RenderSource {
+    fn bind(&mut self, clock: ClockMap, start: i64) -> std::result::Result<(), output::Fault> {
+        match self {
+            Self::Cue(cue) => cue.bind_clock(clock, start),
+            Self::Shared { mixer, .. } => mixer.bind_clock(clock, start),
+        }
+    }
+    fn render(
+        &mut self,
+        first: i64,
+        output: &mut [crate::native_graph::Stereo],
+        state: &State,
+    ) -> std::result::Result<(), Fault> {
+        match self {
+            Self::Cue(cue) => {
+                let report = cue.render(first, output);
+                state.save_lane(0, report);
+                if report.fault.is_some() {
+                    return Err(Fault::Scheduler);
+                }
+            }
+            Self::Shared {
+                mixer,
+                backing,
+                pcm,
+                applied,
+            } => {
+                for (index, previous) in applied.iter_mut().enumerate().take(mixer.cue_count()) {
+                    let bits = state.controls[index].load(Ordering::Acquire);
+                    if *previous != bits {
+                        mixer
+                            .set_controls(index, controls(bits))
+                            .map_err(|_| Fault::Mixer)?;
+                        *previous = bits;
+                    }
+                }
+                let backing = if let Some(reader) = backing {
+                    reader
+                        .render(&mut pcm[..output.len()])
+                        .map_err(|_| Fault::Backing)?;
+                    mix::Backing::Audio {
+                        first_frame: first,
+                        samples: &pcm[..output.len()],
+                    }
+                } else {
+                    mix::Backing::Silent
+                };
+                mixer.render(first, backing, output);
+                for index in 0..mixer.cue_count() {
+                    state.save_lane(index, mixer.cue_report(index).unwrap());
+                }
+                if mixer.fault().is_some() {
+                    return Err(Fault::Mixer);
+                }
+            }
+        }
+        Ok(())
+    }
+}
+struct LaneReport {
+    phase: AtomicUsize,
+    fault: AtomicUsize,
+    played: AtomicU64,
+    drift: AtomicI64,
+}
+impl LaneReport {
+    fn new() -> Self {
+        Self {
+            phase: AtomicUsize::new(0),
+            fault: AtomicUsize::new(0),
+            played: AtomicU64::new(0),
+            drift: AtomicI64::new(0),
+        }
+    }
+    fn get(&self) -> output::Report {
+        output::Report {
+            phase: match self.phase.load(Ordering::Acquire) {
+                0 => output::Phase::Waiting,
+                1 => output::Phase::Running,
+                2 => output::Phase::Ended,
+                _ => output::Phase::Fault,
+            },
+            fault: decode(self.fault.load(Ordering::Acquire)),
+            copied_frames: 0,
+            played_frames: self.played.load(Ordering::Acquire),
+            drift_frames: self.drift.load(Ordering::Acquire),
+        }
+    }
+}
 struct Data {
-    scheduler: Scheduler,
+    source: RenderSource,
     next: i64,
     clock: Option<ClockMap>,
     last: Option<(f64, u64)>,
@@ -83,7 +198,11 @@ struct State {
     entered: AtomicBool,
     phase: AtomicUsize,
     armed: AtomicBool,
-    cue_status: Status<CUE_SLOTS>,
+    cue_status: Vec<Status<CUE_SLOTS>>,
+    backing_status: Option<Status<{ backing::SLOTS }>>,
+    shared: bool,
+    controls: [AtomicU64; mix::MAX_INPUTS],
+    lanes: [LaneReport; mix::MAX_INPUTS],
     ops: Ops,
     timeline: AtomicPtr<c_void>,
     timebase: HostTimebase,
@@ -95,10 +214,6 @@ struct State {
     anchor_host: AtomicU64,
     anchor_frame: AtomicI64,
     fault: AtomicUsize,
-    cue_phase: AtomicUsize,
-    cue_fault: AtomicUsize,
-    played: AtomicU64,
-    drift: AtomicI64,
 }
 // The atomic entered guard grants exclusive callback access to Data. Control
 // accesses Data only before registration or AFTER synchronous Dispose quiesces
@@ -153,7 +268,7 @@ impl State {
         {
             return Err("Invalid native output watchdog or clock tolerance".into());
         }
-        let cue_status = cue.status();
+        let cue_status = vec![cue.status()];
         let scheduler = Scheduler::new(
             cue,
             output::Config {
@@ -164,9 +279,81 @@ impl State {
                 max_drift_frames: config.max_input_drift_frames,
             },
         )?;
+        Self::with_source(
+            RenderSource::Cue(scheduler),
+            cue_status,
+            None,
+            [0; mix::MAX_INPUTS],
+            config,
+            timebase,
+            ops,
+        )
+    }
+    fn shared(
+        cues: Vec<(CueOutput, mix::Controls)>,
+        backing: Option<backing::Reader>,
+        config: Config,
+        timebase: HostTimebase,
+        ops: Ops,
+    ) -> Result<Box<Self>> {
+        let cue_status = cues.iter().map(|(cue, _)| cue.status()).collect();
+        let mut initial = [0; mix::MAX_INPUTS];
+        if cues.len() > mix::MAX_INPUTS {
+            return Err("Too many cue inputs".into());
+        }
+        let inputs = cues
+            .into_iter()
+            .enumerate()
+            .map(|(index, (cue, controls))| {
+                initial[index] = control_bits(controls);
+                (
+                    cue,
+                    output::Config {
+                        clock: timebase.clock_map(0, 0),
+                        start_frame: 0,
+                        delay_frames: config.delay_frames,
+                        startup_grace_frames: config.startup_grace_frames,
+                        max_drift_frames: config.max_input_drift_frames,
+                    },
+                    controls,
+                )
+            })
+            .collect();
+        let mixer = mix::Mixer::new(inputs, 0)?;
+        let backing_status = backing.as_ref().map(|reader| reader.status());
+        Self::with_source(
+            RenderSource::Shared {
+                mixer,
+                backing,
+                pcm: [[0.; 2]; MAX_FRAMES],
+                applied: initial,
+            },
+            cue_status,
+            backing_status,
+            initial,
+            config,
+            timebase,
+            ops,
+        )
+    }
+    fn with_source(
+        source: RenderSource,
+        cue_status: Vec<Status<CUE_SLOTS>>,
+        backing_status: Option<Status<{ backing::SLOTS }>>,
+        initial: [u64; mix::MAX_INPUTS],
+        config: Config,
+        timebase: HostTimebase,
+        ops: Ops,
+    ) -> Result<Box<Self>> {
+        if config.watchdog_timeout.is_zero()
+            || !(1..=MAX_FRAMES as u32).contains(&config.max_output_drift_frames)
+        {
+            return Err("Invalid native output watchdog or clock tolerance".into());
+        }
         Ok(Box::new(Self {
+            shared: matches!(&source, RenderSource::Shared { .. }),
             data: UnsafeCell::new(Data {
-                scheduler,
+                source,
                 next: PRIME_FRAMES,
                 clock: None,
                 last: None,
@@ -176,6 +363,9 @@ impl State {
             phase: AtomicUsize::new(PREPARING),
             armed: AtomicBool::new(false),
             cue_status,
+            backing_status,
+            controls: initial.map(AtomicU64::new),
+            lanes: std::array::from_fn(|_| LaneReport::new()),
             ops,
             timeline: AtomicPtr::new(std::ptr::null_mut()),
             timebase,
@@ -187,24 +377,28 @@ impl State {
             anchor_host: AtomicU64::new(0),
             anchor_frame: AtomicI64::new(0),
             fault: AtomicUsize::new(0),
-            cue_phase: AtomicUsize::new(0),
-            cue_fault: AtomicUsize::new(0),
-            played: AtomicU64::new(0),
-            drift: AtomicI64::new(0),
         }))
     }
     fn fail(&self, fault: Fault) {
         let _ = self
             .fault
             .compare_exchange(0, fault as usize, Ordering::AcqRel, Ordering::Acquire);
-        self.cue_status.cancel();
+        self.cancel_sources();
     }
-    fn save_cue(&self, report: output::Report) {
-        self.played.store(report.played_frames, Ordering::Release);
-        self.drift.store(report.drift_frames, Ordering::Release);
-        self.cue_fault
-            .store(encode(report.fault), Ordering::Release);
-        self.cue_phase.store(
+    fn cancel_sources(&self) {
+        for status in &self.cue_status {
+            status.cancel();
+        }
+        if let Some(status) = &self.backing_status {
+            status.cancel();
+        }
+    }
+    fn save_lane(&self, index: usize, report: output::Report) {
+        let lane = &self.lanes[index];
+        lane.played.store(report.played_frames, Ordering::Release);
+        lane.drift.store(report.drift_frames, Ordering::Release);
+        lane.fault.store(encode(report.fault), Ordering::Release);
+        lane.phase.store(
             match report.phase {
                 output::Phase::Waiting => 0,
                 output::Phase::Running => 1,
@@ -224,7 +418,9 @@ impl State {
             5 => Some(Fault::Device),
             6 => Some(Fault::Stalled),
             7 => Some(Fault::Scheduler),
-            _ => Some(Fault::Setup),
+            8 => Some(Fault::Setup),
+            9 => Some(Fault::Mixer),
+            _ => Some(Fault::Backing),
         };
         let clock = self.anchor_ready.load(Ordering::Acquire).then(|| {
             self.timebase.clock_map(
@@ -240,18 +436,10 @@ impl State {
             armed: self.armed.load(Ordering::Acquire),
             stopped: self.phase.load(Ordering::Acquire) == CLOSED,
             fault,
-            cue: output::Report {
-                phase: match self.cue_phase.load(Ordering::Acquire) {
-                    0 => output::Phase::Waiting,
-                    1 => output::Phase::Running,
-                    2 => output::Phase::Ended,
-                    _ => output::Phase::Fault,
-                },
-                fault: decode(self.cue_fault.load(Ordering::Acquire)),
-                copied_frames: 0,
-                played_frames: self.played.load(Ordering::Acquire),
-                drift_frames: self.drift.load(Ordering::Acquire),
-            },
+            cue: self.lanes[0].get(),
+            cues: std::array::from_fn(|index| {
+                (index < self.cue_status.len()).then(|| self.lanes[index].get())
+            }),
         }
     }
     fn observe(
@@ -348,17 +536,16 @@ unsafe extern "C" fn callback(user: *mut c_void, queue: Queue, buffer: *mut Buff
                     Ok(clock) => {
                         if state.armed.load(Ordering::Acquire) {
                             if !data.bound {
-                                match data.scheduler.bind_clock(clock, data.next) {
+                                match data.source.bind(clock, data.next) {
                                     Ok(()) => data.bound = true,
                                     Err(_) => state.fail(Fault::Clock),
                                 }
                             }
                             if state.fault.load(Ordering::Acquire) == 0 {
-                                let report = data.scheduler.render(data.next, output);
+                                let result = data.source.render(data.next, output, state);
                                 if state.phase.load(Ordering::Acquire) == RUNNING {
-                                    state.save_cue(report);
-                                    if report.fault.is_some() {
-                                        state.fail(Fault::Scheduler);
+                                    if let Err(fault) = result {
+                                        state.fail(fault);
                                     }
                                 }
                             }
@@ -403,13 +590,32 @@ impl Output {
     /// mutation or permission prompt. Caller must explicitly arm after capture
     /// preparation. Physical output/timing remains unqualified.
     pub fn start(uid: &str, cue: CueOutput, config: Config) -> Result<Self> {
+        Self::start_source(uid, config, move |timebase, ops| {
+            State::new(cue, config, timebase, ops)
+        })
+    }
+    /// Shared cue/backing output. The backing worker must already be primed.
+    /// Its owner remains on the control thread and must poll/reap after faults.
+    pub fn start_shared(
+        uid: &str,
+        cues: Vec<(CueOutput, mix::Controls)>,
+        backing: Option<backing::Reader>,
+        config: Config,
+    ) -> Result<Self> {
+        Self::start_source(uid, config, move |timebase, ops| {
+            State::shared(cues, backing, config, timebase, ops)
+        })
+    }
+    fn start_source(
+        uid: &str,
+        config: Config,
+        prepare: impl FnOnce(HostTimebase, Ops) -> Result<Box<State>>,
+    ) -> Result<Self> {
         let device = devices::resolve_output(uid)?;
         if device.channels < 2 {
-            return Err("Native cue output requires a stereo device".into());
+            return Err("Native output requires a stereo device".into());
         }
-        let state = State::new(
-            cue,
-            config,
+        let state = prepare(
             HostTimebase::current()?,
             Ops {
                 enqueue: AudioQueueEnqueueBuffer,
@@ -544,10 +750,52 @@ impl Output {
         state.armed.store(true, Ordering::Release);
         Ok(())
     }
+    /// Latest-value atomic handoff: level/balance/mono travel as one 64-bit
+    /// snapshot, then ramp on the exclusive callback. No unbounded command queue.
+    pub fn set_cue_controls(&self, index: usize, control: mix::Controls) -> Result<()> {
+        control.coefficients()?;
+        let state = self
+            .state
+            .as_ref()
+            .ok_or("Native output disposed unsuccessfully")?;
+        if index >= state.cue_status.len()
+            || state.phase.load(Ordering::Acquire) != RUNNING
+            || state.fault.load(Ordering::Acquire) != 0
+        {
+            return Err("Cue output is unavailable".into());
+        }
+        // Legacy single-cue output has no mix controls.
+        if !state.shared {
+            return Err("Cue controls require shared output".into());
+        }
+        state.controls[index].store(control_bits(control), Ordering::Release);
+        Ok(())
+    }
     pub fn poll(&mut self) -> Result<Report> {
         self.poll_at(Instant::now(), Self::check_device)
     }
+    /// Report health without closing the output on error. A coordinated owner
+    /// must quiesce its input captures before calling stop after a failed inspect.
+    pub fn inspect(&mut self) -> Result<Report> {
+        self.inspect_at(Instant::now(), Self::check_device)
+    }
     fn poll_at(
+        &mut self,
+        now: Instant,
+        check_device: impl FnOnce(&Self) -> Result<()>,
+    ) -> Result<Report> {
+        match self.inspect_at(now, check_device) {
+            Ok(report) => Ok(report),
+            Err(reason) => {
+                let close = self.close();
+                Err(match close {
+                    Ok(()) => reason,
+                    Err(error) => format!("{reason}; shutdown failed: {error}"),
+                })
+            }
+        }
+    }
+    fn inspect_at(
         &mut self,
         now: Instant,
         check_device: impl FnOnce(&Self) -> Result<()>,
@@ -573,11 +821,7 @@ impl Output {
             }
         };
         if let Some(reason) = reason {
-            let close = self.close();
-            return Err(match close {
-                Ok(()) => reason,
-                Err(error) => format!("{reason}; shutdown failed: {error}"),
-            });
+            return Err(reason);
         }
         Ok(report)
     }
@@ -610,7 +854,7 @@ impl Output {
             return Ok(());
         }
         state.phase.store(FINISHING, Ordering::Release);
-        state.cue_status.cancel();
+        state.cancel_sources();
         if self.queue.is_null() {
             state.phase.store(CLOSED, Ordering::Release);
             return Ok(());

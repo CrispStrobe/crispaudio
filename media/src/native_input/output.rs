@@ -156,6 +156,14 @@ impl Scheduler {
         clock: ClockMap,
         start_frame: i64,
     ) -> std::result::Result<(), Fault> {
+        let deadline = self.binding_deadline(start_frame)?;
+        self.config.clock = clock;
+        self.config.start_frame = start_frame;
+        self.next_output = start_frame;
+        self.startup_deadline = deadline;
+        Ok(())
+    }
+    pub(crate) fn binding_deadline(&self, start_frame: i64) -> std::result::Result<i64, Fault> {
         if self.next_output != self.config.start_frame
             || self.origin.is_some()
             || self.pending.is_some()
@@ -166,11 +174,7 @@ impl Scheduler {
         let deadline = start_frame
             .checked_add(self.config.startup_grace_frames as i64)
             .ok_or(Fault::ClockRange)?;
-        self.config.clock = clock;
-        self.config.start_frame = start_frame;
-        self.next_output = start_frame;
-        self.startup_deadline = deadline;
-        Ok(())
+        Ok(deadline)
     }
     pub fn report(&self) -> Report {
         self.report_with(0)

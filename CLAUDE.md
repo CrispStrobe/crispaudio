@@ -927,12 +927,20 @@ impulse timing plus AU/VST3 response/cleanup qualify the shared-buffer change on
 blocks. Construct/drop off callback; controls require exclusive render ownership.
 Never render Graph/helpers on the output callback. Cue faults isolate one lane;
 missing/misaligned backing or output clock errors latch whole-mix silence. The
-future synchronized recording owner must stop/invalidate placement on those faults.
-This mixer is not yet wired to the Mac output adapter or app.
+monitored recording owner stops and marks the group incomplete on those faults.
+`Output::start_shared` now wires this mixer and a bounded `backing::Worker` reader
+to the Mac queue; app integration remains pending. Backing DSP and graph preroll
+run only on the worker. Output controls use coherent atomic snapshots and ramp
+in the callback. `Group::prepare`/`Session::prepare` split files/cue preparation
+from capture start; Drop closes unopened writers before joining.
+`session::monitored` now owns readiness/arming/poll/stop; native `inspect()` leaves
+cleanup to this owner so captures quiesce before output/backing cleanup and file
+joins. Final output failure prevents complete publication. Project timing,
+app/Undo integration and physical qualification remain required.
 
 `media::native_input` (native-engine feature) has one non-Clone/non-Sync callback
 writer, independent dry/cue SPSC queues and a cue worker with a static AU/VST3 rack.
-Do not connect it via JS PCM callbacks: native hardware ingress and output clock
+Do not connect it via JS PCM callbacks: app commands and project-clock
 integration remain pending. No installed recording behavior changes yet. Cue
 faults suppress pending wet packets and retain dry capture; raw overflow/gaps must
 be reported as an incomplete take, never a clean stop. Status cancellation does
@@ -980,15 +988,16 @@ before the device factory runs; startup errors can retain a recovery directory.
 `start_macos` checks file/map channel agreement, uses explicit UID and existing
 permission only. There is no permission prompt or device fallback. This owner is
 dry-only by default; start_with_cue adds a native DSP/helper owner and returns a
-single-consumer CueOutput. Native output scheduling remains pending. Poll at least every 100 ms for device/fault/callback checks;
+single-consumer CueOutput for the scheduler/shared output. Poll at least every
+100 ms for device/fault/callback checks;
 timeout includes startup and resets on callback progress, not file progress.
 A poll fault aborts capture and joins files, with a terminal outcome available.
 Stop quiesces capture before final drain and exact frame-count publication.
 Cancel/drop preserves queued valid PCM, attempts checkpoint and joins the worker.
 Do not delete interrupted directories. Filesystem stalls can delay shutdown.
 The per-take cap is 32,000,000 frames, matching native decoded-source limits;
-this is not long-session streaming. No app commands/UI integration yet. Next add
-grouped atomic publication and native output/clock sync.
+this is not long-session streaming. Group publication, shared output and a
+monitored run owner are implemented below; project-clock/app integration is next.
 
 ### Native cue ownership (development after 0.13.33)
 
@@ -1042,9 +1051,9 @@ must validate/bound its buffers first. Construct/drop scheduler off callback.
 Cue worker/scheduler EOF must acquire closed THEN recheck empty: final publication
 can race the initial empty pop. Never close helpers or discard a final tail from
 an empty read that predates EOF. Generated tests wait off callback for helpers;
-no hardware anchor/deadline/physical latency qualification follows. Next implement
-device-bound output, real clock anchor/backing mapping/persisted placements and
-full-path timing before app/native recording integration.
+no hardware anchor/deadline/physical latency qualification follows. Device-bound
+shared output is implemented below; persisted placements and full-path timing
+remain before app/native recording integration.
 
 ### Mac cue output adapter (development after 0.13.33)
 
@@ -1074,5 +1083,6 @@ Dispose(true). Dispose failure retains Box<State>, no callback UAF; explicit
 error+retained fault report, not a successful-release claim.
 Only fake-queue tests reclaim a leak after proving their own quiescence. No physical
 queue/conversion/timestamp/latency/long/load acceptance from synthetic tests.
-Next shared backing/cue mixer and persisted input/backing/project placements,
-coherent owner/startup, full-path timing, then app integration/physical acceptance.
+Shared backing/cue output and a coordinated owner are now implemented above.
+Next: persisted input/backing/project placements, full-path timing, app integration
+and physical acceptance.

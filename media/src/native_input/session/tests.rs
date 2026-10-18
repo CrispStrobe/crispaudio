@@ -367,3 +367,30 @@ fn failed_cue_startup_never_opens_capture_and_retains_recovery_files() {
     assert!(error.recovery_directory.unwrap().join("take.json").exists());
     assert_eq!(budget.used(), 0);
 }
+
+#[test]
+fn preparation_creates_files_without_capture_and_starts_only_on_request() {
+    let root = tempfile::tempdir().unwrap();
+    let drops = Rc::new(Cell::new(0));
+    let (prepared, output) = Session::<Fake>::prepare(root.path(), config(), None).unwrap();
+    assert!(output.is_none());
+    let path = prepared.recovery_directory().to_owned();
+    assert!(path.join("take.json").is_file());
+    assert!(!path.join("take.wav").exists());
+    assert_eq!(drops.get(), 0);
+    let session = prepared
+        .start(|writer| Ok(Fake::new(writer, Rc::new(Cell::new(true)), drops.clone())))
+        .unwrap();
+    assert!(matches!(session.stop(), Outcome::Complete(_)));
+    assert_eq!(drops.get(), 1);
+}
+#[test]
+fn abandoned_preparation_retains_files_without_a_complete_take() {
+    let root = tempfile::tempdir().unwrap();
+    let (prepared, _) = Session::<Fake>::prepare(root.path(), config(), None).unwrap();
+    let path = prepared.recovery_directory().to_owned();
+    drop(prepared);
+    assert!(path.join("take.json").is_file());
+    assert!(path.join("audio.partial.wav").is_file());
+    assert!(!path.join("take.wav").exists());
+}

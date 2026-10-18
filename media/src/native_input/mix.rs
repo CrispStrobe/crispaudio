@@ -17,7 +17,7 @@ pub struct Controls {
     pub mono: bool,
 }
 impl Controls {
-    fn coefficients(self) -> Result<[[f32; 2]; 2]> {
+    pub(crate) fn coefficients(self) -> Result<[[f32; 2]; 2]> {
         if !self.gain.is_finite()
             || !(0.0..=4.0).contains(&self.gain)
             || !self.pan.is_finite()
@@ -60,6 +60,7 @@ pub enum Fault {
 pub struct Mixer {
     lanes: Vec<Lane>,
     next: i64,
+    started: bool,
     fault: Option<Fault>,
     scratch: [Stereo; MAX_FRAMES],
 }
@@ -87,9 +88,32 @@ impl Mixer {
         Ok(Self {
             lanes,
             next: start,
+            started: false,
             fault: None,
             scratch: [[0.; 2]; MAX_FRAMES],
         })
+    }
+    /// One atomic logical bind: preflight every scheduler before mutating any.
+    /// Only the exclusive callback owner may bind, before the first render.
+    pub fn bind_clock(
+        &mut self,
+        clock: output::ClockMap,
+        start: i64,
+    ) -> std::result::Result<(), output::Fault> {
+        if self.started || self.fault.is_some() {
+            return Err(output::Fault::OutputClock);
+        }
+        for lane in &self.lanes {
+            lane.scheduler.binding_deadline(start)?;
+        }
+        for lane in &mut self.lanes {
+            lane.scheduler.bind_clock(clock, start)?;
+        }
+        self.next = start;
+        Ok(())
+    }
+    pub fn cue_count(&self) -> usize {
+        self.lanes.len()
     }
     /// Called by the exclusive render owner after a bounded command handoff.
     /// Matrix interpolation smooths level, balance and mono changes over 64 frames.
@@ -150,6 +174,7 @@ impl Mixer {
                 return;
             }
         }
+        self.started = true;
         self.next = next;
         for lane in &mut self.lanes {
             let scratch = &mut self.scratch[..output.len()];

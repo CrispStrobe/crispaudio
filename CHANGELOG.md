@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+- Connect the internal shared native mixer to Mac output with bounded worker-prepared backing audio, coherent cue-control updates and separate cue/backing fault handling. Split whole-group file/rack preparation from capture start and coordinate readiness, arming and shutdown; backing/output failure prevents complete take publication. Native app recording integration and physical qualification remain pending.
+
 - Consolidate engineering handoff, remaining task dependencies and acceptance criteria; keep machine-specific paths and evidence locations in ignored local notes.
 
 - Add an internal shared cue/backing mixer with independent level, stereo balance and mono controls, smooth control changes and isolated cue failures. Backing or clock failures latch silence for owner shutdown. Hardware/app integration remains pending.

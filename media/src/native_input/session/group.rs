@@ -156,6 +156,87 @@ pub struct Group<C: Capture> {
     inputs: Vec<(String, Session<C>)>,
     outcome: Option<GroupOutcome>,
 }
+/// A whole group's files and cue racks are ready before any capture opens.
+/// The output owner can establish/prime its clock before calling start().
+pub struct Prepared<C: Capture> {
+    group: Option<Group<C>>,
+    writers: Vec<InputWriter>,
+}
+impl<C: Capture> Prepared<C> {
+    pub fn directory(&self) -> &Path {
+        self.group.as_ref().unwrap().directory()
+    }
+    pub fn start(
+        mut self,
+        mut open: impl FnMut(&str, InputWriter) -> Result<C>,
+    ) -> std::result::Result<Group<C>, StartError> {
+        let mut group = self.group.take().unwrap();
+        let failure = group.inputs.iter_mut().find_map(|(id, session)| {
+            session
+                .check_prepared()
+                .err()
+                .map(|reason| format!("Input {id}: {reason}"))
+        });
+        if let Some(reason) = failure {
+            drop(std::mem::take(&mut self.writers));
+            return Err(Self::failure(group, reason));
+        }
+        let mut failure = None;
+        for ((id, session), writer) in group
+            .inputs
+            .iter_mut()
+            .zip(std::mem::take(&mut self.writers))
+        {
+            match open(id, writer) {
+                Ok(capture) => {
+                    session.capture = Some(capture);
+                    session.progress_at = std::time::Instant::now();
+                }
+                Err(reason) => {
+                    failure = Some(format!("Input {id} failed to start: {reason}"));
+                    break;
+                }
+            }
+        }
+        if let Some(reason) = failure {
+            Err(Self::failure(group, reason))
+        } else {
+            Ok(group)
+        }
+    }
+    /// Cancel an unopened group and its external output/backing resources before
+    /// joining files. No complete manifest is published.
+    pub fn cancel_with(
+        mut self,
+        reason: String,
+        cleanup: impl FnOnce() -> Result<()>,
+    ) -> GroupOutcome {
+        drop(std::mem::take(&mut self.writers));
+        self.group.take().unwrap().interrupt_with(reason, cleanup)
+    }
+    fn failure(mut group: Group<C>, reason: String) -> StartError {
+        group.abort(reason);
+        let GroupOutcome::Incomplete {
+            directory,
+            reason,
+            inputs,
+        } = group.outcome.take().unwrap()
+        else {
+            unreachable!()
+        };
+        StartError {
+            reason,
+            directory: Some(directory),
+            inputs,
+        }
+    }
+}
+impl<C: Capture> Drop for Prepared<C> {
+    fn drop(&mut self) {
+        drop(std::mem::take(&mut self.writers));
+        drop(self.group.take());
+    }
+}
 impl<C: Capture> Group<C> {
     /// Validates the whole group before creating files/opening inputs. The cue
     /// budget is private to this group, so preflight admission cannot race another
@@ -163,8 +244,17 @@ impl<C: Capture> Group<C> {
     pub fn start(
         root: &Path,
         inputs: Vec<Input>,
-        mut open: impl FnMut(&str, InputWriter) -> Result<C>,
+        open: impl FnMut(&str, InputWriter) -> Result<C>,
     ) -> std::result::Result<(Self, Vec<(String, CueOutput)>), StartError> {
+        let (prepared, outputs) = Self::prepare(root, inputs)?;
+        Ok((prepared.start(open)?, outputs))
+    }
+    /// All file and helper preparation precedes capture; opening inputs remains
+    /// sequential and does not imply simultaneous physical device clocks.
+    pub fn prepare(
+        root: &Path,
+        inputs: Vec<Input>,
+    ) -> std::result::Result<(Prepared<C>, Vec<(String, CueOutput)>), StartError> {
         let error = |reason| StartError {
             reason,
             directory: None,
@@ -179,34 +269,27 @@ impl<C: Capture> Group<C> {
         };
         let budget = StreamBudget::default();
         let mut outputs = Vec::new();
+        let mut writers = Vec::new();
         for input in inputs {
             let id = input.track_id;
             let mut config = input.recording;
             config.context = serde_json::json!({"recordingGroup": group.directory.file_name().unwrap().to_string_lossy(), "trackId":id, "source":config.context});
-            let result = if let Some(cue) = input.cue {
-                Session::start_with_cue(
-                    &group.directory,
-                    config,
-                    CueConfig {
-                        plugins: cue.plugins,
-                        budget: budget.clone(),
-                        startup_timeout: cue.startup_timeout,
-                    },
-                    |writer| open(&id, writer),
-                )
-                .map(|(session, output)| (session, Some(output)))
-            } else {
-                Session::start(&group.directory, config, |writer| open(&id, writer))
-                    .map(|session| (session, None))
-            };
+            let cue = input.cue.map(|cue| CueConfig {
+                plugins: cue.plugins,
+                budget: budget.clone(),
+                startup_timeout: cue.startup_timeout,
+            });
+            let result = Session::prepare(&group.directory, config, cue);
             match result {
-                Ok((session, output)) => {
+                Ok((mut prepared, output)) => {
                     if let Some(output) = output {
                         outputs.push((id.clone(), output));
                     }
-                    group.inputs.push((id, session));
+                    writers.push(prepared.writer.take().unwrap());
+                    group.inputs.push((id, prepared.session.take().unwrap()));
                 }
                 Err(failure) => {
+                    drop(writers);
                     group.abort(format!("Input {id} failed to start: {}", failure.reason));
                     let GroupOutcome::Incomplete {
                         directory,
@@ -233,7 +316,13 @@ impl<C: Capture> Group<C> {
                 }
             }
         }
-        Ok((group, outputs))
+        Ok((
+            Prepared {
+                group: Some(group),
+                writers,
+            },
+            outputs,
+        ))
     }
     pub fn directory(&self) -> &Path {
         &self.directory
@@ -242,6 +331,14 @@ impl<C: Capture> Group<C> {
         self.outcome.as_ref()
     }
     pub fn poll(&mut self) -> Result<Vec<(String, Report)>> {
+        let result = self.check();
+        if let Err(reason) = &result {
+            self.abort(reason.clone());
+        }
+        result
+    }
+    // Whole-run owner supplies output/backing cleanup between quiesce and joins.
+    pub(crate) fn check(&mut self) -> Result<Vec<(String, Report)>> {
         if self.outcome.is_some() {
             return Err("Recording group has stopped".into());
         }
@@ -258,20 +355,31 @@ impl<C: Capture> Group<C> {
             }
         }
         if let Some(reason) = failure {
-            self.abort(reason.clone());
             Err(reason)
         } else {
             Ok(reports)
         }
     }
     fn abort(&mut self, reason: String) {
-        if self.outcome.is_some() {
+        self.abort_with(reason, || Ok(()));
+    }
+    fn abort_with(&mut self, mut reason: String, cleanup: impl FnOnce() -> Result<()>) {
+        if let Some(outcome) = &mut self.outcome {
+            if let Err(error) = cleanup() {
+                if let GroupOutcome::Incomplete { reason, .. } = outcome {
+                    reason.push_str(&format!("; cleanup failed: {error}"));
+                }
+            }
             return;
         }
-        // Quiesce ALL captures before any cue/file join can block.
+        // Stop ALL capture callbacks before external output/helper cleanup, then
+        // join cue/file workers. A backing failure must never publish a group.
         for (_, session) in &mut self.inputs {
             session.dry.cancel();
             drop(session.capture.take());
+        }
+        if let Err(error) = cleanup() {
+            reason.push_str(&format!("; cleanup failed: {error}"));
         }
         let inputs = std::mem::take(&mut self.inputs)
             .into_iter()
@@ -286,12 +394,30 @@ impl<C: Capture> Group<C> {
             inputs,
         });
     }
+    pub fn interrupt_with(
+        mut self,
+        reason: String,
+        cleanup: impl FnOnce() -> Result<()>,
+    ) -> GroupOutcome {
+        self.abort_with(reason, cleanup);
+        self.outcome.take().unwrap()
+    }
     pub fn cancel(mut self) -> GroupOutcome {
         self.abort("Recording group cancelled".into());
         self.outcome.take().unwrap()
     }
-    pub fn stop(mut self) -> GroupOutcome {
-        if let Some(outcome) = self.outcome.take() {
+    pub fn stop(self) -> GroupOutcome {
+        self.stop_with(|| Ok(()))
+    }
+    /// Quiesce every capture, finish output/backing, THEN join files and publish.
+    /// Failure of external finalization makes every take incomplete.
+    pub fn stop_with(mut self, cleanup: impl FnOnce() -> Result<()>) -> GroupOutcome {
+        if let Some(mut outcome) = self.outcome.take() {
+            if let Err(error) = cleanup() {
+                if let GroupOutcome::Incomplete { reason, .. } = &mut outcome {
+                    reason.push_str(&format!("; cleanup failed: {error}"));
+                }
+            }
             return outcome;
         }
         let stopped = std::mem::take(&mut self.inputs)
@@ -301,9 +427,18 @@ impl<C: Capture> Group<C> {
                 (id, session, command)
             })
             .collect::<Vec<_>>();
+        let cleanup_error = cleanup().err();
         let inputs = stopped
             .into_iter()
             .map(|(track_id, mut session, command)| {
+                let command = if let Some(reason) = &cleanup_error {
+                    session.dry.cancel();
+                    Some(super::Command::Abort(format!(
+                        "Output/backing finalization failed: {reason}"
+                    )))
+                } else {
+                    command
+                };
                 if let Some(command) = command {
                     session.join(command);
                 }
@@ -314,6 +449,9 @@ impl<C: Capture> Group<C> {
             })
             .collect::<Vec<_>>();
         let result = (|| {
+            if let Some(reason) = &cleanup_error {
+                return Err(format!("Output/backing finalization failed: {reason}"));
+            }
             let mut clips = Vec::new();
             for input in &inputs {
                 let Outcome::Complete(take) = &input.outcome else {

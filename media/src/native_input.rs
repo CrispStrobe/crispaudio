@@ -9,6 +9,7 @@
 use crate::{native_graph::Stereo, Result};
 #[cfg(target_os = "macos")]
 pub mod macos;
+pub mod backing;
 pub mod mix;
 pub mod output;
 pub mod plugins;

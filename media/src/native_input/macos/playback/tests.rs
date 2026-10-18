@@ -116,7 +116,10 @@ unsafe extern "C" fn dispose(queue: Queue, _: u8) -> i32 {
     queue.disposals.fetch_add(1, Ordering::AcqRel);
     let state = &*(queue.state.load(Ordering::Acquire) as *const State);
     assert_eq!(state.phase.load(Ordering::Acquire), FINISHING);
-    assert!(state.cue_status.fault().is_some());
+    assert!(state
+        .cue_status
+        .iter()
+        .all(|status| status.fault().is_some()));
     queue.dispose_error.load(Ordering::Acquire)
 }
 struct Fixture {
@@ -163,6 +166,9 @@ fn make_output(output: CueOutput) -> (Fixture, Arc<FakeQueue>) {
         },
     )
     .unwrap();
+    make_state(state, queue)
+}
+fn make_state(state: Box<State>, queue: Arc<FakeQueue>) -> (Fixture, Arc<FakeQueue>) {
     state.timeline.store(queue.pointer(), Ordering::Release);
     state.phase.store(RUNNING, Ordering::Release);
     queue
@@ -478,7 +484,7 @@ unsafe extern "C" fn finish_in_clock_query(
     let queue = &*queue.cast::<FakeQueue>();
     let state = &*(queue.state.load(Ordering::Acquire) as *const State);
     state.phase.store(FINISHING, Ordering::Release);
-    state.cue_status.cancel();
+    state.cue_status[0].cancel();
     -1
 }
 #[test]
@@ -698,4 +704,155 @@ fn setup_failure_preserves_original_error_and_reports_failed_cleanup() {
             }
         }
     }
+}
+
+fn shared_fixture(
+    cues: Vec<(CueOutput, mix::Controls)>,
+    backing: Option<backing::Reader>,
+) -> (Fixture, Arc<FakeQueue>) {
+    let queue = Arc::new(FakeQueue::new());
+    let state = State::shared(
+        cues,
+        backing,
+        config(),
+        HostTimebase {
+            numerator: 1_000_000_000,
+            denominator: 48000,
+        },
+        Ops {
+            enqueue,
+            current,
+            stop,
+            dispose,
+        },
+    )
+    .unwrap();
+    make_state(state, queue)
+}
+struct BackingTone;
+impl backing::Renderer for BackingTone {
+    fn render(&mut self, pcm: &mut [Stereo]) -> Result<()> {
+        pcm.fill([0.25; 2]);
+        Ok(())
+    }
+}
+fn cue_blocks(value: f32) -> (CueOutput, InputWriter, Reader<DRY_SLOTS>, CueWorker<Pass>) {
+    let (mut writer, mut dry, cue) = input();
+    let (mut worker, output) = CueWorker::new(cue, Pass);
+    for block in 0..3 {
+        assert!(writer.push(block * 512, BASE + block * 512, &[[value; 2]; 512]));
+        assert_eq!(worker.step(), Step::Processed);
+        assert!(dry.pop().is_some());
+    }
+    (output, writer, dry, worker)
+}
+#[test]
+fn shared_callback_mixes_backing_two_cues_and_atomic_ramped_controls() {
+    let (one, _w1, _d1, _c1) = cue_blocks(1.);
+    let (two, _w2, _d2, _c2) = cue_blocks(2.);
+    let status = one.status();
+    let controls = mix::Controls {
+        gain: 1.,
+        pan: 0.,
+        mono: false,
+    };
+    let (mut backing, pcm) =
+        backing::Worker::start(Duration::from_secs(1), |_| Ok((BackingTone, 1536))).unwrap();
+    let (mut fixture, queue) = shared_fixture(vec![(one, controls), (two, controls)], Some(pcm));
+    let mut buffer = BufferFixture::new();
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(*buffer.pcm, [[0.; 2]; 512]);
+    fixture.arm().unwrap();
+    queue.time(512);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(*buffer.pcm, [[3.25; 2]; 512]);
+    assert_eq!(fixture.report().fault, None);
+    assert!(fixture.set_cue_controls(2, controls).is_err());
+    assert!(fixture
+        .set_cue_controls(
+            0,
+            mix::Controls {
+                gain: f32::NAN,
+                ..controls
+            }
+        )
+        .is_err());
+    fixture
+        .set_cue_controls(
+            0,
+            mix::Controls {
+                gain: 0.,
+                ..controls
+            },
+        )
+        .unwrap();
+    queue.time(1024);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(buffer.pcm[0], [2.25 + 63. / 64.; 2]);
+    assert_eq!(buffer.pcm[63..], [[2.25; 2]; 449]);
+    // A failed cue lane does not cancel the second lane or prepared backing.
+    status.cancel();
+    queue.time(1536);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(*buffer.pcm, [[2.25; 2]; 512]);
+    let report = fixture.report();
+    assert_eq!(report.fault, None);
+    assert!(report.cues[0].unwrap().fault.is_some());
+    assert_eq!(report.cues[1].unwrap().fault, None);
+    assert_eq!(report.cues[1].unwrap().played_frames, 1536);
+    assert!(report.cues[2].is_none());
+    fixture.close().unwrap();
+    assert!(backing.poll().is_err());
+    assert_eq!(queue.disposals.load(Ordering::Acquire), 1);
+}
+#[test]
+fn shared_backing_failure_silences_all_lanes_and_closes_on_poll() {
+    let (one, _w, _d, _c) = cue_blocks(1.);
+    let status = one.status();
+    let (backing, pcm) =
+        backing::Worker::start(Duration::from_secs(1), |_| Ok((BackingTone, 16384))).unwrap();
+    let (mut fixture, queue) = shared_fixture(
+        vec![(
+            one,
+            mix::Controls {
+                gain: 1.,
+                pan: 0.,
+                mono: false,
+            },
+        )],
+        Some(pcm),
+    );
+    let mut buffer = BufferFixture::new();
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    fixture.arm().unwrap();
+    drop(backing);
+    queue.time(512);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(*buffer.pcm, [[0.; 2]; 512]);
+    assert_eq!(fixture.report().fault, Some(Fault::Backing));
+    assert!(status.fault().is_some());
+    assert!(fixture.poll_at(Instant::now(), |_| Ok(())).is_err());
+    assert_eq!(queue.disposals.load(Ordering::Acquire), 1);
+}
+#[test]
+fn shared_backing_only_output_binds_without_a_dummy_cue() {
+    let (_backing, pcm) =
+        backing::Worker::start(Duration::from_secs(1), |_| Ok((BackingTone, 513))).unwrap();
+    let (mut fixture, queue) = shared_fixture(vec![], Some(pcm));
+    let mut buffer = BufferFixture::new();
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    fixture.arm().unwrap();
+    queue.time(512);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(*buffer.pcm, [[0.25; 2]; 512]);
+    assert!(fixture.report().cues.iter().all(Option::is_none));
+    queue.time(1024);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(buffer.pcm[0], [0.25; 2]);
+    assert_eq!(buffer.pcm[1..], [[0.; 2]; 511]);
+    queue.time(1536);
+    buffer.send(fixture.state.as_ref().unwrap(), &queue);
+    assert_eq!(*buffer.pcm, [[0.; 2]; 512]);
+    assert_eq!(fixture.report().fault, None);
+    fixture.close().unwrap();
 }

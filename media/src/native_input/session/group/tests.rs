@@ -423,7 +423,7 @@ fn cue_consumer_faults_do_not_invalidate_the_dry_group() {
 }
 
 #[test]
-fn second_rack_open_failure_rolls_back_an_already_capturing_input() {
+fn second_rack_open_failure_prevents_any_capture_startup() {
     let root = tempfile::tempdir().unwrap();
     let mut specs = inputs();
     specs[1].cue = Some(CueSpec {
@@ -436,20 +436,8 @@ fn second_rack_open_failure_rolls_back_an_already_capturing_input() {
         startup_timeout: Duration::from_secs(5),
     });
     let live = Rc::new(Cell::new(0));
-    let finishes = Rc::new(Cell::new(0));
-    let peers = Rc::new(Cell::new(false));
-    let error = Group::start(root.path(), specs, |id, writer| {
-        assert_eq!(
-            id, "voice",
-            "Second capture must not open after cue preparation fails"
-        );
-        Ok(Fake::new(
-            writer,
-            id,
-            live.clone(),
-            finishes.clone(),
-            peers.clone(),
-        ))
+    let error = Group::<Fake>::start(root.path(), specs, |_, _| {
+        panic!("No capture may open before all cue racks are ready")
     })
     .err()
     .unwrap();
@@ -503,4 +491,74 @@ fn interrupted_group_fixture() {
         .unwrap();
     file.sync_all().unwrap();
     std::process::exit(0); // Skip Group/Session/Recorder destructors on remaining input.
+}
+
+#[test]
+fn all_group_files_exist_before_any_capture_starts() {
+    let root = tempfile::tempdir().unwrap();
+    let live = Rc::new(Cell::new(0));
+    let finishes = Rc::new(Cell::new(0));
+    let peers = Rc::new(Cell::new(false));
+    let (prepared, outputs) = Group::<Fake>::prepare(root.path(), inputs()).unwrap();
+    assert!(outputs.is_empty());
+    assert_eq!(live.get(), 0);
+    let directory = prepared.directory().to_owned();
+    let count = fs::read_dir(&directory)
+        .unwrap()
+        .filter(|entry| entry.as_ref().unwrap().path().join("take.json").is_file())
+        .count();
+    assert_eq!(count, 2);
+    let group = prepared
+        .start(|id, writer| {
+            assert_eq!(
+                fs::read_dir(&directory)
+                    .unwrap()
+                    .filter(|entry| entry.as_ref().unwrap().path().join("take.json").is_file())
+                    .count(),
+                2
+            );
+            Ok(Fake::new(
+                writer,
+                id,
+                live.clone(),
+                finishes.clone(),
+                peers.clone(),
+            ))
+        })
+        .unwrap();
+    assert_eq!(live.get(), 2);
+    assert!(matches!(group.stop(), GroupOutcome::Complete { .. }));
+    assert_eq!(live.get(), 0);
+}
+#[test]
+fn group_preparation_drop_and_cancelled_cues_never_open_inputs_or_publish() {
+    let root = tempfile::tempdir().unwrap();
+    let (prepared, _) = Group::<Fake>::prepare(root.path(), inputs()).unwrap();
+    let directory = prepared.directory().to_owned();
+    drop(prepared);
+    assert!(!directory.join(MANIFEST).exists());
+    for entry in fs::read_dir(directory).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_dir() {
+            assert!(path.join("take.json").exists());
+            assert!(!path.join("take.wav").exists());
+        }
+    }
+    let mut specs = inputs();
+    for spec in &mut specs {
+        spec.cue = Some(CueSpec {
+            plugins: vec![],
+            startup_timeout: Duration::from_secs(2),
+        });
+    }
+    let (prepared, outputs) = Group::<Fake>::prepare(root.path(), specs).unwrap();
+    drop(outputs);
+    let error = prepared
+        .start(|_, _| -> Result<Fake> {
+            panic!("Cancelled prepared cues must fail before capture opens")
+        })
+        .err()
+        .unwrap();
+    assert_eq!(error.inputs.len(), 2);
+    assert!(!error.directory.unwrap().join(MANIFEST).exists());
 }

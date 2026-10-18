@@ -210,3 +210,30 @@ fn inputs_require_one_clock_and_bounded_valid_controls() {
     )
     .is_err());
 }
+
+#[test]
+fn shared_clock_binding_is_all_or_nothing_and_cannot_retime_rendered_audio() {
+    let mut mix = Mixer::new(
+        vec![
+            lane(&[[1.; 2]; 128], unity()),
+            lane(&[[2.; 2]; 128], unity()),
+        ],
+        0,
+    )
+    .unwrap();
+    let clock = output::ClockMap::new(
+        output::Timebase::new(1_000_000_000, 48000).unwrap(),
+        1000,
+        100,
+    );
+    assert_eq!(
+        mix.bind_clock(clock, i64::MAX),
+        Err(output::Fault::ClockRange)
+    );
+    mix.bind_clock(clock, 100).unwrap();
+    let mut out = [[0.; 2]; 129];
+    mix.render(100, Backing::Silent, &mut out);
+    assert_eq!(out[0], [0.; 2]);
+    assert_eq!(out[1..], [[3.; 2]; 128]);
+    assert_eq!(mix.bind_clock(clock, 0), Err(output::Fault::OutputClock));
+}

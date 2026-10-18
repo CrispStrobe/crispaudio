@@ -63,8 +63,12 @@ shutdown. Its software callbacks pass with fake queue operations; hardware clock
 backing/project placement and project insertion/Undo remain before native recording
 app integration and physical qualification. A portable shared mixer now sums up to
 16 scheduled cue lanes with prepared backing PCM, smooth level/balance/mono controls
-and separate cue versus backing fault handling. Wiring the mixer to the hardware
-queue, worker-produced backing and synchronized preparation/arming remains open.
+and separate cue versus backing fault handling. The Mac shared-output path now consumes this mixer and worker-produced backing
+through fixed queues, with atomic cue control handoff and whole-mixer clock binding.
+Session/group preparation now completes files and cue racks before any capture
+opens. A whole-run owner now coordinates readiness/arming/polling and gates complete
+group publication on successful output/backing finalization. Project placement,
+app/Undo integration and physical qualification remain open. See the handoff for the precise continuation.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

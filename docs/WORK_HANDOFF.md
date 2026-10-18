@@ -1,6 +1,6 @@
 # Engineering checkpoint and remaining work
 
-Updated 2026-10-17. This is the entry point for a fresh agent. The active product
+Updated 2026-10-18. This is the entry point for a fresh agent. The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -14,7 +14,7 @@ historical records, not a current completion checklist.
 2. Check `git status`, the current commit and GitHub workflow results. Preserve
    existing user changes, installed sessions and original media. Never commit
    credentials, personal paths, private recordings or signing material.
-3. Continue task N1 below. Keep architecture changes bounded and reviewable;
+3. Continue task N3 below; N1/N2 are implemented as internal software paths. Keep architecture changes bounded and reviewable;
    update the acceptance evidence and this handoff at each checkpoint.
 
 ## What is ready
@@ -37,44 +37,52 @@ Native recording work after 0.13.33 is **internal, not connected to the app**:
 | Capture/cue ownership | `native_input/session.rs`, `session/cue.rs` | Watchdogs, helper cleanup and recording-group stream budget |
 | Group completion | `native_input/session/group.rs` | Up-front admission, startup rollback, all-capture stop before joins, atomic group manifest |
 | Cue scheduling | `native_input/output.rs` | Host-clock mapping, fixed delay, bounded startup and drift/underrun rejection |
-| Mac output | `native_input/macos/playback.rs` | One cue scheduler, explicit device UID, silent priming/arming, watchdogs and guarded shutdown |
-| Shared cue/backing mixer | `native_input/mix.rs` | Up to 16 lanes, independent gain/balance/mono, 64-frame control ramps, separate cue/backing failure domains |
+| Mac output | `native_input/macos/playback.rs` | Legacy cue or shared mix/backing output, explicit UID, priming/arming, per-lane reports and coherent atomic controls |
+| Shared cue/backing mixer | `native_input/mix.rs` | Up to 16 lanes, independent gain/balance/mono, 64-frame ramps, whole-mixer clock binding and separate failure domains |
+| Backing worker | `native_input/backing.rs` | Graph history/latency preroll off callback, bounded 16-block queue, partial reads/EOF, cancellation and helper registration |
 
-The last two components are **not wired together**. The group manifest is not a
+`Output::start_shared` wires the mixer and backing reader to the Mac queue.
+`Session::prepare` and `Group::prepare` now create files/cue racks before capture
+opens, retaining recoverable files on abandonment. `session::monitored` now owns group/output/backing readiness, arming, polling and
+ordered shutdown. Capture stops before output cleanup and file joins; backing/clock
+failures prevent complete publication. The group manifest is not a
 project transaction and contains no qualified arrangement placement. None of this
 establishes physical latency, sustained-load stability or independent-device sync.
 See [NATIVE_INPUT.md](NATIVE_INPUT.md) for contracts and evidence links.
 
 ## Next implementation sequence
 
-All items below remain open. Dependencies and completion boundaries are explicit;
-accepted scope is not a claim that every item can be finished in one session.
+N1/N2 are implemented as internal software paths. Timing, app integration and
+hardware qualification (N3–N5) stay open. Dependencies and
+completion boundaries are explicit; none of this enables the installed recording
+path by itself.
 
-### N1 — Shared hardware output and backing worker
+### N1 — Shared hardware output and backing worker (implemented internally)
 
-- Integrate `Mixer` with the Mac output adapter while retaining silent priming,
-  one-time hardware anchor binding, reentrancy guards and safe disposal.
-- Render `native_graph::Graph` and native inserts on a worker. Supply tagged,
-  bounded backing blocks to the output callback; no helper IPC, allocation, file
-  work or application locks on that callback. Define queue budgets and underrun policy.
-- Hand off bounded control updates to the exclusive render owner. Keep cue levels
-  independent of arrangement faders; make device routing app-local, explicit and
-  without silent fallback or global device/rate changes.
-- Done when generated multi-input/backing tests verify exact timing across unequal
-  blocks, ramped controls, EOF, startup deadlines, overload, clock discontinuity,
-  cancellation and device loss. Existing output lifecycle tests must remain valid.
+`Output::start_shared` consumes up to 16 cue lanes and a primed backing reader.
+Graph/plugin rendering and graph preroll run on `backing::Worker`; the callback
+only consumes fixed PCM. Latest cue controls travel as coherent atomic snapshots
+and ramp over 64 frames. Cue-only errors remain isolated; backing or hardware
+clock failures latch whole-output silence. The shared mixer binds all lanes to
+the observed hardware clock before its first render. The legacy one-cue entry
+point remains supported. This is software integration, not physical qualification
+or a shipped latency promise; see N5 before enabling it in the app.
 
-### N2 — Coordinated preparation, arming and failure ownership
+### N2 — Preparation, arming and failure ownership (implemented internally)
 
-- Separate file/helper preparation from capture start; the current session API
-  combines these. Prepare the whole group and output before arming on one clock.
-- Define one owner for capture, backing worker, cue workers and output lifetime;
-  rollback partial startup and quiesce callbacks before joining workers.
-- Cue-only failure may mute cue and preserve dry capture. Backing/output clock
-  loss during synchronized recording must produce an explicit incomplete result;
-  never publish apparently aligned clips merely because dry files survived.
-- Done when failure injection at every startup/stop boundary retains recoverable
-  originals, releases helpers/budgets and never publishes a partial complete group.
+`Session::prepare`/`Group::prepare` finish files/cue helpers before capture. Prepared
+owners retain unopened writers and close them before joining on Drop.
+`session::monitored::Prepared` waits for output-clock/backing readiness, starts the
+prepared group, then arms output. Its `Run` owns polling, stop, cancellation and
+Drop. Output health inspection leaves cleanup to this owner so every capture can
+quiesce before output/backing shutdown and cue/file joins. Finalization failure
+aborts all files instead of publishing a complete group. Cue-only failures remain
+isolated. Software tests cover readiness, startup rollback, arming, raw/output loss,
+shutdown failure and Drop; graph preroll compensates a generated delayed insert.
+
+Sequential physical device opens, queue lead/conversion, real clock accuracy,
+round-trip delay, drift correction and deadline/load qualification are not thereby
+established. Do not turn the internal constants into shipped latency claims.
 
 ### N3 — Persist timing and commit takes to the project
 
@@ -139,11 +147,13 @@ No new patent conclusion or distribution restriction is introduced by this check
 
 ## Verification at the code checkpoint
 
-Code checkpoint: `962cc74` (shared native mixer). Full media suite: **278 passed,
-16 ignored**. App Rust suite: **39 passed, one ignored**. Formatting and diff checks
-passed. Six new mixer tests use generated PCM, without physical input/output.
-See [mixer evidence](evidence/native-shared-mixer.json). No frontend, simulator,
-bundle, installation or Apple upload was performed for this internal increment.
+The shared-output/recording-owner checkpoint adds 21 tests. Full media suite:
+**299 passed, 16 ignored**. Explicit native-input suite, including SDK VST3 and
+child-process fixtures: **134 passed**. Formatting/diff, changed JSON and Markdown
+link checks pass. See [scope](evidence/native-recording-owner.json).
+No microphone/output device was opened. No frontend, app Rust, simulator, bundle,
+installation or Apple upload was rerun for this unused internal media increment;
+the earlier app Rust result (39 passed, one ignored) is historical.
 
 Portable commands (use a configured Rust toolchain):
 

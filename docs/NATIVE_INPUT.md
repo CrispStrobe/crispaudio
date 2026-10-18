@@ -186,7 +186,11 @@ PCM; no output scheduler, physical device, deadline or sustained-load claim.
 `session::group::Group` validates the whole input list before file/device creation:
 unique track IDs, valid channel/context limits, at most 16 inputs, two cue inserts
 per input/eight per group, and a combined 32-million-frame decoded-source budget.
-Each group owns its cue budget. Inputs open sequentially; a later startup failure
+Each group owns its cue budget. `Group::prepare` creates all files/cue racks before
+any capture opens; its returned prepared group retains the unopened writers.
+`Session::prepare` provides the same split for one input. Prepared owners close
+writers before joining on cancellation/Drop and retain recovery files. Existing
+`start` methods use this preparation path internally. Inputs still open sequentially; a later startup failure
 stops earlier inputs and retains their recovery files. This is startup rollback,
 not synchronized hardware start.
 
@@ -208,8 +212,9 @@ error explicitly reports a visible manifest with uncertain durability; reconcile
 it instead of deleting takes or blindly retrying publication.
 
 This layer returns a group result eligible for one future project transaction.
-Actual project insertion/Undo, sample-accurate input/backing alignment, native
-output scheduling and hardware/load qualification are still pending.
+Actual project insertion/Undo, sample-accurate input/backing alignment and
+hardware/load qualification are still pending. Native output scheduling and
+coordinated ownership are implemented below.
 
 ## Cue scheduling and host-clock math
 
@@ -264,7 +269,8 @@ The queue sample clock is relative to queue start; it is not the absolute device
 sample clock or a looping project playhead. The callback requires both valid
 sample and host timestamps, rejects timeline discontinuities, backward clock
 observations and excessive accumulated output/host drift, and binds the scheduler
-before its first render. The published anchor is stable. The SDK's timeline and
+or whole mixer before its first render. Mixer binding preflights all lanes before
+changing any lane. The published anchor is stable. The SDK's timeline and
 clock signatures/constants are checked by the C ABI fixture.
 
 Callback state is guarded before any mutable PCM or scheduler borrow, including
@@ -278,8 +284,10 @@ of audio already queued in hardware.
 Call `poll()` regularly (at least every 100 ms). It checks device availability and
 nominal format, callback progress **and** advancing queue time. A busy callback
 with a frozen hardware clock still times out. Errors stop/dispose the queue and
-cancel cue status; session polling separately kills/reaps cue helpers. Dry capture
-continues. Reports are atomic telemetry snapshots; cue frame counts describe
+cancel cue and backing status; session/backing polling separately kills/reaps
+helpers. Raw capture itself continues until its owner stops it. A synchronized
+recording owner must mark backing/output clock failure incomplete; surviving dry
+files alone do not establish valid project alignment. Reports are atomic telemetry snapshots; cue frame counts describe
 rendered data, not measured acoustic playback. `Output` is not Send/Sync and must
 be controlled on its creating thread.
 
@@ -316,9 +324,34 @@ or non-finite sum latches whole-mix silence and cancels cue consumers. Intention
 backing silence/EOF is explicit. The recording owner must react to a whole-mix
 fault; silence alone does not establish valid project alignment or stop capture.
 
-This portable mixer is not yet connected to the Mac queue. Backing worker handoff,
-hardware-anchor binding, coordinated capture preparation/arming, persisted clip
-placement and physical latency/load qualification remain open. Tests use generated
+`Output::start_shared` now connects the mixer and optional backing reader to the
+Mac queue. `set_cue_controls` publishes each gain/balance/mono setting as one atomic
+64-bit snapshot; the callback applies the latest value and ramps it, with no
+unbounded command queue. Per-lane reports distinguish muted cues from whole-output
+faults. The legacy single-cue entry point retains its earlier fault behavior.
+
+`backing::Worker` prepares graph/rack work on its thread and primes a fixed queue
+of 16 x 512 frames (or a complete shorter backing). Full means worker backpressure,
+not overflow. Its reader handles partial blocks and EOF silence with at most two
+packet reads per callback block. Missing promised PCM latches failure without
+skipping/replaying or advancing the consumed counter. Helpers must register stop
+handles before blocking startup; timeout/cancellation kills registered helpers and
+joins off callback. Arbitrary blocking renderers must cooperate with cancellation.
+Graph preparation warms source history plus plug-in latency before publishing a
+finite selected project range; current decoded-source/frame limits still apply.
+This queue is bounded transport, not a new disk-streaming capability.
+
+`session::monitored::Prepared`/`Run` now coordinate readiness, capture start,
+arming, health polling and ordered shutdown. The native output's `inspect()`
+reports health without closing; the owner quiesces all captures first, then stops
+output/backing and joins cue/file workers. `Group::stop_with` gates completion on
+external finalization; `interrupt_with` retains incomplete files after loss/cancel.
+A final output/disposal error prevents a complete marker. Call owner polling at
+least every 100 ms; this cannot supply a hard deadline while control/storage stalls.
+
+Persisted input/backing/project placement, app/Undo integration and physical
+latency/load qualification remain open. This owner does not infer project timing
+from callback arrival or declare independent devices synchronized. Tests use generated
 PCM and synchronous pass-through cue workers, with no physical devices.
 
 ## Checks

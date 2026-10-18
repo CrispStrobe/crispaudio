@@ -18,6 +18,7 @@ use std::{
 
 pub mod cue;
 pub mod group;
+pub mod monitored;
 use cue::{CueConfig, Owner as CueOwner};
 
 /// Matches the current decoded native graph source limit; this is not a
@@ -114,6 +115,51 @@ pub struct Session<C: Capture> {
     outcome: Option<Outcome>,
     control_thread: PhantomData<Rc<()>>,
 }
+/// Files and cue helpers exist, but capture has not opened. Drop closes the
+/// ingress before joining workers, retaining recovery files. Deliberately !Send.
+pub struct Prepared<C: Capture> {
+    session: Option<Session<C>>,
+    writer: Option<InputWriter>,
+}
+impl<C: Capture> Prepared<C> {
+    pub fn recovery_directory(&self) -> &Path {
+        self.session.as_ref().unwrap().recovery_directory()
+    }
+    pub fn start(
+        mut self,
+        open: impl FnOnce(InputWriter) -> Result<C>,
+    ) -> std::result::Result<Session<C>, StartError> {
+        let session = self.session.as_mut().unwrap();
+        let result = session
+            .check_prepared()
+            .and_then(|_| open(self.writer.take().unwrap()));
+        match result {
+            Ok(capture) => {
+                session.capture = Some(capture);
+                session.progress_at = Instant::now();
+                Ok(self.session.take().unwrap())
+            }
+            Err(reason) => {
+                drop(self.writer.take());
+                session.abort(reason.clone());
+                Err(StartError {
+                    reason,
+                    recovery_directory: Some(session.directory.clone()),
+                })
+            }
+        }
+    }
+    pub fn cancel(mut self) -> Outcome {
+        drop(self.writer.take());
+        self.session.take().unwrap().cancel()
+    }
+}
+impl<C: Capture> Drop for Prepared<C> {
+    fn drop(&mut self) {
+        drop(self.writer.take());
+        drop(self.session.take());
+    }
+}
 impl<C: Capture> Session<C> {
     /// The factory runs only after durable file creation on the worker. It must
     /// use the supplied writer and return a capture owning it; never retain the
@@ -142,6 +188,16 @@ impl<C: Capture> Session<C> {
         cue_config: Option<CueConfig>,
         open: impl FnOnce(InputWriter) -> Result<C>,
     ) -> std::result::Result<(Self, Option<CueOutput>), StartError> {
+        let (prepared, output) = Self::prepare(root, config, cue_config)?;
+        Ok((prepared.start(open)?, output))
+    }
+    /// Prepare durable files and cue helpers without starting capture. Use this
+    /// for a whole group before opening/arming the shared output and inputs.
+    pub fn prepare(
+        root: &Path,
+        config: Config,
+        cue_config: Option<CueConfig>,
+    ) -> std::result::Result<(Prepared<C>, Option<CueOutput>), StartError> {
         let error = |reason: String| StartError {
             reason,
             recovery_directory: None,
@@ -208,35 +264,43 @@ impl<C: Capture> Session<C> {
             drop(cue); // No monitor: disable unused ingress instead of overflowing.
             (None, None)
         };
-        let capture = match open(writer) {
-            Ok(capture) => capture,
-            Err(reason) => {
-                dry.cancel();
-                drop(cue_owner);
-                let _ = commands.send(Command::Abort(reason.clone()));
-                let _ = worker.join();
-                return Err(StartError {
-                    reason,
-                    recovery_directory: Some(directory),
-                });
-            }
+        let session = Self {
+            capture: None,
+            cue: cue_owner,
+            dry,
+            commands,
+            worker: Some(worker),
+            directory,
+            timeout: config.callback_timeout,
+            progress_at: Instant::now(),
+            callbacks: 0,
+            outcome: None,
+            control_thread: PhantomData,
         };
         Ok((
-            Self {
-                capture: Some(capture),
-                cue: cue_owner,
-                dry,
-                commands,
-                worker: Some(worker),
-                directory,
-                timeout: config.callback_timeout,
-                progress_at: Instant::now(),
-                callbacks: 0,
-                outcome: None,
-                control_thread: PhantomData,
+            Prepared {
+                session: Some(session),
+                writer: Some(writer),
             },
             output,
         ))
+    }
+    fn check_prepared(&mut self) -> Result<()> {
+        if let Some(cue) = self.cue.as_mut() {
+            cue.reap();
+            if cue.fault().is_some() {
+                return Err("Cue failed before capture startup".into());
+            }
+        }
+        if self.dry.fault().is_some()
+            || self
+                .worker
+                .as_ref()
+                .is_none_or(|worker| worker.is_finished())
+        {
+            return Err("Prepared recording worker failed".into());
+        }
+        Ok(())
     }
     pub fn recovery_directory(&self) -> &Path {
         &self.directory
