@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-18",
+  "version": "0.13.39",
+  "scope": "Stop/Cancel during cue/backing helper preparation, with joined cleanup and retained originals",
+  "installedVersion": "0.13.33",
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "checks": {
+    "media": {
+      "passed": 334,
+      "ignored": 16,
+      "log": "crispaudio-startup-cancel-media-final.log"
+    },
+    "appRust": {
+      "passed": 52,
+      "ignored": 1,
+      "log": "crispaudio-startup-cancel-app.log"
+    },
+    "release": {
+      "passed": 21,
+      "log": "crispaudio-startup-cancel-release.log"
+    },
+    "productionBuild": "passed",
+    "macDebugBundle": "passed",
+    "signing": "Local ad-hoc sandbox/helper preflight passed",
+    "frontendBaseline": {
+      "version": "0.13.38",
+      "passed": 2068,
+      "files": 214,
+      "evidence": "native-recording-recovery-jobs.json",
+      "note": "No frontend source changes in this increment; no repeat full frontend/layout run"
+    }
+  },
+  "coverage": [
+    "Actual silent subprocess pipe blocks until killed/reaped, for both cue and backing startup",
+    "Helper registration racing cancellation is stopped immediately",
+    "Worker completion and cue stream reservation release before startup returns",
+    "Dry ingress remains independent of cue cancellation",
+    "Pre-cancelled group creates no files; partial preparation retains valid empty WAV/index and never publishes a completed manifest",
+    "Readiness racing cancellation is rejected; timeout and disconnection remain distinct",
+    "Actor Stop and Cancel interrupt backing preparation before releasing the playback reservation"
+  ],
+  "limitations": [
+    "20 ms scheduled polling is not a hard wall-clock cancellation bound",
+    "Active filesystem calls and unregistered blocking work may delay shutdown",
+    "Generated subprocesses exercise owner/stop/pipe cleanup, not arbitrary third-party plugin hangs",
+    "Physical mic/output timing, sustained load, sleep/hotplug/device changes and iOS remain pending",
+    "Safe cleanup of converted files from failed/cancelled explicit import remains pending",
+    "Candidate not installed/launched or submitted to Apple"
+  ],
+  "platform": "macOS arm64"
+}

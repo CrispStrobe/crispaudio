@@ -5,6 +5,7 @@ use crate::native_input::{
     recording::Recorder,
     timing::{Basis, Context, Correction},
 };
+use std::sync::atomic::Ordering;
 use std::{
     io::{Seek, SeekFrom},
     process::Command,

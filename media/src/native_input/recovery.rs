@@ -14,7 +14,7 @@ use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::AtomicBool,
         mpsc::{self, SyncSender},
         Arc, Mutex,
     },

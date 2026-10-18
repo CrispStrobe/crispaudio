@@ -19,7 +19,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33; source/local candidate 0.13.38 adds the
+The installed baseline remains 0.13.33; source/local candidate 0.13.39 adds the
 opt-in native recording preview described below. The established baseline includes timeline/video editing,
 recording/takes/comping, compact recording controls and meters, source restoration,
 FX-aware segment waveforms within documented limits, native Mac AU/VST3 playback
@@ -29,7 +29,7 @@ belong to CrisperWeaver and CometBeat respectively. Imported audio/transcripts s
 editable. Existing MIDI utilities do not imply a MIDI expansion roadmap.
 
 Native recording is now selectable on Mac under **Input → Mode → Native · Preview**
-in the 0.13.38 candidate. Compatible remains the default. Physical qualification
+in the 0.13.39 candidate. Compatible remains the default. Physical qualification
 and the remaining N4 tasks below are still open:
 
 | Foundation | Code entry point | Verified scope |
@@ -185,12 +185,12 @@ converted file from that failed explicit import, with no editor insertion.
 
 Remaining N4 work:
 
-- **Next: helper-opening cancellation qualification.** Exercise cancel/stop while
-  cue/backing helpers are opening, using blocking/failing subprocess fixtures.
-  Current checks run between bounded preparation steps; no instant-cancel promise.
-  Add actual helper interruption if the test shows a long avoidable wait. Verify
-  every capture/output/backing worker closes and dry originals remain usable.
-- Add safe collection for converted files left by failed/cancelled explicit Import
+- Helper-start cancellation now uses the owner's predicate during cue/backing
+  readiness (0.13.39), with registered/late-helper kill/reap, worker join and cue
+  reservation release. Silent blocked subprocess fixtures and partial-group raw
+  reopen cover this software boundary. Active filesystem calls and unregistered
+  blocking work can delay shutdown; real device/load behavior remains N5.
+- **Next: safe owned conversion cleanup.** Collect converted files left by failed/cancelled explicit Import
   (and historical pre-0.13.38 Review). Use owned creation/commit receipts or staging
   transactions, never guess from age/path or delete files referenced by projects,
   Undo, pending review or recovery. Test retry, partial group failure, cancellation,
@@ -241,6 +241,17 @@ The codec assessment is recorded in [MEDIA_FORMATS_AND_LICENSES.md](MEDIA_FORMAT
 No new patent conclusion or distribution restriction is introduced by this checkpoint.
 
 ## Verification at the code checkpoint
+
+The 0.13.39 helper-start cancellation preview passes **334 media tests (16 ignored)**
+and **52 app Rust tests (one hardware case ignored)**, plus 21 release checks. It adds silent subprocess checks for
+blocked cue/backing opens, helper registration racing cancellation and dry ingress
+independence. Group cancellation leaves a valid empty raw WAV/index; recovery
+correctly refuses to invent a take with no samples. The app regression exercises
+both Stop and Cancel during backing preparation and keeps the audio reservation
+until the worker has joined. See [startup evidence](evidence/native-recording-startup-cancel.json)
+for native and packaging results. Production build, Mac debug bundle and local
+ad-hoc sandbox/helper preflight pass. The last full frontend run is the unchanged
+0.13.38 frontend recorded below; this increment changes native startup only.
 
 The 0.13.38 recovery jobs preview passes **2068 frontend tests/214 files**
 (four workers, 20-second test ceiling), **327 media tests (16 ignored)** and

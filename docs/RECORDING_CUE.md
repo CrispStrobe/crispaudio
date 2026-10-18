@@ -126,3 +126,11 @@ Review shows block-verification progress. Use Cancel or close settings to stop t
 owned job; verification stops between blocks, while an active disk call can finish
 first. Refresh the list after recording or archive changes. Converted audio stays
 in memory during Review and is persisted only on explicit Import. No usable timing means no automatic aligned recovery.
+
+## Stopping native preview preparation
+
+The 0.13.39 candidate checks Stop/Cancel during cue and backing helper readiness.
+It closes registered processes and joins workers before returning; it also closes
+helpers registered after cancellation. It retains unfinished dry originals and
+never inserts a partial recording. Filesystem calls may delay shutdown. This is
+separate from physical microphone/output timing qualification.

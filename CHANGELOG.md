@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## 0.13.39 — 2026-10-18 (local preview)
+
+- Stop or Cancel now interrupts native cue/backing readiness waits while helpers open, rather than waiting for the startup deadline. Registered helpers are killed and reaped, workers joined, and cue stream reservations released before preparation returns.
+- Keep pre-cancelled preparation from creating files or opening helpers. Partial group preparation retains recoverable originals and never publishes a completed recording.
+- Test blocked subprocess handshakes and helper registration racing cancellation. Active filesystem calls, unregistered work and OS scheduling can still delay shutdown; physical recording qualification remains separate.
+
 ## 0.13.38 — 2026-10-18 (local preview)
 
 - Make native recovery an owned, cancellable job with visible block-verification progress. Cancel, closing settings, changing project or starting playback prevents late insertion; window/app shutdown cancels and joins workers.

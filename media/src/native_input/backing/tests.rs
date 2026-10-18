@@ -248,3 +248,57 @@ fn graph_backing_preroll_compensates_native_latency_on_the_worker() {
     assert_eq!(actual[..1188], all[750..1938]);
     assert_eq!(actual[1188..], [[0.; 2]; 348]);
 }
+
+#[cfg(target_os = "macos")]
+#[test]
+fn stop_during_backing_helper_open_kills_and_joins_even_a_late_registration() {
+    use crate::native_input::startup::BlockedHelper;
+    for late in [false, true] {
+        let cancel = Arc::new(AtomicBool::new(false));
+        let flag = cancel.clone();
+        let (tx, rx) = mpsc::sync_channel(1);
+        let canceller = thread::spawn(move || {
+            let stop: StreamStop = rx.recv_timeout(Duration::from_secs(3)).unwrap();
+            assert!(stop.is_alive());
+            flag.store(true, Ordering::Release);
+            stop
+        });
+        let finished = Arc::new(AtomicBool::new(false));
+        let done = finished.clone();
+        let start = Instant::now();
+        let result = Worker::start_cancellable::<Sequence>(
+            Duration::from_secs(5),
+            &|| cancel.load(Ordering::Acquire),
+            move |control| {
+                let mut helper = BlockedHelper::new();
+                if !late {
+                    control.register(helper.stop.clone());
+                }
+                tx.send(helper.stop.clone()).unwrap();
+                if late {
+                    wait(|| control.cancelled());
+                    control.register(helper.stop.clone());
+                }
+                helper.handshake();
+                done.store(true, Ordering::Release);
+                Err("Helper handshake interrupted".into())
+            },
+        );
+        assert!(result.err().unwrap().contains("cancelled"));
+        assert!(
+            start.elapsed() < Duration::from_secs(3),
+            "Cancellation waited for the five-second startup deadline"
+        );
+        assert!(finished.load(Ordering::Acquire));
+        assert!(!canceller.join().unwrap().is_alive());
+    }
+}
+#[test]
+fn cancelled_backing_does_not_start_preparation() {
+    assert!(
+        Worker::start_cancellable::<Sequence>(Duration::from_secs(5), &|| true, |_| panic!(
+            "Must not prepare after cancellation"
+        ))
+        .is_err()
+    );
+}

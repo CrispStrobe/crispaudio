@@ -410,12 +410,14 @@ fn run(
     intent.stamp(&mut inputs)?;
     control.check()?;
     // No capture opens until every dry file, cue helper and backing graph is ready.
-    let (prepared, cues) = Group::<macos::Capture>::prepare(&root, inputs).map_err(|error| {
-        if let Some(directory) = error.directory {
-            retained(&control, &directory);
-        }
-        error.reason
-    })?;
+    let (prepared, cues) =
+        Group::<macos::Capture>::prepare_cancellable(&root, inputs, &|| control.cancelled())
+            .map_err(|error| {
+                if let Some(directory) = error.directory {
+                    retained(&control, &directory);
+                }
+                error.reason
+            })?;
     retained(&control, prepared.directory());
     let mut ledger = crispaudio_media::native_input::recovery::Ledger::create(
         prepared.directory(),
@@ -424,7 +426,7 @@ fn run(
     )?;
     control.check()?;
     let backing_snapshot = snapshot.clone(); // Retain the decoded-source budget lease.
-    let (backing, reader) = backing::Worker::recording(
+    let (backing, reader) = backing::Worker::recording_cancellable(
         Duration::from_secs(10),
         Plan {
             intent: intent.clone(),
@@ -432,6 +434,7 @@ fn run(
             count_in_frames: options.count_in_frames,
             click: options.click.clone(),
         },
+        &|| control.cancelled(),
         move |backing_control| {
             crate::native_audio_clock::prepare_recording_graph(
                 &backing_snapshot.project,

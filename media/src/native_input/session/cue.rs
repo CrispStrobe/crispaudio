@@ -100,20 +100,43 @@ pub(super) struct Owner {
     latency: usize,
 }
 impl Owner {
-    pub(super) fn start(input: Reader<CUE_SLOTS>, config: CueConfig) -> Result<(Self, CueOutput)> {
+    pub(super) fn start_cancellable(
+        input: Reader<CUE_SLOTS>,
+        config: CueConfig,
+        cancelled: &dyn Fn() -> bool,
+    ) -> Result<(Self, CueOutput)> {
         let reservation = config.budget.reserve(config.plugins.len())?;
-        Self::spawn(input, reservation, config.startup_timeout, move |control| {
-            let rack = PluginRack::open(&config.plugins, |helper| control.register(helper))?;
-            let latency = rack.latency_samples();
-            Ok((rack, latency))
-        })
+        Self::spawn_cancellable(
+            input,
+            reservation,
+            config.startup_timeout,
+            cancelled,
+            move |control| {
+                let rack = PluginRack::open(&config.plugins, |helper| control.register(helper))?;
+                let latency = rack.latency_samples();
+                Ok((rack, latency))
+            },
+        )
     }
+    #[cfg(test)]
     fn spawn<P: Processor + 'static>(
         input: Reader<CUE_SLOTS>,
         reservation: Reservation,
         timeout: Duration,
         open: impl FnOnce(Arc<Control>) -> Result<(P, usize)> + Send + 'static,
     ) -> Result<(Self, CueOutput)> {
+        Self::spawn_cancellable(input, reservation, timeout, &|| false, open)
+    }
+    fn spawn_cancellable<P: Processor + 'static>(
+        input: Reader<CUE_SLOTS>,
+        reservation: Reservation,
+        timeout: Duration,
+        cancelled: &dyn Fn() -> bool,
+        open: impl FnOnce(Arc<Control>) -> Result<(P, usize)> + Send + 'static,
+    ) -> Result<(Self, CueOutput)> {
+        if cancelled() {
+            return Err("Cue startup cancelled".into());
+        }
         if timeout.is_zero() {
             return Err("Invalid cue startup timeout".into());
         }
@@ -149,7 +172,7 @@ impl Owner {
                 }
             })
             .map_err(|error| error.to_string())?;
-        match ready_rx.recv_timeout(timeout) {
+        match super::super::startup::wait(&ready_rx, timeout, cancelled) {
             Ok(Ok((output, latency))) => Ok((
                 Self {
                     input: status,
@@ -167,7 +190,12 @@ impl Owner {
                 let _ = worker.join();
                 Err(match result {
                     Ok(Err(reason)) => reason,
-                    Err(mpsc::RecvTimeoutError::Timeout) => "Cue startup timed out".into(),
+                    Err(super::super::startup::WaitError::Timeout) => {
+                        "Cue startup timed out".into()
+                    }
+                    Err(super::super::startup::WaitError::Cancelled) => {
+                        "Cue startup cancelled".into()
+                    }
                     _ => "Cue worker failed during startup".into(),
                 })
             }

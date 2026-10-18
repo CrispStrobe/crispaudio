@@ -1,9 +1,34 @@
-# Distribution and platform status — 2026-10-17
+# Distribution and platform status — 2026-10-18
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
+
+## Native helper-start cancellation — 0.13.39 candidate
+
+Stop/Cancel now reaches cue/backing readiness waits during helper opening. The
+recording actor supplies its cancellation predicate through group/session cue
+preparation and backing graph startup. Waits check every 20 ms while scheduled,
+then stop registered helpers, kill late registrations and join workers before
+returning. This interval is not a hard wall-clock shutdown promise. Active disk
+calls and unregistered blocking work may delay cleanup.
+
+Silent real subprocess fixtures cover blocked handshakes and late registration;
+they check process death, worker completion, released cue stream reservations and
+independent dry ingress. Partial group preparation retains a readable empty raw
+WAV/index without inventing samples or publishing a completed manifest. Physical
+mic/output timing, load/device qualification and failed-import conversion cleanup
+remain open. The installed 0.13.33 session stays unchanged; no hardware, install or
+Apple upload is part of this checkpoint.
+
+Validation: 334 media tests (16 ignored), 52 app Rust tests (one hardware case
+ignored) and 21 release-script checks pass. The app regression exercises Stop and
+Cancel during backing startup, retaining the audio reservation until its worker
+has joined. The frontend source is unchanged; its previous full 2068-test run is
+recorded separately in [startup evidence](evidence/native-recording-startup-cancel.json).
+The production build and Mac debug bundle pass, with local ad-hoc sandbox/helper
+signatures verified. This is not Store signing or submission.
 
 ## Native recovery jobs/pages — 0.13.38 candidate
 

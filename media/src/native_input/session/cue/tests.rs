@@ -504,3 +504,72 @@ fn ingress_overflow_interrupts_blocked_processing_and_releases_budget_on_poll() 
     assert!(output.pop().is_none());
     assert_eq!(dry.status().fault(), None);
 }
+
+#[cfg(target_os = "macos")]
+#[test]
+fn stop_during_helper_open_kills_joins_and_releases_budget_without_affecting_dry() {
+    use crate::native_input::startup::BlockedHelper;
+    // Both a registered blocked handshake and registration racing cancellation.
+    for late in [false, true] {
+        let budget = StreamBudget::default();
+        let (mut writer, mut dry, input) = crate::native_input::input();
+        let cancel = Arc::new(AtomicBool::new(false));
+        let flag = cancel.clone();
+        let (tx, rx) = mpsc::sync_channel(1);
+        let canceller = thread::spawn(move || {
+            let stop: StreamStop = rx.recv_timeout(Duration::from_secs(3)).unwrap();
+            assert!(stop.is_alive());
+            flag.store(true, Ordering::Release);
+            stop
+        });
+        let finished = Arc::new(AtomicBool::new(false));
+        let done = finished.clone();
+        let start = std::time::Instant::now();
+        let result = Owner::spawn_cancellable::<Gain>(
+            input,
+            budget.reserve(2).unwrap(),
+            Duration::from_secs(5),
+            &|| cancel.load(Ordering::Acquire),
+            move |control| {
+                let mut helper = BlockedHelper::new();
+                if !late {
+                    control.register(helper.stop.clone());
+                }
+                tx.send(helper.stop.clone()).unwrap();
+                if late {
+                    until(|| control.cancelled.load(Ordering::Acquire));
+                    control.register(helper.stop.clone());
+                }
+                helper.handshake();
+                done.store(true, Ordering::Release);
+                Err("Helper handshake interrupted".into())
+            },
+        );
+        assert!(result.err().unwrap().contains("cancelled"));
+        assert!(
+            start.elapsed() < Duration::from_secs(3),
+            "Cancellation waited for the five-second startup deadline"
+        );
+        assert!(finished.load(Ordering::Acquire));
+        assert_eq!(budget.used(), 0);
+        assert!(!canceller.join().unwrap().is_alive());
+        assert!(writer.push(0, 0, &[[0.25, -0.5]; 128]));
+        assert_eq!(dry.pop().unwrap().samples(), &[[0.25, -0.5]; 128]);
+        assert_eq!(dry.status().fault(), None);
+    }
+}
+
+#[test]
+fn already_cancelled_cue_never_opens_a_helper_or_retains_its_budget() {
+    let budget = StreamBudget::default();
+    let (_writer, _dry, input) = crate::native_input::input();
+    assert!(Owner::spawn_cancellable::<Gain>(
+        input,
+        budget.reserve(2).unwrap(),
+        Duration::from_secs(5),
+        &|| true,
+        |_| panic!("Cancelled helper must not open")
+    )
+    .is_err());
+    assert_eq!(budget.used(), 0);
+}

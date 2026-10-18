@@ -1187,3 +1187,16 @@ Review never persists converted audio. prepareImport performs encoding/persisten
 only on explicit Import, then the usual guarded one-action insertion/receipt. Pass
 AbortSignal to the encoder; recheck playback before commit. Failure may leave a
 conversion file but never partial project state. Owned orphan collection remains.
+
+### Native helper-start cancellation (0.13.39)
+
+Use Group::prepare_cancellable and backing::Worker::recording_cancellable from the
+recording actor, with Control::cancelled (Stop OR Cancel). The control-thread
+startup::wait polls at <=20 ms scheduled intervals and rejects ready results if
+cancellation races acknowledgement. Error paths kill/reap registered and late
+helper processes, then join before releasing cue reservations. Do not kill helpers
+from the audio callback or change running Stop's capture-before-output ordering.
+File-worker creation/flush still joins after an active filesystem call; arbitrary
+unregistered blocking code cannot be interrupted. Non-cancellable public wrappers
+remain for existing callers. Silent /bin/cat pipe fixtures exercise blocked startup
+and late registration without opening devices or environment-wide helper overrides.

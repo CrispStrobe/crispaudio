@@ -205,7 +205,15 @@ impl Worker {
         plan: Plan,
         prepare: impl FnOnce(Control) -> Result<Graph> + Send + 'static,
     ) -> Result<(Self, Reader)> {
-        Self::start(timeout, move |control| {
+        Self::recording_cancellable(timeout, plan, &|| false, prepare)
+    }
+    pub fn recording_cancellable(
+        timeout: Duration,
+        plan: Plan,
+        cancelled: &dyn Fn() -> bool,
+        prepare: impl FnOnce(Control) -> Result<Graph> + Send + 'static,
+    ) -> Result<(Self, Reader)> {
+        Self::start_cancellable(timeout, cancelled, move |control| {
             let frames = plan.frames;
             let renderer = Recording::prepare(prepare(control.clone())?, plan, &control)?;
             Ok((renderer, frames))

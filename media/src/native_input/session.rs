@@ -198,6 +198,16 @@ impl<C: Capture> Session<C> {
         config: Config,
         cue_config: Option<CueConfig>,
     ) -> std::result::Result<(Prepared<C>, Option<CueOutput>), StartError> {
+        Self::prepare_cancellable(root, config, cue_config, &|| false)
+    }
+    /// Cancellation is checked before file creation and during cue readiness.
+    /// An active filesystem call still finishes before file-worker cleanup joins.
+    pub fn prepare_cancellable(
+        root: &Path,
+        config: Config,
+        cue_config: Option<CueConfig>,
+        cancelled: &dyn Fn() -> bool,
+    ) -> std::result::Result<(Prepared<C>, Option<CueOutput>), StartError> {
         let error = |reason: String| StartError {
             reason,
             recovery_directory: None,
@@ -207,6 +217,9 @@ impl<C: Capture> Session<C> {
             || config.callback_timeout.is_zero()
         {
             return Err(error("Invalid recording budget or callback timeout".into()));
+        }
+        if cancelled() {
+            return Err(error("Recording preparation cancelled".into()));
         }
         let (writer, reader, cue) = input();
         let dry = reader.status();
@@ -247,7 +260,7 @@ impl<C: Capture> Session<C> {
             }
         };
         let (cue_owner, output) = if let Some(cue_config) = cue_config {
-            match CueOwner::start(cue, cue_config) {
+            match CueOwner::start_cancellable(cue, cue_config, cancelled) {
                 Ok((owner, output)) => (Some(owner), Some(output)),
                 Err(reason) => {
                     drop(writer);
@@ -277,6 +290,15 @@ impl<C: Capture> Session<C> {
             outcome: None,
             control_thread: PhantomData,
         };
+        if cancelled() {
+            let directory = session.directory.clone();
+            drop(writer);
+            drop(session);
+            return Err(StartError {
+                reason: "Recording preparation cancelled".into(),
+                recovery_directory: Some(directory),
+            });
+        }
         Ok((
             Prepared {
                 session: Some(session),

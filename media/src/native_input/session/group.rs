@@ -279,12 +279,23 @@ impl<C: Capture> Group<C> {
         root: &Path,
         inputs: Vec<Input>,
     ) -> std::result::Result<(Prepared<C>, Vec<(String, CueOutput)>), StartError> {
+        Self::prepare_cancellable(root, inputs, &|| false)
+    }
+    /// All-or-none preparation with a control-thread cancellation predicate.
+    pub fn prepare_cancellable(
+        root: &Path,
+        inputs: Vec<Input>,
+        cancelled: &dyn Fn() -> bool,
+    ) -> std::result::Result<(Prepared<C>, Vec<(String, CueOutput)>), StartError> {
         let error = |reason| StartError {
             reason,
             directory: None,
             inputs: Vec::new(),
         };
         validate(&inputs).map_err(error)?;
+        if cancelled() {
+            return Err(error("Recording preparation cancelled".into()));
+        }
         let directory = create(root, &inputs).map_err(error)?;
         let mut group = Self {
             directory,
@@ -303,7 +314,7 @@ impl<C: Capture> Group<C> {
                 budget: budget.clone(),
                 startup_timeout: cue.startup_timeout,
             });
-            let result = Session::prepare(&group.directory, config, cue);
+            let result = Session::prepare_cancellable(&group.directory, config, cue, cancelled);
             match result {
                 Ok((mut prepared, output)) => {
                     if let Some(output) = output {

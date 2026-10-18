@@ -16,6 +16,7 @@ pub mod plugins;
 pub mod recording;
 pub mod recovery;
 pub mod session;
+mod startup;
 pub mod timing;
 pub mod verification;
 use std::{

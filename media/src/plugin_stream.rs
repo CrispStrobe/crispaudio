@@ -55,6 +55,10 @@ mod native {
     #[derive(Clone)]
     pub struct StreamStop(Arc<Mutex<Child>>);
     impl StreamStop {
+        #[cfg(test)]
+        pub(crate) fn test_child(child: Child) -> Self {
+            Self(Arc::new(Mutex::new(child)))
+        }
         pub fn is_alive(&self) -> bool {
             self.0
                 .lock()

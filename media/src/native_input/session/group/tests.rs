@@ -562,3 +562,48 @@ fn group_preparation_drop_and_cancelled_cues_never_open_inputs_or_publish() {
     assert_eq!(error.inputs.len(), 2);
     assert!(!error.directory.unwrap().join(MANIFEST).exists());
 }
+
+#[test]
+fn cancelled_group_creates_no_files_and_partial_preparation_retains_originals() {
+    let root = tempfile::tempdir().unwrap();
+    assert!(Group::<Fake>::prepare_cancellable(root.path(), inputs(), &|| true).is_err());
+    assert_eq!(fs::read_dir(root.path()).unwrap().count(), 0);
+    let checks = Cell::new(0);
+    let error = Group::<Fake>::prepare_cancellable(root.path(), inputs(), &|| {
+        checks.set(checks.get() + 1);
+        checks.get() >= 4
+    })
+    .err()
+    .unwrap();
+    assert!(error.reason.contains("cancelled"));
+    let directory = error.directory.unwrap();
+    assert!(directory.exists());
+    assert!(!directory.join("completed.json").exists());
+    assert_eq!(error.inputs.len(), 1);
+    let Outcome::Incomplete {
+        recovery_directory, ..
+    } = &error.inputs[0].outcome
+    else {
+        panic!("Cancelled preparation cannot complete")
+    };
+    // Capture never opened: retain a valid empty raw WAV/index, but never invent
+    // a recoverable take with samples or a completed manifest.
+    let original = recovery_directory.join("audio.partial.wav");
+    let before = fs::read(&original).unwrap();
+    let wave = hound::WavReader::open(&original).unwrap();
+    assert_eq!(wave.spec().sample_rate, 48000);
+    assert_eq!(wave.duration(), 0);
+    assert_eq!(
+        &fs::read(recovery_directory.join("blocks.bin")).unwrap()[..8],
+        b"CRSPREC1"
+    );
+    let reason = recover(
+        recovery_directory,
+        &root.path().join("cancelled.wav"),
+        &AtomicBool::new(false),
+    )
+    .unwrap_err();
+    assert!(reason.contains("no recoverable samples"));
+    assert_eq!(fs::read(&original).unwrap(), before);
+    assert!(!root.path().join("cancelled.wav").exists());
+}

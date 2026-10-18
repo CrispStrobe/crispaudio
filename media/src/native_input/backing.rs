@@ -86,6 +86,18 @@ impl Worker {
         timeout: Duration,
         prepare: impl FnOnce(Control) -> Result<(R, u64)> + Send + 'static,
     ) -> Result<(Self, Reader)> {
+        Self::start_cancellable(timeout, &|| false, prepare)
+    }
+    /// Stop a blocked helper handshake when the owner's preparation is cancelled.
+    /// Cleanup kills registered helpers and joins; filesystem/unregistered code may delay it.
+    pub fn start_cancellable<R: Renderer>(
+        timeout: Duration,
+        cancelled: &dyn Fn() -> bool,
+        prepare: impl FnOnce(Control) -> Result<(R, u64)> + Send + 'static,
+    ) -> Result<(Self, Reader)> {
+        if cancelled() {
+            return Err("Backing startup cancelled".into());
+        }
         if timeout.is_zero() {
             return Err("Invalid backing startup timeout".into());
         }
@@ -159,7 +171,7 @@ impl Worker {
             control,
             thread: Some(task),
         };
-        match rx.recv_timeout(timeout) {
+        match super::startup::wait(&rx, timeout, cancelled) {
             Ok(Ok(frames)) => Ok((
                 owner,
                 Reader {
@@ -176,7 +188,8 @@ impl Worker {
                 owner.close();
                 Err(match result {
                     Ok(Err(reason)) => reason,
-                    Err(mpsc::RecvTimeoutError::Timeout) => "Backing startup timed out".into(),
+                    Err(super::startup::WaitError::Timeout) => "Backing startup timed out".into(),
+                    Err(super::startup::WaitError::Cancelled) => "Backing startup cancelled".into(),
                     _ => "Backing worker failed during startup".into(),
                 })
             }

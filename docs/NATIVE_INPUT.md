@@ -6,9 +6,10 @@ recording path remains unchanged.
 
 The installed recorder still uses Web Audio capture and the
 [buffered native cue](RECORDING_CUE.md). The Rust foundation now includes a Mac
-hardware capture adapter, but it is not connected to the recording UI or opened
-by the installed app. It introduces no new recording mode and establishes no
-monitoring latency. Adapter checks use synthetic callbacks, not a microphone.
+hardware capture adapter connected to the candidate recording UI as the opt-in
+Native Preview mode. The installed baseline has not been replaced. No physical
+monitoring latency is established; adapter checks use synthetic callbacks, not a
+microphone.
 
 ## Implemented
 
@@ -574,3 +575,27 @@ converted WAVs, rechecks project/cancel/playback and publishes once with the run
 receipt. Repeated Review/close writes no converted WAV. A failed/cancelled explicit
 Import can still leave a newly persisted conversion; safe owned orphan collection
 is a separate task. Never delete originals or infer unreferenced files from age.
+
+## Cancellation during helper startup — 0.13.39
+
+`Group::prepare_cancellable` passes the owner's Stop/Cancel predicate through each
+session and its cue readiness wait. `Worker::recording_cancellable` does the same
+for backing graph preparation. Readiness waits check cancellation at most every
+20 ms while scheduled and again before accepting a ready result. This interval is
+not a wall-clock shutdown guarantee. Existing non-cancellable convenience APIs
+retain their startup deadlines.
+
+A cancelled wait stops registered helper processes, kills late registrations and
+joins workers before returning. Cue stream reservations survive until cleanup is
+finished. Pre-cancelled groups create no files; cancellation after partial file
+preparation preserves the originals and produces no completed manifest. The app
+checks cancellation again before output/capture startup. No capture is opened
+until all group and backing preparation succeeds.
+
+Subprocess fixtures block on an actual pipe with no handshake reply, including a
+helper registered after cancellation. Tests require kill/reap, worker completion,
+released cue budgets and independent dry queue operation. Group tests reopen the
+retained raw file after cancellation. These tests open no microphone or output;
+they do not establish device timing or arbitrary third-party plug-in behavior.
+An active filesystem call, OS scheduling or unregistered blocking code may delay
+cleanup; cancellation is not a hard real-time guarantee.

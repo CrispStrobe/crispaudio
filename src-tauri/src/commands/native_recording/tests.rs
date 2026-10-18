@@ -300,3 +300,51 @@ fn recovery_reservation_excludes_recording_and_other_recovery_until_worker_exits
     state.shutdown();
     assert!(state.reserve_recovery().is_ok());
 }
+
+#[test]
+fn stop_and_cancel_interrupt_backing_preparation_before_audio_reservation_is_released() {
+    struct Never;
+    impl backing::Renderer for Never {
+        fn render(&mut self, _: &mut [[f32; 2]]) -> Result<(), String> {
+            panic!("Cancelled preparation must not render")
+        }
+    }
+    for cancel in [false, true] {
+        let playback = NativePlayback::default();
+        let lease = playback.reserve_recording().unwrap();
+        let control = Arc::new(Control::new());
+        let worker_control = control.clone();
+        let joined = Arc::new(AtomicBool::new(false));
+        let finished = joined.clone();
+        let (tx, rx) = std::sync::mpsc::sync_channel(1);
+        let worker = thread::spawn(move || {
+            let result = backing::Worker::start_cancellable::<Never>(
+                Duration::from_secs(5),
+                &|| worker_control.cancelled(),
+                move |backing_control| {
+                    tx.send(()).unwrap();
+                    while !backing_control.cancelled() {
+                        thread::sleep(Duration::from_millis(1));
+                    }
+                    finished.store(true, Ordering::Release);
+                    Err("Preparation interrupted".into())
+                },
+            );
+            assert!(joined.load(Ordering::Acquire));
+            drop(lease);
+            json!({"error":result.err().unwrap()})
+        });
+        rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        assert!(playback.reserve_recording().is_err());
+        let start = Instant::now();
+        control.request(cancel);
+        let result = worker.join().unwrap();
+        assert!(result["error"].as_str().unwrap().contains("cancelled"));
+        assert_eq!(
+            control.action.load(Ordering::Acquire),
+            if cancel { CANCEL } else { STOP }
+        );
+        assert!(start.elapsed() < Duration::from_secs(3));
+        assert!(playback.reserve_recording().is_ok());
+    }
+}
