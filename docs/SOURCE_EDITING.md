@@ -165,9 +165,13 @@ in the [audio-workstation roadmap](DAW_GAP_ANALYSIS.md).
 
 ## Native streaming development status
 
-Source **Auto preview** still renders through the helper. The internal 0.13.48
-native-clock source adapter is not exposed in this editor. Its actual-helper
-comparison found AU mono-layout and limiter-amplitude differences that must be
-resolved before enabling streaming or claiming preview/Apply parity. The
-[engineering handoff](WORK_HANDOFF.md#native-source-audition-foundation--01348-checkpoint)
-records the reproduction, exact limits and next acceptance steps.
+Source **Auto preview** still renders through the helper. The internal native-clock
+source adapter is not exposed in this editor. Version 0.13.49 fixes incomplete AU
+file reads, missing end samples and an implicit-mixer mono level change. The
+original strict source-plan comparison now passes; 52 actual AU window cases at
+8–192 kHz match stream DSP exactly. Silent input padding drains processing while
+output remains the original clip length; following source audio is not included.
+These offline comparisons do not qualify native-owned real-time playback, live
+edits, looping, selected devices or its fixed-48-kHz resampling/Apply semantics.
+The [engineering handoff](WORK_HANDOFF.md#au-source-window-fidelity--01349-checkpoint)
+records the measured scope and next acceptance steps.

@@ -1,6 +1,24 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for source candidate 0.13.48 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for source candidate 0.13.49 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.49 resolves the measured AU source-render parity blocker: complete bounded
+file reads preserve the requested window, silent input padding drains pending
+latency without extending output, and direct manual-output routing preserves
+mono level. The original strict browser comparison now passes; 52 actual AU
+window cases across 8–192 kHz have zero sample error against stream DSP, including
+tiny clips, quantum edges, offsets and saved-state-only cases. See
+[evidence](docs/evidence/au-source-window.json). Existing source Prepare/Apply
+benefits when built with the new helper; running installed apps are unchanged.
+
+Next: qualify the hidden native source adapter's native-owned clock, live
+parameters/bypass, loops/history, cursor/end, cancellation/faults and selected
+output before wiring compact opt-in controls into the shared Source Editor
+Play/Stop. Native-owned playback runs at 48 kHz: define matching resampling/Apply
+semantics or restrict the first UI slice to 48 kHz sources. Per-rate offline tests
+do not establish cross-rate native playback equivalence. Preserve rendered
+fallback, mono/stereo semantics, headroom, saved state, originals and one Undo.
+[Current handoff](docs/WORK_HANDOFF.md#au-source-window-fidelity--01349-checkpoint).
 
 0.13.48 adds an **internal, hidden native source-audition adapter** using the
 existing native-owned output clock, warm latency-aligned bypass and exclusive
@@ -8,17 +26,10 @@ transport owner. It isolates a bounded full-clip source plan, preserves mono
 listening level, accepts live parameter/monitor updates and handles stale/cancel/
 output-change/EOF ownership. No source-editor control has been enabled.
 
-The new actual-helper parity gate found unresolved differences between AU stream
-processing and the existing source helper render: mono bandpass and mono/stereo
-peak limiter. VST3 delay matches exactly; all six static bypass cases match the
-source exactly. Next: isolate AU channel/configuration/initialization/history
-semantics and establish a common preview/Apply contract before wiring the UI.
-Then qualify real-time clock/updates/loops/faults and selected-device ownership,
-connect the shared Source Editor transport with compact controls, and retain the
-rendered fallback. See the [handoff](docs/WORK_HANDOFF.md#native-source-audition-foundation--01348-checkpoint)
-and [sanitized evidence](docs/evidence/native-source-plan.json). This checkpoint
-is software groundwork and a recorded acceptance blocker, not native source
-playback availability, hardware acceptance or an Apple submission.
+Its historical AU parity failure is documented in the
+[0.13.48 handoff](docs/WORK_HANDOFF.md#native-source-audition-foundation--01348-checkpoint)
+and [measurements](docs/evidence/native-source-plan.json). Version 0.13.49 resolves
+those measured offline differences; real-time source playback remains unqualified.
 
 0.13.47 adds bounded ordered source chains: up to six high/low-pass, level and
 clipper stages, individual bypass, compact reorder controls and versioned recipe

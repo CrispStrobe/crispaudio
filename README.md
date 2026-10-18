@@ -101,7 +101,8 @@ Select a clip and open **Source Editor** for detailed work on its source window.
 - Inspect peak, RMS, DC offset, clipping, loudness and true-peak readings. Open a
   spectrum or spectrogram and adjust its analysis settings.
 - Save selections as named regions for later delivery. On macOS, apply supported
-  Audio Unit or VST3 effects to the selected source window.
+  Audio Unit or VST3 effects to the selected source window. Preview compensates
+  reported plug-in latency and keeps the clip length; Apply retains the original.
 
 [Source editing and continuous comparison](docs/SOURCE_EDITING.md) · [Restoration tools and limits](docs/RESTORATION.md)
 

@@ -21,9 +21,10 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.48 adds hidden native source
-audition groundwork and records an AU preview/Apply parity blocker; start at the
-latest checkpoint below. Source 0.13.47 adds bounded ordered source
+The installed baseline remains 0.13.33. Source 0.13.49 fixes AU source-window
+fidelity and clears the measured offline parity blocker; start at the latest
+checkpoint below. Source 0.13.48 adds the hidden native source-audition adapter.
+Source 0.13.47 adds bounded ordered source
 effect chains; see the latest checkpoint below. Source 0.13.46 adds automatic bounded
 live-filter waveform snapshots; see the latest checkpoint below. Source 0.13.45 adds a bounded continuous
 built-in source filter; see the latest checkpoint below. Source 0.13.44 extends Mix A/B to frozen live mixer values, with baked fields
@@ -677,6 +678,9 @@ its checkpoint. No native rebuild, installation or Apple upload.
 
 ## Native source audition foundation — 0.13.48 checkpoint
 
+Historical status: the measured AU offline parity blocker below is resolved by
+0.13.49. Continue at the latest checkpoint; native streaming UI remains hidden.
+
 `NativeSourceAudition.ts` is internal and **not wired into SourceEditor**. It
 builds a private full-clip project with one enabled AU/VST3 insert, unity clip/
 track gains and no arrangement FX, fades, automation or output limiter. Input is
@@ -754,3 +758,84 @@ Validation: **50 focused tests / 3 files**, production build, full lint and
 **has an open strict parity failure**; characterization records rather than
 accepts it. No source UI behavior, native helper code/build, installed bundle,
 hardware, tag or Apple submission changed. Both original app sessions are kept.
+
+
+## AU source-window fidelity — 0.13.49 checkpoint
+
+The 0.13.48 comparison blocker is resolved for its measured fixtures. The old
+errors were concentrated at the clip end, rather than a general limiter gain or
+mono/stereo plug-in incompatibility. `media/apple/Plugins.swift::processPlugin`
+now reads bounded chunks until the **entire requested window** is present. A short
+non-EOF `AVAudioFile.read` is valid and must not silently shorten scheduled input.
+An incomplete read rejects. Reads never extend beyond the selected source window.
+
+The helper schedules one source buffer with zeroed **reported latency + 4096
+frames** of input padding. Keeping input supplied through the final downstream
+quantum preserves pending output inside the compensated window. The writer still
+emits exactly the requested source-frame count; no output tail or following source
+audio is appended. This adds padding and one small read buffer, not a second full
+source copy. The helper also connects the AU directly to its explicitly formatted
+manual output: an implicit main mixer produced a -3 dB mono level change at
+44.1 kHz in the expanded test. Rates are bounded to 8–192 kHz; zero/out-of-bounds,
+huge offsets and oversized durations reject before integer conversion/allocation.
+The binary stream host, native input/clock code and project format are unchanged.
+
+### Evidence and reproduction
+
+- Compile the **complete media helper**, not only an isolated AU entry point, with
+  the recipe in `media/build.rs`, into a separate test directory. Preserve live app
+  bundles and their helpers. Use an explicit `CRISPAUDIO_TEST_MEDIA_HELPER` path.
+- Run `python3 scripts/test-au-source-window.py`: **52 cases, zero maximum sample
+  error**, four invalid ranges rejected cleanly, every source window frame count
+  exact and no remaining children. This uses Python standard library only, generated
+  float WAV, actual Apple AUBandpass/AUPeakLimiter and binary stream DSP. Cases cover
+  mono/stereo, 1/127/128/129/4095/4096/4097/16384 frames, 8/44.1/48/96/192 kHz,
+  nonzero offsets with nonzero outside guards, EOF windows, and saved-state-only
+  restore. Fixture latency reaches 768 samples at 192 kHz.
+- Run the existing `node scripts/test-native-source-plan.mjs` with explicit helper,
+  VST3 fixture folder and muted browser setup: **strict gate now passes**. AU/VST3
+  mono/stereo comparisons are zero except stereo bandpass denormals around
+  1.16e-38; all six static bypass comparisons remain exact. 18 stream sessions /
+  102 packets complete, with zero remaining sessions/children. Keep the strict
+  threshold; no characterization override is required.
+- `scripts/test-source-plugins.mjs` now mutes Chromium and uses the current editable
+  parameter number's accessible name (the old duplicate `… value` field no longer
+  exists). Actual AU source-editor scan, parameter render, bypass, Apply, saved
+  state, original retention and one Undo pass. The initial stale selector timeout
+  was a harness issue, corrected before the final run.
+- **50 focused frontend tests / 3 files**, production build, full lint, changed
+  script lint and **24 release checks** pass. No broad frontend or Cargo app suite
+  was rerun. Complete Swift helper compile passes with existing SDK deprecation
+  notices. [Sanitized evidence](evidence/au-source-window.json). The prior .48
+  failure measurements remain in their historical evidence file.
+
+The temporary isolated AU harness helped diagnose the issue; final evidence uses
+all production Swift helper sources and the real command dispatcher. Private
+candidate paths/build logs stay in ignored local handover files. Neither active
+app bundle was overwritten, re-signed, quit or relaunched. This is a source change,
+not an installed update, native source UI activation or Apple submission.
+
+### Continue here
+
+1. Qualify `NativeSourceAudition` against the **native-owned real-time clock** with
+   an isolated silent/null-output harness. Verify continuous parameter edits,
+   aligned warm dry/wet, latency changes, first/looped history, cursor/end, device
+   changes, faults, cancellation and close/replacement races. Offline exactness
+   above is necessary groundwork and does not cover these timing contracts.
+2. Define sample-rate semantics before UI exposure: `NativeTimelineSnapshot`
+   resamples sources to **48 kHz**, whereas helper Prepare processes at source
+   rate. The 52 per-rate comparisons use equal-rate render and stream paths; they
+   do not compare native-owned 48 kHz audition to original-rate Apply. Adopt a
+   common resampling/processing contract or initially restrict streaming to
+   48 kHz sources. Do not silently claim parity across those different graphs.
+3. Wire a compact opt-in control into shared Source Editor Play/Stop, retaining
+   rendered fallback. Initially admit only qualified full-clip/rate/channel cases.
+   Abort and join on recording/arrangement/other-preview/selection/project/source/
+   close transitions. Define stereo effects on mono sources, monitor headroom,
+   state capture, original retention and one-Undo Apply; test UI lifecycle and
+   failure messages before enabling the control. Keep native streaming hidden
+   until that bounded acceptance is complete.
+4. Continue broader built-ins, base-aware recipe recall, seamless topology,
+   waveform load/resident-memory and remaining restoration/freeze cases. Physical
+   N5 and the unanswered .41 speech check remain separate and pending. Do not
+   repeat the hardware question or operate the user's active app sessions.

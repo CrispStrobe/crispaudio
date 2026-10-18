@@ -1,0 +1,180 @@
+{
+  "version": "0.13.49",
+  "date": "2026-10-18",
+  "scope": "AU source-window read, unity routing and final-quantum drain; actual complete media helper and offline-only DSP",
+  "physicalAudio": false,
+  "sourceStreamingUiEnabled": false,
+  "rootCauses": [
+    "One AVAudioFile read did not guarantee the full requested source window",
+    "Scheduled EOF could discard pending effect output inside the latency-compensated window",
+    "Implicit AVAudioEngine main mixer attenuated the 44.1 kHz mono fixture by 3 dB"
+  ],
+  "fix": [
+    "Read in bounded chunks until every requested frame is present; reject incomplete reads",
+    "Schedule one source buffer plus zeroed latency + 4096 input frames, while writing exactly the original window length",
+    "Connect the effect directly to the explicitly formatted manual output, without an arrangement mixer"
+  ],
+  "windowQualification": {
+    "cases": 52,
+    "maxError": 0.0,
+    "childrenRemaining": 0,
+    "invalidRangesRejected": 4
+  },
+  "matrix": {
+    "plugins": [
+      "Apple AUBandpass",
+      "Apple AUPeakLimiter"
+    ],
+    "channels": [
+      1,
+      2
+    ],
+    "sampleRates": [
+      8000,
+      44100,
+      48000,
+      96000,
+      192000
+    ],
+    "lengthsAt48k": [
+      1,
+      127,
+      128,
+      129,
+      4095,
+      4096,
+      4097,
+      16384
+    ],
+    "otherRatesLength": 4097,
+    "sourceOffsetFrames": [
+      0,
+      11,
+      31
+    ],
+    "followingGuardFrames": [
+      0,
+      37
+    ],
+    "stateOnlyCases": 4,
+    "maximumFixtureLatencySamples": 768,
+    "everyWindowFrameCountExact": true,
+    "maximumAbsoluteSampleError": 0.0
+  },
+  "sourcePlanComparison": {
+    "parityAccepted": true,
+    "results": [
+      {
+        "bypassError": 0,
+        "format": "VST3",
+        "name": "ADelay",
+        "channels": 1,
+        "frames": 16384,
+        "latencySamples": 0,
+        "helperLatencySeconds": 0,
+        "error": 0,
+        "peak": 0.5,
+        "first": 5050,
+        "stateSupplied": true,
+        "estimatedBytes": 655440
+      },
+      {
+        "bypassError": 0,
+        "format": "AU",
+        "name": "AUBandpass",
+        "channels": 1,
+        "frames": 16384,
+        "latencySamples": 0,
+        "helperLatencySeconds": 0,
+        "error": 1.1237490228197043e-38,
+        "peak": 0.10462240874767303,
+        "first": 4090,
+        "stateSupplied": true,
+        "estimatedBytes": 655440
+      },
+      {
+        "bypassError": 0,
+        "format": "AU",
+        "name": "AUPeakLimiter",
+        "channels": 1,
+        "frames": 16384,
+        "latencySamples": 192,
+        "helperLatencySeconds": 0.004000000189989805,
+        "error": 0,
+        "peak": 0.3539728820323944,
+        "first": 4090,
+        "stateSupplied": true,
+        "estimatedBytes": 655440
+      },
+      {
+        "bypassError": 0,
+        "format": "VST3",
+        "name": "ADelay",
+        "channels": 2,
+        "frames": 16384,
+        "latencySamples": 0,
+        "helperLatencySeconds": 0,
+        "error": 0,
+        "peak": 0.5,
+        "first": 5050,
+        "stateSupplied": true,
+        "estimatedBytes": 655440
+      },
+      {
+        "bypassError": 0,
+        "format": "AU",
+        "name": "AUBandpass",
+        "channels": 2,
+        "frames": 16384,
+        "latencySamples": 0,
+        "helperLatencySeconds": 0,
+        "error": 1.1606928555331638e-38,
+        "peak": 0.10462240874767303,
+        "first": 4090,
+        "stateSupplied": true,
+        "estimatedBytes": 655440
+      },
+      {
+        "bypassError": 0,
+        "format": "AU",
+        "name": "AUPeakLimiter",
+        "channels": 2,
+        "frames": 16384,
+        "latencySamples": 192,
+        "helperLatencySeconds": 0.004000000189989805,
+        "error": 0,
+        "peak": 0.3539728820323944,
+        "first": 4090,
+        "stateSupplied": true,
+        "estimatedBytes": 655440
+      }
+    ],
+    "sessionsRemaining": 0,
+    "childrenRemaining": 0,
+    "packets": 102
+  },
+  "sourceEditorRegression": {
+    "nativeScan": "passed",
+    "nativeParameterPreview": "passed",
+    "bypass": "passed",
+    "processedSourceCommit": "passed",
+    "savedPluginState": "passed",
+    "originalAndUndo": "passed",
+    "format": "AU",
+    "fixture": "Apple AUBandpass"
+  },
+  "checks": {
+    "completeSwiftMediaHelperCompile": "passed",
+    "frontendTests": 50,
+    "frontendTestFiles": 3,
+    "productionBuild": "passed",
+    "lint": "passed",
+    "releaseChecks": 24
+  },
+  "limits": [
+    "Generated float WAV and two known AU fixtures; not all plug-ins, media formats or sustained loads",
+    "Native source adapter remains hidden; native-owned realtime clock, live edits, loop history, output changes and UI lifecycle still need source-specific qualification",
+    "Native-owned playback resamples to 48 kHz; these per-rate offline comparisons do not qualify cross-rate native playback/Apply equivalence",
+    "No installed app replacement, hardware listening or Apple submission"
+  ]
+}

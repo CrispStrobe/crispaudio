@@ -36,17 +36,40 @@ func processPlugin(_ operation:String,_ json:String)async throws {
  if operation=="plugin-info"{pluginProtocolOutput.write(try JSONSerialization.data(withJSONObject:["parameters":parameters,"state":try encodedState(),"latency":unit.auAudioUnit.latency]));return}
  guard let path=request.path,let output=request.output,let offset=request.offset,let duration=request.duration,offset.isFinite,duration.isFinite,offset>=0,duration>0,duration<=120,!FileManager.default.fileExists(atPath:output) else {try fail("Invalid plugin render window or output")}
  let file=try AVAudioFile(forReading:URL(fileURLWithPath:path)),format=file.processingFormat,rate=format.sampleRate
- guard format.channelCount>0,format.channelCount<=2 else{try fail("Audio Unit source preview supports mono or stereo")}
- let frames=AVAudioFrameCount((duration*rate).rounded()),start=AVAudioFramePosition((offset*rate).rounded())
- guard start+AVAudioFramePosition(frames)<=file.length,let input=AVAudioPCMBuffer(pcmFormat:format,frameCapacity:frames) else{try fail("Audio Unit source bounds")}
- file.framePosition=start;try file.read(into:input,frameCount:frames)
- let engine=AVAudioEngine(),player=AVAudioPlayerNode();engine.attach(player);engine.attach(unit);engine.connect(player,to:unit,format:format);engine.connect(unit,to:engine.mainMixerNode,format:format)
+ guard rate.isFinite,rate>=8000,rate<=192000,format.channelCount>0,format.channelCount<=2 else{try fail("Audio Unit source preview supports mono or stereo at 8–192 kHz")}
+ let frames=AVAudioFrameCount((duration*rate).rounded())
+ guard frames>0,offset<=Double(file.length)/rate,offset*rate<Double(Int64.max)-Double(frames) else{try fail("Audio Unit source bounds")}
+ let start=AVAudioFramePosition((offset*rate).rounded())
+ guard start+AVAudioFramePosition(frames)<=file.length else{try fail("Audio Unit source bounds")}
+ // Source processing has no mix stage: an implicit main mixer can change mono
+ // level when its output layout/rate differs from the manual render format.
+ let engine=AVAudioEngine(),player=AVAudioPlayerNode();engine.attach(player);engine.attach(unit);engine.connect(player,to:unit,format:format);engine.connect(unit,to:engine.outputNode,format:format)
  unit.auAudioUnit.isRenderingOffline=true
  try engine.enableManualRenderingMode(.offline,format:format,maximumFrameCount:4096)
- player.scheduleBuffer(input,at:nil,options:[],completionCallbackType:.dataPlayedBack,completionHandler:{_ in});try engine.start();player.play();defer{player.stop();engine.stop()}
+ try engine.start();defer{player.stop();engine.stop()}
  let latency=unit.auAudioUnit.latency
  guard latency.isFinite,latency>=0,latency<=10 else{try fail("Invalid Audio Unit latency")}
  let delay=AVAudioFramePosition((latency*rate).rounded()),total=AVAudioFramePosition(frames)+delay
+ // Keep the player supplied through the last downstream render quantum. At
+ // scheduled EOF AVAudioEngine can mark a pull silent and discard pending AU
+ // output, including source samples still inside the compensated clip window.
+ // This padding is input-only; the writer below still emits exactly `frames`.
+ guard total<=AVAudioFramePosition(UInt32.max-4096),let input=AVAudioPCMBuffer(pcmFormat:format,frameCapacity:AVAudioFrameCount(total)+4096),let samples=input.floatChannelData else{try fail("Audio Unit padding allocation")}
+ // AVAudioFile may return a short, non-EOF read even for uncompressed PCM.
+ // Read bounded chunks until the requested window is complete; never schedule
+ // an implicitly shortened clip or pull samples beyond the selected window.
+ guard let chunk=AVAudioPCMBuffer(pcmFormat:format,frameCapacity:4096),let read=chunk.floatChannelData else{try fail("Audio Unit input allocation")}
+ file.framePosition=start;var copied:AVAudioFrameCount=0
+ while copied<frames {
+  let wanted=min(4096,frames-copied);try file.read(into:chunk,frameCount:wanted)
+  guard chunk.frameLength>0,chunk.frameLength<=wanted else{try fail("Audio Unit source read incomplete")}
+  for ch in 0..<Int(format.channelCount){memcpy(samples[ch].advanced(by:Int(copied)),read[ch],Int(chunk.frameLength)*MemoryLayout<Float>.size)}
+  copied+=chunk.frameLength
+ }
+ for ch in 0..<Int(format.channelCount){memset(samples[ch].advanced(by:Int(frames)),0,Int(input.frameCapacity-frames)*MemoryLayout<Float>.size)}
+ input.frameLength=input.frameCapacity
+ player.scheduleBuffer(input,at:nil,options:[],completionCallbackType:.dataPlayedBack,completionHandler:{_ in})
+ player.play()
  guard let block=AVAudioPCMBuffer(pcmFormat:format,frameCapacity:4096) else {try fail("Audio Unit output allocation")}
  var outputSettings=format.settings;outputSettings[AVLinearPCMIsNonInterleaved]=false
  let writer=try AVAudioFile(forWriting:URL(fileURLWithPath:output),settings:outputSettings,commonFormat:.pcmFormatFloat32,interleaved:false),limit=Date().addingTimeInterval(60)

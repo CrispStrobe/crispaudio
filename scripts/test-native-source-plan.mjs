@@ -1,7 +1,7 @@
 // Internal source plan + actual helper DSP. Offline only: no native output queue,
 // microphone, realtime clock, user app bundle, or source-editor UI activation.
 // Default is a strict parity gate. CRISPAUDIO_NATIVE_SOURCE_CHARACTERIZE=1 writes
-// a report of known differences without accepting them or enabling the UI.
+// a report of measured differences without accepting them or enabling the UI.
 import assert from 'node:assert/strict';
 import {execFileSync,execFile} from 'node:child_process';
 import {promisify} from 'node:util';
@@ -49,5 +49,5 @@ try{
  },{vst,band,limiter});
  const report=await Promise.race([task,new Promise((_,reject)=>{deadline=setTimeout(()=>reject(new Error('Native source qualification exceeded five minutes')),300000);})]);
  assert.deepEqual(errors,[]);for(const result of report.results){assert.ok(result.bypassError<2e-6,JSON.stringify(result));assert.ok(result.peak>1e-5);assert.equal(result.frames,16384);if(result.name==='ADelay')assert.equal(result.first,4090+Math.floor(.02*48000));if(result.name==='AUPeakLimiter'){assert.ok(result.latencySamples>0);assert.equal(result.first,4090);}}
- const helperStats=bridge.stats();assert.equal(helperStats.sessions,0);assert.equal(helperStats.children,0);const parityAccepted=report.results.every(result=>result.error<2e-6);console.log(JSON.stringify({...report,parityAccepted,helperStats}));if(process.env.CRISPAUDIO_NATIVE_SOURCE_CHARACTERIZE!=='1')assert.ok(parityAccepted,'Native source UI stays gated: AU helper-render vs stream parity is unresolved; see report above');
+ const helperStats=bridge.stats();assert.equal(helperStats.sessions,0);assert.equal(helperStats.children,0);const parityAccepted=report.results.every(result=>result.error<2e-6);console.log(JSON.stringify({...report,parityAccepted,helperStats}));if(process.env.CRISPAUDIO_NATIVE_SOURCE_CHARACTERIZE!=='1')assert.ok(parityAccepted,'Native source UI stays gated: helper-render vs stream parity failed; see report above');
 }finally{clearTimeout(deadline);await browser.close();await bridge.close();rmSync(root,{recursive:true,force:true});}

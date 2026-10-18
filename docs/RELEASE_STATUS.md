@@ -4516,3 +4516,37 @@ bypass, loops/cursor, faults, device changes and source UI cancellation. Keep mo
 output/channel semantics, saved state, monitor headroom, original retention and
 one-Undo Apply explicit. Both existing app sessions are preserved. Physical N5
 and the pending .41 human speech check remain open; no hardware action occurred.
+
+
+## AU source-window fidelity — 0.13.49 source candidate
+
+Fixes missing end samples and an implicit-mixer mono level change in AU source
+Prepare/Apply. File reads now complete the requested window; zeroed input padding
+keeps the player supplied while pending AU output drains. The writer preserves
+exact clip length and direct manual-output routing preserves mono level. Invalid
+rates/windows and huge offsets reject cleanly. Binary stream hosting and project
+format are unchanged; no installed app or native source streaming UI was updated.
+
+The **complete production Swift media helper** compiles in a separate test location
+(existing SDK deprecation notices remain). Actual helper/stream tests pass:
+**52 AU window cases, maximum sample error 0**, four malformed ranges rejected
+without a crash/output, and no unreaped helper children. This covers mono/stereo,
+8–192 kHz, one-frame/tiny/quantum-edge/EOF windows, source offsets with outside
+sample guards, reported latency up to 768 frames and saved-state-only restore.
+
+The previously failing strict browser source-plan gate now passes: six AU/VST3
+cases, zero sample error except stereo bandpass denormals around 1.16e-38, all
+static bypass samples exact, all 18 sessions/helpers closed. The muted actual AU
+source-editor regression passes scan, parameter render, bypass, Apply, saved
+state, retained original and one Undo. Its stale numeric-field selector was fixed
+before the final pass. **50 focused tests / 3 files**, production build, full lint,
+changed-script lint and **24 release checks** pass. Full frontend/Cargo app suites
+were not rerun. [Sanitized evidence](evidence/au-source-window.json).
+
+These are generated offline fixtures, not universal plug-in/media-format,
+real-time, sustained-load, physical or WebKit acceptance. In particular native-owned
+playback resamples to 48 kHz; equal-rate offline tests do not establish matching
+Apply behavior for other source rates. Next: source clock/loop/parameter/fault/
+device qualification, explicit resampling semantics and compact shared editor
+transport integration as scoped in the latest WORK_HANDOFF. Existing app sessions
+and the pending .41 human check remain untouched. No tag or Apple upload occurred.
