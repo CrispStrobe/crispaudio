@@ -405,3 +405,84 @@ fn complete_candidate_without_ledger_is_reviewed_by_full_manifest_verification()
         .any(|c| c.group == "native-group-complete"));
     assert!(source.exists());
 }
+
+#[test]
+fn scanner_pages_do_not_omit_entries_past_the_old_limit_and_cancellation_stops_reads() {
+    let root = tempfile::tempdir().unwrap();
+    for i in 0..1025 {
+        fs::write(root.path().join(format!("other-{i}")), b"").unwrap();
+    }
+    fixture(root.path(), 0, false, false);
+    let mut scanner = Scanner::open(root.path()).unwrap();
+    let mut count = 0;
+    let mut found = 0;
+    loop {
+        let page = scanner.page(Verification::default()).unwrap();
+        assert!(page.scanned <= 512);
+        assert!(page.candidates.len() <= 64);
+        count += page.scanned;
+        found += page.candidates.len();
+        if !page.truncated {
+            break;
+        }
+    }
+    assert_eq!(count, 1026);
+    assert_eq!(found, 1);
+    let cancel = AtomicBool::new(true);
+    assert!(Scanner::open(root.path())
+        .unwrap()
+        .page(Verification::new(&cancel, None))
+        .is_err());
+    let filtered = Scanner::open(root.path())
+        .unwrap()
+        .page_for(Verification::default(), Some("another-project"))
+        .unwrap();
+    assert!(filtered.candidates.is_empty());
+}
+#[test]
+fn verification_progress_and_cancellation_cover_reused_recovery_and_completed_pcm() {
+    let root = tempfile::tempdir().unwrap();
+    let source = fixture(root.path(), 0, false, false);
+    let blocks = std::sync::atomic::AtomicU64::new(0);
+    let cancel = AtomicBool::new(false);
+    let work = Verification::new(&cancel, Some(&blocks));
+    let (path, result) = recover_checked(root.path(), "native-group-fixture", work).unwrap();
+    assert!(blocks.load(Ordering::Relaxed) >= 4);
+    cancel.store(true, Ordering::Release);
+    assert!(recover_checked(root.path(), "native-group-fixture", work).is_err());
+    assert!(load_recovered_checked(&source, work).is_err());
+    fs::write(
+        path.join("completed.json"),
+        serde_json::to_vec(&result.manifest).unwrap(),
+    )
+    .unwrap();
+    assert!(super::super::session::group::load_completed_checked(&path, work).is_err());
+    cancel.store(false, Ordering::Release);
+    let before = blocks.load(Ordering::Relaxed);
+    super::super::session::group::load_completed_checked(&path, work).unwrap();
+    assert!(blocks.load(Ordering::Relaxed) > before);
+}
+
+#[test]
+fn cancellation_after_first_verified_block_stops_before_the_next_pcm_block() {
+    let root = tempfile::tempdir().unwrap();
+    fixture(root.path(), 0, false, false);
+    let (path, result) =
+        recover(root.path(), "native-group-fixture", &AtomicBool::new(false)).unwrap();
+    let cancel = AtomicBool::new(false);
+    let blocks = std::sync::atomic::AtomicU64::new(0);
+    let work = Verification::new(&cancel, Some(&blocks));
+    let clip = &result.manifest.clips[0];
+    let error = super::super::recording::visit_verified_clocks_checked(
+        path.join(&clip.audio).parent().unwrap(),
+        &clip.info,
+        work,
+        |_, _, _| {
+            cancel.store(true, Ordering::Release);
+            Ok(())
+        },
+    )
+    .unwrap_err();
+    assert!(error.contains("cancelled"));
+    assert_eq!(blocks.load(Ordering::Relaxed), 1);
+}

@@ -1,5 +1,6 @@
 //! Native dry-file worker. No disk work belongs on an audio callback.
 //! Unpublished WAV + append-only checksummed block index survive interruption.
+use super::verification::Verification;
 use super::{Fault, Packet, Reader, DRY_SLOTS, MAX_FRAMES};
 use crate::Result;
 use serde::{Deserialize, Serialize};
@@ -418,11 +419,13 @@ fn open_index(directory: &Path) -> Result<(Metadata, BufReader<File>)> {
 /// Verify a COMPLETE recording's metadata, index and every PCM checksum before
 /// trusting its clock observations. Visitor calls may precede a later error;
 /// callers must not publish partial results. All I/O belongs off callback.
-pub(super) fn visit_verified_clocks(
+pub(super) fn visit_verified_clocks_checked(
     directory: &Path,
     expected: &TakeInfo,
+    verification: Verification<'_>,
     mut visit: impl FnMut(u64, u64, usize) -> Result<()>,
 ) -> Result<()> {
+    verification.check()?;
     if expected.frames == 0 || expected.frames > 32_000_000 {
         return Err("Invalid recording verification budget".into());
     }
@@ -442,6 +445,7 @@ pub(super) fn visit_verified_clocks(
     let (mut frames, mut blocks, mut first, mut next, mut last_host) =
         (0u64, 0u64, None, None, None);
     loop {
+        verification.check()?;
         let mut record = [0u8; 32];
         let count = read_record(&mut index, &mut record)?;
         if count == 0 {
@@ -475,6 +479,7 @@ pub(super) fn visit_verified_clocks(
         {
             return Err("Complete recording checksum mismatch".into());
         }
+        verification.block()?;
         visit(frame, host, length)?;
         first.get_or_insert((frame, host));
         next = end;
@@ -492,14 +497,14 @@ pub(super) fn visit_verified_clocks(
 /// RIFF/data lengths, leaves all recovery files intact and never replaces output.
 /// Recovery is always marked incomplete, even if every indexed block verifies.
 pub fn recover(directory: &Path, output: &Path, cancel: &AtomicBool) -> Result<RecoveredTake> {
-    recover_inner(directory, output, cancel, None)
+    recover_inner(directory, output, Verification::new(cancel, None), None)
 }
 /// Recovery-only copy into a fresh take directory. Keep a matching verified index
 /// so the ordinary timing verifier can independently recheck every retained block.
 pub(super) fn recover_aligned(
     directory: &Path,
     destination: &Path,
-    cancel: &AtomicBool,
+    verification: Verification<'_>,
     clock: super::output::ClockMap,
     end: i64,
     drift: u32,
@@ -507,14 +512,14 @@ pub(super) fn recover_aligned(
     recover_inner(
         directory,
         &destination.join(COMPLETE),
-        cancel,
+        verification,
         Some((destination, clock, end, drift)),
     )
 }
 fn recover_inner(
     directory: &Path,
     output: &Path,
-    cancel: &AtomicBool,
+    verification: Verification<'_>,
     aligned: Option<(&Path, super::output::ClockMap, i64, u32)>,
 ) -> Result<RecoveredTake> {
     let (meta, mut index) = open_index(directory)?;
@@ -549,7 +554,7 @@ fn recover_inner(
     let mut next = None;
     let mut last_host = None;
     let stopped_reason = loop {
-        if cancel.load(Ordering::Acquire) {
+        if verification.cancelled() {
             return Err("Recording recovery cancelled".into());
         }
         let mut record = [0u8; 32];
@@ -606,6 +611,7 @@ fn recover_inner(
                 break Some("Durable output timing boundary".into());
             }
         }
+        verification.block()?;
         for bytes in pcm[..bytes].chunks_exact(4) {
             wave.write_sample(f32::from_le_bytes(bytes.try_into().unwrap()))
                 .map_err(|e| e.to_string())?;
@@ -625,7 +631,7 @@ fn recover_inner(
     if let Some(index) = copied_index.as_ref() {
         io(index.sync_all())?;
     }
-    if cancel.load(Ordering::Acquire) {
+    if verification.cancelled() {
         return Err("Recording recovery cancelled".into());
     }
     io(std::fs::hard_link(&path, output))?;

@@ -1,0 +1,67 @@
+{
+  "date": "2026-10-18",
+  "version": "0.13.38",
+  "scope": "Owned recovery cancellation/progress, project-filtered cursor pages and explicit-import conversion persistence",
+  "installedVersion": "0.13.33",
+  "hardwareInputOpened": false,
+  "hardwareOutputOpened": false,
+  "checks": {
+    "frontend": {
+      "passed": 2068,
+      "files": 214,
+      "workers": 4,
+      "testTimeoutMs": 20000,
+      "log": "crispaudio-recovery-jobs-frontend.log"
+    },
+    "focusedFinal": {
+      "passed": 25,
+      "files": 3,
+      "log": "crispaudio-recovery-jobs-regression.log"
+    },
+    "media": {
+      "passed": 327,
+      "ignored": 16,
+      "log": "crispaudio-recovery-jobs-media-last.log"
+    },
+    "appRust": {
+      "passed": 51,
+      "ignored": 1,
+      "log": "crispaudio-recovery-jobs-app-last.log"
+    },
+    "release": {
+      "passed": 21,
+      "log": "crispaudio-recovery-jobs-release.log"
+    },
+    "lint": "passed",
+    "productionBuild": "passed",
+    "macDebugBundle": "passed",
+    "signing": "Local ad-hoc sandbox/helper preflight",
+    "layout": {
+      "scope": "Generated standalone busy/ready UI, no native IPC or audio devices",
+      "cases": [
+        "EN1100x800",
+        "DE820x650",
+        "DE390x800"
+      ],
+      "horizontalOverflow": false
+    }
+  },
+  "coverage": [
+    "Owned job lookup/cancel/join and reservation release, terminal errors and worker panics",
+    "Block verification checks cancellation before subsequent PCM; full and reused recovery included",
+    "Cursor owner/project matching, refresh/window cleanup and traversal rejection",
+    "Pages traverse more than 1024 entries without the old 512-entry omission",
+    "Frontend progress, late-start cancellation and discovery closure",
+    "Current page replacement and Cancel access during work",
+    "Repeated converted Review writes no conversion WAV; explicit Import persists",
+    "Converted original provenance and linked/portable reopen",
+    "Playback beginning during import preparation prevents late insertion"
+  ],
+  "limitations": [
+    "Cancellation is cooperative; active filesystem calls can delay shutdown",
+    "Live directory mutation requires refresh; a cursor is not a durable archive snapshot",
+    "Failed or cancelled explicit Import can leave a newly persisted conversion; safe owned orphan collection pending",
+    "Helper-opening cancellation qualification and N5 physical timing/load/device/iOS checks remain pending",
+    "Candidate not installed/launched or submitted to Apple"
+  ]
+}

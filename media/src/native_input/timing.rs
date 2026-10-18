@@ -1,6 +1,7 @@
 //! Persisted native recording timing. Integer 48 kHz frames, never JS/callback
 //! arrival time. This validates clock consistency; it does not resample drift or
 //! establish physical ADC/DAC accuracy without separate calibration/acceptance.
+use super::verification::Verification;
 use super::{
     output::{ClockMap, Timebase},
     recording,
@@ -309,6 +310,16 @@ pub(crate) fn build(
     intent: &Intent,
     output: &Snapshot,
 ) -> Result<Timing> {
+    build_checked(directory, clips, intent, output, Verification::default())
+}
+pub(crate) fn build_checked(
+    directory: &Path,
+    clips: &[Clip],
+    intent: &Intent,
+    output: &Snapshot,
+    verification: Verification<'_>,
+) -> Result<Timing> {
+    verification.check()?;
     intent.validate(
         &clips
             .iter()
@@ -346,9 +357,10 @@ pub(crate) fn build(
             return Err("Capture extends beyond queued backing output".into());
         }
         let (mut min, mut max) = (0i64, 0i64);
-        recording::visit_verified_clocks(
+        recording::visit_verified_clocks_checked(
             directory.join(&clip.audio).parent().unwrap(),
             &clip.info,
+            verification,
             |frame, host, _| {
                 let elapsed = frame
                     .checked_sub(clip.info.first_input_frame)
@@ -398,8 +410,21 @@ pub(crate) fn build(
         placements,
     })
 }
-pub(crate) fn verify(directory: &Path, clips: &[Clip], timing: &Timing) -> Result<()> {
-    if timing.version != 1 || build(directory, clips, &timing.intent, &timing.output)? != *timing {
+pub(crate) fn verify_checked(
+    directory: &Path,
+    clips: &[Clip],
+    timing: &Timing,
+    verification: Verification<'_>,
+) -> Result<()> {
+    if timing.version != 1
+        || build_checked(
+            directory,
+            clips,
+            &timing.intent,
+            &timing.output,
+            verification,
+        )? != *timing
+    {
         return Err("Timed recording manifest mismatch".into());
     }
     Ok(())

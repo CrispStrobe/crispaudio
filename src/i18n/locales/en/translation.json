@@ -1676,7 +1676,7 @@
     "recoveryVerifiedPrefix": "Verified prefix · incomplete",
     "recoveryVerifiedComplete": "Verified complete recording",
     "recoveryImport": "Import takes",
-    "recoveryEmpty": "No recordings for this project.",
+    "recoveryEmpty": "No recordings on this page for this project.",
     "recoveryTruncated": "Search limit reached; older recordings may be omitted.",
     "recoveryRejected": "Without usable timing: {{count}}",
     "recoveryImported": "Takes imported · Undo available",
@@ -1684,7 +1684,17 @@
     "recoveryHelp": "Find native Mac recordings retained for this project. Review verifies every file and prepares all tracks before Import adds one Undo action. Interrupted takes contain only verified blocks within the saved output timing; their tail may be missing. Arm the target tracks and stop playback first. Original files stay intact. Imported run IDs are saved with the project; Undo removes the import and its receipt. Recordings without trustworthy timing cannot be aligned automatically.",
     "recoveryPasses_one": "pass",
     "recoveryPasses_other": "passes",
-    "recoveryBudget": "Recording exceeds the memory limit at this sample rate."
+    "recoveryBudget": "Recording exceeds the memory limit at this sample rate.",
+    "recoveryPage": "Page {{count}}",
+    "recoveryNext": "Next",
+    "recoveryCancel": "Cancel recovery",
+    "recoveryBlocks": "{{count}} blocks checked",
+    "recoveryBlocks_one": "{{count}} block checked",
+    "recoveryBlocks_other": "{{count}} blocks checked",
+    "recoverySearching": "Searching…",
+    "recoveryPreparingImport": "Preparing…",
+    "recoveryStopPlayback": "Stop playback first.",
+    "recoveryRefresh": "Refresh the recording list."
   },
   "retime": {
     "title": "Speed / pitch",

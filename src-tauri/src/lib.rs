@@ -131,9 +131,15 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             commands::native_recording::native_recording_mix,
             #[cfg(target_os = "macos")]
-            commands::native_recording::native_recording_discover,
+            commands::native_recording::recovery_jobs::native_recording_discover,
             #[cfg(target_os = "macos")]
-            commands::native_recording::native_recording_recover,
+            commands::native_recording::recovery_jobs::native_recording_recovery_start,
+            #[cfg(target_os = "macos")]
+            commands::native_recording::recovery_jobs::native_recording_recovery_status,
+            #[cfg(target_os = "macos")]
+            commands::native_recording::recovery_jobs::native_recording_recovery_close,
+            #[cfg(target_os = "macos")]
+            commands::native_recording::recovery_jobs::native_recording_discovery_close,
             #[cfg(target_os = "macos")]
             commands::native_recording::native_recording_close,
             #[cfg(target_os = "macos")]

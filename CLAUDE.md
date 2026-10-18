@@ -1172,3 +1172,18 @@ Undo removes them with takes. Path fallback scans only projectSourceIds, never a
 cached sources (Undo retains orphans for Redo). Complete marker groups require
 load_completed, even when invalid; never fall back to raw salvage. Current backend
 verification has no owned cancellation yet; frontend AbortSignal discards late work.
+
+### Recovery jobs, pages and import persistence (0.13.38)
+
+Keep recovery jobs owner-scoped: start/status/close, sparse phase/block counts,
+cancel+join and reservation release. Pass Verification through raw copying AND
+full/reused timing verification; do not check only before/after a long operation.
+Cancellation is cooperative between blocks, not an interruptible filesystem call.
+Discovery owns one bounded iterator; project/cursor/owner must match. Each page is
+<=512 entries/64 candidates; UI replaces its page, never builds an unlimited list.
+Close cursors at EOF/refresh/window or project close; native recording invalidates
+idle cursors. Directory mutation requires refresh, not a snapshot guarantee.
+Review never persists converted audio. prepareImport performs encoding/persistence
+only on explicit Import, then the usual guarded one-action insertion/receipt. Pass
+AbortSignal to the encoder; recheck playback before commit. Failure may leave a
+conversion file but never partial project state. Owned orphan collection remains.

@@ -148,7 +148,7 @@ export class NativeRecordingController {
  }
 }
 
-export async function loadNativeRecordingSources(directory:string,manifest:NativeRecordingManifest,spec:{targets:{trackId:string}[];context:BaseAudioContext;sampleRate:number;sourceName:string},signal?:AbortSignal){
+export async function loadNativeRecordingSources(directory:string,manifest:NativeRecordingManifest,spec:{targets:{trackId:string}[];context:BaseAudioContext;sampleRate:number;sourceName:string;persistConverted?:boolean},signal?:AbortSignal){
   if(manifest.version!==2||!Array.isArray(manifest.clips)||manifest.clips.length!==spec.targets.length||manifest.clips.length>8)throw new Error('recording.timingInvalid');
   if(!Number.isFinite(spec.sampleRate)||spec.sampleRate<=0)throw new Error('recording.timingInvalid');
   let frames=0,decodedBytes=0;const tracks=new Set<string>();
@@ -170,9 +170,9 @@ export async function loadNativeRecordingSources(directory:string,manifest:Nativ
     const offline=new OfflineAudioContext(buffer.numberOfChannels,Math.round(buffer.duration*spec.sampleRate),spec.sampleRate),node=offline.createBufferSource();node.buffer=buffer;node.connect(offline.destination);node.start();buffer=await offline.startRendering();
    }
    signal?.throwIfAborted();
-   let filePath=originalPath;
-   if(buffer.sampleRate!==RATE){const wav=await encodeAudioBufferWav(buffer,32);filePath=await invoke<string>('persist_recording',new Uint8Array(await wav.arrayBuffer()));}
-   const source:AudioSource={id:crypto.randomUUID(),name:spec.sourceName,buffer,duration:buffer.duration,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels,filePath,...(filePath!==originalPath?{provenance:{path:originalPath,offset:0,rate:1}}:{}),peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))};
+   let filePath:string|undefined=originalPath;
+   if(buffer.sampleRate!==RATE){if(spec.persistConverted===false)filePath=undefined;else{const wav=await encodeAudioBufferWav(buffer,32);filePath=await invoke<string>('persist_recording',new Uint8Array(await wav.arrayBuffer()));}}
+   const source:AudioSource={id:crypto.randomUUID(),name:spec.sourceName,buffer,duration:buffer.duration,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels,filePath,...(buffer.sampleRate!==RATE?{provenance:{path:originalPath,offset:0,rate:1}}:{}),peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))};
    loaded.set(clip.track_id,source);
   }
   return loaded;

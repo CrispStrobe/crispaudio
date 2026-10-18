@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for candidate 0.13.37 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for candidate 0.13.38 (installed baseline 0.13.33). This section is the current plan.
 Start with [the engineering handoff](docs/WORK_HANDOFF.md) for scoped tasks N1–N5,
 acceptance criteria and the remaining accepted product backlog.
 The implementation records below are historical; their old missing-feature lists
@@ -73,8 +73,10 @@ native-clock lead-in, metronome and loop backing. The 0.13.34 candidate now conn
 explicit routing and atomic project insertion. Compatible stays the default. Live monitor balance, per-input cues and mute are
 implemented in 0.13.35. Version 0.13.36 adds an in-run timing ledger and verified
 interrupted-group recovery commands. Version 0.13.37 adds compact review/import, completed-group reconciliation and
-portable import receipts. Discovery pagination, owned recovery cancellation,
-pending-helper cancellation qualification and physical acceptance remain open. See the handoff for the precise continuation.
+portable import receipts. Version 0.13.38 adds owned recovery progress/cancellation,
+bounded project-filtered discovery pages and converted-file persistence on explicit
+Import. Pending-helper cancellation qualification, failed-import orphan collection
+and physical acceptance remain open. See the handoff for the precise continuation.
 
 Local 0.13.33 shares one Web Audio bridge across a native input cue rack.
 Two inserts now add 4096 transport samples total rather than 8192 (85.3 vs 170.7 ms

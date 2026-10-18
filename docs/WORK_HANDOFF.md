@@ -19,7 +19,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33; source/local candidate 0.13.37 adds the
+The installed baseline remains 0.13.33; source/local candidate 0.13.38 adds the
 opt-in native recording preview described below. The established baseline includes timeline/video editing,
 recording/takes/comping, compact recording controls and meters, source restoration,
 FX-aware segment waveforms within documented limits, native Mac AU/VST3 playback
@@ -29,7 +29,7 @@ belong to CrisperWeaver and CometBeat respectively. Imported audio/transcripts s
 editable. Existing MIDI utilities do not imply a MIDI expansion roadmap.
 
 Native recording is now selectable on Mac under **Input → Mode → Native · Preview**
-in the 0.13.37 candidate. Compatible remains the default. Physical qualification
+in the 0.13.38 candidate. Compatible remains the default. Physical qualification
 and the remaining N4 tasks below are still open:
 
 | Foundation | Code entry point | Verified scope |
@@ -56,11 +56,10 @@ See [NATIVE_INPUT.md](NATIVE_INPUT.md) for contracts and evidence links.
 
 ## Next implementation sequence
 
-N1–N3 are implemented internally. App integration and hardware qualification
-(N4–N5) stay open; aligned interrupted-session recovery also needs a durable
-output-clock ledger before it can be qualified. Dependencies and
-completion boundaries are explicit; none of this enables the installed recording
-path by itself.
+N1–N3 are implemented internally, including the durable output-clock ledger and
+aligned interrupted-session recovery. The remaining app integration and hardware
+qualification tasks (N4–N5) stay open. Dependencies and completion boundaries are
+explicit; the installed baseline does not include these candidate changes.
 
 ### N1 — Shared hardware output and backing worker (implemented internally)
 
@@ -165,28 +164,42 @@ receipts or source provenance cannot prove whether a historical group was import
 review existing takes before importing those. No on-disk acknowledgement is written
 before project insertion/save, and originals remain available.
 
+The 0.13.38 preview adds owner-scoped recovery jobs, sparse status and a real
+cancel signal. Full completed-file verification, raw copy and reused recovery
+verification check cancellation between blocks and count actual block checks.
+Window/app shutdown joins workers before releasing their reservation. The UI
+cancels/discards late work on close, project changes or playback; active disk calls
+can delay completion, so do not promise immediate cancellation.
+
+Discovery now retains one owned directory iterator, filtered to the requested
+project. Each page scans at most 512 entries/64 candidates; Next replaces the
+current page and closes the cursor at EOF, refresh, project/window close. Starting
+native recording invalidates the idle cursor. Refresh after archive changes; this
+is a bounded live iterator, not a durable snapshot of a mutating directory.
+
+Rate-converted Review is now memory-only. Explicit Import encodes/persists any
+converted WAVs, checks project/cancel/playback again, then commits all takes and
+receipts once. Repeated Review/close creates no converted WAVs. Original provenance
+and linked/portable reopen are tested. Cancel during a disk write can leave a
+converted file from that failed explicit import, with no editor insertion.
+
 Remaining N4 work:
 
-- Discovery currently caps at 512 root entries/64 candidates and reports
-  `truncated`; add bounded pagination before claiming arbitrary archive coverage.
-  Rejected/no-ledger groups remain raw-only and must never be auto-aligned.
-  Recovery commands currently finish a bounded worker even if the inspector
-  closes; add owned cancellation/status and expose progress for long verification. Closing the current review aborts frontend
-  loading/import, while bounded backend verification may finish in the background.
-- Avoid accumulating derived rate-conversion WAVs on repeated Review/close. The
-  shared loader currently persists converted audio before project insertion;
-  preserve originals and Undo references while adding explicit-import persistence
-  or a stable managed conversion cache plus safe orphan collection. Test repeated
-  review at a non-48 kHz project rate, cancellation, linked/portable reopen and
-  native playback before claiming disk-neutral review.
+- **Next: helper-opening cancellation qualification.** Exercise cancel/stop while
+  cue/backing helpers are opening, using blocking/failing subprocess fixtures.
+  Current checks run between bounded preparation steps; no instant-cancel promise.
+  Add actual helper interruption if the test shows a long avoidable wait. Verify
+  every capture/output/backing worker closes and dry originals remain usable.
+- Add safe collection for converted files left by failed/cancelled explicit Import
+  (and historical pre-0.13.38 Review). Use owned creation/commit receipts or staging
+  transactions, never guess from age/path or delete files referenced by projects,
+  Undo, pending review or recovery. Test retry, partial group failure, cancellation,
+  linked/portable reopen and native playback. Normal repeated Review is now fixed.
 - Keep immediate Record/Stop, persistent GUI meters and a small settings dropdown.
   Advanced routing/inserts remain collapsed; show measured/configured delays
   honestly. Explicit monitor output and independent backing/cue controls are now
   implemented; hardware routing/latency acceptance remains N5. Wet capture must
   retain dry originals.
-- Qualification must include cancellation while helpers are opening, independent
-  cue/backing levels and recorded WAV inspection. Preparation checks cancellation
-  between bounded helper/graph startup steps; it is not an instant-cancel promise.
 - Done when desktop/touch tests cover arm/record/stop/cancel, device selection,
   cue fault recovery, compact layout, save/reopen and one-action group Undo.
 
@@ -228,6 +241,17 @@ The codec assessment is recorded in [MEDIA_FORMATS_AND_LICENSES.md](MEDIA_FORMAT
 No new patent conclusion or distribution restriction is introduced by this checkpoint.
 
 ## Verification at the code checkpoint
+
+The 0.13.38 recovery jobs preview passes **2068 frontend tests/214 files**
+(four workers, 20-second test ceiling), **327 media tests (16 ignored)** and
+**51 app Rust tests (one hardware case ignored)**. Focused final recovery/loader/UI
+regression passes 25 tests/3 files, including converted linked/portable reopen.
+Full lint, production build, 21 release checks and local Mac ad-hoc sandbox/helper
+preflight pass. EN1100×800, DE820×650 and DE390×800 generated component reviews cover
+busy progress/cancel, Next and ready Import without horizontal overflow. No physical
+mic/output, install, simulator or Apple upload. Installed 0.13.33 is preserved.
+See [job/pagination evidence](evidence/native-recording-recovery-jobs.json).
+
 
 The 0.13.37 review/import preview passes **2064 frontend tests/214 files** with
 four workers and a 20-second per-test ceiling, **324 media tests (16 ignored)** and

@@ -52,6 +52,7 @@ fn run_token(sequence: u64) -> Result<String, String> {
         .collect::<String>();
     Ok(format!("nr-{random}-{sequence:x}"))
 }
+pub mod recovery_jobs;
 const STOP: usize = 1;
 const CANCEL: usize = 2;
 const POLL: Duration = Duration::from_millis(20);
@@ -211,6 +212,8 @@ pub struct NativeRecording {
     active: Mutex<Option<Arc<Session>>>,
     sequence: AtomicU64,
     recovering: Arc<AtomicBool>,
+    recovery: Mutex<Option<Arc<recovery_jobs::Job>>>,
+    scan: Mutex<Option<Arc<recovery_jobs::Scan>>>,
 }
 struct RecoveryLease(Arc<AtomicBool>);
 impl Drop for RecoveryLease {
@@ -252,6 +255,7 @@ impl NativeRecording {
         }
     }
     pub fn close_owner(&self, owner: &str) {
+        self.stop_recovery_owner(owner);
         let mut slot = self.active.lock().unwrap();
         if let Some(s) = slot.as_ref().filter(|s| s.owner == owner) {
             s.control.request(true);
@@ -262,6 +266,7 @@ impl NativeRecording {
         }
     }
     pub fn shutdown(&self) {
+        self.stop_recovery();
         if let Some(s) = self.active.lock().unwrap().take() {
             s.control.request(true);
             if let Some(worker) = s.worker.lock().unwrap().take() {
@@ -600,6 +605,7 @@ pub fn native_recording_start(
         .map_err(|error| error.to_string())?
         .join("recordings");
     let lease = playback.reserve_recording()?;
+    state.invalidate_discovery();
     let id = run_token(state.sequence.fetch_add(1, Ordering::Relaxed))?;
     let session = Arc::new(Session {
         owner: window.label().into(),
@@ -635,52 +641,6 @@ pub fn native_recording_start(
     *session.worker.lock().unwrap() = Some(worker);
     *slot = Some(session);
     Ok(id)
-}
-/// App-data managed IDs only; never accepts a filesystem path from WebKit.
-#[tauri::command]
-pub async fn native_recording_discover(
-    window: tauri::WebviewWindow,
-    state: tauri::State<'_, NativeRecording>,
-) -> Result<Value, String> {
-    let lease = state.reserve_recovery()?;
-    let root = window
-        .app_handle()
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("recordings");
-    tauri::async_runtime::spawn_blocking(move || {
-        let _lease = lease;
-        crispaudio_media::native_input::recovery::discover(&root)
-            .and_then(|result| serde_json::to_value(result).map_err(|e| e.to_string()))
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-#[tauri::command]
-pub async fn native_recording_recover(
-    window: tauri::WebviewWindow,
-    state: tauri::State<'_, NativeRecording>,
-    group: String,
-) -> Result<Value, String> {
-    let lease = state.reserve_recovery()?;
-    let root = window
-        .app_handle()
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("recordings");
-    tauri::async_runtime::spawn_blocking(move || {
-        let _lease = lease;
-        let directory=crispaudio_media::native_input::recovery::managed_group(&root,&group)?;
-        if directory.join("completed.json").symlink_metadata().is_ok() {
-            let manifest=group::load_completed(&directory)?;
-            if manifest.version!=2{return Err("Recording has no verified timing".into());}
-            return Ok(json!({"phase":"complete","incomplete":false,"group":group,"directory":directory,"manifest":manifest,"reasons":[]}));
-        }
-        let (directory,result) = crispaudio_media::native_input::recovery::recover(&root,&group,&AtomicBool::new(false))?;
-        Ok(json!({"phase":"recovered","incomplete":result.incomplete,"group":group,"directory":directory,"manifest":result.manifest,"reasons":result.reasons}))
-    }).await.map_err(|e|e.to_string())?
 }
 #[tauri::command]
 pub fn native_recording_status(

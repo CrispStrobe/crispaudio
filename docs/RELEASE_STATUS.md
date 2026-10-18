@@ -5,6 +5,32 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Native recovery jobs/pages — 0.13.38 candidate
+
+Recovery now has owned start/status/close commands, actual block-verification
+progress and cancellation through raw, completed and reused file verification.
+The compact UI offers Cancel and paginated Next; close, project changes or playback
+prevent late insertion. Shutdown joins workers before releasing reservations.
+Cancellation waits for an active filesystem call; no instant-stop claim is made.
+
+Project-filtered discovery keeps one bounded iterator and only one UI page
+(512 entries/64 candidates per page). Refresh after archive changes or recording.
+Converted Review stays in memory; explicit Import alone persists conversion WAVs
+before one guarded take/receipt transaction. Tests cover repeated review, cancelled
+preparation, linked/portable reopen and playback-start interruption. Failed explicit
+imports can still leave conversion files; owned orphan collection is pending.
+
+Validation: 2068 frontend tests/214 files (four workers/20-second ceiling), 327 media
+checks (16 ignored), 51 app Rust tests (one hardware case ignored), 25 focused
+regression tests/3 files, full lint, production build and 21 release checks pass.
+Generated busy/ready EN/DE/narrow layout review has no horizontal overflow. The Mac
+candidate passes local ad-hoc sandbox/helper signing checks; installed 0.13.33 stays
+unchanged. No mic/output, simulator, installation or Apple upload.
+[Recovery job evidence](evidence/native-recording-recovery-jobs.json).
+
+Helper-opening cancellation qualification, safe failed-import cleanup and N5
+physical timing/load/device acceptance remain open; the full roadmap is unfinished.
+
 ## Native recovery review/import — 0.13.37 candidate
 
 Recording settings now offer a collapsed Mac Recovery section: Find → Review →

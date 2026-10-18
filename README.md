@@ -118,8 +118,10 @@ or dry recordings. Type exact fader values; muted faders remember their level.
 Native placement correction is separate from compatible calibration. In recording
 settings, expand **Recovery**, find retained recordings, then **Review → Import takes**.
 Interrupted takes are labelled incomplete; fully finished recordings are reconciled
-separately. Import adds the whole group with one Undo action and saves a duplicate
-check with the project. Originals remain on disk. Hardware timing/load checks are
+separately. **Next** continues a longer search; verification shows progress and can
+be cancelled. Converted audio stays in memory until Import. Import adds the whole
+group with one Undo action and saves a duplicate check with the project. Originals
+remain on disk. Hardware timing/load checks are
 still pending; keep using Compatible for established workflows until qualification.
 
 Audition an original take or listen to its comp through the project mix. Choose

@@ -550,3 +550,27 @@ No disk acknowledgement is written before editor insertion or project save.
 Discovery pagination and owned backend recovery jobs/cancellation remain open.
 The UI uses existing recording menu/settings access and short EN/DE controls;
 advanced explanations stay behind (i). No physical device acceptance is implied.
+
+## Owned recovery work and bounded pages — 0.13.38
+
+`Verification` carries a caller-owned cancel flag and optional checked-block count.
+Default non-job callers stay uncancelled; the default flag is not exposed for
+mutation. Raw-prefix copying, full completed manifests and reused recovery receipts
+all check between file blocks. Job status carries phase/count, not large manifests
+or guessed percentages. Owner-scoped start/status/close commands retain one result
+until joined; window/app shutdown cancels and joins. No file verification belongs
+on WebKit or an audio callback. A blocked OS read/write is not interruptible here.
+
+Discovery retains one owned `ReadDir` cursor; each page scans at most 512 entries
+and returns at most 64 candidates for the requested project. The UI keeps only the
+current page. Closing/refreshing or switching project releases the cursor, EOF
+closes it, and native recording invalidates idle discovery. A live directory change
+requires refresh; a final empty page at a budget boundary is valid. Candidate
+metadata remains unverified until explicit Review.
+
+Review uses the shared loader with conversion persistence disabled; converted
+buffers retain original provenance in memory. Explicit Import prepares durable
+converted WAVs, rechecks project/cancel/playback and publishes once with the run
+receipt. Repeated Review/close writes no converted WAV. A failed/cancelled explicit
+Import can still leave a newly persisted conversion; safe owned orphan collection
+is a separate task. Never delete originals or infer unreferenced files from age.

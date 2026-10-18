@@ -1,5 +1,6 @@
 //! Durable output timing ledger and conservative, all-input crash recovery.
 //! Managed directories only. No disk I/O, locks or recovery on audio callbacks.
+use super::verification::Verification;
 use super::{
     recording,
     session::group::{Clip, Manifest},
@@ -323,109 +324,146 @@ pub struct Discovery {
     pub rejected: usize,
     pub truncated: bool,
 }
-/// Metadata only, <=512 directory entries and <=64 candidates. A candidate is
-/// not permission to import: recover still verifies all clocks and PCM.
-pub fn discover(root: &Path) -> Result<Discovery> {
-    let mut result = Discovery {
-        candidates: Vec::new(),
-        scanned: 0,
-        rejected: 0,
-        truncated: false,
-    };
-    if !root.try_exists().map_err(|e| e.to_string())? {
-        return Ok(result);
+/// App-owned directory iterator retained between bounded pages. A refresh opens
+/// a fresh iterator; no path/caller offset is ever interpreted as a cursor.
+pub struct Scanner {
+    entries: Option<fs::ReadDir>,
+}
+impl Scanner {
+    pub fn open(root: &Path) -> Result<Self> {
+        if !root.try_exists().map_err(|e| e.to_string())? {
+            return Ok(Self { entries: None });
+        }
+        directory(root)?;
+        Ok(Self {
+            entries: Some(io(fs::read_dir(root))?),
+        })
     }
-    directory(root)?;
-    for entry in io(fs::read_dir(root))? {
-        if result.scanned >= 512 || result.candidates.len() >= 64 {
-            result.truncated = true;
-            break;
-        }
-        result.scanned += 1;
-        let entry = io(entry)?;
-        let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
-            continue;
+    pub fn page(&mut self, verification: Verification<'_>) -> Result<Discovery> {
+        self.page_for(verification, None)
+    }
+    pub fn page_for(
+        &mut self,
+        verification: Verification<'_>,
+        project: Option<&str>,
+    ) -> Result<Discovery> {
+        verification.check()?;
+        let mut result = Discovery {
+            candidates: Vec::new(),
+            scanned: 0,
+            rejected: 0,
+            truncated: false,
         };
-        if !named(&name, "native-group-") {
-            continue;
-        }
-        let path = entry.path();
-        if path.join("completed.json").symlink_metadata().is_ok() {
-            // Discovery is metadata-only. Full PCM/clock verification happens
-            // when the user explicitly reviews this candidate.
-            let completed = (|| -> Result<Candidate> {
-                directory(&path)?;
-                let manifest: serde_json::Value = read(&path.join("completed.json"))?;
-                let timing = &manifest["timing"];
-                let clips = manifest["clips"]
-                    .as_array()
-                    .ok_or("Invalid completed recording clips")?;
-                let tracks = clips
-                    .iter()
-                    .map(|c| {
-                        c["track_id"]
-                            .as_str()
-                            .map(str::to_owned)
-                            .ok_or("Invalid completed track".to_string())
+        let Some(entries) = self.entries.as_mut() else {
+            return Ok(result);
+        };
+        loop {
+            if result.scanned >= 512 || result.candidates.len() >= 64 {
+                result.truncated = true;
+                break;
+            }
+            verification.check()?;
+            let Some(entry) = entries.next() else {
+                self.entries = None;
+                break;
+            };
+            result.scanned += 1;
+            let entry = io(entry)?;
+            let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
+                continue;
+            };
+            if !named(&name, "native-group-") {
+                continue;
+            }
+            let path = entry.path();
+            if path.join("completed.json").symlink_metadata().is_ok() {
+                // Discovery is metadata-only. Full PCM/clock verification happens
+                // when the user explicitly reviews this candidate.
+                let completed = (|| -> Result<Candidate> {
+                    directory(&path)?;
+                    let manifest: serde_json::Value = read(&path.join("completed.json"))?;
+                    let timing = &manifest["timing"];
+                    let clips = manifest["clips"]
+                        .as_array()
+                        .ok_or("Invalid completed recording clips")?;
+                    let tracks = clips
+                        .iter()
+                        .map(|c| {
+                            c["track_id"]
+                                .as_str()
+                                .map(str::to_owned)
+                                .ok_or("Invalid completed track".to_string())
+                        })
+                        .collect::<Result<Vec<_>>>()?;
+                    let project_id = timing["intent"]["projectId"]
+                        .as_str()
+                        .ok_or("Missing completed project")?
+                        .to_owned();
+                    let import_id = timing["intent"]["context"]["scope"]
+                        .as_str()
+                        .ok_or("Missing completed run")?
+                        .to_owned();
+                    let output_end_frame = timing["output"]["endQueuedFrame"]
+                        .as_i64()
+                        .ok_or("Missing completed extent")?;
+                    let valid_id = |id: &str| {
+                        !id.is_empty() && id.len() <= 128 && !id.chars().any(char::is_control)
+                    };
+                    if manifest["version"] != 2
+                        || timing["version"] != 1
+                        || tracks.is_empty()
+                        || tracks.len() > 16
+                        || tracks.iter().collect::<HashSet<_>>().len() != tracks.len()
+                        || tracks.iter().any(|id| !valid_id(id))
+                        || !valid_id(&project_id)
+                        || !valid_id(&import_id)
+                        || output_end_frame < 0
+                    {
+                        return Err("Invalid completed recording metadata".into());
+                    }
+                    Ok(Candidate {
+                        kind: "complete".into(),
+                        import_id,
+                        group: name,
+                        project_id,
+                        tracks,
+                        output_end_frame,
+                        recovered: false,
                     })
-                    .collect::<Result<Vec<_>>>()?;
-                let project_id = timing["intent"]["projectId"]
-                    .as_str()
-                    .ok_or("Missing completed project")?
-                    .to_owned();
-                let import_id = timing["intent"]["context"]["scope"]
-                    .as_str()
-                    .ok_or("Missing completed run")?
-                    .to_owned();
-                let output_end_frame = timing["output"]["endQueuedFrame"]
-                    .as_i64()
-                    .ok_or("Missing completed extent")?;
-                let valid_id = |id: &str| {
-                    !id.is_empty() && id.len() <= 128 && !id.chars().any(char::is_control)
-                };
-                if manifest["version"] != 2
-                    || timing["version"] != 1
-                    || tracks.is_empty()
-                    || tracks.len() > 16
-                    || tracks.iter().collect::<HashSet<_>>().len() != tracks.len()
-                    || tracks.iter().any(|id| !valid_id(id))
-                    || !valid_id(&project_id)
-                    || !valid_id(&import_id)
-                    || output_end_frame < 0
-                {
-                    return Err("Invalid completed recording metadata".into());
+                })();
+                match completed {
+                    Ok(candidate) => {
+                        if project.is_none_or(|id| id == candidate.project_id) {
+                            result.candidates.push(candidate);
+                        }
+                    }
+                    Err(_) => result.rejected += 1,
                 }
-                Ok(Candidate {
-                    kind: "complete".into(),
-                    import_id,
-                    group: name,
-                    project_id,
-                    tracks,
-                    output_end_frame,
-                    recovered: false,
-                })
-            })();
-            match completed {
-                Ok(candidate) => result.candidates.push(candidate),
+                continue;
+            }
+            match load_checkpoint(&path) {
+                Ok(c) => {
+                    if project.is_none_or(|id| id == c.plan.intent.project_id) {
+                        result.candidates.push(Candidate {
+                            kind: "interrupted".into(),
+                            import_id: c.plan.intent.context.scope,
+                            group: name,
+                            project_id: c.plan.intent.project_id,
+                            tracks: c.plan.inputs.into_iter().map(|(id, _)| id).collect(),
+                            output_end_frame: c.output.end_queued_frame,
+                            recovered: path.join(DESTINATION).try_exists().unwrap_or(false),
+                        });
+                    }
+                }
                 Err(_) => result.rejected += 1,
             }
-            continue;
         }
-        match load_checkpoint(&path) {
-            Ok(c) => result.candidates.push(Candidate {
-                kind: "interrupted".into(),
-                import_id: c.plan.intent.context.scope,
-                group: name,
-                project_id: c.plan.intent.project_id,
-                tracks: c.plan.inputs.into_iter().map(|(id, _)| id).collect(),
-                output_end_frame: c.output.end_queued_frame,
-                recovered: path.join(DESTINATION).try_exists().unwrap_or(false),
-            }),
-            Err(_) => result.rejected += 1,
-        }
+        result.candidates.sort_by(|a, b| a.group.cmp(&b.group));
+        Ok(result)
     }
-    result.candidates.sort_by(|a, b| a.group.cmp(&b.group));
-    Ok(result)
+}
+pub fn discover(root: &Path) -> Result<Discovery> {
+    Scanner::open(root)?.page(Verification::default())
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -439,6 +477,14 @@ pub struct Recovered {
 /// Fresh derived copies only. No completed.json marker: interrupted recording is
 /// always labelled incomplete, even with independently verified aligned placement.
 pub fn recover(root: &Path, id: &str, cancel: &AtomicBool) -> Result<(PathBuf, Recovered)> {
+    recover_checked(root, id, Verification::new(cancel, None))
+}
+pub fn recover_checked(
+    root: &Path,
+    id: &str,
+    verification: Verification<'_>,
+) -> Result<(PathBuf, Recovered)> {
+    verification.check()?;
     let source = managed_group(root, id)?;
     if source.join("completed.json").symlink_metadata().is_ok() {
         return Err("Recording already has a completed manifest; reconcile it instead".into());
@@ -446,14 +492,14 @@ pub fn recover(root: &Path, id: &str, cancel: &AtomicBool) -> Result<(PathBuf, R
     let checkpoint = load_checkpoint(&source)?;
     let destination = source.join(DESTINATION);
     if destination.symlink_metadata().is_ok() {
-        return load_recovered(&source);
+        return load_recovered_checked(&source, verification);
     }
     let staged = io(tempfile::Builder::new()
         .prefix(".native-recovery-")
         .tempdir_in(&source))?;
     let (mut clips, mut reasons, mut frames) = (Vec::new(), Vec::new(), 0u64);
     for (track_id, name) in &checkpoint.plan.inputs {
-        if cancel.load(Ordering::Acquire) {
+        if verification.cancelled() {
             return Err("Recording recovery cancelled".into());
         }
         let input = source.join(name);
@@ -463,7 +509,7 @@ pub fn recover(root: &Path, id: &str, cancel: &AtomicBool) -> Result<(PathBuf, R
         let take = recording::recover_aligned(
             &input,
             &output,
-            cancel,
+            verification,
             checkpoint.output.clock()?,
             checkpoint.output.end_queued_frame,
             checkpoint.plan.intent.max_drift_frames,
@@ -482,11 +528,12 @@ pub fn recover(root: &Path, id: &str, cancel: &AtomicBool) -> Result<(PathBuf, R
         });
         reasons.push(take.stopped_reason);
     }
-    let timing = super::timing::build(
+    let timing = super::timing::build_checked(
         staged.path(),
         &clips,
         &checkpoint.plan.intent,
         &checkpoint.output,
+        verification,
     )?;
     let manifest = Manifest {
         version: 2,
@@ -501,7 +548,7 @@ pub fn recover(root: &Path, id: &str, cancel: &AtomicBool) -> Result<(PathBuf, R
         reasons,
     };
     write(&staged.path().join(RECEIPT), &recovered, false)?;
-    if cancel.load(Ordering::Acquire) {
+    if verification.cancelled() {
         return Err("Recording recovery cancelled".into());
     }
     io(fs::rename(staged.path(), &destination))?;
@@ -509,6 +556,13 @@ pub fn recover(root: &Path, id: &str, cancel: &AtomicBool) -> Result<(PathBuf, R
     Ok((destination, recovered))
 }
 pub fn load_recovered(source: &Path) -> Result<(PathBuf, Recovered)> {
+    load_recovered_checked(source, Verification::default())
+}
+fn load_recovered_checked(
+    source: &Path,
+    verification: Verification<'_>,
+) -> Result<(PathBuf, Recovered)> {
+    verification.check()?;
     let checkpoint = load_checkpoint(source)?;
     let path = source.join(DESTINATION);
     directory(&path)?;
@@ -538,7 +592,7 @@ pub fn load_recovered(source: &Path) -> Result<(PathBuf, Recovered)> {
         }
         directory(&path.join(name))?;
     }
-    super::timing::verify(&path, &recovered.manifest.clips, timing)?;
+    super::timing::verify_checked(&path, &recovered.manifest.clips, timing, verification)?;
     Ok((path, recovered))
 }
 #[cfg(test)]

@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## 0.13.38 — 2026-10-18 (local preview)
+
+- Make native recovery an owned, cancellable job with visible block-verification progress. Cancel, closing settings, changing project or starting playback prevents late insertion; window/app shutdown cancels and joins workers.
+- Add bounded discovery pages with project filtering and a Next action. Each page scans at most 512 entries and returns at most 64 candidates; old pages are replaced rather than accumulated in memory.
+- Keep rate-converted recovery reviews in memory. Persist converted WAVs only on explicit Import, retain original provenance, and keep all-file preparation plus the import receipt in one Undo transaction.
+- Keep originals intact on failure/cancel. Cancellation is cooperative between file-work blocks; an active filesystem call can finish first. Helper-opening and physical recording qualification remain pending.
+
 ## 0.13.37 — 2026-10-18 (local preview)
 
 - Add a collapsed Recovery section in Mac recording settings: find recordings for the current project, review verified files, then explicitly import all takes with one Undo action. Show unavailable targets and mark interrupted takes incomplete.

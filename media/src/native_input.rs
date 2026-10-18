@@ -17,6 +17,7 @@ pub mod recording;
 pub mod recovery;
 pub mod session;
 pub mod timing;
+pub mod verification;
 use std::{
     cell::{Cell, UnsafeCell},
     marker::PhantomData,

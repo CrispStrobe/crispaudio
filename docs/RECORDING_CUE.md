@@ -121,6 +121,8 @@ receipts are saved with the project to prevent duplicate insertion; Undo removes
 the import and its receipt. Originals stay on disk. For older portable projects
 without receipts/source provenance, compare existing takes before importing.
 
-Search is currently bounded; a message indicates omitted older entries. Closing
-settings cancels frontend loading/import, although backend file verification can
-finish in the background. No usable timing means no automatic aligned recovery.
+Each search page is bounded; **Next** continues the same project-filtered search.
+Review shows block-verification progress. Use Cancel or close settings to stop the
+owned job; verification stops between blocks, while an active disk call can finish
+first. Refresh the list after recording or archive changes. Converted audio stays
+in memory during Review and is persisted only on explicit Import. No usable timing means no automatic aligned recovery.

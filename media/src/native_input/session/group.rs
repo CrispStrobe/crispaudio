@@ -4,6 +4,7 @@ use super::{
     cue::{CueConfig, StreamBudget, MAX_GROUP_INSERTS},
     Capture, Config, Outcome, Report, Session, MAX_TAKE_FRAMES,
 };
+use crate::native_input::verification::Verification;
 use crate::{
     native_input::{plugins::PluginConfig, recording::TakeInfo, CueOutput, InputWriter},
     Result,
@@ -559,6 +560,13 @@ impl<C: Capture> Drop for Group<C> {
 /// manifest yields no clips; individual recording prefixes remain recoverable.
 /// Assumes an app-owned directory, not an adversarial filesystem security boundary.
 pub fn load_completed(directory: &Path) -> Result<Manifest> {
+    load_completed_checked(directory, Verification::default())
+}
+pub fn load_completed_checked(
+    directory: &Path,
+    verification: Verification<'_>,
+) -> Result<Manifest> {
+    verification.check()?;
     let path = directory.join(MANIFEST);
     let metadata = io(fs::symlink_metadata(&path))?;
     if !metadata.is_file() || metadata.len() > MAX_MANIFEST_BYTES {
@@ -585,6 +593,7 @@ pub fn load_completed(directory: &Path) -> Result<Manifest> {
     let mut audio_paths = HashSet::new();
     let mut frames = 0u64;
     for clip in &manifest.clips {
+        verification.check()?;
         let parts = Path::new(&clip.audio).components().collect::<Vec<_>>();
         let valid_path = parts.len() == 2
             && matches!(parts[0],Component::Normal(name) if name.to_str().is_some_and(|n| n.starts_with("native-take-")))
@@ -635,7 +644,12 @@ pub fn load_completed(directory: &Path) -> Result<Manifest> {
         }
     }
     if let Some(timing) = &manifest.timing {
-        crate::native_input::timing::verify(directory, &manifest.clips, timing)?;
+        crate::native_input::timing::verify_checked(
+            directory,
+            &manifest.clips,
+            timing,
+            verification,
+        )?;
     }
     Ok(manifest)
 }
