@@ -636,3 +636,20 @@ Known symlinks are rejected; these app-owned filesystem checks do not establish
 a boundary against hostile concurrent directory mutation. Ordinary recording persistence is unchanged; these transactions cover recovery
 Import conversions. This work adds no audio-device access or physical timing
 qualification.
+
+## First-use permission and isolated qualification — 0.13.41
+
+An explicit native Record action calls `authorizeNativeRecording` when the native
+permission state is Undetermined. WebKit obtains the OS grant, then every track of
+that temporary stream is stopped before native inventory is rechecked and the
+selected native input opens. No samples, clocks or device mappings from that
+permission stream are used for recording. Authorized inputs skip the stream;
+denied/restricted access is not reprompted. Stop/project change rejects late
+permission results, and inventory/settings remain read-only. The backend still
+requires existing native authorization; capture callbacks never request consent.
+
+The [qualification protocol](NATIVE_RECORDING_QUALIFICATION.md) uses a separate Mac
+debug profile with isolated bundle/app-data and WebKit identities. The preparer
+verifies the actual embedded context before launch, not only a plist label. The
+production/release identity is unchanged. The preview launch does not establish
+physical recording, speech/playback, timing, load/hot-plug or signed iOS acceptance.

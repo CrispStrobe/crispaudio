@@ -1,6 +1,6 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-18, for candidate 0.13.40 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-18, for candidate 0.13.41 (installed baseline 0.13.33). This section is the current plan.
 Start with [the engineering handoff](docs/WORK_HANDOFF.md) for scoped tasks N1–N5,
 acceptance criteria and the remaining accepted product backlog.
 The implementation records below are historical; their old missing-feature lists
@@ -78,7 +78,9 @@ bounded project-filtered discovery pages and converted-file persistence on expli
 Import. Version 0.13.39 interrupts cue/backing startup on Stop/Cancel and tests
 blocked subprocess cleanup, including late registration. Version 0.13.40 stages
 new recovery conversions with owned rollback/retention receipts and bounded
-abandoned-transaction cleanup. Physical acceptance remains N5. Unreceipted legacy
+abandoned-transaction cleanup. Version 0.13.41 adds Record-triggered first-use permission and an isolated Mac
+qualification preview. Physical acceptance remains N5; follow
+[the qualification protocol](docs/NATIVE_RECORDING_QUALIFICATION.md). Unreceipted legacy
 files and uncertain successful publication are retained, pending reference-aware
 asset management rather than heuristic deletion. See the handoff for the precise continuation.
 

@@ -1220,3 +1220,21 @@ ownership of pre-0.13.40 files in recordings. Collection/command I/O runs off UI
 audio threads; active file writes finish before rollback. Bind lifecycle cleanup
 in main window destruction/app exit AFTER audio owners close; file cleanup must
 not delay capture shutdown. Protect precedes observable editor references.
+
+### Native qualification and first-use permission (0.13.41)
+
+Read docs/NATIVE_RECORDING_QUALIFICATION.md before device checks. Build/launch the
+isolated Mac preview via npm run native:preview -- --launch, preserving installed
+sessions. Profile has a separate identifier/product and no file associations.
+Mac debug app_context sets its 16-byte WebKit store only for that exact preview
+identifier; current SDK config token generation incorrectly emits Vec for the
+array field, so do not restore dataStoreIdentifier to the JSON overlay. The
+preparer checks actual embedded config through --print-native-preview-identity,
+which exits before constructing owners/windows. Null/empty file associations mean
+none. Verification-only does not establish source freshness; default build does.
+
+Only TimelineRecording's explicit Record action calls authorizeNativeRecording.
+Undetermined access uses getUserMedia for permission, stops ALL tracks before
+native requery/open, and rejects late work on Stop/project changes. Already
+Authorized skips browser capture; Denied/Restricted do not loop permission prompts.
+Never connect that permission stream or browser timestamps to native take timing.

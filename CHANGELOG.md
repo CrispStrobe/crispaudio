@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+## 0.13.41 — 2026-10-18 (local preview)
+
+- Let an explicit native Record action obtain first-use microphone permission. Release the temporary browser permission stream before native input opens; Stop or project changes suppress late capture. Inventory stays read-only; denied/restricted access keeps the system-settings guidance.
+- Add a separate Mac native qualification preview with isolated bundle/app-data and WebKit identities, no project associations, and verified local sandbox/helper signing. Verify its embedded context before opening a window; the installed session stays separate.
+- Add the physical qualification protocol. Generated tests and preview launch do not establish microphone, listening, placement or device/load acceptance.
+
 ## 0.13.40 — 2026-10-18 (local preview)
 
 - Stage recovery-import conversions in owned transactions. Failed preparation, cancellation or stale projects roll back their converted WAVs without touching native originals or changing the editor.

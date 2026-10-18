@@ -50,3 +50,15 @@ it('offers one live cue section with unique slider IDs while recording',async()=
 it('keeps ownership when a UI flag resets and stops the existing native run instead of opening another',async()=>{
  renderRecording();fireEvent.click(screen.getByRole('button',{name:'recording.start'}));await waitFor(()=>expect(mocks.status).toHaveBeenCalled());act(()=>useUIStore.setState({timelineRecording:false}));fireEvent.click(screen.getByRole('button',{name:'recording.start'}));await waitFor(()=>expect(mocks.stop).toHaveBeenCalledWith(false));expect(mocks.start).toHaveBeenCalledTimes(1);
 });
+
+it('Record grants first-use microphone permission and closes the browser stream before native start',async()=>{
+ const stop=vi.fn(),get=vi.fn(async()=>({getTracks:()=>[{stop}]}));
+ vi.stubGlobal('navigator',{mediaDevices:{getUserMedia:get,enumerateDevices:vi.fn(async()=>[]),addEventListener:vi.fn(),removeEventListener:vi.fn()}});
+ mocks.inputs.mockResolvedValueOnce({permission:'Undetermined',devices:[]}).mockResolvedValue({permission:'Authorized',devices:[]});mocks.start.mockImplementation(async()=>{expect(stop).toHaveBeenCalledTimes(1);});
+ try{renderRecording();expect(get).not.toHaveBeenCalled();fireEvent.click(screen.getByRole('button',{name:'recording.start'}));await waitFor(()=>expect(mocks.status).toHaveBeenCalled());expect(get).toHaveBeenCalledTimes(1);expect(mocks.capture).not.toHaveBeenCalled();fireEvent.click(screen.getByRole('button',{name:'recording.stop'}));await waitFor(()=>expect(useUIStore.getState().timelineRecording).toBe(false));}finally{vi.unstubAllGlobals();}
+});
+it('transport Stop while permission is pending releases its late stream without starting native recording',async()=>{
+ let release!:(value:unknown)=>void;const stop=vi.fn(),get=vi.fn(()=>new Promise(resolve=>{release=resolve;}));
+ vi.stubGlobal('navigator',{mediaDevices:{getUserMedia:get,enumerateDevices:vi.fn(async()=>[]),addEventListener:vi.fn(),removeEventListener:vi.fn()}});mocks.inputs.mockResolvedValue({permission:'Undetermined',devices:[]});
+ try{renderRecording();fireEvent.click(screen.getByRole('button',{name:'recording.start'}));await waitFor(()=>expect(get).toHaveBeenCalled());act(()=>window.dispatchEvent(new Event('crispaudio-transport-stop')));await waitFor(()=>expect(useUIStore.getState().timelineRecording).toBe(false));await act(async()=>release({getTracks:()=>[{stop}]}));await waitFor(()=>expect(stop).toHaveBeenCalledTimes(1));expect(mocks.start).not.toHaveBeenCalled();expect(mocks.status).not.toHaveBeenCalled();}finally{vi.unstubAllGlobals();}
+});

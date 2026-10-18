@@ -18,11 +18,37 @@ use tauri::Manager;
 
 // One context expansion also embeds the Mac Info.plist exactly once.
 pub(crate) fn app_context() -> tauri::Context<tauri::Wry> {
-    tauri::generate_context!()
+    let context = tauri::generate_context!();
+    #[cfg(all(debug_assertions, target_os = "macos"))]
+    let context = {
+        let mut context = context;
+        if context.config().identifier == "com.crispstrobe.crispaudio.native-preview" {
+            // tauri-utils' config token generator emits Vec<u8> for this [u8;16]
+            // field. Set it after context generation, before any window opens.
+            for window in &mut context.config_mut().app.windows {
+                window.data_store_identifier = Some(*b"CrispAudioQA0001");
+            }
+        }
+        context
+    };
+    context
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // The preview preparer verifies the EMBEDDED config before allowing a window
+    // to open. This read-only debug command constructs no app/audio/file owners.
+    #[cfg(all(debug_assertions, target_os = "macos"))]
+    if std::env::args().any(|arg| arg == "--print-native-preview-identity") {
+        let context = app_context();
+        let config =
+            serde_json::to_value(context.config()).expect("Cannot read embedded app config");
+        println!(
+            "{}",
+            serde_json::json!({"identifier":config["identifier"],"productName":config["productName"],"version":config["version"],"dataStoreIdentifier":config["app"]["windows"][0]["dataStoreIdentifier"],"fileAssociations":config["bundle"]["fileAssociations"]})
+        );
+        return;
+    }
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())

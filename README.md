@@ -111,7 +111,8 @@ ranges, loop takes and simultaneous capture into up to eight armed tracks. Input
 measure a real return path, or you can enter a known correction.
 
 On Mac, **Input → Mode → Native · Preview** uses a native audio clock, explicit
-input channels and a separate monitor output. The existing Record button and
+input channels and a separate monitor output. First-use Record asks for microphone
+access; device selection does not. The existing Record button and
 meters work in either mode. Stop also cancels native helper preparation. During native recording, **Monitor mix** adjusts backing
 and output levels, mute and each prepared input cue without changing the project
 or dry recordings. Type exact fader values; muted faders remember their level.
@@ -374,3 +375,8 @@ processing and the CLI in `media/`. Tests are in `tests/` and `scripts/`.
 
 MIT. Dependencies, plugins, external tools and ASR models retain their own licenses.
 See the app's About view and [third-party licensing](docs/MEDIA_FORMATS_AND_LICENSES.md).
+
+For Mac native recording qualification, `npm run native:preview -- --launch` builds
+and opens a separate sandboxed preview with its own settings and recovery data.
+The installed app stays separate. See the [qualification protocol](docs/NATIVE_RECORDING_QUALIFICATION.md)
+for requirements and the checks still needed.

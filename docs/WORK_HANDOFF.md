@@ -19,7 +19,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33; source/local candidate 0.13.40 adds the
+The installed baseline remains 0.13.33; source/isolated preview 0.13.41 adds the
 opt-in native recording preview described below. The established baseline includes timeline/video editing,
 recording/takes/comping, compact recording controls and meters, source restoration,
 FX-aware segment waveforms within documented limits, native Mac AU/VST3 playback
@@ -29,7 +29,7 @@ belong to CrisperWeaver and CometBeat respectively. Imported audio/transcripts s
 editable. Existing MIDI utilities do not imply a MIDI expansion roadmap.
 
 Native recording is now selectable on Mac under **Input → Mode → Native · Preview**
-in the 0.13.40 candidate. Compatible remains the default. Physical qualification
+in the 0.13.41 preview. Compatible remains the default. Physical qualification
 and the remaining N4 tasks below are still open:
 
 | Foundation | Code entry point | Verified scope |
@@ -214,6 +214,15 @@ Remaining N4 work:
 
 ### N5 — Physical and release qualification
 
+Use [NATIVE_RECORDING_QUALIFICATION.md](NATIVE_RECORDING_QUALIFICATION.md) and
+`npm run native:preview -- --launch` on macOS 14+. The .41 isolated preview has its
+own bundle/app-data/WebKit identities and no document associations; it does not
+replace or import the installed session. Plist/signatures AND embedded runtime
+context are verified before a window opens. Only explicit user Record/Play opens
+capture/playback; first-use Record releases its temporary browser permission stream
+before native input. Do not assume launch or generated tests establish speech or
+listening acceptance. Record actual user/device results in the evidence matrix.
+
 - Built-in microphone recording and playback were accepted on the existing app;
   that does not qualify the new native path. Test it separately once N1–N4 work.
 - Measure physical round-trip/placement, long/load/background behavior, output
@@ -252,6 +261,17 @@ The codec assessment is recorded in [MEDIA_FORMATS_AND_LICENSES.md](MEDIA_FORMAT
 No new patent conclusion or distribution restriction is introduced by this checkpoint.
 
 ## Verification at the code checkpoint
+
+The 0.13.41 permission/qualification preview passes **2083 frontend tests/216 files**,
+25 focused tests/3 files, lint, production frontend build and 24 release checks.
+The sandboxed Mac preview bundle passes local helper/signature and embedded identity
+checks and was opened separately from the installed .33 app. No recording/tone/play
+was initiated by the agent; the built-in mic/meter/speech/playback question is still
+awaiting a user result. Do not mark it accepted from launch/generated tests. The
+59 app Rust and 334 media test runs below are unchanged-command/source baselines.
+While the physical response/devices are unavailable, continue the independent
+source FX/restoration sequence rather than repeatedly asking the same check.
+See [preview evidence](evidence/native-recording-qualification-preview.json).
 
 The 0.13.40 conversion-transaction checkpoint passes **2076 frontend tests/215 files**,
 **59 app Rust tests (one hardware case ignored)**, 22 focused tests/3 files, lint and

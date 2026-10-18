@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-18",
+  "version": "0.13.41",
+  "scope": "First-use native Record permission and isolated physical qualification preview",
+  "installedVersion": "0.13.33",
+  "installedSessionPreserved": true,
+  "previewLaunched": true,
+  "agentInitiatedRecording": false,
+  "agentInitiatedToneOrPlayback": false,
+  "checks": {
+    "frontend": {
+      "passed": 2083,
+      "files": 216,
+      "workers": 4,
+      "testTimeoutMs": 20000,
+      "log": "crispaudio-native-qualification-frontend-final.log"
+    },
+    "focused": {
+      "passed": 25,
+      "files": 3,
+      "log": "crispaudio-native-qualification-focused-last.log"
+    },
+    "release": {
+      "passed": 24,
+      "log": "crispaudio-native-qualification-release-final-all.log"
+    },
+    "lint": {
+      "status": "passed",
+      "log": "crispaudio-native-qualification-lint-final.log"
+    },
+    "productionFrontendBuild": "passed",
+    "previewBundle": "passed; config-array SDK generation workaround applied",
+    "previewSigning": "Local ad-hoc sandbox/helper preflight passed",
+    "embeddedIdentity": "Verified before opening any window; distinct bundle and WebKit store; no project associations",
+    "previewVerificationLog": "crispaudio-native-qualification-preview-verify-last.log",
+    "appRustBaseline": {
+      "version": "0.13.40",
+      "passed": 59,
+      "ignored": 1,
+      "note": "Audio/backend commands unchanged; new Mac debug context exercised by the actual preview build/identity inspection",
+      "evidence": "native-recording-conversion-cleanup.json"
+    },
+    "mediaBaseline": {
+      "version": "0.13.39",
+      "passed": 334,
+      "ignored": 16,
+      "note": "Media source unchanged",
+      "evidence": "native-recording-startup-cancel.json"
+    },
+    "livePreviewGuard": "Expected refusal verified against the running preview"
+  },
+  "coverage": [
+    "Authorized access skips the temporary browser permission stream",
+    "Denied/restricted states do not loop permission prompts",
+    "All temporary stream tracks stop before native permission requery/input start",
+    "Stop/project change while permission is pending closes late streams and suppresses native capture",
+    "Main Record integration exercises first-use grant and transport Stop",
+    "Preview profile and embedded identity checks reject production/store/association mismatches",
+    "Separate debug preview uses its own bundle/app-data/WebKit identities; original installed process left running",
+    "Preparer ignores unrelated global target-dir overrides and verifies the actual matching bundle",
+    "Live preview/main-helper detection refuses rebuild/sign before touching an active bundle"
+  ],
+  "physicalAcceptance": {
+    "builtinMicMeterSpeechPlayback": "Awaiting user check in the isolated preview",
+    "placementRoundTrip": "pending",
+    "leadLoopPunch": "pending",
+    "convertedRecoveryAudibleReopen": "pending",
+    "longLoadBackground": "pending",
+    "sleepOutputSwitchHotplug": "pending",
+    "externalDevicesPhysicalIOS": "pending available hardware"
+  },
+  "limitations": [
+    "Preview launch and generated tests do not establish physical listening/latency/device acceptance",
+    "New preview identity needs its own microphone permission on explicit Record",
+    "Ad-hoc preview qualification does not establish Store signing or distribution results",
+    "Verification-only validates an existing matching bundle, not source freshness",
+    "Custom WebKit store qualification requires macOS 14+",
+    "Physical response and private recording paths/content are kept out of public evidence until actual acceptance is reported"
+  ]
+}

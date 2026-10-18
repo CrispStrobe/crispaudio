@@ -1,3 +1,4 @@
+import {authorizeNativeRecording} from '../../audio/plugins/NativeRecordingPermission';
 import {NativeRecordingRecovery} from './NativeRecordingRecovery';
 import {NativeRecordingMix} from './NativeRecordingMix';
 import {NativeRecordingSetup} from './NativeRecordingSetup';
@@ -131,7 +132,9 @@ export function TimelineRecording({engine,audio}:{engine:RefObject<TimelineEngin
     if(nativeSession.current!==active||active.stopping)return;
     const [inventory,outputs]=await Promise.all([NativeTimelineRecording.inputs(),playbackOutputs()]);
     if(nativeSession.current!==active||active.stopping)return;
-    const options=nativeRecordingOptions(spec,inventory,outputs.devices);active.options=options;
+    const authorized=await authorizeNativeRecording(inventory,()=>nativeSession.current===active&&!active.stopping&&useProjectStore.getState().project===snapshot);
+    if(nativeSession.current!==active||active.stopping)return;
+    const options=nativeRecordingOptions(spec,authorized,outputs.devices);active.options=options;
     await controller.start(options);
     if(nativeSession.current!==active||active.stopping)return;
     useProjectStore.getState().setIsPlaying(true);

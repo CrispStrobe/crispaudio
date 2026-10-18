@@ -1660,7 +1660,7 @@
     "refreshDevices": "Geräte aktualisieren",
     "nativeCorrection": "Zeitversatz (ms)",
     "nativeCorrectionHelp": "Zusätzliche native Platzierungskorrektur: Positive Werte verschieben Aufnahmen nach hinten. Sie ist unabhängig von der Kalibrierung der kompatiblen Aufnahme und von Abhör- oder Plug-in-Verzögerungen. Null gilt bis zur Messung als unkalibriert.",
-    "nativePermission": "Mikrofonzugriff erforderlich. Über „Verbinden“ bei der kompatiblen Aufnahme erlauben oder CrispAudio in macOS unter Datenschutz & Sicherheit → Mikrofon freigeben.",
+    "nativePermission": "Mikrofonzugriff zum Aufnehmen erlauben. Falls gesperrt: in macOS unter Datenschutz & Sicherheit → Mikrofon freigeben.",
     "nativeOutputMissing": "Die gewählte native Ausgabe ist nicht verfügbar. In den Aufnahmeeinstellungen eine andere Ausgabe wählen.",
     "nativeInputMissing": "Der gewählte native Eingang ist nicht verfügbar. In den Aufnahmeeinstellungen einen anderen Eingang wählen.",
     "nativeChannels": "Die gewählten Eingangskanäle sind nicht verfügbar. Aufnahmeeinstellungen prüfen.",

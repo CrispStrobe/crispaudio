@@ -1647,7 +1647,7 @@
     "refreshDevices": "Refresh devices",
     "nativeCorrection": "Placement offset (ms)",
     "nativeCorrectionHelp": "Additional native placement adjustment: positive values move recordings later. This is separate from compatible recording calibration and monitoring or plug-in delay. Zero is uncalibrated until measured.",
-    "nativePermission": "Microphone access is required. Use the compatible recorder’s Connect button to grant access, or enable CrispAudio in macOS Privacy & Security → Microphone.",
+    "nativePermission": "Allow microphone access to record. If blocked, enable it in macOS Privacy & Security → Microphone.",
     "nativeOutputMissing": "The chosen native output is unavailable. Select another output in recording settings.",
     "nativeInputMissing": "The chosen native input is unavailable. Select another input in recording settings.",
     "nativeChannels": "The chosen input channels are unavailable. Check recording settings.",

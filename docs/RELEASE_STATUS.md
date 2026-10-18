@@ -5,6 +5,28 @@ an iOS or macOS build to Apple. Repository web deployments use their own trigger
 external hosting integrations may differ. No release tag or Apple upload was
 triggered for this local checkpoint.
 
+## Isolated native qualification preview — 0.13.41
+
+First-use native Record now obtains microphone permission through WebKit, stops
+all temporary stream tracks, rechecks native authorization and then opens the
+selected native input. Stop/project changes suppress late capture; inventory does
+not prompt and denied/restricted access keeps system-settings guidance.
+
+A separate sandboxed Mac debug preview uses its own bundle/app-data identity and
+WebKit store, with no project-file associations. The preparer verifies plist,
+helper signatures and the actual embedded context before opening any window.
+The installed 0.13.33 process/session remains separate and running. The local
+preview was opened; no recording, tone or playback was initiated by the agent.
+The first built-in mic/meter/speech/playback check is awaiting a user result.
+
+Validation: 2083 frontend tests/216 files, 25 focused permission/recording tests in
+3 files, full lint, production frontend build, Mac preview bundle and local ad-hoc
+sandbox/helper/identity checks pass. Release checks pass 24 tests. Audio/backend
+commands and media source are unchanged; their prior 59/334-test runs remain
+baselines, not new hardware evidence. No normal installed-app replacement or Apple
+upload. [Preview evidence](evidence/native-recording-qualification-preview.json) ·
+[Physical protocol](NATIVE_RECORDING_QUALIFICATION.md).
+
 ## Owned recovery conversions — 0.13.40 candidate
 
 New recovery-import conversions use window-owned transactions with filesystem
