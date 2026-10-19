@@ -1,6 +1,6 @@
 [package]
 name = "crispaudio"
-version = "0.13.56"
+version = "0.13.57"
 description = "CrispAudio - Integrated Audio Workstation"
 authors = ["CrispStrobe"]
 license = "MIT"
@@ -14,6 +14,7 @@ name = "crispaudio_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
+crispaudio-native-helper-build = { path = "../scripts/native-helper-build" }
 tauri-build = { version = "2.6.2", features = [] }
 
 [dependencies]
@@ -56,3 +57,10 @@ native-validation = ["crispaudio-media/native-engine"]
 name = "crispaudio-native-validation"
 path = "src/bin/native_validation.rs"
 required-features = ["native-validation"]
+
+# Content hashing is used by build scripts, including unoptimized app builds.
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package.crispaudio-native-helper-build]
+opt-level = 3

@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [Tauri native command IPC, 0.13.56](#tauri-native-command-ipc--01356-checkpoint). The active product
+Current checkpoint: [Native helper build cache, 0.13.57](#native-helper-build-cache--01357-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,9 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.56 tests native commands
+The installed baseline remains 0.13.33. Source 0.13.57 shares a verified native-helper
+build cache between embedded helpers and staged Mac sidecars; see the latest
+checkpoint below. Source 0.13.56 tests native commands
 through actual Tauri dispatch with a mock runtime; start at the latest checkpoint
 below. Source 0.13.55 closes native admission
 before teardown and tests the production owner registry; start at the latest
@@ -1254,3 +1256,60 @@ still uses real output. Do not confuse it with a hardware-free Wry runtime mode.
 
 No installed app, microphone, output-device setting or live session is changed by
 these tests. Product boundaries with CometBeat and CrisperWeaver stay in force.
+
+
+## Native helper build cache — 0.13.57 checkpoint
+
+The shared build-only crate [`scripts/native-helper-build`](../scripts/native-helper-build/README.md)
+replaces duplicate unconditional Swift/VST3 compilation. Embedded development
+helpers and staged sidecars reuse one verified generation under the existing
+Cargo target. Its content key covers source/vendor files, the complete selected
+SDK/toolchain, target and the recipe/flags. No timestamp-only shortcut or adoption
+of old unreceipted binaries is used. Full hashing has a warm-build I/O cost;
+optimized hashing and canonical-file deduplication keep that bounded by the inputs.
+Compiler module caches stay in owned temporary directories and are discarded.
+
+A process lock protects verification/publication/staging. Outputs require matching
+SHA-256, executable permissions and the requested Mach-O architecture. Failed builds
+preserve the previous cache/output. Atomic cache publication and individually
+atomic copies recover after interruption; copies are separate files so bundle
+signing cannot mutate the cache. A successful build stages both helpers, but the
+two output copies are not one filesystem transaction. Only one cache generation
+is retained. See the crate README for reuse, cleanup and regression commands.
+
+Validation results are recorded in [cache evidence](evidence/native-helper-build-cache.json).
+No live bundle, audio device, microphone, installation or Apple submission is part
+of this source checkpoint. The installed baseline and isolated recording preview
+remain separate from the new source version.
+
+### Continue in this order
+
+1. **Real Wry/WebKit and OS events:** use a separate isolated identity/setup to
+   qualify binary upload/close and actual window-destroy/exit delivery, preserving
+   running sessions. Snapshot-only checks can progress without starting playback.
+   The .56 MockRuntime factory cannot silence Wry; Wry still opens real output.
+2. **Combined DSP/command ownership:** connect a dedicated test-only null sink to
+   actual command/owner handling with hardware traps. Cover recording-command
+   exclusion, delayed start/close, teardown and zero retained snapshots/helpers.
+   Keep .54 UI/DSP and .56 mock IPC evidence separate until this is qualified.
+3. **Physical N5:** selected outputs, hotplug/device/helper failure, clocks,
+   latency/listening and sustained load. Retain Rendered default and Native opt-in;
+   do not repeat the pending isolated recording question or automate microphones.
+4. **Independent source editing:** explicit mono/rate/range/state parity before
+   broadening native admission; bounded native effect waveform snapshots;
+   original-based recipe reprocessing; scale/memory, restoration and reversible
+   freeze acceptance. Scope remains in .54 and the gap analysis. Composition and
+   ASR/TTS creation stay with CometBeat and CrisperWeaver.
+
+The build-turnaround task from .56 is implemented here. Future cache work should
+follow measured defects: preserve complete keys, corruption detection, signing
+isolation, a single current generation and source freshness when improving speed.
+
+Validation for .57: **13 cache tests**, full Mac app library **81 passed / 8 ignored**,
+non-test Mac library check, production frontend build, lint, formatting and **24
+release checks** pass. The fresh check took 213.64 seconds; a forced rerun of both
+build scripts took 94.50 seconds with two cache hits and no helper compilation.
+These are observations on a busy host, not a controlled benchmark. The published
+cache is 916,520 bytes. Actual embedded/staged/alias checksums match, with staging
+inodes separate from the cache. The full frontend suite and actual AU/VST DSP
+fixtures were not rerun; prior evidence remains separate.

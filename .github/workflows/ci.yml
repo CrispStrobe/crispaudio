@@ -80,6 +80,9 @@ jobs:
         if: runner.os == 'macOS'
         run: python3 tests/release/test_macos_signing_actual.py
 
+      - name: Native helper cache regression tests
+        run: cargo test --manifest-path scripts/native-helper-build/Cargo.toml --target-dir src-tauri/target --locked
+
       - name: cargo check
         working-directory: src-tauri
         run: cargo check

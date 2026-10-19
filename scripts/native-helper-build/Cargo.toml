@@ -1,0 +1,15 @@
+[package]
+name = "crispaudio-native-helper-build"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+sha2 = "0.10.9"
+
+# Content hashing is used by build scripts, including unoptimized app builds.
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package.crispaudio-native-helper-build]
+opt-level = 3

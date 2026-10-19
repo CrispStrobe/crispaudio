@@ -6,6 +6,7 @@ dist/
 dist-ssr/
 src-tauri/target/
 /scripts/native-source-clock/target/
+/scripts/native-helper-build/target/
 
 # IDE
 .vscode/*

@@ -1,6 +1,14 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.56 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.57 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.57 shares a **verified native-helper build cache** between embedded helpers
+and Mac sidecars. Complete source/vendor/SDK/toolchain/target/recipe content keys,
+executable/architecture/checksum validation, process locking and atomic publication
+replace unconditional duplicate Swift/VST3 compilation. One generation lives in
+the existing Cargo target; signing staged copies cannot mutate it. Source/UI/audio
+behavior remains at the previous checkpoint; hardware/runtime acceptance stays open.
+[Current handoff](docs/WORK_HANDOFF.md#native-helper-build-cache--01357-checkpoint).
 
 0.13.56 tests the **actual Tauri snapshot/playback command handlers** with
 MockRuntime windows, managed state, JSON arguments and raw CPS1 bodies. Private

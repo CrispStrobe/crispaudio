@@ -813,9 +813,10 @@ dependencies = [
 
 [[package]]
 name = "crispaudio"
-version = "0.13.56"
+version = "0.13.57"
 dependencies = [
  "crispaudio-media",
+ "crispaudio-native-helper-build",
  "hound",
  "libc",
  "log",
@@ -837,11 +838,19 @@ name = "crispaudio-media"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "crispaudio-native-helper-build",
  "hound",
  "rustfft",
  "serde",
  "serde_json",
  "tempfile",
+]
+
+[[package]]
+name = "crispaudio-native-helper-build"
+version = "0.1.0"
+dependencies = [
+ "sha2",
 ]
 
 [[package]]

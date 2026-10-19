@@ -26,3 +26,13 @@ debug = 0
 [features]
 # Internal native worker graph; not enabled in the CLI or ordinary app.
 native-engine = []
+
+[build-dependencies]
+crispaudio-native-helper-build = { path = "../scripts/native-helper-build" }
+
+# Content hashing is used by build scripts, including unoptimized app builds.
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package.crispaudio-native-helper-build]
+opt-level = 3

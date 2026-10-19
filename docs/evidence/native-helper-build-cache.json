@@ -1,0 +1,105 @@
+{
+  "checkpoint": "0.13.57",
+  "date": "2026-10-19",
+  "status": "qualified source checkpoint",
+  "scope": "Build-only helper cache; no app runtime or audio behavior change",
+  "key_inputs": [
+    "helper source tree",
+    "VST3 vendor source/header tree",
+    "selected SDK tree and build identity",
+    "selected compiler/toolchain tree including resolved symlinks",
+    "Rust target architecture",
+    "build recipe, flags and sanitized compiler environment policy"
+  ],
+  "storage": {
+    "generations_per_cargo_target_root": 1,
+    "published_bytes_observed": 916520,
+    "copies_sdk_or_toolchain": false,
+    "separate_target_directory_created": false,
+    "temporary_module_caches_removed": true
+  },
+  "verification": {
+    "algorithm": "SHA-256",
+    "requires_regular_executable": true,
+    "checks_macho_cpu": true,
+    "cross_process_lock": "flock",
+    "cache_publication": "rename under lock",
+    "output_publication": "individual same-filesystem rename",
+    "staging_uses_hardlinks": false
+  },
+  "observed_mac_checks": {
+    "fresh_check_seconds": 213.64,
+    "forced_warm_check_seconds": 94.5,
+    "fresh_compiles": 1,
+    "fresh_other_caller_cache_hits": 1,
+    "warm_caller_cache_hits": 2,
+    "note": "Wall-clock observations on a busy host, not a controlled performance benchmark; fresh run includes Rust dependency compilation. Warm run forces both build scripts to rerun."
+  },
+  "real_output_consistency": {
+    "target": "aarch64-apple-darwin",
+    "helpers": [
+      {
+        "name": "crispaudio-apple-media",
+        "bytes": 668824,
+        "sha256": "ab530e3018cb1012115842be29de2330ae82f3cffe96e5f9e7d5ac77ca37f776"
+      },
+      {
+        "name": "crispaudio-vst3-host",
+        "bytes": 247464,
+        "sha256": "e04fb4ae079a78df5e7f41b3f2718ed8eb2d8973e572bbf64acd5664519ddf3a"
+      }
+    ],
+    "embedded_matches_cache": true,
+    "sidecar_alias_matches_cache": true,
+    "target_staging_matches_cache": true,
+    "compatibility_copy_matches_cache": true,
+    "staging_inodes_differ_from_cache": true
+  },
+  "tests": {
+    "cache_suite": {
+      "passed": 13,
+      "failed": 0,
+      "includes": [
+        "warm reuse and unchanged staging inode/mtime",
+        "signing-copy isolation",
+        "missing/corrupt/non-executable/wrong-CPU artifacts",
+        "invalid manifest",
+        "failed build preserves prior generation",
+        "single-generation bound",
+        "abandoned publication cleanup",
+        "unmanaged contents refusal",
+        "symlink-target preservation",
+        "concurrent threads",
+        "separate-process single compilation",
+        "killed-process lock release",
+        "source/vendor/SDK/compiler content and target/flag key changes"
+      ]
+    },
+    "non_test_mac_library_check": "passed",
+    "full_mac_library": {
+      "passed": 81,
+      "failed": 0,
+      "ignored": 8,
+      "features": [
+        "native-validation"
+      ],
+      "hardware_and_real_helper_ignored_tests_run": false
+    },
+    "production_web_build": "passed",
+    "lint": "passed",
+    "release_checks": {
+      "passed": 24,
+      "failed": 0
+    },
+    "formatting": "passed",
+    "frontend_full_suite": "Not rerun: only About version changed; prior .54 suite remains separate evidence"
+  },
+  "limits": [
+    "Real build qualified on arm64 Mac only; fixture tests cover architecture rejection. Cross-target builds are staged separately but not physically compiled here.",
+    "Full input hashing still costs I/O; source and toolchain must remain stable during builds.",
+    "Two output copies are individually atomic, not a filesystem transaction.",
+    "Killing a process during output copying may leave an unpublished .helper-stage-* directory in that output directory.",
+    "No helper execution, audio hardware, microphone, live bundle build/signing/install, native runtime or Apple upload qualification.",
+    "Prior .54 frontend/UI-DSP and .56 MockRuntime IPC results remain separate prior evidence."
+  ]
+}

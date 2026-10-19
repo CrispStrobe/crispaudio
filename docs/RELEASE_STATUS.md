@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.56, Tauri native command IPC](#tauri-native-command-ipc--01356-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.57, native helper build cache](#native-helper-build-cache--01357-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4748,3 +4748,29 @@ formatting and **24 release checks** pass. The .54 frontend 2,204-test/233-file 
 those suites were not rerun. No physical audio or native window was opened.
 [Evidence](evidence/tauri-native-command-ipc.json) ·
 [next work](WORK_HANDOFF.md#tauri-native-command-ipc--01356-checkpoint).
+
+
+## Native helper build cache — 0.13.57 source candidate
+
+Both Mac build callers share one content-verified helper cache in the existing
+Cargo target. Complete input keys, process locking, executable/architecture/hash
+checks and atomic publication prevent stale or partial reuse. Embedded helpers
+and sidecar aliases are copied from verified outputs; signing cannot alter cached
+bytes. Compiler module caches are temporary, with only one published generation.
+See the [build-cache README](../scripts/native-helper-build/README.md) and
+[evidence](evidence/native-helper-build-cache.json) for measured validation.
+
+This changes build turnaround, not audio behavior or native feature admission.
+Installed 0.13.33 and isolated 0.13.41 sessions remain intact. No bundle build,
+installation, signing, release tag or Apple upload was performed. Actual Wry/event,
+combined command/DSP and physical N5 acceptance remain open in the
+[current handoff](WORK_HANDOFF.md#native-helper-build-cache--01357-checkpoint).
+
+Validation for .57: **13 cache tests**, full Mac app library **81 passed / 8 ignored**,
+non-test Mac library check, production frontend build, lint, formatting and **24
+release checks** pass. The fresh check took 213.64 seconds; a forced rerun of both
+build scripts took 94.50 seconds with two cache hits and no helper compilation.
+These are observations on a busy host, not a controlled benchmark. The published
+cache is 916,520 bytes. Actual embedded/staged/alias checksums match, with staging
+inodes separate from the cache. The full frontend suite and actual AU/VST DSP
+fixtures were not rerun; prior evidence remains separate.
