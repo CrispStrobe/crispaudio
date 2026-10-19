@@ -1,6 +1,6 @@
 [package]
 name = "crispaudio"
-version = "0.13.55"
+version = "0.13.56"
 description = "CrispAudio - Integrated Audio Workstation"
 authors = ["CrispStrobe"]
 license = "MIT"
@@ -39,6 +39,7 @@ midir = "0.11"
 libc = "=0.2.189"
 
 [dev-dependencies]
+tauri = { version = "2.11.2", features = ["test"] }
 tokio = { version = "1", features = ["rt"] }
 
 [profile.dev.package.crispaudio-media]

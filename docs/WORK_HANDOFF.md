@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [native teardown admission, 0.13.55](#native-teardown-admission--01355-checkpoint). The active product
+Current checkpoint: [Tauri native command IPC, 0.13.56](#tauri-native-command-ipc--01356-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,9 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.55 closes native admission
+The installed baseline remains 0.13.33. Source 0.13.56 tests native commands
+through actual Tauri dispatch with a mock runtime; start at the latest checkpoint
+below. Source 0.13.55 closes native admission
 before teardown and tests the production owner registry; start at the latest
 checkpoint below. Source 0.13.54 adds shared opt-in native
 source controls; start at the latest checkpoint below. Source 0.13.53 adds isolated browser-to-Rust
@@ -1175,3 +1177,80 @@ No app bundle was built/replaced; running sessions and hardware stay untouched.
 
 No feature admission was broadened; the .54 source UI remains opt-in for whole
 stereo 48 kHz clips. CometBeat and CrisperWeaver keep their product boundaries.
+
+
+## Tauri native command IPC — 0.13.56 checkpoint
+
+Snapshot/playback commands now accept `WebviewWindow<R>` for `R: Runtime`; command
+names, argument casing and production behavior stay the same. The ordinary Wry
+path still selects the real output and calls `live::run`. A dev-only Tauri test
+feature enables MockRuntime. A private `cfg(test)` output factory supplies bounded
+synthetic workers only for that runtime; an unconfigured mock fails before device
+lookup, with a separate pre-inventory tripwire. The factory/field do not exist in
+normal app builds. No runtime null setting or new app command was added.
+
+`commands/native_playback/ipc_tests.rs` creates two mock WebviewWindows and invokes
+the actual generated handlers through `tauri::test::get_ipc_response`, with bounded
+caller waits. Tauri supplies window labels and managed production state. Raw CPS1
+upload passes through the real `Request` argument; JSON bodies, wrong casing and
+invalid types follow normal command decoding. Tests cover cross-window snapshot/
+session/control isolation, incomplete/non-finite upload rejection, valid controls,
+recording leases, fault status and error-close release, delayed close replies and
+pending-start retirement via the production cleanup coordinator. Mock workers own
+generated PCM until joined; cleanup checks zero retained entries/bytes. The correct
+macOS app origin is `tauri://localhost`; the minimal mock context rejects a remote
+origin. The mock builder registers this command subset, not the entire shipped
+app builder; this does not validate shipped capabilities or full registration.
+
+Validation: **9 new IPC tests** pass with the normal test build, and the same
+nine pass with **8 parallel threads**. The full Mac library suite with
+`native-validation` passes **81 tests / 8 ignored**. The non-test Mac library
+check with validation features also passes, compiling the real Wry/device path
+without the test factory. Full lint, production frontend build, Rust formatting
+and **24 release checks** pass. The frontend's .54 2,204-test/233-file and browser
+17-session results remain prior evidence; those suites were not rerun.
+[IPC evidence](evidence/tauri-native-command-ipc.json).
+
+On macOS, from the repo root, reusing its existing Cargo target:
+
+```sh
+CARGO_TARGET_DIR="$PWD/src-tauri/target" cargo test \
+  --manifest-path src-tauri/Cargo.toml --locked --lib \
+  commands::native_playback::ipc_tests -- --test-threads=1
+```
+
+No trusted plug-in fixtures are required: these IPC workers never render audio.
+The test factory is used **only by MockRuntime**; even a test-build Wry command
+still uses real output. Do not confuse it with a hardware-free Wry runtime mode.
+
+### Continue in this order
+
+1. **Real runtime/event acceptance:** qualify Wry/WebKit binary IPC and actual
+   native-window destruction/exit using a separate isolated setup, preserving both
+   running apps. Tauri MockRuntime does not deliver OS window events; the test
+   explicitly calls the production teardown coordinator. It does not qualify
+   WebKit resume, native event delivery or shipped capabilities.
+2. **Combined DSP/command acceptance:** connect an isolated, explicit null-output
+   test process to the actual command/owner path, retaining hardware traps. This
+   checkpoint's IPC workers are synthetic; .54 qualifies actual UI/DSP through a
+   separate child-process dispatch double. Do not present the two runs as one
+   end-to-end real-runtime/hardware result. Verify actual native recording command
+   conflicts separately; these tests use the real recording lease without capture.
+3. **Physical N5:** selected speakers/headphones, output changes/disconnect,
+   native helper/device loss, actual clocks/latency/listening and sustained load.
+   Preserve Rendered default, Native opt-in and the existing pending recording
+   question. A muted ordinary Live run still opens hardware; never use it as null.
+4. **Independent source work:** broader rate/channel/range/state parity, bounded
+   native waveform snapshots, original-based recipe reprocessing, scale,
+   restoration and freeze acceptance remain as scoped in .54 and the gap analysis.
+
+5. **Build turnaround and footprint:** `media/build.rs::build_helpers` recompiles
+   Swift and VST3 sources when the root build script reruns for a version/feature
+   change. Add reuse only with a complete source/vendor/toolchain/SDK/target/flags
+   cache key, verified outputs and atomic publication. Keep embedded helpers and
+   staged signed sidecars consistent; never reuse the previously stale AU helper.
+   Test source/SDK/flag invalidation and missing/corrupt outputs. Reuse the existing
+   Cargo target and preserve live app bundles rather than creating another cache.
+
+No installed app, microphone, output-device setting or live session is changed by
+these tests. Product boundaries with CometBeat and CrisperWeaver stay in force.

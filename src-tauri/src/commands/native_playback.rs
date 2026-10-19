@@ -40,7 +40,18 @@ pub struct NativePlayback {
     active: Mutex<Option<Arc<Session>>>,
     sequence: AtomicU64,
     recording: Arc<AtomicBool>,
+    #[cfg(test)]
+    test_output: Mutex<Option<TestOutput>>,
 }
+#[cfg(test)]
+type TestWorker = Box<dyn FnOnce() -> Result<Value, String> + Send>;
+#[cfg(test)]
+type TestOutput = Arc<
+    dyn Fn(Arc<Snapshot>, Arc<LiveControl>, PlaybackRange) -> Result<TestWorker, String>
+        + Send
+        + Sync,
+>;
+
 /// Reservation shares the playback start lock; no two native owners can open
 /// output concurrently. Retain until recording workers and queues have closed.
 pub(crate) struct RecordingLease(Arc<AtomicBool>);
@@ -175,8 +186,8 @@ impl NativePlayback {
     }
 }
 #[tauri::command]
-pub fn native_playback_start(
-    window: tauri::WebviewWindow,
+pub fn native_playback_start<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     state: tauri::State<NativePlayback>,
     snapshots: tauri::State<Snapshots>,
     snapshot: String,
@@ -199,6 +210,23 @@ pub fn native_playback_start(
         snapshot,
         range,
         |snapshot, control| {
+            #[cfg(test)]
+            if std::any::TypeId::of::<R>() == std::any::TypeId::of::<tauri::test::MockRuntime>() {
+                let prepare = state
+                    .test_output
+                    .lock()
+                    .unwrap()
+                    .clone()
+                    .ok_or("Mock native output was not configured")?;
+                return prepare(snapshot, control, range);
+            }
+            // A separate tripwire remains if the mock-only branch is changed.
+            #[cfg(test)]
+            assert_ne!(
+                std::any::TypeId::of::<R>(),
+                std::any::TypeId::of::<tauri::test::MockRuntime>(),
+                "Mock IPC must never enumerate or open an audio device"
+            );
             let devices = crate::commands::audio_output::list_audio_outputs()?;
             let selected = devices
                 .iter()
@@ -206,7 +234,7 @@ pub fn native_playback_start(
                 .ok_or("Selected output is unavailable")?
                 .id
                 .clone();
-            Ok(move || {
+            let run = move || {
                 live::run(
                     snapshot,
                     selected,
@@ -217,22 +245,30 @@ pub fn native_playback_start(
                     muted.unwrap_or(false),
                     control,
                 )
-            })
+            };
+            #[cfg(test)]
+            {
+                Ok(Box::new(run) as TestWorker)
+            }
+            #[cfg(not(test))]
+            {
+                Ok(run)
+            }
         },
     )
 }
 
 #[tauri::command]
-pub fn native_playback_status(
-    window: tauri::WebviewWindow,
+pub fn native_playback_status<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     state: tauri::State<NativePlayback>,
     session: String,
 ) -> Result<Value, String> {
     state.status(window.label(), &session)
 }
 #[tauri::command]
-pub fn native_playback_pause(
-    window: tauri::WebviewWindow,
+pub fn native_playback_pause<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     state: tauri::State<NativePlayback>,
     session: String,
     paused: bool,
@@ -241,8 +277,8 @@ pub fn native_playback_pause(
     Ok(())
 }
 #[tauri::command]
-pub fn native_playback_update(
-    window: tauri::WebviewWindow,
+pub fn native_playback_update<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     state: tauri::State<NativePlayback>,
     session: String,
     controls: Value,
@@ -253,8 +289,8 @@ pub fn native_playback_update(
         .update(controls)
 }
 #[tauri::command]
-pub fn native_playback_reset_loudness(
-    window: tauri::WebviewWindow,
+pub fn native_playback_reset_loudness<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     state: tauri::State<NativePlayback>,
     session: String,
 ) -> Result<(), String> {
@@ -265,8 +301,8 @@ pub fn native_playback_reset_loudness(
     Ok(())
 }
 #[tauri::command]
-pub fn native_playback_volume(
-    window: tauri::WebviewWindow,
+pub fn native_playback_volume<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     state: tauri::State<NativePlayback>,
     session: String,
     volume: f32,
@@ -274,8 +310,8 @@ pub fn native_playback_volume(
     state.get(window.label(), &session)?.control.volume(volume)
 }
 #[tauri::command]
-pub async fn native_playback_close(
-    window: tauri::WebviewWindow,
+pub async fn native_playback_close<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     state: tauri::State<'_, NativePlayback>,
     session: String,
 ) -> Result<Value, String> {
@@ -299,8 +335,8 @@ pub async fn native_playback_close(
 
 #[cfg(feature = "native-validation")]
 #[tauri::command]
-pub fn native_playback_validation_fault(
-    window: tauri::WebviewWindow,
+pub fn native_playback_validation_fault<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     state: tauri::State<NativePlayback>,
     kind: String,
 ) -> Result<(), String> {
@@ -314,3 +350,6 @@ pub fn native_playback_validation_fault(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod ipc_tests;

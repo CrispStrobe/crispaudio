@@ -1,6 +1,16 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.55 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.56 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.56 tests the **actual Tauri snapshot/playback command handlers** with
+MockRuntime windows, managed state, JSON arguments and raw CPS1 bodies. Private
+`cfg(test)` output workers keep the tests hardware-free; no runtime null mode is
+added. Checks cover window labels, malformed/incomplete uploads, controls,
+recording exclusion, fault/error-close cleanup, a blocked close reply and a
+pending start during owner retirement. A minimal mock context also rejects a
+remote origin. This is command-dispatch acceptance, not WebKit/native-window
+behavior, shipped capability validation or actual device/DSP acceptance.
+[Current handoff](docs/WORK_HANDOFF.md#tauri-native-command-ipc--01356-checkpoint).
 
 0.13.55 closes native upload admission **before** joining audio owners on window
 or app teardown. A late command cannot use a retired snapshot; a command already
@@ -9,7 +19,7 @@ The actual production playback registry now has hardware-free admission, owner,
 recording-exclusion and join tests, using synthetic workers and generated PCM.
 The Tauri wrappers retain their existing command contract and real device path.
 Actual IPC/window-event delivery, WebKit and physical acceptance still follow.
-[Current handoff](docs/WORK_HANDOFF.md#native-teardown-admission--01355-checkpoint).
+[Teardown handoff](docs/WORK_HANDOFF.md#native-teardown-admission--01355-checkpoint).
 
 0.13.54 integrates opt-in **Native · Preview** into the Source Editor's shared
 Play/Stop. Whole unretimed stereo 48 kHz clips (2048 frames–120 seconds) support

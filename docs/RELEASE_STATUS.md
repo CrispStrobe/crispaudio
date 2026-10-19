@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.55, native teardown admission](#native-teardown-admission--01355-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.56, Tauri native command IPC](#tauri-native-command-ipc--01356-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4721,3 +4721,30 @@ The frontend's .54 **2,204-test / 233-file** and **17-session browser/null-bridg
 results remain prior evidence; those suites were not rerun for this backend change.
 [Evidence](evidence/native-teardown-admission.json) ·
 [next work](WORK_HANDOFF.md#native-teardown-admission--01355-checkpoint).
+
+
+## Tauri native command IPC — 0.13.56 source candidate
+
+Native snapshot/playback handlers now support generic Tauri runtimes, allowing
+actual command dispatch through MockRuntime windows and managed state. Private
+`cfg(test)` workers keep command tests hardware-free and fail closed without
+explicit configuration. The normal app retains real output/device/DSP behavior;
+there is no runtime null setting or extra command. JSON/raw-body decoding,
+cross-window ownership, controls, recording leases, fault/error-close cleanup and
+pending-start/close retirement are covered. The mock context uses the canonical
+macOS app origin and separately rejects an untrusted remote origin.
+
+This qualifies actual Tauri command decoding/dispatch with mock windows. It does
+not qualify native window-event delivery, WebKit, shipped capabilities, hardware
+routing/clocks/listening/load, actual recording capture or combined command/DSP
+execution. Running app sessions stay unchanged; no native bundle, installation,
+release tag or Apple upload is included.
+
+Validation: **9 focused IPC tests**, the same nine with **8 parallel threads**,
+full Mac app library tests (**81 passed / 8 ignored**), the non-test Mac library
+check with validation features, full lint, production frontend build, Rust
+formatting and **24 release checks** pass. The .54 frontend 2,204-test/233-file and
+17-session actual editor/null-bridge results remain separate prior evidence;
+those suites were not rerun. No physical audio or native window was opened.
+[Evidence](evidence/tauri-native-command-ipc.json) ·
+[next work](WORK_HANDOFF.md#tauri-native-command-ipc--01356-checkpoint).

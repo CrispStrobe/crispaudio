@@ -1,0 +1,76 @@
+{
+  "version": "0.13.56",
+  "date": "2026-10-19",
+  "hardwareOpened": false,
+  "scope": "Actual Tauri generated snapshot/playback command handlers, argument/body decoding, managed state and MockRuntime WebviewWindow labels",
+  "production": [
+    "native_snapshot_begin/write/seal/status/close handlers",
+    "native_playback_start/status/update/pause/volume/reset_loudness/close handlers",
+    "Snapshots CPS1 validation and budget registry",
+    "NativePlayback owner admission, recording lease and join/result cleanup",
+    "native_audio_lifecycle close_owner coordinator"
+  ],
+  "simulated": [
+    "Tauri MockRuntime windows instead of Wry/WebKit/OS windows",
+    "Private cfg(test)-only output workers; no DSP/device preparation",
+    "Minimal mock context and subset handler registration instead of the shipped app builder"
+  ],
+  "guards": [
+    "MockRuntime without an output factory fails before device lookup",
+    "Separate pre-inventory mock-runtime assertion",
+    "No output factory field/type in non-test app builds",
+    "Bounded caller/worker waits; fixture shutdown uses production cleanup",
+    "No recording capture command registered or permission requested"
+  ],
+  "ipcTests": [
+    "Raw CPS1 begin/write/seal, sparse controls and owned close",
+    "Cross-window upload/session/control isolation through injected window labels",
+    "JSON-instead-of-binary, malformed/non-finite/incomplete PCM and incorrect argument casing/types",
+    "Unconfigured mock output fails closed",
+    "Real recording lease excludes IPC playback and remains excluded until close",
+    "Synthetic worker fault status and error-close release",
+    "Close response waits for blocked join and retains output reservation",
+    "Pending start, owner retirement, late reply and revoked-window requests",
+    "Remote origin rejected by the minimal mock context without allocating PCM"
+  ],
+  "validation": {
+    "focusedDefaultIpcTests": 9,
+    "parallelIpcTests": {
+      "passed": 9,
+      "threads": 8
+    },
+    "fullMacAppTests": {
+      "features": "native-validation",
+      "passed": 81,
+      "ignored": 8,
+      "ignoredScope": "One physical output test and seven real-helper tests reserved for the isolated null driver"
+    },
+    "normalNonTestMacLibraryCheck": "passed with native-validation; test factory absent",
+    "productionFrontendBuild": "passed",
+    "fullLint": "passed",
+    "rustFormatting": "passed",
+    "releaseChecks": 24,
+    "fullFrontendTests": "Not rerun; only About version changed. Previous .54: 2204 tests / 233 files.",
+    "browserAndDsp": "Not rerun. Previous .54 actual Source Editor/null bridge: 17 sessions joined, zero snapshots/bytes. This is separate evidence."
+  },
+  "limits": [
+    "No browser/WebKit-to-Wry IPC transport or OS window-event acceptance",
+    "No shipped capability manifest/full app builder/handler registration acceptance",
+    "IPC output workers are synthetic; no control application, DSP, helper or hardware acceptance in these tests",
+    "Actual recording capture commands are not invoked; exclusion uses the production lease",
+    "Separate prior UI/DSP and current IPC tests are not one combined end-to-end run"
+  ],
+  "next": [
+    "Isolated actual Wry/WebKit/window-event acceptance preserving running apps",
+    "Combined explicit null-DSP/command acceptance with hardware traps",
+    "Separate physical N5 device/clock/listening/latency/load checks",
+    "Independent broader source semantics, waveform/recipe/scale/restoration/freeze work",
+    "Source/toolchain/SDK/target/flags keyed native helper reuse with correct invalidation"
+  ],
+  "distribution": {
+    "nativeAppBundlesBuilt": false,
+    "installedAppsUpdated": false,
+    "releaseTag": false,
+    "appleUpload": false
+  }
+}

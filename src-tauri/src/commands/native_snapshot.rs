@@ -3,8 +3,8 @@ use serde_json::{json, Value};
 #[cfg(feature = "native-validation")]
 use tauri::Manager;
 #[tauri::command]
-pub async fn native_snapshot_begin(
-    window: tauri::WebviewWindow,
+pub async fn native_snapshot_begin<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     snapshots: tauri::State<'_, crispaudio_media::native_snapshot::Snapshots>,
     project: Value,
     descriptors: Vec<crispaudio_media::native_snapshot::Descriptor>,
@@ -16,8 +16,8 @@ pub async fn native_snapshot_begin(
         .map_err(|e| e.to_string())?
 }
 #[tauri::command]
-pub fn native_snapshot_write(
-    window: tauri::WebviewWindow,
+pub fn native_snapshot_write<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     snapshots: tauri::State<crispaudio_media::native_snapshot::Snapshots>,
     request: tauri::ipc::Request<'_>,
 ) -> Result<(), String> {
@@ -27,8 +27,8 @@ pub fn native_snapshot_write(
     }
 }
 #[tauri::command]
-pub async fn native_snapshot_seal(
-    window: tauri::WebviewWindow,
+pub async fn native_snapshot_seal<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     snapshots: tauri::State<'_, crispaudio_media::native_snapshot::Snapshots>,
     snapshot: String,
 ) -> Result<(), String> {
@@ -39,8 +39,8 @@ pub async fn native_snapshot_seal(
         .map_err(|e| e.to_string())?
 }
 #[tauri::command]
-pub fn native_snapshot_close(
-    window: tauri::WebviewWindow,
+pub fn native_snapshot_close<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     snapshots: tauri::State<crispaudio_media::native_snapshot::Snapshots>,
     playback: tauri::State<NativePlayback>,
     recording: tauri::State<super::native_recording::NativeRecording>,
