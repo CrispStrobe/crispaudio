@@ -9,7 +9,7 @@ export interface NativeSourceInput {
  effect:NativeEffect;
 }
 export interface NativeSourceControls {parameters:Record<string,number>;bypass:boolean;levelDb:number}
-interface Options {loop?:boolean;levelDb?:number;muted?:boolean;signal?:AbortSignal;isCurrent?:()=>boolean}
+interface Options {protectOutput?:boolean;loop?:boolean;levelDb?:number;muted?:boolean;signal?:AbortSignal;isCurrent?:()=>boolean}
 const interrupted=()=>new DOMException('Native source audition superseded','AbortError');
 function monitorGain(db:number){if(!Number.isFinite(db)||db < -60||db>0)throw new Error('Invalid native source monitor level');return 10**(db/20);}
 function sourceEffect(effect:NativeEffect){
@@ -21,7 +21,7 @@ function sourceEffect(effect:NativeEffect){
  * Admission precedes allocation. Snapshot upload owns another copy; the estimate
  * includes five planar float copies at the larger source/output frame count.
  * This is an allocation estimate, not an OS resident-memory ceiling. */
-export function nativeSourcePlan(input:NativeSourceInput,levelDb=0){
+export function nativeSourcePlan(input:NativeSourceInput,levelDb=0,protectOutput=false){
  const {channels,sampleRate}=input,frames=channels[0]?.length??0;
  const effect=sourceEffect(input.effect),gain=monitorGain(levelDb);
  if(!Number.isFinite(sampleRate)||sampleRate<8000||sampleRate>192000||![1,2].includes(channels.length)||!frames||channels.some(c=>!(c instanceof Float32Array)||c.length!==frames))throw new Error('Invalid native source PCM');
@@ -35,13 +35,13 @@ export function nativeSourcePlan(input:NativeSourceInput,levelDb=0){
  const buffer=new AudioBuffer({numberOfChannels:2,length:frames,sampleRate});
  for(let index=0;index<2;index++)buffer.copyToChannel(channels[Math.min(index,channels.length-1)] as Float32Array<ArrayBuffer>,index);
  const source:AudioSource={id:'source-audition',name:'Source',buffer,sampleRate,channels:2,duration:buffer.duration,peaks:{min:new Float32Array(),max:new Float32Array()}};
- const project:TimelineProject={id:'source-audition',name:'Source audition',sampleRate,duration:frames/sampleRate,masterVolume:gain,masterEffects:[],outputLimiter:{enabled:false},nativeEffects:[effect],tracks:[{id:'source-track',name:'Source',volume:1,pan:0,muted:false,solo:false,effects:[],segments:[{id:'source-clip',trackId:'source-track',sourceId:source.id,startTime:0,sourceOffset:0,duration:frames/sampleRate,gain:1,effects:[],fadeInDuration:0,fadeOutDuration:0,fadeInCurve:'linear',fadeOutCurve:'linear',name:'Source',color:'#6366f1'}]}]};
+ const project:TimelineProject={id:'source-audition',name:'Source audition',sampleRate,duration:frames/sampleRate,masterVolume:gain,masterEffects:[],outputLimiter:protectOutput?{enabled:true,ceiling:-1,release:.1}:{enabled:false},nativeEffects:[effect],tracks:[{id:'source-track',name:'Source',volume:1,pan:0,muted:false,solo:false,effects:[],segments:[{id:'source-clip',trackId:'source-track',sourceId:source.id,startTime:0,sourceOffset:0,duration:frames/sampleRate,gain:1,effects:[],fadeInDuration:0,fadeOutDuration:0,fadeInCurve:'linear',fadeOutCurve:'linear',name:'Source',color:'#6366f1'}]}]};
  return {project,sources:new Map([[source.id,source]]),estimatedBytes};
 }
 
-/** Internal, not yet exposed in SourceEditor. Reuses the native-owned clock,
+/** SourceEditor opt-in transport. Reuses the native-owned clock,
  * latency-aligned warm bypass and exclusive output owner used by Mac Live.
- * No timers: the eventual UI owner must poll and stop on recording/arrangement
+ * No timers: the UI owner must poll and stop on recording/arrangement
  * start, selection/source changes and unmount. Source/owner validity is also
  * checked at every async boundary; an AbortSignal cancels a pending start.
  * Starting without a device override uses the selected macOS default output.
@@ -56,7 +56,7 @@ export class NativeSourceAudition {
  private current?:()=>boolean;
  private detach?:()=>void;
  private controller:NativePlaybackController;
- private readonly events:{change?:()=>void;ended?:()=>void;fault:(error:unknown)=>void};
+ private events:{change?:()=>void;ended?:()=>void;fault:(error:unknown)=>void};
  constructor(events:{change?:()=>void;ended?:()=>void;fault:(error:unknown)=>void}){
   this.events=events;
   this.controller=new NativePlaybackController(()=>{
@@ -65,6 +65,8 @@ export class NativeSourceAudition {
    this.events.change?.();
   },error=>{void this.stop();this.events.fault(error);});
  }
+ /** Replace UI subscriptions after mount without replacing the DSP owner. */
+ setEvents(events:{change?:()=>void;ended?:()=>void;fault:(error:unknown)=>void}){this.events=events;}
  get active(){return this.controller.active;}
  get status(){return this.controller.status;}
  position(){return this.controller.clock()??0;}
@@ -77,7 +79,7 @@ export class NativeSourceAudition {
   try{
    options.signal?.throwIfAborted();if(options.isCurrent&&!options.isCurrent())throw interrupted();
    if(input.sampleRate!==48000)throw new Error('Native source preview currently requires 48 kHz audio');
-   plan=nativeSourcePlan(input,options.levelDb);
+   plan=nativeSourcePlan(input,options.levelDb,options.protectOutput);
   }catch(error){await previous;throw error;}
   const lease=nativeSourceOwner.reserve(()=>this.stop());this.lease=lease;
   const check=()=>{options.signal?.throwIfAborted();if(generation!==this.generation||!lease.isCurrent()||options.isCurrent&&!options.isCurrent())throw interrupted();};

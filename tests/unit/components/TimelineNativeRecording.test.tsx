@@ -1,3 +1,4 @@
+import {requestAudition} from '../../../src/lib/auditionEvent';
 import {nativeSourceOwner} from '../../../src/audio/engine/NativeSourceOwner';
 import {beforeEach,expect,it,vi} from 'vitest';
 import {act,fireEvent,render,screen,waitFor} from '@testing-library/react';
@@ -72,4 +73,10 @@ it.each([false,true])('joins source output before permission/inventory/native re
  await act(async()=>release());
  if(cancel){await waitFor(()=>expect(useUIStore.getState().timelineRecording).toBe(false));expect(mocks.inputs).not.toHaveBeenCalled();expect(mocks.start).not.toHaveBeenCalled();}
  else {await waitFor(()=>expect(mocks.status).toHaveBeenCalled());fireEvent.click(screen.getByRole('button',{name:'recording.stop'}));await waitFor(()=>expect(useUIStore.getState().timelineRecording).toBe(false));}
+});
+
+it('rejects native source audition while a recording session owns capture',async()=>{
+ renderRecording();fireEvent.click(screen.getByRole('button',{name:'recording.start'}));await waitFor(()=>expect(mocks.status).toHaveBeenCalled());
+ expect(requestAudition('source',true)).toBe(false);expect(mocks.stop).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByRole('button',{name:'recording.stop'}));await waitFor(()=>expect(useUIStore.getState().timelineRecording).toBe(false));expect(requestAudition('source',true)).toBe(true);
 });

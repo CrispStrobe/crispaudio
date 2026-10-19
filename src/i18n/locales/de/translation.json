@@ -2250,7 +2250,7 @@
   "sourceEditor": {
     "title": "Quelleneditor",
     "info": "Über die Quellenbearbeitung",
-    "help": "Quellsamples durch Ziehen auswählen. Umschalt oder + fügt einen separaten Bereich hinzu. Vorhören verbindet die ausgewählten Abschnitte und nutzt das gewählte Wiedergabegerät. Original und Vorschau vergleichen das Quellaudio; Zeitleisteneffekte werden bei der Wiedergabe des Projekts angewandt. Anwenden erhält die Originalaufnahme und erzeugt einen Rückgängig-Schritt. Bereich behalten kürzt auch verknüpfte Clips. Wurde bearbeitetes Audio nachträglich zeitlich verändert, vor weiterer Quellenbearbeitung oder Wiederherstellung des Originals zuerst die ursprüngliche Zeit in Geschwindigkeit / Tonhöhe wiederherstellen. Original und Vorschau wechseln mit kurzer Überblendung an der aktuellen Abhörposition. Schleife und Vorschauänderungen laufen weiter; der Cursor folgt den verbundenen Bereichen. Bei aktiver Normalisierung aktualisiert eine Änderung der Zielspitze die Vorschau. Zeitleisteneffekte sind beim Abhören der Quelle nicht enthalten. Native Vorschauen werden erst nach abgeschlossenem Rendern aktualisiert.",
+    "help": "Quellsamples durch Ziehen auswählen. Umschalt oder + fügt einen separaten Bereich hinzu. Vorhören verbindet die ausgewählten Abschnitte und nutzt das gewählte Wiedergabegerät. Original und Vorschau vergleichen das Quellaudio; Zeitleisteneffekte werden bei der Wiedergabe des Projekts angewandt. Anwenden erhält die Originalaufnahme und erzeugt einen Rückgängig-Schritt. Bereich behalten kürzt auch verknüpfte Clips. Wurde bearbeitetes Audio nachträglich zeitlich verändert, vor weiterer Quellenbearbeitung oder Wiederherstellung des Originals zuerst die ursprüngliche Zeit in Geschwindigkeit / Tonhöhe wiederherstellen. Original und Vorschau wechseln mit kurzer Überblendung an der aktuellen Abhörposition. Schleife und Vorschauänderungen laufen weiter; der Cursor folgt den verbundenen Bereichen. Bei aktiver Normalisierung aktualisiert eine Änderung der Zielspitze die Vorschau. Zeitleisteneffekte sind beim Abhören der Quelle nicht enthalten. Externe Effekte nutzen standardmäßig Berechnet; für ganze Stereo-Clips bei 48 kHz gibt es auch die optionale native Vorschau. Vorschau berechnen bereitet das Audio für Anwenden vor.",
     "stop": "Vorhören stoppen",
     "audition": "Auswahl vorhören",
     "loop": "Schleife",
@@ -2312,6 +2312,20 @@
     "declip": "Clipping reparieren",
     "filter": "Filter",
     "chain": "Effekte"
+  },
+  "sourceNative": {
+    "mode": "Vorschaumodus",
+    "rendered": "Berechnet",
+    "native": "Nativ · Vorschau",
+    "level": "Abhörpegel (dB)",
+    "unsupported": "Ganzer Stereo-Clip · 48 kHz",
+    "preparing": "Vorbereiten…",
+    "live": "Live",
+    "ready": "Bereit",
+    "failed": "Native Vorschau gestoppt: {{reason}}",
+    "snapshot": "Momentaufnahme",
+    "inputBusy": "Aufnahme, Kalibrierung oder Eingangsvorschau vor dem nativen Vorhören beenden.",
+    "help": "Nativ nutzt Wiedergabe/Stopp oben und lässt den Effekt bei Änderungen an Parametern, Original/Vorschau und Abhörpegel weiterlaufen. Unterstützt werden ganze Stereo-Clips ohne Tempoänderung bei 48 kHz (2048 Samples bis zwei Minuten). Änderungen an Auswahl, Kanälen, Schleife, Quelle, Projekt oder Ausgabe stoppen die Wiedergabe. Berechnet bleibt Standard und unterstützt weitere Auswahlen.\n\nDer Abhörpegel beginnt bei −12 dB. Ein Limiter nur zum Abhören begrenzt Sample-Spitzen bei −1 dBFS; dies ist kein True-Peak-Schutz. Abhörpegel und dieser Limiter verändern Anwenden nicht. Eine Eingangsvorschau vor Nativ beenden.\n\nWellenform und Analyse zeigen die Quelle oder berechnete Momentaufnahmen, nicht die aktuelle native Ausgabe. Vorschau berechnen stoppt Nativ, startet einen neuen Durchlauf mit dem wiederhergestellten Zustand und bereitet Audio für Anwenden vor. Schleifenverlauf und Echtzeitverarbeitung eines Plug-ins können davon abweichen. Eine Änderung der Plug-in-Latenz kann Nativ stoppen; die Wiedergabe dann neu starten. Native Fehler bleiben sichtbar; zum Fortsetzen Berechnet ausdrücklich auswählen."
   },
   "sourcePlugins": {
     "title": "Externe Effekte",
@@ -2471,7 +2485,7 @@
     "lowpass": "Tiefpass",
     "level": "Ausgang",
     "limit": "Bis zu 120 Sekunden Mono-/Stereo-Audio auswählen. Die Bearbeitung muss außerdem in 256 MiB passen.",
-    "help": "Aktivieren und oben abspielen. Parameter und Häkchen bleiben live. Bis zu sechs Effekte anordnen/hinzufügen; Pfeile setzen die Reihenfolge. Hinzufügen, Entfernen oder Verschieben eines aktiven Effekts stoppt die Vorschau—danach erneut abspielen.\n\nOriginal/Vorschau wechselt weich. Die Wellenform folgt nach kurzer Pause; Aktualisiert/Quelle bedeutet, dass keine aktuelle Effektvorschau angezeigt wird. Automatische Vorschauen nutzen ein Speicherbudget von 64 MiB. Vorbereiten erlaubt größere Bearbeitungen und erzeugt die feste Vorschau für Analyse, Lautheitsabgleich und Anwenden. Nur ausgewählte Samples/Kanäle ändern sich; Originale bleiben erhalten.\n\nGetrennte Bereiche laufen nacheinander durch dieselbe Kette. Nachklang endet an der Auswahlgrenze; beim Wiederholen bleibt der Verlauf erhalten. Der Clipper begrenzt Spitzen ohne Vorschauverzögerung oder Überabtastung; Verzerrungen/Aliasing sind möglich. Native Plug-ins nutzen eine separate berechnete Vorschau.",
+    "help": "Aktivieren und oben abspielen. Parameter und Häkchen bleiben live. Bis zu sechs Effekte anordnen/hinzufügen; Pfeile setzen die Reihenfolge. Hinzufügen, Entfernen oder Verschieben eines aktiven Effekts stoppt die Vorschau—danach erneut abspielen.\n\nOriginal/Vorschau wechselt weich. Die Wellenform folgt nach kurzer Pause; Aktualisiert/Quelle bedeutet, dass keine aktuelle Effektvorschau angezeigt wird. Automatische Vorschauen nutzen ein Speicherbudget von 64 MiB. Vorbereiten erlaubt größere Bearbeitungen und erzeugt die feste Vorschau für Analyse, Lautheitsabgleich und Anwenden. Nur ausgewählte Samples/Kanäle ändern sich; Originale bleiben erhalten.\n\nGetrennte Bereiche laufen nacheinander durch dieselbe Kette. Nachklang endet an der Auswahlgrenze; beim Wiederholen bleibt der Verlauf erhalten. Der Clipper begrenzt Spitzen ohne Vorschauverzögerung oder Überabtastung; Verzerrungen/Aliasing sind möglich. Externe Plug-ins haben einen eigenen Modus Berechnet / Nativ.",
     "waveform": {
       "ready": "Effektvorschau",
       "updating": "Aktualisiert…",

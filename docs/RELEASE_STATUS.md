@@ -1,5 +1,7 @@
 # Distribution and platform status — 2026-10-19
 
+Latest source: [0.13.54, shared native source controls](#shared-native-source-controls--01354-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
 external hosting integrations may differ. No release tag or Apple upload was
@@ -4667,3 +4669,31 @@ in the [latest handoff](WORK_HANDOFF.md#native-source-browser-null-bridge--01353
 Both running app sessions are preserved. No native app bundle build/install,
 hardware action, tag or Apple upload. Previous .52 general CI passed and iOS CI
 was still in progress at the pre-push check; current commit CI is separate.
+
+
+## Shared native source controls — 0.13.54 source candidate
+
+The Mac Source Editor now shares Play/Stop between Rendered (default) and opt-in
+Native preview for whole unretimed stereo 48 kHz clips, 2048 frames–120 seconds.
+Live parameters, warm Original/Preview bypass and editable monitor gain keep one
+native graph. A private −1 dBFS sample-peak limiter and initial gain at most −12 dB
+protect listening only. Fresh helper preparation and Apply retain raw rendered
+samples, restored starting state, originals and one Undo. Waveform/analysis stay
+labelled snapshots; native faults require explicit recovery. Ownership changes
+stop/join before replacement; active input/recording is excluded by the UI.
+
+Validation: **2,204 frontend tests / 233 files**, **61 focused tests / 5 files**,
+full lint, production build and **24 release checks** pass. The actual React
+controls passed the browser/Rust null bridge using real AU/VST3 DSP: 17 sessions
+joined, no retained snapshots/PCM, exact raw-sample Apply, pending-start replacement,
+helper fault/recovery, arrangement handoff, input refusal, recording and source/
+range/channel/project/loop/lock/output/Reset/close transitions. EN/DE desktop
+Chromium layouts fit 1440 and 375 pixels. Offline Web Audio substitutes and a
+microphone trap prevent browser hardware access. Rust core code is unchanged;
+.53's 19 native tests remain prior evidence. Full Tauri app tests were not rerun.
+
+Actual Tauri command/window registries, native recording exclusivity, WebKit,
+Core Audio routing/timestamps/hotplug, physical listening/latency and sustained
+load remain separate acceptance. This is not physical iOS qualification. No app
+bundle was built or replaced, no tag was created and no Apple upload was made.
+[Evidence](evidence/source-native-ui.json) · [remaining scope](WORK_HANDOFF.md#shared-native-source-controls--01354-checkpoint).

@@ -1,6 +1,7 @@
 # Engineering checkpoint and remaining work
 
-Updated 2026-10-19. This is the entry point for a fresh agent. The active product
+Updated 2026-10-19. This is the entry point for a fresh agent.
+Current checkpoint: [shared native source controls, 0.13.54](#shared-native-source-controls--01354-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -21,7 +22,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.53 adds isolated browser-to-Rust
+The installed baseline remains 0.13.33. Source 0.13.54 adds shared opt-in native
+source controls; start at the latest checkpoint below. Source 0.13.53 adds isolated browser-to-Rust
 null-bridge qualification; see the latest checkpoint below. Source 0.13.52 fixes source plug-in
 first-pass state and stale prepared results; see the latest checkpoint below.
 Source 0.13.51 adds the shared source-preview
@@ -1053,3 +1055,73 @@ editor. Keep rendered fallback and visible failures; do not silently fall back a
 a native fault or enable unsupported rate/channel cases. Broader plug-in/process-
 mode equivalence, mono output semantics, seamless topology, recipe recall,
 waveform/scale, restoration/freeze and the platform/device checks remain open.
+
+
+## Shared native source controls — 0.13.54 checkpoint
+
+`SourceEditor` now offers **Rendered** (default) and **Native · Preview** after
+selecting an external Mac effect. Initial native admission is one whole unretimed
+stereo 48 kHz clip, 2048 frames–120 seconds, all channels. Play/Stop is shared;
+parameters, warm Original/Preview bypass and editable monitor level update one
+running graph. The compact toolbar remains visible while scrolling. Details stay
+behind the mode information button; narrow desktop layouts wrap controls.
+
+`useNativeSourcePreview` owns preparation, serialized control/polling, generations
+and cancellation. Source start stops Web Audio auditions and joins existing native
+arrangement output. A cancellable audition event rejects active input preview,
+calibration or recording; input/recording requests cancel pending source starts.
+The existing outgoing source lease remains held until close/join finishes.
+Source/buffer/project/range/channel/loop/mode/lock changes, recording, arrangement,
+output changes, Reset and unmount stop native playback. Faults remain visible;
+Rendered recovery is explicit. There is no automatic engine switch after failure.
+
+Native monitor gain initially stays at −12 dB or lower. Its private source plan
+enables a −1 dBFS sample-peak limiter, without changing the unprotected adapter
+qualification default. It is not true-peak protection. Render preview first joins
+native output, then prints a fresh helper pass from the stable .52 base state and
+copied parameters. Apply joins before persistence and commits that prepared PCM,
+retaining the original and one Undo. Neither monitor control enters audio or recipe.
+Native waveform/analysis remain labelled source/prepared snapshots. Auto preview
+is disabled in Native. A latency-changing plug-in parameter can stop playback;
+loop history and real-time process mode need not equal a fresh offline pass.
+
+Validation: **2,204 frontend tests / 233 files**, **61 focused tests / 5 files**,
+full lint, production build and **24 release checks** pass. The actual editor
+browser run used real AU/VST3 helpers and production Rust processing, starting and
+joining 17 native sessions with zero retained snapshots/bytes. Raw Apply matched
+every helper sample; monitor output was separately limited. EN/DE layouts fit
+1440/375-pixel desktop Chromium viewports. Microphone access is trapped; every
+browser Web Audio context is an offline substitute. The Rust core is unchanged;
+.53's 19 native tests remain prior evidence, not a new full app test run.
+[UI evidence](evidence/source-native-ui.json) ·
+[portable runner setup](../scripts/native-source-clock/README.md#actual-source-editor-controls).
+Both running app sessions remain unchanged; no native app bundle, install, release
+tag or Apple upload was made.
+
+### Continue in this order
+
+1. **Actual native command/owner acceptance:** extend the isolated qualification
+   setup without replacing either running app. Exercise Tauri upload/start/status/
+   update/close and window destruction against actual window-bound registries;
+   recording-exclusive conflicts must reject cleanly. Test pending upload/start,
+   source↔arrangement handoff, input-preview refusal, project/close/shutdown and
+   cleanup after helper failure. The null bridge deliberately substitutes dispatch,
+   owner identity and time; do not count it as evidence for these app paths.
+2. **Physical/platform acceptance:** follow N5 and the recording protocol using
+   explicit user actions, preserving the existing pending recording check. Verify
+   selected speakers/headphones, default/explicit output changes, disconnects,
+   helper/device loss, WebKit resume/lifecycle, measured latency and sustained load.
+   Keep Rendered default and Native opt-in until acceptance supports a change.
+3. **Broader source semantics:** add generated mono/other-rate/partial-range cases
+   only with explicit output mapping, resampling, latency and fresh-state Apply
+   parity. Qualify additional trusted plug-ins and real-time/offline mode behavior;
+   define tails and seamless topology separately. Do not enable unsupported cases
+   merely because the internal offline plan accepts them.
+4. **Waveform/recipe/scale:** add bounded native snapshots with cancellation,
+   memory admission and honest stale/source labels; retain a separate monitor path.
+   Implement actual recipe reprocessing from retained originals, then expand
+   resident-memory/long-file handling. Continue restoration material/listening and
+   freeze mixed-rack/state/portable-reopen acceptance from their existing scopes.
+
+Composition and ASR/TTS creation stay with CometBeat and CrisperWeaver. Candidate
+source is not a new installed build, TestFlight upload or completed DAW roadmap.

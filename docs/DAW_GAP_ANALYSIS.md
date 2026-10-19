@@ -32,19 +32,16 @@ creation remain with CometBeat and CrisperWeaver. Physical device/platform check
 Effect-aware segment waveforms are implemented through the bounded 0.13.24
 continuous-refresh checkpoint; continue the execution order below.
 
-Source checkpoint 0.13.53 adds a hardware-free browser/Rust bridge for source
-adapter lifecycle and production DSP qualification. Shared Source Editor controls
-are still pending; this is not Tauri/window, WebKit or physical acceptance.
-See the [latest handoff](WORK_HANDOFF.md#native-source-browser-null-bridge--01353-checkpoint).
-
-Source checkpoint 0.13.52 defines repeatable first-pass plug-in render/recipe state
-and invalidates stale prepared results after parameter edits. Source 0.13.51 adds
-the outgoing native-source close/join barrier
-before recording, arrangement and other audition paths. Native streaming source
-controls are still hidden. The next acceptance remains shared Play/Stop, reverse
-ownership transitions, saved-state/first-pass Apply parity, mono/stereo/headroom
-policy and null-backed IPC/UI tests; see the
-[latest handoff](WORK_HANDOFF.md#native-source-ownership-handoff--01351-checkpoint).
+Source checkpoint **0.13.54** exposes compact opt-in native source controls on
+Mac, sharing Play/Stop with Rendered (the default). Initial admission is whole
+unretimed stereo 48 kHz clips, 2048 frames–120 seconds. Parameters, warm bypass and
+monitor gain update one graph; private sample-peak protection never enters Apply.
+Prepared edits keep fresh first-pass state, originals and one Undo. The actual
+React controls are qualified through a hardware-free Rust bridge with real AU/VST3
+DSP; Tauri/window ownership, WebKit and physical device/load acceptance remain.
+Waveform/analysis remain snapshots. Broader source formats/ranges, recipe recall,
+live native waveform snapshots and scale/restoration work remain open.
+See the [current handoff](WORK_HANDOFF.md#shared-native-source-controls--01354-checkpoint).
 
 ## What the comparisons tell us
 
@@ -68,7 +65,7 @@ policy and null-backed IPC/UI tests; see the
 |---|---|---|
 | Basic arrangement, trims, fades, ripple, groups, source selections and analysis | Present | Measure completion time and friction in complete editing jobs; improve inline/context actions from findings. |
 | Effect-aware timeline waveforms | Partial in 0.13.24 | Built-in segment DSP refreshes during continuous edits for visible clips up to 60 s / 32 MiB. Native inserts, longer clips and track/bus/master processing still show source or remain excluded. Extend with scalable caches and safe native-render ownership; modulation follows a clip-range render, not the running graph phase. |
-| Source FX audition | Partial in 0.13.50 | Position-preserving Original/Preview, cleanup replacement/reset, loop changes and source cursor are implemented. Active normalization follows its target. Native source previews still need helper renders. Separate audition level and hot-float sample-peak headroom are present in 0.13.30. 0.13.42 adds optional cancellable monitor-only matching for measurable mono/stereo selections of 0.4–120 seconds, with per-voice gains and shared sample-peak headroom. 0.13.45 adds persistent built-in high/low-pass and output controls with smooth bypass; Prepare creates a waveform preview and reversible edit. 0.13.46 adds debounced, versioned waveform snapshots with serialized 64 MiB admission and source fallback; playback is independent. 0.13.47 adds ordered six-stage high/low-pass, level and clipper chains with per-stage bypass and versioned printed-source recipes; topology edits stop audition. 0.13.48 adds a hidden native-clock source adapter. 0.13.49 resolves its measured AU offline parity blocker with complete source-window reads, end drain and unity mono routing (52 generated AU cases exact); 0.13.50 qualifies the production real-time worker/DSP with a synthetic null consumer (15 native tests) and restricts audition to 48 kHz. The source UI stays rendered pending shared editor integration, actual device/WebKit/load acceptance and defined channel/state/Apply semantics. Native streaming UI/real-time acceptance, broader stages, seamless topology, recipe recall, multichannel/short-selection matching and larger-file/resident-memory qualification remain. |
+| Source FX audition | Partial in 0.13.54 | Position-preserving Original/Preview, cleanup replacement/reset, loop changes and source cursor are implemented. Active normalization follows its target. Native source Apply still needs a fresh helper render. Separate audition level and hot-float sample-peak headroom are present in 0.13.30. 0.13.42 adds optional cancellable monitor-only matching for measurable mono/stereo selections of 0.4–120 seconds, with per-voice gains and shared sample-peak headroom. 0.13.45 adds persistent built-in high/low-pass and output controls with smooth bypass; Prepare creates a waveform preview and reversible edit. 0.13.46 adds debounced, versioned waveform snapshots with serialized 64 MiB admission and source fallback; playback is independent. 0.13.47 adds ordered six-stage high/low-pass, level and clipper chains with per-stage bypass and versioned printed-source recipes; topology edits stop audition. 0.13.48 adds a hidden native-clock source adapter. 0.13.49 resolves its measured AU offline parity blocker with complete source-window reads, end drain and unity mono routing (52 generated AU cases exact); 0.13.50 qualifies the production real-time worker/DSP with a synthetic null consumer (15 native tests) and restricts audition to 48 kHz. 0.13.54 adds shared opt-in native Play/Stop for whole stereo 48 kHz clips with live controls, monitor-only protection and joined owners; the actual UI uses the null bridge for qualification. Rendered remains default. Actual Tauri/device/WebKit/load acceptance, broader stages, seamless topology, recipe recall, multichannel/short-selection matching and larger-file/resident-memory qualification remain. |
 | Repair and restoration | Partial in 0.13.30 | Manual click repair, mains/harmonic de-hum, selected-band spectral attenuation and conservative hard-clip reconstruction use cancellable previews/A-B/Apply with retained originals and unchanged boundaries. Spectral healing/inpainting, general click detection, drift tracking and real-recording/listening qualification remain. Version 0.13.31 adds nonstationary synthetic material checks and logarithmic band selection. Declipping gains are modest on noisy/transient fixtures; these measurements do not establish perceptual recovery. |
 | Recording and takes | Partial | Built-in mic accepted; punch/loop/multi-arm/comping implemented. Bar-based audible count-in and pre-roll are implemented in 0.13.26 with bounded scheduled lead-in. Local track/input/FX templates are implemented in 0.13.27; real interface/channel checks remain. |
 | Live input DSP | Partial in 0.13.32 | Buffered native cue inserts preserve dry capture and display added delay; 0.13.33 shares a single 4096-sample transport buffer across up to two inserts; faults mute the cue independently. Low-latency native ingress, wet/dry capture, broader plug-in/rate/load/device-loss qualification remain. One/two AU and SDK VST3 cue chains have bounded eight-second Mac checks. Prepared wet backing remains separate. |

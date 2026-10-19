@@ -91,3 +91,32 @@ This is real browser-to-Rust child-process IPC with production DSP, **not Tauri
 command/window ownership, WebKit, actual Source Editor UI, Core Audio or hardware
 qualification**. Reuse it when integrating shared source controls; do not claim
 that those UI/platform paths have already passed.
+
+## Actual Source Editor controls
+
+With the same environment and isolated Vite server, run:
+
+```sh
+node scripts/test-source-native-ui.mjs
+```
+
+This mounts the real React Source Editor, stores and arrangement engine. It uses
+OfflineAudioContext substitutes for all Web Audio contexts, rejects microphone
+access and forces muted output only on the test wire. Plug-in discovery is limited
+to the trusted AU peak limiter and VST3 delay. Generated source/render/apply files
+stay inside one temporary directory, removed on exit. Set the optional
+`CRISPAUDIO_TEST_SCREENSHOT_PREFIX` to save desktop/narrow screenshots locally.
+
+The checks exercise shared Play/Stop, default Rendered mode, live parameter and
+monitor editing, warm bypass without replacing DSP, private output protection,
+fresh preparation, exact raw-sample Apply, original retention and one Undo. They
+also exercise pending-start replacement, visible helper failure, explicit recovery,
+source/range/channel/project/loop/lock/output changes, recording/other-audition
+transitions, arrangement owner joining, Reset and close. A cancellable audition
+request models an active input; the actual recording component's rejection is
+covered separately by frontend unit tests.
+
+This extends qualification to the actual React controls through the null bridge.
+Tauri command/window ownership, recording exclusivity in the native registry,
+WebKit, real devices/clocks, listening and sustained load remain unqualified.
+A 375-pixel desktop Chromium viewport does not qualify iOS.

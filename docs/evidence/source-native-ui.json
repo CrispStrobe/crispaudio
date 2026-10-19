@@ -1,0 +1,95 @@
+{
+  "version": "0.13.54",
+  "date": "2026-10-19",
+  "hardwareOpened": false,
+  "nativeSourceUiEnabled": "Opt-in Mac candidate; Rendered default",
+  "scope": "Actual React Source Editor and stores through the production source adapter, snapshots, Rust worker and AU/VST3 DSP; test command dispatch/owner identity/synthetic null time",
+  "browserResult": {
+    "sharedPlayStop": true,
+    "defaultRendered": true,
+    "monitorLimiter": true,
+    "monitorOnlyApply": true,
+    "liveControlsOneGraph": true,
+    "channelChangeStops": true,
+    "renderStopsNative": true,
+    "originalAndOneUndo": true,
+    "pendingStartReplacement": true,
+    "faultStaysNative": true,
+    "explicitRenderedRecovery": true,
+    "inputBusyRefused": true,
+    "outputChangeStops": true,
+    "recordingStops": true,
+    "otherAuditionStops": true,
+    "arrangementStartsStop": true,
+    "loopChangeStops": true,
+    "rangeChangeStops": true,
+    "bufferReplacementStops": true,
+    "arrangementJoined": true,
+    "resetStops": true,
+    "projectChangeStops": true,
+    "responsiveWidths": [
+      1440,
+      375
+    ],
+    "responsiveLanguages": [
+      "en",
+      "de"
+    ],
+    "lockStops": true,
+    "closeJoins": true,
+    "stats": {
+      "bytes": 0,
+      "closed": 17,
+      "hardware": false,
+      "sessions": 0,
+      "snapshots": 0,
+      "started": 17
+    },
+    "hardware": false
+  },
+  "fixtures": [
+    "Apple AUPeakLimiter",
+    "Steinberg ADelay VST3",
+    "Generated one-second stereo 48-kHz PCM"
+  ],
+  "validation": {
+    "frontend": {
+      "passed": 2204,
+      "files": 233
+    },
+    "focusedFrontend": {
+      "passed": 61,
+      "files": 5
+    },
+    "productionBuild": "passed",
+    "fullLint": "passed",
+    "releaseChecks": 24,
+    "rustCore": "Unchanged; preceding .53 standalone 19-test run remains baseline; current browser uses that executable",
+    "fullTauriAppTests": "Not rerun"
+  },
+  "semantics": {
+    "admission": "Whole unretimed stereo 48-kHz clips; all channels; 2048 frames to 120 seconds",
+    "monitor": "Initially at most -12 dB; private -1 dBFS sample-peak limiter, not true peak",
+    "apply": "Fresh restored-base helper pass; exact raw samples retained, monitor controls excluded; original retained and one Undo",
+    "waveformAndAnalysis": "Source/prepared snapshots; no live native waveform claim",
+    "fault": "Visible error; explicit Rendered recovery, no automatic fallback"
+  },
+  "limits": [
+    "No actual Tauri command/window registry or native recording-exclusive ownership qualification",
+    "No WebKit/Core Audio device, clock, timestamp, hotplug, latency, physical listening or sustained-load acceptance",
+    "Short trusted fixtures; no arbitrary plug-in/process-mode equivalence",
+    "375-pixel desktop Chromium in EN/DE is not physical iOS acceptance",
+    "No broader mono/rate/partial-range admission, live native waveform or original-based recipe reprocessing"
+  ],
+  "next": [
+    "Isolated actual native command/window/exclusive-owner acceptance",
+    "Separate physical/platform N5 checks without replacing running sessions",
+    "Broader plug-in, source-format/range and real-time/offline state parity qualification",
+    "Bounded live native waveform snapshots, recipe recall, resident-memory/long-file work and restoration/freeze acceptance"
+  ],
+  "distribution": {
+    "installedAppsUpdated": false,
+    "releaseTag": false,
+    "appleUpload": false
+  }
+}

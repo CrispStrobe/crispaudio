@@ -113,3 +113,9 @@ it('waits for prior output cleanup even when a replacement rate is rejected',asy
  let rejected=false;const failure=audio.play({...input(),sampleRate:44100}).catch(error=>{rejected=true;expect(error.message).toContain('requires 48 kHz');});
  await vi.waitFor(()=>expect(f.snapshot.close).toHaveBeenCalledOnce());expect(rejected).toBe(false);release();await failure;expect(rejected).toBe(true);
 });
+
+it('adds monitor-only sample-peak protection on request while leaving render plans and original PCM unchanged',async()=>{
+ const source=input(),plain=nativeSourcePlan(source),protectedPlan=nativeSourcePlan(source,-12,true);
+ expect(plain.project.outputLimiter).toEqual({enabled:false});expect(protectedPlan.project.outputLimiter).toEqual({enabled:true,ceiling:-1,release:.1});expect(protectedPlan.project.masterVolume).toBeCloseTo(10**(-12/20));
+ const f=session();create.mockResolvedValue(f.snapshot);const {audio}=owner();await audio.play(source,{protectOutput:true,levelDb:-12,muted:true});expect(create.mock.calls[0][0].outputLimiter).toEqual({enabled:true,ceiling:-1,release:.1});expect(source.channels[0][0]).toBeCloseTo(.2);expect(source.effect.parameters).toEqual({'100':.2});
+});

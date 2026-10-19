@@ -152,40 +152,48 @@ See [Restoration tools and limits](RESTORATION.md) before using these on a recor
 Expand **Analysis** for peak/RMS, DC, clipping, loudness/true peak, spectrum and
 spectrogram. These describe the selected source audio, independent of timeline FX.
 
-On macOS, native source previews run in cancellable helper processes. A completed
-preview replaces the audition buffer at its current position. Parameter changes
-still need a helper render; this is not a new continuously running native FX graph.
-Processing preserves the source window's length, so extend it first for effect tails.
+On macOS, external source effects use cancellable helper processes. **Rendered**
+remains the default: a completed preview replaces the audition buffer at its
+current position. Rendering preserves the source window's length; extend it first
+if you need effect tails.
 
-Continuous comparison currently uses in-memory audio. Long-file streaming,
-broader live source FX chains/native streaming and further restoration
-(spectral healing, drift tracking and varied-material qualification) remain work
-in the [audio-workstation roadmap](DAW_GAP_ANALYSIS.md).
+## Native external-effect preview
 
+Source candidate **0.13.54** adds **Native · Preview** beside the shared Play/Stop
+controls after selecting an external effect. It supports a whole, unretimed stereo
+48 kHz clip from 2048 frames to two minutes, with all channels selected. Other
+rates, mono, separate ranges and longer clips continue to use Rendered.
 
-## Native streaming development status
+Press Play, adjust effect parameters, type or scrub their numbers, and switch
+**Original / Preview** without replacing the running graph. Monitor level starts
+at −12 dB or lower; a separate sample-peak limiter at −1 dBFS protects native listening.
+This is not true-peak protection. Neither control affects prepared audio or Apply.
+Details stay behind the mode's information button. Auto preview is disabled in
+Native to avoid running automatic helper renders alongside playback.
 
-Source **Auto preview** still renders through the helper. The internal native-clock
-source adapter is not exposed in this editor. Version 0.13.49 fixes incomplete AU
-file reads, missing end samples and an implicit-mixer mono level change. The
-original strict source-plan comparison now passes; 52 actual AU window cases at
-8–192 kHz match stream DSP exactly. Silent input padding drains processing while
-output remains the original clip length; following source audio is not included.
-0.13.50 also checks the production real-time worker and DSP through an isolated
-null consumer, including controls, loop history and cleanup. The source streaming
-UI remains hidden; actual device timing/routing and editor lifecycle are still
-open. Native source audition admits 48 kHz only until matching resampling/Apply
-semantics are defined. The null clock does not establish physical acceptance.
-The [engineering handoff](WORK_HANDOFF.md#native-source-null-output-qualification--01350-checkpoint)
-records the measured scope and next acceptance steps.
+**Render preview** stops and joins native output, then makes a fresh helper pass
+from restored state and current parameters. **Apply** commits only that prepared
+audio, retains the original and creates one Undo step. Running plug-in history,
+monitor gain and the monitor limiter are excluded. A fresh pass can differ from
+looping or a plug-in's real-time processing mode. A latency-changing parameter can
+stop native playback; restart with the new graph or choose Rendered.
 
+The waveform and analysis remain labelled source/prepared **snapshots**, not the
+live native output. Selection, channel, loop, source, project, lock, output-device,
+recording and arrangement changes stop native preview. Source start joins an
+existing arrangement output and stops other auditions. Stop input preview before
+using Native. Native errors stay visible; choose Rendered explicitly to recover.
 
-Version 0.13.51 adds source-preview ownership handoff internally: pending uploads
-and outputs are joined before arrangement, recording or another audition starts.
-Cancelled requests cannot begin playing after that wait. The editor's native
-streaming controls still await UI/state/headroom qualification; **Auto preview**
-continues to render. See the [latest handoff](WORK_HANDOFF.md#native-source-ownership-handoff--01351-checkpoint).
+This mode is opt-in candidate software. The actual React controls have been tested
+through a development-only browser/Rust null bridge with real AU/VST3 processing,
+offline Web Audio substitutes and synthetic time. This does not qualify Tauri
+window/command ownership, WebKit, Core Audio routing/timestamps, physical listening,
+latency, hotplug or sustained load. The installed baseline is unchanged.
+See [checkpoint and remaining acceptance](WORK_HANDOFF.md#shared-native-source-controls--01354-checkpoint).
 
+Long-file streaming, broader live effect chains, native live waveform snapshots,
+spectral healing, drift tracking and varied-material restoration qualification
+remain in the [audio-workstation roadmap](DAW_GAP_ANALYSIS.md).
 
 ## Repeatable external-effect previews
 
@@ -196,10 +204,3 @@ use **Auto preview** before Apply. Apply commits that prepared audio and saves i
 starting state and parameters with the edit history. Saved effects restore both
 state and explicit parameters when selected again. This is metadata recall on the
 current source, not automatic reprocessing from the retained original.
-
-
-Version 0.13.53 adds a development-only browser/Rust null bridge for testing the
-native source adapter with actual AU/VST3 DSP and no audio hardware. It does not
-activate native streaming in the editor. Shared controls, monitor headroom,
-state/Apply and actual editor/platform acceptance remain in the
-[latest handoff](WORK_HANDOFF.md#native-source-browser-null-bridge--01353-checkpoint).

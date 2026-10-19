@@ -1,6 +1,29 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.53 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.54 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.54 integrates opt-in **Native · Preview** into the Source Editor's shared
+Play/Stop. Whole unretimed stereo 48 kHz clips (2048 frames–120 seconds) support
+live parameters, warm Original/Preview bypass and monitor gain. Rendered remains
+the default. Native monitoring starts at −12 dB or lower and uses a private −1 dBFS
+sample-peak limiter; neither changes prepared audio or Apply. Fresh helper passes
+retain restored state, originals and one Undo. Source waveforms/analysis remain
+labelled snapshots. Ownership transitions stop/join before replacement; faults
+require explicit recovery. See the [current handoff](docs/WORK_HANDOFF.md#shared-native-source-controls--01354-checkpoint).
+
+Next, in order:
+
+1. Qualify actual Tauri command/window/exclusive-owner transitions with a dedicated
+   isolated native app, then WebKit and device/listening/load acceptance. Preserve
+   both existing app sessions. Keep Rendered default and Native opt-in meanwhile.
+2. Extend source admission only with explicit mono/rate/range state/latency/Apply
+   tests. Add bounded native waveform snapshots without treating monitor output
+   as edit data. Qualify more plug-ins and real-time/offline mode differences.
+3. Continue recipe recall, broader effect chains, resident-memory/long-file work,
+   restoration and freeze acceptance as scoped in the gap analysis and handoff.
+   CometBeat owns composition; CrisperWeaver owns ASR/TTS creation.
+
+## Prior source checkpoints (historical evidence)
 
 0.13.53 adds a bounded **browser-to-Rust null bridge** for the production source
 adapter, CPS1 snapshot upload, native worker and real-time AU/VST3 DSP. Test-only
@@ -39,7 +62,7 @@ starting an insert. This uses a synthetic clock, not a physical output device.
 Native source audition now explicitly admits **48 kHz only**; its offline plan
 remains rate-generic. See [evidence](docs/evidence/native-source-null.json).
 
-Next: integrate a compact opt-in native source mode into the shared Source Editor
+At the .50 checkpoint, the next task was to integrate a compact opt-in native source mode into the shared Source Editor
 Play/Stop, retaining rendered fallback and admitting only qualified full-clip,
 rate/channel cases. Join ownership transitions, validate saved-state/first-pass
 Prepare/Apply behavior, monitor headroom and mono/stereo output semantics, and
