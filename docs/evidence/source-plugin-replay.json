@@ -1,0 +1,216 @@
+{
+  "sourceVersion": "0.13.67",
+  "date": "2026-10-19",
+  "scope": "Bounded ordered original-based replay and selection of saved external effects in verified mixed histories",
+  "hardwareOpened": false,
+  "validation": {
+    "frontend": {
+      "tests": 2375,
+      "files": 241,
+      "passed": true,
+      "seconds": 149.04
+    },
+    "focused": {
+      "tests": 90,
+      "files": 4,
+      "passed": true
+    },
+    "newCases": 28,
+    "productionBuild": "pass",
+    "fullLint": "pass",
+    "releaseChecks": {
+      "tests": 39,
+      "passed": true
+    },
+    "nativeSuites": "Not rerun; no Rust/DSP/driver changes. Prior native suite results remain baselines.",
+    "precedingCI": "Both 0.13.66 general CI and iOS passed."
+  },
+  "semantics": {
+    "processors": "External AU/VST3 effects; normalize, silence, DC removal, edge fades, invert, stereo swap/mono/copy. Unknown settings/types, chains/filters/restoration, unverified and retimed histories are refused before rendering.",
+    "admission": "Verified journal v1, matched decoded 44100/48000 Hz mono/stereo, <=8 operations, first window <=30 seconds and 256 MiB PCM allocation estimate. Single-effect limits remain unchanged.",
+    "processing": "Start from the entire first retained original window, execute each operation with its own local mask, crop preceding output only between saved windows, restore each plug-in base, never reuse transient helper state or earlier preview PCM.",
+    "publication": "Replace only the selected recipe/mask. Persist the final window once through protect-before-publication; preserve original mapping, visible offset, siblings, other operations and one Undo/Redo.",
+    "ui": "Choose a saved external effect in a compact dropdown. Waveform/Original/Preview show the final all-channel result; mask controls use the selected effect clock and map the current clip into it. Ranges outside the final window are explained in Info.",
+    "epoch": "Root epoch state/ref stays latched across effect switches, including same-batch project round trips. Close and stale jobs cannot start later helpers or publish partial replay.",
+    "transport": "Existing arrangement close/join still precedes source helper allocation and audition; monitor gain remains outside Apply."
+  },
+  "mixedRuns": [
+    {
+      "replayOnly": true,
+      "replayQualification": {
+        "sourceRate": 48000,
+        "sourceChannels": 2,
+        "operations": 4,
+        "firstInputFrames": 48000,
+        "finalFrames": 24000,
+        "inputError": 0,
+        "firstApplyError": 0,
+        "secondApplyError": 0,
+        "editedMaskApplyError": 0,
+        "editedEarlierMask": {
+          "channel": -1,
+          "ranges": [
+            {
+              "start": 16800,
+              "end": 31200
+            }
+          ]
+        },
+        "exactWaveform": true,
+        "bothEffectsEditable": true,
+        "repeatable": true,
+        "earlierHistoryPreserved": true,
+        "unchangedOperations": true,
+        "oneUndoRedo": true,
+        "portableReopen": true,
+        "renderedAB": true,
+        "siblingRetained": true,
+        "closeDiscarded": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "retainedPublishedFiles": 3
+      },
+      "stats": {
+        "bytes": 0,
+        "closed": 0,
+        "hardware": false,
+        "sessions": 0,
+        "snapshots": 0,
+        "started": 0
+      }
+    },
+    {
+      "replayOnly": true,
+      "replayQualification": {
+        "sourceRate": 44100,
+        "sourceChannels": 1,
+        "operations": 4,
+        "firstInputFrames": 44100,
+        "finalFrames": 22050,
+        "inputError": 0,
+        "firstApplyError": 0,
+        "secondApplyError": 0,
+        "editedMaskApplyError": 0,
+        "editedEarlierMask": {
+          "channel": -1,
+          "ranges": [
+            {
+              "start": 15435,
+              "end": 28665
+            }
+          ]
+        },
+        "exactWaveform": true,
+        "bothEffectsEditable": true,
+        "repeatable": true,
+        "earlierHistoryPreserved": true,
+        "unchangedOperations": true,
+        "oneUndoRedo": true,
+        "portableReopen": true,
+        "renderedAB": true,
+        "siblingRetained": true,
+        "closeDiscarded": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "retainedPublishedFiles": 3
+      },
+      "stats": {
+        "bytes": 0,
+        "closed": 0,
+        "hardware": false,
+        "sessions": 0,
+        "snapshots": 0,
+        "started": 0
+      }
+    }
+  ],
+  "singleRegression": {
+    "recallOnly": true,
+    "recallQualification": {
+      "sourceRate": 48000,
+      "sourceChannels": 2,
+      "auInputError": 0,
+      "auApplyError": 0,
+      "trimmedInputError": 0,
+      "trimmedApplyError": 0,
+      "editedMaskApplyError": 0,
+      "editedMask": {
+        "channel": 1,
+        "ranges": [
+          {
+            "start": 4800,
+            "end": 9600
+          },
+          {
+            "start": 38400,
+            "end": 43200
+          }
+        ]
+      },
+      "editedMaskUndoRedo": true,
+      "editedMaskPortableReopen": true,
+      "repeatedApplyError": 0,
+      "fullWindowFrames": 48000,
+      "clipOffset": 0.25,
+      "originalOffset": 0.5,
+      "disjointRanges": true,
+      "individualChannel": true,
+      "siblingUnchanged": true,
+      "oneUndoAndRedo": true,
+      "portableReopen": true,
+      "restoredParameters": true,
+      "baseStatePreserved": true,
+      "noncumulative": true,
+      "exactWaveformPixels": true,
+      "renderedAuditionAB": true,
+      "arrangementCloseJoined": true,
+      "monitorExcludedFromApply": true,
+      "responsiveWidths": [
+        1440,
+        375
+      ],
+      "responsiveLanguages": [
+        "en",
+        "de"
+      ],
+      "lateCloseDiscarded": true,
+      "projectRoundtripDiscarded": true,
+      "recordingRoundtripDiscarded": true,
+      "mixedHistoryGated": true,
+      "retainedPublishedFiles": 4
+    },
+    "stats": {
+      "bytes": 0,
+      "closed": 1,
+      "hardware": false,
+      "sessions": 0,
+      "snapshots": 0,
+      "started": 1
+    }
+  },
+  "phases": [
+    "48-kHz stereo mixed run passed with final production replay/epoch logic before the manifest-only 0.13.67 version bump. The later fixture decoder-context channel argument does not change its stereo behavior.",
+    "44.1-kHz mono mixed and 48-kHz stereo single-effect runs use the final version and fixture. Final focused/full suite, build and lint follow all production changes.",
+    "Initial mixed browser probe failed because its fixture did not expand Parameters in the ordinary effect panel; corrected fixture, no passed evidence claimed for that attempt.",
+    "Early lint/type checks caught shared epoch ref rendering and typed-array inference issues; fixed with root reactive epoch state plus event/effect ref checks and explicit PCM types. All final checks pass."
+  ],
+  "limitations": [
+    "Every browser AudioContext is an offline substitute; no actual device, microphone, TCC, Wry output/listening or signed/mobile qualification.",
+    "FS/conversion/relocation IPC wrappers are synthetic; trusted Apple AUPeakLimiter/Steinberg ADelay DSP and fixture files are real. Parent tripwires do not establish arbitrary child plug-in sandboxing.",
+    "Actual mixed fixtures use four operations, a one-second first window and a half-second final window. The maximum admitted count/window is not a long-session responsiveness or memory benchmark.",
+    "Utilities are synchronous within each bounded stage and yield between stages. PCM estimates exclude arbitrary plug-in internals.",
+    "No legacy provenance promotion, chain/restoration replay, utility-parameter editor, larger window/count, Native recall/new-format admission, ordinary preview staging rewrite, install, signing, tag or Apple upload."
+  ]
+}

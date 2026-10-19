@@ -10,7 +10,7 @@ export async function commitSourcePluginRecall(plan:SourcePluginRecallPlan,prepa
  const check=()=>{signal.throwIfAborted();const state=current();assertSourcePluginRecallCurrent(plan,state);return state;};
  let token:string|undefined,publicationStarted=false;
  try{
-  check();const buffer=new AudioBuffer({numberOfChannels:prepared.pcm.length,length:plan.frames,sampleRate:plan.rate});prepared.pcm.forEach((c,ch)=>buffer.copyToChannel(c as Float32Array<ArrayBuffer>,ch));
+  check();const buffer=new AudioBuffer({numberOfChannels:prepared.pcm.length,length:plan.outputFrames,sampleRate:plan.rate});prepared.pcm.forEach((c,ch)=>buffer.copyToChannel(c as Float32Array<ArrayBuffer>,ch));
   let filePath:string|undefined;
   if('__TAURI_INTERNALS__' in window){
    const wav=await encodeSourceBufferWav(buffer,signal);check();

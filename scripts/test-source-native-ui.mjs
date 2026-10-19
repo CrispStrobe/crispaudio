@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {execFileSync,execFile} from 'node:child_process';import {promisify} from 'node:util';
 import {mkdtempSync,writeFileSync,readFileSync,rmSync,unlinkSync,statSync} from 'node:fs';
 import {tmpdir} from 'node:os';import {join} from 'node:path';import {pathToFileURL} from 'node:url';
+import {qualifySourceReplay} from './fixtures/sourceReplayQualification.mjs';
 import {qualifySourceJournal} from './fixtures/sourceJournalQualification.mjs';
 import {qualifySourcePluginRecall} from './fixtures/sourcePluginRecallQualification.mjs';
 import {qualifySourceRate} from './fixtures/sourceRateQualification.mjs';
@@ -17,7 +18,7 @@ verifyNativeSourceBridge(binary);
 const call=(helper,operation,args)=>JSON.parse(execFileSync(helper,[operation,JSON.stringify(args)],{timeout:20000,maxBuffer:2*1024*1024}));
 const limiter=call(au,'plugin-scan',{}).find(p=>p.name==='AUPeakLimiter'),delay=call(vst,'plugin-scan',{path:join(folder,'adelay.vst3')}).find(p=>p.name==='ADelay');assert.ok(limiter&&delay);
 const {chromium}=await import(pathToFileURL(process.env.CRISPAUDIO_PLAYWRIGHT_MODULE).href),browser=await chromium.launch({headless:true,executablePath:process.env.CRISPAUDIO_CHROME_EXECUTABLE,args:['--mute-audio']}),bridge=nativeSourceBridge({binary,ids:[limiter.id,delay.id]}),root=mkdtempSync(join(tmpdir(),'crispaudio-source-ui-'));
-let selectedParity,serial=0,lastSession,lastStatus,lastPreparedBytes,lastSnapshotBytes,lastSnapshotInputBytes,failSnapshot=false,gateCommand,releaseGate,held=false;const conversions=new Map(),protectedConversions=new Set(),retainedConversions=new Set(),snapshotRenders=[];const prepared=[],uploads=[],starts=[],summaries=[],infos=new Map();
+let selectedParity,serial=0,lastSession,lastStatus,lastPreparedBytes,lastSnapshotBytes,lastSnapshotInputBytes,failSnapshot=false,gateCommand,releaseGate,held=false;const conversions=new Map(),protectedConversions=new Set(),retainedConversions=new Set(),snapshotRenders=[],snapshotInputs=[];const prepared=[],uploads=[],starts=[],summaries=[],infos=new Map();
 function writeSource(signal=false){const frames=signal?sourceRate:sourceFrames,stride=sourceChannels*4,data=Buffer.alloc(44+frames*stride);data.write('RIFF');data.writeUInt32LE(data.length-8,4);data.write('WAVEfmt ',8);data.writeUInt32LE(16,16);data.writeUInt16LE(3,20);data.writeUInt16LE(sourceChannels,22);data.writeUInt32LE(sourceRate,24);data.writeUInt32LE(sourceRate*stride,28);data.writeUInt16LE(stride,32);data.writeUInt16LE(32,34);data.write('data',36);data.writeUInt32LE(frames*stride,40);for(let i=0;i<frames;i++)for(let ch=0;ch<sourceChannels;ch++){const wave=.13*Math.sin(2*Math.PI*997*i/sourceRate+ch*.7)+.06*Math.sin(2*Math.PI*9701*i/sourceRate+ch*.3)+(i===Math.floor(sourceRate*.31)+7?.2:0),value=signal?wave:(partial&&(i<sourceRate*.5||i>=sourceRate*1.5)?.25:1)*(ch===0?.25:-.125);data.writeFloatLE(value,44+i*stride+ch*4);}const path=join(root,signal?'signal.wav':'source.wav');writeFileSync(path,data);return path;}
 const sourcePath=writeSource(),signalPath=writeSource(true);
 try{
@@ -29,6 +30,7 @@ try{
   if(command==='fixture_prepared')return [...lastPreparedBytes];
   if(command==='fixture_snapshot')return [...lastSnapshotBytes];
   if(command==='fixture_snapshot_input')return [...lastSnapshotInputBytes];
+  if(command==='fixture_snapshot_inputs')return snapshotInputs.slice(-args.count).map(item=>({id:item.id,bytes:[...item.bytes]}));
   if(command==='fixture_plugin_info')return infos.get(args.id);
   if(command==='fixture_retained_files')return [...retainedConversions].map(path=>({path,exists:statSync(path).isFile()}));
   if(command==='fixture_snapshot_fault'){failSnapshot=true;return null;}
@@ -45,7 +47,7 @@ try{
   if(command==='audio_unit_plugin'){
    if(args.operation==='plugin-scan')return {plugins:[limiter,delay],warnings:[]};const request={...args.request};if(args.operation==='plugin-render')request.output=join(root,`render-${++serial}.wav`);
    if(args.operation==='plugin-render'&&request.path.includes('snapshot-input-')&&failSnapshot){failSnapshot=false;throw new Error('Injected snapshot-only failure');}
-   const result=JSON.parse((await execute(request.id.startsWith('vst3:')?vst:au,[args.operation,JSON.stringify(request)],{timeout:20000,maxBuffer:2*1024*1024})).stdout);if(args.operation==='plugin-render'){if(request.path.includes('snapshot-input-')){snapshotRenders.push({request,result});lastSnapshotBytes=readFileSync(result.path);lastSnapshotInputBytes=readFileSync(request.path);}else{prepared.push({request,result});lastPreparedBytes=readFileSync(result.path);}}if(args.operation==='plugin-info')infos.set(request.id,result);if(args.operation===gateCommand){held=true;await new Promise(resolve=>{releaseGate=resolve;});}return result;
+   const result=JSON.parse((await execute(request.id.startsWith('vst3:')?vst:au,[args.operation,JSON.stringify(request)],{timeout:20000,maxBuffer:2*1024*1024})).stdout);if(args.operation==='plugin-render'){if(request.path.includes('snapshot-input-')){snapshotRenders.push({request,result});lastSnapshotBytes=readFileSync(result.path);lastSnapshotInputBytes=readFileSync(request.path);snapshotInputs.push({id:request.id,bytes:lastSnapshotInputBytes});if(snapshotInputs.length>8)snapshotInputs.shift();}else{prepared.push({request,result});lastPreparedBytes=readFileSync(result.path);}}if(args.operation==='plugin-info')infos.set(request.id,result);if(args.operation===gateCommand){held=true;await new Promise(resolve=>{releaseGate=resolve;});}return result;
   }
   if(command==='plugin:fs|read_file'){assert.ok(args.path.startsWith(root));return [...readFileSync(args.path)];}
   if(command==='plugin:fs|remove'){assert.ok(args.path.startsWith(root));unlinkSync(args.path);return null;}
@@ -78,7 +80,9 @@ try{
   s.setState({...s.getInitialState(),project:{...s.getInitialState().project,id:'native-ui',sampleRate:sourceRate,duration:1,tracks:[]}});s.getState().importAudioSource({id:'source',name:'Source',filePath:path,buffer,sampleRate:sourceRate,channels:sourceChannels,duration:sourceFrames/sourceRate,peaks:{min:new Float32Array([- .125]),max:new Float32Array([.25])}});s.getState().selectSegment(s.getState().project.tracks[0].segments[0].id);if(clipOffset){const state=s.getState();s.setState({project:{...state.project,duration:1,tracks:state.project.tracks.map(t=>({...t,segments:t.segments.map(c=>({...c,sourceOffset:clipOffset,duration:1}))}))}});}s.temporal.getState().clear();
   const ctx=new OfflineAudioContext(2,48000,48000);window.main=new TimelineEngine(ctx,ctx.createGain());window.uiRoot=createRoot(document.getElementById('fixture'));window.uiRoot.render(React.createElement(TimelineEngineContext.Provider,{value:{current:window.main}},React.createElement(SourceEditor)));
  },{path:sourcePath,sourceChannels,sourceFrames,clipOffset,sourceRate});
- if(process.env.CRISPAUDIO_TEST_JOURNAL_ONLY==='1'){
+ if(process.env.CRISPAUDIO_TEST_REPLAY_ONLY==='1'){
+ const replayQualification=await qualifySourceReplay(page,{rate:sourceRate,channels:sourceChannels,offset:clipOffset,delayId:delay.id,limiterId:limiter.id});assert.deepEqual(errors,[]);console.log(JSON.stringify({replayOnly:true,replayQualification,stats:await bridge.native('bridge_stats')}));
+ }else if(process.env.CRISPAUDIO_TEST_JOURNAL_ONLY==='1'){
  assert.equal(sourceChannels,2);const journalQualification=await qualifySourceJournal(page,{rate:sourceRate,offset:clipOffset});assert.deepEqual(errors,[]);console.log(JSON.stringify({journalOnly:true,journalQualification,stats:await bridge.native('bridge_stats')}));
  }else if(process.env.CRISPAUDIO_TEST_RECALL_ONLY==='1'){
  const info=call(au,'plugin-info',{id:limiter.id});await page.evaluate(async({info,id,offset,rangeStart,rangeEnd,rate})=>{

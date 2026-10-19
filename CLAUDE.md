@@ -1285,3 +1285,24 @@ Reversible retime validates the retained pre-retime derivative; later destructiv
 retime processing and truncation drop completeness. Do not infer legacy provenance.
 The marker establishes coordinates, not processor validity, historical DSP rate,
 byte parity or mixed replay admission. See docs/SOURCE_EDIT_JOURNALS.md.
+
+
+### Ordered saved-effect replay (0.13.67)
+
+`sourcePluginRecallPlan` admits verified mixed journals only for explicitly known
+processors, <=8 operations/30-second first window, decoded 44.1/48-kHz mono/stereo
+and the PCM estimate. `SourcePluginRecallRender` processes the first original window
+fully, crops preceding output into the next window and restores each saved plug-in
+base. Replace only the chosen recipe/mask; never skip unsupported operations or
+seed another edit from processed output/transient helper state.
+
+`plan.frames/input/selectionVisible` describe the selected effect's processing
+window; `outputFrames/displayInput/visible` describe the final derivative. Range
+controls use the former; waveform/audition/owned Apply use the latter. Mixed
+waveforms show all output channels, because later utilities can move an earlier
+single-channel effect. Map mask overlays by original sample origins. Keep the
+root epoch state/ref sticky across operation switches, plus close/join-before-helper
+ownership ordering. Utilities yield between bounded synchronous stages. The marker
+alone does not admit chains/restoration, arbitrary settings, legacy journals or
+larger windows. Legacy migration from a freshly observed single-effect Apply is
+still future work. See the current handoff and source editing guide.

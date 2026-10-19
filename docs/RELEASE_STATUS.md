@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.66, source edit window provenance](#source-edit-window-provenance--01366-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.67, ordered saved-effect replay](#ordered-saved-effect-replay--01367-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -5049,3 +5049,47 @@ acceptance. [Evidence](evidence/source-edit-journals.json).
 The preceding 0.13.65 iOS workflow passed; general CI remained queued. Refresh the
 new checkpoint workflows after pushing. Installed apps and user sessions remain
 untouched; no tag or Apple upload.
+
+
+## Ordered saved-effect replay — 0.13.67 source candidate
+
+Verified mixed histories now replay saved external effects and basic audio/channel
+utilities in order, processing full earlier windows before later crops. A compact
+selector chooses the effect to edit. One owned Apply replaces its recipe/mask and
+preserves other operations, originals, siblings, offsets, Undo/Redo and portable
+reopen. Waveform/audition show the final window; advanced range fields use the
+chosen effect's clock. Root invalidation remains sticky across effect switches.
+
+Initial mixed admission: eight operations, 30-second first window, mono/stereo
+44.1/48 kHz and 256 MiB PCM estimate. Single-effect limits remain unchanged. Legacy,
+retimed, chain/filter/restoration and unsupported histories stay gated. No new
+Native/format admission, backend/DSP, install, signing, release tag or Apple upload.
+
+
+Validation: **2,375 tests in 241 files** pass, with 90 focused checks in four files
+and 28 added regressions. Production build, full lint and 39 release checks pass.
+Both preceding 0.13.66 general CI and iOS workflows passed. Rust/DSP/driver and
+native suites were not rebuilt or rerun; their prior results remain baselines.
+
+Actual browser workflows build four operations through ordinary Apply: inversion,
+ADelay, later crop/channel edge fades, then AUPeakLimiter. Real trusted-helper checks
+pass at **48-kHz stereo and 44.1-kHz mono**: both effects editable, repeated renders,
+earlier mask/clock translation, full helper input history and three fresh Apply
+comparisons all have sample error zero; waveform pixels match the independent
+reference. Other operations, original mapping, siblings, one Undo/Redo and portable
+reopen survive. Rendered A/B, EN/DE 1440/375 layouts and held first-stage reply/close
+cancellation pass. Each run retains three published files through Undo/reopen before
+the fixture removes only its own root; no native session is opened in mixed runs.
+
+The stereo mixed run precedes the manifest-only version bump; production replay
+logic is the same. The final mono run and single-effect regression follow it.
+The fresh 48-kHz stereo single-effect run also passes held native arrangement close,
+showing no helper input before acknowledgement, and joins one null session with
+zero snapshots/bytes. Its A/B, mask, reopen and epoch checks pass. FS/conversion/
+relocation wrappers are mocked; helpers/files/null DSP are real. These checks do
+not establish actual output/listening, Wry ACL/bookmarks, arbitrary plug-in sandbox,
+physical/timing/load or signed/mobile acceptance. Maximum count/window responsiveness
+and memory remain future measurements. [Evidence](evidence/source-plugin-replay.json).
+
+No installer, tag, signing or Apple upload. Installed sessions remain untouched;
+refresh workflows for the new source push.

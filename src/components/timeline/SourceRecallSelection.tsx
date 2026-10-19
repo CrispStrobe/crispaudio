@@ -11,13 +11,13 @@ export function SourceRecallSelection({plan,value,disabled,onChange,onDraft}:{pl
  const {t}=useTranslation();
  const commit=(next:SourcePluginRecallSelection)=>{try{onChange(sourcePluginRecallSelection(plan,next));return true;}catch{return false;}};
  const same=(ranges:SourcePluginRecallSelection['ranges'])=>JSON.stringify(value.ranges)===JSON.stringify(ranges);
- const preset=same(sourcePluginRecallSelection(plan,plan.operation).ranges)?'saved':same([plan.visible])?'clip':same([{start:0,end:plan.frames}])?'all':'custom';
+ const preset=same(sourcePluginRecallSelection(plan,plan.operation).ranges)?'saved':same([plan.selectionVisible])?'clip':same([{start:0,end:plan.frames}])?'all':'custom';
  let cursor=0,gap:{start:number;end:number}|undefined;
  for(const range of [...value.ranges,{start:plan.frames,end:plan.frames}]){if(range.start-cursor>=3){gap={start:cursor,end:range.start};break;}cursor=range.end;}
  const added=gap?{start:gap.start+Math.max(1,Math.floor((gap.end-gap.start)/4)),end:gap.end-Math.max(1,Math.floor((gap.end-gap.start)/4))}:undefined;
  return <details><summary className="min-h-11 content-center cursor-pointer">{t('sourceRecall.selection')}</summary><fieldset disabled={disabled} className="space-y-2">
   <div className="flex flex-wrap gap-2 items-center"><select className="timeline-tool min-w-0 max-w-full" aria-label={t('sourceEditor.channel')} value={value.channel} onChange={e=>commit({...value,channel:Number(e.target.value)})}><option value={-1}>{t('sourceEditor.allChannels')}</option>{plan.input.channels.map((_,ch)=><option key={ch} value={ch}>{t('sourceEditor.channelNumber',{number:ch+1})}</option>)}</select>
-   <select className="timeline-tool min-w-0 max-w-full" aria-label={t('sourceRecall.ranges')} value={preset} onChange={e=>commit({...value,ranges:e.target.value==='saved'?plan.operation.ranges:e.target.value==='clip'?[plan.visible]:[{start:0,end:plan.frames}]})}><option value="saved">{t('sourceRecall.saved')}</option><option value="clip">{t('sourceRecall.clip')}</option><option value="all">{t('sourceRecall.full')}</option><option value="custom" disabled>{t('sourceRecall.custom')}</option></select>
+   <select className="timeline-tool min-w-0 max-w-full" aria-label={t('sourceRecall.ranges')} value={preset} onChange={e=>commit({...value,ranges:e.target.value==='saved'?plan.operation.ranges:e.target.value==='clip'?[plan.selectionVisible]:[{start:0,end:plan.frames}]})}><option value="saved">{t('sourceRecall.saved')}</option><option value="clip">{t('sourceRecall.clip')}</option><option value="all">{t('sourceRecall.full')}</option><option value="custom" disabled>{t('sourceRecall.custom')}</option></select>
    <InfoButton label={t('sourceRecall.selection')}>{t('sourceRecall.selectionHelp')}</InfoButton>
   </div>
   {value.ranges.map((range,index)=><div key={index} className="flex flex-wrap gap-2 items-center" role="group" aria-label={t('sourceRecall.rangeNumber',{number:index+1})}>

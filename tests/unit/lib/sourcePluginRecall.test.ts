@@ -49,3 +49,6 @@ it.each([
 ])('rejects an invalid edited mask %j rather than clamping or processing other samples',selection=>{
  const f=recallFixture(),plan=sourcePluginRecallPlan(f.state,'clip');expect(()=>prepareSourcePluginRecall(plan,plan.input.channels,plan.recipe,selection)).toThrow('sourceRecall.bounds');expect(f.source.buffer.getChannelData(0)[0]).toBe(3);
 });
+it('does not trust orphaned per-operation windows after a legacy app discards the completeness marker',()=>{
+ const f=recallFixture();f.clip.sourceEdit!.operations[0].window={start:999999,frames:1};const plan=sourcePluginRecallPlan(f.state,'clip');expect(plan.mixed).toBe(false);expect(plan.frames).toBe(4800);expect(plan.input.channels[0]).toEqual(f.original.buffer.getChannelData(0).subarray(1200,6000));
+});

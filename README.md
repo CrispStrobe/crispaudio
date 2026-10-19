@@ -90,8 +90,11 @@ Select a clip and open **Source Editor** for detailed work on its source window.
 - On Mac, revise a saved external effect under **External effects → Edit saved effect**.
   Expand **Ranges & channels** for exact sample boundaries, separate ranges or one channel.
   Render from the retained original and Apply one undoable replacement. Trimmed
-  clips keep their earlier FX history. This supports one saved plug-in operation
-  in bounded mono/stereo 44.1/48-kHz audio; mixed edit histories remain unavailable.
+  clips keep their earlier FX history. Single effects support bounded mono/stereo
+  44.1/48-kHz audio. Verified mixed histories can replay external effects and basic
+  audio/channel tools in order; choose the saved effect to change from the dropdown.
+  Mixed replay currently allows eight operations and a 30-second first window.
+  Older mixed histories without saved processing windows remain unavailable.
   [Saved-effect editing](docs/SOURCE_EDITING.md#edit-a-saved-external-effect).
 - Enable **Live effects**, then press Play to adjust high-pass, low-pass and output
   while listening. Arrange up to six high/low-pass, level and clipper effects, with

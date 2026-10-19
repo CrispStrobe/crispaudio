@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [source edit window provenance, 0.13.66](#source-edit-window-provenance--01366-checkpoint). The active product
+Current checkpoint: [ordered saved-effect replay, 0.13.67](#ordered-saved-effect-replay--01367-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.66 records source operation windows and validates retained audio; see the latest checkpoint below. Source 0.13.65 adds editable saved-effect masks; source 0.13.64 adds a bounded original-based saved-effect editor; see the latest checkpoint below. Source 0.13.63 adds automatic bounded native FX waveform snapshots; see the latest checkpoint below. Source 0.13.62 adds 44.1-kHz source audition
+The installed baseline remains 0.13.33. Source 0.13.67 adds bounded ordered saved-effect replay; see the latest checkpoint below. Source 0.13.66 records source operation windows and validates retained audio; see the latest checkpoint below. Source 0.13.65 adds editable saved-effect masks; source 0.13.64 adds a bounded original-based saved-effect editor; see the latest checkpoint below. Source 0.13.63 adds automatic bounded native FX waveform snapshots; see the latest checkpoint below. Source 0.13.62 adds 44.1-kHz source audition
 on the native 48-kHz clock; see the latest checkpoint below. Source 0.13.61 admits one contiguous native
 source selection; see the latest checkpoint below. Source 0.13.60 extends opt-in native source
 audition to whole mono 48-kHz clips; see the latest checkpoint below. Source 0.13.59 combines actual command
@@ -1953,3 +1953,87 @@ acceptance. [Evidence](evidence/source-edit-journals.json).
 The preceding 0.13.65 iOS workflow passed; general CI remained queued. Refresh the
 new checkpoint workflows after pushing. Installed apps and user sessions remain
 untouched; no tag or Apple upload.
+
+
+## Ordered saved-effect replay — 0.13.67 checkpoint
+
+Source Editor → External effects → Edit saved effect now admits verified mixed
+histories containing external plug-ins plus normalize, silence, DC removal, edge
+fades, polarity inversion and stereo swap/mono/copy tools. A compact dropdown
+selects which saved external effect to edit. Other operations retain their recipes.
+The first slice allows up to eight operations, a first processing window up to
+30 seconds, decoded mono/stereo 44.1/48 kHz and a 256 MiB PCM allocation estimate.
+Single-effect admission remains two minutes within its existing PCM budget.
+
+`SourcePluginRecallRender` starts from the first full original window, executes
+saved operations in order, crops only between recorded windows and restores each
+plug-in's base state. The selected recipe/mask is replaced; other recipes stay
+unchanged. Missing/unsupported processors and unverified/retimed histories are
+refused before helpers run. Utilities yield between bounded stages; helper passes
+keep the existing serialized owned staging and cancellation. Apply publishes only
+the final window through the owned conversion, preserving offsets, originals,
+sibling source references, Undo/Redo and portable reopen.
+
+The waveform/Original comparison shows the final combined source window, with all
+output channels for mixed replay (later channel operations can move an earlier
+single-channel effect). Its mask overlay intersects the selected effect with that
+window. Advanced range fields use the selected effect's own sample clock; the
+Current clip preset translates into that clock. Info explains earlier ranges that
+are outside the displayed result. Original compares dry retained audio, not the
+preceding processed stage. Switching effects discards local drafts and restores
+that effect's saved settings. Root-level epoch/ref state keeps invalidation sticky
+across switches and same-batch state round trips. Arrangement close/join still
+precedes helper allocation/audition; monitor level never enters Apply.
+
+Next scoped work:
+1. **Legacy single-effect migration from a newly observed pass.** An explicit
+   original-based recalled Render + Apply could seed verified window metadata for
+   a legacy single operation. Qualify exact sample-origin mapping, mask/state,
+   siblings, Undo/reopen and subsequent ordinary append. Never infer missing older
+   windows or promote an ambiguous mixed/truncated/retimed journal.
+2. **Ordinary SourcePluginEffects owned staging/publication.** Replace its legacy
+   file-path/input and `persist_recording` paths with owned decoded PCM and a
+   protect-before-publication transaction. Cover generated sources, rate/window
+   policy, cancellation/staleness and failures without silently reducing support.
+3. **Broaden ordered replay deliberately.** Built-in chains, filters, restoration
+   and editing utility settings need processor-specific parameter/state, padding,
+   latency/working-set and crop-history checks. Larger windows/operation counts
+   need measured responsiveness/memory. Current utility stages are synchronous
+   inside the bounded window and yield between stages; no long-session benchmark
+   or arbitrary plug-in internal allocation guarantee is included.
+4. **Native recall and other formats stay separate.** Keep the scoped all-channel
+   contiguous admission proposal and required clock/cursor/latency/fresh Apply
+   evidence from .65. No extra Native or general 8–192-kHz support is implied.
+5. Continue accepted long-session memory, monitoring/plug-ins, sessions/delivery,
+   restoration/recorded-audio timing and physical/signed/mobile qualification.
+   Preserve installed apps, pending recording checks and retained/unknown assets.
+   Real-window helper ownership and bounded known-preview cleanup remain open.
+
+
+Validation: **2,375 tests in 241 files** pass, with 90 focused checks in four files
+and 28 added regressions. Production build, full lint and 39 release checks pass.
+Both preceding 0.13.66 general CI and iOS workflows passed. Rust/DSP/driver and
+native suites were not rebuilt or rerun; their prior results remain baselines.
+
+Actual browser workflows build four operations through ordinary Apply: inversion,
+ADelay, later crop/channel edge fades, then AUPeakLimiter. Real trusted-helper checks
+pass at **48-kHz stereo and 44.1-kHz mono**: both effects editable, repeated renders,
+earlier mask/clock translation, full helper input history and three fresh Apply
+comparisons all have sample error zero; waveform pixels match the independent
+reference. Other operations, original mapping, siblings, one Undo/Redo and portable
+reopen survive. Rendered A/B, EN/DE 1440/375 layouts and held first-stage reply/close
+cancellation pass. Each run retains three published files through Undo/reopen before
+the fixture removes only its own root; no native session is opened in mixed runs.
+
+The stereo mixed run precedes the manifest-only version bump; production replay
+logic is the same. The final mono run and single-effect regression follow it.
+The fresh 48-kHz stereo single-effect run also passes held native arrangement close,
+showing no helper input before acknowledgement, and joins one null session with
+zero snapshots/bytes. Its A/B, mask, reopen and epoch checks pass. FS/conversion/
+relocation wrappers are mocked; helpers/files/null DSP are real. These checks do
+not establish actual output/listening, Wry ACL/bookmarks, arbitrary plug-in sandbox,
+physical/timing/load or signed/mobile acceptance. Maximum count/window responsiveness
+and memory remain future measurements. [Evidence](evidence/source-plugin-replay.json).
+
+No installer, tag, signing or Apple upload. Installed sessions remain untouched;
+refresh workflows for the new source push.

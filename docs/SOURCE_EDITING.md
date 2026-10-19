@@ -264,17 +264,17 @@ recipe and originals. Missing originals/plugins or a changed project do not publ
 partial edits. Derived files are staged, protected before publication, and rolled
 back when preparation is cancelled or becomes stale.
 
-The first slice supports **one saved plug-in operation**, matched decoded source
+Single-effect mode supports **one saved plug-in operation**, matched decoded source
 and derived rates of 44.1/48 kHz, one or two channels, up to two minutes and a
 256 MiB PCM allocation estimate including helper latency padding. Large windows,
-retimed clips and mixed operation journals remain gated with an explanation behind
+retimed clips and unverified/unsupported mixed journals remain gated with an explanation behind
 (i). Arbitrary plug-in internal allocation is outside that PCM estimate. Imported
 legacy recipes may not record the original file's processing rate; a new pass uses
 the retained decoded source rate, rather than promising byte-identical historical
 plug-in output. This does not expand Native's current channel/range/rate admission.
 
-Editing ranges/channels or replaying mixed histories requires a later journal
-replay step so earlier edits and processing-window coordinates are preserved.
+Range/channel editing and the bounded mixed-history mode below preserve earlier
+operations and their processing-window coordinates.
 
 
 ## Retained processing windows
@@ -282,6 +282,37 @@ replay step so earlier edits and processing-window coordinates are preserved.
 Since **0.13.66**, new edit histories remember the full original-source window used
 by each operation, including windows before later trimming. Project saves, reopen
 and recovery validate that metadata against retained audio. Earlier projects remain
-editable; their missing history windows are not guessed. Mixed-history recipe
-editing remains unavailable until complete ordered replay is implemented.
+editable; their missing history windows are not guessed. Verified histories can
+use the bounded ordered replay described below.
 [Implementation contract and next work](SOURCE_EDIT_JOURNALS.md).
+
+
+## Edit an effect within a mixed history
+
+Since **0.13.67**, **Edit saved effect** can replay verified histories containing
+external effects plus normalization, silence, DC removal, edge fades, polarity
+inversion and stereo channel tools. Choose the saved external effect in the compact
+dropdown, adjust parameters or collapsed **Ranges & channels**, Render preview,
+compare Original/Preview and Apply. Switching effects discards the local draft.
+Other saved operations keep their settings and run in their recorded order.
+
+Mixed replay supports up to **eight operations**, a first processing window up to
+**30 seconds**, mono/stereo 44.1/48 kHz and a **256 MiB PCM allocation estimate**.
+The full earlier windows are processed before later crops, preserving effect history
+before the current clip. Apply stores only the final source window and one Undo
+step; originals, siblings, offsets and recipes survive portable reopen.
+
+The waveform shows the final combined source window in all output channels. Range
+fields count samples in the selected effect's own earlier window; Current clip
+translates its boundaries into that clock. Only the intersection is highlighted on
+the waveform. Ranges before the displayed result can affect later effect history.
+Original is dry retained audio, and audition plays only the outlined current clip.
+Outside the selected effect's mask, preceding audio is preserved and subsequent
+saved operations still apply. Monitor level changes listening only.
+
+New verified coordinate histories are recorded by current versions. Older mixed
+histories without those windows, retimed histories, built-in chains/filters and
+restoration remain unavailable for this editor. No operation is silently omitted.
+Legacy single external effects retain the existing bounded editor, but do not gain
+mixed-history provenance automatically. Larger-history and Native audition
+admission require separate qualification.

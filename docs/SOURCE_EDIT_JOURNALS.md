@@ -1,8 +1,9 @@
 # Source edit window provenance
 
 Source 0.13.66 records complete **coordinate provenance** for new, unretimed source
-edit histories. This is groundwork for mixed-history replay; the mixed-history
-editor remains gated. The existing single external-effect editor is unchanged.
+edit histories. Source **0.13.67** uses this contract for bounded ordered mixed-history replay;
+see SOURCE_EDITING.md for admitted processors and limits. Unverified and unsupported
+histories remain gated.
 
 ## Stored contract
 
@@ -62,14 +63,14 @@ may discard the optional completeness marker when editing; such histories remain
 unverified when reopened here. No project format version bump is required for this
 optional metadata.
 
-The next implementation must admit explicit processor types, validate their saved
+Replay implementations must admit explicit processor types, validate their saved
 parameters/state, replay in order with each recorded crop and preserve unselected
 PCM/channels. Use fresh plug-in base states and owned helper/conversion paths. Apply
 must replace the chosen operation while preserving every other operation, one
 Undo/Redo, original mapping, sibling sources and portable reopen. Reject unsupported
 processors or insufficient legacy provenance; do not silently omit them. Partial
 publication, stale replies, cancellation and working-set limits need qualification
-before opening the mixed-history UI. Built-in chains/restoration and additional
+before broadening mixed-history admission. Built-in chains/restoration and additional
 Native admission retain their separate DSP/rate/history acceptance requirements.
 
 
