@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [shared native source controls, 0.13.54](#shared-native-source-controls--01354-checkpoint). The active product
+Current checkpoint: [native teardown admission, 0.13.55](#native-teardown-admission--01355-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,9 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.54 adds shared opt-in native
+The installed baseline remains 0.13.33. Source 0.13.55 closes native admission
+before teardown and tests the production owner registry; start at the latest
+checkpoint below. Source 0.13.54 adds shared opt-in native
 source controls; start at the latest checkpoint below. Source 0.13.53 adds isolated browser-to-Rust
 null-bridge qualification; see the latest checkpoint below. Source 0.13.52 fixes source plug-in
 first-pass state and stale prepared results; see the latest checkpoint below.
@@ -1125,3 +1127,51 @@ tag or Apple upload was made.
 
 Composition and ASR/TTS creation stay with CometBeat and CrisperWeaver. Candidate
 source is not a new installed build, TestFlight upload or completed DAW roadmap.
+
+
+## Native teardown admission — 0.13.55 checkpoint
+
+The normal Mac window/exit handlers now call `native_audio_lifecycle`: revoke
+snapshot admission first, then close recording and playback owners, then continue
+file/helper cleanup. Previously, playback could be admitted after its owner's
+close finished but before snapshot revocation. A blocked join also left uploads
+open during teardown. Validation-app cleanup now revokes admission before its
+existing cancel/shutdown actions too.
+
+`NativePlayback::start_with` contains the production owner/snapshot/range checks,
+recording exclusion, locked session publication and worker result handling.
+The Tauri command delegates to it with the existing real device-selection and
+`live::run` closure. There is no runtime null setting or alternate app command.
+`Session::join` explicitly retains its mutex through worker completion, including
+concurrent close callers; status/result ownership remains until registry close.
+
+Validation: **8 new focused default-app tests** pass. The complete Mac library
+suite with `native-validation` passes **72 tests**, with **8 intentionally ignored**
+(one physical output case and seven helper cases reserved for the isolated driver).
+Generated CPS1 PCM uses the real snapshot registry; bounded synthetic workers
+replace device/DSP preparation. During a blocked join, revoked entries are gone
+but the worker retains its 32,768-byte accounting lease; after join bytes are zero.
+Tests also cover preparation failure, cross-owner access/cancellation, recording
+exclusion, fault/panic ownership, concurrent joins and already-admitted preparation.
+Full lint, production frontend build, Rust formatting and **24 release checks**
+pass. Frontend logic is unchanged except the About version; .54's 2,204 frontend
+and 17-session UI/null-bridge results remain prior evidence, not new runs.
+[Teardown evidence](evidence/native-teardown-admission.json).
+No app bundle was built/replaced; running sessions and hardware stay untouched.
+
+### Remaining acceptance
+
+1. Invoke the actual Tauri commands through an isolated app/window without
+   replacing either running session. Cover binary upload, start/status/update/
+   close, cross-window calls, actual destruction/exit events, pending starts and
+   native recording-exclusive conflicts. Tests of core methods and cleanup
+   coordinators do not establish IPC or event-delivery acceptance.
+2. Continue WebKit/device/listening/timing/hotplug/load N5 checks, preserving the
+   existing pending recording question and Rendered default. Do not use the old
+   muted Live harness as a hardware-free check: it opens a real AudioQueue.
+3. Resume broader source rate/channel/range semantics, bounded native waveform
+   snapshots, original-based recipe reprocessing, scale, restoration and freeze
+   acceptance as scoped in the .54 checkpoint and gap analysis.
+
+No feature admission was broadened; the .54 source UI remains opt-in for whole
+stereo 48 kHz clips. CometBeat and CrisperWeaver keep their product boundaries.

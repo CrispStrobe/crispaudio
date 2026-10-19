@@ -1,6 +1,15 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.54 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.55 (installed baseline 0.13.33). This section is the current plan.
+
+0.13.55 closes native upload admission **before** joining audio owners on window
+or app teardown. A late command cannot use a retired snapshot; a command already
+admitted under its owner lock is cancelled and joined before cleanup returns.
+The actual production playback registry now has hardware-free admission, owner,
+recording-exclusion and join tests, using synthetic workers and generated PCM.
+The Tauri wrappers retain their existing command contract and real device path.
+Actual IPC/window-event delivery, WebKit and physical acceptance still follow.
+[Current handoff](docs/WORK_HANDOFF.md#native-teardown-admission--01355-checkpoint).
 
 0.13.54 integrates opt-in **Native · Preview** into the Source Editor's shared
 Play/Stop. Whole unretimed stereo 48 kHz clips (2048 frames–120 seconds) support
@@ -9,7 +18,7 @@ the default. Native monitoring starts at −12 dB or lower and uses a private �
 sample-peak limiter; neither changes prepared audio or Apply. Fresh helper passes
 retain restored state, originals and one Undo. Source waveforms/analysis remain
 labelled snapshots. Ownership transitions stop/join before replacement; faults
-require explicit recovery. See the [current handoff](docs/WORK_HANDOFF.md#shared-native-source-controls--01354-checkpoint).
+require explicit recovery. See the [source UI handoff](docs/WORK_HANDOFF.md#shared-native-source-controls--01354-checkpoint).
 
 Next, in order:
 

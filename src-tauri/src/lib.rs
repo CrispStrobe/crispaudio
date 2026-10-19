@@ -61,15 +61,12 @@ pub fn run() {
             if matches!(event, tauri::WindowEvent::Destroyed) {
                 #[cfg(target_os = "macos")]
                 {
-                    window
-                        .state::<commands::native_recording::NativeRecording>()
-                        .close_owner(window.label());
-                    window
-                        .state::<commands::native_playback::NativePlayback>()
-                        .close_owner(window.label());
-                    window
-                        .state::<crispaudio_media::native_snapshot::Snapshots>()
-                        .close_owner(window.label());
+                    commands::native_audio_lifecycle::close_owner(
+                        window.label(),
+                        &window.state::<crispaudio_media::native_snapshot::Snapshots>(),
+                        &window.state::<commands::native_recording::NativeRecording>(),
+                        &window.state::<commands::native_playback::NativePlayback>(),
+                    );
                     // Audio owners close before potentially blocking file cleanup.
                     window
                         .state::<commands::recording_conversions::ConversionFiles>()
@@ -238,12 +235,11 @@ pub fn run() {
         if matches!(event, tauri::RunEvent::Exit) {
             #[cfg(target_os = "macos")]
             {
-                app.state::<commands::native_recording::NativeRecording>()
-                    .shutdown();
-                app.state::<commands::native_playback::NativePlayback>()
-                    .shutdown();
-                app.state::<crispaudio_media::native_snapshot::Snapshots>()
-                    .shutdown();
+                commands::native_audio_lifecycle::shutdown(
+                    &app.state::<crispaudio_media::native_snapshot::Snapshots>(),
+                    &app.state::<commands::native_recording::NativeRecording>(),
+                    &app.state::<commands::native_playback::NativePlayback>(),
+                );
                 // Audio owners close before potentially blocking file cleanup.
                 app.state::<commands::recording_conversions::ConversionFiles>()
                     .shutdown();

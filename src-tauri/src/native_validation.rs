@@ -336,14 +336,14 @@ pub fn run() {
         .on_window_event(|window, event| {
             if matches!(event, tauri::WindowEvent::Destroyed) {
                 window
+                    .state::<crispaudio_media::native_snapshot::Snapshots>()
+                    .close_owner(window.label());
+                window
                     .state::<NativePlayback>()
                     .cancel_owner(window.label());
                 window
                     .state::<NativeClockState>()
                     .cancel_owner(window.label());
-                window
-                    .state::<crispaudio_media::native_snapshot::Snapshots>()
-                    .close_owner(window.label());
                 window.state::<PluginStreams>().close_owner(window.label());
                 window.state::<LoopbackState>().0.lock().unwrap().take();
             }
@@ -415,10 +415,10 @@ pub fn run() {
         .expect("Native validation startup failed");
     app.run(|app, event| {
         if matches!(event, tauri::RunEvent::Exit) {
-            app.state::<NativeClockState>().shutdown();
-            app.state::<NativePlayback>().shutdown();
             app.state::<crispaudio_media::native_snapshot::Snapshots>()
                 .shutdown();
+            app.state::<NativeClockState>().shutdown();
+            app.state::<NativePlayback>().shutdown();
             app.state::<PluginStreams>().shutdown();
             app.state::<LoopbackState>().0.lock().unwrap().take();
         }

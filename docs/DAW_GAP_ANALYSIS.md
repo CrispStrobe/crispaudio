@@ -32,6 +32,11 @@ creation remain with CometBeat and CrisperWeaver. Physical device/platform check
 Effect-aware segment waveforms are implemented through the bounded 0.13.24
 continuous-refresh checkpoint; continue the execution order below.
 
+Source checkpoint **0.13.55** closes the native window/exit admission gap and
+adds production owner-registry tests with synthetic workers and generated PCM.
+Actual Tauri IPC/window event delivery, WebKit and physical acceptance remain
+open. [Current handoff](WORK_HANDOFF.md#native-teardown-admission--01355-checkpoint).
+
 Source checkpoint **0.13.54** exposes compact opt-in native source controls on
 Mac, sharing Play/Stop with Rendered (the default). Initial admission is whole
 unretimed stereo 48 kHz clips, 2048 frames–120 seconds. Parameters, warm bypass and

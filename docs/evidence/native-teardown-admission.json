@@ -1,0 +1,59 @@
+{
+  "version": "0.13.55",
+  "date": "2026-10-19",
+  "hardwareOpened": false,
+  "problem": "Window/exit cleanup joined audio before snapshot admission was retired, leaving a late-start/upload gap.",
+  "change": "Retire snapshot admission before recording/playback cleanup. Share production playback admission, status and serialized join with synthetic-worker tests.",
+  "productionPaths": [
+    "Normal Mac WindowEvent::Destroyed handler",
+    "Normal Mac RunEvent::Exit handler",
+    "Validation-app revoke-first cleanup",
+    "NativePlayback start/status and Session join used by Tauri commands"
+  ],
+  "tests": [
+    "Owner, incomplete upload, missing snapshot and range admission before worker/device preparation",
+    "Preparation failure leaves no session/output reservation",
+    "Recording lease and playback exclude each other until registry close",
+    "Unrelated owner/session/snapshot calls do not cancel or close active playback",
+    "Worker failure and panic remain visible and owned until explicit close",
+    "Concurrent join callers wait for worker completion and keep recording excluded",
+    "Window/app teardown retires admission before a deliberately blocked owner join",
+    "Already-admitted preparation is published, cancelled and joined during teardown"
+  ],
+  "fixtures": {
+    "worker": "Synthetic cancellable threads with bounded channel waits; no device preparation or DSP helper",
+    "pcm": "Generated 2048-frame stereo CPS1 upload through real Snapshots registry",
+    "memory": "Revoked metadata has zero entries while the worker retains its 32768-byte accounting lease; zero bytes after join"
+  },
+  "validation": {
+    "focusedDefaultAppTests": 8,
+    "fullMacAppTests": {
+      "features": "native-validation",
+      "passed": 72,
+      "ignored": 8,
+      "ignoredScope": "One physical output test; seven real-helper cases reserved for the isolated null driver"
+    },
+    "rustFormatting": "passed",
+    "productionFrontendBuild": "passed",
+    "fullLint": "passed",
+    "releaseChecks": 24,
+    "frontendTests": "Unchanged except About version; not rerun. Previous .54 baseline: 2204 tests / 233 files.",
+    "browserDsp": "Not rerun; previous .54 actual editor null-bridge result: 17 sessions joined, zero retained snapshots/PCM."
+  },
+  "limits": [
+    "No actual Tauri IPC/OS window-event delivery acceptance; tests call production core/coordinator directly",
+    "Synthetic workers replace hardware/DSP only in private Rust test call sites, not a runtime app mode",
+    "No WebKit, Core Audio output/routing/clock/hotplug, physical listening/latency or sustained-load acceptance"
+  ],
+  "next": [
+    "Isolated actual command/owner/window acceptance without replacing running apps",
+    "Separate platform/device N5 qualification",
+    "Continue broader source semantics, bounded waveform snapshots, recipe recall and scale/restoration/freeze scopes"
+  ],
+  "distribution": {
+    "nativeAppBundlesBuilt": false,
+    "installedAppsUpdated": false,
+    "releaseTag": false,
+    "appleUpload": false
+  }
+}

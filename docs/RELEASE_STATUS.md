@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.54, shared native source controls](#shared-native-source-controls--01354-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.55, native teardown admission](#native-teardown-admission--01355-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4697,3 +4697,27 @@ Core Audio routing/timestamps/hotplug, physical listening/latency and sustained
 load remain separate acceptance. This is not physical iOS qualification. No app
 bundle was built or replaced, no tag was created and no Apple upload was made.
 [Evidence](evidence/source-native-ui.json) · [remaining scope](WORK_HANDOFF.md#shared-native-source-controls--01354-checkpoint).
+
+
+## Native teardown admission — 0.13.55 source candidate
+
+Window/exit cleanup now revokes native snapshots before waiting for recording and
+playback owners. This closes the late-start gap between an owner's completed
+cleanup and snapshot revocation. Pending admitted commands remain protected by the
+same owner lock until publication and are cancelled/joined by cleanup.
+The production playback registry's admission, status and join logic is shared
+with hardware-free tests; Tauri commands keep their existing argument/device/DSP
+path. Validation-app cleanup uses the same revoke-first policy.
+
+Actual Tauri IPC/window event delivery, WebKit, Core Audio routing/timing/hotplug,
+physical listening and sustained-load acceptance remain open. No native app bundle,
+installation, release tag or Apple upload is part of this checkpoint.
+
+Validation: **8 new focused app tests**, full Mac library suite with validation
+features (**72 passed / 8 ignored**), full lint, production frontend build, Rust
+formatting and **24 release checks** pass. Test workers are synthetic; CPS1 PCM,
+owner admission, recording leases, status and cleanup use production code.
+The frontend's .54 **2,204-test / 233-file** and **17-session browser/null-bridge**
+results remain prior evidence; those suites were not rerun for this backend change.
+[Evidence](evidence/native-teardown-admission.json) ·
+[next work](WORK_HANDOFF.md#native-teardown-admission--01355-checkpoint).
