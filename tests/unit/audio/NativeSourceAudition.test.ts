@@ -130,3 +130,23 @@ it.each([false,true])('auditions whole mono with cycle=%s without changing sourc
  await audio.update({parameters:{'100':.8},bypass:true,levelDb:0});await audio.stop();
  expect(channel).toEqual(original);expect(fx).toEqual(effect());expect(create).toHaveBeenCalledOnce();expect(f.snapshot.close).toHaveBeenCalledOnce();
 });
+
+it.each([false,true])('plays a selected interval with clip history, a relative cursor and cycle=%s',async loop=>{
+ const f=session(),data=input(),range={start:1200,end:4000};
+ f.playback.status.mockResolvedValue({phase:'playing',frame:2400,clockTimeMs:0,renderedFrames:4096,callbacks:4,fault:0,peaks:[.2,.1],appliedRevision:0});
+ create.mockResolvedValue(f.snapshot);const {audio}=owner();await audio.play({...data,range},{loop,muted:true});
+ const [project,sources]=create.mock.calls[0],source=[...sources.values()][0];
+ expect(project.duration).toBe(.1);expect(project.tracks[0].segments[0].sourceOffset).toBe(0);
+ expect(source.buffer.length).toBe(4800);expect(source.buffer.getChannelData(0)).toEqual(data.channels[0]);
+ expect(f.snapshot.startPlayback).toHaveBeenCalledWith({startFrame:1200,endFrame:4000,cycle:loop,loopStartFrame:1200,muted:true});
+ expect(audio.position()).toBeCloseTo(1200/48000);await audio.stop();expect(audio.position()).toBe(0);
+ expect(data.channels[0]).toEqual(new Float32Array(4800).fill(.2));
+});
+it.each([{start:-1,end:4000},{start:1.5,end:4000},{start:1200,end:NaN},{start:1200,end:5000},{start:1200,end:1200},{start:1200,end:3247}])('refuses invalid or short selection %j before allocating or uploading',async range=>{
+ const allocation=vi.fn();vi.stubGlobal('AudioBuffer',allocation);const audio=owner().audio;
+ await expect(audio.play({...input(),range})).rejects.toThrow();expect(allocation).not.toHaveBeenCalled();expect(create).not.toHaveBeenCalled();
+});
+it('admits the minimum selected window while reserving the full clip history memory',()=>{
+ const full=nativeSourcePlan(input()),selected=nativeSourcePlan({...input(),range:{start:1200,end:3248}});
+ expect(selected.estimatedBytes).toBe(full.estimatedBytes);expect(selected.start).toBe(1200/48000);expect(selected.end).toBe(3248/48000);expect(selected.project.duration).toBe(.1);
+});

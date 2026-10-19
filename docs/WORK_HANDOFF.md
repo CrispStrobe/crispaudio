@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [Whole mono source audition, 0.13.60](#whole-mono-source-audition--01360-checkpoint). The active product
+Current checkpoint: [Contiguous source selection, 0.13.61](#contiguous-source-selection--01361-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.60 extends opt-in native source
+The installed baseline remains 0.13.33. Source 0.13.61 admits one contiguous native
+source selection; see the latest checkpoint below. Source 0.13.60 extends opt-in native source
 audition to whole mono 48-kHz clips; see the latest checkpoint below. Source 0.13.59 combines actual command
 dispatch with real worker/DSP and a null consumer in MockRuntime tests. Source 0.13.58 qualifies snapshot IPC and
 window/exit cleanup in actual Wry/WebKit with no audio commands. Source 0.13.57 shares a verified native-helper
@@ -1479,3 +1480,73 @@ now reset only that restored helper cache, before Cargo starts, at the target ro
 and two known Mac triples. Six tests cover partial restores, scope, refusal outside
 Mac CI and symlink protection. Normal build ownership validation is unchanged;
 Rust dependency caches remain available. Verify the new Mac CI result after push.
+
+
+## Contiguous source selection — 0.13.61 checkpoint
+
+Native source preview now accepts one contiguous selection of at least 2048
+samples within an unretimed mono/stereo 48-kHz clip, with all channels selected.
+The entire clip remains limited to two minutes and the existing allocation budget.
+Rendered stays default. No extra dialog or transport is added.
+
+`NativeSourceInput.range` is a half-open clip-relative sample interval. The plan
+validates it before allocating/uploading and retains the complete clip PCM.
+`NativeSourceAudition` sets the native start/end/cycle boundaries and subtracts the
+selected start from its reported position. SourceEditor maps that relative position
+back to selected samples without repair audition padding. The production worker
+already processes the full clip history before emitting the selected interval;
+no worker, ring, helper DSP or native app command changes are required.
+
+Loops retain DSP history and stop at the selected end; tails outside the interval
+are excluded. Render preview still joins native playback and processes the whole
+clip in a fresh helper pass. Existing Apply replaces only selected samples,
+retaining the rest byte-for-sample, original source/offset and one Undo. Live
+history and real-time/offline plug-in modes can still differ from that fresh pass.
+
+Hardware-free qualification entry points:
+- `scripts/test-source-native-ui.mjs`: set `CRISPAUDIO_TEST_SOURCE_RANGE=1`,
+  source channels 1 and 2 separately. The generated source has distinct audio
+  outside a clip starting at a nonzero file offset; select its middle half.
+- `scripts/native-source-clock`: rebuild its explicit test executable. The bridge
+  retains at most 4096 consumed floats plus a frame counter for comparisons;
+  `bridge_capture` is a test-only endpoint, absent from the app.
+- Four strong queue/property abort guards are retained with `black_box`; the Node
+  bridge verifies their actual linked symbols before launch. An older driver
+  whose unused guard was stripped is explicitly refused. Existing muted-wire
+  admission stays enforced. Trusted helper children remain outside these parent
+  guards; this is not an arbitrary plug-in sandbox.
+- `NativeSourceAudition.test.ts`: full history PCM, selected start/end/loop, relative
+  clock, unchanged input/state and invalid/short bounds rejected before allocation.
+
+Next ordered work:
+1. Other rates: qualify actual resampling length, selected boundary rounding,
+   latency, helper state and fresh Apply rate/channel shape before admitting them.
+   `nativeSourcePlan` offline support alone does not qualify native playback.
+2. Individual channels and multiple ranges need explicit processing/history/clock
+   semantics. The production native loop supports one interval, not joined ranges;
+   do not relax UI guards without a defined graph/cursor/Apply implementation.
+3. Bounded native FX waveform snapshots: debounced helper preparation, cancellation,
+   generation/source/parameter identity, memory limits and honest snapshot labels;
+   preserve responsive playback and monitor-only gain exclusion.
+4. Original-based recipe recall: restore retained source/offset, process fresh from
+   the original, avoid cumulative effects; cover Apply, Undo/Redo, reopen and stale
+   results with bounded asset ownership.
+5. Continue measured long sessions/memory, monitoring/plug-in UX, session/delivery
+   and restoration/recorded-audio timing from the accepted workstation roadmap.
+
+Actual Wry playback/product registration, physical recording/output, timing/load,
+arbitrary plug-ins and signed/mobile acceptance remain separate. Preserve the
+installed baseline and isolated recording preview; no install/tag/upload here.
+
+Validation: **2,215 frontend tests in 233 files**, 56 focused source tests in three
+files, build, full/final runner lint, 39 release checks and 21 standalone native
+checks pass. Final actual editor/null-DSP runs pass for mono and stereo: **19
+sessions joined each**, zero retained snapshots/bytes, exact first-pass and later
+loop samples for the trusted delay fixture, and exact partial Apply including
+unchanged outside samples/original offset. Short/multiple ranges stay gated.
+EN/DE controls fit 1440/375-pixel desktop Chromium viewports; this is not iOS.
+[Evidence](evidence/source-native-ui.json).
+
+Both preceding .60 general CI and iOS checks succeeded, confirming the Mac helper
+cache restore repair. Refresh this checkpoint's newly triggered CI after push;
+there is no Store submission or physical audio validation in a main-branch push.

@@ -1,7 +1,13 @@
 // Isolated Rust test binary, never the installed app. No Tauri/device fallback.
-import {spawn} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
+export function verifyNativeSourceBridge(binary){
+ if(!binary)throw new Error('Explicit null driver required');
+ const symbols=execFileSync('nm',['-gU',binary],{encoding:'utf8',timeout:10000,maxBuffer:16*1024*1024}),defined=new Set(symbols.split('\n').map(line=>line.trim().split(/\s+/)).filter(parts=>parts[1]==='T').map(parts=>parts[2]));
+ for(const name of ['AudioQueueNewOutput','AudioQueueNewInput','AudioObjectGetPropertyDataSize','AudioObjectGetPropertyData'])if(!defined.has('_'+name))throw new Error(`Null driver lacks linked hardware guard: ${name}`);
+}
 export function nativeSourceBridge({binary,ids,env={}}){
  if(!binary||!ids?.length)throw new Error('Explicit null driver and trusted fixture IDs required');
+ verifyNativeSourceBridge(binary);
  const child=spawn(binary,['bridge::source_bridge_server','--exact','--ignored','--nocapture','--test-threads=1'],{detached:true,stdio:['pipe','pipe','pipe'],env:{...process.env,...env,CRISPAUDIO_SOURCE_BRIDGE:'1',CRISPAUDIO_SOURCE_BRIDGE_PLUGIN_IDS:JSON.stringify(ids)}});
  let sequence=0,buffer='',stderr='',failed,finalStats,closed=false;const pending=new Map(),commands=new Map();
  const kill=()=>{try{process.kill(-child.pid,'SIGKILL');}catch{/* Already reaped. */}};

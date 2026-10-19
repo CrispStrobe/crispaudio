@@ -16,7 +16,22 @@ struct Session {
     snapshot: String,
     control: Arc<LiveControl>,
     result: Arc<Mutex<Option<Result<Value, String>>>>,
+    capture: Arc<Mutex<Capture>>,
     worker: Option<JoinHandle<()>>,
+}
+// Bounded consumed output, only in this test executable. Never hardware PCM.
+#[derive(Default)]
+struct Capture {
+    samples: Vec<f32>,
+    consumed_frames: u64,
+}
+impl Capture {
+    fn push(&mut self, pcm: &[f32]) {
+        let remaining = 4096 - self.samples.len();
+        self.samples
+            .extend_from_slice(&pcm[..remaining.min(pcm.len())]);
+        self.consumed_frames += (pcm.len() / 2) as u64;
+    }
 }
 #[derive(Default)]
 struct Bridge {
@@ -160,9 +175,19 @@ impl Bridge {
                 let result = Arc::new(Mutex::new(None));
                 let saved = result.clone();
                 let owned = control.clone();
+                let capture = Arc::new(Mutex::new(Capture::default()));
+                let observed = capture.clone();
                 let worker = std::thread::spawn(move || {
                     let value = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        live::null_bridge::run(snapshot, start, end, cycle, loop_start, owned)
+                        live::null_bridge::run_observed(
+                            snapshot,
+                            start,
+                            end,
+                            cycle,
+                            loop_start,
+                            owned,
+                            |pcm| observed.lock().unwrap().push(pcm),
+                        )
                     }))
                     .unwrap_or_else(|_| Err("Null bridge worker panicked".into()));
                     *saved.lock().unwrap() = Some(value);
@@ -172,9 +197,19 @@ impl Bridge {
                     snapshot: snapshot_id,
                     control,
                     result,
+                    capture,
                     worker: Some(worker),
                 });
                 Ok(json!(id))
+            }
+            "bridge_capture" => {
+                let mut capture = self.active(&args)?.capture.lock().unwrap();
+                let result =
+                    json!({"samples":capture.samples,"consumedFrames":capture.consumed_frames});
+                if args["reset"] == true {
+                    capture.samples.clear();
+                }
+                Ok(result)
             }
             "native_playback_status" => {
                 let active = self.active(&args)?;
@@ -241,6 +276,7 @@ impl Drop for Bridge {
 #[test]
 #[ignore = "Explicit stdin frontend bridge; no hardware"]
 fn source_bridge_server() {
+    crate::hardware_guards::retain();
     if std::env::var("CRISPAUDIO_SOURCE_BRIDGE").as_deref() != Ok("1") {
         return;
     }
@@ -356,4 +392,18 @@ fn bridge_preserves_production_upload_validation_and_releases_failed_uploads() {
         .dispatch("native_snapshot_close", json!({"snapshot":id}))
         .unwrap();
     assert_eq!(bridge.snapshots.counts(), (0, 0));
+}
+
+#[test]
+fn capture_is_bounded_and_counts_consumed_frames() {
+    let mut capture = Capture::default();
+    capture.push(&vec![0.25; 2048]);
+    capture.push(&vec![-0.5; 4096]);
+    assert_eq!(capture.samples.len(), 4096);
+    assert_eq!(capture.consumed_frames, 3072);
+    assert_eq!(capture.samples[0], 0.25);
+    assert_eq!(capture.samples[4095], -0.5);
+    capture.push(&vec![1.; 1024]);
+    assert_eq!(capture.samples.len(), 4096);
+    assert_eq!(capture.consumed_frames, 3584);
 }

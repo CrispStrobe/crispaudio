@@ -123,3 +123,29 @@ This extends qualification to the actual React controls through the null bridge.
 Tauri command/window ownership, recording exclusivity in the native registry,
 WebKit, real devices/clocks, listening and sustained load remain unqualified.
 A 375-pixel desktop Chromium viewport does not qualify iOS.
+
+
+## Contiguous source selections
+
+Add `CRISPAUDIO_TEST_SOURCE_RANGE=1` to the editor runner, with source channels 1
+and 2 in separate runs. Its generated source has different audio outside a clip
+with a nonzero source offset. The selection spans only the middle half of that
+clip. Checks cover exact command/loop boundaries, the selection-relative cursor,
+first-pass VST3 delay history against fresh helper output, repeated loops, partial
+Apply preserving outside samples and the original offset, short/multiple-range
+refusal, and the existing ownership/cancellation scenarios.
+
+The test-only bridge now offers `bridge_capture` for its active session: at most
+4096 interleaved floats (2048 stereo frames), plus a consumed-frame counter.
+`reset: true` clears the retained samples after returning them. It observes only
+the synthetic consumer through the existing test observer; no app command or
+hardware PCM path is added. Rebuild the explicit standalone driver before using
+this check. Normal builds do not contain this bridge/capture endpoint.
+
+
+Before browser launch, the Node bridge checks the selected executable with `nm`
+for strong definitions of `AudioQueueNewInput`, `AudioQueueNewOutput`,
+`AudioObjectGetPropertyDataSize` and `AudioObjectGetPropertyData`. The driver retains
+these abort definitions explicitly so linker dead stripping cannot remove them.
+Older drivers that lack any guard are refused; rebuild rather than bypassing the
+check. This guards the parent driver, not arbitrary child plug-in code.

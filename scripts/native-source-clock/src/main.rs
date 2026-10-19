@@ -22,18 +22,62 @@ mod commands {
 
 #[cfg(all(test, target_os = "macos"))]
 #[allow(non_snake_case)]
-#[no_mangle]
-pub unsafe extern "C" fn AudioQueueNewOutput(
-    _: *const std::ffi::c_void,
-    _: *const std::ffi::c_void,
-    _: *mut std::ffi::c_void,
-    _: *const std::ffi::c_void,
-    _: *const std::ffi::c_void,
-    _: u32,
-    _: *mut *mut std::ffi::c_void,
-) -> i32 {
-    eprintln!("Hardware queue creation is forbidden in the null-output test driver");
-    std::process::abort()
+mod hardware_guards {
+    macro_rules! forbidden_queue {
+        ($name:ident) => {
+            #[no_mangle]
+            pub unsafe extern "C" fn $name(
+                _: *const std::ffi::c_void,
+                _: *const std::ffi::c_void,
+                _: *mut std::ffi::c_void,
+                _: *const std::ffi::c_void,
+                _: *const std::ffi::c_void,
+                _: u32,
+                _: *mut *mut std::ffi::c_void,
+            ) -> i32 {
+                eprintln!("Native source null QA forbids hardware queues");
+                std::process::abort()
+            }
+        };
+    }
+    forbidden_queue!(AudioQueueNewOutput);
+    forbidden_queue!(AudioQueueNewInput);
+    #[no_mangle]
+    pub unsafe extern "C" fn AudioObjectGetPropertyDataSize(
+        _: u32,
+        _: *const std::ffi::c_void,
+        _: u32,
+        _: *const std::ffi::c_void,
+        _: *mut u32,
+    ) -> i32 {
+        eprintln!("Native source null QA forbids device inventory");
+        std::process::abort()
+    }
+    #[no_mangle]
+    pub unsafe extern "C" fn AudioObjectGetPropertyData(
+        _: u32,
+        _: *const std::ffi::c_void,
+        _: u32,
+        _: *const std::ffi::c_void,
+        _: *mut u32,
+        _: *mut std::ffi::c_void,
+    ) -> i32 {
+        eprintln!("Native source null QA forbids device property queries");
+        std::process::abort()
+    }
+
+    pub fn retain() {
+        // Keep definitions even if this fixture's reachable graph needs no CoreAudio.
+        std::hint::black_box(AudioQueueNewOutput as *const ());
+        std::hint::black_box(AudioQueueNewInput as *const ());
+        std::hint::black_box(AudioObjectGetPropertyDataSize as *const ());
+        std::hint::black_box(AudioObjectGetPropertyData as *const ());
+    }
+
+    #[test]
+    fn guard_definitions_are_retained() {
+        retain();
+    }
 }
 fn main() {
     eprintln!("Use cargo test --manifest-path scripts/native-source-clock/Cargo.toml -- --include-ignored --test-threads=1 --nocapture on macOS");

@@ -34,6 +34,13 @@ The remaining sequence was reaffirmed on 19 October; use
 Effect-aware segment waveforms are implemented through the bounded 0.13.24
 continuous-refresh checkpoint; continue the execution order below.
 
+Source checkpoint **0.13.61** adds one contiguous native source selection with
+clip-history preroll, a selection-relative cursor and partial Apply preserving
+outside samples/original offsets. Full real-Wry/device acceptance, other formats,
+multiple ranges, individual channels, native waveform snapshots and original-based
+recipe recall remain open.
+[Current handoff](WORK_HANDOFF.md#contiguous-source-selection--01361-checkpoint).
+
 Source checkpoint **0.13.60** adds whole mono 48-kHz native source audition to the
 existing stereo candidate, with unity stereo monitoring and mono render/Apply.
 Broader ranges/rates, bounded native waveforms and original-based recipe recall

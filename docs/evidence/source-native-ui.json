@@ -1,11 +1,24 @@
 {
-  "version": "0.13.60",
+  "version": "0.13.61",
   "date": "2026-10-19",
   "hardwareOpened": false,
   "nativeSourceUiEnabled": "Opt-in Mac candidate; Rendered default",
   "scope": "Actual React Source Editor and stores through the production source adapter, snapshots, Rust worker and AU/VST3 DSP; test command dispatch/owner identity/synthetic null time",
   "browserResult": {
     "sourceChannels": 2,
+    "partialSelection": true,
+    "shortAndMultipleRejected": true,
+    "clipOffset": 0.5,
+    "range": [
+      12000,
+      36000
+    ],
+    "selectedDelayHistory": true,
+    "selectedDelayParity": {
+      "error": 0,
+      "first": 0.25,
+      "loopMaxDifference": 0
+    },
     "finiteEnd": true,
     "applyChannels": 2,
     "applySampleError": 0,
@@ -43,54 +56,63 @@
     "closeJoins": true,
     "stats": {
       "bytes": 0,
-      "closed": 18,
+      "closed": 19,
       "hardware": false,
       "sessions": 0,
       "snapshots": 0,
-      "started": 18
+      "started": 19
     },
     "hardware": false
   },
   "fixtures": [
     "Apple AUPeakLimiter",
-    "Steinberg ADelay VST3",
-    "Generated one-second mono and stereo 48-kHz PCM"
+    "Steinberg ADelay VST3 at 0.125 seconds",
+    "Generated mono/stereo two-second 48-kHz files; one-second clip at source offset 0.5 seconds; selected samples [12000,36000)"
   ],
   "validation": {
     "frontend": {
-      "fullRunPassed": 2204,
-      "fullRunTimeouts": 2,
+      "passed": 2215,
       "files": 233,
-      "isolatedRecheckPassed": 65,
-      "isolatedRecheckFiles": 5,
-      "note": "Both unchanged tests that timed out at 20 seconds passed with one worker and a 60-second limit; new mono tests and source hook/plugin tests included in recheck."
+      "workers": 2,
+      "timeoutSeconds": 60
+    },
+    "focusedFrontend": {
+      "passed": 56,
+      "files": 3
     },
     "productionBuild": "passed",
     "fullLint": "passed",
     "finalRunnerLint": "passed",
     "releaseChecks": 39,
-    "rustCore": "No production Rust/DSP change; existing guarded null-driver executable reused. New CI-only cache reset has six portable regression tests.",
-    "fullTauriAppTests": "Not rerun; .59 81-pass baseline remains separate"
+    "nativeStandalone": {
+      "passed": 21,
+      "ignored": 0,
+      "strongLinkedGuards": 4,
+      "oldStrippedGuardDriver": "Refused by nm verification before launch",
+      "note": "Seven trusted real-helper null-worker cases plus shared clock, bridge and guard/capture tests; no hardware output"
+    },
+    "fullTauriAppTests": "Not rerun; production Rust/DSP/app commands unchanged; .59 baseline remains separate"
   },
   "semantics": {
-    "admission": "Whole unretimed mono/stereo 48-kHz clips; all channels; 2048 frames to 120 seconds",
+    "admission": "One contiguous all-channel selection of at least 2048 samples within an unretimed mono/stereo 48-kHz clip up to 120 seconds",
     "monitor": "Initially at most -12 dB; private -1 dBFS sample-peak limiter, not true peak",
-    "apply": "Fresh restored-base helper pass; exact raw samples retained, monitor controls excluded; original retained and one Undo",
+    "apply": "Fresh whole-clip helper pass; splice raw samples only inside selection, retaining every outside sample, channel count, original source/offset and one Undo. Monitor controls excluded.",
     "waveformAndAnalysis": "Source/prepared snapshots; no live native waveform claim",
     "fault": "Visible error; explicit Rendered recovery, no automatic fallback",
-    "mono": "Monitor duplicates the mono channel at unity into stereo before panning. Prepared helper output and Apply remain mono; Undo restores original source ID and untouched samples."
+    "mono": "Monitor duplicates the mono channel at unity into stereo before panning. Prepared helper output and Apply remain mono; Undo restores original source ID and untouched samples.",
+    "selection": "Half-open clip-relative range. Full clip PCM/history retained; worker prerolls from clip start. Native cursor is selection-relative then mapped onto source; loop keeps DSP history and selection boundaries. No tail after selected end."
   },
   "limits": [
     "This browser check substitutes command dispatch/owner identity/synthetic time; .59 actual MockRuntime command/DSP and .58 actual Wry snapshot results are separate evidence.",
     "No WebKit/Core Audio device, clock, timestamp, hotplug, latency, physical listening or sustained-load acceptance",
     "Short trusted fixtures; no arbitrary plug-in/process-mode equivalence",
     "375-pixel desktop Chromium in EN/DE is not physical iOS acceptance",
-    "No broader rate/partial-range/individual-channel admission, live native waveform or original-based recipe reprocessing"
+    "No other-rate/multiple-range/individual-channel admission, live native waveform or original-based recipe reprocessing"
   ],
   "next": [
     "Full actual Wry playback/product registration and separate physical/platform acceptance",
-    "One contiguous source selection with explicit window/history/tail and Apply semantics before admission",
-    "Other-rate parity, bounded native waveform snapshots and original-based recipe reprocessing",
+    "Other-rate resampling/boundary/state/Apply parity; explicit individual-channel and multiple-range semantics before admission",
+    "Bounded native waveform snapshots and original-based recipe reprocessing",
     "Measured long sessions/memory, monitoring/plug-in UX, sessions/delivery, restoration/recorded-audio timing"
   ],
   "distribution": {
@@ -101,6 +123,19 @@
   "channelRuns": [
     {
       "sourceChannels": 1,
+      "partialSelection": true,
+      "shortAndMultipleRejected": true,
+      "clipOffset": 0.5,
+      "range": [
+        12000,
+        36000
+      ],
+      "selectedDelayHistory": true,
+      "selectedDelayParity": {
+        "error": 0,
+        "first": 0.25,
+        "loopMaxDifference": 0
+      },
       "finiteEnd": true,
       "applyChannels": 1,
       "applySampleError": 0,
@@ -138,16 +173,29 @@
       "closeJoins": true,
       "stats": {
         "bytes": 0,
-        "closed": 18,
+        "closed": 19,
         "hardware": false,
         "sessions": 0,
         "snapshots": 0,
-        "started": 18
+        "started": 19
       },
       "hardware": false
     },
     {
       "sourceChannels": 2,
+      "partialSelection": true,
+      "shortAndMultipleRejected": true,
+      "clipOffset": 0.5,
+      "range": [
+        12000,
+        36000
+      ],
+      "selectedDelayHistory": true,
+      "selectedDelayParity": {
+        "error": 0,
+        "first": 0.25,
+        "loopMaxDifference": 0
+      },
       "finiteEnd": true,
       "applyChannels": 2,
       "applySampleError": 0,
@@ -185,13 +233,112 @@
       "closeJoins": true,
       "stats": {
         "bytes": 0,
-        "closed": 18,
+        "closed": 19,
         "hardware": false,
         "sessions": 0,
         "snapshots": 0,
-        "started": 18
+        "started": 19
       },
       "hardware": false
     }
-  ]
+  ],
+  "priorWholeClipQualification": {
+    "version": "0.13.60",
+    "channelRuns": [
+      {
+        "sourceChannels": 1,
+        "finiteEnd": true,
+        "applyChannels": 1,
+        "applySampleError": 0,
+        "sharedPlayStop": true,
+        "defaultRendered": true,
+        "monitorLimiter": true,
+        "monitorOnlyApply": true,
+        "liveControlsOneGraph": true,
+        "channelChangeStops": true,
+        "renderStopsNative": true,
+        "originalAndOneUndo": true,
+        "pendingStartReplacement": true,
+        "faultStaysNative": true,
+        "explicitRenderedRecovery": true,
+        "inputBusyRefused": true,
+        "outputChangeStops": true,
+        "recordingStops": true,
+        "otherAuditionStops": true,
+        "arrangementStartsStop": true,
+        "loopChangeStops": true,
+        "rangeChangeStops": true,
+        "bufferReplacementStops": true,
+        "arrangementJoined": true,
+        "resetStops": true,
+        "projectChangeStops": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "lockStops": true,
+        "closeJoins": true,
+        "stats": {
+          "bytes": 0,
+          "closed": 18,
+          "hardware": false,
+          "sessions": 0,
+          "snapshots": 0,
+          "started": 18
+        },
+        "hardware": false
+      },
+      {
+        "sourceChannels": 2,
+        "finiteEnd": true,
+        "applyChannels": 2,
+        "applySampleError": 0,
+        "sharedPlayStop": true,
+        "defaultRendered": true,
+        "monitorLimiter": true,
+        "monitorOnlyApply": true,
+        "liveControlsOneGraph": true,
+        "channelChangeStops": true,
+        "renderStopsNative": true,
+        "originalAndOneUndo": true,
+        "pendingStartReplacement": true,
+        "faultStaysNative": true,
+        "explicitRenderedRecovery": true,
+        "inputBusyRefused": true,
+        "outputChangeStops": true,
+        "recordingStops": true,
+        "otherAuditionStops": true,
+        "arrangementStartsStop": true,
+        "loopChangeStops": true,
+        "rangeChangeStops": true,
+        "bufferReplacementStops": true,
+        "arrangementJoined": true,
+        "resetStops": true,
+        "projectChangeStops": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "lockStops": true,
+        "closeJoins": true,
+        "stats": {
+          "bytes": 0,
+          "closed": 18,
+          "hardware": false,
+          "sessions": 0,
+          "snapshots": 0,
+          "started": 18
+        },
+        "hardware": false
+      }
+    ]
+  }
 }

@@ -159,10 +159,12 @@ if you need effect tails.
 
 ## Native external-effect preview
 
-Since **0.13.54** (mono added in **0.13.60**), the editor offers **Native · Preview** beside the shared Play/Stop
-controls after selecting an external effect. It supports a whole, unretimed mono or stereo
-48 kHz clip from 2048 frames to two minutes, with all channels selected. Other
-rates, separate ranges and longer clips continue to use Rendered.
+Since **0.13.54** (mono added in **0.13.60**, contiguous selections in **0.13.61**), the editor offers **Native · Preview** beside the shared Play/Stop
+controls after selecting an external effect. It supports one contiguous selection
+of at least 2048 samples in an unretimed mono/stereo 48-kHz clip up to two minutes,
+with all channels selected. Other rates, separate ranges, individual channels and
+longer clips continue to use Rendered. The whole clip stays within the limit: a
+short selection does not remove the cost of retaining and processing its history.
 
 Press Play, adjust effect parameters, type or scrub their numbers, and switch
 **Original / Preview** without replacing the running graph. Monitor level starts
@@ -171,9 +173,16 @@ This is not true-peak protection. Neither control affects prepared audio or Appl
 Details stay behind the mode's information button. Auto preview is disabled in
 Native to avoid running automatic helper renders alongside playback.
 
+For a partial selection, the native worker processes from the clip beginning
+before emitting the selected interval. The cursor follows that selection on the
+source waveform; looping returns to its start while keeping effect history.
+Playback stops at the selection end and does not append an effect tail. Extend
+the selection if you need that tail.
+
 **Render preview** stops and joins native output, then makes a fresh helper pass
 from restored state and current parameters. **Apply** commits only that prepared
-audio, retains the original and creates one Undo step. Running plug-in history,
+audio into the selected samples, preserving every sample outside the selection,
+the original source/offset and one Undo step. Running plug-in history,
 monitor gain and the monitor limiter are excluded. A fresh pass can differ from
 looping or a plug-in's real-time processing mode. A latency-changing parameter can
 stop native playback; restart with the new graph or choose Rendered.

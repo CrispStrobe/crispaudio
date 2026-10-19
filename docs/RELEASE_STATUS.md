@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.60, whole mono source audition](#whole-mono-source-audition--01360-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.61, contiguous source selection](#contiguous-source-selection--01361-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4845,3 +4845,32 @@ now reset only that restored helper cache, before Cargo starts, at the target ro
 and two known Mac triples. Six tests cover partial restores, scope, refusal outside
 Mac CI and symlink protection. Normal build ownership validation is unchanged;
 Rust dependency caches remain available. Verify the new Mac CI result after push.
+
+
+## Contiguous source selection — 0.13.61 source candidate
+
+Native source preview accepts one contiguous all-channel selection (at least 2048
+samples) in mono/stereo 48-kHz clips up to two minutes. Clip-history preroll,
+selection-relative cursor and selected loop boundaries preserve the existing fresh
+render/partial Apply behavior. Audio outside the selection and original offsets
+remain intact. Rendered stays default; other rates, individual channels and multiple
+ranges remain excluded. Source help and README describe these limits.
+
+The test-only null driver adds a bounded consumed-sample observer endpoint and
+retains/verifies four strong queue/device abort guards. No production Rust worker,
+DSP or native app command changes. This editor/null-DSP check is separate from
+actual Wry/device/load/signed-platform acceptance. No live app replacement, release
+tag or Apple upload.
+
+Validation: **2,215 frontend tests in 233 files**, 56 focused source tests in three
+files, build, full/final runner lint, 39 release checks and 21 standalone native
+checks pass. Final actual editor/null-DSP runs pass for mono and stereo: **19
+sessions joined each**, zero retained snapshots/bytes, exact first-pass and later
+loop samples for the trusted delay fixture, and exact partial Apply including
+unchanged outside samples/original offset. Short/multiple ranges stay gated.
+EN/DE controls fit 1440/375-pixel desktop Chromium viewports; this is not iOS.
+[Evidence](evidence/source-native-ui.json).
+
+Both preceding .60 general CI and iOS checks succeeded, confirming the Mac helper
+cache restore repair. Refresh this checkpoint's newly triggered CI after push;
+there is no Store submission or physical audio validation in a main-branch push.

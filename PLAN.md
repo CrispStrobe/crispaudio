@@ -1,11 +1,19 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.60 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.61 (installed baseline 0.13.33). This section is the current plan.
 
 The user reaffirmed the full ordered [audio workstation roadmap](docs/AUDIO_WORKSTATION_ROADMAP.md)
 on 19 October: native acceptance → source FX → long sessions → monitoring/plug-ins
 → sessions/delivery → restoration/recorded-audio timing. Each phase has concrete
 acceptance criteria; existing partial tools must be extended rather than recreated.
+
+0.13.61 adds **one contiguous native source selection** in bounded mono/stereo
+48-kHz clips. The worker retains clip history before the selected interval; the
+cursor and loop stay inside it. A fresh rendered Apply replaces selected samples
+and preserves outside audio and original offsets. Short/multiple ranges, other
+rates and individual channels remain gated. Next: separately qualified formats/
+channels, bounded native waveform snapshots and original-based recipe recall.
+[Current handoff](docs/WORK_HANDOFF.md#contiguous-source-selection--01361-checkpoint).
 
 0.13.60 extends opt-in native source audition to whole mono 48-kHz clips using
 unity stereo monitoring. Fresh prepared audio and Apply retain mono; monitor
