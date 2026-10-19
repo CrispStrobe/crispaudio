@@ -34,6 +34,13 @@ The remaining sequence was reaffirmed on 19 October; use
 Effect-aware segment waveforms are implemented through the bounded 0.13.24
 continuous-refresh checkpoint; continue the execution order below.
 
+Source checkpoint **0.13.59** combines actual Tauri command dispatch with the
+production native worker/DSP through MockRuntime and a guarded null consumer.
+Actual recording-command exclusion, live parameters, real Apple limiter bypass/
+helper loss and cleanup pass. Full real-Wry playback and physical acceptance remain
+open; continue independent source-editor formats/ranges, waveforms and recipe recall.
+[Current handoff](WORK_HANDOFF.md#native-command-and-dsp-qualification--01359-checkpoint).
+
 Source checkpoint **0.13.58** qualifies actual Wry/WebKit snapshot upload and
 window/exit cleanup with generated PCM and isolated test assets. It does not run
 native audio workers or plug-ins; combined command/native DSP, full product

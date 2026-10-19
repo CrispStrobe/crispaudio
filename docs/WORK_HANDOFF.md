@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [Real-runtime snapshot qualification, 0.13.58](#real-runtime-snapshot-qualification--01358-checkpoint). The active product
+Current checkpoint: [Native command and DSP qualification, 0.13.59](#native-command-and-dsp-qualification--01359-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.58 qualifies snapshot IPC and
+The installed baseline remains 0.13.33. Source 0.13.59 combines actual command
+dispatch with real worker/DSP and a null consumer in MockRuntime tests. Source 0.13.58 qualifies snapshot IPC and
 window/exit cleanup in actual Wry/WebKit with no audio commands. Source 0.13.57 shares a verified native-helper
 build cache between embedded helpers and staged Mac sidecars; see the latest
 checkpoint below. Source 0.13.56 tests native commands
@@ -1364,3 +1365,58 @@ Apple upload or microphone/device action is included.
    waveform caches, monitoring/plug-in usability, session/delivery, restoration and
    recorded-audio timing. Full acceptance criteria are in the new ordered roadmap;
    software work need not wait for unavailable physical checks.
+
+
+## Native command and DSP qualification — 0.13.59 checkpoint
+
+Actual generated command handlers, production snapshot/playback registries and
+native worker/ring/graph now run together through MockRuntime windows and an
+explicit synthetic PCM consumer. Existing MockRuntime-only factory restrictions
+are unchanged. No runtime null setting, output hook or field is added to ordinary
+app builds. Recording-start accepts a generic Runtime for actual command exclusion
+testing; the ordinary Wry path, command name/arguments and capture code are unchanged.
+
+Tests live under the existing IPC fixture, gated by `cfg(test)` and both explicit
+QA features. They define queue-creation and CoreAudio property-query abort guards;
+the dedicated runner verifies all four definitions before running only that exact
+namespace. Test-only null consumption adds a bounded observer and helper count.
+
+Six default cases pass; the explicit trusted-system-AU run passes all seven. Checks
+cover finite PCM gain, live controls, pause/resume, actual recording-command
+exclusion, the reverse recording lease, cross-owner control rejection, blocked
+consumer cancellation/join, owner/app retirement, ring fault/error close, real
+limiter gain changes/bypass without another helper and forced helper-loss cleanup.
+Both actual AU helper sessions join/reap; retained snapshot bytes return to zero.
+Ordinary Mac library tests remain **81 passed / 8 ignored** and the non-test library
+check passes. Runner/refusal/timeout cleanup checks bring the release suite to **33 tests**.
+Production frontend build, full lint and Rust formatting also pass.
+[Protocol](NATIVE_COMMAND_DSP_QUALIFICATION.md) · [evidence](evidence/native-command-dsp.json).
+
+This combines commands and real DSP **with MockRuntime**, not Wry playback. Native
+retirement is called through the production coordinator, not delivered as OS events
+here. Real Wry snapshot/events (.58) and actual React/DSP (.54) remain separate
+results; do not combine them into full product/platform/hardware acceptance.
+Only the trusted Apple effect runs; no device, physical microphone, app bundle,
+installation, tag or Apple upload is part of this source checkpoint.
+
+### Next work
+
+1. **Source-editor formats/ranges:** continue the independent product work now;
+   physical checks need not stall it. Start with explicit whole mono 48-kHz source
+   audition before broader rates/ranges. `src/audio/engine/NativeSourceAudition.ts`
+   already duplicates mono to stereo to keep center level neutral; reuse that plan
+   rather than adding another conversion. Qualify source UI admission, first/looped
+   passes, channel shape, native/rendered parity, original retention and one-Undo
+   Apply before enabling each case. See the .54 scope and ordered roadmap.
+2. **Native FX waveforms and recipe recall:** bounded snapshots with stale/cancel/
+   memory guards; reprocess recalled recipes from retained originals. Preserve
+   responsive controls and distinguish waveform snapshots from instantaneous audio.
+3. **Remaining acceptance:** full actual Wry command/worker/DSP ownership requires
+   a separate explicit guarded setup; this checkpoint does not provide a Wry null
+   playback mode. Ordinary/test Wry still targets real output. Physical/signed/
+   platform N5 remains device/user dependent, with Rendered default and Native
+   opt-in. Preserve running apps and do not repeat the pending recording question.
+4. **Broader product phases:** measured paging/waveform caches, monitoring/plug-in
+   UX, sessions/delivery, restoration and recorded-audio timing remain fully scoped
+   in [AUDIO_WORKSTATION_ROADMAP.md](AUDIO_WORKSTATION_ROADMAP.md). Do not reintroduce
+   composition or ASR/TTS creation from the companion apps.

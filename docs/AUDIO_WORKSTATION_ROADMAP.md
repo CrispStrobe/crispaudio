@@ -14,6 +14,11 @@ reachable touch actions and accessible numeric entry.
 
 ## 1. Native runtime acceptance
 
+Source .58 qualifies real-Wry snapshot IPC/events; .59 qualifies actual commands
+with native worker/DSP through MockRuntime. These are separate results. Full Wry
+playback/product integration and physical checks remain open; independent source
+editing work can continue meanwhile.
+
 - Qualify actual Wry/WebKit raw snapshot IPC, argument rejection, cross-window
   ownership, window destruction and app exit using an isolated debug executable.
   Keep the installed app and the recording preview sessions intact.

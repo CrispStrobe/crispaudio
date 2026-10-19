@@ -1,11 +1,21 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.58 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.59 (installed baseline 0.13.33). This section is the current plan.
 
 The user reaffirmed the full ordered [audio workstation roadmap](docs/AUDIO_WORKSTATION_ROADMAP.md)
 on 19 October: native acceptance → source FX → long sessions → monitoring/plug-ins
 → sessions/delivery → restoration/recorded-audio timing. Each phase has concrete
 acceptance criteria; existing partial tools must be extended rather than recreated.
+
+0.13.59 combines **actual Tauri command ownership and production native worker/DSP**
+using MockRuntime windows and a synthetic null consumer. Tests cover live controls,
+recording-command exclusion, cancellation/join, retirement, ring faults and actual
+Apple limiter parameters/bypass/helper loss. All queue and inventory guards are
+verified in an explicit test-only process; normal Wry behavior is unchanged. This
+is separate from .58 Wry snapshot/events and physical/full product acceptance.
+Next independent product work is source format/range parity, waveform snapshots
+and original-based recipe recall; physical checks do not block that work.
+[Current handoff](docs/WORK_HANDOFF.md#native-command-and-dsp-qualification--01359-checkpoint).
 
 0.13.58 qualifies **actual Wry/WebKit snapshot IPC and native lifecycle events**
 in a dedicated debug executable with generated PCM, isolated assets/identity/store,

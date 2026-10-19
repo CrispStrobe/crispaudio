@@ -55,6 +55,7 @@ impl Fixture {
                 super::native_playback_volume,
                 super::native_playback_close,
                 super::native_playback_reset_loudness,
+                crate::commands::native_recording::native_recording_start,
                 crate::commands::native_snapshot::native_snapshot_begin,
                 crate::commands::native_snapshot::native_snapshot_write,
                 crate::commands::native_snapshot::native_snapshot_seal,
@@ -526,3 +527,8 @@ fn ipc_remote_origin_cannot_allocate_a_snapshot_in_the_test_context() {
     assert!(reply.recv_timeout(WAIT).unwrap().is_err());
     assert_eq!(f.counts(), json!({"entries":0,"bytes":0}));
 }
+
+// Explicit test feature: real worker/DSP with queue and inventory abort guards.
+// Default app tests and normal app binaries do not contain these guards/tests.
+#[cfg(all(feature = "native-runtime-qa", feature = "native-validation"))]
+mod dsp;

@@ -21,6 +21,19 @@ pub fn run(
     loop_start: Option<u32>,
     control: Arc<LiveControl>,
 ) -> Result<Value, String> {
+    run_observed(snapshot, start, end, cycle, loop_start, control, |_| {})
+}
+
+/// Bounded test observers see consumed PCM, never a hardware callback.
+pub fn run_observed(
+    snapshot: Arc<crispaudio_media::native_snapshot::Snapshot>,
+    start: u32,
+    end: u32,
+    cycle: bool,
+    loop_start: Option<u32>,
+    control: Arc<LiveControl>,
+    mut observe: impl FnMut(&[f32]),
+) -> Result<Value, String> {
     run_with_output(
         snapshot,
         start,
@@ -66,7 +79,8 @@ pub fn run(
                     (end - start) as u64 - elapsed
                 }
                 .min(FRAMES as u64);
-                let _consumed = pending.pop_front().unwrap();
+                let consumed = pending.pop_front().unwrap();
+                observe(&consumed[..count as usize * 2]);
                 elapsed += count;
                 if publish_clock(
                     &state.control,
@@ -86,4 +100,9 @@ pub fn run(
             Ok(())
         },
     )
+}
+
+/// A count distinguishes actual helper qualification from an empty helper set.
+pub fn helper_count(control: &LiveControl) -> usize {
+    control.stop.helper.lock().unwrap().len()
 }

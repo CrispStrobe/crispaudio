@@ -587,8 +587,8 @@ fn run(
     }
 }
 #[tauri::command]
-pub fn native_recording_start(
-    window: tauri::WebviewWindow,
+pub fn native_recording_start<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
     state: tauri::State<NativeRecording>,
     snapshots: tauri::State<Snapshots>,
     playback: tauri::State<NativePlayback>,

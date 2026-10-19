@@ -1,0 +1,81 @@
+{
+  "checkpoint": "0.13.59",
+  "date": "2026-10-19",
+  "status": "qualified command/worker/DSP source checkpoint",
+  "result": {
+    "version": "0.13.59",
+    "dispatch": "actual Tauri handlers with MockRuntime windows",
+    "worker": "production native worker/ring/graph/control path",
+    "clock": "synthetic null consumer",
+    "systemAU": true,
+    "guardsVerified": true,
+    "hardwareOpened": false,
+    "passed": 7,
+    "ignored": 0
+  },
+  "execution": {
+    "dispatch": "Actual generated Tauri handlers, managed production state and window labels",
+    "windows": "MockRuntime; no Wry/WebKit or OS events in this test",
+    "snapshots": "Production raw CPS1 upload/seal/owner registry",
+    "worker": "Production run_with_output, native thread, ring, graph, live controls and cleanup",
+    "output": "Synthetic 512-frame 48-kHz consumer with two pending buffers; no hardware queue",
+    "guards": [
+      "AudioQueueNewOutput",
+      "AudioQueueNewInput",
+      "AudioObjectGetPropertyDataSize",
+      "AudioObjectGetPropertyData"
+    ],
+    "guard_scope": "Defined and retained only in cfg(test) library binary with both explicit QA features; parent process only",
+    "trusted_helper": "Apple AUPeakLimiter, selected from system AU catalog by name/manufacturer; explicit runner opt-in",
+    "failure_cleanup": "Test process starts in an owned session/group; timeout/abort/interruption kills only that group and reaps the process. Portable timeout regression passes."
+  },
+  "checked": [
+    "Finite PCM: track/master gains produce exact first 256 captured samples [0.125,-0.0625]",
+    "Live gain update reaches consumed PCM [0.0625,-0.03125]",
+    "Pause holds synthetic position; resume continues; raw graph does not print monitor gain",
+    "Cross-window pause rejected",
+    "Actual recording-start command with valid plan rejects existing playback reservation before capture",
+    "Reverse playback exclusion uses actual recording lease without capture",
+    "Snapshot cancellation and close reply wait for held consumer and worker; final entries/bytes zero",
+    "Production owner and app coordinators join real workers and revoke admission",
+    "Ring fault retains reservation until error-close then releases it",
+    "Actual AU initial -6.020599913 dB and live -12.041199827 dB pre-gain reach expected samples within 1e-5",
+    "Warm AU bypass/re-enable keeps one registered helper",
+    "Normal AU close reaps first helper; second session restores original project parameters before helper termination faults and joins"
+  ],
+  "validation": {
+    "guarded_default": {
+      "passed": 6,
+      "ignored": 1
+    },
+    "guarded_system_au": {
+      "passed": 7,
+      "ignored": 0
+    },
+    "ordinary_mac_library": {
+      "passed": 81,
+      "ignored": 8,
+      "features": [
+        "native-validation"
+      ]
+    },
+    "ordinary_non_test_mac_library_check": "passed",
+    "production_frontend_build": "passed",
+    "lint": "passed",
+    "release_tests": {
+      "passed": 33,
+      "failed": 0
+    },
+    "formatting": "passed",
+    "frontend_full_suite": "Not rerun; only About version changed"
+  },
+  "limits": [
+    "MockRuntime dispatch plus actual worker/DSP; not real Wry/WebKit playback or full shipped registration/capability acceptance",
+    "Retirement invokes production coordinator directly; real OS event delivery is separate .58 evidence",
+    "No physical input/output, clocks/listening/load, actual recording capture, signed/sandboxed/Store qualification",
+    "Monitor command acceptance/raw-PCM separation does not qualify physical monitor volume",
+    "Bounded observer checks block samples; not complete signal-quality or arbitrary-plug-in/state-blob qualification",
+    "Parent abort guards do not sandbox arbitrary plug-in children; helper fixture restricted to trusted Apple effect",
+    "Prior .54 UI/DSP bridge and .58 Wry snapshot results remain separate runs, not one end-to-end product result"
+  ]
+}

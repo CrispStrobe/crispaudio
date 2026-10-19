@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.58, real-runtime snapshot qualification](#real-runtime-snapshot-qualification--01358-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.59, native command/DSP qualification](#native-command-and-dsp-qualification--01359-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4798,3 +4798,21 @@ The full remaining ordered [workstation roadmap](AUDIO_WORKSTATION_ROADMAP.md) i
 accepted. [Current handoff](WORK_HANDOFF.md#real-runtime-snapshot-qualification--01358-checkpoint)
 scopes the next combined command/DSP and independent source-editing tasks. Main
 source pushes do not install an app or submit a new TestFlight/Store build.
+
+
+## Native command and DSP qualification — 0.13.59 source candidate
+
+Actual generated Tauri commands and production ownership now run with real native
+worker/ring/graph DSP through MockRuntime and a synthetic consumer. Six default
+cases pass; the trusted Apple limiter run passes all seven, including live gain,
+bypass, normal cleanup and forced helper loss. The runner verifies queue/inventory
+abort guards and exact test counts before reporting acceptance. The actual
+recording-start command rejects an existing playback owner before capture.
+
+Ordinary Mac library tests **81 passed / 8 ignored**, the non-test library check,
+lint and **33 release checks** pass. Production frontend build and Rust formatting also pass; results are in the checkpoint
+[evidence](evidence/native-command-dsp.json). Full frontend, real Wry playback,
+physical capture/routing/clocks/listening/load and Store/sandbox paths are separate
+acceptance. Prior .54 UI/DSP and .58 real-Wry snapshots/events remain separate runs.
+No live app bundle, install, signing, tag or Apple upload is changed here.
+[Next source-editor and platform work](WORK_HANDOFF.md#native-command-and-dsp-qualification--01359-checkpoint).
