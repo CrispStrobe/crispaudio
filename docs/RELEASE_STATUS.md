@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.61, contiguous source selection](#contiguous-source-selection--01361-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.62, 44.1-kHz source audition](#441-khz-source-audition--01362-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4874,3 +4874,36 @@ EN/DE controls fit 1440/375-pixel desktop Chromium viewports; this is not iOS.
 Both preceding .60 general CI and iOS checks succeeded, confirming the Mac helper
 cache restore repair. Refresh this checkpoint's newly triggered CI after push;
 there is no Store submission or physical audio validation in a main-branch push.
+
+
+## 44.1-kHz source audition — 0.13.62 source candidate
+
+Source effects can use 44.1-kHz mono/stereo clips alongside 48 kHz. Native audition
+converts before processing on the fixed 48-kHz clock, now explicit in its label
+and help. Fresh rendering and Apply preserve the original source rate/shape;
+rate-dependent processing may sound different. Existing selection, memory,
+monitor-only protection and Rendered-default limits remain.
+
+Qualification covers fractional boundary rounding, conversion cancellation before
+native admission, changing-signal finite/looped comparison, delay history and exact
+partial Apply. Native driver/guards/Rust DSP are unchanged; hardware, full actual
+Wry playback and signed/mobile packaging remain separate. No live installation,
+release tag or Apple upload.
+
+Validation: **2,220 frontend tests in 233 files**, 76 focused source/snapshot tests
+in four files, build, full/final runner lint and 39 release checks pass. Final editor/
+null-DSP runs pass for 44.1-kHz mono/stereo and 48-kHz stereo: **24 sessions joined
+each**, zero retained snapshots/bytes and exact source-rate Apply/outside samples.
+Changing-signal finite/looped native output matches the fresh 48-kHz processing
+reference exactly. Whole clips and minimum head/tail selections finish with exact
+native counts (2,229 frames for 2,048 source samples at 44.1 kHz; 2,048 at 48 kHz).
+
+The constant 44.1-kHz delay comparison to original-rate processing differs by at
+most 7.093e-6 full scale, within the explicit 1e-5 conversion tolerance. The dynamic
+fixture also reports a separate difference between processing rates; this is not
+presented as arbitrary plug-in parity. The existing guarded Rust driver is unchanged
+and reused; its .61 21-test result remains a baseline, not a new standalone run.
+[Evidence](evidence/source-native-ui.json). Both .61 CI and iOS checks succeeded.
+
+The installed baseline/recording preview remain untouched. Main-branch CI is new
+at push; no install, release tag, physical audio check or Apple upload is included.

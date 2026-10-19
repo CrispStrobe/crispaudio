@@ -1,4 +1,4 @@
-import {beforeEach,it,expect,vi} from 'vitest';
+import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {NativeTimelineSnapshot} from '../../../src/audio/plugins/NativeTimelineSnapshot';
 import {DEFAULT_MUSIC} from '../../../src/lib/musicalTime';
 import {useProjectStore} from '../../../src/stores/projectStore';
@@ -110,4 +110,20 @@ it('sends validated monitor attenuation and rejects controls after recording clo
  const recording=await snapshot.startRecording({...recordingOptions,monitorMix:{backing:.5,output:0}});await recording.mix({backing:.25,output:.75});expect(invoke).toHaveBeenCalledWith('native_recording_mix',{session:'recording',levels:{backing:.25,output:.75}});
  const before=invoke.mock.calls.length;await expect(recording.mix({backing:-1,output:1})).rejects.toThrow('Invalid native monitor levels');await expect(recording.mix({backing:1,output:Infinity})).rejects.toThrow('Invalid native monitor levels');expect(invoke.mock.calls).toHaveLength(before);
  await recording.close();await expect(recording.mix({backing:1,output:1})).rejects.toMatchObject({name:'AbortError'});await snapshot.close();
+});
+
+
+// A deferred converter verifies ownership at the additional pre-IPC await.
+afterEach(()=>vi.unstubAllGlobals());
+it.each(['abort','supersede','failure'] as const)('rejects %s during 44.1-kHz conversion before native admission',async action=>{
+ const f=fixture(),source=f.sources.get('s')!;Object.assign(source.buffer,{sampleRate:44100});
+ const controller=new AbortController();let current=true,resolve!:(value:unknown)=>void,reject!:(error:Error)=>void;
+ const rendered=new Promise((done,fail)=>{resolve=done;reject=fail;});
+ vi.stubGlobal('OfflineAudioContext',class {
+  destination={};createBuffer(){return {copyToChannel:vi.fn()};}createBufferSource(){return {connect:vi.fn(),start:vi.fn()};}startRendering(){return rendered;}
+ });
+ const pending=NativeTimelineSnapshot.create(f.p,f.sources,{signal:controller.signal,isCurrent:()=>current}),failure=action==='failure'?expect(pending).rejects.toThrow('converter failed'):expect(pending).rejects.toMatchObject({name:'AbortError'});
+ if(action==='abort')controller.abort();else if(action==='supersede')current=false;
+ if(action==='failure')reject(new Error('converter failed'));else resolve({getChannelData:()=>new Float32Array(Math.ceil(8193*48000/44100)+2)});
+ await failure;expect(invoke).not.toHaveBeenCalled();
 });

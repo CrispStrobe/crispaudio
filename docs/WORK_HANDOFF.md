@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [Contiguous source selection, 0.13.61](#contiguous-source-selection--01361-checkpoint). The active product
+Current checkpoint: [44.1-kHz source audition, 0.13.62](#441-khz-source-audition--01362-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.61 admits one contiguous native
+The installed baseline remains 0.13.33. Source 0.13.62 adds 44.1-kHz source audition
+on the native 48-kHz clock; see the latest checkpoint below. Source 0.13.61 admits one contiguous native
 source selection; see the latest checkpoint below. Source 0.13.60 extends opt-in native source
 audition to whole mono 48-kHz clips; see the latest checkpoint below. Source 0.13.59 combines actual command
 dispatch with real worker/DSP and a null consumer in MockRuntime tests. Source 0.13.58 qualifies snapshot IPC and
@@ -1550,3 +1551,72 @@ EN/DE controls fit 1440/375-pixel desktop Chromium viewports; this is not iOS.
 Both preceding .60 general CI and iOS checks succeeded, confirming the Mac helper
 cache restore repair. Refresh this checkpoint's newly triggered CI after push;
 there is no Store submission or physical audio validation in a main-branch push.
+
+
+## 44.1-kHz source audition — 0.13.62 checkpoint
+
+Source preview admits 44.1/48-kHz mono/stereo, one contiguous all-channel selection
+of at least 2048 source samples, unretimed clips up to two minutes and the existing
+full-history memory bound. Rendered remains default; all other rates remain gated.
+The mode label is now **Native · 48 kHz**, with EN/DE help explaining that native
+converts before effect processing while fresh Rendered processes at source rate.
+Sample-rate-sensitive and nonlinear effects can differ; this is not a promise of
+arbitrary cross-rate plug-in equivalence. Apply keeps the original source rate,
+length, channel count and exact prepared samples, preserving outside audio/Undo.
+
+`NativeSourceAudition` admits only the two qualified rates and anchors its relative
+cursor to the rounded 48-kHz start boundary. `SourceEditor` admits the same rates.
+Existing `NativeTimelineSnapshot` performs bounded Web Audio conversion and checks
+cancellation/current identity after the conversion, before any native admission.
+New tests cover abort, supersession and converter failure at that extra await;
+no Rust worker, native app command or rate-conversion implementation changes.
+
+Qualification uses the existing guarded driver (four linked abort symbols checked
+before launch). The actual editor runner accepts `CRISPAUDIO_TEST_SOURCE_RATE`:
+- 44.1-kHz mono and stereo with odd sample bounds, source offset, all existing
+  lifecycle/control/Apply checks, plus a 48-kHz stereo regression.
+- A generated 997/9701-Hz signal and impulse through trusted minimum-delay VST3:
+  first 2048 consumed frames against a fresh 48-kHz helper render of identically
+  converted input; finite/looped playback, whole clip and minimum head/tail counts,
+  rounded clock and intact originals. A separate metric records the difference
+  from original-rate processing: the plug-in's one-sample minimum delay has a
+  different duration at each rate. This does not qualify arbitrary plug-ins.
+- A 0.125-second delay history check remains separate: 44.1-kHz comparisons allow
+  1e-5 full-scale error after conversion, versus 1e-6 at 48 kHz. Apply remains an
+  exact original-rate comparison, with no monitoring conversion printed into it.
+
+Next ordered work:
+1. Bounded native FX waveform snapshots: fresh helper render at source rate,
+   debounce/cancel, source/selection/parameter/state generations, bounded memory,
+   honest snapshot labels distinct from instantaneous native 48-kHz output. Use
+   a helper/offline graph; muted Live/capture paths can open hardware queues and
+   must not be repurposed as offline waveform renderers. Do not
+   stream unbounded callback PCM to React or block native playback for drawing.
+2. Original-based recipe recall: start from retained originals/offsets, avoid
+   cumulative processing; preserve original assets, one Undo and redo/reopen/stale
+   result behavior, with existing helper-state/latency constraints.
+3. Other rates, individual channels and multiple ranges each need their own
+   conversion/history/clock/Apply evidence. Do not admit the offline plan's entire
+   8–192-kHz range or join native intervals by relaxing UI guards alone.
+4. Continue the accepted long-session/memory, monitoring/plug-in UX, sessions/
+   delivery and restoration/recorded-audio timing roadmap. Actual Wry playback,
+   physical device/timing/load, arbitrary plug-ins and signed/mobile acceptance
+   remain separate; preserve running baseline and recording-preview sessions.
+
+Validation: **2,220 frontend tests in 233 files**, 76 focused source/snapshot tests
+in four files, build, full/final runner lint and 39 release checks pass. Final editor/
+null-DSP runs pass for 44.1-kHz mono/stereo and 48-kHz stereo: **24 sessions joined
+each**, zero retained snapshots/bytes and exact source-rate Apply/outside samples.
+Changing-signal finite/looped native output matches the fresh 48-kHz processing
+reference exactly. Whole clips and minimum head/tail selections finish with exact
+native counts (2,229 frames for 2,048 source samples at 44.1 kHz; 2,048 at 48 kHz).
+
+The constant 44.1-kHz delay comparison to original-rate processing differs by at
+most 7.093e-6 full scale, within the explicit 1e-5 conversion tolerance. The dynamic
+fixture also reports a separate difference between processing rates; this is not
+presented as arbitrary plug-in parity. The existing guarded Rust driver is unchanged
+and reused; its .61 21-test result remains a baseline, not a new standalone run.
+[Evidence](evidence/source-native-ui.json). Both .61 CI and iOS checks succeeded.
+
+The installed baseline/recording preview remain untouched. Main-branch CI is new
+at push; no install, release tag, physical audio check or Apple upload is included.

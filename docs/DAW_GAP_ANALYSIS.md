@@ -34,6 +34,13 @@ The remaining sequence was reaffirmed on 19 October; use
 Effect-aware segment waveforms are implemented through the bounded 0.13.24
 continuous-refresh checkpoint; continue the execution order below.
 
+Source checkpoint **0.13.62** admits mono/stereo 44.1-kHz source audition on the
+48-kHz native clock, with explicit mode/help semantics. Fresh rendering and Apply
+retain source rate/shape; processing at different rates can sound different.
+Other rates/ranges/channels, native waveform snapshots and original-based recipe
+recall remain separate work.
+[Current handoff](WORK_HANDOFF.md#441-khz-source-audition--01362-checkpoint).
+
 Source checkpoint **0.13.61** adds one contiguous native source selection with
 clip-history preroll, a selection-relative cursor and partial Apply preserving
 outside samples/original offsets. Full real-Wry/device acceptance, other formats,

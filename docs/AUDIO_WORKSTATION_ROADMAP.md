@@ -38,7 +38,8 @@ independent software work; do not repeat an unanswered recording question.
 ## 2. Complete source-effect editing
 
 - Whole mono/stereo 48 kHz audition is admitted in 0.13.60; one contiguous
-  selection follows in 0.13.61. Broaden to explicit rate/multiple-range/channel cases, with state, latency, first-pass, loop and Apply parity
+  selection follows in 0.13.61, and 44.1 kHz in 0.13.62. Broaden further rate/
+  multiple-range/channel cases, with state, latency, first-pass, loop and Apply parity
   tests before enabling each case. Keep arbitrary unsupported formats rejected.
 - Add bounded effect-aware native waveform snapshots with stale-generation
   rejection. Distinguish source/processed snapshots from instantaneous monitor

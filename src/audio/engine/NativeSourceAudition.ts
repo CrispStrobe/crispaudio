@@ -50,7 +50,7 @@ export function nativeSourcePlan(input:NativeSourceInput,levelDb=0,protectOutput
  * checked at every async boundary; an AbortSignal cancels a pending start.
  * Starting without a device override uses the selected macOS default output.
  * Output changes stop the audition; restarting resolves the new selected device.
- * Playback currently admits only 48 kHz sources; the offline plan remains
+ * Playback admits 44.1/48 kHz sources on the fixed 48 kHz native clock; the offline plan remains
  * rate-generic for qualification. No plugin-state capture or Apply parity is
  * implied by this transport adapter. */
 export class NativeSourceAudition {
@@ -83,7 +83,7 @@ export class NativeSourceAudition {
   let plan:ReturnType<typeof nativeSourcePlan>;
   try{
    options.signal?.throwIfAborted();if(options.isCurrent&&!options.isCurrent())throw interrupted();
-   if(input.sampleRate!==48000)throw new Error('Native source preview currently requires 48 kHz audio');
+   if(![44100,48000].includes(input.sampleRate))throw new Error('Native source preview requires 44.1 or 48 kHz audio');
    plan=nativeSourcePlan(input,options.levelDb,options.protectOutput);
   }catch(error){await previous;throw error;}
   const lease=nativeSourceOwner.reserve(()=>this.stop());this.lease=lease;
@@ -97,7 +97,7 @@ export class NativeSourceAudition {
    await Promise.all([previous,lease.ready]);check();
    // Keep the full clip in the graph: the worker prerolls from its beginning.
    // Expose only the selected interval and a selection-relative UI clock.
-   this.rangeStart=plan.start;
+   this.rangeStart=Math.round(plan.start*48000)/48000;
    await this.controller.play(plan.project,plan.sources,plan.start,plan.start,plan.end,options.loop??false,options.muted??false,()=>generation===this.generation&&lease.isCurrent()&&!options.signal?.aborted&&(!options.isCurrent||options.isCurrent()));check();
    // Controls may have changed during upload/preparation. Publish the latest set
    // without opening a replacement helper or changing saved state/topology.

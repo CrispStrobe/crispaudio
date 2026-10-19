@@ -79,10 +79,11 @@ Select a clip and open **Source Editor** for detailed work on its source window.
   target updates an active normalization preview.
 - Apply a preview as one undoable edit. Originals remain available for restoration.
   Source audition plays source audio; timeline FX belong to arrangement playback.
-  On Mac, external effects also offer an opt-in **Native · Preview** mode: use the
+  On Mac, external effects also offer an opt-in **Native · 48 kHz** mode: use the
   same Play/Stop, adjust parameters and compare Original/Preview while listening.
   It supports one contiguous selection (at least 2048 samples) in mono/stereo
-  48-kHz clips up to two minutes. Rendered stays the default; **Render preview** prepares the audio for Apply. Monitor gain
+  44.1/48-kHz clips up to two minutes. Native converts to 48 kHz for listening;
+  Apply retains the source rate. Rendered stays the default; **Render preview** prepares the audio for Apply. Monitor gain
   and output protection affect listening only. The native waveform remains a
   labelled snapshot. [Details and limits](docs/SOURCE_EDITING.md#native-external-effect-preview).
 - Enable **Live effects**, then press Play to adjust high-pass, low-pass and output

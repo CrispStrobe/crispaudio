@@ -149,3 +149,26 @@ for strong definitions of `AudioQueueNewInput`, `AudioQueueNewOutput`,
 these abort definitions explicitly so linker dead stripping cannot remove them.
 Older drivers that lack any guard are refused; rebuild rather than bypassing the
 check. This guards the parent driver, not arbitrary child plug-in code.
+
+
+## Source-rate qualification
+
+Set `CRISPAUDIO_TEST_SOURCE_RATE=44100` on the editor runner for each channel
+configuration. The odd source-sample boundaries round independently onto the
+48-kHz native clock. Source-render/Apply checks still compare every original-rate
+sample and preserve rate, length, outside samples, original offset and Undo.
+The 44.1-kHz constant delay comparison permits 1e-5 full-scale error after conversion
+(the 48-kHz comparison retains its 1e-6 limit); this does not establish arbitrary
+plug-in equivalence across processing rates.
+
+`scripts/fixtures/sourceRateQualification.mjs` adds a generated 997/9701-Hz signal
+and impulse through the trusted minimum-delay VST3 fixture. It compares the first
+2048 consumed frames against a fresh 48-kHz render of identically converted input,
+for finite and looped playback, with a separate 1e-6 limit. The difference from
+processing at the original rate is reported separately: a one-sample minimum delay
+has a different duration at each rate (see the [upstream ADelay processor](https://github.com/steinbergmedia/vst3_public_sdk/blob/master/samples/vst/adelay/source/adelayprocessor.cpp)). Whole-clip and minimum head/tail cases
+check exact finite counts and helper cleanup. It also checks rounded bounds,
+repeated-loop clock, finite completion and intact originals. The native driver/guards are unchanged; no native rebuild is needed.
+
+Use `CRISPAUDIO_TEST_RATE_PROBE_ONLY=1` to run just the dynamic/edge matrix during
+investigation; omit it for full editor/Apply/lifecycle qualification.

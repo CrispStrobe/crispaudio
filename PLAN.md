@@ -1,11 +1,19 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.61 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.62 (installed baseline 0.13.33). This section is the current plan.
 
 The user reaffirmed the full ordered [audio workstation roadmap](docs/AUDIO_WORKSTATION_ROADMAP.md)
 on 19 October: native acceptance → source FX → long sessions → monitoring/plug-ins
 → sessions/delivery → restoration/recorded-audio timing. Each phase has concrete
 acceptance criteria; existing partial tools must be extended rather than recreated.
+
+0.13.62 admits **44.1-kHz source audition** alongside 48 kHz. Native processing
+stays at 48 kHz, now stated in its mode label/help; Apply retains the original
+source rate and samples. Fractional selection boundaries round to the native
+clock, with cancellation before native admission during conversion. Other rates
+and channel/range cases remain gated. Next: bounded native FX waveform snapshots
+and original-based recipe recall; broaden formats only with separate evidence.
+[Current handoff](docs/WORK_HANDOFF.md#441-khz-source-audition--01362-checkpoint).
 
 0.13.61 adds **one contiguous native source selection** in bounded mono/stereo
 48-kHz clips. The worker retains clip history before the selected interval; the

@@ -159,12 +159,18 @@ if you need effect tails.
 
 ## Native external-effect preview
 
-Since **0.13.54** (mono added in **0.13.60**, contiguous selections in **0.13.61**), the editor offers **Native · Preview** beside the shared Play/Stop
+Since **0.13.54** (mono added in **0.13.60**, contiguous selections in **0.13.61**, 44.1 kHz in **0.13.62**), the editor offers **Native · 48 kHz** beside the shared Play/Stop
 controls after selecting an external effect. It supports one contiguous selection
-of at least 2048 samples in an unretimed mono/stereo 48-kHz clip up to two minutes,
+of at least 2048 samples in an unretimed mono/stereo 44.1/48-kHz clip up to two minutes,
 with all channels selected. Other rates, separate ranges, individual channels and
 longer clips continue to use Rendered. The whole clip stays within the limit: a
 short selection does not remove the cost of retaining and processing its history.
+
+Native processes at 48 kHz. A 44.1-kHz source is converted before effect processing;
+Rendered uses its original sample rate. These processing orders can sound different,
+especially with nonlinear or sample-rate-sensitive effects. Apply always retains
+the source sample rate, channel count and exact prepared samples. Boundaries round
+once to the native clock; the source waveform/cursor retain the selection.
 
 Press Play, adjust effect parameters, type or scrub their numbers, and switch
 **Original / Preview** without replacing the running graph. Monitor level starts

@@ -86,8 +86,8 @@ it('stops an invalidated owner on polling and rejects invalid controls without n
 it('duplicates mono into stereo before the timeline panner to preserve source audition unity',()=>{const channel=new Float32Array(4800).fill(.5),plan=nativeSourcePlan({...input(),channels:[channel]}),source=[...plan.sources.values()][0];expect(source.channels).toBe(2);expect(source.buffer.getChannelData(0)).toEqual(channel);expect(source.buffer.getChannelData(1)).toEqual(channel);expect(source.buffer.getChannelData(0)).not.toBe(source.buffer.getChannelData(1));expect(plan.estimatedBytes).toBe((4800+2)*2*4*5);});
 
 it('rejects cross-rate native audition before allocation/upload while keeping offline plans rate-generic',async()=>{
- const {audio}=owner(),f=input();f.sampleRate=44100;const allocation=vi.fn();vi.stubGlobal('AudioBuffer',allocation);
- await expect(audio.play(f)).rejects.toThrow('requires 48 kHz');expect(allocation).not.toHaveBeenCalled();expect(create).not.toHaveBeenCalled();expect(audio.active).toBe(false);
+ const {audio}=owner(),f=input();f.sampleRate=96000;const allocation=vi.fn();vi.stubGlobal('AudioBuffer',allocation);
+ await expect(audio.play(f)).rejects.toThrow('requires 44.1 or 48 kHz');expect(allocation).not.toHaveBeenCalled();expect(create).not.toHaveBeenCalled();expect(audio.active).toBe(false);
 });
 
 it('joins a source output before another source instance can upload or start',async()=>{
@@ -110,7 +110,7 @@ it('revokes an uploading source and exposes its late cleanup to other consumers'
 it('waits for prior output cleanup even when a replacement rate is rejected',async()=>{
  const f=session();let release!:()=>void;f.snapshot.close.mockImplementationOnce(()=>new Promise<void>(resolve=>{release=resolve;}));
  create.mockResolvedValue(f.snapshot);const audio=owner().audio;await audio.play(input());
- let rejected=false;const failure=audio.play({...input(),sampleRate:44100}).catch(error=>{rejected=true;expect(error.message).toContain('requires 48 kHz');});
+ let rejected=false;const failure=audio.play({...input(),sampleRate:96000}).catch(error=>{rejected=true;expect(error.message).toContain('requires 44.1 or 48 kHz');});
  await vi.waitFor(()=>expect(f.snapshot.close).toHaveBeenCalledOnce());expect(rejected).toBe(false);release();await failure;expect(rejected).toBe(true);
 });
 
@@ -149,4 +149,16 @@ it.each([{start:-1,end:4000},{start:1.5,end:4000},{start:1200,end:NaN},{start:12
 it('admits the minimum selected window while reserving the full clip history memory',()=>{
  const full=nativeSourcePlan(input()),selected=nativeSourcePlan({...input(),range:{start:1200,end:3248}});
  expect(selected.estimatedBytes).toBe(full.estimatedBytes);expect(selected.start).toBe(1200/48000);expect(selected.end).toBe(3248/48000);expect(selected.project.duration).toBe(.1);
+});
+
+
+it.each([1,2])('admits %s-channel 44.1 kHz while rounding native bounds once and preserving source PCM/rate',async count=>{
+ const f=session(),channel=new Float32Array(44100).fill(.25),channels=Array.from({length:count},()=>channel.slice()),range={start:11026,end:33074};
+ f.playback.status.mockResolvedValue({phase:'playing',frame:12001,clockTimeMs:0,renderedFrames:4096,callbacks:4,fault:0,peaks:[.25,.25],appliedRevision:0});
+ create.mockResolvedValue(f.snapshot);const {audio}=owner();await audio.play({channels,sampleRate:44100,effect:effect(),range},{loop:true,muted:true});
+ const [project,sources]=create.mock.calls[0],source=[...sources.values()][0];
+ expect(project.sampleRate).toBe(44100);expect(source.buffer.sampleRate).toBe(44100);expect(source.buffer.length).toBe(44100);
+ expect(source.buffer.getChannelData(0)).toEqual(channel);expect(source.buffer.getChannelData(1)).toEqual(channel);
+ expect(f.snapshot.startPlayback).toHaveBeenCalledWith({startFrame:12001,endFrame:35999,cycle:true,loopStartFrame:12001,muted:true});expect(audio.position()).toBe(0);
+ await audio.stop();expect(channels).toEqual(Array.from({length:count},()=>channel));
 });
