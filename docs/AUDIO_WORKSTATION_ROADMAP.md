@@ -12,6 +12,13 @@ editable. Preserve the compact interface: direct controls for common jobs;
 context/desktop menus and collapsed sections for advanced settings; equivalent
 reachable touch actions and accessible numeric entry.
 
+Source checkpoint **0.13.64** adds a first saved-effect recall slice: a single
+plug-in operation reprocesses the retained original full window, with Rendered
+preview, trimmed history, one Undo/Redo and owned file publication. Mixed journals,
+new range/channel editing and retimed clips remain gated until replay and coordinate
+mapping are defined. Other native admission expansions remain separate. Continue
+from the current handoff; this does not complete the workstation roadmap.
+
 Source checkpoint **0.13.63** adds automatic bounded native FX waveform snapshots
 without restarting the running graph. These are fresh source-rate renders, separate
 from instantaneous 48-kHz output, analysis and Apply. Next independent source work

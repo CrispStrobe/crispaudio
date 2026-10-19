@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [native FX waveform snapshots, 0.13.63](#native-fx-waveform-snapshots--01363-checkpoint). The active product
+Current checkpoint: [original-based saved-effect editing, 0.13.64](#original-based-saved-effect-editing--01364-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.63 adds automatic bounded native FX waveform snapshots; see the latest checkpoint below. Source 0.13.62 adds 44.1-kHz source audition
+The installed baseline remains 0.13.33. Source 0.13.64 adds a bounded original-based saved-effect editor; see the latest checkpoint below. Source 0.13.63 adds automatic bounded native FX waveform snapshots; see the latest checkpoint below. Source 0.13.62 adds 44.1-kHz source audition
 on the native 48-kHz clock; see the latest checkpoint below. Source 0.13.61 admits one contiguous native
 source selection; see the latest checkpoint below. Source 0.13.60 extends opt-in native source
 audition to whole mono 48-kHz clips; see the latest checkpoint below. Source 0.13.59 combines actual command
@@ -1697,3 +1697,122 @@ The fixture uses actual trusted AU/VST3 helpers and temporary files, with mocked
 Tauri filesystem/conversion wrappers; it does not establish production ACL,
 window ownership or signed sandbox acceptance. [Evidence](evidence/source-native-ui.json).
 No install, release tag or Apple upload is part of this source change.
+
+
+## Original-based saved-effect editing — 0.13.64 checkpoint
+
+Source Editor → External effects → **Edit saved effect** revises one saved plug-in
+operation from its retained original. Restored parameters/base state feed a fresh
+source-rate Rendered preview; transient post-render state never seeds another pass.
+Original/Preview switches preserve audition position, the waveform shows the full
+processing window with the current clip outlined, and playback uses that clip.
+Monitor changes never print into Apply. Parameters invalidate prepared output.
+
+This first slice admits matched decoded 44.1/48-kHz mono/stereo, up to two minutes
+and a 256 MiB PCM allocation estimate. It retains the saved ranges and channel
+choice, including disjoint ranges and an individual channel. It does not offer
+Native recall or range/channel editing. Mixed journals, retimed clips, missing
+originals/plugins, inconsistent bounds/layout and excessive windows remain gated.
+Older recipes may lack original file-processing-rate provenance; fresh passes use
+the retained decoded source rate, without promising historical byte equivalence.
+
+Code entry points:
+- `sourcePluginRecall.ts` validates one operation and retains the complete derived
+  source window: original start = `sourceEdit.offset`, length = derived buffer
+  frames. Visible clip = `clip.sourceOffset` plus duration within that window.
+  Render before cropping, so trimmed/split clips keep pre-trim DSP history. Apply
+  preserves that complete buffer and clip source offset, replaces the operation
+  instead of appending it, and changes only the selected clip's source reference.
+  Other clips keep the old source. Restore still maps to
+  `sourceEdit.offset + clip.sourceOffset` in the original.
+- `SourcePluginWaveform.renderSourcePluginPass` shares the existing serialized,
+  cancellable, owned float-WAV/helper/decode pipeline with waveform snapshots,
+  using a separate admission budget and validated helper latency. Its base state
+  is cloned from restoration; result state is discarded. Snapshot callers still
+  have their own 64 MiB display budget and cannot enable Apply.
+- `SourcePluginRecallCommit` stages one full-window derived file using existing
+  conversion transactions, protects it before observable publication, checks
+  project/source/recording/playback identity, and publishes one store mutation.
+  Mark publication begun before invoking subscribers; an uncertain thrown
+  subscriber retains protected files, matching the recovery-import convention.
+  Cancel/stale/encode/write/protect failures roll back unpublished assets.
+- `SourcePluginRecall` owns compact recall controls, source/prepared drawing,
+  visible-clip audition/playhead and monitoring. Render/audition stop and join the
+  arrangement native owner before work starts; a late acknowledgement checks the
+  request before touching a replacement source owner. Parameter edits, close, project/
+  source changes, arrangement start and recording abort late work. Direct store
+  subscriptions keep invalidation sticky even when a state change and return are
+  batched into one React render. A plan that
+  becomes unavailable before mounting shows a recoverable message. Back/close
+  leaves project media unchanged; only Apply publishes.
+
+Next scoped work:
+1. **Replay mixed operation journals and edit recipe ranges/channels.** Define
+   source-coordinate windows for every operation before replay. Existing generic
+   edits after trimming can change their coordinate origin; do not infer a complete
+   history from the last operation or silently omit earlier edits. Start with an
+   explicitly admitted journal subset, replay utilities/built-in chains and each
+   plug-in from its saved base in order, then extend restoration cases with their
+   DSP/latency limits. Parameter/range edits must preserve unrelated operations,
+   originals, outside samples, one Undo/Redo, reopen, and owned cancellation.
+   Legacy journals without enough window/rate provenance must stay gated with an
+   explanation or gain an explicit migration path. Retimed mapping remains separate.
+   The ordinary SourcePluginEffects preview still has its legacy file-path/input
+   persistence path. Route it through owned decoded-PCM staging in a separately
+   qualified change, covering generated sources and cancellation; preserve or
+   explicitly scope its existing rates/windows instead of silently shrinking them.
+2. **Separate Native admission expansions.** Other rates need conversion length,
+   rounding, latency/state and fresh Apply evidence; individual channels and
+   multiple ranges need defined graph history, clock/cursor and loop semantics.
+   Native recall can first target an explicitly admitted all-channel saved effect
+   covering the entire visible clip, retaining its full original history and using
+   the existing source owner/hook. Qualify live controls, A/B, snapshots, stop/join,
+   fresh Apply and failures before admitting it. Keep partial/disjoint/channel-only
+   cases gated until output masking/history semantics are implemented.
+   Offline recall support does not qualify those Native cases or 8–192 kHz generally.
+3. **Continue the accepted workstation phases**: measured long-session memory,
+   monitoring/plug-in UX, session/delivery and restoration/recorded-audio timing
+   per AUDIO_WORKSTATION_ROADMAP.md. Track staged/retained assets without deleting
+   originals or files referenced by Undo, unsaved or other projects.
+4. **Keep platform evidence separate.** Actual Wry playback/product registration,
+   physical timing/listening/load, arbitrary plug-ins and signed/mobile acceptance
+   remain open. Add real-window owner-scoped helper-job cancellation and bounded
+   cleanup of known preview-cache outputs; React-modal cleanup evidence does not
+   establish that exit/window path. Never collect unknown recording files as cache.
+   Preserve the installed baseline and isolated recording preview.
+
+Validation: **2,296 frontend tests in 239 files**, 74 focused tests in five files,
+production build, full/final runner lint and 39 release checks pass. The 53 new
+cases cover the model, owned Apply, controls and helper latency. Four same-batch
+round-trip cases (project, sources, arrangement and recording) ensure pending
+results cannot become valid again just because the store returns to old values.
+Both .63 general CI and iOS checks passed. No native suite was rerun; prior native
+suite results remain labelled baselines. No install, tag, Apple upload or native
+rebuild is included.
+
+Combined editor/null-DSP runs pass at 44.1-kHz mono/stereo and 48-kHz stereo,
+closing **24 native sessions each** with zero retained snapshots/bytes or temporary
+inputs. Saved AU/VST3 input, full-window Apply and repeated Apply match fresh
+original-based samples exactly. Trim/split history, fixed disjoint ranges/channel,
+sibling independence, restored base state/parameters, Undo/Redo, portable reopen,
+waveform pixels, Rendered A/B, monitor exclusion, late close and mixed-history gating
+pass in EN/DE desktop Chromium at 1440/375 pixels.
+
+The stereo 44.1-kHz combined recall preceded the final sticky guard; a fresh final
+44.1-kHz stereo recall-only browser run verifies that guard and held replies across
+project/recording round trips (zero native sessions). Mono combined runs after the
+guard change; the final 48-kHz combined run includes the browser round-trip checks.
+Four current unit cases additionally cover all store round trips. Filesystem,
+conversion and resource-relocation wrappers are mocked; this does not qualify
+actual Tauri ACL/bookmarks/window ownership or signed sandbox behavior. Trusted
+helper DSP and fixture files are real. [Evidence](evidence/source-plugin-recall.json).
+
+Final transport review adds the arrangement close/join barrier before recalled
+Render/audition. Two additional tests cover delayed close and unmount before its
+acknowledgement, including refusal to stop a replacement source owner. The final
+fresh stereo browser run holds a real null-native arrangement close acknowledgement
+and proves no helper input is allocated before release. That additional session
+joins with zero snapshots/bytes; the complete recall/A-B/reopen/epoch checks then
+pass again. The three combined runs above predate this last UI barrier and are
+separate evidence. Final current full suite: 2,296/239, focused 74/5, build and lint
+pass. No further production edits followed these checks.

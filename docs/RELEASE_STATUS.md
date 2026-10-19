@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.63, native FX waveform snapshots](#native-fx-waveform-snapshots--01363-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.64, original-based saved-effect editing](#original-based-saved-effect-editing--01364-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4936,3 +4936,45 @@ ACL and signed sandbox acceptance remain separate. Prior native suite results
 remain baselines; no Rust code changed or native suite was rerun. Both .62 CI
 and iOS checks succeeded; refresh the new workflows after pushing this checkpoint.
 [Evidence](evidence/source-native-ui.json).
+
+
+## Original-based saved-effect editing — 0.13.64 source candidate
+
+A bounded saved-effect editor reprocesses one plug-in recipe from retained original
+PCM and restored base state. The full processing window preserves history before
+trimmed/split clips; Apply replaces one operation/source reference with one Undo/Redo,
+keeping other clips and originals. The compact Rendered editor supports A/B,
+monitor-only gain, full-window waveforms with a clip outline and visible-clip
+playback. Mixed histories and retimed audio remain gated; saved ranges/channels
+stay fixed. Admission is matched decoded 44.1/48-kHz mono/stereo, up to two minutes
+and a 256 MiB PCM estimate, excluding arbitrary plug-in internal memory.
+
+The shared owned offline pass now validates measured helper latency. Derived files
+are protected before one store publication; stale/cancelled/failed work rolls back,
+while an uncertain post-publication subscriber failure conservatively retains them.
+Current native admission and automatic waveform snapshot limits stay separate.
+No Rust source/DSP/driver or native build changed. Installed .33 / preview .41 remain
+untouched. Native recall, mixed-journal replay and broader Native admission remain
+next scoped work in the current handoff, not release acceptance claims.
+
+Validation: **2,296 frontend tests in 239 files**, 74 focused cases, production
+build, full/final runner lint and 39 release checks pass. Actual AU/VST3 recall
+checks pass for 44.1-kHz mono/stereo and 48-kHz stereo: exact original-based input,
+Apply/repeated Apply, waveform pixels, trim history, fixed ranges/channel, sibling
+independence, Undo/Redo, portable reopen, A/B, monitoring and stale/close cleanup.
+Combined Native regression runs close 24 sessions each with no retained snapshots
+or inputs. A final separate 44.1-kHz stereo recall run and final 48-kHz combined run
+verify same-batch project/recording invalidation; four current unit cases cover all
+store round trips. The earlier stereo combined run predates this final guard and
+is not its evidence. Filesystem/conversion/resource wrappers remain synthetic;
+physical, real Wry playback, production ACL/bookmarks and signed/mobile acceptance
+remain separate. Both preceding .63 CI workflows succeeded; refresh the new push.
+[Evidence and exact scope](evidence/source-plugin-recall.json).
+
+Final transport qualification additionally holds a real null-native arrangement
+close acknowledgement: recalled preparation waits before allocating input, then
+joins the session/snapshot and passes the full recall workflow. The combined
+format runs predate this last UI barrier; the final fresh stereo run and two new
+unit cases qualify it. Final current full suite is 2,296/239, focused 74/5; final
+build and lint pass. The added session closes cleanly (73 native closes across
+combined runs plus this final probe), with no retained snapshots/bytes.

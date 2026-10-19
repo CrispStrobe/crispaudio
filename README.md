@@ -87,6 +87,11 @@ Select a clip and open **Source Editor** for detailed work on its source window.
   and output protection affect listening only. FX changes refresh a labelled
   source-rate waveform snapshot after a short pause, within a memory limit;
   playback continues. Analysis and Apply use explicitly prepared audio. [Details and limits](docs/SOURCE_EDITING.md#native-external-effect-preview).
+- On Mac, revise a saved external effect under **External effects → Edit saved effect**.
+  Render from the retained original and Apply one undoable replacement. Trimmed
+  clips keep their earlier FX history. This supports one saved plug-in operation
+  in bounded mono/stereo 44.1/48-kHz audio; mixed edit histories remain unavailable.
+  [Saved-effect editing](docs/SOURCE_EDITING.md#edit-a-saved-external-effect).
 - Enable **Live effects**, then press Play to adjust high-pass, low-pass and output
   while listening. Arrange up to six high/low-pass, level and clipper effects, with
   individual bypass and reorder controls. Structural edits stop audition.

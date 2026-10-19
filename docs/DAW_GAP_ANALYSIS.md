@@ -4,6 +4,13 @@ Reviewed 16 October 2026 against local 0.13.26 and current official product page
 This is a workflow and architecture comparison, not a claim of feature parity or
 an independent listening/performance benchmark. Competitor editions differ.
 
+Source progress **0.13.64**: one saved external-effect recipe can now be revised
+from its retained original, using full-window history and one undoable replacement,
+including trimmed/split clips and portable reopen. This is a bounded Rendered slice;
+mixed journals and retimed cases remain gated. It does not complete arbitrary
+recipe replay, Native admission, long-session memory or physical qualification.
+See the current handoff for the next implementation slices.
+
 Source progress **0.13.63**: native source FX now refresh a bounded, labelled
 source-rate waveform snapshot while playback continues. This closes automatic
 external-FX visualization within the admitted snapshot budget, not original-based

@@ -2314,6 +2314,19 @@
     "inputBusy": "Stop recording, calibration or input preview before native source playback.",
     "help": "Native uses Play/Stop above and keeps the effect running while parameters, Original/Preview and monitor level change. Choose one selection of at least 2048 samples in an unretimed mono or stereo 44.1/48 kHz clip up to two minutes. Effects process the clip history before the selection; playback stops at its end. Loops retain effect history. Changing selection, channels, loop, source, project or output stops playback. Rendered remains the default and supports other selections.\n\nNative processes at 48 kHz. A 44.1 kHz source is resampled before the effect; Rendered processes at the original source rate, so some effects can sound different. Apply keeps the source rate.\n\nMonitor level starts at −12 dB. A monitor-only sample-peak limiter at −1 dBFS protects native listening; this is not true-peak protection. Neither monitor gain nor this limiter changes Apply. Stop input preview before starting Native.\n\nThe waveform updates after a short pause using a fresh source-rate FX render, independently of native playback. Updating/Source means no current FX snapshot is shown. Automatic snapshots have a 64 MiB PCM allocation estimate; large clips keep the source waveform. Original shows unprocessed audio. This display snapshot does not enable Apply or update analysis, and may differ from the current 48 kHz output or loop history. Use Render preview for analysis and Apply. Render preview stops Native, processes the clip from its beginning in a fresh pass from restored state and prepares audio for Apply. Apply replaces only selected samples; audio outside the selection stays unchanged. Loop history and plug-in real-time processing can differ from that fresh render. A plug-in latency change can stop Native; restart playback in that case. Native failures stay visible; choose Rendered explicitly to continue."
   },
+  "sourceRecall": {
+    "title": "Saved effect",
+    "edit": "Edit saved effect",
+    "back": "Back to source editor",
+    "help": "Edit the saved effect from the retained original, without accumulating processing. Render preview prepares a fresh source-rate pass; Apply replaces the saved recipe in one undoable edit. The waveform shows the full processing window and saved effect ranges. The outlined interval is the current clip. Playback uses only the current clip, keeping pre-trim effect history. Original compares the dry retained audio. Monitor level changes listening only. This first version supports one saved plug-in operation, mono/stereo 44.1/48 kHz, up to two minutes and a 256 MiB PCM allocation estimate. Mixed histories and retimed clips are unavailable. This editor uses Rendered preview; native audition of recalled recipes is not yet available.",
+    "mixed": "This edit history contains other operations. Saved-effect editing will become available when the complete history can be replayed. Restore the original to start a new edit.",
+    "retimed": "Saved-effect editing is not yet available for retimed audio.",
+    "missing": "The retained original or processed source is unavailable.",
+    "format": "Saved-effect editing requires a valid mono/stereo 44.1/48 kHz recipe and matching original audio.",
+    "bounds": "The saved effect ranges or original processing window are unavailable.",
+    "limited": "The complete processing window exceeds the saved-effect preview limit (two minutes / 256 MiB PCM estimate).",
+    "changed": "The project or source changed, or recording/playback started. Return to the source editor and reopen the saved effect."
+  },
   "sourcePlugins": {
     "title": "External effects",
     "scan": "Scan plugins",

@@ -235,3 +235,36 @@ use **Auto preview** before Apply. Apply commits that prepared audio and saves i
 starting state and parameters with the edit history. Saved effects restore both
 state and explicit parameters when selected again. This is metadata recall on the
 current source, not automatic reprocessing from the retained original.
+
+
+## Edit a saved external effect
+
+On Mac since **0.13.64**, select an edited clip, open Source Editor → External effects →
+**Edit saved effect**. Adjust the restored parameters, choose **Render preview**,
+compare **Original / Preview**, then **Apply**. Playback and A/B use Rendered audio;
+recalled recipes do not yet offer Native audition. Monitor level changes listening
+only. Changing parameters invalidates the prepared audio until the next render.
+
+Each pass starts from the retained original and restored base state, replacing the
+saved operation rather than adding the effect again. The full processing window
+is rendered, including history before a trimmed/split clip. The waveform shows
+that full window and fixed saved effect ranges; the outline marks the current clip,
+and playback uses that clip. Saved individual-channel and disjoint-range choices
+stay fixed. Apply preserves the clip's timing, fades, gain, source offset and
+original mapping, changes only its source reference, and adds one Undo step.
+Other clips keep their old source. Undo/Redo and portable save/reopen retain the
+recipe and originals. Missing originals/plugins or a changed project do not publish
+partial edits. Derived files are staged, protected before publication, and rolled
+back when preparation is cancelled or becomes stale.
+
+The first slice supports **one saved plug-in operation**, matched decoded source
+and derived rates of 44.1/48 kHz, one or two channels, up to two minutes and a
+256 MiB PCM allocation estimate including helper latency padding. Large windows,
+retimed clips and mixed operation journals remain gated with an explanation behind
+(i). Arbitrary plug-in internal allocation is outside that PCM estimate. Imported
+legacy recipes may not record the original file's processing rate; a new pass uses
+the retained decoded source rate, rather than promising byte-identical historical
+plug-in output. This does not expand Native's current channel/range/rate admission.
+
+Editing ranges/channels or replaying mixed histories requires a later journal
+replay step so earlier edits and processing-window coordinates are preserved.

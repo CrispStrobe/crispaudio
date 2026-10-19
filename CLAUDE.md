@@ -1238,3 +1238,25 @@ Undetermined access uses getUserMedia for permission, stops ALL tracks before
 native requery/open, and rejects late work on Stop/project changes. Already
 Authorized skips browser capture; Denied/Restricted do not loop permission prompts.
 Never connect that permission stream or browser timestamps to native take timing.
+
+
+### Saved source-effect recipes (0.13.64)
+
+Use `sourcePluginRecallPlan` and `commitSourcePluginRecall` for explicit saved-FX
+editing. Render the complete retained original processing window before trimming;
+keep the edited clip's source offset inside the full derived buffer. Replace the
+saved operation instead of appending it to processed PCM. Other clips and original
+assets must retain their references. A fresh source-rate pass need not reproduce
+legacy file-rate or real-time/loop history byte for byte.
+
+Mixed operation journals and retimed cases stay gated until their coordinate
+windows and replay are implemented. Do not silently omit previous edits. Use the
+owned source helper pass and conversion transaction for staging/protect/publication;
+retain files if publication may already have begun. Snapshot memory and Native
+admission remain separate from the Rendered recall slice. See the current handoff
+for acceptance evidence and the next scoped work.
+
+Before recalled Render/audition, stop and await the arrangement's native close
+barrier through TimelineEngineContext. Recheck cancellation/ownership after that
+await before stopping a source owner, so a late acknowledgement cannot stop the
+replacement editor's audition.

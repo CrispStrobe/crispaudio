@@ -15,7 +15,7 @@ export function sourcePluginWaveformPlan(input:NativeSourceInput,budget=SOURCE_P
  if(!Number.isFinite(budget)||estimatedBytes>budget)throw new Error('Plug-in waveform snapshot memory limit reached');
  return {frames,range,estimatedBytes,maxFileBytes:pcmBytes+65536};
 }
-interface Result {path?:string;sampleRate:number;frames:number}
+interface Result {path?:string;sampleRate:number;frames:number;latency:number}
 const discard=async(result:Result)=>{if(result.path)await remove(result.path);};
 let settled=Promise.resolve();
 export async function waitSourcePluginWaveforms(){await settled;}
@@ -23,13 +23,18 @@ export async function waitSourcePluginWaveforms(){await settled;}
  * transient DSP state or monitor control is read or mutated. Owned input files
  * are always rolled back; the returned PCM never enables Apply. */
 export async function renderSourcePluginWaveform(input:NativeSourceInput,signal:AbortSignal){
+ return (await renderSourcePluginPass(input,signal)).pcm;
+}
+/** Shared owned offline pass. Recipe preparation has a separately admitted budget;
+ * callers own any later editor publication. Returned state never seeds a pass. */
+export async function renderSourcePluginPass(input:NativeSourceInput,signal:AbortSignal,budget=SOURCE_PLUGIN_WAVEFORM_BYTES){
  // Serialize across editor unmount/remount too: cancelling a helper is not proof
  // that it has exited or that its buffers/files have been released.
  const previous=settled;let release!:()=>void;settled=new Promise<void>(done=>{release=done;});
- try{await previous;signal.throwIfAborted();return await render(input,signal);}finally{release();}
+ try{await previous;signal.throwIfAborted();return await render(input,signal,budget);}finally{release();}
 }
-async function render(input:NativeSourceInput,signal:AbortSignal){
- const plan=sourcePluginWaveformPlan(input);signal.throwIfAborted();
+async function render(input:NativeSourceInput,signal:AbortSignal,budget:number){
+ const plan=sourcePluginWaveformPlan(input,budget);signal.throwIfAborted();
  const effect=structuredClone(input.effect),token=crypto.randomUUID();
  let begun=false,output:string|undefined;
  try{
@@ -40,7 +45,7 @@ async function render(input:NativeSourceInput,signal:AbortSignal){
   const path=await invoke<string>('recording_conversion_write',bytes,{headers:{'x-conversion-token':token}});signal.throwIfAborted();
   const result=await mediaJob<Result>('audio_unit_plugin',{operation:'plugin-render',request:{id:effect.pluginId,path,offset:0,duration:plan.frames/input.sampleRate,parameters:effect.parameters,state:effect.state,bypass:false}},signal,discard);
   output=result.path;signal.throwIfAborted();
-  if(!output||result.sampleRate!==input.sampleRate||result.frames!==plan.frames)throw new Error('Invalid plug-in waveform format');
+  if(!output||result.sampleRate!==input.sampleRate||result.frames!==plan.frames||!Number.isFinite(result.latency)||result.latency<0||result.latency>10)throw new Error('Invalid plug-in waveform format');
   const file=await stat(output);signal.throwIfAborted();
   if(!file.isFile||file.size<44||file.size>plan.maxFileBytes)throw new Error('Plug-in waveform file exceeds its budget');
   const encoded=await readFile(output);signal.throwIfAborted();
@@ -57,7 +62,7 @@ async function render(input:NativeSourceInput,signal:AbortSignal){
    }
    next.set(processed.subarray(plan.range.start,plan.range.end),plan.range.start);pcm.push(next);
   }
-  signal.throwIfAborted();return pcm;
+  signal.throwIfAborted();return {pcm,latency:result.latency};
  }finally{
   // Attempt both cleanups even if output removal fails. Never retain a display
   // input as a recording or add its path to the project/Undo history.

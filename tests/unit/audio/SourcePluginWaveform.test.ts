@@ -1,5 +1,5 @@
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
-import {renderSourcePluginWaveform,sourcePluginWaveformPlan} from '../../../src/audio/engine/SourcePluginWaveform';
+import {renderSourcePluginWaveform,renderSourcePluginPass,sourcePluginWaveformPlan} from '../../../src/audio/engine/SourcePluginWaveform';
 import type {NativeSourceInput} from '../../../src/audio/engine/NativeSourceAudition';
 const mocks=vi.hoisted(()=>({invoke:vi.fn(),read:vi.fn(),remove:vi.fn(),stat:vi.fn(),encode:vi.fn(),job:vi.fn(),decode:vi.fn()}));
 vi.mock('@tauri-apps/api/core',()=>({invoke:mocks.invoke}));
@@ -10,13 +10,19 @@ const input=(rate=48000,channels=2):NativeSourceInput=>({channels:Array.from({le
 let current:NativeSourceInput,processed:Float32Array[];
 beforeEach(()=>{
  vi.resetAllMocks();current=input();processed=current.channels.map(c=>Float32Array.from(c,v=>v*2));
- mocks.invoke.mockResolvedValue('/owned/input.wav');mocks.encode.mockResolvedValue(new Blob([new Uint8Array(44)]));mocks.job.mockResolvedValue({path:'/owned/output.wav',frames:4800,sampleRate:48000,state:'transient'});mocks.stat.mockResolvedValue({isFile:true,size:4800*8+44});mocks.read.mockResolvedValue(new Uint8Array(44));mocks.remove.mockResolvedValue(undefined);
+ mocks.invoke.mockResolvedValue('/owned/input.wav');mocks.encode.mockResolvedValue(new Blob([new Uint8Array(44)]));mocks.job.mockResolvedValue({path:'/owned/output.wav',frames:4800,sampleRate:48000,latency:0,state:'transient'});mocks.stat.mockResolvedValue({isFile:true,size:4800*8+44});mocks.read.mockResolvedValue(new Uint8Array(44));mocks.remove.mockResolvedValue(undefined);
  mocks.decode.mockImplementation(async()=>({sampleRate:current.sampleRate,length:4800,numberOfChannels:processed.length,getChannelData:(ch:number)=>processed[ch]}));
  vi.stubGlobal('OfflineAudioContext',class {decodeAudioData=mocks.decode;});
 });
 afterEach(()=>vi.unstubAllGlobals());
+it('returns measured latency, without transient state, for explicit recipe preparation',async()=>{
+ mocks.job.mockResolvedValue({path:'/owned/output.wav',frames:4800,sampleRate:48000,latency:.125,state:'transient'});const result=await renderSourcePluginPass(current,new AbortController().signal,256*1024*1024);expect(result.latency).toBe(.125);expect(result).not.toHaveProperty('state');expect(result.pcm).toHaveLength(2);expect(current.effect.state).toBe('base');
+});
+it.each([NaN,Infinity,-1,11,undefined])('rejects invalid helper latency %s before decoding and cleans files',async latency=>{
+ mocks.job.mockResolvedValue({path:'/owned/output.wav',frames:4800,sampleRate:48000,latency});await expect(renderSourcePluginPass(current,new AbortController().signal)).rejects.toThrow('format');expect(mocks.decode).not.toHaveBeenCalled();expect(mocks.remove).toHaveBeenCalledWith('/owned/output.wav');expect(mocks.invoke).toHaveBeenLastCalledWith('recording_conversion_finish',{token:expect.any(String),keep:false});
+});
 it.each([44100,48000])('splices a fresh %i Hz render into the selection without changing original PCM or effect state',async rate=>{
- current=input(rate);processed=current.channels.map(c=>Float32Array.from(c,v=>v*2));mocks.job.mockResolvedValue({path:'/owned/output.wav',frames:4800,sampleRate:rate});
+ current=input(rate);processed=current.channels.map(c=>Float32Array.from(c,v=>v*2));mocks.job.mockResolvedValue({path:'/owned/output.wav',frames:4800,sampleRate:rate,latency:0});
  const result=await renderSourcePluginWaveform(current,new AbortController().signal);
  for(let ch=0;ch<result.length;ch++)for(let i=0;i<4800;i++)expect(result[ch][i]).toBe(i>=100&&i<2100?processed[ch][i]:current.channels[ch][i]);
  expect(current.channels[0][200]).toBeCloseTo(.1);expect(current.effect.state).toBe('base');
@@ -60,5 +66,5 @@ it('serializes snapshots across editor owners and skips an aborted waiter before
  await vi.waitFor(()=>expect(mocks.job).toHaveBeenCalledOnce());
  const controller=new AbortController(),second=renderSourcePluginWaveform(input(),controller.signal),rejected=expect(second).rejects.toMatchObject({name:'AbortError'});
  controller.abort();await Promise.resolve();expect(mocks.encode).toHaveBeenCalledOnce();
- finish({path:'/owned/output.wav',frames:4800,sampleRate:48000});await first;await rejected;expect(mocks.encode).toHaveBeenCalledOnce();
+ finish({path:'/owned/output.wav',frames:4800,sampleRate:48000,latency:0});await first;await rejected;expect(mocks.encode).toHaveBeenCalledOnce();
 });
