@@ -243,14 +243,21 @@ On Mac since **0.13.64**, select an edited clip, open Source Editor → External
 **Edit saved effect**. Adjust the restored parameters, choose **Render preview**,
 compare **Original / Preview**, then **Apply**. Playback and A/B use Rendered audio;
 recalled recipes do not yet offer Native audition. Monitor level changes listening
-only. Changing parameters invalidates the prepared audio until the next render.
+only. Changing parameters or range/channel settings invalidates the prepared audio until the next render.
 
 Each pass starts from the retained original and restored base state, replacing the
 saved operation rather than adding the effect again. The full processing window
 is rendered, including history before a trimmed/split clip. The waveform shows
-that full window and fixed saved effect ranges; the outline marks the current clip,
-and playback uses that clip. Saved individual-channel and disjoint-range choices
-stay fixed. Apply preserves the clip's timing, fades, gain, source offset and
+that full window and current effect ranges; the outline marks the current clip,
+and playback uses that clip. Since **0.13.65**, expand **Ranges & channels** to choose
+saved ranges, the current clip or the full source window; select all channels or one
+channel. Edit exact sample boundaries by typing or touch/pen vertical dragging;
+start is inclusive and end exclusive. Add creates a separate range in the first
+free gap; remove deletes a range. Overlapping/adjacent ranges merge. Up to 64
+nonempty ranges are admitted. Changes clear the preview until rendered again.
+The waveform shows the chosen channel(s). Effects outside the current clip remain
+editable but cannot be heard in this clip's audition. Removed effect areas return
+to dry original samples. Apply preserves the clip's timing, fades, gain, source offset and
 original mapping, changes only its source reference, and adds one Undo step.
 Other clips keep their old source. Undo/Redo and portable save/reopen retain the
 recipe and originals. Missing originals/plugins or a changed project do not publish

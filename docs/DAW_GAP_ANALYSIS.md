@@ -4,6 +4,13 @@ Reviewed 16 October 2026 against local 0.13.26 and current official product page
 This is a workflow and architecture comparison, not a claim of feature parity or
 an independent listening/performance benchmark. Competitor editions differ.
 
+Source progress **0.13.65** adds editable masks for the saved single-effect slice:
+exact/disjoint sample ranges, all/individual channels and saved/clip/full-window
+presets. Full-window original rendering, outside dry PCM, one Undo/Redo and portable
+reopen remain the contract. Mixed replay still needs explicit operation-window
+provenance; Native recall/admission and the rest of the workstation roadmap remain
+open. See the current handoff for scoped acceptance criteria.
+
 Source progress **0.13.64**: one saved external-effect recipe can now be revised
 from its retained original, using full-window history and one undoable replacement,
 including trimmed/split clips and portable reopen. This is a bounded Rendered slice;

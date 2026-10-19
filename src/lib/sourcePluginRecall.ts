@@ -1,6 +1,7 @@
 import type {AudioSource,PluginRecipe,TimelineProject} from '../types/audio';
 import {sourcePluginWaveformPlan} from '../audio/engine/SourcePluginWaveform';
 import type {NativeSourceInput} from '../audio/engine/NativeSourceAudition';
+import {sampleRanges,type SampleRange} from './sourceEditing';
 import {validNativeEffects} from './nativeEffects';
 
 export const SOURCE_PLUGIN_RECALL_BYTES=256*1024*1024;
@@ -30,16 +31,23 @@ export type SourcePluginRecallPlan=ReturnType<typeof sourcePluginRecallPlan>;
 export function assertSourcePluginRecallCurrent(plan:SourcePluginRecallPlan,current:RecallState){
  if(current.project!==plan.snapshot.project||current.sources!==plan.snapshot.sources||current.isPlaying||current.sources.get(plan.source.id)?.buffer!==plan.source.buffer||current.sources.get(plan.original.id)?.buffer!==plan.original.buffer)fail('changed');
 }
+export interface SourcePluginRecallSelection {channel:number;ranges:SampleRange[]}
+/** Strict admission before canonicalizing overlaps; never silently clamp a bad edit. */
+export function sourcePluginRecallSelection(plan:SourcePluginRecallPlan,selection:SourcePluginRecallSelection):SourcePluginRecallSelection{
+ if(!Number.isInteger(selection.channel)||selection.channel< -1||selection.channel>=plan.input.channels.length||!Array.isArray(selection.ranges)||!selection.ranges.length||selection.ranges.length>64||selection.ranges.some(r=>!Number.isInteger(r.start)||!Number.isInteger(r.end)||r.start<0||r.end<=r.start||r.end>plan.frames))fail('bounds');
+ return {channel:selection.channel,ranges:sampleRanges(selection.ranges,plan.frames)};
+}
 /** Replace the original saved operation, never append it to processed PCM. */
-export function prepareSourcePluginRecall(plan:SourcePluginRecallPlan,processed:Float32Array[],recipe:PluginRecipe){
+export function prepareSourcePluginRecall(plan:SourcePluginRecallPlan,processed:Float32Array[],recipe:PluginRecipe,selection:SourcePluginRecallSelection=plan.operation){
+ const selected=sourcePluginRecallSelection(plan,selection);
  if(processed.length!==plan.input.channels.length||processed.some(c=>c.length!==plan.frames)||recipe.id!==plan.recipe.id||!Number.isFinite(recipe.latency)||recipe.latency<0||recipe.latency>10||!validNativeEffects([{...plan.input.effect,parameters:recipe.parameters,state:recipe.state}]))fail('format');
  const pcm=plan.input.channels.map(c=>new Float32Array(c));
  for(let ch=0;ch<pcm.length;ch++){
   for(const value of processed[ch])if(!Number.isFinite(value))fail('format');
-  if(plan.operation.channel>=0&&plan.operation.channel!==ch)continue;
-  for(const range of plan.operation.ranges)pcm[ch].set(processed[ch].subarray(range.start,range.end),range.start);
+  if(selected.channel>=0&&selected.channel!==ch)continue;
+  for(const range of selected.ranges)pcm[ch].set(processed[ch].subarray(range.start,range.end),range.start);
  }
- return {pcm,recipe:structuredClone(recipe)};
+ return {pcm,recipe:structuredClone(recipe),selection:selected};
 }
 export type PreparedSourcePluginRecall=ReturnType<typeof prepareSourcePluginRecall>;
 /** Pure one-publication replacement; other clips keep referencing the old source. */
@@ -47,6 +55,6 @@ export function sourcePluginRecallCommit(plan:SourcePluginRecallPlan,prepared:Pr
  assertSourcePluginRecallCurrent(plan,current);
  if(current.sources.has(source.id)||source.buffer.length!==plan.frames||source.sampleRate!==plan.rate||source.buffer.numberOfChannels!==plan.input.channels.length)fail('format');
  const sources=new Map(current.sources);sources.set(source.id,source);
- const project={...current.project,tracks:current.project.tracks.map(track=>track.id!==plan.track.id?track:{...track,segments:track.segments.map(clip=>clip.id!==plan.clip.id?clip:{...clip,sourceId:source.id,sourceEdit:{...clip.sourceEdit!,operations:[{...plan.operation,plugin:prepared.recipe}]}})})};
+ const project={...current.project,tracks:current.project.tracks.map(track=>track.id!==plan.track.id?track:{...track,segments:track.segments.map(clip=>clip.id!==plan.clip.id?clip:{...clip,sourceId:source.id,sourceEdit:{...clip.sourceEdit!,operations:[{...plan.operation,...sourcePluginRecallSelection(plan,prepared.selection),plugin:prepared.recipe}]}})})};
  return {project,sources,isPlaying:false};
 }

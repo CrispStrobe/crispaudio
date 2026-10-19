@@ -34,3 +34,18 @@ it('rejects a full processing window over the explicit PCM budget before renderi
 it.each(['shape','nan','plugin','state'])('rejects invalid prepared %s without changing source or recipe',kind=>{
  const f=recallFixture(),plan=sourcePluginRecallPlan(f.state,'clip'),processed=plan.input.channels.map(c=>new Float32Array(c)),recipe={...plan.recipe};if(kind==='shape')processed.pop();if(kind==='nan')processed[0][0]=NaN;if(kind==='plugin')recipe.id='vst3:other';if(kind==='state')recipe.state=undefined as unknown as string;expect(()=>prepareSourcePluginRecall(plan,processed,recipe)).toThrow('format');expect(f.source.buffer.getChannelData(0)[0]).toBe(3);
 });
+it('edits channel/ranges from original PCM and persists the new mask for subsequent recall',()=>{
+ const f=recallFixture(),plan=sourcePluginRecallPlan(f.state,'clip'),processed=plan.input.channels.map(c=>Float32Array.from(c,v=>v*.25));
+ const prepared=prepareSourcePluginRecall(plan,processed,plan.recipe,{channel:1,ranges:[{start:3500,end:4600},{start:10,end:50},{start:40,end:60}]}),buffer=f.make(4800);prepared.pcm.forEach((c,ch)=>buffer.copyToChannel(c,ch));
+ expect(prepared.selection).toEqual({channel:1,ranges:[{start:10,end:60},{start:3500,end:4600}]});expect(prepared.pcm[0]).toEqual(plan.input.channels[0]);
+ for(let i=0;i<4800;i++)expect(prepared.pcm[1][i]).toBe((i>=10&&i<60)||(i>=3500&&i<4600)?processed[1][i]:plan.input.channels[1][i]);
+ const next=sourcePluginRecallCommit(plan,prepared,{...f.source,id:'changed-mask',buffer},f.state),again=sourcePluginRecallPlan(next,'clip');expect(again.operation).toMatchObject(prepared.selection);expect(again.input.channels).toEqual(plan.input.channels);expect(again.visible).toEqual(plan.visible);expect(next.project.tracks[0].segments[1]).toBe(f.state.project.tracks[0].segments[1]);expect(plan.operation.channel).toBe(-1);expect(plan.operation.ranges).toEqual([{start:400,end:3000}]);
+});
+it.each([
+ {channel:2,ranges:[{start:0,end:1}]},{channel:.5,ranges:[{start:0,end:1}]},{channel:-2,ranges:[{start:0,end:1}]},
+ {channel:0,ranges:[]},{channel:0,ranges:[{start:-1,end:10}]},{channel:0,ranges:[{start:0,end:4801}]},
+ {channel:0,ranges:[{start:10,end:10}]},{channel:0,ranges:[{start:1.5,end:10}]},{channel:0,ranges:[{start:0,end:NaN}]},
+ {channel:0,ranges:Array.from({length:65},(_,i)=>({start:i*2,end:i*2+1}))},
+])('rejects an invalid edited mask %j rather than clamping or processing other samples',selection=>{
+ const f=recallFixture(),plan=sourcePluginRecallPlan(f.state,'clip');expect(()=>prepareSourcePluginRecall(plan,plan.input.channels,plan.recipe,selection)).toThrow('sourceRecall.bounds');expect(f.source.buffer.getChannelData(0)[0]).toBe(3);
+});

@@ -88,6 +88,7 @@ Select a clip and open **Source Editor** for detailed work on its source window.
   source-rate waveform snapshot after a short pause, within a memory limit;
   playback continues. Analysis and Apply use explicitly prepared audio. [Details and limits](docs/SOURCE_EDITING.md#native-external-effect-preview).
 - On Mac, revise a saved external effect under **External effects → Edit saved effect**.
+  Expand **Ranges & channels** for exact sample boundaries, separate ranges or one channel.
   Render from the retained original and Apply one undoable replacement. Trimmed
   clips keep their earlier FX history. This supports one saved plug-in operation
   in bounded mono/stereo 44.1/48-kHz audio; mixed edit histories remain unavailable.

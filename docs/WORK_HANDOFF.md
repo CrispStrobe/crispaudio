@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [original-based saved-effect editing, 0.13.64](#original-based-saved-effect-editing--01364-checkpoint). The active product
+Current checkpoint: [editable saved-effect ranges/channels, 0.13.65](#editable-saved-effect-rangeschannels--01365-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.64 adds a bounded original-based saved-effect editor; see the latest checkpoint below. Source 0.13.63 adds automatic bounded native FX waveform snapshots; see the latest checkpoint below. Source 0.13.62 adds 44.1-kHz source audition
+The installed baseline remains 0.13.33. Source 0.13.65 adds editable saved-effect masks; source 0.13.64 adds a bounded original-based saved-effect editor; see the latest checkpoint below. Source 0.13.63 adds automatic bounded native FX waveform snapshots; see the latest checkpoint below. Source 0.13.62 adds 44.1-kHz source audition
 on the native 48-kHz clock; see the latest checkpoint below. Source 0.13.61 admits one contiguous native
 source selection; see the latest checkpoint below. Source 0.13.60 extends opt-in native source
 audition to whole mono 48-kHz clips; see the latest checkpoint below. Source 0.13.59 combines actual command
@@ -1816,3 +1816,72 @@ joins with zero snapshots/bytes; the complete recall/A-B/reopen/epoch checks the
 pass again. The three combined runs above predate this last UI barrier and are
 separate evidence. Final current full suite: 2,296/239, focused 74/5, build and lint
 pass. No further production edits followed these checks.
+
+
+## Editable saved-effect ranges/channels — 0.13.65 checkpoint
+
+Source Editor → External effects → Edit saved effect now has a collapsed
+**Ranges & channels** section. Choose saved ranges, the current clip, or the full
+retained processing window. Edit exact half-open sample boundaries, add/remove
+separate ranges and choose all channels or one channel. Numeric fields support
+keyboard entry and the shared touch/pen vertical scrub. Overlapping/adjacent ranges
+merge; malformed, fractional, empty, out-of-window or >64-range masks are refused.
+Changing a field clears the prepared result; Render preview is required again.
+The waveform shows the chosen channel(s) and current mask. Info explains that
+playback still auditions only the outlined clip, including pre-trim effect history.
+
+Preparation validates/copies the mask and applies it after a fresh complete original
+helper pass. Outside samples and unselected channels stay dry, including regions
+removed from the previous mask. Apply replaces the saved operation's mask and
+parameters together through the existing owned transaction, preserving originals,
+full-window offsets, siblings, one Undo/Redo and portable reopen. Admission limits
+and cancellation/arrangement-join protections from 0.13.64 remain unchanged.
+This change adds no backend/DSP behavior or Native recall admission.
+
+Next, in order:
+1. **Mixed journal replay provenance.** The old generic Source Editor crops to the
+   visible clip and changes `sourceEdit.offset` when adding an operation, but earlier
+   operation ranges may refer to older windows. Fitting ranges alone cannot prove
+   replay safety. Define and validate per-operation origin, frame count, rate and
+   cropping boundaries for new journals; keep insufficient legacy histories gated
+   or provide an explicit migration. Replay utilities, built-in chains and plug-ins
+   in saved order/from saved base states. Qualify trim/split, unaffected PCM,
+   cancellation, owned publication, one Undo/Redo and reopen before opening the gate.
+   Do not rebuild from only the last operation and lose earlier work.
+2. **Ordinary SourcePluginEffects staging.** Replace its legacy file-path/input
+   persistence flow with owned decoded-PCM staging; cover generated sources,
+   cancellation, rates/windows and publication without silently narrowing support.
+3. **Native recall and format admission.** Begin with a separately qualified
+   all-channel/whole-visible-range case, retain original history and use the existing
+   source owner. Partial masks require explicit graph/history/output semantics.
+   Other rates require rounding/length/latency/clock/cursor and fresh Apply evidence.
+4. Continue long-session memory, monitoring/plug-in UX, sessions/delivery and
+   restoration/recorded-audio timing from AUDIO_WORKSTATION_ROADMAP.md.
+5. Physical/signed/mobile and actual Wry output qualification remain separate;
+   preserve installed sessions and the pending recording check. Add real-window
+   owner-scoped helper-job cancellation and bounded collection of known preview
+   outputs. Never infer that unknown or retained recordings are disposable cache.
+
+Validation: **2,311 frontend tests in 239 files** pass, including 15 added
+model/control/owned-publication regressions (62 focused checks in three files). Production build, full lint, final
+fixture lint and 39 release checks pass. Rust/DSP and native suites are unchanged;
+previous native suite results remain baselines. Browser/helper evidence and CI are
+recorded below. No tag, install, signing or Apple upload.
+
+Final browser evidence: recall-only actual React → trusted AU/VST3 helpers → guarded
+null driver passes for **44.1-kHz mono/stereo and 48-kHz stereo**. Every edited-mask
+Apply and original-input comparison has error zero; waveform pixels match the
+independent reference. Selected and excluded samples/channels, trimmed history,
+sibling sources, restored base state, one Undo/Redo, portable mask/parameter reopen,
+Rendered A/B, monitor exclusion, held close/epoch cancellation and mixed-history
+gating pass. Expanded EN/DE controls fit 1440/375 desktop Chromium widths.
+Each run joins one held null-native arrangement close before staging; three sessions
+close with zero snapshots/bytes and temporary inputs. Four published files per run
+survive Undo/reopen before each fixture removes only its temporary root.
+FS/conversion/relocation wrappers are mocked; helper DSP/files are real. This is
+not actual Wry/device/listening/signed/mobile acceptance. Current full Native common
+UI checks were not rerun; earlier evidence remains historical.
+[Evidence](evidence/source-plugin-recall-selection.json).
+
+The preceding 0.13.64 CI/iOS workflows remained queued at this wrap; do not call them
+passed. Refresh workflows for this checkpoint after pushing.

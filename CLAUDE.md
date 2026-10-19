@@ -1260,3 +1260,14 @@ Before recalled Render/audition, stop and await the arrangement's native close
 barrier through TimelineEngineContext. Recheck cancellation/ownership after that
 await before stopping a source owner, so a late acknowledgement cannot stop the
 replacement editor's audition.
+
+
+### Saved-effect masks (0.13.65)
+
+`prepareSourcePluginRecall` validates/copies the edited channel/ranges into its
+prepared result. Apply persists that exact mask together with the recipe, rather
+than consulting current UI state. Removing an old range restores dry original PCM.
+All helper input remains the full original processing window; never crop a pass to
+the new mask and lose effect history. Numeric drafts clear prepared audio. Keep
+advanced mask controls collapsed and sample coordinates explicit. Mixed journal
+replay remains gated until per-operation windows/crops/rates have safe provenance.

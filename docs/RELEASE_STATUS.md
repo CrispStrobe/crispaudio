@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.64, original-based saved-effect editing](#original-based-saved-effect-editing--01364-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.65, editable saved-effect masks](#editable-saved-effect-masks--01365-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4978,3 +4978,38 @@ format runs predate this last UI barrier; the final fresh stereo run and two new
 unit cases qualify it. Final current full suite is 2,296/239, focused 74/5; final
 build and lint pass. The added session closes cleanly (73 native closes across
 combined runs plus this final probe), with no retained snapshots/bytes.
+
+
+## Editable saved-effect masks — 0.13.65 source candidate
+
+Saved single-effect editing now offers a collapsed Ranges & channels section:
+saved/clip/full-window presets, exact sample boundaries with direct entry/touch
+scrubbing, separate ranges and all/individual channels. Preparation validates and
+copies the mask, renders the full retained original window, then keeps unselected
+PCM dry. Apply replaces the saved mask and recipe in one existing owned transaction;
+trim history, offsets, siblings, originals and one Undo/Redo remain intact.
+Mixed histories/retimed audio and Native recall remain gated. No backend/DSP change,
+installer, signing, release tag or Apple upload is part of this source checkpoint.
+
+Validation: **2,311 frontend tests / 239 files** pass (15 new cases), production
+build, full/final fixture lint and 39 release checks pass. No Rust/DSP change or
+native suite rerun; earlier native results remain baselines. The current browser
+and workflow results are recorded below.
+
+Final browser evidence: recall-only actual React → trusted AU/VST3 helpers → guarded
+null driver passes for **44.1-kHz mono/stereo and 48-kHz stereo**. Every edited-mask
+Apply and original-input comparison has error zero; waveform pixels match the
+independent reference. Selected and excluded samples/channels, trimmed history,
+sibling sources, restored base state, one Undo/Redo, portable mask/parameter reopen,
+Rendered A/B, monitor exclusion, held close/epoch cancellation and mixed-history
+gating pass. Expanded EN/DE controls fit 1440/375 desktop Chromium widths.
+Each run joins one held null-native arrangement close before staging; three sessions
+close with zero snapshots/bytes and temporary inputs. Four published files per run
+survive Undo/reopen before each fixture removes only its temporary root.
+FS/conversion/relocation wrappers are mocked; helper DSP/files are real. This is
+not actual Wry/device/listening/signed/mobile acceptance. Current full Native common
+UI checks were not rerun; earlier evidence remains historical.
+[Evidence](evidence/source-plugin-recall-selection.json).
+
+The preceding 0.13.64 CI/iOS workflows remained queued at this wrap; do not call them
+passed. Refresh workflows for this checkpoint after pushing.

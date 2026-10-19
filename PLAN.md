@@ -1,11 +1,20 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.64 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.65 (installed baseline 0.13.33). This section is the current plan.
 
 The user reaffirmed the full ordered [audio workstation roadmap](docs/AUDIO_WORKSTATION_ROADMAP.md)
 on 19 October: native acceptance → source FX → long sessions → monitoring/plug-ins
 → sessions/delivery → restoration/recorded-audio timing. Each phase has concrete
 acceptance criteria; existing partial tools must be extended rather than recreated.
+
+0.13.65 adds **editable saved-effect ranges/channels** in a collapsed section:
+exact sample boundaries, saved/clip/full-window presets, disjoint ranges and
+individual channels. Fresh full-window rendering preserves pre-trim history;
+one Apply replaces the recipe/mask, with outside samples dry and one Undo/Redo.
+Next: explicit per-operation window/rate/crop provenance for mixed journal replay,
+owned staging for ordinary source plug-in previews, separately qualified Native
+admission, then the accepted workstation phases.
+[Current handoff](docs/WORK_HANDOFF.md#editable-saved-effect-rangeschannels--01365-checkpoint).
 
 0.13.64 adds **original-based saved-effect editing**, as an explicitly scoped first
 slice: one saved plug-in operation, Rendered preview, matched 44.1/48-kHz mono/stereo
@@ -13,7 +22,7 @@ and a 256 MiB PCM estimate. It renders the retained full window so trimmed/split
 clips keep effect history; Apply replaces one recipe with one Undo/Redo step.
 Temporary/derived files use owned transactions, with stale/close protection.
 Mixed histories and retimed edits stay gated rather than losing earlier work.
-Next: journal replay and range/channel editing, separately qualified source
+At that checkpoint, next work was journal replay and range/channel editing, separately qualified source
 admission, then the remaining accepted workstation phases.
 [Current handoff](docs/WORK_HANDOFF.md#original-based-saved-effect-editing--01364-checkpoint).
 

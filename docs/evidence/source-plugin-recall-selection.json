@@ -1,0 +1,241 @@
+{
+  "sourceVersion": "0.13.65",
+  "date": "2026-10-19",
+  "scope": "Saved single-effect range/channel editing; trusted AU/VST3 DSP, guarded Rust null bridge and offline browser AudioContexts",
+  "hardwareOpened": false,
+  "validation": {
+    "frontend": {
+      "tests": 2311,
+      "files": 239,
+      "passed": true,
+      "seconds": 189.65
+    },
+    "focused": {
+      "tests": 62,
+      "files": 3,
+      "passed": true
+    },
+    "newCases": 15,
+    "productionBuild": "pass",
+    "fullLint": "pass",
+    "finalRunnerLint": "pass",
+    "releaseChecks": {
+      "tests": 39,
+      "passed": true
+    },
+    "nativeSuites": "Not rerun; unchanged Rust/DSP/driver. Prior native results remain baselines."
+  },
+  "semantics": {
+    "mask": "Strict integer half-open boundaries; 1..64 ranges; all or one admitted channel. Canonicalize overlapping/adjoining ranges after validation. Invalid input is refused, never silently clamped.",
+    "render": "Fresh complete original processing window, then splice only edited channel/ranges. Removed areas return to original dry PCM.",
+    "commit": "Prepared result owns copied mask and recipe. Existing conversion protects before one publication; replace one operation, retain originals, offsets, siblings and Undo/Redo.",
+    "ui": "Collapsed advanced controls, saved/clip/full-window presets, exact numeric boundaries, separate ranges, shared direct-entry/touch-scrub fields. Range/channel changes clear prepared output. Waveform shows selected channel(s) and current mask; audition still uses outlined clip.",
+    "limits": "Single plug-in operation; matched decoded 44.1/48 kHz mono/stereo; <=120 seconds and 256 MiB PCM estimate. Mixed journals, retiming and Native recall remain gated."
+  },
+  "runs": [
+    {
+      "recallOnly": true,
+      "recallQualification": {
+        "sourceRate": 44100,
+        "sourceChannels": 2,
+        "auInputError": 0,
+        "auApplyError": 0,
+        "trimmedInputError": 0,
+        "trimmedApplyError": 0,
+        "editedMaskApplyError": 0,
+        "editedMask": {
+          "channel": 1,
+          "ranges": [
+            {
+              "start": 4410,
+              "end": 8820
+            },
+            {
+              "start": 35280,
+              "end": 39690
+            }
+          ]
+        },
+        "editedMaskUndoRedo": true,
+        "editedMaskPortableReopen": true,
+        "repeatedApplyError": 0,
+        "fullWindowFrames": 44100,
+        "clipOffset": 0.25,
+        "originalOffset": 0,
+        "disjointRanges": true,
+        "individualChannel": true,
+        "siblingUnchanged": true,
+        "oneUndoAndRedo": true,
+        "portableReopen": true,
+        "restoredParameters": true,
+        "baseStatePreserved": true,
+        "noncumulative": true,
+        "exactWaveformPixels": true,
+        "renderedAuditionAB": true,
+        "arrangementCloseJoined": true,
+        "monitorExcludedFromApply": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "lateCloseDiscarded": true,
+        "projectRoundtripDiscarded": true,
+        "recordingRoundtripDiscarded": true,
+        "mixedHistoryGated": true,
+        "retainedPublishedFiles": 4
+      },
+      "stats": {
+        "bytes": 0,
+        "closed": 1,
+        "hardware": false,
+        "sessions": 0,
+        "snapshots": 0,
+        "started": 1
+      }
+    },
+    {
+      "recallOnly": true,
+      "recallQualification": {
+        "sourceRate": 44100,
+        "sourceChannels": 1,
+        "auInputError": 0,
+        "auApplyError": 0,
+        "trimmedInputError": 0,
+        "trimmedApplyError": 0,
+        "editedMaskApplyError": 0,
+        "editedMask": {
+          "channel": 0,
+          "ranges": [
+            {
+              "start": 4410,
+              "end": 8820
+            },
+            {
+              "start": 35280,
+              "end": 39690
+            }
+          ]
+        },
+        "editedMaskUndoRedo": true,
+        "editedMaskPortableReopen": true,
+        "repeatedApplyError": 0,
+        "fullWindowFrames": 44100,
+        "clipOffset": 0.25,
+        "originalOffset": 0.5,
+        "disjointRanges": true,
+        "individualChannel": true,
+        "siblingUnchanged": true,
+        "oneUndoAndRedo": true,
+        "portableReopen": true,
+        "restoredParameters": true,
+        "baseStatePreserved": true,
+        "noncumulative": true,
+        "exactWaveformPixels": true,
+        "renderedAuditionAB": true,
+        "arrangementCloseJoined": true,
+        "monitorExcludedFromApply": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "lateCloseDiscarded": true,
+        "projectRoundtripDiscarded": true,
+        "recordingRoundtripDiscarded": true,
+        "mixedHistoryGated": true,
+        "retainedPublishedFiles": 4
+      },
+      "stats": {
+        "bytes": 0,
+        "closed": 1,
+        "hardware": false,
+        "sessions": 0,
+        "snapshots": 0,
+        "started": 1
+      }
+    },
+    {
+      "recallOnly": true,
+      "recallQualification": {
+        "sourceRate": 48000,
+        "sourceChannels": 2,
+        "auInputError": 0,
+        "auApplyError": 0,
+        "trimmedInputError": 0,
+        "trimmedApplyError": 0,
+        "editedMaskApplyError": 0,
+        "editedMask": {
+          "channel": 1,
+          "ranges": [
+            {
+              "start": 4800,
+              "end": 9600
+            },
+            {
+              "start": 38400,
+              "end": 43200
+            }
+          ]
+        },
+        "editedMaskUndoRedo": true,
+        "editedMaskPortableReopen": true,
+        "repeatedApplyError": 0,
+        "fullWindowFrames": 48000,
+        "clipOffset": 0.25,
+        "originalOffset": 0.5,
+        "disjointRanges": true,
+        "individualChannel": true,
+        "siblingUnchanged": true,
+        "oneUndoAndRedo": true,
+        "portableReopen": true,
+        "restoredParameters": true,
+        "baseStatePreserved": true,
+        "noncumulative": true,
+        "exactWaveformPixels": true,
+        "renderedAuditionAB": true,
+        "arrangementCloseJoined": true,
+        "monitorExcludedFromApply": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "lateCloseDiscarded": true,
+        "projectRoundtripDiscarded": true,
+        "recordingRoundtripDiscarded": true,
+        "mixedHistoryGated": true,
+        "retainedPublishedFiles": 4
+      },
+      "stats": {
+        "bytes": 0,
+        "closed": 1,
+        "hardware": false,
+        "sessions": 0,
+        "snapshots": 0,
+        "started": 1
+      }
+    }
+  ],
+  "runNotes": [
+    "Three final recall-only runs; each joins one held real null-native arrangement close before any helper staging. No full common Native UI rerun in this checkpoint.",
+    "44.1-kHz stereo uses original offset 0; mono 44.1 and stereo 48 use original offset 0.5 seconds. All delay clips retain visible source offset 0.25 seconds.",
+    "Each fixture retains four published files through Undo/Redo and portable reopen; finally removes only its own temporary root.",
+    "Initial browser attempt compared total Undo history after two edits with one; fixture now reopens between independent edits. Initial failure excluded."
+  ],
+  "limitations": [
+    "Filesystem, conversion and relocation IPC wrappers are synthetic; trusted helper DSP and files are real.",
+    "Desktop Chromium 1440/375 EN/DE is not actual iOS or touch-device qualification. Shared NumberField touch behavior has unit coverage.",
+    "No actual Wry output, device/microphone, signed sandbox, arbitrary plug-in sandboxing, listening, latency/load, installer or Apple upload qualification.",
+    "No mixed-history replay or new Native admission."
+  ]
+}

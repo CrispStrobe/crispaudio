@@ -58,3 +58,22 @@ it('joins the arrangement output before allocating a helper pass',async()=>{
 it('discards a pending audition close acknowledgement after unmount, before touching a replacement source owner',async()=>{
  const gate=deferred<void>(),engine={stop:vi.fn(),closeNativeOwned:vi.fn(()=>gate.promise)},view=render(<TimelineEngineContext.Provider value={{current:engine as unknown as TimelineEngine}}><SourcePluginRecall clipId="clip" onBack={vi.fn()}/></TimelineEngineContext.Provider>);await screen.findByRole('spinbutton',{name:'Gain'});fireEvent.click(screen.getByRole('button',{name:'sourceEditor.audition'}));expect(engine.stop).toHaveBeenCalledOnce();expect(engine.closeNativeOwned).toHaveBeenCalledOnce();expect(mocks.stop).not.toHaveBeenCalled();view.unmount();await act(async()=>gate.resolve());expect(mocks.stop).not.toHaveBeenCalled();expect(mocks.pass).not.toHaveBeenCalled();
 });
+it('invalidates a prepared result on range edits and publishes the edited channel/mask only after rendering again',async()=>{
+ mount();await screen.findByRole('spinbutton',{name:'Gain'});renderPreview();await screen.findByRole('button',{name:'sourceEditor.apply'});
+ fireEvent.change(screen.getByRole('combobox',{name:'sourceEditor.channel'}),{target:{value:'1'}});expect(screen.queryByRole('button',{name:'sourceEditor.apply'})).toBeNull();
+ const start=screen.getByRole('spinbutton',{name:'sourceRecall.start'});fireEvent.focus(start);fireEvent.change(start,{target:{value:'1500'}});fireEvent.blur(start);
+ const end=screen.getByRole('spinbutton',{name:'sourceRecall.end'});fireEvent.focus(end);fireEvent.change(end,{target:{value:'3500'}});fireEvent.blur(end);
+ expect(mocks.commit).not.toHaveBeenCalled();renderPreview();await screen.findByRole('button',{name:'sourceEditor.apply'});fireEvent.click(screen.getByRole('button',{name:'sourceEditor.apply'}));await waitFor(()=>expect(mocks.commit).toHaveBeenCalled());const [plan,prepared]=mocks.commit.mock.calls[0];expect(prepared.selection).toEqual({channel:1,ranges:[{start:1500,end:3500}]});expect(prepared.pcm[0]).toEqual(plan.input.channels[0]);expect(prepared.pcm[1][1499]).toBe(plan.input.channels[1][1499]);expect(prepared.pcm[1][1500]).toBeCloseTo(plan.input.channels[1][1500]*.25);expect(mocks.pass.mock.calls[1][0].channels).toBe(mocks.pass.mock.calls[0][0].channels);
+});
+it('restores saved ranges, selects the visible clip or full source and adds/removes disjoint ranges',async()=>{
+ mount();await screen.findByRole('spinbutton',{name:'Gain'});const choose=screen.getByRole('combobox',{name:'sourceRecall.ranges'}),current=()=>screen.getAllByRole('spinbutton',{name:'sourceRecall.start'}).map(el=>(el as HTMLInputElement).value);
+ fireEvent.change(choose,{target:{value:'clip'}});expect(current()).toEqual(['1200']);expect((screen.getByRole('spinbutton',{name:'sourceRecall.end'}) as HTMLInputElement).value).toBe('3600');
+ fireEvent.change(choose,{target:{value:'all'}});expect(current()).toEqual(['0']);expect(screen.getByRole('button',{name:'sourceRecall.add'})).toBeDisabled();expect(screen.getByRole('button',{name:'sourceRecall.remove'})).toBeDisabled();
+ fireEvent.change(choose,{target:{value:'saved'}});expect(current()).toEqual(['400']);
+ // Add a separate range in the first gap without merging the existing one.
+ fireEvent.click(screen.getByRole('button',{name:'sourceRecall.add'}));expect(current()).toEqual(['100','400']);fireEvent.click(screen.getAllByRole('button',{name:'sourceRecall.remove'})[0]);expect(current()).toEqual(['400']);
+});
+it('discarding a preview for an invalid numeric draft never edits the project',async()=>{
+ const before=useProjectStore.getState().project;mount();await screen.findByRole('spinbutton',{name:'Gain'});renderPreview();await screen.findByRole('button',{name:'sourceEditor.apply'});
+ const start=screen.getByRole('spinbutton',{name:'sourceRecall.start'});fireEvent.focus(start);fireEvent.change(start,{target:{value:'3000'}});fireEvent.blur(start);expect(start).toHaveAttribute('aria-invalid','true');expect(screen.queryByRole('button',{name:'sourceEditor.apply'})).toBeNull();expect(useProjectStore.getState().project).toBe(before);expect(mocks.commit).not.toHaveBeenCalled();
+});

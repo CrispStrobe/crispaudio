@@ -12,6 +12,13 @@ editable. Preserve the compact interface: direct controls for common jobs;
 context/desktop menus and collapsed sections for advanced settings; equivalent
 reachable touch actions and accessible numeric entry.
 
+Source progress **0.13.65** adds editable masks for the saved single-effect slice:
+exact/disjoint sample ranges, all/individual channels and saved/clip/full-window
+presets. Full-window original rendering, outside dry PCM, one Undo/Redo and portable
+reopen remain the contract. Mixed replay still needs explicit operation-window
+provenance; Native recall/admission and the rest of the workstation roadmap remain
+open. See the current handoff for scoped acceptance criteria.
+
 Source checkpoint **0.13.64** adds a first saved-effect recall slice: a single
 plug-in operation reprocesses the retained original full window, with Rendered
 preview, trimmed history, one Undo/Redo and owned file publication. Mixed journals,
