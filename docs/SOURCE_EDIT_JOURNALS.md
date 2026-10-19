@@ -74,7 +74,8 @@ before broadening mixed-history admission. Built-in chains/restoration and addit
 Native admission retain their separate DSP/rate/history acceptance requirements.
 
 
-One possible legacy migration is an explicit fresh Render + Apply in the existing
-single-effect recall editor. The newly observed pass could seed a verified window
-for subsequent edits. That promotion is not implemented here; qualify exact sample
-origin/offset handling, originals, siblings and Undo/reopen before adding it.
+Legacy migration is out of scope by the user's 19 October 2026 decision: nobody
+has used the app yet. Do not seed compatibility metadata or reconstruct old
+histories. New work targets the current journal contract; unverifiable histories
+remain rejected. Older development projects can be recreated without deleting
+original media or active session/Undo assets.

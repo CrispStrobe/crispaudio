@@ -12,10 +12,15 @@ external effects and basic audio/channel utilities, explicit saved-effect select
 per-operation crop/history preservation and one owned Apply/Undo. Other operations
 keep their recipes. The first slice admits eight operations, a 30-second first
 window and matched 44.1/48-kHz mono/stereo within a 256 MiB PCM estimate. Legacy,
-retimed and unsupported histories remain gated. Next: qualified legacy single-
-effect migration from fresh Apply, ordinary source-preview owned staging, explicit
-chain/restoration and larger-history qualification, then the accepted Native and
-workstation phases.
+retimed and unsupported histories remain gated. Next: ordinary source-preview owned
+staging, explicit chain/restoration and larger-history qualification, then the
+accepted Native and workstation phases.
+
+**Compatibility scope (user decision, 19 October):** no users depend on earlier
+project formats or source-edit histories. Do not build legacy migrations, historical
+recipe reconstruction or compatibility-only UI/tests. Develop against the current
+format; older development projects may require recreation. Preserve original media
+and current-session/Undo assets. This supersedes older migration proposals below.
 [Current handoff](docs/WORK_HANDOFF.md#ordered-saved-effect-replay--01367-checkpoint).
 
 0.13.66 records **per-operation original-source windows** for new edit histories.

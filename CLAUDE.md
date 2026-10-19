@@ -1304,5 +1304,9 @@ single-channel effect. Map mask overlays by original sample origins. Keep the
 root epoch state/ref sticky across operation switches, plus close/join-before-helper
 ownership ordering. Utilities yield between bounded synchronous stages. The marker
 alone does not admit chains/restoration, arbitrary settings, legacy journals or
-larger windows. Legacy migration from a freshly observed single-effect Apply is
-still future work. See the current handoff and source editing guide.
+larger windows. Per the user's 19 October 2026 decision, legacy compatibility and
+migration are not required: nobody depends on old development projects. Do not add
+legacy migration or compatibility-only UI/tests. Target the current format, preserve
+original media and active session/Undo assets, and reject unverifiable histories.
+Next is ordinary source plug-in owned staging/publication. See the current handoff
+and source editing guide.

@@ -6,6 +6,20 @@ roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
 
+## Compatibility scope — 19 October 2026
+
+The user confirmed that nobody has used the app yet: **legacy compatibility and
+migration are out of scope**. Do not implement the previously proposed single-effect
+migration, reconstruct old histories, or add compatibility-only controls/tests.
+Older development projects can be recreated; original media and active session/Undo
+assets must remain protected. Existing rejection of unverifiable histories remains
+valid. Do not equate format simplification with permission to delete media.
+This decision supersedes migration proposals in historical checkpoint notes.
+
+The next implementation is **ordinary SourcePluginEffects owned staging and Apply
+publication**, scoped in the latest checkpoint below. Then broaden current-format
+ordered replay and continue the accepted workstation roadmap.
+
 ## Start here
 
 1. Read the ignored `HANDOVER.local.md` and `CLAUDE.local.md`, if present, for
@@ -1986,25 +2000,20 @@ across switches and same-batch state round trips. Arrangement close/join still
 precedes helper allocation/audition; monitor level never enters Apply.
 
 Next scoped work:
-1. **Legacy single-effect migration from a newly observed pass.** An explicit
-   original-based recalled Render + Apply could seed verified window metadata for
-   a legacy single operation. Qualify exact sample-origin mapping, mask/state,
-   siblings, Undo/reopen and subsequent ordinary append. Never infer missing older
-   windows or promote an ambiguous mixed/truncated/retimed journal.
-2. **Ordinary SourcePluginEffects owned staging/publication.** Replace its legacy
+1. **Ordinary SourcePluginEffects owned staging/publication.** Replace its legacy
    file-path/input and `persist_recording` paths with owned decoded PCM and a
    protect-before-publication transaction. Cover generated sources, rate/window
    policy, cancellation/staleness and failures without silently reducing support.
-3. **Broaden ordered replay deliberately.** Built-in chains, filters, restoration
+2. **Broaden ordered replay deliberately.** Built-in chains, filters, restoration
    and editing utility settings need processor-specific parameter/state, padding,
    latency/working-set and crop-history checks. Larger windows/operation counts
    need measured responsiveness/memory. Current utility stages are synchronous
    inside the bounded window and yield between stages; no long-session benchmark
    or arbitrary plug-in internal allocation guarantee is included.
-4. **Native recall and other formats stay separate.** Keep the scoped all-channel
+3. **Native recall and other formats stay separate.** Keep the scoped all-channel
    contiguous admission proposal and required clock/cursor/latency/fresh Apply
    evidence from .65. No extra Native or general 8–192-kHz support is implied.
-5. Continue accepted long-session memory, monitoring/plug-ins, sessions/delivery,
+4. Continue accepted long-session memory, monitoring/plug-ins, sessions/delivery,
    restoration/recorded-audio timing and physical/signed/mobile qualification.
    Preserve installed apps, pending recording checks and retained/unknown assets.
    Real-window helper ownership and bounded known-preview cleanup remain open.

@@ -8,9 +8,11 @@ Source progress **0.13.67** adds bounded ordered replay for verified mixed sourc
 histories: saved external effects plus basic audio/channel tools, explicit effect
 selection, per-operation windows and one owned replacement/Undo. Initial limits are
 eight operations, a 30-second first window and 44.1/48-kHz mono/stereo within the PCM
-budget. Legacy/retimed and chain/restoration histories stay gated. Next: qualified
-legacy migration, ordinary source-preview owned staging and deliberate admission
-expansions; the remaining workstation/platform phases stay open.
+budget. Unverified/retimed and chain/restoration histories stay gated. Next: ordinary
+source-preview owned staging and deliberate admission expansions; the remaining
+workstation/platform phases stay open. Per the user’s 19 October decision, legacy
+format compatibility and migration are not required: nobody depends on older
+development projects. Original media and active session/Undo assets stay protected.
 
 Source progress **0.13.66** captures complete window coordinates for new source
 operation histories and validates retained PCM on save/reopen/recovery. Later trims
