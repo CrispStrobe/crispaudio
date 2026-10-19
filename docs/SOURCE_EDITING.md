@@ -316,3 +316,11 @@ restoration remain unavailable for this editor. No operation is silently omitted
 Legacy single external effects retain the existing bounded editor, but do not gain
 mixed-history provenance automatically. Larger-history and Native audition
 admission require separate qualification.
+
+
+### Applying prepared edits
+
+Since **0.13.68**, ordinary Apply protects its new audio file before adding the edit
+to the project. Closing the editor, changing the project or starting playback or
+recording discards a pending Apply. Completed edits keep their audio available for
+Undo/Redo and save/reopen. Original audio and other clips remain preserved.

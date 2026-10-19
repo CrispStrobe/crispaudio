@@ -12,6 +12,11 @@ editable. Preserve the compact interface: direct controls for common jobs;
 context/desktop menus and collapsed sections for advanced settings; equivalent
 reachable touch actions and accessible numeric entry.
 
+Source progress **0.13.68** makes ordinary Source Editor Apply transactional:
+protect derived audio before one publication, roll back unpublished failures and
+stale/closed operations, preserve originals/siblings/Undo. Ordinary external-effect
+preview input staging remains next; this does not complete all helper ownership.
+
 Source progress **0.13.67** adds bounded ordered replay for verified mixed source
 histories: saved external effects plus basic audio/channel tools, explicit effect
 selection, per-operation windows and one owned replacement/Undo. Initial limits are

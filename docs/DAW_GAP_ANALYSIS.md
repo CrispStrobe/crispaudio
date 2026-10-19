@@ -4,6 +4,11 @@ Reviewed 16 October 2026 against local 0.13.26 and current official product page
 This is a workflow and architecture comparison, not a claim of feature parity or
 an independent listening/performance benchmark. Competitor editions differ.
 
+Source progress **0.13.68** makes ordinary Source Editor Apply transactional:
+protect derived audio before one publication, roll back unpublished failures and
+stale/closed operations, preserve originals/siblings/Undo. Ordinary external-effect
+preview input staging remains next; this does not complete all helper ownership.
+
 Source progress **0.13.67** adds bounded ordered replay for verified mixed source
 histories: saved external effects plus basic audio/channel tools, explicit effect
 selection, per-operation windows and one owned replacement/Undo. Initial limits are

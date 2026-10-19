@@ -9,7 +9,6 @@ import {SourceAudition,makeSourceAuditionBuffer,sourceAuditionHeadroom} from '..
 import {matchSourceAudition,type SourceAuditionMatch} from '../../audio/engine/SourceAuditionMatch';
 import {Play,Square,ZoomIn,ZoomOut,Maximize,Plus,Undo2,Redo2,Wand2,ScanLine} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
-import {invoke} from '@tauri-apps/api/core';
 import {useStore} from 'zustand';
 import {useProjectStore} from '../../stores/projectStore';
 import {useUIStore} from '../../stores/uiStore';
@@ -23,8 +22,6 @@ import {Modal} from '../common/Modal';
 import {ToolButton} from '../common/ToolButton';
 import {InfoButton} from '../common/InfoButton';
 import {NumberField} from './NumberField';
-import {computeWaveformPeaks} from '../../audio/utils/audioBufferUtils';
-import {encodeSourceBufferWav} from '../../lib/wavExport';
 import {trimToPlayhead} from '../../lib/trimEdits';
 import {projectSelection} from '../../lib/projectEdits';
 import {sampleRanges,zeroCrossing,sourceStatistics,processSource,activeSourceRange,auditionSamples,auditionSourceSample,type SampleRange,type SourceOperation} from '../../lib/sourceEditing';
@@ -32,7 +29,7 @@ import {SpectrogramDisplay} from '../shared/SpectrogramDisplay';
 import {SourceLiveFilter} from './SourceLiveFilter';
 import {createSourceFilter,sourceFilterSettings,type SourceFilterSettings} from '../../audio/engine/SourceFilter';
 import {SourcePluginRecall} from './SourcePluginRecall';
-import {appendSourceEdit} from '../../lib/sourceEditJournal';
+import {commitSourceEdit} from '../../audio/plugins/SourceEditCommit';
 import {sourcePluginRecallPlan} from '../../lib/sourcePluginRecall';
 import {SourcePluginEffects} from './SourcePluginEffects';
 import {isNativeMac} from '../../lib/nativeMenuPlatform';
@@ -62,7 +59,7 @@ function SourceEditorBody({clipId,onRecall}:{clipId:string;onRecall:()=>void}){
  const [pluginPreparing,setPluginPreparing]=useState(false),[nativeMode,setNativeMode]=useState(false),[nativeEffect,setNativeEffect]=useState<NativeEffect|null>(null),nativeLevelSet=useRef(false);
  const [chainRecipe,setChainRecipe]=useState<SourceChainRecipe>();
  const [filterPreparing,setFilterPreparing]=useState(false),[liveFilter,setLiveFilter]=useState<SourceFilterSettings|null>(null),filterGraph=useRef<ReturnType<typeof createSourceFilter>|null>(null);
- const measureJob=useRef<AbortController|null>(null),audition=useRef<SourceAudition|null>(null),auditionGain=useRef<GainNode|null>(null),playhead=useRef<HTMLDivElement>(null),generation=useRef(0),previewGeneration=useRef(0),canvas=useRef<HTMLCanvasElement>(null),gesture=useRef<{start:number;ranges:SampleRange[];append:boolean}|null>(null),alive=useRef(true);
+ const applyJob=useRef<AbortController|null>(null),measureJob=useRef<AbortController|null>(null),audition=useRef<SourceAudition|null>(null),auditionGain=useRef<GainNode|null>(null),playhead=useRef<HTMLDivElement>(null),generation=useRef(0),previewGeneration=useRef(0),canvas=useRef<HTMLCanvasElement>(null),gesture=useRef<{start:number;ranges:SampleRange[];append:boolean}|null>(null),alive=useRef(true);
  const filterSupported=rate>=8000&&rate<=192000&&(channel>=0||channels.length<=2);
  const disabled=recording||busy||!source||!!track.locked||!!(clip.sourceEdit&&clip.retime);
  const nativeSupported=!!nativeEffect&&!clip.retime&&[44100,48000].includes(rate)&&(channels.length===1||channels.length===2)&&channel===-1&&ranges.length===1&&Number.isInteger(ranges[0].start)&&Number.isInteger(ranges[0].end)&&ranges[0].start>=0&&ranges[0].end<=length&&ranges[0].end-ranges[0].start>=2048&&length===Math.round(clip.duration*rate)&&length/rate<=120&&!liveFilter&&(!draft||operation==='plugin');
@@ -115,10 +112,21 @@ function SourceEditorBody({clipId,onRecall}:{clipId:string;onRecall:()=>void}){
  const previewHeadroom=(next:Float32Array[])=>{let peak=0;const listening=repairAuditionRanges(selected,length,rate,repairContext);for(let ch=0;ch<channels.length;ch++)if(channel<0||channel===ch)for(const r of listening)for(let i=r.start;i<r.end;i++)peak=Math.max(peak,Math.abs(channels[ch][i]),Math.abs(next[ch][i]));if(peak>1)setAuditionDb(value=>Math.min(value,-1-20*Math.log10(peak)));};
  const preview=(kind:SourceOperation,targetDb=target)=>{beginPreview();try{const next=processSource(channels,selected,kind,channel,targetDb,Math.round(rate*.005));previewHeadroom(next);setDraft(next);setOperation(kind);setOriginal(false);setError('');}catch(e){setError(t(String(e instanceof Error?e.message:e)));}};
  const utilityPreview=()=>{beginPreview();try{const next=processSourceUtility(channels,selected,utility,channel,rate);previewHeadroom(next);setDraft(next);setOperation(utility);setOriginal(false);setError('');}catch(e){setError(t(e instanceof Error?e.message:String(e)));}};
- const apply=async()=>{if(disabled||!draft||!source)return;stop();const snapshot=useProjectStore.getState();if(snapshot.project!==project)return;setBusy(true);try{await native.stop();if(!alive.current||useUIStore.getState().timelineRecording||useProjectStore.getState().project!==project)throw new Error(t('sourceEditor.changed'));const sourceEdit=appendSourceEdit(clip,source,snapshot.sources,{type:operation,channel,ranges:selected,targetDb:target,plugin:operation==='plugin'?pluginRecipe:undefined,chain:operation==='chain'?chainRecipe:undefined,parameters:['dehum','spectral','declip','filter'].includes(operation)?restorationParams:undefined},length);const buffer=new AudioBuffer({length,numberOfChannels:draft.length,sampleRate:rate});draft.forEach((c,i)=>buffer.copyToChannel(c as Float32Array<ArrayBuffer>,i));let filePath:string|undefined;if('__TAURI_INTERNALS__' in window){const wav=await encodeSourceBufferWav(buffer);filePath=await invoke<string>('persist_recording',new Uint8Array(await wav.arrayBuffer()));}if(!alive.current||useUIStore.getState().timelineRecording||useProjectStore.getState().project!==project)throw new Error(t('sourceEditor.changed'));
-  const id=crypto.randomUUID(),derived={id,name:`${source.name} · ${t(`sourceEditor.${operation}`)}`,buffer,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200))),duration:buffer.duration,sampleRate:rate,channels:buffer.numberOfChannels,filePath,provenance:source.filePath?{path:source.filePath,offset:clip.sourceOffset,rate:1}:source.provenance},nextSources=new Map(snapshot.sources);nextSources.set(id,derived);
-  useProjectStore.setState({project:{...project,tracks:project.tracks.map(tr=>({...tr,segments:tr.segments.map(c=>c.id===clipId?{...c,sourceId:id,sourceOffset:0,retime:undefined,sourceEdit}:c)}))},sources:nextSources,isPlaying:false});
- }catch(e){if(alive.current)setError(String(e));}finally{if(alive.current)setBusy(false);}};
+ useEffect(()=>()=>applyJob.current?.abort(),[]);
+ const apply=async()=>{
+  if(disabled||!draft||!source||applyJob.current)return;
+  stop();const snapshot=useProjectStore.getState();if(snapshot.project!==project)return;
+  const controller=new AbortController();applyJob.current=controller;
+  const unsubscribeProject=useProjectStore.subscribe(next=>{if(next.project!==snapshot.project||next.sources!==snapshot.sources||next.isPlaying)controller.abort();});
+  const unsubscribeUI=useUIStore.subscribe(next=>{if(next.timelineRecording)controller.abort();});
+  const current=()=>{if(!alive.current||useUIStore.getState().timelineRecording)controller.abort();return useProjectStore.getState();};
+  setBusy(true);
+  try{
+   await native.stop();controller.signal.throwIfAborted();
+   await commitSourceEdit({snapshot,clipId,pcm:draft,name:`${source.name} · ${t(`sourceEditor.${operation}`)}`,operation:{type:operation,channel,ranges:selected,targetDb:target,plugin:operation==='plugin'?pluginRecipe:undefined,chain:operation==='chain'?chainRecipe:undefined,parameters:['dehum','spectral','declip','filter'].includes(operation)?restorationParams:undefined}},current,next=>useProjectStore.setState(next),controller.signal);
+  }catch(e){if(alive.current&&!controller.signal.aborted)setError(t(e instanceof Error?e.message:String(e)));}
+  finally{unsubscribeProject();unsubscribeUI();if(applyJob.current===controller)applyJob.current=null;if(alive.current)setBusy(false);}
+ };
  const saveRegions=()=>{if(recording||busy||!selected.length||!regionName.trim()||useProjectStore.getState().project!==project)return;stop();const additions=selected.map((r,i)=>({id:crypto.randomUUID(),name:selected.length===1?regionName.trim():`${regionName.trim()} ${i+1}`,start:clip.startTime+r.start/rate,end:Math.min(clip.startTime+clip.duration,clip.startTime+r.end/rate)}));useProjectStore.setState({project:{...project,sections:[...(project.sections??[]),...additions]}});};
  const restore=()=>{if(disabled||!clip.sourceEdit)return;stop();const edit=clip.sourceEdit;if(!sources.has(edit.sourceId)){setError(t('sourceEditor.changed'));return;}useProjectStore.setState({project:{...project,tracks:project.tracks.map(tr=>({...tr,segments:tr.segments.map(c=>c.id===clipId?{...c,sourceId:edit.sourceId,sourceOffset:edit.offset+clip.sourceOffset,sourceEdit:undefined,retime:edit.retime}:c)}))},isPlaying:false});};
  const measure=async()=>{measureJob.current?.abort();const controller=new AbortController();measureJob.current=controller;setMeasuring(true);try{const pcm=auditionSamples(selectedChannels,ranges);if(!pcm[0]?.length)return;const buffer=new AudioBuffer({length:pcm[0].length,numberOfChannels:pcm.length,sampleRate:rate});pcm.forEach((c,i)=>buffer.copyToChannel(c as Float32Array<ArrayBuffer>,i));const value=await measureBuffer(buffer,controller.signal);if(alive.current&&!controller.signal.aborted)setReading({ranges,shown,channel,value});}catch(e){if(alive.current&&!controller.signal.aborted)setError(String(e));}finally{if(alive.current&&measureJob.current===controller)setMeasuring(false);}};

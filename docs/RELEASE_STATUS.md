@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.67, ordered saved-effect replay](#ordered-saved-effect-replay--01367-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.68, owned Source Editor Apply](#owned-source-editor-apply--01368-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -5093,3 +5093,27 @@ and memory remain future measurements. [Evidence](evidence/source-plugin-replay.
 
 No installer, tag, signing or Apple upload. Installed sessions remain untouched;
 refresh workflows for the new source push.
+
+
+## Owned Source Editor Apply — 0.13.68 source candidate
+
+Ordinary source edits now protect derived files before a single project/Undo
+publication and roll back failed, stale or closed unpublished operations. Original
+sources, siblings, masks, current-format journals and portable reopen survive.
+Transient project/recording changes invalidate late writes. No added legacy handling,
+UI, DSP/native admission, installed build, signing, release tag or Apple upload.
+Preview input staging for ordinary external effects remains next; this checkpoint
+completes Apply publication only. See [handoff](WORK_HANDOFF.md#owned-source-editor-apply--01368-checkpoint)
+and [evidence](evidence/source-edit-owned-apply.json).
+
+Validation for 0.13.68: **2,392 tests in 242 files** pass, including 17 new Apply
+cases; 66 focused tests in three files pass. Production build, full lint plus final
+changed-file lint, and 39 release checks pass. Ordinary React workflows pass at
+44.1/48-kHz stereo: normalization error below 3e-8, original error zero, one Undo/Redo,
+sibling/portable reopen and held-write close/project/recording invalidation. Final
+48-kHz mixed AU/VST3 replay passes with zero input/Apply error and seven published
+owned files retained through Undo/reopen. All three browser runs open zero native
+sessions; synthetic IPC/FS wrappers are not actual Wry/device acceptance. Source
+logic was frozen before final checks; no Rust/DSP/native rebuild or installed-app
+changes. Previous 0.13.67 workflows were cancelled by the newer documentation push;
+0.13.66 both passed. Refresh current push workflows rather than assuming green CI.

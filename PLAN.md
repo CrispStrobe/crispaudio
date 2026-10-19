@@ -1,11 +1,21 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.67 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.68 (installed baseline 0.13.33). This section is the current plan.
 
 The user reaffirmed the full ordered [audio workstation roadmap](docs/AUDIO_WORKSTATION_ROADMAP.md)
 on 19 October: native acceptance → source FX → long sessions → monitoring/plug-ins
 → sessions/delivery → restoration/recorded-audio timing. Each phase has concrete
 acceptance criteria; existing partial tools must be extended rather than recreated.
+
+0.13.68 makes **ordinary Source Editor Apply transactional** across built-in,
+restoration, chain and external-effect drafts. New files are protected before one
+project/Undo publication; failed, stale or closed operations roll back their own
+files. Project/source/playback/recording transitions invalidate pending Apply even
+if the state returns before an await completes. Originals, siblings and journal
+coordinates remain intact. No new format/rate admission or legacy migration.
+Next: ordinary external-effect **preview input** still needs owned decoded-PCM
+staging; then broaden current-format replay and continue the accepted phases.
+[Current handoff](docs/WORK_HANDOFF.md#owned-source-editor-apply--01368-checkpoint).
 
 0.13.67 adds **bounded ordered replay** for verified mixed source histories:
 external effects and basic audio/channel utilities, explicit saved-effect selection,

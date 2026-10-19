@@ -18,5 +18,24 @@ export async function qualifySourceJournal(page,{rate,offset}){
  assert.equal(second.edit.offset,offset+.25);assert.deepEqual(second.edit.operations.map(op=>op.window),[{start:Math.round(offset*rate),frames:rate},{start:Math.round((offset+.25)*rate),frames:rate/2}]);assert.deepEqual(second.edit.operations.map(op=>op.channel),[-1,0]);assert.equal(second.frames,rate/2);assert.equal(second.sourceOffset,0);assert.equal(second.sibling,first.id);assert.equal(second.undo,1);assert.ok(second.error<1e-7);assert.equal(second.originalError,0);
  await page.evaluate(()=>window.store.temporal.getState().undo());assert.equal(await page.evaluate(()=>window.store.getState().project.tracks[0].segments[0].sourceId),first.id);await page.evaluate(()=>window.store.temporal.getState().redo());assert.equal(await page.evaluate(()=>window.store.getState().project.tracks[0].segments[0].sourceId),second.id);
  await page.getByRole('button',{name:'Close panel',exact:true}).click();const reopened=await page.evaluate(async()=>{const s=window.store.getState(),{serializeProject,deserializeProject,projectSourceIds,validateFrozenProjectAudio}=await import('/src/lib/projectFile.ts'),loaded=await deserializeProject(serializeProject(s.project,s.sources),new OfflineAudioContext(2,1,s.project.sampleRate));validateFrozenProjectAudio(loaded.project,loaded.sources);window.store.setState({...loaded,isPlaying:false});return {edit:loaded.project.tracks[0].segments[0].sourceEdit,ids:[...projectSourceIds(loaded.project)]};});assert.deepEqual(reopened.edit,JSON.parse(JSON.stringify(second.edit)));assert.ok(reopened.ids.includes('source'));assert.ok(reopened.ids.includes(first.id));assert.ok(reopened.ids.includes(second.id));
- return {sourceRate:rate,sourceChannels:2,originalOffset:offset,firstWindow:first.edit.operations[0].window,secondWindow:second.edit.operations[1].window,coordinateOffset:second.edit.offset,applyError:second.error,originalError:second.originalError,oneUndoRedo:true,siblingRetained:true,portableReopen:true,originalRetained:true,ordinaryApplyCaptured:true,mixedReplayEnabled:false};
+ // A late successful file write must not publish after close or a transient
+ // state round trip. These exercise actual React subscriptions, not model guards.
+ const retained=await page.evaluate(()=>window.sourceNative('fixture_retained_files',{}));
+ assert.equal(retained.length,2);assert.ok(retained.every(file=>file.exists));
+ for(const reason of ['close','project-roundtrip','recording-roundtrip']){
+  await open();await editor.locator('[data-source-utilities] summary').click();await editor.getByRole('combobox',{name:'Source operation',exact:true}).selectOption('invert');await editor.getByRole('button',{name:'Prepare preview',exact:true}).click();
+  await page.evaluate(()=>{window.applyBefore=window.store.getState().project;window.store.temporal.getState().clear();return window.sourceNative('fixture_hold',{command:'recording_conversion_write'});});
+  await editor.getByRole('button',{name:'Apply',exact:true}).click();await page.waitForFunction(()=>window.sourceNative('fixture_gate',{}));
+  if(reason==='close')await page.getByRole('button',{name:'Close panel',exact:true}).click();
+  else await page.evaluate(async reason=>{
+   if(reason==='project-roundtrip'){const project=window.store.getState().project;window.store.setState({project:{...project}});window.store.setState({project});}
+   else {const {useUIStore}=await import('/src/stores/uiStore.ts');useUIStore.setState({timelineRecording:true});useUIStore.setState({timelineRecording:false});}
+  },reason);
+  await page.evaluate(()=>window.sourceNative('fixture_release',{}));await page.waitForFunction(async()=>await window.sourceNative('fixture_conversions',{})===0);
+  const state=await page.evaluate(()=>({unchanged:window.store.getState().project===window.applyBefore,undo:window.store.temporal.getState().pastStates.length}));
+  assert.equal(state.unchanged,true,reason);assert.equal(state.undo,reason==='project-roundtrip'?2:0,reason);
+  if(reason!=='close')await page.getByRole('button',{name:'Close panel',exact:true}).click();
+ }
+ const after=await page.evaluate(()=>window.sourceNative('fixture_retained_files',{}));assert.deepEqual(after,retained);
+ return {sourceRate:rate,sourceChannels:2,originalOffset:offset,firstWindow:first.edit.operations[0].window,secondWindow:second.edit.operations[1].window,coordinateOffset:second.edit.offset,applyError:second.error,originalError:second.originalError,oneUndoRedo:true,siblingRetained:true,portableReopen:true,originalRetained:true,ordinaryApplyCaptured:true,ownedApply:true,protectedFilesRetained:2,lateWriteCloseDiscarded:true,transientProjectChangeDiscarded:true,transientRecordingDiscarded:true};
 }

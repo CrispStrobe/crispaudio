@@ -1,0 +1,170 @@
+{
+  "sourceVersion": "0.13.68",
+  "date": "2026-10-19",
+  "scope": "Transactional ordinary Source Editor Apply; external-effect preview input staging remains pending",
+  "hardwareOpened": false,
+  "validation": {
+    "focused": {
+      "tests": 66,
+      "files": 3,
+      "passed": true
+    },
+    "newCases": 17,
+    "productionBuild": "pass",
+    "fullLint": "pass",
+    "finalChangedFilesLint": "pass",
+    "releaseChecks": {
+      "tests": 39,
+      "passed": true
+    },
+    "nativeSuites": "Not rerun; no Rust/DSP/driver changes. Native manifest version only.",
+    "frontend": {
+      "tests": 2392,
+      "files": 242,
+      "passed": true,
+      "seconds": 157.19
+    },
+    "precedingCI": "0.13.66 both passed; 0.13.67 workflows cancelled by newer push. Docs-only fd119f6 CI queued/iOS in progress at pre-push check."
+  },
+  "contract": {
+    "publication": "Validate and copy finite draft PCM, capture current journal, encode with AbortSignal, begin/write/protect, final current check, one synchronous project/sources publication, finish. Protect before publication; retain after publication starts even if a subscriber throws.",
+    "invalidation": "Project/source-map/playback/recording subscriptions latch cancellation, including same-batch round trips. Editor unmount aborts; duplicate Apply blocked. Late unpublished writes roll back.",
+    "preservation": "Original sources, siblings, visible duration, selected/outside PCM and current-format windows; one Undo/Redo; portable reopen.",
+    "formats": "Ordinary Apply adds no recalled-effect rate/channel/duration gate. Unit storage model covers 44.1 kHz mono, 48 kHz stereo, 96 kHz stereo and four channels; not device/helper qualification at those extra formats.",
+    "remaining": "Ordinary SourcePluginEffects preview still uses source.filePath or persists generated input. Owned decoded-PCM preview staging, real-window helper ownership and bounded known-preview cleanup remain open. No legacy migration."
+  },
+  "browser": [
+    {
+      "journalOnly": true,
+      "journalQualification": {
+        "sourceRate": 48000,
+        "sourceChannels": 2,
+        "originalOffset": 0.5,
+        "firstWindow": {
+          "start": 24000,
+          "frames": 48000
+        },
+        "secondWindow": {
+          "start": 36000,
+          "frames": 24000
+        },
+        "coordinateOffset": 0.75,
+        "applyError": 2.97589591857772e-08,
+        "originalError": 0,
+        "oneUndoRedo": true,
+        "siblingRetained": true,
+        "portableReopen": true,
+        "originalRetained": true,
+        "ordinaryApplyCaptured": true,
+        "ownedApply": true,
+        "protectedFilesRetained": 2,
+        "lateWriteCloseDiscarded": true,
+        "transientProjectChangeDiscarded": true,
+        "transientRecordingDiscarded": true
+      },
+      "stats": {
+        "bytes": 0,
+        "closed": 0,
+        "hardware": false,
+        "sessions": 0,
+        "snapshots": 0,
+        "started": 0
+      }
+    },
+    {
+      "journalOnly": true,
+      "journalQualification": {
+        "sourceRate": 44100,
+        "sourceChannels": 2,
+        "originalOffset": 0.5,
+        "firstWindow": {
+          "start": 22050,
+          "frames": 44100
+        },
+        "secondWindow": {
+          "start": 33075,
+          "frames": 22050
+        },
+        "coordinateOffset": 0.75,
+        "applyError": 2.97589591857772e-08,
+        "originalError": 0,
+        "oneUndoRedo": true,
+        "siblingRetained": true,
+        "portableReopen": true,
+        "originalRetained": true,
+        "ordinaryApplyCaptured": true,
+        "ownedApply": true,
+        "protectedFilesRetained": 2,
+        "lateWriteCloseDiscarded": true,
+        "transientProjectChangeDiscarded": true,
+        "transientRecordingDiscarded": true
+      },
+      "stats": {
+        "bytes": 0,
+        "closed": 0,
+        "hardware": false,
+        "sessions": 0,
+        "snapshots": 0,
+        "started": 0
+      }
+    },
+    {
+      "replayOnly": true,
+      "replayQualification": {
+        "sourceRate": 48000,
+        "sourceChannels": 2,
+        "operations": 4,
+        "firstInputFrames": 48000,
+        "finalFrames": 24000,
+        "inputError": 0,
+        "firstApplyError": 0,
+        "secondApplyError": 0,
+        "editedMaskApplyError": 0,
+        "editedEarlierMask": {
+          "channel": -1,
+          "ranges": [
+            {
+              "start": 16800,
+              "end": 31200
+            }
+          ]
+        },
+        "exactWaveform": true,
+        "bothEffectsEditable": true,
+        "repeatable": true,
+        "earlierHistoryPreserved": true,
+        "unchangedOperations": true,
+        "oneUndoRedo": true,
+        "portableReopen": true,
+        "renderedAB": true,
+        "siblingRetained": true,
+        "closeDiscarded": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "retainedPublishedFiles": 7
+      },
+      "stats": {
+        "bytes": 0,
+        "closed": 0,
+        "hardware": false,
+        "sessions": 0,
+        "snapshots": 0,
+        "started": 0
+      }
+    }
+  ],
+  "limits": [
+    "React/store and actual fixture files; desktop FS/conversion/resource-relocation wrappers mocked.",
+    "Trusted Apple limiter and Steinberg ADelay helpers are real in the replay check. All browser AudioContexts offline; guarded null driver verifies no native sessions, snapshots or bytes remain.",
+    "48 kHz ordinary-only browser precedes the manifest-only version bump and removal of a fixture-only global begin/session assertion. Production logic is unchanged. 44.1 kHz ordinary and 48 kHz mixed replay are final-version/final-fixture runs.",
+    "Seven owned published files in mixed replay: four ordinary edits plus three recalled-effect applies. Retained through Undo/reopen and removed only with the isolated fixture root in finally.",
+    "No actual Wry/ACL/device/microphone/listening/signed/mobile or long-session/peak-heap acceptance.",
+    "Parent null-driver tripwires are not an arbitrary plug-in child-process sandbox."
+  ]
+}

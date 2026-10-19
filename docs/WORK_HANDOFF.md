@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [ordered saved-effect replay, 0.13.67](#ordered-saved-effect-replay--01367-checkpoint). The active product
+Current checkpoint: [owned Source Editor Apply, 0.13.68](#owned-source-editor-apply--01368-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -16,8 +16,8 @@ assets must remain protected. Existing rejection of unverifiable histories remai
 valid. Do not equate format simplification with permission to delete media.
 This decision supersedes migration proposals in historical checkpoint notes.
 
-The next implementation is **ordinary SourcePluginEffects owned staging and Apply
-publication**, scoped in the latest checkpoint below. Then broaden current-format
+Ordinary Apply publication is implemented in 0.13.68. The next implementation is
+**ordinary SourcePluginEffects owned preview input staging**, scoped below. Then broaden current-format
 ordered replay and continue the accepted workstation roadmap.
 
 ## Start here
@@ -2046,3 +2046,60 @@ and memory remain future measurements. [Evidence](evidence/source-plugin-replay.
 
 No installer, tag, signing or Apple upload. Installed sessions remain untouched;
 refresh workflows for the new source push.
+
+
+## Owned Source Editor Apply — 0.13.68 checkpoint
+
+Ordinary Source Editor Apply now uses `SourceEditCommit.ts` for all prepared edit
+kinds. It captures the current-format journal before persistence, copies and checks
+finite PCM, encodes with an AbortSignal, then owns begin/write/protect/publication/
+finish as one operation. Protection precedes the single synchronous project/Undo
+publication. Failed/stale/cancelled unpublished files roll back; once publication
+starts, retain conservatively even if a store subscriber throws. Originals, sibling
+clips, visible duration, channel PCM and journal coordinates stay intact. Web Apply
+uses the same publication coordinator without native storage. The coordinator adds
+no recalled-effect rate, channel or duration restrictions to ordinary Apply.
+
+The editor prevents duplicate Apply jobs and subscribes during the operation to
+project/source-map changes, playback and recording. Invalidation is sticky even for
+same-batch state round trips. Unmount aborts the job, including late successful
+writes; cleanup removes subscriptions after transaction finalization. No new UI,
+backend/DSP behavior, legacy handling, installation, signing or Apple upload.
+
+Qualification and limitations are recorded in
+[evidence/source-edit-owned-apply.json](evidence/source-edit-owned-apply.json).
+Browser tests use real React/store, synthetic desktop filesystem/conversion IPC,
+real fixture files and offline Web Audio; they do not qualify Wry permissions,
+actual devices, listening or signed/mobile behavior. Existing native suites remain
+baselines. No long-session/peak-memory performance claim.
+
+Next, in order:
+1. **Ordinary external-effect preview input staging.** `SourcePluginEffects` still
+   reads the source file path and persists generated input with `persist_recording`.
+   Replace that input path with owned decoded PCM for the actual visible window;
+   always release inputs and helper outputs on success, failure, cancellation and
+   editor replacement. Preserve or explicitly qualify existing rates/channels and
+   define output resampling/length policy. Join competing owners before allocation;
+   do not blindly impose recalled-effect or display-snapshot admission limits.
+   Test generated and file-backed sources with misleading file-rate/offset metadata,
+   trim/masks, stable base state, repeated renders, late close/stale replies and Apply.
+2. Broaden current-format replay: chains/filters/restoration and utility settings,
+   processor-specific state/padding/latency/crop checks, measured larger-history
+   working sets and responsiveness. Native recall/format admission stays separate.
+3. Continue accepted long-session, monitoring/plug-ins, sessions/delivery and
+   restoration/recorded-audio timing work. Real-window helper ownership and bounded
+   known-preview cleanup remain open; retain original/Undo/unsaved/unknown assets.
+4. Physical/signed/mobile acceptance stays pending; preserve installed apps and the
+   unanswered recording check. No legacy migration or compatibility-only work.
+
+Validation for 0.13.68: **2,392 tests in 242 files** pass, including 17 new Apply
+cases; 66 focused tests in three files pass. Production build, full lint plus final
+changed-file lint, and 39 release checks pass. Ordinary React workflows pass at
+44.1/48-kHz stereo: normalization error below 3e-8, original error zero, one Undo/Redo,
+sibling/portable reopen and held-write close/project/recording invalidation. Final
+48-kHz mixed AU/VST3 replay passes with zero input/Apply error and seven published
+owned files retained through Undo/reopen. All three browser runs open zero native
+sessions; synthetic IPC/FS wrappers are not actual Wry/device acceptance. Source
+logic was frozen before final checks; no Rust/DSP/native rebuild or installed-app
+changes. Previous 0.13.67 workflows were cancelled by the newer documentation push;
+0.13.66 both passed. Refresh current push workflows rather than assuming green CI.

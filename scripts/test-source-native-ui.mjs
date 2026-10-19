@@ -39,7 +39,7 @@ try{
   if(command==='fixture_fault')return bridge.native('bridge_fault',{session:lastSession,kind:'helper'});
   if(command==='fixture_hold'){gateCommand=args.command;held=false;return null;}if(command==='fixture_gate')return held;if(command==='fixture_release'){gateCommand=undefined;releaseGate?.();held=false;return null;}
   if(command==='recording_conversion_begin'){conversions.set(args.token,[]);return null;}
-  if(command==='recording_conversion_write'){const path=join(root,`snapshot-input-${++serial}.wav`);writeFileSync(path,Buffer.from(args.bytes));assert.ok(conversions.has(args.token));conversions.get(args.token).push(path);return path;}
+  if(command==='recording_conversion_write'){const path=join(root,`snapshot-input-${++serial}.wav`);writeFileSync(path,Buffer.from(args.bytes));assert.ok(conversions.has(args.token));conversions.get(args.token).push(path);if(command===gateCommand){held=true;await new Promise(resolve=>{releaseGate=resolve;});}return path;}
   if(command==='recording_conversion_protect'){assert.ok(conversions.has(args.token));protectedConversions.add(args.token);return null;}
   if(command==='recording_conversion_finish'){if(args.keep){assert.ok(protectedConversions.has(args.token));for(const path of conversions.get(args.token)??[])retainedConversions.add(path);}else for(const path of conversions.get(args.token)??[])unlinkSync(path);conversions.delete(args.token);protectedConversions.delete(args.token);return null;}
   if(command==='relocate_resource_paths'){assert.ok(args.paths.every(path=>path.startsWith(root)));return {};}

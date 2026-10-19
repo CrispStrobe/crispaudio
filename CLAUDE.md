@@ -1310,3 +1310,17 @@ legacy migration or compatibility-only UI/tests. Target the current format, pres
 original media and active session/Undo assets, and reject unverifiable histories.
 Next is ordinary source plug-in owned staging/publication. See the current handoff
 and source editing guide.
+
+
+### Ordinary source Apply ownership (0.13.68)
+
+`SourceEditCommit.ts` owns ordinary draft publication: validate/copy PCM and capture
+journal, encode/begin/write, protect, fresh check, one synchronous project/sources
+publication, finish. Set publicationStarted BEFORE calling the store; subscribers
+can throw after mutation. Unpublished owned files roll back; uncertain published
+files stay retained for Undo/unsaved projects. No await between final check and
+publication. SourceEditor subscribes to project/source-map/playback/recording during
+Apply and latches abort through transient round trips; unmount aborts and duplicate
+Apply is blocked. Keep subscriptions until finally. Preserve ordinary format support;
+this is separate from recalled-effect admission. Ordinary external-effect preview
+input staging is still pending; do not claim all source-file ownership is complete.
