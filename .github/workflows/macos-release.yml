@@ -28,6 +28,10 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
           key: mac-appstore
+      - name: Reset restored native helper cache
+        if: runner.os == 'macOS'
+        run: python3 scripts/reset-ci-native-helper-cache.py
+
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*

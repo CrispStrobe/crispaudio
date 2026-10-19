@@ -37,7 +37,7 @@ independent software work; do not repeat an unanswered recording question.
 
 ## 2. Complete source-effect editing
 
-- Broaden native audition from whole stereo 48 kHz clips to explicit mono/rate/
+- Whole mono/stereo 48 kHz audition is admitted in 0.13.60. Broaden to explicit rate/
   selection/channel cases, with state, latency, first-pass, loop and Apply parity
   tests before enabling each case. Keep arbitrary unsupported formats rejected.
 - Add bounded effect-aware native waveform snapshots with stale-generation

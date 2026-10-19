@@ -159,10 +159,10 @@ if you need effect tails.
 
 ## Native external-effect preview
 
-Since **0.13.54**, the editor offers **Native · Preview** beside the shared Play/Stop
-controls after selecting an external effect. It supports a whole, unretimed stereo
+Since **0.13.54** (mono added in **0.13.60**), the editor offers **Native · Preview** beside the shared Play/Stop
+controls after selecting an external effect. It supports a whole, unretimed mono or stereo
 48 kHz clip from 2048 frames to two minutes, with all channels selected. Other
-rates, mono, separate ranges and longer clips continue to use Rendered.
+rates, separate ranges and longer clips continue to use Rendered.
 
 Press Play, adjust effect parameters, type or scrub their numbers, and switch
 **Original / Preview** without replacing the running graph. Monitor level starts

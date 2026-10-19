@@ -98,6 +98,7 @@ With the same environment and isolated Vite server, run:
 
 ```sh
 node scripts/test-source-native-ui.mjs
+CRISPAUDIO_TEST_SOURCE_CHANNELS=1 node scripts/test-source-native-ui.mjs
 ```
 
 This mounts the real React Source Editor, stores and arrangement engine. It uses
@@ -109,7 +110,9 @@ stay inside one temporary directory, removed on exit. Set the optional
 
 The checks exercise shared Play/Stop, default Rendered mode, live parameter and
 monitor editing, warm bypass without replacing DSP, private output protection,
-fresh preparation, exact raw-sample Apply, original retention and one Undo. They
+finite-end cleanup, fresh preparation, exact raw-sample Apply, original retention and one Undo.
+Run both channel configurations: mono monitoring duplicates at unity into the stereo
+clock, while the fresh helper render and applied source must retain one channel. They
 also exercise pending-start replacement, visible helper failure, explicit recovery,
 source/range/channel/project/loop/lock/output changes, recording/other-audition
 transitions, arrangement owner joining, Reset and close. A cancellable audition

@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.59, native command/DSP qualification](#native-command-and-dsp-qualification--01359-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.60, whole mono source audition](#whole-mono-source-audition--01360-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4816,3 +4816,32 @@ physical capture/routing/clocks/listening/load and Store/sandbox paths are separ
 acceptance. Prior .54 UI/DSP and .58 real-Wry snapshots/events remain separate runs.
 No live app bundle, install, signing, tag or Apple upload is changed here.
 [Next source-editor and platform work](WORK_HANDOFF.md#native-command-and-dsp-qualification--01359-checkpoint).
+
+
+## Whole mono source audition — 0.13.60 source candidate
+
+Whole mono 48-kHz clips can opt into native source preview. The existing stereo
+monitor plan duplicates mono at unity; fresh rendered previews and Apply retain
+mono, raw helper samples and original/Undo semantics. Rendered remains default;
+other rates, partial selections, individual channels and longer clips remain gated.
+
+The actual editor/null-DSP runner now accepts an explicit mono fixture as well as
+stereo and checks finite-end cleanup and applied channel count. It uses trusted
+Apple/Steinberg FX, offline Web Audio substitutes and a guarded native null output.
+This is separate from actual Wry commands, physical audio and signed packaging.
+No installed app replacement, release tag or Apple submission.
+
+Validation: actual editor/null-DSP checks pass for mono and stereo (18 sessions
+joined each, zero retained snapshots/bytes, exact applied PCM and preserved channel
+count). Full frontend run: 2,204 passed and two unchanged tests timed out; an isolated
+one-worker rerun of those tests plus source adapter/hook/plug-in checks passes all
+65 tests in five files. Build, full lint, final runner lint and 39 release checks
+pass. No production Rust/DSP change; prior native results remain separate evidence.
+[Source preview evidence](evidence/source-native-ui.json).
+
+The preceding .59 Mac CI failed because `rust-cache` strips the helper cache's
+ownership/manifest files before saving target artifacts. Hosted CI/release workflows
+now reset only that restored helper cache, before Cargo starts, at the target root
+and two known Mac triples. Six tests cover partial restores, scope, refusal outside
+Mac CI and symlink protection. Normal build ownership validation is unchanged;
+Rust dependency caches remain available. Verify the new Mac CI result after push.

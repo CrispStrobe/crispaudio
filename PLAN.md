@@ -1,11 +1,19 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.59 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.60 (installed baseline 0.13.33). This section is the current plan.
 
 The user reaffirmed the full ordered [audio workstation roadmap](docs/AUDIO_WORKSTATION_ROADMAP.md)
 on 19 October: native acceptance → source FX → long sessions → monitoring/plug-ins
 → sessions/delivery → restoration/recorded-audio timing. Each phase has concrete
 acceptance criteria; existing partial tools must be extended rather than recreated.
+
+0.13.60 extends opt-in native source audition to whole mono 48-kHz clips using
+unity stereo monitoring. Fresh prepared audio and Apply retain mono; monitor
+controls do not print into the edit. Hosted Mac workflows also discard partial
+restored helper caches before Cargo; ownership validation remains strict.
+Rendered remains default. Next: explicit
+selection/rate qualification, bounded native waveforms and original-based recipes.
+[Current handoff](docs/WORK_HANDOFF.md#whole-mono-source-audition--01360-checkpoint).
 
 0.13.59 combines **actual Tauri command ownership and production native worker/DSP**
 using MockRuntime windows and a synthetic null consumer. Tests cover live controls,

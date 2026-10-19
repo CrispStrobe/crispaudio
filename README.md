@@ -81,7 +81,7 @@ Select a clip and open **Source Editor** for detailed work on its source window.
   Source audition plays source audio; timeline FX belong to arrangement playback.
   On Mac, external effects also offer an opt-in **Native · Preview** mode: use the
   same Play/Stop, adjust parameters and compare Original/Preview while listening.
-  It currently supports whole stereo 48 kHz clips up to two minutes. Rendered
+  It currently supports whole mono or stereo 48 kHz clips up to two minutes. Rendered
   stays the default; **Render preview** prepares the audio for Apply. Monitor gain
   and output protection affect listening only. The native waveform remains a
   labelled snapshot. [Details and limits](docs/SOURCE_EDITING.md#native-external-effect-preview).

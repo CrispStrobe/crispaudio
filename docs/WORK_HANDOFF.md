@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [Native command and DSP qualification, 0.13.59](#native-command-and-dsp-qualification--01359-checkpoint). The active product
+Current checkpoint: [Whole mono source audition, 0.13.60](#whole-mono-source-audition--01360-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.59 combines actual command
+The installed baseline remains 0.13.33. Source 0.13.60 extends opt-in native source
+audition to whole mono 48-kHz clips; see the latest checkpoint below. Source 0.13.59 combines actual command
 dispatch with real worker/DSP and a null consumer in MockRuntime tests. Source 0.13.58 qualifies snapshot IPC and
 window/exit cleanup in actual Wry/WebKit with no audio commands. Source 0.13.57 shares a verified native-helper
 build cache between embedded helpers and staged Mac sidecars; see the latest
@@ -1420,3 +1421,61 @@ installation, tag or Apple upload is part of this source checkpoint.
    UX, sessions/delivery, restoration and recorded-audio timing remain fully scoped
    in [AUDIO_WORKSTATION_ROADMAP.md](AUDIO_WORKSTATION_ROADMAP.md). Do not reintroduce
    composition or ASR/TTS creation from the companion apps.
+
+
+## Whole mono source audition — 0.13.60 checkpoint
+
+Native source preview now admits whole, unretimed mono or stereo 48-kHz clips,
+all channels, 2048 frames to two minutes. Rendered stays default. The existing
+source adapter copies mono at unity into both stereo monitor channels before
+panning. It never replaces the mono source with that monitor buffer. Render preview
+still stops/joins the owner and runs a fresh helper pass; Apply retains the helper's
+channel count and raw samples, excluding monitor gain and the private limiter.
+Original media and one Undo step remain available. EN/DE help describes the scope.
+
+Entry points: `SourceEditor.tsx`, `NativeSourceAudition.ts`,
+`tests/unit/audio/NativeSourceAudition.test.ts`, `scripts/test-source-native-ui.mjs`.
+Run the actual editor/null-DSP runner twice, default stereo and
+`CRISPAUDIO_TEST_SOURCE_CHANNELS=1`; setup and hardware guards are documented in
+`scripts/native-source-clock/README.md`. Check finite end, loop/live controls,
+mono bypass unity on both outputs, fresh render/Apply shape and exact PCM,
+retained original/Undo, cancellation and zero retained worker resources.
+
+Next ordered work:
+1. Qualify and then admit explicit partial source selections (first one contiguous
+   all-channel 48-kHz range), including source offset, joined cursor, reset/change
+   cancellation, first/looped processing and fresh Apply boundaries. Do not simply
+   relax the UI guard: current native input contains the whole clip, and rendered
+   preparation expects whole-clip PCM. Define selected-window/history/tail semantics
+   before modifying either. Keep multiple ranges and individual channels excluded
+   until their own tests pass.
+2. Qualify other rates independently against actual helper renders: source-clock
+   boundaries, resampling length/latency and Apply channel/sample-rate shape. Offline
+   plan support alone does not qualify native audition. Keep 48 kHz admission.
+3. Add bounded native FX waveform snapshots, stale-generation rejection and clear
+   source/prepared/live semantics; do not send unbounded callback PCM into React.
+4. Recall printed recipes from retained originals with one Undo; preserve original
+   offsets, avoid cumulative reprocessing, and test reopen/Redo/cancellation.
+5. Continue the ordered workstation roadmap: measured long sessions/memory,
+   monitoring/plug-in UX, session/delivery, restoration and recorded-audio timing.
+
+The .59 MockRuntime+DSP and .58 actual Wry snapshot/lifecycle evidence remain
+separate. This editor/null-DSP work does not qualify actual Wry playback, physical
+output/recording, arbitrary plug-ins, sustained load or signed/mobile packaging.
+Keep the installed baseline and isolated recording preview sessions intact; no
+installation, release tag or Apple upload is included in this source checkpoint.
+
+Validation: actual editor/null-DSP checks pass for mono and stereo (18 sessions
+joined each, zero retained snapshots/bytes, exact applied PCM and preserved channel
+count). Full frontend run: 2,204 passed and two unchanged tests timed out; an isolated
+one-worker rerun of those tests plus source adapter/hook/plug-in checks passes all
+65 tests in five files. Build, full lint, final runner lint and 39 release checks
+pass. No production Rust/DSP change; prior native results remain separate evidence.
+[Source preview evidence](evidence/source-native-ui.json).
+
+The preceding .59 Mac CI failed because `rust-cache` strips the helper cache's
+ownership/manifest files before saving target artifacts. Hosted CI/release workflows
+now reset only that restored helper cache, before Cargo starts, at the target root
+and two known Mac triples. Six tests cover partial restores, scope, refusal outside
+Mac CI and symlink protection. Normal build ownership validation is unchanged;
+Rust dependency caches remain available. Verify the new Mac CI result after push.

@@ -68,6 +68,10 @@ jobs:
           workspaces: './src-tauri -> target'
           key: ${{ matrix.rust_target }}
 
+      - name: Reset restored native helper cache
+        if: runner.os == 'macOS'
+        run: python3 scripts/reset-ci-native-helper-cache.py
+
       - run: npm ci
 
       - uses: tauri-apps/tauri-action@v0
@@ -109,6 +113,10 @@ jobs:
           workspaces: './src-tauri -> target'
           key: x86_64-apple-darwin
 
+      - name: Reset restored native helper cache
+        if: runner.os == 'macOS'
+        run: python3 scripts/reset-ci-native-helper-cache.py
+
       - run: npm ci
 
       - uses: tauri-apps/tauri-action@v0
@@ -146,6 +154,10 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
           key: aarch64-apple-ios
+
+      - name: Reset restored native helper cache
+        if: runner.os == 'macOS'
+        run: python3 scripts/reset-ci-native-helper-cache.py
 
       - run: npm ci
 
@@ -244,6 +256,10 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
           key: android
+
+      - name: Reset restored native helper cache
+        if: runner.os == 'macOS'
+        run: python3 scripts/reset-ci-native-helper-cache.py
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4

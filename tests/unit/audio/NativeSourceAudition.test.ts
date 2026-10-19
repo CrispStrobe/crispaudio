@@ -119,3 +119,14 @@ it('adds monitor-only sample-peak protection on request while leaving render pla
  expect(plain.project.outputLimiter).toEqual({enabled:false});expect(protectedPlan.project.outputLimiter).toEqual({enabled:true,ceiling:-1,release:.1});expect(protectedPlan.project.masterVolume).toBeCloseTo(10**(-12/20));
  const f=session();create.mockResolvedValue(f.snapshot);const {audio}=owner();await audio.play(source,{protectOutput:true,levelDb:-12,muted:true});expect(create.mock.calls[0][0].outputLimiter).toEqual({enabled:true,ceiling:-1,release:.1});expect(source.channels[0][0]).toBeCloseTo(.2);expect(source.effect.parameters).toEqual({'100':.2});
 });
+
+it.each([false,true])('auditions whole mono with cycle=%s without changing source or saved effect state',async loop=>{
+ const channel=new Float32Array(4800).fill(.25),original=channel.slice(),fx=effect(),f=session();create.mockResolvedValue(f.snapshot);
+ const {audio}=owner();await audio.play({channels:[channel],sampleRate:48000,effect:fx},{loop,levelDb:-12,protectOutput:true,muted:true});
+ const [project,sources]=create.mock.calls[0],source=[...sources.values()][0];
+ expect(project.nativeEffects[0].state).toBe('saved-state');expect(source.buffer.numberOfChannels).toBe(2);
+ expect(source.buffer.getChannelData(0)).toEqual(original);expect(source.buffer.getChannelData(1)).toEqual(original);
+ expect(f.snapshot.startPlayback).toHaveBeenCalledWith({startFrame:0,endFrame:4800,cycle:loop,loopStartFrame:0,muted:true});
+ await audio.update({parameters:{'100':.8},bypass:true,levelDb:0});await audio.stop();
+ expect(channel).toEqual(original);expect(fx).toEqual(effect());expect(create).toHaveBeenCalledOnce();expect(f.snapshot.close).toHaveBeenCalledOnce();
+});

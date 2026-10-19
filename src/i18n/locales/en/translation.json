@@ -2237,7 +2237,7 @@
   "sourceEditor": {
     "title": "Source editor",
     "info": "About source editing",
-    "help": "Select source samples by dragging. Shift or + adds a separate range. Audition joins the selected portions and uses the chosen playback device. Preview compares original and processed source audio; timeline effects apply when playing the arrangement. Apply retains the original recording and creates one undo step. Keep range also trims linked clips. If processed audio was subsequently retimed, restore that timing in Speed / Pitch before further source processing or restoring the original. Original and Preview switch at the current audition position with a short crossfade. Loop and preview updates keep playing; the cursor follows the joined selections. With a normalization preview active, changing Target updates it. Source audition does not include timeline FX. External effects default to Rendered; eligible whole stereo 48 kHz clips also offer opt-in Native preview. Render preview prepares the audio for Apply.",
+    "help": "Select source samples by dragging. Shift or + adds a separate range. Audition joins the selected portions and uses the chosen playback device. Preview compares original and processed source audio; timeline effects apply when playing the arrangement. Apply retains the original recording and creates one undo step. Keep range also trims linked clips. If processed audio was subsequently retimed, restore that timing in Speed / Pitch before further source processing or restoring the original. Original and Preview switch at the current audition position with a short crossfade. Loop and preview updates keep playing; the cursor follows the joined selections. With a normalization preview active, changing Target updates it. Source audition does not include timeline FX. External effects default to Rendered; eligible whole mono/stereo 48 kHz clips also offer opt-in Native preview. Render preview prepares the audio for Apply.",
     "stop": "Stop audition",
     "audition": "Audition selection",
     "loop": "Loop",
@@ -2305,14 +2305,14 @@
     "rendered": "Rendered",
     "native": "Native · Preview",
     "level": "Monitor level (dB)",
-    "unsupported": "Whole stereo clip · 48 kHz",
+    "unsupported": "Whole mono/stereo clip · 48 kHz",
     "preparing": "Preparing…",
     "live": "Live",
     "ready": "Ready",
     "failed": "Native preview stopped: {{reason}}",
     "snapshot": "Snapshot",
     "inputBusy": "Stop recording, calibration or input preview before native source playback.",
-    "help": "Native uses Play/Stop above and keeps the effect running while parameters, Original/Preview and monitor level change. Choose a whole, unretimed stereo clip at 48 kHz (2048 frames to two minutes). Changing selection, channels, loop, source, project or output stops playback. Rendered remains the default and supports other selections.\n\nMonitor level starts at −12 dB. A monitor-only sample-peak limiter at −1 dBFS protects native listening; this is not true-peak protection. Neither monitor gain nor this limiter changes Apply. Stop input preview before starting Native.\n\nThe waveform and analysis show source or rendered snapshots, not the current native output. Render preview stops Native, starts a fresh pass from the restored state and prepares audio for Apply. Loop history and plug-in real-time processing can differ from that fresh render. A plug-in latency change can stop Native; restart playback in that case. Native failures stay visible; choose Rendered explicitly to continue."
+    "help": "Native uses Play/Stop above and keeps the effect running while parameters, Original/Preview and monitor level change. Choose a whole, unretimed mono or stereo clip at 48 kHz (2048 frames to two minutes). Changing selection, channels, loop, source, project or output stops playback. Rendered remains the default and supports other selections.\n\nMonitor level starts at −12 dB. A monitor-only sample-peak limiter at −1 dBFS protects native listening; this is not true-peak protection. Neither monitor gain nor this limiter changes Apply. Stop input preview before starting Native.\n\nThe waveform and analysis show source or rendered snapshots, not the current native output. Render preview stops Native, starts a fresh pass from the restored state and prepares audio for Apply. Loop history and plug-in real-time processing can differ from that fresh render. A plug-in latency change can stop Native; restart playback in that case. Native failures stay visible; choose Rendered explicitly to continue."
   },
   "sourcePlugins": {
     "title": "External effects",

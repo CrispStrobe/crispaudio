@@ -46,3 +46,17 @@ CARGO_TARGET_DIR="$PWD/src-tauri/target" cargo test \
 
 Cache/lock tests require Unix; content-key and target-layout tests are portable.
 These tests never launch helpers, open audio devices or change app sessions.
+
+
+## Hosted CI restores
+
+`Swatinem/rust-cache` recursively removes non-Cargo files when saving target
+artifacts, including this cache's `owner` and `manifest`. A subsequent restore
+can therefore leave incomplete directories. Normal builds intentionally refuse
+these unmanaged contents; never create a replacement owner marker to adopt them.
+The Mac CI/release workflows call `scripts/reset-ci-native-helper-cache.py` after
+restore and before any Cargo build. It discards only the helper cache at the target
+root and two known Mac target triples, rejects symlinks, and refuses execution
+outside macOS GitHub Actions. Rust dependency caches remain in place. Helpers then
+build once and share their verified generation within that job. This small cache
+is rebuildable; the reset is not a general local disk-cleanup command.

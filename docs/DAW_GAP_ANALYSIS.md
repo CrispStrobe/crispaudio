@@ -34,6 +34,11 @@ The remaining sequence was reaffirmed on 19 October; use
 Effect-aware segment waveforms are implemented through the bounded 0.13.24
 continuous-refresh checkpoint; continue the execution order below.
 
+Source checkpoint **0.13.60** adds whole mono 48-kHz native source audition to the
+existing stereo candidate, with unity stereo monitoring and mono render/Apply.
+Broader ranges/rates, bounded native waveforms and original-based recipe recall
+remain next. [Current handoff](WORK_HANDOFF.md#whole-mono-source-audition--01360-checkpoint).
+
 Source checkpoint **0.13.59** combines actual Tauri command dispatch with the
 production native worker/DSP through MockRuntime and a guarded null consumer.
 Actual recording-command exclusion, live parameters, real Apple limiter bypass/
