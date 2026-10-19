@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.57, native helper build cache](#native-helper-build-cache--01357-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.58, real-runtime snapshot qualification](#real-runtime-snapshot-qualification--01358-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4774,3 +4774,27 @@ These are observations on a busy host, not a controlled benchmark. The published
 cache is 916,520 bytes. Actual embedded/staged/alias checksums match, with staging
 inodes separate from the cache. The full frontend suite and actual AU/VST DSP
 fixtures were not rerun; prior evidence remains separate.
+
+
+## Real-runtime snapshot qualification — 0.13.58 source candidate
+
+Actual Wry/WebKit snapshot IPC and native Destroyed/Exit events are qualified in
+an isolated debug executable. Its local page uses generated raw PCM and tests
+validation, cross-window ownership and resource retirement. It registers no audio
+commands and verifies local input/output queue abort guards. Production and QA
+share the existing resource-cleanup handlers. A fresh temporary ad hoc bundle is
+removed afterward; no installed/recording-preview app is rebuilt or replaced.
+
+The finalized runtime run passes, including exact planar stereo sample transfer
+verified through a bounded no-insert graph. Final Exit starts with one retained sealed upload
+and ends with zero entries/bytes and closed admission. Ordinary Mac library tests
+**81 passed / 8 ignored**, non-test Mac library check, production frontend build,
+lint, formatting and **28 release checks** pass. Frontend full-suite, real DSP,
+physical audio and installed/sandboxed/Store paths were not rerun or qualified.
+This is subset-registration/snapshot acceptance, not combined UI/command/DSP or
+full shipped capability acceptance. [Evidence](evidence/native-runtime-snapshots.json).
+
+The full remaining ordered [workstation roadmap](AUDIO_WORKSTATION_ROADMAP.md) is
+accepted. [Current handoff](WORK_HANDOFF.md#real-runtime-snapshot-qualification--01358-checkpoint)
+scopes the next combined command/DSP and independent source-editing tasks. Main
+source pushes do not install an app or submit a new TestFlight/Store build.

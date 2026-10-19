@@ -29,8 +29,16 @@ The user accepted **all audio-workstation gaps below** on 16 October, including
 the larger engine, restoration, timing, session and scale work. They are authorized
 work, not completed features or a delivery-date promise. Composition and ASR/TTS
 creation remain with CometBeat and CrisperWeaver. Physical device/platform checks require the actual hardware.
+The remaining sequence was reaffirmed on 19 October; use
+[AUDIO_WORKSTATION_ROADMAP.md](AUDIO_WORKSTATION_ROADMAP.md) for ordered acceptance.
 Effect-aware segment waveforms are implemented through the bounded 0.13.24
 continuous-refresh checkpoint; continue the execution order below.
+
+Source checkpoint **0.13.58** qualifies actual Wry/WebKit snapshot upload and
+window/exit cleanup with generated PCM and isolated test assets. It does not run
+native audio workers or plug-ins; combined command/native DSP, full product
+registration and physical acceptance remain open.
+[Current handoff](WORK_HANDOFF.md#real-runtime-snapshot-qualification--01358-checkpoint).
 
 Source checkpoint **0.13.56** adds actual Tauri command-dispatch tests with mock
 windows and synthetic output workers, covering decoding, ownership and cleanup.
@@ -81,7 +89,7 @@ See the [current handoff](WORK_HANDOFF.md#shared-native-source-controls--01354-c
 | Live input DSP | Partial in 0.13.32 | Buffered native cue inserts preserve dry capture and display added delay; 0.13.33 shares a single 4096-sample transport buffer across up to two inserts; faults mute the cue independently. Low-latency native ingress, wet/dry capture, broader plug-in/rate/load/device-loss qualification remain. One/two AU and SDK VST3 cue chains have bounded eight-second Mac checks. Prepared wet backing remains separate. |
 | Monitor/cue routing | Partial in 0.13.32 | Per-input cue level/pan/mono and buffered native track inserts preserve dry takes. Added delay is shown; this shares the playback output and does not provide a separate headphone/backing mix. The Mac output picker currently changes the system output. Add app-local device routing, arbitrary input-channel maps, independent headphone mixes, PFL/AFL and dim/mono. Native playback currently targets 48 kHz stereo; broader channel/rate support needs a defined use case. |
 | Native FX and automation | Partial | AU/VST3 generic controls and saved curves exist on Mac. Custom plug-in windows, broader live built-in parameter coverage and stronger event-timing guarantees remain. Some edits restart playback. |
-| Freeze/render in place | Missing as a reversible track workflow | Render a track/clip with tails and routing semantics, release its DSP, retain source/rack state and unfreeze safely. Whole-project Preview is different. |
+| Freeze/render in place | Partial since 0.13.43 | Bounded reversible pre-fader track freeze/thaw retains originals/racks, supports tails and preserves downstream routing. Remaining: streaming, linked/grouped/ducked/bus workflows, frozen-package remapping and physical/arbitrary plug-in qualification. See [TRACK_FREEZE.md](TRACK_FREEZE.md). |
 | Assets and sessions | Partial | Local track/input/FX templates exist in 0.13.27. Add searchable audition of local files/regions, portable/session templates and more useful session navigation/version workflows. No multiple-open-project workflow is established. |
 | Recorded-audio timing | Partial | Current global tempo and offline speed/pitch tools do not provide tempo maps, transient/warp markers or grouped timing edits with qualified phase coherence. Composition remains outside scope. |
 | Mastering precision | Partial | LUFS/estimated true-peak analysis and a sample-peak limiter exist. A true-peak limiter, dither/noise-shaping choices and systematic resampling/stretch quality qualification remain. |

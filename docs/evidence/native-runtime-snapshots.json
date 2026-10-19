@@ -1,0 +1,96 @@
+{
+  "checkpoint": "0.13.58",
+  "date": "2026-10-19",
+  "status": "qualified snapshot-only real-runtime checkpoint",
+  "runtime": "macOS Wry/WebKit with actual local Tauri IPC and native events",
+  "result": {
+    "admissionClosed": true,
+    "afterExitBytes": 0,
+    "afterExitEntries": 0,
+    "audioCommands": false,
+    "beforeExitEntries": 1,
+    "destroyedEvent": true,
+    "error": null,
+    "exitEvent": true,
+    "identifier": "com.crispstrobe.crispaudio.runtime-qa",
+    "store": [
+      67,
+      114,
+      105,
+      115,
+      112,
+      82,
+      117,
+      110,
+      116,
+      105,
+      109,
+      101,
+      81,
+      65,
+      48,
+      49
+    ],
+    "success": true
+  },
+  "cases": [
+    "production snapshot begin/write/seal/status/close handlers",
+    "planar stereo upload renders 2048 exact [0.125, -0.25] samples through a bounded no-insert graph",
+    "raw Uint8Array CPS1 accepted",
+    "JSON raw-body substitute rejected",
+    "incomplete seal rejected",
+    "nonfinite PCM rejected before valid upload",
+    "Unicode project metadata and source entry retained",
+    "cross-window write/seal/close rejected",
+    "unfinished peer upload retained before native destroy",
+    "actual Destroyed event calls shared production cleanup",
+    "retired peer admission rejected and its memory released",
+    "explicit close returns entries and bytes to zero",
+    "sealed main upload retained until actual Exit event",
+    "actual Exit calls shared production shutdown, frees memory and closes admission"
+  ],
+  "isolation": {
+    "debug_feature": "native-runtime-qa",
+    "identifier": "com.crispstrobe.crispaudio.runtime-qa",
+    "assets": "Only dedicated index.html and qa.js; no product frontend or dev server",
+    "webview_store": "Explicit separate 16-byte builder identifier",
+    "bundle": "Fresh temporary ad-hoc-signed app, removed after run",
+    "installed_and_recording_preview_bundles_changed": false,
+    "playback_recording_commands_registered": false,
+    "audio_queue_input_output_abort_symbols_verified": true,
+    "physical_audio_microphone_or_device_actions": false
+  },
+  "validation": {
+    "actual_runtime_runs_passed": 1,
+    "ordinary_mac_library": {
+      "passed": 81,
+      "failed": 0,
+      "ignored": 8,
+      "features": [
+        "native-validation"
+      ]
+    },
+    "ordinary_non_test_mac_library_check": "passed",
+    "production_frontend_build": "passed",
+    "lint": "passed",
+    "release_tests": {
+      "passed": 28,
+      "failed": 0
+    },
+    "rust_formatting": "passed",
+    "frontend_full_suite": "Not rerun; About version only, prior .54 result remains separate",
+    "earlier_protocol_runs": "Three earlier protocol/lifecycle runs passed; the final fixture adds planar sample verification."
+  },
+  "limits": [
+    "Subset handler/asset registration, not the complete shipped product builder/capabilities/React transport.",
+    "Ad hoc temporary bundle, not sandboxed/Store/provisioning qualification.",
+    "No running audio worker, native-insert DSP, plug-in, native recording conflict or physical routing/listening/clock/load qualification.",
+    "Existing .54 UI/DSP and .56 MockRuntime command results are separate prior evidence, not one combined end-to-end run.",
+    "Explicit WebKit store isolation is configured; cross-relaunch persistence isolation is not separately measured."
+  ],
+  "next": [
+    "Combined actual command ownership and production DSP with explicit test-only null sink and queue guards",
+    "Physical and signed/platform N5 qualification",
+    "Continue independent source FX and remaining ordered AUDIO_WORKSTATION_ROADMAP phases"
+  ]
+}

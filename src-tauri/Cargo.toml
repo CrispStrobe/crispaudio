@@ -1,6 +1,6 @@
 [package]
 name = "crispaudio"
-version = "0.13.57"
+version = "0.13.58"
 description = "CrispAudio - Integrated Audio Workstation"
 authors = ["CrispStrobe"]
 license = "MIT"
@@ -52,6 +52,7 @@ opt-level = 3
 
 [features]
 native-validation = ["crispaudio-media/native-engine"]
+native-runtime-qa = []
 
 [[bin]]
 name = "crispaudio-native-validation"
@@ -64,3 +65,8 @@ opt-level = 3
 
 [profile.dev.package.crispaudio-native-helper-build]
 opt-level = 3
+
+[[bin]]
+name = "crispaudio-runtime-qa"
+path = "src/bin/runtime_qa.rs"
+required-features = ["native-runtime-qa"]

@@ -1,6 +1,20 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.57 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.58 (installed baseline 0.13.33). This section is the current plan.
+
+The user reaffirmed the full ordered [audio workstation roadmap](docs/AUDIO_WORKSTATION_ROADMAP.md)
+on 19 October: native acceptance → source FX → long sessions → monitoring/plug-ins
+→ sessions/delivery → restoration/recorded-audio timing. Each phase has concrete
+acceptance criteria; existing partial tools must be extended rather than recreated.
+
+0.13.58 qualifies **actual Wry/WebKit snapshot IPC and native lifecycle events**
+in a dedicated debug executable with generated PCM, isolated assets/identity/store,
+no playback/recording commands and verified queue abort guards. Shared production
+cleanup handles real window destruction and app exit; retained snapshot memory
+returns to zero. This does not qualify running DSP, full product registration or
+physical audio. The full ordered workstation roadmap above remains open beyond
+this first software acceptance step.
+[Current handoff](docs/WORK_HANDOFF.md#real-runtime-snapshot-qualification--01358-checkpoint).
 
 0.13.57 shares a **verified native-helper build cache** between embedded helpers
 and Mac sidecars. Complete source/vendor/SDK/toolchain/target/recipe content keys,

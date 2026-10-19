@@ -40,6 +40,7 @@ jobs:
       - run: npm ci
       - run: python3 tests/release/test_macos_signing.py
       - run: python3 tests/release/test_altool_result.py
+      - run: python3 tests/release/test_native_runtime.py
       - run: npm run lint
       - run: npx tsc -b --pretty false
       - run: npm test

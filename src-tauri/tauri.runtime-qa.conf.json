@@ -1,0 +1,17 @@
+{
+  "productName": "CrispAudio Runtime QA",
+  "identifier": "com.crispstrobe.crispaudio.runtime-qa",
+  "build": {
+    "devUrl": null,
+    "frontendDist": "src/native_runtime_qa"
+  },
+  "app": {
+    "windows": []
+  },
+  "bundle": {
+    "fileAssociations": [],
+    "macOS": {
+      "minimumSystemVersion": "14.0"
+    }
+  }
+}

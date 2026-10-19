@@ -10,6 +10,10 @@ mod native_validation_loopback;
 mod resource_validation;
 #[cfg(all(feature = "native-validation", target_os = "macos"))]
 pub use native_validation::run as run_native_validation;
+#[cfg(all(feature = "native-runtime-qa", debug_assertions, target_os = "macos"))]
+mod native_runtime_qa;
+#[cfg(all(feature = "native-runtime-qa", debug_assertions, target_os = "macos"))]
+pub use native_runtime_qa::run as run_native_runtime_qa;
 mod commands;
 mod native_menu;
 
@@ -57,26 +61,7 @@ pub fn run() {
         .manage(native_files::OpenedFiles::default())
         .manage(commands::midi::MidiState::default())
         .manage(commands::plugins::PluginStreams::default())
-        .on_window_event(|window, event| {
-            if matches!(event, tauri::WindowEvent::Destroyed) {
-                #[cfg(target_os = "macos")]
-                {
-                    commands::native_audio_lifecycle::close_owner(
-                        window.label(),
-                        &window.state::<crispaudio_media::native_snapshot::Snapshots>(),
-                        &window.state::<commands::native_recording::NativeRecording>(),
-                        &window.state::<commands::native_playback::NativePlayback>(),
-                    );
-                    // Audio owners close before potentially blocking file cleanup.
-                    window
-                        .state::<commands::recording_conversions::ConversionFiles>()
-                        .close_owner(window.label());
-                }
-                window
-                    .state::<commands::plugins::PluginStreams>()
-                    .close_owner(window.label());
-            }
-        })
+        .on_window_event(handle_window_event)
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -233,18 +218,7 @@ pub fn run() {
 
     app.run(|app, event| {
         if matches!(event, tauri::RunEvent::Exit) {
-            #[cfg(target_os = "macos")]
-            {
-                commands::native_audio_lifecycle::shutdown(
-                    &app.state::<crispaudio_media::native_snapshot::Snapshots>(),
-                    &app.state::<commands::native_recording::NativeRecording>(),
-                    &app.state::<commands::native_playback::NativePlayback>(),
-                );
-                // Audio owners close before potentially blocking file cleanup.
-                app.state::<commands::recording_conversions::ConversionFiles>()
-                    .shutdown();
-            }
-            app.state::<commands::plugins::PluginStreams>().shutdown();
+            shutdown_resources(app);
         }
         #[cfg(any(target_os = "macos", target_os = "ios"))]
         if let tauri::RunEvent::Opened { urls } = &event {
@@ -256,4 +230,41 @@ pub fn run() {
         }
         let _ = (app, event);
     });
+}
+
+// Shared by production and the isolated real-runtime qualification executable.
+fn handle_window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
+    if matches!(event, tauri::WindowEvent::Destroyed) {
+        #[cfg(target_os = "macos")]
+        {
+            commands::native_audio_lifecycle::close_owner(
+                window.label(),
+                &window.state::<crispaudio_media::native_snapshot::Snapshots>(),
+                &window.state::<commands::native_recording::NativeRecording>(),
+                &window.state::<commands::native_playback::NativePlayback>(),
+            );
+            // Audio owners close before potentially blocking file cleanup.
+            window
+                .state::<commands::recording_conversions::ConversionFiles>()
+                .close_owner(window.label());
+        }
+        window
+            .state::<commands::plugins::PluginStreams>()
+            .close_owner(window.label());
+    }
+}
+
+fn shutdown_resources(app: &tauri::AppHandle) {
+    #[cfg(target_os = "macos")]
+    {
+        commands::native_audio_lifecycle::shutdown(
+            &app.state::<crispaudio_media::native_snapshot::Snapshots>(),
+            &app.state::<commands::native_recording::NativeRecording>(),
+            &app.state::<commands::native_playback::NativePlayback>(),
+        );
+        // Audio owners close before potentially blocking file cleanup.
+        app.state::<commands::recording_conversions::ConversionFiles>()
+            .shutdown();
+    }
+    app.state::<commands::plugins::PluginStreams>().shutdown();
 }

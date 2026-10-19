@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [Native helper build cache, 0.13.57](#native-helper-build-cache--01357-checkpoint). The active product
+Current checkpoint: [Real-runtime snapshot qualification, 0.13.58](#real-runtime-snapshot-qualification--01358-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,8 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.57 shares a verified native-helper
+The installed baseline remains 0.13.33. Source 0.13.58 qualifies snapshot IPC and
+window/exit cleanup in actual Wry/WebKit with no audio commands. Source 0.13.57 shares a verified native-helper
 build cache between embedded helpers and staged Mac sidecars; see the latest
 checkpoint below. Source 0.13.56 tests native commands
 through actual Tauri dispatch with a mock runtime; start at the latest checkpoint
@@ -1313,3 +1314,53 @@ These are observations on a busy host, not a controlled benchmark. The published
 cache is 916,520 bytes. Actual embedded/staged/alias checksums match, with staging
 inodes separate from the cache. The full frontend suite and actual AU/VST DSP
 fixtures were not rerun; prior evidence remains separate.
+
+
+## Real-runtime snapshot qualification — 0.13.58 checkpoint
+
+The user reaffirmed the full ordered [audio workstation roadmap](AUDIO_WORKSTATION_ROADMAP.md).
+The stale gap-table entry calling freeze missing is corrected: bounded reversible
+freeze exists; streaming/group/bus/routing expansion remains open.
+
+A dedicated debug Mac executable now qualifies actual Wry/WebKit snapshot commands
+and OS window/app lifecycle. It embeds only two test assets, uses a distinct
+identity and WebKit store, registers no playback/recording commands and defines
+input/output AudioQueue abort guards. The runner verifies those symbols and actual
+embedded identity before signing/running a fresh temporary bundle. Existing live
+app bundles are preserved. Production and QA call the same extracted window
+resource-cleanup and app-shutdown functions; their ordering is unchanged.
+
+The finalized two-asset runtime run passes, including exact planar stereo sample
+verification through a bounded no-insert graph. Real raw CPS1 upload, invalid JSON/nonfinite/incomplete requests, Unicode metadata,
+cross-window ownership, peer destruction with an unfinished upload, revoked
+admission, explicit close and actual Exit cleanup pass. The final run retains one
+sealed snapshot before Exit, then reports zero entries/bytes and closed admission.
+Ordinary app Mac library **81 passed / 8 ignored**, non-test library check, build,
+lint, formatting and **28 release checks** pass. Full frontend and actual audio
+DSP/helper fixtures were not rerun. See [protocol](NATIVE_RUNTIME_QUALIFICATION.md)
+and [evidence](evidence/native-runtime-snapshots.json).
+
+This is snapshot-only, subset-registration acceptance. It does not qualify the
+complete product builder/capabilities, React transport, running workers/native-insert DSP,
+recording conflicts, sandbox/Store signing, persistent-store relaunch or physical
+audio. The .54 UI/DSP bridge and .56 mock IPC results remain separate evidence.
+Only the temporary ad hoc QA bundle was built/signed; no product install, tag,
+Apple upload or microphone/device action is included.
+
+### Next work
+
+1. **Combined command/DSP ownership:** qualify actual command handlers, admitted
+   playback owners and production DSP in a dedicated test-only null-output process.
+   Keep hardware guards. Cover delayed start/close, parameter/bypass/state behavior,
+   recording command conflicts, window/exit retirement and zero retained workers,
+   helpers and snapshots. The existing MockRuntime factory works only for Mock;
+   normal/test Wry playback still opens real hardware. Do not weaken that boundary
+   or claim that this snapshot-only executable provides a Wry null playback mode.
+2. **Physical/signed/platform N5:** continue only with real device/user availability,
+   preserving installed/recording-preview sessions and the pending human question.
+   Keep Rendered default and Native opt-in; no repeated question or automated mic.
+3. **Independent product work:** source-format/range/state parity, bounded native
+   effect waveform snapshots and original-based recipe recall, then measured paging/
+   waveform caches, monitoring/plug-in usability, session/delivery, restoration and
+   recorded-audio timing. Full acceptance criteria are in the new ordered roadmap;
+   software work need not wait for unavailable physical checks.
