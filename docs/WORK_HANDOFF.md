@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [editable saved-effect ranges/channels, 0.13.65](#editable-saved-effect-rangeschannels--01365-checkpoint). The active product
+Current checkpoint: [source edit window provenance, 0.13.66](#source-edit-window-provenance--01366-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.65 adds editable saved-effect masks; source 0.13.64 adds a bounded original-based saved-effect editor; see the latest checkpoint below. Source 0.13.63 adds automatic bounded native FX waveform snapshots; see the latest checkpoint below. Source 0.13.62 adds 44.1-kHz source audition
+The installed baseline remains 0.13.33. Source 0.13.66 records source operation windows and validates retained audio; see the latest checkpoint below. Source 0.13.65 adds editable saved-effect masks; source 0.13.64 adds a bounded original-based saved-effect editor; see the latest checkpoint below. Source 0.13.63 adds automatic bounded native FX waveform snapshots; see the latest checkpoint below. Source 0.13.62 adds 44.1-kHz source audition
 on the native 48-kHz clock; see the latest checkpoint below. Source 0.13.61 admits one contiguous native
 source selection; see the latest checkpoint below. Source 0.13.60 extends opt-in native source
 audition to whole mono 48-kHz clips; see the latest checkpoint below. Source 0.13.59 combines actual command
@@ -1885,3 +1885,71 @@ UI checks were not rerun; earlier evidence remains historical.
 
 The preceding 0.13.64 CI/iOS workflows remained queued at this wrap; do not call them
 passed. Refresh workflows for this checkpoint after pushing.
+
+
+## Source edit window provenance — 0.13.66 checkpoint
+
+New ordinary Source Editor Apply histories now record versioned decoded-rate/channel
+coordinates and each operation's original-source window. A later crop preserves
+all preceding full windows/ranges and records its new root sample origin. Capture
+happens before persistence; portable/linked save, load and recovery share actual
+buffer validation. Comp bases and frozen originals are included. Single-effect
+recall validates any advertised journal and preserves it through mask/recipe edits.
+See [the stored contract and example](SOURCE_EDIT_JOURNALS.md).
+
+Legacy histories are not inferred or promoted; truncating the 64-operation journal
+or destructively processing retimed audio drops the completeness marker. Reversible
+retiming retains the pre-retime derivative for validation. This checkpoint captures
+coordinate provenance; **mixed replay remains gated**. It does not prove historical
+external helper DSP rate, processor validity or byte equivalence.
+
+Next scoped work, in order:
+1. **Implement mixed replay for explicitly admitted processors.** Use the new
+   windows: process the first original window fully, crop each preceding result to
+   the next recorded window, then execute that operation with its own local ranges
+   and channels. Validate saved parameters/base state and reject unknown processors.
+   Start with deterministic utilities plus one external effect; expand chains and
+   restoration with separate latency/rate/working-set evidence. Select an operation
+   explicitly in the editor; replace it and replay all others unchanged. Qualify
+   full/trim/split histories, unaffected PCM/channels, original mapping, sibling
+   sources, one owned Apply/Undo/Redo, portable reopen, cancellation/staleness and
+   allocation limits before opening the gate. Legacy journals without a completeness
+   marker still require an explicit migration, never fitting-range inference.
+   A useful migration candidate is a legacy single effect's explicit fresh original-
+   based Render + Apply: that new pass observes a full processing window and could
+   seed verified coordinates. Qualify it before promoting the history; reading the
+   old recipe alone is not proof of its preceding window.
+2. Route ordinary SourcePluginEffects through owned decoded-PCM staging and owned
+   Apply publication, covering generated sources/rates/windows and cancellation.
+   Its legacy `persist_recording` path remains; this checkpoint adds metadata only.
+3. Separately qualify Native recall and other source admission as scoped in .65;
+   then continue long-session memory, monitoring/plug-ins, session delivery and
+   restoration/recorded-audio timing from AUDIO_WORKSTATION_ROADMAP.md.
+4. Keep actual Wry/device/listening/signed/mobile checks separate. Preserve installed
+   sessions and pending physical recording checks. Real-window helper ownership
+   and bounded known-preview collection remain open; never collect unknown or
+   retained recordings as disposable cache.
+
+
+Validation: **2,347 tests in 240 files** pass (36 new cases), with 93 focused tests
+in six files, final production build/full lint and 39 release checks passing.
+The first full run caught a segment-less-track compatibility regression; the final
+traversal guard preserves the existing pan-automation diagnostic, and the final
+full suite passes. No Rust/DSP/driver changes or native suite rebuild/rerun.
+
+Fresh post-fix ordinary editor browser checks at 48-kHz stereo capture invert,
+trim/channel normalization, original-source windows, preserved originals/sibling,
+one Undo/Redo and portable metadata reopen. Float-normalization error is below
+3e-8; original sample error is zero. This run opens zero native sessions.
+The combined 44.1-kHz stereo Native/null-DSP and recalled AU/VST3 run passes with
+24 sessions closed, zero snapshots/bytes/temporary inputs and fresh Apply error
+zero. That combined run precedes the final missing-group traversal guard; the
+post-fix ordinary browser/full suite are separate final evidence. Source masks,
+trim history, base states, reopen, A/B and responsive EN/DE checks remain passing.
+Filesystem/conversion/relocation wrappers are mocked; helper DSP/files are real.
+These are offline/null checks, not actual device/Wry/listening/signed/mobile
+acceptance. [Evidence](evidence/source-edit-journals.json).
+
+The preceding 0.13.65 iOS workflow passed; general CI remained queued. Refresh the
+new checkpoint workflows after pushing. Installed apps and user sessions remain
+untouched; no tag or Apple upload.

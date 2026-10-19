@@ -2,6 +2,7 @@ import type {AudioSource,PluginRecipe,TimelineProject} from '../types/audio';
 import {sourcePluginWaveformPlan} from '../audio/engine/SourcePluginWaveform';
 import type {NativeSourceInput} from '../audio/engine/NativeSourceAudition';
 import {sampleRanges,type SampleRange} from './sourceEditing';
+import {validateSourceJournalClipAudio} from './sourceEditJournal';
 import {validNativeEffects} from './nativeEffects';
 
 export const SOURCE_PLUGIN_RECALL_BYTES=256*1024*1024;
@@ -16,6 +17,7 @@ export function sourcePluginRecallPlan(snapshot:RecallState,clipId:string){
  if(clip.retime||edit.retime)fail('retimed');
  const source=snapshot.sources.get(clip.sourceId),original=snapshot.sources.get(edit.sourceId);
  if(!source||!original||source.id===original.id)fail('missing');
+ try{validateSourceJournalClipAudio(clip,snapshot.sources);}catch{fail('format');}
  const rate=original.sampleRate,frames=source.buffer.length,start=Math.round(edit.offset*rate),visibleStart=Math.round(clip.sourceOffset*rate),visibleEnd=visibleStart+Math.round(clip.duration*rate),op=edit.operations[0],recipe=op.plugin!;
  if(![44100,48000].includes(rate)||source.sampleRate!==rate||source.buffer.sampleRate!==rate||original.buffer.sampleRate!==rate||source.buffer.numberOfChannels!==original.buffer.numberOfChannels||source.channels!==source.buffer.numberOfChannels||original.channels!==original.buffer.numberOfChannels||![1,2].includes(source.channels))fail('format');
  if(!Number.isFinite(edit.offset)||edit.offset<0||start<0||start+frames>original.buffer.length||!Number.isFinite(clip.sourceOffset)||clip.sourceOffset<0||!Number.isFinite(clip.duration)||clip.duration<=0||visibleStart<0||visibleEnd<=visibleStart||visibleEnd>frames)fail('bounds');

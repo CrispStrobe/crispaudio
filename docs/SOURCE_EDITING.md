@@ -275,3 +275,13 @@ plug-in output. This does not expand Native's current channel/range/rate admissi
 
 Editing ranges/channels or replaying mixed histories requires a later journal
 replay step so earlier edits and processing-window coordinates are preserved.
+
+
+## Retained processing windows
+
+Since **0.13.66**, new edit histories remember the full original-source window used
+by each operation, including windows before later trimming. Project saves, reopen
+and recovery validate that metadata against retained audio. Earlier projects remain
+editable; their missing history windows are not guessed. Mixed-history recipe
+editing remains unavailable until complete ordered replay is implemented.
+[Implementation contract and next work](SOURCE_EDIT_JOURNALS.md).

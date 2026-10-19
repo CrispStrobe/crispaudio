@@ -1,0 +1,247 @@
+{
+  "sourceVersion": "0.13.66",
+  "date": "2026-10-19",
+  "scope": "Capture and validate source operation window provenance; mixed replay remains disabled",
+  "hardwareOpened": false,
+  "validation": {
+    "frontend": {
+      "tests": 2347,
+      "files": 240,
+      "passed": true,
+      "seconds": 125.81
+    },
+    "focused": {
+      "tests": 93,
+      "files": 6,
+      "passed": true
+    },
+    "newCases": 36,
+    "productionBuild": "pass",
+    "fullLint": "pass",
+    "releaseChecks": {
+      "tests": 39,
+      "passed": true
+    },
+    "nativeSuites": "Not rerun; no Rust/DSP/driver changes. Previous native suite results remain baselines.",
+    "precedingCI": "0.13.65 iOS passed; general CI still queued at wrap."
+  },
+  "contract": {
+    "coordinates": "journal v1 fixes decoded sampleRate/channels. Every operation window has an original-source start and frame count; effect ranges stay local. Later windows can crop, not expand.",
+    "capture": "Ordinary SourceEditor Apply observes windows before persistence. Exact copied sample origins avoid accumulated fractional offsets.",
+    "admission": "A complete new unretimed history may retain provenance. Missing legacy windows are never inferred. Truncation past 64 operations or destructive processing after retime drops completeness.",
+    "validation": "Structural checks before project decode; actual retained-original/current-derivative format and frame checks on save, reopen and recovery, including comp bases and frozen originals. Reversible retime uses its retained pre-retime derivative.",
+    "limits": "This proves coordinates only, not processor validity, old helper DSP rate, byte equivalence or mixed replay admission. Saved single-effect admission and budgets are unchanged."
+  },
+  "ordinaryEditorAfterFinalGuard": {
+    "journalOnly": true,
+    "journalQualification": {
+      "sourceRate": 48000,
+      "sourceChannels": 2,
+      "originalOffset": 0.5,
+      "firstWindow": {
+        "start": 24000,
+        "frames": 48000
+      },
+      "secondWindow": {
+        "start": 36000,
+        "frames": 24000
+      },
+      "coordinateOffset": 0.75,
+      "applyError": 2.97589591857772e-08,
+      "originalError": 0,
+      "oneUndoRedo": true,
+      "siblingRetained": true,
+      "portableReopen": true,
+      "originalRetained": true,
+      "ordinaryApplyCaptured": true,
+      "mixedReplayEnabled": false
+    },
+    "stats": {
+      "bytes": 0,
+      "closed": 0,
+      "hardware": false,
+      "sessions": 0,
+      "snapshots": 0,
+      "started": 0
+    }
+  },
+  "combinedNativeBeforeMissingGroupGuard": {
+    "sourceRate": 44100,
+    "sourceChannels": 2,
+    "rateQualification": {
+      "sourceRate": 44100,
+      "outputRate": 48000,
+      "sourceFrames": 44100,
+      "renderedRate": 44100,
+      "renderedFrames": 44100,
+      "convertedFrames": 48002,
+      "outputFrames": 48000,
+      "sourceRateRenderDifference": 0.01699584722518921,
+      "startSample": 13672,
+      "endSample": 36602,
+      "startFrame": 14881,
+      "endFrame": 39839,
+      "loopError": 0,
+      "finiteError": 0,
+      "originalsIntact": true,
+      "finiteEndedOnce": true,
+      "edgeCases": [
+        {
+          "name": "whole",
+          "startFrame": 0,
+          "endFrame": 48000,
+          "renderedFrames": 48000,
+          "endedOnce": true,
+          "helpersClosed": true
+        },
+        {
+          "name": "minimum-head",
+          "startFrame": 0,
+          "endFrame": 2229,
+          "renderedFrames": 2229,
+          "endedOnce": true,
+          "helpersClosed": true
+        },
+        {
+          "name": "minimum-tail",
+          "startFrame": 45771,
+          "endFrame": 48000,
+          "renderedFrames": 2229,
+          "endedOnce": true,
+          "helpersClosed": true
+        }
+      ],
+      "finiteCompletionCount": 4
+    },
+    "recallQualification": {
+      "sourceRate": 44100,
+      "sourceChannels": 2,
+      "auInputError": 0,
+      "auApplyError": 0,
+      "trimmedInputError": 0,
+      "trimmedApplyError": 0,
+      "editedMaskApplyError": 0,
+      "editedMask": {
+        "channel": 1,
+        "ranges": [
+          {
+            "start": 4410,
+            "end": 8820
+          },
+          {
+            "start": 35280,
+            "end": 39690
+          }
+        ]
+      },
+      "editedMaskUndoRedo": true,
+      "editedMaskPortableReopen": true,
+      "repeatedApplyError": 0,
+      "fullWindowFrames": 44100,
+      "clipOffset": 0.25,
+      "originalOffset": 0.5,
+      "disjointRanges": true,
+      "individualChannel": true,
+      "siblingUnchanged": true,
+      "oneUndoAndRedo": true,
+      "portableReopen": true,
+      "restoredParameters": true,
+      "baseStatePreserved": true,
+      "noncumulative": true,
+      "exactWaveformPixels": true,
+      "renderedAuditionAB": true,
+      "arrangementCloseJoined": false,
+      "monitorExcludedFromApply": true,
+      "responsiveWidths": [
+        1440,
+        375
+      ],
+      "responsiveLanguages": [
+        "en",
+        "de"
+      ],
+      "lateCloseDiscarded": true,
+      "projectRoundtripDiscarded": true,
+      "recordingRoundtripDiscarded": true,
+      "mixedHistoryGated": true,
+      "retainedPublishedFiles": 4
+    },
+    "partialSelection": true,
+    "shortAndMultipleRejected": true,
+    "clipOffset": 0.5,
+    "range": [
+      11026,
+      33074
+    ],
+    "selectedDelayHistory": true,
+    "selectedDelayParity": {
+      "error": 7.092952728271484e-06,
+      "first": 0.25,
+      "loopMaxDifference": 0
+    },
+    "delayTolerance": 1e-05,
+    "finiteEnd": true,
+    "applyRate": 44100,
+    "applyChannels": 2,
+    "applySampleError": 0,
+    "sharedPlayStop": true,
+    "defaultRendered": true,
+    "monitorLimiter": true,
+    "monitorOnlyApply": true,
+    "liveControlsOneGraph": true,
+    "automaticFxSnapshots": 20,
+    "snapshotRate": 44100,
+    "snapshotDidNotPrepareApply": true,
+    "snapshotPixelsExact": true,
+    "snapshotFaultKeepsNativePlaying": true,
+    "retainedSnapshotInputs": 0,
+    "channelChangeStops": true,
+    "renderStopsNative": true,
+    "originalAndOneUndo": true,
+    "pendingStartReplacement": true,
+    "faultStaysNative": true,
+    "explicitRenderedRecovery": true,
+    "inputBusyRefused": true,
+    "outputChangeStops": true,
+    "recordingStops": true,
+    "otherAuditionStops": true,
+    "arrangementStartsStop": true,
+    "loopChangeStops": true,
+    "rangeChangeStops": true,
+    "bufferReplacementStops": true,
+    "arrangementJoined": true,
+    "resetStops": true,
+    "projectChangeStops": true,
+    "responsiveWidths": [
+      1440,
+      375
+    ],
+    "responsiveLanguages": [
+      "en",
+      "de"
+    ],
+    "lockStops": true,
+    "closeJoins": true,
+    "stats": {
+      "bytes": 0,
+      "closed": 24,
+      "hardware": false,
+      "sessions": 0,
+      "snapshots": 0,
+      "started": 24
+    },
+    "hardware": false
+  },
+  "evidencePhases": [
+    "Combined 44.1-kHz stereo Native UI/null-DSP and saved-recipe run passed before the final traversal guard for segment-less metadata. That guard leaves valid array traversal unchanged.",
+    "Fresh final 48-kHz ordinary SourceEditor browser run follows that guard. It captures invert then trim/channel normalize, checks originals/sibling/one Undo-Redo and portable metadata reopen. No native output session is opened in this run.",
+    "Final full suite, focused checks, build and lint follow the guard. Initial full suite caught the missing-group compatibility regression and is excluded from passed evidence.",
+    "Initial ordinary browser fixture dispatched open before mount; fixed by waiting for the handler. Another attempt compared JS undefined properties with JSON-omitted fields; corrected to compare serialized metadata. Neither attempt is counted as passed evidence."
+  ],
+  "limitations": [
+    "FS/conversion/resource relocation IPC wrappers are synthetic; trusted Apple AUPeakLimiter and Steinberg ADelay helpers, files and guarded null DSP are real.",
+    "All browser AudioContexts are offline substitutes. No microphone/device/TCC/actual Wry output, listening or signed/mobile qualification.",
+    "Parent test tripwires do not establish arbitrary child plug-in sandboxing.",
+    "No mixed replay, legacy migration, Native recall/format expansion, new owned ordinary Apply transaction, install, signing, tag or Apple upload."
+  ]
+}

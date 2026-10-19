@@ -1271,3 +1271,17 @@ All helper input remains the full original processing window; never crop a pass 
 the new mask and lose effect history. Numeric drafts clear prepared audio. Keep
 advanced mask controls collapsed and sample coordinates explicit. Mixed journal
 replay remains gated until per-operation windows/crops/rates have safe provenance.
+
+
+### Source operation coordinates (0.13.66)
+
+Ordinary SourceEditor Apply calls `appendSourceEdit` BEFORE encoding/persisting PCM.
+New complete histories carry journal v1 decoded sampleRate/channels and per-operation
+original-source `window.start/frames`; ranges remain local to their own window.
+Crop only between operations and never rewrite earlier windows. Offset is the last
+window's exact sample origin in seconds. `validateSourceJournalAudio` runs through
+the shared project/recovery validation path, including comp/frozen originals.
+Reversible retime validates the retained pre-retime derivative; later destructive
+retime processing and truncation drop completeness. Do not infer legacy provenance.
+The marker establishes coordinates, not processor validity, historical DSP rate,
+byte parity or mixed replay admission. See docs/SOURCE_EDIT_JOURNALS.md.

@@ -1,3 +1,4 @@
+import {validProjectSourceJournals,validateSourceJournalAudio} from './sourceEditJournal';
 import {validProjectSourceChains} from './sourceChainRecipe';
 import {validTrackFreezes,retainedFreezeProject} from './trackFreeze';
 import {validNativeRecordingImports} from './nativeRecordingImports';
@@ -123,6 +124,7 @@ export function linkedRenderDocument(project: TimelineProject, sources: Map<stri
 }
 
 function validateProjectMetadata(project:TimelineProject,serializedSources:SerializedSource[],version:number){
+  if(!validProjectSourceJournals(project))throw new Error('Invalid source edit journal');
   if(!validProjectSourceChains(project))throw new Error('Invalid source effect chain');
   if(!validNativeRecordingImports(project))throw new Error('Invalid native recording import receipts');
   if(!validMixVersions(project))throw new Error('Invalid mix versions');
@@ -239,6 +241,7 @@ export async function deserializeProject(
 
 /** Shared load/cache checks for source recipes and retained frozen originals. */
 export function validateFrozenProjectAudio(project:TimelineProject,sources:Map<string,AudioSource>){
+ validateSourceJournalAudio(project,sources);
  if(!validProjectSourceChains(project))throw new Error('Invalid source effect chain');
  if(!validTrackFreezes(project,new Set(sources.keys())))throw new Error('Invalid frozen track');
  if(!project.tracks.some(t=>t.freeze))return;

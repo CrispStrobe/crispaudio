@@ -1,11 +1,20 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.65 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.66 (installed baseline 0.13.33). This section is the current plan.
 
 The user reaffirmed the full ordered [audio workstation roadmap](docs/AUDIO_WORKSTATION_ROADMAP.md)
 on 19 October: native acceptance → source FX → long sessions → monitoring/plug-ins
 → sessions/delivery → restoration/recorded-audio timing. Each phase has concrete
 acceptance criteria; existing partial tools must be extended rather than recreated.
+
+0.13.66 records **per-operation original-source windows** for new edit histories.
+Later crops preserve preceding windows; project save/reopen/recovery validate the
+retained original, decoded format and final derivative. Legacy, truncated and
+retimed destructive histories are not promoted. This supplies coordinate provenance;
+mixed replay still needs processor execution/validation, selection, owned Apply and
+qualification. Next: admitted ordered mixed replay, ordinary source-preview staging,
+then separate Native admission and the accepted workstation phases.
+[Current handoff](docs/WORK_HANDOFF.md#source-edit-window-provenance--01366-checkpoint).
 
 0.13.65 adds **editable saved-effect ranges/channels** in a collapsed section:
 exact sample boundaries, saved/clip/full-window presets, disjoint ranges and

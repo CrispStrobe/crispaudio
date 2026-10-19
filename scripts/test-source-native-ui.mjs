@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {execFileSync,execFile} from 'node:child_process';import {promisify} from 'node:util';
 import {mkdtempSync,writeFileSync,readFileSync,rmSync,unlinkSync,statSync} from 'node:fs';
 import {tmpdir} from 'node:os';import {join} from 'node:path';import {pathToFileURL} from 'node:url';
+import {qualifySourceJournal} from './fixtures/sourceJournalQualification.mjs';
 import {qualifySourcePluginRecall} from './fixtures/sourcePluginRecallQualification.mjs';
 import {qualifySourceRate} from './fixtures/sourceRateQualification.mjs';
 import {nativeSourceBridge,verifyNativeSourceBridge} from './fixtures/nativeSourceBridge.mjs';
@@ -77,7 +78,9 @@ try{
   s.setState({...s.getInitialState(),project:{...s.getInitialState().project,id:'native-ui',sampleRate:sourceRate,duration:1,tracks:[]}});s.getState().importAudioSource({id:'source',name:'Source',filePath:path,buffer,sampleRate:sourceRate,channels:sourceChannels,duration:sourceFrames/sourceRate,peaks:{min:new Float32Array([- .125]),max:new Float32Array([.25])}});s.getState().selectSegment(s.getState().project.tracks[0].segments[0].id);if(clipOffset){const state=s.getState();s.setState({project:{...state.project,duration:1,tracks:state.project.tracks.map(t=>({...t,segments:t.segments.map(c=>({...c,sourceOffset:clipOffset,duration:1}))}))}});}s.temporal.getState().clear();
   const ctx=new OfflineAudioContext(2,48000,48000);window.main=new TimelineEngine(ctx,ctx.createGain());window.uiRoot=createRoot(document.getElementById('fixture'));window.uiRoot.render(React.createElement(TimelineEngineContext.Provider,{value:{current:window.main}},React.createElement(SourceEditor)));
  },{path:sourcePath,sourceChannels,sourceFrames,clipOffset,sourceRate});
- if(process.env.CRISPAUDIO_TEST_RECALL_ONLY==='1'){
+ if(process.env.CRISPAUDIO_TEST_JOURNAL_ONLY==='1'){
+ assert.equal(sourceChannels,2);const journalQualification=await qualifySourceJournal(page,{rate:sourceRate,offset:clipOffset});assert.deepEqual(errors,[]);console.log(JSON.stringify({journalOnly:true,journalQualification,stats:await bridge.native('bridge_stats')}));
+ }else if(process.env.CRISPAUDIO_TEST_RECALL_ONLY==='1'){
  const info=call(au,'plugin-info',{id:limiter.id});await page.evaluate(async({info,id,offset,rangeStart,rangeEnd,rate})=>{
   const state=window.store.getState(),original=state.sources.get('source'),clip=state.project.tracks[0].segments[0],parameters=Object.fromEntries(info.parameters.map(p=>[p.address,p.address==='2'?20:p.value]));const result=await window.sourceNative('audio_unit_plugin',{operation:'plugin-render',request:{id,path:original.filePath,offset,duration:1,parameters,state:info.state}}),bytes=Uint8Array.from(await window.sourceNative('plugin:fs|read_file',{path:result.path})),buffer=await new OfflineAudioContext(original.channels,1,rate).decodeAudioData(bytes.buffer);await window.sourceNative('plugin:fs|remove',{path:result.path});for(let ch=0;ch<original.channels;ch++)for(let i=0;i<buffer.length;i++)if(i<rangeStart||i>=rangeEnd)buffer.getChannelData(ch)[i]=original.buffer.getChannelData(ch)[Math.round(offset*rate)+i];
   const source={...original,id:'recall-start',buffer,duration:1,filePath:undefined},next={...clip,sourceId:source.id,sourceOffset:0,sourceEdit:{sourceId:original.id,offset,operations:[{type:'plugin',channel:-1,ranges:[{start:rangeStart,end:rangeEnd}],targetDb:-1,plugin:{id,name:'AUPeakLimiter',parameters,state:info.state,latency:result.latency}}]}};window.sourceRecallFixture={project:{...state.project,tracks:[{...state.project.tracks[0],segments:[next]}]},sources:new Map(state.sources).set(source.id,source)};

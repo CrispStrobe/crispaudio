@@ -91,7 +91,11 @@ export interface DuckingConfig { source: string; threshold: number; ratio: numbe
 export interface Retime {renderDuration?:number;rate:number;reverse:boolean;preservePitch:boolean;semitones:number;original:{sourceId?:string;path?:string;offset:number;duration:number}}
 
 export interface PluginRecipe {id:string;name:string;parameters:Record<string,number>;state:string;latency:number}
-export interface SourceEdit {sourceId:string;offset:number;retime?:Retime;operations:{type:string;channel:number;ranges:{start:number;end:number}[];targetDb:number;parameters?:Record<string,number>;chain?:import('../lib/sourceChainRecipe').SourceChainRecipe;plugin?:PluginRecipe}[]}
+/** Uniform decoded-PCM coordinates; not a claim about a plug-in's historic DSP rate. */
+export interface SourceEditJournal {version:1;sampleRate:number;channels:number}
+export interface SourceEditWindow {start:number;frames:number}
+export interface SourceEditOperation {type:string;channel:number;ranges:{start:number;end:number}[];targetDb:number;parameters?:Record<string,number>;chain?:import('../lib/sourceChainRecipe').SourceChainRecipe;plugin?:PluginRecipe;window?:SourceEditWindow}
+export interface SourceEdit {sourceId:string;offset:number;retime?:Retime;journal?:SourceEditJournal;operations:SourceEditOperation[]}
 
 export interface AudioSegment {
   nativeEffects?:NativeEffect[];

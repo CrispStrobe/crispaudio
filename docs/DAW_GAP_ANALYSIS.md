@@ -4,6 +4,12 @@ Reviewed 16 October 2026 against local 0.13.26 and current official product page
 This is a workflow and architecture comparison, not a claim of feature parity or
 an independent listening/performance benchmark. Competitor editions differ.
 
+Source progress **0.13.66** captures complete window coordinates for new source
+operation histories and validates retained PCM on save/reopen/recovery. Later trims
+preserve earlier full windows. This is mixed-replay groundwork; processor replay,
+selection and qualification remain open, and insufficient legacy histories stay
+gated. [Contract](SOURCE_EDIT_JOURNALS.md), [current handoff](WORK_HANDOFF.md).
+
 Source progress **0.13.65** adds editable masks for the saved single-effect slice:
 exact/disjoint sample ranges, all/individual channels and saved/clip/full-window
 presets. Full-window original rendering, outside dry PCM, one Undo/Redo and portable

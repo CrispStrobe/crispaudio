@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.65, editable saved-effect masks](#editable-saved-effect-masks--01365-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.66, source edit window provenance](#source-edit-window-provenance--01366-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -5013,3 +5013,39 @@ UI checks were not rerun; earlier evidence remains historical.
 
 The preceding 0.13.64 CI/iOS workflows remained queued at this wrap; do not call them
 passed. Refresh workflows for this checkpoint after pushing.
+
+
+## Source edit window provenance — 0.13.66 source candidate
+
+Ordinary Source Editor Apply records complete decoded coordinates and original-source
+windows for new edit histories, preserving earlier windows through later cropping.
+Shared save/reopen/recovery checks verify the original, format and final frame
+count, including comp bases/frozen originals. Single-effect recall validates and
+preserves the marker. Legacy journals are not inferred; truncation and retimed
+processing drop completeness. Mixed replay is still gated. No backend/DSP or new
+Native admission, install, tag, signing or Apple upload is included.
+[Contract and next implementation](SOURCE_EDIT_JOURNALS.md).
+
+
+Validation: **2,347 tests in 240 files** pass (36 new cases), with 93 focused tests
+in six files, final production build/full lint and 39 release checks passing.
+The first full run caught a segment-less-track compatibility regression; the final
+traversal guard preserves the existing pan-automation diagnostic, and the final
+full suite passes. No Rust/DSP/driver changes or native suite rebuild/rerun.
+
+Fresh post-fix ordinary editor browser checks at 48-kHz stereo capture invert,
+trim/channel normalization, original-source windows, preserved originals/sibling,
+one Undo/Redo and portable metadata reopen. Float-normalization error is below
+3e-8; original sample error is zero. This run opens zero native sessions.
+The combined 44.1-kHz stereo Native/null-DSP and recalled AU/VST3 run passes with
+24 sessions closed, zero snapshots/bytes/temporary inputs and fresh Apply error
+zero. That combined run precedes the final missing-group traversal guard; the
+post-fix ordinary browser/full suite are separate final evidence. Source masks,
+trim history, base states, reopen, A/B and responsive EN/DE checks remain passing.
+Filesystem/conversion/relocation wrappers are mocked; helper DSP/files are real.
+These are offline/null checks, not actual device/Wry/listening/signed/mobile
+acceptance. [Evidence](evidence/source-edit-journals.json).
+
+The preceding 0.13.65 iOS workflow passed; general CI remained queued. Refresh the
+new checkpoint workflows after pushing. Installed apps and user sessions remain
+untouched; no tag or Apple upload.
