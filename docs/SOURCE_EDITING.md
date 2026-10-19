@@ -176,8 +176,9 @@ Press Play, adjust effect parameters, type or scrub their numbers, and switch
 **Original / Preview** without replacing the running graph. Monitor level starts
 at −12 dB or lower; a separate sample-peak limiter at −1 dBFS protects native listening.
 This is not true-peak protection. Neither control affects prepared audio or Apply.
-Details stay behind the mode's information button. Auto preview is disabled in
-Native to avoid running automatic helper renders alongside playback.
+Details stay behind the mode's information button. The Rendered auto-preview
+control stays disabled in Native; separate display snapshots run without stopping
+the native graph.
 
 For a partial selection, the native worker processes from the clip beginning
 before emitting the selected interval. The cursor follows that selection on the
@@ -193,8 +194,23 @@ monitor gain and the monitor limiter are excluded. A fresh pass can differ from
 looping or a plug-in's real-time processing mode. A latency-changing parameter can
 stop native playback; restart with the new graph or choose Rendered.
 
-The waveform and analysis remain labelled source/prepared **snapshots**, not the
-live native output. Selection, channel, loop, source, project, lock, output-device,
+Since **0.13.63**, the waveform follows native FX parameter changes after a
+350 ms pause using a fresh **source-rate** helper render. The compact **FX · rate**
+badge identifies a current snapshot; Updating, Source or unavailable labels mean
+no current FX snapshot is shown. Original shows dry audio. Only selected samples
+are replaced in the displayed PCM, with no monitor gain/limiter applied.
+
+Snapshots have a 64 MiB PCM allocation estimate, including encoding, IPC, decoding
+and helper latency padding; plug-in internals are outside that estimate. Large
+clips keep the source waveform; use Render preview to prepare them explicitly.
+Jobs are cancellable, serialized even across editor replacement, and stale source,
+selection or parameter results cannot publish. Temporary input/output files are
+removed. A snapshot failure shows source audio and does not stop native playback.
+
+Display snapshots never enable Apply or change project audio, analysis or loudness
+matching. Those still use source/prepared audio. Source-rate snapshots can differ
+from the live 48-kHz output, real-time processing and accumulated loop history.
+Selection, channel, loop, source, project, lock, output-device,
 recording and arrangement changes stop native preview. Source start joins an
 existing arrangement output and stops other auditions. Stop input preview before
 using Native. Native errors stay visible; choose Rendered explicitly to recover.

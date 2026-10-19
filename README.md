@@ -84,8 +84,9 @@ Select a clip and open **Source Editor** for detailed work on its source window.
   It supports one contiguous selection (at least 2048 samples) in mono/stereo
   44.1/48-kHz clips up to two minutes. Native converts to 48 kHz for listening;
   Apply retains the source rate. Rendered stays the default; **Render preview** prepares the audio for Apply. Monitor gain
-  and output protection affect listening only. The native waveform remains a
-  labelled snapshot. [Details and limits](docs/SOURCE_EDITING.md#native-external-effect-preview).
+  and output protection affect listening only. FX changes refresh a labelled
+  source-rate waveform snapshot after a short pause, within a memory limit;
+  playback continues. Analysis and Apply use explicitly prepared audio. [Details and limits](docs/SOURCE_EDITING.md#native-external-effect-preview).
 - Enable **Live effects**, then press Play to adjust high-pass, low-pass and output
   while listening. Arrange up to six high/low-pass, level and clipper effects, with
   individual bypass and reorder controls. Structural edits stop audition.

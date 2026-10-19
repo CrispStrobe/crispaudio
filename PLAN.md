@@ -1,11 +1,20 @@
 # CrispAudio — Active roadmap
 
-Updated 2026-10-19, for source candidate 0.13.62 (installed baseline 0.13.33). This section is the current plan.
+Updated 2026-10-19, for source candidate 0.13.63 (installed baseline 0.13.33). This section is the current plan.
 
 The user reaffirmed the full ordered [audio workstation roadmap](docs/AUDIO_WORKSTATION_ROADMAP.md)
 on 19 October: native acceptance → source FX → long sessions → monitoring/plug-ins
 → sessions/delivery → restoration/recorded-audio timing. Each phase has concrete
 acceptance criteria; existing partial tools must be extended rather than recreated.
+
+0.13.63 adds **automatic native FX waveform snapshots**: fresh source-rate helper
+renders, 350 ms debounce, cancellation and source/parameter identity, a 64 MiB
+PCM allocation estimate, serialized ownership and temporary-file cleanup. Drawing
+does not restart native playback or enable Apply. Source-rate/loop-history
+differences remain explicit; large or failed previews show source audio.
+Next: original-based recipe recall, then separately scoped format/channel/range
+qualification and the remaining accepted workstation phases.
+[Current handoff](docs/WORK_HANDOFF.md#native-fx-waveform-snapshots--01363-checkpoint).
 
 0.13.62 admits **44.1-kHz source audition** alongside 48 kHz. Native processing
 stays at 48 kHz, now stated in its mode label/help; Apply retains the original

@@ -12,6 +12,12 @@ editable. Preserve the compact interface: direct controls for common jobs;
 context/desktop menus and collapsed sections for advanced settings; equivalent
 reachable touch actions and accessible numeric entry.
 
+Source checkpoint **0.13.63** adds automatic bounded native FX waveform snapshots
+without restarting the running graph. These are fresh source-rate renders, separate
+from instantaneous 48-kHz output, analysis and Apply. Next independent source work
+is original-based recipe recall; format/channel/range expansion still needs its
+own evidence. See the current handoff for ordered acceptance criteria.
+
 ## 1. Native runtime acceptance
 
 Source .58 qualifies real-Wry snapshot IPC/events; .59 qualifies actual commands

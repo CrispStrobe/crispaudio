@@ -1,5 +1,5 @@
 {
-  "version": "0.13.62",
+  "version": "0.13.63",
   "date": "2026-10-19",
   "hardwareOpened": false,
   "nativeSourceUiEnabled": "Opt-in Mac candidate: Native \u00b7 48 kHz; Rendered default",
@@ -75,6 +75,12 @@
     "monitorLimiter": true,
     "monitorOnlyApply": true,
     "liveControlsOneGraph": true,
+    "automaticFxSnapshots": 14,
+    "snapshotRate": 44100,
+    "snapshotDidNotPrepareApply": true,
+    "snapshotPixelsExact": true,
+    "snapshotFaultKeepsNativePlaying": true,
+    "retainedSnapshotInputs": 0,
     "channelChangeStops": true,
     "renderStopsNative": true,
     "originalAndOneUndo": true,
@@ -119,16 +125,8 @@
     "Generated 997/9701-Hz signal with impulse inside the captured interval; fresh 48-kHz processing reference and separate source-rate processing comparison"
   ],
   "validation": {
-    "frontend": {
-      "passed": 2220,
-      "files": 233,
-      "workers": 2,
-      "timeoutSeconds": 60
-    },
-    "focusedFrontend": {
-      "passed": 76,
-      "files": 4
-    },
+    "frontend": "2243 tests in 236 files pass",
+    "focusedFrontend": "23 new snapshot renderer/hook/media-job cases included in the passing full suite",
     "productionBuild": "passed",
     "fullLint": "passed",
     "finalRunnerLint": "passed",
@@ -139,39 +137,34 @@
       "rerun": false,
       "note": "No Rust worker/driver/guard changes or rebuild. Existing guarded executable reused; all four strong guard symbols checked before each browser run."
     },
-    "currentBrowserDsp": {
-      "sessionsJoined": 72,
-      "runs": 3,
-      "retainedBytes": 0,
-      "retainedSnapshots": 0,
-      "canonicalSignalMaxError": 0,
-      "applyMaxError": 0
-    },
+    "currentBrowserDsp": "Three final actual React/null-DSP runs: 44.1-kHz mono/stereo and 48-kHz stereo; 24 sessions closed each, zero retained snapshots/bytes or display inputs; exact waveform pixels and Apply; snapshot-only failure leaves native playing",
     "fullTauriAppTests": "Not rerun; production Rust/DSP/app commands unchanged; .59 baseline remains separate"
   },
   "semantics": {
     "admission": "One contiguous all-channel selection of at least 2048 source samples in an unretimed mono/stereo 44.1/48-kHz clip up to 120 seconds",
     "monitor": "Initially at most -12 dB; private -1 dBFS sample-peak limiter, not true peak",
     "apply": "Fresh whole-clip helper pass; splice raw samples only inside selection, retaining every outside sample, channel count, original source/offset and one Undo. Monitor controls excluded.",
-    "waveformAndAnalysis": "Source/prepared snapshots; no live native waveform claim",
+    "waveformAndAnalysis": "Automatic display-only source-rate helper snapshots after 350 ms debounce, 64 MiB PCM estimate, selected-sample splice, Original dry and source fallback on pending/limited/error. Snapshot pixels match fresh rendered samples exactly, without monitoring gain/limiter. No project mutation or Apply preparation; analysis still uses source/prepared PCM. Fresh source-rate/offline snapshots can differ from native 48-kHz/loop history.",
     "fault": "Visible error; explicit Rendered recovery, no automatic fallback",
     "mono": "Monitor duplicates the mono channel at unity into stereo before panning. Prepared helper output and Apply remain mono; Undo restores original source ID and untouched samples.",
     "selection": "Half-open source-sample range; bounds round once to 48-kHz clock. Relative cursor is anchored to rounded native start. Clip history retained; loops preserve DSP history; no tail after selected end.",
     "processingRate": "Native resamples source PCM to 48 kHz before FX. Rendered processes at original source rate. Apply preserves source rate and raw prepared samples. Rate-dependent effects may differ; mode label/help make the fixed native rate explicit.",
-    "qualificationTolerance": "Canonical changing-signal native vs fresh 48-kHz helper reference: limit 1e-6, measured zero. Constant delay vs source-rate render converted for listening: limit 1e-5 at 44.1 kHz, measured 7.092952728271484e-6; 48-kHz limit 1e-6, measured zero. Different-rate changing-signal render difference is a separate reported metric, not a claimed equivalence."
+    "qualificationTolerance": "Canonical changing-signal native vs fresh 48-kHz helper reference: limit 1e-6, measured zero. Constant delay vs source-rate render converted for listening: limit 1e-5 at 44.1 kHz, measured 7.092952728271484e-6; 48-kHz limit 1e-6, measured zero. Different-rate changing-signal render difference is a separate reported metric, not a claimed equivalence.",
+    "snapshotOwnership": "Serialized cancellable jobs, including across editor replacement; explicit Prepare waits for cancellation/cleanup. Decoded clip PCM uses temporary conversion input at offset zero; inputs always rolled back and outputs removed. Optional mediaJob late-result disposal. No monitor or output/capture command used by snapshot renderer."
   },
   "limits": [
     "This browser check substitutes command dispatch/owner identity/synthetic time; .59 actual MockRuntime command/DSP and .58 actual Wry snapshot results are separate evidence.",
     "No WebKit/Core Audio device, clock, timestamp, hotplug, latency, physical listening or sustained-load acceptance",
     "Short trusted fixtures; no arbitrary plug-in/process-mode equivalence",
     "375-pixel desktop Chromium in EN/DE is not physical iOS acceptance",
-    "Other source rates, multiple ranges and individual channels remain gated. No live native waveform or original-based recipe reprocessing."
+    "Other source rates, multiple ranges and individual channels remain gated. No live native waveform or original-based recipe reprocessing.",
+    "Waveform fixture uses actual helper DSP and temporary files but mocks Tauri filesystem/conversion command wrappers. Production window ownership, filesystem ACL enforcement and signed sandbox acceptance are not established by this browser run."
   ],
   "next": [
-    "Bounded versioned native FX waveform snapshots through a helper/offline graph, with honest processing-rate/snapshot labels",
-    "Original-based recipe reprocessing with offsets, retained assets, Apply/Undo/Redo/reopen and stale-result protection",
-    "Separately qualified other rates and explicit multiple-range/individual-channel semantics",
-    "Full actual Wry playback and physical/platform acceptance; long sessions/memory, monitoring/plug-in UX, sessions/delivery, restoration/recorded-audio timing"
+    "Original-based noncumulative saved-effect recipe editing, including source offset/range mapping, one Undo/Redo, reopen, stale results and owned staging; mixed operation journals must not lose earlier edits.",
+    "Separately qualify other rates, individual channels and multiple intervals before expanding native admission.",
+    "Continue long-session/memory, monitoring/plugin UX, sessions/delivery and restoration/recorded-audio timing in the accepted roadmap.",
+    "Actual Wry playback/product integration, physical device/timing/load and signed/mobile acceptance remain separate."
   ],
   "distribution": {
     "installedAppsUpdated": false,
@@ -179,114 +172,6 @@
     "appleUpload": false
   },
   "channelRuns": [
-    {
-      "sourceRate": 44100,
-      "sourceChannels": 1,
-      "rateQualification": {
-        "sourceRate": 44100,
-        "outputRate": 48000,
-        "sourceFrames": 44100,
-        "renderedRate": 44100,
-        "renderedFrames": 44100,
-        "convertedFrames": 48002,
-        "outputFrames": 48000,
-        "sourceRateRenderDifference": 0.01616312563419342,
-        "startSample": 13672,
-        "endSample": 36602,
-        "startFrame": 14881,
-        "endFrame": 39839,
-        "loopError": 0,
-        "finiteError": 0,
-        "originalsIntact": true,
-        "finiteEndedOnce": true,
-        "edgeCases": [
-          {
-            "name": "whole",
-            "startFrame": 0,
-            "endFrame": 48000,
-            "renderedFrames": 48000,
-            "endedOnce": true,
-            "helpersClosed": true
-          },
-          {
-            "name": "minimum-head",
-            "startFrame": 0,
-            "endFrame": 2229,
-            "renderedFrames": 2229,
-            "endedOnce": true,
-            "helpersClosed": true
-          },
-          {
-            "name": "minimum-tail",
-            "startFrame": 45771,
-            "endFrame": 48000,
-            "renderedFrames": 2229,
-            "endedOnce": true,
-            "helpersClosed": true
-          }
-        ],
-        "finiteCompletionCount": 4
-      },
-      "partialSelection": true,
-      "shortAndMultipleRejected": true,
-      "clipOffset": 0.5,
-      "range": [
-        11026,
-        33074
-      ],
-      "selectedDelayHistory": true,
-      "selectedDelayParity": {
-        "error": 7.092952728271484e-06,
-        "first": 0.25,
-        "loopMaxDifference": 0
-      },
-      "delayTolerance": 1e-05,
-      "finiteEnd": true,
-      "applyRate": 44100,
-      "applyChannels": 1,
-      "applySampleError": 0,
-      "sharedPlayStop": true,
-      "defaultRendered": true,
-      "monitorLimiter": true,
-      "monitorOnlyApply": true,
-      "liveControlsOneGraph": true,
-      "channelChangeStops": true,
-      "renderStopsNative": true,
-      "originalAndOneUndo": true,
-      "pendingStartReplacement": true,
-      "faultStaysNative": true,
-      "explicitRenderedRecovery": true,
-      "inputBusyRefused": true,
-      "outputChangeStops": true,
-      "recordingStops": true,
-      "otherAuditionStops": true,
-      "arrangementStartsStop": true,
-      "loopChangeStops": true,
-      "rangeChangeStops": true,
-      "bufferReplacementStops": true,
-      "arrangementJoined": true,
-      "resetStops": true,
-      "projectChangeStops": true,
-      "responsiveWidths": [
-        1440,
-        375
-      ],
-      "responsiveLanguages": [
-        "en",
-        "de"
-      ],
-      "lockStops": true,
-      "closeJoins": true,
-      "stats": {
-        "bytes": 0,
-        "closed": 24,
-        "hardware": false,
-        "sessions": 0,
-        "snapshots": 0,
-        "started": 24
-      },
-      "hardware": false
-    },
     {
       "sourceRate": 44100,
       "sourceChannels": 2,
@@ -358,6 +243,126 @@
       "monitorLimiter": true,
       "monitorOnlyApply": true,
       "liveControlsOneGraph": true,
+      "automaticFxSnapshots": 14,
+      "snapshotRate": 44100,
+      "snapshotDidNotPrepareApply": true,
+      "snapshotPixelsExact": true,
+      "snapshotFaultKeepsNativePlaying": true,
+      "retainedSnapshotInputs": 0,
+      "channelChangeStops": true,
+      "renderStopsNative": true,
+      "originalAndOneUndo": true,
+      "pendingStartReplacement": true,
+      "faultStaysNative": true,
+      "explicitRenderedRecovery": true,
+      "inputBusyRefused": true,
+      "outputChangeStops": true,
+      "recordingStops": true,
+      "otherAuditionStops": true,
+      "arrangementStartsStop": true,
+      "loopChangeStops": true,
+      "rangeChangeStops": true,
+      "bufferReplacementStops": true,
+      "arrangementJoined": true,
+      "resetStops": true,
+      "projectChangeStops": true,
+      "responsiveWidths": [
+        1440,
+        375
+      ],
+      "responsiveLanguages": [
+        "en",
+        "de"
+      ],
+      "lockStops": true,
+      "closeJoins": true,
+      "stats": {
+        "bytes": 0,
+        "closed": 24,
+        "hardware": false,
+        "sessions": 0,
+        "snapshots": 0,
+        "started": 24
+      },
+      "hardware": false
+    },
+    {
+      "sourceRate": 44100,
+      "sourceChannels": 1,
+      "rateQualification": {
+        "sourceRate": 44100,
+        "outputRate": 48000,
+        "sourceFrames": 44100,
+        "renderedRate": 44100,
+        "renderedFrames": 44100,
+        "convertedFrames": 48002,
+        "outputFrames": 48000,
+        "sourceRateRenderDifference": 0.01616312563419342,
+        "startSample": 13672,
+        "endSample": 36602,
+        "startFrame": 14881,
+        "endFrame": 39839,
+        "loopError": 0,
+        "finiteError": 0,
+        "originalsIntact": true,
+        "finiteEndedOnce": true,
+        "edgeCases": [
+          {
+            "name": "whole",
+            "startFrame": 0,
+            "endFrame": 48000,
+            "renderedFrames": 48000,
+            "endedOnce": true,
+            "helpersClosed": true
+          },
+          {
+            "name": "minimum-head",
+            "startFrame": 0,
+            "endFrame": 2229,
+            "renderedFrames": 2229,
+            "endedOnce": true,
+            "helpersClosed": true
+          },
+          {
+            "name": "minimum-tail",
+            "startFrame": 45771,
+            "endFrame": 48000,
+            "renderedFrames": 2229,
+            "endedOnce": true,
+            "helpersClosed": true
+          }
+        ],
+        "finiteCompletionCount": 4
+      },
+      "partialSelection": true,
+      "shortAndMultipleRejected": true,
+      "clipOffset": 0.5,
+      "range": [
+        11026,
+        33074
+      ],
+      "selectedDelayHistory": true,
+      "selectedDelayParity": {
+        "error": 7.092952728271484e-06,
+        "first": 0.25,
+        "loopMaxDifference": 0
+      },
+      "delayTolerance": 1e-05,
+      "finiteEnd": true,
+      "applyRate": 44100,
+      "applyChannels": 1,
+      "applySampleError": 0,
+      "sharedPlayStop": true,
+      "defaultRendered": true,
+      "monitorLimiter": true,
+      "monitorOnlyApply": true,
+      "liveControlsOneGraph": true,
+      "automaticFxSnapshots": 14,
+      "snapshotRate": 44100,
+      "snapshotDidNotPrepareApply": true,
+      "snapshotPixelsExact": true,
+      "snapshotFaultKeepsNativePlaying": true,
+      "retainedSnapshotInputs": 0,
       "channelChangeStops": true,
       "renderStopsNative": true,
       "originalAndOneUndo": true,
@@ -466,6 +471,12 @@
       "monitorLimiter": true,
       "monitorOnlyApply": true,
       "liveControlsOneGraph": true,
+      "automaticFxSnapshots": 14,
+      "snapshotRate": 48000,
+      "snapshotDidNotPrepareApply": true,
+      "snapshotPixelsExact": true,
+      "snapshotFaultKeepsNativePlaying": true,
+      "retainedSnapshotInputs": 0,
       "channelChangeStops": true,
       "renderStopsNative": true,
       "originalAndOneUndo": true,
@@ -723,6 +734,335 @@
           "sessions": 0,
           "snapshots": 0,
           "started": 19
+        },
+        "hardware": false
+      }
+    ]
+  },
+  "priorSourceRateQualification": {
+    "version": "0.13.62",
+    "channelRuns": [
+      {
+        "sourceRate": 44100,
+        "sourceChannels": 1,
+        "rateQualification": {
+          "sourceRate": 44100,
+          "outputRate": 48000,
+          "sourceFrames": 44100,
+          "renderedRate": 44100,
+          "renderedFrames": 44100,
+          "convertedFrames": 48002,
+          "outputFrames": 48000,
+          "sourceRateRenderDifference": 0.01616312563419342,
+          "startSample": 13672,
+          "endSample": 36602,
+          "startFrame": 14881,
+          "endFrame": 39839,
+          "loopError": 0,
+          "finiteError": 0,
+          "originalsIntact": true,
+          "finiteEndedOnce": true,
+          "edgeCases": [
+            {
+              "name": "whole",
+              "startFrame": 0,
+              "endFrame": 48000,
+              "renderedFrames": 48000,
+              "endedOnce": true,
+              "helpersClosed": true
+            },
+            {
+              "name": "minimum-head",
+              "startFrame": 0,
+              "endFrame": 2229,
+              "renderedFrames": 2229,
+              "endedOnce": true,
+              "helpersClosed": true
+            },
+            {
+              "name": "minimum-tail",
+              "startFrame": 45771,
+              "endFrame": 48000,
+              "renderedFrames": 2229,
+              "endedOnce": true,
+              "helpersClosed": true
+            }
+          ],
+          "finiteCompletionCount": 4
+        },
+        "partialSelection": true,
+        "shortAndMultipleRejected": true,
+        "clipOffset": 0.5,
+        "range": [
+          11026,
+          33074
+        ],
+        "selectedDelayHistory": true,
+        "selectedDelayParity": {
+          "error": 7.092952728271484e-06,
+          "first": 0.25,
+          "loopMaxDifference": 0
+        },
+        "delayTolerance": 1e-05,
+        "finiteEnd": true,
+        "applyRate": 44100,
+        "applyChannels": 1,
+        "applySampleError": 0,
+        "sharedPlayStop": true,
+        "defaultRendered": true,
+        "monitorLimiter": true,
+        "monitorOnlyApply": true,
+        "liveControlsOneGraph": true,
+        "channelChangeStops": true,
+        "renderStopsNative": true,
+        "originalAndOneUndo": true,
+        "pendingStartReplacement": true,
+        "faultStaysNative": true,
+        "explicitRenderedRecovery": true,
+        "inputBusyRefused": true,
+        "outputChangeStops": true,
+        "recordingStops": true,
+        "otherAuditionStops": true,
+        "arrangementStartsStop": true,
+        "loopChangeStops": true,
+        "rangeChangeStops": true,
+        "bufferReplacementStops": true,
+        "arrangementJoined": true,
+        "resetStops": true,
+        "projectChangeStops": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "lockStops": true,
+        "closeJoins": true,
+        "stats": {
+          "bytes": 0,
+          "closed": 24,
+          "hardware": false,
+          "sessions": 0,
+          "snapshots": 0,
+          "started": 24
+        },
+        "hardware": false
+      },
+      {
+        "sourceRate": 44100,
+        "sourceChannels": 2,
+        "rateQualification": {
+          "sourceRate": 44100,
+          "outputRate": 48000,
+          "sourceFrames": 44100,
+          "renderedRate": 44100,
+          "renderedFrames": 44100,
+          "convertedFrames": 48002,
+          "outputFrames": 48000,
+          "sourceRateRenderDifference": 0.01699584722518921,
+          "startSample": 13672,
+          "endSample": 36602,
+          "startFrame": 14881,
+          "endFrame": 39839,
+          "loopError": 0,
+          "finiteError": 0,
+          "originalsIntact": true,
+          "finiteEndedOnce": true,
+          "edgeCases": [
+            {
+              "name": "whole",
+              "startFrame": 0,
+              "endFrame": 48000,
+              "renderedFrames": 48000,
+              "endedOnce": true,
+              "helpersClosed": true
+            },
+            {
+              "name": "minimum-head",
+              "startFrame": 0,
+              "endFrame": 2229,
+              "renderedFrames": 2229,
+              "endedOnce": true,
+              "helpersClosed": true
+            },
+            {
+              "name": "minimum-tail",
+              "startFrame": 45771,
+              "endFrame": 48000,
+              "renderedFrames": 2229,
+              "endedOnce": true,
+              "helpersClosed": true
+            }
+          ],
+          "finiteCompletionCount": 4
+        },
+        "partialSelection": true,
+        "shortAndMultipleRejected": true,
+        "clipOffset": 0.5,
+        "range": [
+          11026,
+          33074
+        ],
+        "selectedDelayHistory": true,
+        "selectedDelayParity": {
+          "error": 7.092952728271484e-06,
+          "first": 0.25,
+          "loopMaxDifference": 0
+        },
+        "delayTolerance": 1e-05,
+        "finiteEnd": true,
+        "applyRate": 44100,
+        "applyChannels": 2,
+        "applySampleError": 0,
+        "sharedPlayStop": true,
+        "defaultRendered": true,
+        "monitorLimiter": true,
+        "monitorOnlyApply": true,
+        "liveControlsOneGraph": true,
+        "channelChangeStops": true,
+        "renderStopsNative": true,
+        "originalAndOneUndo": true,
+        "pendingStartReplacement": true,
+        "faultStaysNative": true,
+        "explicitRenderedRecovery": true,
+        "inputBusyRefused": true,
+        "outputChangeStops": true,
+        "recordingStops": true,
+        "otherAuditionStops": true,
+        "arrangementStartsStop": true,
+        "loopChangeStops": true,
+        "rangeChangeStops": true,
+        "bufferReplacementStops": true,
+        "arrangementJoined": true,
+        "resetStops": true,
+        "projectChangeStops": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "lockStops": true,
+        "closeJoins": true,
+        "stats": {
+          "bytes": 0,
+          "closed": 24,
+          "hardware": false,
+          "sessions": 0,
+          "snapshots": 0,
+          "started": 24
+        },
+        "hardware": false
+      },
+      {
+        "sourceRate": 48000,
+        "sourceChannels": 2,
+        "rateQualification": {
+          "sourceRate": 48000,
+          "outputRate": 48000,
+          "sourceFrames": 48000,
+          "renderedRate": 48000,
+          "renderedFrames": 48000,
+          "convertedFrames": 48002,
+          "outputFrames": 48000,
+          "sourceRateRenderDifference": 0,
+          "startSample": 14881,
+          "endSample": 39839,
+          "startFrame": 14881,
+          "endFrame": 39839,
+          "loopError": 0,
+          "finiteError": 0,
+          "originalsIntact": true,
+          "finiteEndedOnce": true,
+          "edgeCases": [
+            {
+              "name": "whole",
+              "startFrame": 0,
+              "endFrame": 48000,
+              "renderedFrames": 48000,
+              "endedOnce": true,
+              "helpersClosed": true
+            },
+            {
+              "name": "minimum-head",
+              "startFrame": 0,
+              "endFrame": 2048,
+              "renderedFrames": 2048,
+              "endedOnce": true,
+              "helpersClosed": true
+            },
+            {
+              "name": "minimum-tail",
+              "startFrame": 45952,
+              "endFrame": 48000,
+              "renderedFrames": 2048,
+              "endedOnce": true,
+              "helpersClosed": true
+            }
+          ],
+          "finiteCompletionCount": 4
+        },
+        "partialSelection": true,
+        "shortAndMultipleRejected": true,
+        "clipOffset": 0.5,
+        "range": [
+          12000,
+          36000
+        ],
+        "selectedDelayHistory": true,
+        "selectedDelayParity": {
+          "error": 0,
+          "first": 0.25,
+          "loopMaxDifference": 0
+        },
+        "delayTolerance": 1e-06,
+        "finiteEnd": true,
+        "applyRate": 48000,
+        "applyChannels": 2,
+        "applySampleError": 0,
+        "sharedPlayStop": true,
+        "defaultRendered": true,
+        "monitorLimiter": true,
+        "monitorOnlyApply": true,
+        "liveControlsOneGraph": true,
+        "channelChangeStops": true,
+        "renderStopsNative": true,
+        "originalAndOneUndo": true,
+        "pendingStartReplacement": true,
+        "faultStaysNative": true,
+        "explicitRenderedRecovery": true,
+        "inputBusyRefused": true,
+        "outputChangeStops": true,
+        "recordingStops": true,
+        "otherAuditionStops": true,
+        "arrangementStartsStop": true,
+        "loopChangeStops": true,
+        "rangeChangeStops": true,
+        "bufferReplacementStops": true,
+        "arrangementJoined": true,
+        "resetStops": true,
+        "projectChangeStops": true,
+        "responsiveWidths": [
+          1440,
+          375
+        ],
+        "responsiveLanguages": [
+          "en",
+          "de"
+        ],
+        "lockStops": true,
+        "closeJoins": true,
+        "stats": {
+          "bytes": 0,
+          "closed": 24,
+          "hardware": false,
+          "sessions": 0,
+          "snapshots": 0,
+          "started": 24
         },
         "hardware": false
       }

@@ -54,6 +54,9 @@
         },
         {
           "path": "$APPDATA/mix-preview-*.wav"
+        },
+        {
+          "path": "$APPCACHE/plugin-previews/preview-*.wav"
         }
       ]
     },

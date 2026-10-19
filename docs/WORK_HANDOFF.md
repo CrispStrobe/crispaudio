@@ -1,7 +1,7 @@
 # Engineering checkpoint and remaining work
 
 Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [44.1-kHz source audition, 0.13.62](#441-khz-source-audition--01362-checkpoint). The active product
+Current checkpoint: [native FX waveform snapshots, 0.13.63](#native-fx-waveform-snapshots--01363-checkpoint). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -22,7 +22,7 @@ historical records, not a current completion checklist.
 
 ## What is ready
 
-The installed baseline remains 0.13.33. Source 0.13.62 adds 44.1-kHz source audition
+The installed baseline remains 0.13.33. Source 0.13.63 adds automatic bounded native FX waveform snapshots; see the latest checkpoint below. Source 0.13.62 adds 44.1-kHz source audition
 on the native 48-kHz clock; see the latest checkpoint below. Source 0.13.61 admits one contiguous native
 source selection; see the latest checkpoint below. Source 0.13.60 extends opt-in native source
 audition to whole mono 48-kHz clips; see the latest checkpoint below. Source 0.13.59 combines actual command
@@ -1620,3 +1620,80 @@ and reused; its .61 21-test result remains a baseline, not a new standalone run.
 
 The installed baseline/recording preview remain untouched. Main-branch CI is new
 at push; no install, release tag, physical audio check or Apple upload is included.
+
+
+## Native FX waveform snapshots — 0.13.63 checkpoint
+
+Native mode now refreshes the waveform after a 350 ms parameter pause, using a
+fresh helper pass at the source rate. It keeps the running native graph intact.
+The **FX · rate** badge identifies current processed PCM; Original shows dry audio,
+and updating/limited/error states show the source instead of stale effect output.
+Only selected samples are spliced into the display; monitor gain and protection
+are excluded. This does not enable Apply or change project audio, analysis or
+loudness matching. Source-rate renders can differ from instantaneous native
+48-kHz processing, real-time mode and retained loop history.
+
+Implementation:
+- `SourcePluginWaveform` admits mono/stereo 44.1/48-kHz clip PCM within a 64 MiB
+  allocation estimate, including encode/IPC/decode copies and helper latency
+  padding. Arbitrary plug-in internal allocation is outside the PCM estimate.
+  Large clips keep their source waveform; explicit Render preview stays available.
+- It encodes the decoded clip window at the source rate into an owned temporary
+  conversion transaction, renders from offset zero with cloned base state/current
+  parameters, checks result metadata and file size before read/decode, validates
+  PCM shape/finiteness and removes input/output files. It never retains display
+  inputs as recordings or project/Undo assets, even after late cancellation.
+- `useSourcePluginWaveform` debounces/version-checks requests, drops stale display
+  PCM immediately, cancels disabled/recording/arrangement/Original/unmounted work,
+  and serializes replacements. A module barrier also serializes across editor
+  replacement; explicit Render preview waits for cancellation/cleanup to settle.
+- `mediaJob` has optional cleanup for a successful result arriving after abort.
+  The narrowly scoped app-cache preview removal permission also fixes cleanup
+  availability in the next built Tauri app. Existing installed apps are untouched.
+- Snapshot faults remain local display status; they do not become playback faults.
+  No hardware output/capture path is used to render waveform PCM.
+
+Next ordered work:
+1. **Original-based effect recipe recall.** Add an explicit edit/reprocess action
+   for saved source FX, resolving retained source ID/offset and original-rate PCM
+   before a fresh pass from saved base state/parameters. Match the existing Restore
+   mapping (`sourceEdit.offset + clip.sourceOffset`) and test trimmed/split windows.
+   Parameter edits must not
+   reapply the effect cumulatively to its already processed output. Do not mutate
+   the arrangement while recalling/auditioning. Apply must preserve timing, channel
+   shape, outside samples, retained originals and one Undo/Redo transaction.
+   Cover close/project/source/selection changes, helper failure/cancellation,
+   owned staging cleanup, save/reopen and missing originals/plugins. Scope a first
+   single-plugin-recipe slice explicitly; mixed operation journals must replay
+   earlier operations correctly or remain unavailable with a clear explanation,
+   rather than silently dropping those edits. Keep retimed cases gated until their
+   source-coordinate/range mapping is implemented and verified.
+2. **Separate source admission expansions.** Other rates need conversion length,
+   rounding, latency/state and fresh Apply tests. Individual channels and multiple
+   ranges need defined graph history, cursor/loop and selected Apply semantics.
+   Keep current native guards; offline 8–192-kHz plan support is not qualification.
+3. **Accepted workstation phases.** Continue measured long-session/memory work,
+   monitoring/plug-in UX, session/delivery and restoration/recorded-audio timing
+   per AUDIO_WORKSTATION_ROADMAP.md. Original-based recall does not complete these.
+4. **Platform evidence.** Actual Wry playback/product registration, physical device
+   timing/listening/load, arbitrary plug-ins and signed/mobile acceptance remain
+   separate. Preserve the installed baseline and isolated recording preview.
+
+Validation: **2,243 frontend tests in 236 files**, production build, full/final
+runner lint and 39 release checks pass. The 23 new cases cover renderer admission,
+selection/shape/finiteness, cancellation/cleanup, cross-editor serialization, stale
+identity and late successful media-job disposal. No Rust code changed or native
+test suite was rerun; prior native results remain labelled baselines. Both .62
+general CI and iOS checks succeeded.
+
+Final actual editor/null-DSP runs pass at 44.1-kHz mono/stereo and 48-kHz stereo:
+**24 sessions joined each**, zero retained native snapshots/bytes and zero display
+inputs. Waveform pixels match a fresh source-rate render exactly, with selected
+samples spliced into unchanged outside PCM and no monitor gain printed. Injected
+snapshot-only failure leaves native playback running; a later parameter edit
+recovers the waveform. Existing exact Apply/original/Undo, dynamic rate-reference,
+range/clock, lifecycle/fault and EN/DE 1440/375 desktop Chromium checks pass.
+The fixture uses actual trusted AU/VST3 helpers and temporary files, with mocked
+Tauri filesystem/conversion wrappers; it does not establish production ACL,
+window ownership or signed sandbox acceptance. [Evidence](evidence/source-native-ui.json).
+No install, release tag or Apple upload is part of this source change.

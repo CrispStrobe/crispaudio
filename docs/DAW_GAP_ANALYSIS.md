@@ -4,6 +4,12 @@ Reviewed 16 October 2026 against local 0.13.26 and current official product page
 This is a workflow and architecture comparison, not a claim of feature parity or
 an independent listening/performance benchmark. Competitor editions differ.
 
+Source progress **0.13.63**: native source FX now refresh a bounded, labelled
+source-rate waveform snapshot while playback continues. This closes automatic
+external-FX visualization within the admitted snapshot budget, not original-based
+recipe recall, arbitrary source formats, long-session memory or physical native
+acceptance. Current next work is scoped in [WORK_HANDOFF.md](WORK_HANDOFF.md).
+
 ## Product boundary
 
 | Product | Owns | Exchange with CrispAudio |

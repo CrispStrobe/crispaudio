@@ -1,6 +1,6 @@
 # Distribution and platform status — 2026-10-19
 
-Latest source: [0.13.62, 44.1-kHz source audition](#441-khz-source-audition--01362-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
+Latest source: [0.13.63, native FX waveform snapshots](#native-fx-waveform-snapshots--01363-source-candidate). Installed baseline: 0.13.33; isolated recording preview: 0.13.41.
 
 Pushing `main` runs CI and the unsigned iOS simulator check. It does **not** submit
 an iOS or macOS build to Apple. Repository web deployments use their own triggers;
@@ -4907,3 +4907,32 @@ and reused; its .61 21-test result remains a baseline, not a new standalone run.
 
 The installed baseline/recording preview remain untouched. Main-branch CI is new
 at push; no install, release tag, physical audio check or Apple upload is included.
+
+
+## Native FX waveform snapshots — 0.13.63 source candidate
+
+Native source FX refresh a bounded source-rate waveform snapshot while the graph
+keeps playing. Automatic display jobs use a 350 ms debounce, a 64 MiB PCM estimate,
+versioned cancellation, cross-editor serialization and temporary-file rollback.
+The current snapshot has a compact FX/rate badge; Original, pending, large and
+failed previews show dry source audio. Display snapshots never enable Apply or
+change analysis/project audio. Render preview remains the explicit preparation
+step, and joins outstanding display work before rendering. A narrow app-cache
+preview removal permission is included for the next built desktop app.
+
+Source-rate/offline snapshots can differ from native 48-kHz real-time processing
+and loop history. No native DSP, driver or hardware code changed. Installed .33
+and recording preview .41 remain untouched. Next: original-based recipe recall,
+then the separately scoped source-admission and workstation work in the current
+handoff. This source candidate does not constitute physical/signed/mobile acceptance.
+
+Validation: **2,243 frontend tests in 236 files**, production build, full/final
+runner lint and 39 release checks pass. Three actual editor/null-DSP runs at
+44.1-kHz mono/stereo and 48-kHz stereo each close 24 sessions with zero retained
+snapshots/bytes or display inputs. Exact waveform pixels, snapshot-only failure
+isolation/recovery, source-rate Apply and prior lifecycle/range checks pass.
+Filesystem/conversion wrappers are mocked in this browser fixture; production
+ACL and signed sandbox acceptance remain separate. Prior native suite results
+remain baselines; no Rust code changed or native suite was rerun. Both .62 CI
+and iOS checks succeeded; refresh the new workflows after pushing this checkpoint.
+[Evidence](evidence/source-native-ui.json).

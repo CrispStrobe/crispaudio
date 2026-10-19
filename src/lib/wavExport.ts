@@ -113,5 +113,9 @@ export async function encodeAudioBufferWav(buffer: AudioBuffer, bitDepth: number
 /** Immutable source storage preserves float headroom; delivery PCM keeps its chosen depth. */
 export async function encodeSourceBufferWav(buffer:AudioBuffer,signal?:AbortSignal):Promise<Blob>{
  const channels=Array.from({length:buffer.numberOfChannels},(_,c)=>buffer.getChannelData(c));
- return encodeWavWorker(channels,buffer.sampleRate,32,'ieee-float',signal);
+ return encodeSourceChannelsWav(channels,buffer.sampleRate,signal);
+}
+/** Float source storage without allocating another AudioBuffer for a clip view. */
+export async function encodeSourceChannelsWav(channels:Float32Array[],sampleRate:number,signal?:AbortSignal):Promise<Blob>{
+ return encodeWavWorker(channels,sampleRate,32,'ieee-float',signal);
 }
