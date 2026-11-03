@@ -1,7 +1,8 @@
 # Engineering checkpoint and remaining work
 
-Updated 2026-10-19. This is the entry point for a fresh agent.
-Current checkpoint: [owned Source Editor Apply, 0.13.68](#owned-source-editor-apply--01368-checkpoint). The active product
+Updated 2026-11-03. This is the entry point for a fresh agent.
+Current checkpoint: [CrispASR audio tools](#crispasr-audio-tools--checkpoint-after-01368)
+(after [owned Source Editor Apply, 0.13.68](#owned-source-editor-apply--01368-checkpoint)). The active product
 roadmap is [PLAN.md](../PLAN.md); the broader accepted scope is
 [DAW_GAP_ANALYSIS.md](DAW_GAP_ANALYSIS.md). Old milestone notes in those files are
 historical records, not a current completion checklist.
@@ -16,7 +17,8 @@ assets must remain protected. Existing rejection of unverifiable histories remai
 valid. Do not equate format simplification with permission to delete media.
 This decision supersedes migration proposals in historical checkpoint notes.
 
-Ordinary Apply publication is implemented in 0.13.68. The next implementation is
+Ordinary Apply publication is implemented in 0.13.68. CrispASR audio tools follow
+it (lanes C1–C10 below). The next source implementation is still
 **ordinary SourcePluginEffects owned preview input staging**, scoped below. Then broaden current-format
 ordered replay and continue the accepted workstation roadmap.
 
@@ -2103,3 +2105,137 @@ sessions; synthetic IPC/FS wrappers are not actual Wry/device acceptance. Source
 logic was frozen before final checks; no Rust/DSP/native rebuild or installed-app
 changes. Previous 0.13.67 workflows were cancelled by the newer documentation push;
 0.13.66 both passed. Refresh current push workflows rather than assuming green CI.
+
+## CrispASR audio tools — checkpoint after 0.13.68
+
+Implemented and pushed (commit `68dea6d` on main, follow-ups in this checkpoint).
+Read [CRISPASR_AUDIO.md](CRISPASR_AUDIO.md) first. Summary for orientation:
+
+- `media/src/crispasr.rs` loads `libcrispasr` in-process through its C ABI
+  (`dlopen`/`LoadLibraryW`; no subprocess, no Cargo/CMake dependency). Audio-only:
+  stem separation, generative speech regeneration (Sidon), Silero voice regions,
+  Beat This! beats. ASR/TTS creation stays in CrisperWeaver. Library lookup:
+  explicit path → `CRISPASR_LIB` → beside the executable / `../Frameworks` →
+  (debug builds only) `src-tauri/generated/crispasr`.
+- CLI: `separate-audio`, `regenerate-speech`, `speech-regions`, `detect-beats`;
+  `edit-project` recipes `tighten-pauses`, `beat-markers`.
+- Tauri: `crispasr_status`, `crispasr_process`, `crispasr_analyze` (raw planar
+  f32 IPC, cancellable via `cancel_media_job` between chunks).
+- GUI: `src/components/timeline/CrispTools.tsx` (Source editor tools, stem tracks,
+  Tighten pauses in Workspace → Transcript, Detect beats in the musical dialog),
+  `src/lib/crispasr.ts`, `src/audio/plugins/StemTracksCommit.ts`, settings paths
+  in `settingsStore.crispasr`. EN/DE.
+- macOS bundling: `scripts/build-crispasr.sh` builds the pin in
+  `scripts/crispasr-revision.txt` (v0.8.49) with opus/ogg, FFmpeg, curl and
+  CoreML **off** (CrispAudio passes PCM; Glint/Apple decode files) and stages
+  gitignored `src-tauri/generated/crispasr/` (6 relocatable dylibs, ~23 MB,
+  `manifest.json`, `tauri.conf.json` frameworks overlay). `release.yml` macOS
+  jobs and `macos-release.yml` run it and pass `--config …/tauri.conf.json`;
+  `scripts/release/check-macos-app.py` verifies bundled libraries.
+
+Evidence: [evidence/crispasr-audio.json](evidence/crispasr-audio.json).
+
+### Pending lanes (in recommended order)
+
+Every lane is independently doable. Environment variables used below:
+`CRISPASR_BIN` (crispasr CLI from a CrispASR build), `CRISPAUDIO_CLI` (this repo's
+`crispaudio` binary: `cargo build --manifest-path media/Cargo.toml --bin crispaudio`
+with a shared `CARGO_TARGET_DIR`), `CRISPASR_LIB` (a `libcrispasr.dylib`),
+`CRISPASR_MODEL_DIRS` / `CRISPASR_TEST_MODELS` (folders holding the GGUF models
+named in the scripts), `CRISPAUDIO_PLAYWRIGHT_MODULE`, `CRISPAUDIO_CHROME_EXECUTABLE`.
+Models auto-download with `crispasr … -m auto --auto-download` where supported.
+
+**C1 — Complete the separation benchmark (measurement only).**
+`scripts/benchmark-separation.py OUT --music TRACK [--ratios 6,0,-6] [--slow]`
+mixes TTS speech (Piper, MeloTTS, Kokoro; Harvard sentences) with generated
+piano-like music (exact notes) and an optional real instrumental track, separates
+with mel-band-roformer, htdemucs and mini-bs-roformer via `crispaudio
+separate-audio`, and reports SI-SDR, leakage, WER (Parakeet TDT v3 q4_k, Whisper
+large-v3-turbo, Qwen3-ASR 0.6B) and note F1 (Basic Pitch, piano-transcription,
+Onsets & Frames, MT3; `--slow` adds hFT-Transformer). Status: the first full run
+built the 51 s three-voice speech track, then `crispaudio separate-audio` died
+with **SIGBUS** on the speech-only leakage step. Rerunning the identical command
+on the same file afterwards succeeded with both the pinned bundle and a newer
+CrispASR build; at the time model files were being removed from the model folders,
+so a model/library file changing under an mmap is the leading but **unconfirmed**
+explanation. To do: rerun the whole script (≈1–2 h at moderate load; outputs
+`results.json` incrementally) with model folders that nobody modifies; if SIGBUS
+recurs, capture a crash report (`~/Library/Logs/DiagnosticReports`) and bisect
+(model file, `CRISPASR_GGUF_MMAP`, Metal vs `-ng`). Then add a results table to
+CRISPASR_AUDIO.md and the evidence JSON. Use a real track you are allowed to use
+locally; never commit it or its path. mini-bs-roformer needs lane C2's library.
+
+**C2 — Bump the CrispASR pin past v0.8.49.** v0.8.49 cannot open
+mini-bs-roformer models ("cannot open model"); support landed in later CrispASR
+commits. When CrispASR tags a release containing it: update
+`scripts/crispasr-revision.txt` (`TAG COMMIT`, the tag's peeled commit from
+`git ls-remote REPO TAG^{}`), run `scripts/build-crispasr.sh`, confirm the
+script's verification passes, rerun `cargo test --lib crispasr -- --include-ignored`
+with `CRISPASR_TEST_MODELS`, and rerun `scripts/test-crispasr-ui.mjs`. Update
+the licence notice `src/lib/licenses/crispasr.txt` from the new tag (LICENSE +
+THIRD_PARTY_NOTICES.txt) and the docs' version mentions. Also map "cannot open
+model" to a clearer message suggesting an unsupported model or older library.
+
+**C3 — First signed macOS run with the bundled library.** Trigger
+`macos-release.yml` by `workflow_dispatch` with `dry_run: true` (no upload).
+Acceptance: the "Build bundled CrispASR library" step succeeds (cache keyed on the
+revision file), `check-macos-app.py` prints "Bundled CrispASR libraries verified
+(6)", `codesign --verify --deep --strict` passes. CI runners have not yet built
+CrispASR; expect the first build to take tens of minutes. Then do lane C4 on that
+signed, sandboxed build.
+
+**C4 — Real Tauri app acceptance.** The browser harness covers React/store/real
+models but not Tauri IPC, the sandbox or security-scoped model files. Build an
+app with the overlay (`npx tauri build --bundles app --config
+src-tauri/generated/crispasr/tauri.conf.json`, separate `CARGO_TARGET_DIR`) or use
+`npm run tauri dev` (debug finds the staged library). Do not replace or disturb an
+installed app or a running native preview; follow HANDOVER.local.md rules. Check:
+library status line, choosing each model through the dialog, every tool once,
+Cancel during separation (takes effect between 30 s chunks), relaunch keeps model
+access (sandboxed builds need the remembered security-scoped resources), Metal
+works inside the sandbox, and Undo/save/reopen of stem tracks and pause edits.
+
+**C5 — Rust tests for the IPC layer.** `src-tauri/src/commands/crispasr.rs`
+parses the `x-crispasr` header and raw body and encodes the stem response inline.
+Extract pure `parse_request(header, bytes)` / `encode_stems(stems)` functions and
+unit-test them (channel/length mismatch, >2 channels, oversized body, UTF-8 stem
+names) against `decodeStems` in `src/lib/crispasr.ts` with a shared fixture.
+
+**C6 — Quality on real material and listening.** Objective numbers exist only for
+synthetic/TTS material (see CRISPASR_AUDIO.md). Qualify on varied real
+recordings (interviews with music beds, noisy field recordings) with a human
+listener; record judgements and failure cases. Beat detection: downbeats on real
+music (synthetic clicks gave inconsistent downbeats, so the UI fell back to
+tempo-only correctly); verify meter/bar-marker results on several real songs.
+
+**C7 — Windows/Linux bundling.** Loader already supports `crispasr.dll` /
+`libcrispasr.so`. Needed: a build script per OS with the same options, Linux
+`$ORIGIN` rpath, Windows dependent-DLL search (use `LoadLibraryExW` with
+`LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS`, otherwise the
+ggml DLLs beside crispasr.dll are not found), Tauri `bundle.resources` (no
+`frameworks` key) and release.yml wiring. iOS cannot `dlopen` a downloaded
+library: it would need a static xcframework link and is out of scope until decided.
+
+**C8 — Finer cancellation.** One CrispASR call per chunk cannot be interrupted
+(the C ABI has abort callbacks for chat sessions only). Option A: smaller chunks
+(costs more overlap). Option B (preferred, owning repo): add an abort callback to
+CrispASR separation/S2S sessions upstream, then poll `jobs::cancelled()` from it.
+
+**C9 — Stem tracks scope.** Separation runs on the clip's visible window only,
+mono/stereo, ≤20 min, ≤8 stems/256 MiB. Not done: multichannel sources, clips
+with native inserts on the stem tracks, retimed/frozen clips (rejected by the
+commit guards), and choosing which stems to add.
+
+**C10 — Pause tightening scope.** Uses the rendered mix; per-track VAD,
+speaker-aware thresholds, and "only between transcript words" are not done.
+Picture projects round cuts inward to frames; blends and locks block edits as in
+range edits.
+
+Validation at this checkpoint: full Vitest **2,407 tests in 244 files** pass
+(run with `--testTimeout=30000` because the machine load was ~38; default 5 s
+timeouts failed only under load, and the affected files pass in isolation),
+production build and lint pass, media crate tests (154) and clippy pass, Tauri
+`cargo check`/clippy pass, `real_models` passes against both a developer CrispASR
+build and the staged pinned bundle, and `scripts/test-crispasr-ui.mjs` passes all
+steps. CI for `68dea6d` was queued at push; refresh workflow results.
+

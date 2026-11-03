@@ -142,3 +142,14 @@ the results with the same semantics as the GUI:
   reduced the log-spectral distance to the clean speech in speech frames from
   65.5 to 35.8 dB and returned pauses to −62.5 dB (clean −63.9 dB), with a 3 ms
   envelope offset. Physical listening and varied real recordings remain open.
+- `scripts/benchmark-separation.py` measures separation against known ground
+  truth: TTS speech (exact text) mixed with generated music (exact notes) and an
+  optional real track at several speech-to-music ratios, scored by SI-SDR,
+  leakage, ASR word error rate (several ASR models) and note-transcription F1
+  (several transcribers) before and after separation. Its first full run was
+  interrupted (see the handoff, lane C1); results are not published yet.
+- The pinned v0.8.49 library cannot open mini-bs-roformer models; use
+  mel-band-roformer or htdemucs until the pin is bumped (handoff lane C2).
+
+Evidence: [evidence/crispasr-audio.json](evidence/crispasr-audio.json). Pending
+work with exact steps: [WORK_HANDOFF.md](WORK_HANDOFF.md#crispasr-audio-tools--checkpoint-after-01368).

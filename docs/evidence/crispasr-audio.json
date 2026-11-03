@@ -1,0 +1,90 @@
+{
+  "checkpoint": "CrispASR audio tools (after 0.13.68)",
+  "date": "2026-11-03",
+  "crispasrPin": {
+    "tag": "v0.8.49",
+    "commit": "d94264379dada437aa4ea9163eb34ffe4554422a",
+    "build": "Release, Metal embedded, portable CPU, opus/ogg/FFmpeg/curl/CoreML off",
+    "bundle": "6 dylibs, ~23 MB, @rpath install names, @loader_path rpath only"
+  },
+  "automated": {
+    "vitest": {
+      "files": 244,
+      "tests": 2407,
+      "note": "run with --testTimeout=30000 at load ~38; 5 s default timeouts failed only under load"
+    },
+    "mediaCrateTests": 154,
+    "realModelsTest": "pass in-process against a developer CrispASR build and the staged pinned bundle (separation, Silero VAD, Beat This!, Sidon)",
+    "lint": "pass",
+    "build": "pass",
+    "clippy": "pass (media, src-tauri)"
+  },
+  "uiHarness": {
+    "script": "scripts/test-crispasr-ui.mjs",
+    "transport": "fixture Tauri bridge running the real crispaudio CLI with the staged library and real models; Tauri IPC, sandbox and installed app not exercised",
+    "separation": {
+      "outsideSelectionMaxError": 0,
+      "insideVsStemMaxError": 0
+    },
+    "stemTracks": {
+      "tracksAdded": 2,
+      "ownedFiles": 2,
+      "undoSteps": 1,
+      "originalMuted": true
+    },
+    "speechRegeneration": {
+      "outsideSelectionMaxError": 0,
+      "channelDifferenceInside": 0,
+      "rmsInside": 0.085
+    },
+    "pauseTightening": {
+      "sample": "CrispASR samples/jfk.wav",
+      "pauses": 3,
+      "removedSeconds": 1.67,
+      "matchesCli": true
+    },
+    "beats": {
+      "syntheticClick120Bpm": "tempo 120 exact; inconsistent model downbeats -> tempo-only, no bar markers"
+    },
+    "germanPhoneWidth": "no horizontal overflow"
+  },
+  "objectiveQuality": {
+    "sample": "CrispASR samples/jfk.wav",
+    "notListening": true,
+    "separationMelBandRoformer": {
+      "input": "speech + synthetic chords/noise bursts",
+      "speechSdrDb": [
+        8.3,
+        22.6
+      ],
+      "musicSdrDb": [
+        -8.3,
+        12.4
+      ]
+    },
+    "sidon": {
+      "input": "speech + white noise",
+      "logSpectralDistanceSpeechFramesDb": [
+        65.5,
+        35.8
+      ],
+      "pauseLevelDb": {
+        "clean": -63.9,
+        "noisy": -3.9,
+        "regenerated": -62.5
+      },
+      "envelopeOffsetMs": -2.9
+    }
+  },
+  "benchmark": {
+    "script": "scripts/benchmark-separation.py",
+    "status": "incomplete: SIGBUS in crispaudio separate-audio during the first full run; not reproduced on rerun of the same step; see WORK_HANDOFF lane C1"
+  },
+  "notQualified": [
+    "Tauri IPC transport and sandbox",
+    "signed/Store build with bundled library",
+    "physical listening and varied real recordings",
+    "Windows/Linux/iOS bundling",
+    "mini-bs-roformer with the pinned v0.8.49 library"
+  ]
+}

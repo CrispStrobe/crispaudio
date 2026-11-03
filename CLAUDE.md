@@ -1341,4 +1341,7 @@ expanded. scripts/build-crispasr.sh builds the pinned revision with opus/ffmpeg/
 curl OFF into gitignored src-tauri/generated/crispasr (@rpath, @loader_path only)
 plus a --config overlay; mac release workflows use it. Never link Homebrew libs.
 Downbeats are trusted only when consistent; otherwise tempo only, no bar markers.
+Pending CrispASR lanes C1–C10 (benchmark, pin bump for mini-bs-roformer, signed
+build, real Tauri check, IPC tests, listening, Win/Linux bundling, cancellation,
+stem/pause scope) are scoped with commands in docs/WORK_HANDOFF.md.
 
