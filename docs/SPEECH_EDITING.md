@@ -71,6 +71,13 @@ Caption text corrections change text only and clear that cue's word alignment.
 For deletion-only edits to a pasted shortened transcript, see
 [Keep-text editing](KEEP_TEXT_EDITING.md).
 
+## Tighten pauses
+
+Workspace → Text → **Tighten pauses** finds silences between speech with a local
+Silero voice-activity model through CrispASR's library and shortens them across
+every lane in one reviewed edit. It does not need a transcript. See
+[CrispASR audio tools](CRISPASR_AUDIO.md).
+
 ## Existing CLI compatibility
 
 The independent media CLI retains its existing external ASR helper command for

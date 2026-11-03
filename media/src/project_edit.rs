@@ -1206,6 +1206,79 @@ pub fn apply(doc: &Value, recipe: &Value) -> Result<Value> {
                 options["operation"] = json!("extract");
                 out["project"] = crate::range_edit::apply(&out["project"], &options)?;
             }
+            "tighten-pauses" => {
+                let project = &out["project"];
+                let duration = timeline_duration(project);
+                let pauses = op["pauses"]
+                    .as_array()
+                    .ok_or("Missing pauses")?
+                    .iter()
+                    .map(|p| {
+                        let pair = (
+                            p[0].as_f64().or(p["start"].as_f64()),
+                            p[1].as_f64().or(p["end"].as_f64()),
+                        );
+                        match pair {
+                            (Some(a), Some(b)) if b <= duration + 1e-6 => Ok((a, b)),
+                            _ => Err("Invalid pause"),
+                        }
+                    })
+                    .collect::<std::result::Result<Vec<_>, _>>()?;
+                let picture = !project["video"].is_null();
+                let fps = picture.then(|| project["frameRate"].as_f64().unwrap_or(25.0));
+                let cuts = crate::crispasr::pause_cuts(&pauses, number(op, "keep")?, fps)?;
+                let tracks: Vec<_> = project["tracks"]
+                    .as_array()
+                    .ok_or("Missing tracks")?
+                    .iter()
+                    .map(|t| t["id"].clone())
+                    .collect();
+                for &(start, end) in cuts.iter().rev() {
+                    out["project"] = crate::range_edit::apply(
+                        &out["project"],
+                        &json!({"operation":"extract","start":start,"end":end,"trackIds":tracks,"includeVideo":picture,"retimeGlobal":true}),
+                    )?;
+                }
+            }
+            "beat-markers" => {
+                let offset = op["offset"].as_f64().unwrap_or(0.0);
+                let downbeats_only = op["downbeatsOnly"].as_bool().unwrap_or(true);
+                let beats = op["beats"].as_array().ok_or("Missing beats")?;
+                if !offset.is_finite() || offset < 0.0 || beats.len() > 100_000 {
+                    return Err("Invalid beats".into());
+                }
+                if !out["project"]["markers"].is_array() {
+                    out["project"]["markers"] = json!([]);
+                }
+                let markers = out["project"]["markers"].as_array_mut().unwrap();
+                let (mut bar, mut beat) = (0, 0);
+                let mut previous = f64::NEG_INFINITY;
+                for b in beats {
+                    let time = number(b, "time")? + offset;
+                    if time < 0.0 || time <= previous {
+                        return Err("Beats must be ordered and non-negative".into());
+                    }
+                    previous = time;
+                    let downbeat = b["downbeat"].as_bool().unwrap_or(false);
+                    beat += 1;
+                    if downbeat {
+                        bar += 1;
+                        beat = 1;
+                    }
+                    if downbeats_only && !downbeat {
+                        continue;
+                    }
+                    let name = if downbeat {
+                        format!("Bar {bar}")
+                    } else {
+                        format!("Beat {bar}.{beat}")
+                    };
+                    markers.push(json!({"id":id(),"time":time,"name":name}));
+                }
+                if markers.len() > 5000 {
+                    return Err("More than 5000 markers".into());
+                }
+            }
             "marker" => {
                 let time = number(op, "at")?;
                 if time < 0.0 {
@@ -1765,6 +1838,74 @@ mod tests {
     use super::*;
     fn doc() -> Value {
         json!({"format":"crispaudio-project","version":2,"project":{"id":"p","duration":6,"tracks":[{"id":"t","segments":[{"id":"a","linkGroup":"g","trackId":"t","sourceId":"s","startTime":1,"sourceOffset":2,"duration":5}]}],"video":{"path":"unused","duration":10,"clips":[{"id":"v","linkGroup":"g","startTime":1,"sourceOffset":2,"duration":5,"transition":"cut"}]}},"sources":[{"id":"s","duration":10}]})
+    }
+
+    #[test]
+    fn tighten_pauses_extracts_pause_centres_across_lanes_and_frames() {
+        let mut p = doc();
+        p["project"]["frameRate"] = json!(25);
+        p["project"]["markers"] = json!([{"id":"m","time":5.0,"name":"After"}]);
+        // Pause 2.0..3.0 keeping 0.2 s removes 2.1..2.9, rounded inward to 2.12..2.88.
+        let out = apply(
+            &p,
+            &json!([{"op":"tighten-pauses","pauses":[[2.0,3.0]],"keep":0.2}]),
+        )
+        .unwrap();
+        let audio = out["project"]["tracks"][0]["segments"].as_array().unwrap();
+        let total: f64 = audio.iter().map(|c| c["duration"].as_f64().unwrap()).sum();
+        assert!((total - 4.24).abs() < 1e-6, "audio {total}");
+        let picture = out["project"]["video"]["clips"].as_array().unwrap();
+        let total: f64 = picture
+            .iter()
+            .map(|c| c["duration"].as_f64().unwrap())
+            .sum();
+        assert!((total - 4.24).abs() < 1e-6, "picture {total}");
+        assert!((out["project"]["markers"][0]["time"].as_f64().unwrap() - 4.24).abs() < 1e-6);
+        // Short pauses are left alone; overlapping pauses are rejected.
+        let same = apply(
+            &p,
+            &json!([{"op":"tighten-pauses","pauses":[[2.0,2.1]],"keep":0.2}]),
+        )
+        .unwrap();
+        assert_eq!(same["project"]["tracks"], p["project"]["tracks"]);
+        assert!(apply(
+            &p,
+            &json!([{"op":"tighten-pauses","pauses":[[2.0,3.0],[2.5,4.0]],"keep":0.2}])
+        )
+        .is_err());
+        assert!(apply(
+            &p,
+            &json!([{"op":"tighten-pauses","pauses":[[2.0,30.0]],"keep":0.2}])
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn beat_markers_name_bars_and_reject_unordered_beats() {
+        let p = doc();
+        let beats = json!([{"time":0.5,"downbeat":true},{"time":1.0},{"time":1.5,"downbeat":true},{"time":2.0}]);
+        let out = apply(&p, &json!([{"op":"beat-markers","beats":beats}])).unwrap();
+        let names: Vec<_> = out["project"]["markers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| m["name"].as_str().unwrap().to_owned())
+            .collect();
+        assert_eq!(names, ["Bar 1", "Bar 2"]);
+        let all = apply(
+            &p,
+            &json!([{"op":"beat-markers","beats":beats,"downbeatsOnly":false,"offset":1}]),
+        )
+        .unwrap();
+        let markers = all["project"]["markers"].as_array().unwrap();
+        assert_eq!(markers.len(), 4);
+        assert_eq!(markers[1]["name"], "Beat 1.2");
+        assert_eq!(markers[0]["time"].as_f64(), Some(1.5));
+        assert!(apply(
+            &p,
+            &json!([{"op":"beat-markers","beats":[{"time":2},{"time":1}]}])
+        )
+        .is_err());
     }
 
     #[test]

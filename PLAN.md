@@ -293,7 +293,9 @@ audio/video finishing. CometBeat owns music composition/instruments/sequencing;
 CrisperWeaver owns ASR/TTS generation and model management. TTS creation is removed
 in 0.13.22; existing generated clips, transcript import/editing and captions remain.
 ASR launch/setup and its app commands are removed in 0.13.25. Transcript import,
-word editing and old aligned projects remain. The independent CLI keeps its existing
+word editing and old aligned projects remain. CrispASR audio tasks (separation, speech
+regeneration, pause tightening, beat detection) are in scope through the in-process
+C-ABI loader in docs/CRISPASR_AUDIO.md; ASR/TTS creation is not. The independent CLI keeps its existing
 external-helper command for compatibility; do not expand it or build a second
 music composition environment.
 

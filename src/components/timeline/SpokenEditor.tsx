@@ -1,5 +1,6 @@
 import {NumberField} from './NumberField';
 import {KeepSpeechEditor} from './KeepSpeechEditor';
+import {PauseTightening} from './CrispTools';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2, Play } from 'lucide-react';
@@ -23,6 +24,7 @@ export function SpokenEditor(){
     </div>}
     {error&&<p role="alert" className="text-amber-300 break-words">{error}</p>}
     <KeepSpeechEditor/>
+    <PauseTightening/>
     {!!words.length&&<div tabIndex={0} role="group" aria-label={t('spoken.editor')} className="rounded bg-gray-950 p-2 leading-loose" onKeyDown={e=>{if((e.key==='Delete'||e.key==='Backspace')&&current){e.preventDefault();e.stopPropagation();remove();}}}>
       {words.map(w=><button key={w.id} className={`rounded px-1 min-h-11 ${selected===w.id?'bg-purple-600':'hover:bg-gray-700'}`} aria-pressed={selected===w.id} title={`${w.start.toFixed(3)}–${w.end.toFixed(3)} s`} onClick={()=>setSelected(w.id)}>{w.text.trim()}</button>)}
     </div>}

@@ -1324,3 +1324,21 @@ Apply and latches abort through transient round trips; unmount aborts and duplic
 Apply is blocked. Keep subscriptions until finally. Preserve ordinary format support;
 this is separate from recalled-effect admission. Ordinary external-effect preview
 input staging is still pending; do not claim all source-file ownership is complete.
+
+
+### CrispASR audio tools (development after 0.13.68)
+
+Read docs/CRISPASR_AUDIO.md. media/src/crispasr.rs dlopens libcrispasr's C ABI
+in-process (no subprocess, no Cargo/CMake dependency); never bundle/download
+models. Only separation, speech regeneration, Silero VAD and Beat This! beats;
+ASR/TTS stay in CrisperWeaver. Use crispasr_vad_segments, NOT vad_slices (it
+merges close segments/fails over to ASR chunks and hides pauses). Chunk with
+crossfades and check jobs::cancelled between chunks; bounded length mismatch only.
+GUI drafts reuse SourceEditor Apply; stem tracks use one owned conversion
+transaction and one Undo step. Pause tightening and beat markers share CLI recipe
+semantics (tighten-pauses, beat-markers). Sections probe the library only when
+expanded. scripts/build-crispasr.sh builds the pinned revision with opus/ffmpeg/
+curl OFF into gitignored src-tauri/generated/crispasr (@rpath, @loader_path only)
+plus a --config overlay; mac release workflows use it. Never link Homebrew libs.
+Downbeats are trusted only when consistent; otherwise tempo only, no bar markers.
+

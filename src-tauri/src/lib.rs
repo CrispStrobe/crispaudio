@@ -196,6 +196,9 @@ pub fn run() {
             commands::recording_conversions::recording_conversion_protect,
             #[cfg(target_os = "macos")]
             commands::recording_conversions::recording_conversion_finish,
+            commands::crispasr::crispasr_status,
+            commands::crispasr::crispasr_process,
+            commands::crispasr::crispasr_analyze,
             media::desktop_media_available,
             media::probe_media,
             media::cancel_media_job,

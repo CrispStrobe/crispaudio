@@ -17,6 +17,7 @@ import vst3Notice from '../../lib/licenses/vst3.txt?raw';
 import midiNotice from '../../lib/licenses/midi.txt?raw';
 import houndNotice from '../../lib/licenses/hound.txt?raw';
 import rustfftNotice from '../../lib/licenses/rustfft.txt?raw';
+import crispasrNotice from '../../lib/licenses/crispasr.txt?raw';
 import { isNewerVersion } from '../../lib/versionComparison';
 import webkitCompressorNotice from '../../lib/licenses/webkit-compressor.txt?raw';
 import webkitOversamplingNotice from '../../lib/licenses/webkit-oversampling.txt?raw';
@@ -265,7 +266,7 @@ export function AboutModal() {
 
         <details className="text-xs">
           <summary className="cursor-pointer">{t('mediaFormats.notices')}</summary>
-          <pre className="whitespace-pre-wrap break-words mt-3 max-h-64 overflow-y-auto">{`Glint\n${glintNotice}\n\n${opusNotice}\n\nlibFLAC\n${flacNotice}\n\nlibflacjs\n${wrapperNotice}\n\n${houndNotice}\n\n${rustfftNotice}\n\n${vst3Notice}\n\n${midiNotice}\n\n${webkitOversamplingNotice}\n\n${webkitCompressorNotice}`}</pre>
+          <pre className="whitespace-pre-wrap break-words mt-3 max-h-64 overflow-y-auto">{`Glint\n${glintNotice}\n\n${opusNotice}\n\nlibFLAC\n${flacNotice}\n\nlibflacjs\n${wrapperNotice}\n\n${houndNotice}\n\n${rustfftNotice}\n\n${crispasrNotice}\n\n${vst3Notice}\n\n${midiNotice}\n\n${webkitOversamplingNotice}\n\n${webkitCompressorNotice}`}</pre>
         </details>
 
         {/* Copyright */}

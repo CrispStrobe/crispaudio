@@ -74,6 +74,19 @@ jobs:
 
       - run: npm ci
 
+      - name: Restore CrispASR build cache
+        if: runner.os == 'macOS'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/crispaudio-crispasr
+          key: crispasr-${{ hashFiles('scripts/crispasr-revision.txt', 'scripts/build-crispasr.sh') }}-arm64
+
+      - name: Build bundled CrispASR library
+        if: runner.os == 'macOS'
+        run: |
+          JOBS=3 bash scripts/build-crispasr.sh
+          echo "CRISPASR_CONFIG=--config src-tauri/generated/crispasr/tauri.conf.json" >> "$GITHUB_ENV"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -83,7 +96,7 @@ jobs:
           releaseBody: 'See the [changelog](https://github.com/CrispStrobe/crispaudio/commits/main) for details.'
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.tauri_args }}
+          args: ${{ matrix.tauri_args }} ${{ env.CRISPASR_CONFIG }}
 
   # ── macOS Intel — optional, non-blocking ────────────────────────────────
   desktop-intel:
@@ -119,6 +132,15 @@ jobs:
 
       - run: npm ci
 
+      - name: Restore CrispASR build cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/crispaudio-crispasr
+          key: crispasr-${{ hashFiles('scripts/crispasr-revision.txt', 'scripts/build-crispasr.sh') }}-x86_64
+
+      - name: Build bundled CrispASR library
+        run: ARCH=x86_64 JOBS=3 bash scripts/build-crispasr.sh
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -128,7 +150,7 @@ jobs:
           releaseBody: 'See the [changelog](https://github.com/CrispStrobe/crispaudio/commits/main) for details.'
           releaseDraft: true
           prerelease: false
-          args: --target x86_64-apple-darwin
+          args: --target x86_64-apple-darwin --config src-tauri/generated/crispasr/tauri.conf.json
 
   # ── iOS (unsigned .app bundle) ──────────────────────────────────────────
   ios:

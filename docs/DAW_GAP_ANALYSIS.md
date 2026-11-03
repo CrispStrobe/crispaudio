@@ -57,7 +57,9 @@ TTS creation is removed from CrispAudio in 0.13.22, including its server setting
 iOS synthesis commands and menus. Existing generated audio is ordinary source
 media and remains editable. Transcript import, correction, captions and word-based
 editing stay in CrispAudio. ASR launch/setup and app commands are removed in
-0.13.25; guarded transcript import replaces them. The independent CLI retains
+0.13.25; guarded transcript import replaces them. CrispASR's audio-only tasks (stem separation, generative speech
+regeneration, pause detection, beat tracking) run in-process through its C ABI;
+see [CrispASR audio tools](CRISPASR_AUDIO.md). The independent CLI retains
 its existing external-helper command for compatibility, with no new generation
 roadmap. Existing MIDI utilities remain,
 but instrument tracks, beat sequencing and a second composition environment are

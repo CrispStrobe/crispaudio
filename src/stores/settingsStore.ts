@@ -19,7 +19,12 @@ export type SampleRate = (typeof SAMPLE_RATES)[number];
 export type BitDepth = (typeof BIT_DEPTHS)[number];
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
+/** Local file paths only; CrispAudio never downloads or bundles CrispASR models. */
+export interface CrispasrPaths {library:string;separation:string;speech:string;vad:string;beats:string}
+export const EMPTY_CRISPASR:CrispasrPaths={library:'',separation:'',speech:'',vad:'',beats:''};
 interface SettingsState {
+  crispasr:CrispasrPaths;
+  setCrispasrPath:(key:keyof CrispasrPaths,path:string)=>void;
   nativeRecording:boolean;
   nativeRecordingOutput:string;
   setNativeRecording:(enabled:boolean)=>void;
@@ -65,6 +70,8 @@ function applyTheme(theme: Theme) {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
+      crispasr:EMPTY_CRISPASR,
+      setCrispasrPath:(key,path)=>set(state=>({crispasr:{...state.crispasr,[key]:path}})),
       nativeRecording:false,
       nativeRecordingOutput:'',
       setNativeRecording:(nativeRecording)=>set({nativeRecording}),
@@ -107,7 +114,7 @@ export const useSettingsStore = create<SettingsState>()(
       merge: (persisted, current) => {
         const saved = { ...(persisted as Record<string, unknown>) };
         for (const key of ['ttsServerUrl', 'ttsDefaultVoice', 'ttsDefaultBackend']) delete saved[key];
-        return { ...current, ...saved, nativeRecording:saved.nativeRecording===true, nativeRecordingOutput:typeof saved.nativeRecordingOutput==='string'?saved.nativeRecordingOutput:'' };
+        return { ...current, ...saved, nativeRecording:saved.nativeRecording===true, nativeRecordingOutput:typeof saved.nativeRecordingOutput==='string'?saved.nativeRecordingOutput:'', crispasr:Object.fromEntries(Object.keys(EMPTY_CRISPASR).map(key=>{const value=(saved.crispasr as Record<string,unknown>|undefined)?.[key];return [key,typeof value==='string'?value:''];})) as unknown as CrispasrPaths };
       },
       onRehydrateStorage: () => (state) => {
         if (state?.language) i18n.changeLanguage(state.language);

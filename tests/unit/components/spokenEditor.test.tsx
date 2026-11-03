@@ -4,7 +4,7 @@ import {SpokenEditor} from '../../../src/components/timeline/SpokenEditor';
 import {useProjectStore} from '../../../src/stores/projectStore';
 import {withTimelineTranscript} from '../../../src/lib/importedTranscript';
 import type {AudioSource} from '../../../src/types/audio';
-vi.mock('react-i18next',()=>({useTranslation:()=>({t:(key:string)=>key})}));
+vi.mock('react-i18next',()=>({useTranslation:()=>({t:(key:string)=>key}),initReactI18next:{type:'3rdParty',init:()=>{}}}));
 const {invoke}=vi.hoisted(()=>({invoke:vi.fn()}));
 vi.mock('@tauri-apps/api/core',()=>({invoke}));
 const text=JSON.stringify({transcription:[{offsets:{from:1000,to:3000},text:'Hallo Welt',words:[{text:'Hallo',offsets:{from:1000,to:2000}},{text:'Welt',offsets:{from:2100,to:3000}}]}]});

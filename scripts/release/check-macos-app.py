@@ -103,6 +103,25 @@ def check(app, expected_team, allow_ad_hoc=False, expected_bundle=None):
             raise ValueError(f'Native helper signing team differs from the app: {name}')
         if set(run('lipo', '-archs', str(helper)).decode().split()) != architecture:
             raise ValueError(f'Native helper architectures differ from the app: {name}')
+    frameworks = contents / 'Frameworks'
+    libraries = sorted(frameworks.glob('*.dylib')) if frameworks.is_dir() else []
+    if (frameworks / 'libcrispasr.dylib').exists():
+        for library in libraries:
+            if library.is_symlink():
+                raise ValueError(f'Bundled library must be a regular file: {library.name}')
+            if signing(library) != main_team:
+                raise ValueError(f'Bundled library signing team differs from the app: {library.name}')
+            if set(run('lipo', '-archs', str(library)).decode().split()) != architecture:
+                raise ValueError(f'Bundled library architectures differ from the app: {library.name}')
+            for line in run('otool', '-L', str(library)).decode().splitlines()[1:]:
+                dependency = line.strip().split(' ')[0]
+                if dependency.startswith(('/usr/lib/', '/System/')):
+                    continue
+                if not dependency.startswith('@rpath/') or not (frameworks / dependency[7:]).is_file():
+                    raise ValueError(f'Bundled library has a non-bundled dependency: {library.name} -> {dependency}')
+                if re.search(r'opus|ogg|avcodec|curl', dependency, re.I):
+                    raise ValueError(f'Bundled CrispASR must not link codec/network libraries: {dependency}')
+        print(f'Bundled CrispASR libraries verified ({len(libraries)}).')
     print('Native helper signatures, teams, architectures and sandbox inheritance verified.')
 
 

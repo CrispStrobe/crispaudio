@@ -114,13 +114,16 @@ Select a clip and open **Source Editor** for detailed work on its source window.
   attenuate a frequency band selected in the spectrogram, or estimate short
   hard-clipped peaks. Compare Original/Preview, then Apply. Preparation is cancellable.
   A separate audition level keeps saved audio unchanged; hot sources get monitor headroom.
+- Under **CrispASR audio tools** (desktop), separate dialogue from music or keep
+  any stem of the selection, split a whole clip into stem tracks, or resynthesise
+  damaged speech with a generative model. Models are local files you choose.
 - Inspect peak, RMS, DC offset, clipping, loudness and true-peak readings. Open a
   spectrum or spectrogram and adjust its analysis settings.
 - Save selections as named regions for later delivery. On macOS, apply supported
   Audio Unit or VST3 effects to the selected source window. Preview compensates
   reported plug-in latency and keeps the clip length; Apply retains the original.
 
-[Source editing and continuous comparison](docs/SOURCE_EDITING.md) · [Restoration tools and limits](docs/RESTORATION.md)
+[Source editing and continuous comparison](docs/SOURCE_EDITING.md) · [Restoration tools and limits](docs/RESTORATION.md) · [CrispASR audio tools](docs/CRISPASR_AUDIO.md)
 
 ## Record and choose takes
 
@@ -277,6 +280,8 @@ Use a transcript to find and select passages, remove timed words across sound an
 picture, or paste a shortened transcript and review which passages to keep.
 Source transcripts map through trims, repeated clips, speed and reverse. Correct
 words and speaker labels, search occurrences and organize named sections.
+**Tighten pauses** finds silences between speech with a local voice-activity model
+and shortens them across every lane in one reviewed edit, with or without a transcript.
 
 Generate speech and transcripts in **CrisperWeaver**, then import the audio and
 timed text into CrispAudio for editing, captions and mixing. Existing voiceovers

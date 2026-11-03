@@ -174,6 +174,15 @@ x264/x265. CrispAudio invokes it as a separate executable, not a linked library;
 we do not bundle that binary. The executable's own licence still applies. Selecting
 VP9 or AV1 does not turn a GPL FFmpeg binary into BSD software.
 
+CrispASR (MIT, ggml MIT) is loaded at runtime. macOS release builds bundle a
+pinned `libcrispasr` built with opus/ogg, FFmpeg and curl disabled (CrispAudio
+passes PCM; Glint/Apple decode files), so no codec library ships with it. Its MIT
+licence and third-party notices are in About.
+Model weights carry their own licences and are chosen by the user: the documented
+models (mel-band-roformer, htdemucs, Sidon, Silero, Beat This!) are MIT, VoxCPM2's
+VAE is Apache-2.0. CC-BY-NC chord models are not exposed. See
+[CrispASR audio tools](CRISPASR_AUDIO.md).
+
 libvpx (VP9) and SVT-AV1 have permissive source licences, but WebM currently still
 runs through optional FFmpeg. A bundled permissive-only WebM decoder/muxer/encoder
 path is **not completed**. Long-file DSP and iOS video composition also remain separate work. No GPL binary has

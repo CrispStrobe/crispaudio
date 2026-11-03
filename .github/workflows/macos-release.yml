@@ -66,9 +66,16 @@ jobs:
             --identity "Apple Distribution: Christian Ströbele ($TEAM_ID)" \
             --entitlements-template src-tauri/entitlements.plist \
             --entitlements-output "$RUNNER_TEMP/store-entitlements.plist"
+      - name: Restore CrispASR build cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/crispaudio-crispasr
+          key: crispasr-${{ hashFiles('scripts/crispasr-revision.txt', 'scripts/build-crispasr.sh') }}-arm64
+      - name: Build bundled CrispASR library
+        run: JOBS=3 bash scripts/build-crispasr.sh
       - name: Build .app
         run: |
-          npx tauri build --target aarch64-apple-darwin --bundles app
+          npx tauri build --target aarch64-apple-darwin --bundles app --config src-tauri/generated/crispasr/tauri.conf.json
           APP=$(find src-tauri/target -path "*aarch64-apple-darwin/release/bundle/macos/*.app" -type d 2>/dev/null | head -1 || true)
           [ -n "$APP" ] || { echo "::error::no .app produced"; exit 1; }
           echo "APP=$APP" >> "$GITHUB_ENV"

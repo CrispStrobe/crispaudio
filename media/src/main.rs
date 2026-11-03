@@ -34,6 +34,64 @@ enum Commands {
         #[arg(long, default_value = "de")]
         language: String,
     },
+    /// Split audio into stems with an in-process CrispASR separation model.
+    SeparateAudio {
+        /// Audio file (WAV directly; other formats via native Apple decode).
+        #[arg(long)]
+        input: String,
+        /// Separation GGUF, e.g. mel-band-roformer-vocals or htdemucs.
+        #[arg(long)]
+        model: String,
+        /// Existing folder; receives one float WAV per stem (never overwritten).
+        #[arg(long)]
+        output_dir: String,
+        /// libcrispasr path; defaults to CRISPASR_LIB or a copy beside this tool.
+        #[arg(long)]
+        crispasr_lib: Option<String>,
+    },
+    /// Resynthesise speech with a CrispASR restoration model (generative, mono).
+    RegenerateSpeech {
+        #[arg(long)]
+        input: String,
+        /// Speech-to-speech GGUF such as sidon or voxcpm2-vae.
+        #[arg(long)]
+        model: String,
+        #[arg(long)]
+        output: String,
+        #[arg(long)]
+        crispasr_lib: Option<String>,
+    },
+    /// Detect speech regions and pauses (JSON) in audio or a project's mix.
+    SpeechRegions {
+        /// Audio file, or a .crispaudio project whose native mix is analysed.
+        #[arg(long)]
+        input: String,
+        /// VAD model, e.g. ggml-silero-v6.2.0.bin or a FireRedVAD GGUF.
+        #[arg(long)]
+        model: String,
+        #[arg(long)]
+        output: String,
+        /// Shortest interior silence reported as a pause (seconds).
+        #[arg(long, default_value_t = 0.7)]
+        min_pause: f64,
+        /// VAD options JSON {threshold,minSpeechMs,minSilenceMs,padMs}.
+        #[arg(long)]
+        vad: Option<String>,
+        #[arg(long)]
+        crispasr_lib: Option<String>,
+    },
+    /// Detect beats/downbeats and tempo (JSON) in audio or a project's mix.
+    DetectBeats {
+        #[arg(long)]
+        input: String,
+        /// Beat This! GGUF.
+        #[arg(long)]
+        model: String,
+        #[arg(long)]
+        output: String,
+        #[arg(long)]
+        crispasr_lib: Option<String>,
+    },
     /// Create derived speed/reverse/pitch media without changing the input.
     RetimeMedia {
         #[arg(long)]
@@ -195,6 +253,108 @@ fn execute(cli: Cli) -> media::Result<()> {
                     .as_bytes(),
             )
             .map_err(|e| e.to_string())?;
+        }
+        Commands::SeparateAudio {
+            input,
+            model,
+            output_dir,
+            crispasr_lib,
+        } => {
+            let directory = std::path::Path::new(&output_dir);
+            if !directory.is_dir() {
+                return Err("Output folder must already exist".into());
+            }
+            let audio = media::crispasr::read_audio(&input)?;
+            let stems = media::crispasr::separate(
+                crispasr_lib.as_deref().map(std::path::Path::new),
+                std::path::Path::new(&model),
+                &audio,
+            )?;
+            let stem = std::path::Path::new(&input)
+                .file_stem()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "audio".into());
+            let mut written = vec![];
+            for item in &stems {
+                let name: String = item
+                    .name
+                    .chars()
+                    .map(|c| {
+                        if c.is_ascii_alphanumeric() || c == '-' {
+                            c
+                        } else {
+                            '_'
+                        }
+                    })
+                    .collect();
+                let path = directory.join(format!("{stem}_{name}.wav"));
+                media::crispasr::write_audio(&path, &item.audio)?;
+                written.push(serde_json::json!({"stem":item.name,"path":path}));
+            }
+            println!("{}", serde_json::json!({"stems":written}));
+        }
+        Commands::RegenerateSpeech {
+            input,
+            model,
+            output,
+            crispasr_lib,
+        } => {
+            let audio = media::crispasr::read_audio(&input)?;
+            let speech = media::crispasr::regenerate_speech(
+                crispasr_lib.as_deref().map(std::path::Path::new),
+                std::path::Path::new(&model),
+                &audio,
+            )?;
+            media::crispasr::write_audio(std::path::Path::new(&output), &speech)?;
+            println!("{}", serde_json::json!({"output":output,"generative":true}));
+        }
+        Commands::SpeechRegions {
+            input,
+            model,
+            output,
+            min_pause,
+            vad,
+            crispasr_lib,
+        } => {
+            if !min_pause.is_finite() || min_pause <= 0.0 {
+                return Err("--min-pause must be positive".into());
+            }
+            let options: media::crispasr::VadOptions = match vad {
+                Some(json) => serde_json::from_str(&json).map_err(|e| e.to_string())?,
+                None => Default::default(),
+            };
+            let audio = analysis_audio(&input)?;
+            let regions = media::crispasr::speech_regions(
+                crispasr_lib.as_deref().map(std::path::Path::new),
+                std::path::Path::new(&model),
+                &audio,
+                &options,
+            )?;
+            let pauses = media::crispasr::pauses(&regions, min_pause);
+            write_json(
+                &output,
+                &serde_json::json!({
+                    "duration": audio.frames() as f64 / audio.rate as f64,
+                    "regions": regions,
+                    "pauses": pauses,
+                }),
+            )?;
+        }
+        Commands::DetectBeats {
+            input,
+            model,
+            output,
+            crispasr_lib,
+        } => {
+            let audio = analysis_audio(&input)?;
+            let grid = media::crispasr::beats(
+                crispasr_lib.as_deref().map(std::path::Path::new),
+                std::path::Path::new(&model),
+                &audio,
+            )?;
+            let mut value = serde_json::to_value(&grid).map_err(|e| e.to_string())?;
+            value["duration"] = serde_json::json!(audio.frames() as f64 / audio.rate as f64);
+            write_json(&output, &value)?;
         }
         Commands::RetimeMedia {
             input,
@@ -407,6 +567,29 @@ fn main() {
         eprintln!("{error}");
         std::process::exit(1);
     }
+}
+
+/// A .crispaudio project is analysed through its native mix; other inputs are audio.
+fn analysis_audio(input: &str) -> media::Result<media::crispasr::Audio> {
+    if input.ends_with(".crispaudio") {
+        let doc: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(input).map_err(|e| e.to_string())?)
+                .map_err(|e| e.to_string())?;
+        media::crispasr::render_project_mix(&doc)
+    } else {
+        media::crispasr::read_audio(input)
+    }
+}
+
+fn write_json(output: &str, value: &serde_json::Value) -> media::Result<()> {
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(output)
+        .map_err(|e| e.to_string())?;
+    file.write_all(serde_json::to_string_pretty(value).unwrap().as_bytes())
+        .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

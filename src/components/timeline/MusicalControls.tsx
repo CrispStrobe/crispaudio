@@ -7,6 +7,7 @@ import { NumberField } from './NumberField';
 import { useProjectStore } from '../../stores/projectStore';
 import { DEFAULT_MUSIC, validMusic, musicalPosition, musicalLabel, barTime, barSeconds, type MusicalSettings } from '../../lib/musicalTime';
 import { timelineDuration } from '../../lib/timelineView';
+import { BeatDetection } from './CrispTools';
 export function MusicalControls({launcher = true}:{launcher?:boolean}={}) {
     const { t } = useTranslation(), music = useProjectStore(s => s.project.music), playhead = useProjectStore(s => s.playheadPosition), editRange = useProjectStore(s => s.project.editRange), m = music ?? DEFAULT_MUSIC, [open, setOpen] = useState(false), [bar, setBar] = useState(1), [bars, setBars] = useState(4), [extend, setExtend] = useState(false), [error, setError] = useState('');
     const update = (patch: Partial<MusicalSettings>) => { const state = useProjectStore.getState(), next = { ...(state.project.music ?? DEFAULT_MUSIC), ...patch }; if (!validMusic(next))
@@ -33,5 +34,6 @@ export function MusicalControls({launcher = true}:{launcher?:boolean}={}) {
         state.playEditRange();
     } }}>{t('music.playLoop')}</button><HelpDetails><p className="text-xs text-gray-400">{t('music.loopNote')}</p></HelpDetails></fieldset>
   <button className="timeline-tool" disabled={!music} onClick={() => { const state = useProjectStore.getState(); useProjectStore.setState({ project: { ...state.project, music: undefined } }); }}>{t('music.reset')}</button>{error && <p role="alert" className="text-amber-300">{error}</p>}
+  <BeatDetection/>
  </div></Modal></>;
 }

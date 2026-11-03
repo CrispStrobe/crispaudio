@@ -49,6 +49,7 @@ media/target-cli/
 
 # Native Mac sidecars compiled from the shared helper recipe
 /src-tauri/generated/native-helpers/
+/src-tauri/generated/crispasr/
 
 # Python validation scripts
 __pycache__/
