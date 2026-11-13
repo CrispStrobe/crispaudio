@@ -55,9 +55,11 @@ jobs:
       matrix:
         include:
           - platform: ubuntu-24.04
+          # Keep the legacy Rust check (macos-14) name required by branch protection.
           - platform: macos-14
+            runner: macos-15
           - platform: windows-latest
-    runs-on: ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner || matrix.platform }}
     steps:
       - uses: actions/checkout@v7
 
