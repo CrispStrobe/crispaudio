@@ -14,6 +14,11 @@ on:
 env:
   TEAM_ID: N9XSJ4M3GT
   BUNDLE_ID: com.crispstrobe.crispaudio
+  # The xcode-27 image starts steps without a UTF-8 locale, so codesign decodes
+  # the identity name "...Ströbele..." as MacRoman ("Str√∂bele") and reports
+  # "no identity found". Force UTF-8 for every step.
+  LANG: en_US.UTF-8
+  LC_ALL: en_US.UTF-8
 
 jobs:
   release-macos-appstore:
