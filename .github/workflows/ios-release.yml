@@ -32,7 +32,11 @@ on:
 jobs:
   ios-release:
     name: Signed IPA + App Store upload
-    runs-on: macos-15
+    # ITMS-90725: from April 2027 App Store Connect only accepts builds made
+    # with the 27 SDKs (Xcode 27). The standard macOS images only ship
+    # Xcode 26.x, so the store build runs on GitHub's xcode-27 image (arm64)
+    # and fails before signing if the SDK is older.
+    runs-on: xcode-27
     timeout-minutes: 90
     env:
       TEAM_ID: N9XSJ4M3GT
@@ -48,15 +52,17 @@ jobs:
         with:
           node-version: 20
 
-      # App Store now requires the iOS 26 SDK (Xcode 26). The runner may default
-      # to an older Xcode, so select the newest available.
-      - name: Select newest Xcode
+      - name: Select the newest Xcode 27 and require the iOS 27 SDK
         run: |
-          echo "Available Xcodes:"; ls -d /Applications/Xcode*.app
-          XC="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
-          [ -n "$XC" ] || XC="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          set -euo pipefail
+          XC=$(ls -d /Applications/Xcode_27*.app | sort -V | tail -1)
           sudo xcode-select -s "$XC/Contents/Developer"
           xcodebuild -version
+          SDK=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "iphoneos SDK: $SDK"
+          if [ "${SDK%%.*}" -lt 27 ]; then
+            echo "::error::iOS SDK $SDK < 27 (ITMS-90725)"; exit 1
+          fi
 
       - name: Add Rust iOS device target
         run: rustup target add aarch64-apple-ios
@@ -81,7 +87,10 @@ jobs:
         run: |
           set -euo pipefail
           KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
-          KEYCHAIN_PW="$(uuidgen)"
+          # Empty password: on the xcode-27 image unlock-keychain rejects the
+          # password the keychain was just created with (runner-images#14837).
+          # The keychain lives in RUNNER_TEMP on a single-use VM.
+          KEYCHAIN_PW=""
           security create-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
           security set-keychain-settings -lut 21600 "$KEYCHAIN"
           security unlock-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
