@@ -110,9 +110,16 @@ jobs:
       - name: Sign and package .pkg
         run: |
           set -euo pipefail
-          APP_CERT="Apple Distribution: Christian Ströbele (N9XSJ4M3GT)"
-          INST_CERT="3rd Party Mac Developer Installer: Christian Ströbele (N9XSJ4M3GT)"
-          
+          # Select identities by SHA-1 from the build keychain. Matching the
+          # display name fails on xcode-27: the "ö" in the certificate name and
+          # in this file use different Unicode normalizations ("no identity found").
+          ids=$(security find-identity -v "$KC")
+          APP_CERT=$(printf '%s\n' "$ids" | grep "Apple Distribution: .*($TEAM_ID)" | head -1 | awk '{print $2}')
+          INST_CERT=$(printf '%s\n' "$ids" | grep "3rd Party Mac Developer Installer: .*($TEAM_ID)" | head -1 | awk '{print $2}')
+          [ -n "$APP_CERT" ] || { echo "::error::Apple Distribution identity missing"; exit 1; }
+          [ -n "$INST_CERT" ] || { echo "::error::Mac Installer identity missing"; exit 1; }
+          echo "app identity $APP_CERT, installer identity $INST_CERT"
+
           cp "$PROFILE" "$APP/Contents/embedded.provisionprofile"
           chmod -R a+rX "$APP"
           # Reserve CI numbers above local TestFlight build 14; attempts stay unique.
@@ -140,7 +147,7 @@ jobs:
           python3 scripts/release/check-macos-app.py "$APP" --team "$TEAM_ID" --bundle "$BUNDLE_ID"
 
           VERSION=$(node -p "require('./package.json').version")
-          productbuild --component "$APP" /Applications --sign "$INST_CERT" "CrispAudio_${VERSION}.pkg"
+          productbuild --component "$APP" /Applications --keychain "$KC" --sign "$INST_CERT" "CrispAudio_${VERSION}.pkg"
           echo "PKG=CrispAudio_${VERSION}.pkg" >> "$GITHUB_ENV"
           echo "SV=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist")" >> "$GITHUB_ENV"
           echo "BV=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Contents/Info.plist")" >> "$GITHUB_ENV"

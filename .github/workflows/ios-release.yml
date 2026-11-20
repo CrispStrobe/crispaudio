@@ -147,6 +147,24 @@ jobs:
           echo "BUILD_NO=$BUILD_NO" >> "$GITHUB_ENV"
           echo "SHORT_VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
 
+      # Xcode 27's SwiftPM defaults to the "swiftbuild" engine, which ignores the
+      # -Xswiftc/-Xcc iOS target overrides swift-rs passes and links Tauri's Swift
+      # package for macOS ("building for 'macOS', but linking ... built for 'iOS'").
+      # Patch the locked swift-rs (CI only) to request the native build system,
+      # the Xcode 26 default that honours those overrides.
+      - name: Pin swift-rs to SwiftPM's native build system (Xcode 27)
+        run: |
+          set -euo pipefail
+          V=$(awk '/^name = "swift-rs"$/{getline; gsub(/"/,"",$3); print $3}' src-tauri/Cargo.lock)
+          [ -n "$V" ] || { echo "::error::swift-rs not in Cargo.lock"; exit 1; }
+          curl -sSfL "https://static.crates.io/crates/swift-rs/swift-rs-$V.crate" | tar xz -C "$RUNNER_TEMP"
+          D="$RUNNER_TEMP/swift-rs-$V"
+          perl -0pi -e 's/\.arg\("build"\)/.arg("build").args(["--build-system", "native"])/' "$D/src-rs/build.rs"
+          grep -q -- '"--build-system", "native"' "$D/src-rs/build.rs"
+          mkdir -p "$HOME/.cargo"
+          printf '\n[patch.crates-io]\nswift-rs = { path = "%s" }\n' "$D" >> "$HOME/.cargo/config.toml"
+          cat "$HOME/.cargo/config.toml"
+
       # Archive UNSIGNED (--no-sign → CODE_SIGNING_ALLOWED=NO), so the archive
       # doesn't demand an "iOS Development" cert the CI runner doesn't have.
       # Distribution signing is applied at -exportArchive below. Tauri's own
