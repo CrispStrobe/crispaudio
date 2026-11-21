@@ -96,7 +96,9 @@ jobs:
           xcrun simctl bootstatus "$DEV" -b
           xcrun simctl install "$DEV" "${{ steps.app.outputs.path }}"
           touch "$RUNNER_TEMP/launch-start"
-          xcrun simctl launch "$DEV" com.crispstrobe.crispaudio
+          # Simulator apps are ordinary host processes; `simctl launch` prints the PID.
+          PID=$(xcrun simctl launch "$DEV" com.crispstrobe.crispaudio | awk '{print $NF}')
+          echo "launched pid $PID"
           sleep 20
           xcrun simctl io "$DEV" screenshot ios-launch.png || true
           # The app must still be running, and must not have left a crash report.
@@ -107,7 +109,7 @@ jobs:
             grep -h -m3 -E 'exception|SceneLifecycle|termination' ios-diagnostics/*.ips || true
             echo "::error::CrispAudio crashed on launch (crash report saved)"; exit 1
           fi
-          if ! xcrun simctl spawn "$DEV" launchctl list | grep -q 'UIKitApplication:com.crispstrobe.crispaudio'; then
+          if ! ps -p "$PID" >/dev/null; then
             echo "::error::CrispAudio is not running 20 s after launch"; exit 1
           fi
           echo "CrispAudio is running on $RUNTIME"
