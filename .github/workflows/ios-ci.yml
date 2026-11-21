@@ -86,7 +86,7 @@ jobs:
       - name: Boot simulator, install, launch, screenshot
         run: |
           set -euxo pipefail
-          RT=$(xcrun simctl list runtimes available -j | jq -r '[.runtimes[] | select(.platform == "iOS")] | sort_by(.version | split(".") | map(tonumber)) | last | "\(.identifier) \(.version)"')
+          RT=$(xcrun simctl list runtimes available -j | jq -r '[.runtimes[] | select(.platform == "iOS" and (.identifier | test("SimRuntime\\.iOS-[0-9]+(-[0-9]+)*$")))] | sort_by(.version | split(".") | map(tonumber)) | last | "\(.identifier) \(.version)"')
           RUNTIME=${RT%% *}; VERSION=${RT##* }
           [ "${VERSION%%.*}" -ge 27 ] 2>/dev/null || { echo "::error::need an iOS 27+ simulator runtime, found '$RT'"; exit 1; }
           DEVTYPE=$(xcrun simctl list devicetypes | grep -oE 'com\.apple\.CoreSimulator\.SimDeviceType\.iPhone-[0-9]+([-A-Za-z]*)?' | sort -V | tail -1)
