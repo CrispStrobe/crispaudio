@@ -131,6 +131,9 @@ enum Commands {
         /// Native integer PCM WAV depth; omitted keeps 32-bit float WAV.
         #[arg(long, conflicts_with="video", value_parser=["8","16","24","32"])]
         wav_bit_depth: Option<String>,
+        /// TPDF dither for --wav-bit-depth 8 or 16 (sample-identical to the GUI).
+        #[arg(long, requires = "wav_bit_depth")]
+        dither: bool,
         /// Native AAC bitrate for .aac/.m4a; AAC output defaults to 192 kbps.
         #[arg(long, conflicts_with_all=["video","wav_bit_depth"],value_parser=["96","128","192","256","320"])]
         audio_bitrate_kbps: Option<String>,
@@ -396,6 +399,7 @@ fn execute(cli: Cli) -> media::Result<()> {
             output,
             video,
             wav_bit_depth,
+            dither,
             audio_bitrate_kbps,
             start,
             end,
@@ -444,7 +448,7 @@ fn execute(cli: Cli) -> media::Result<()> {
                             .into(),
                     );
                 }
-                media::audio_mix::render_pcm(&doc, &output, depth.parse().unwrap())?;
+                media::audio_mix::render_pcm_dithered(&doc, &output, depth.parse().unwrap(), dither)?;
             } else {
                 media::project_edit::render_project(&doc, &output, video)?;
             }

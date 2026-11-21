@@ -7,9 +7,12 @@ export interface DeliverySettings {
  format:'wav'|'flac'|'aac'|'mp4'|'mov';scope:'project'|'range'|'selection'|'stems'|'regions';
  stemMode?:'solo'|'summing';nameTemplate?:string;metadata?:{title?:string;artist?:string;comment?:string};
  layout:'stereo'|'mono';bitDepth:16|24|32;bitrateKbps:number;
+ /** TPDF dither at 16 bits; undefined (older presets/jobs) means on. */
+ dither?:boolean;
  width:number;height:number;frameRate:number;quality:'highest'|'prores';captions:'none'|'srt'|'vtt'|'burn';
 }
-export const DELIVERY_DEFAULTS:DeliverySettings={format:'wav',scope:'project',layout:'stereo',bitDepth:24,bitrateKbps:192,width:1920,height:1080,frameRate:25,quality:'highest',captions:'none'};
+export const deliveryDither=(s:DeliverySettings)=>s.format==='wav'&&s.bitDepth===16&&s.dither!==false;
+export const DELIVERY_DEFAULTS:DeliverySettings={format:'wav',scope:'project',layout:'stereo',bitDepth:24,dither:true,bitrateKbps:192,width:1920,height:1080,frameRate:25,quality:'highest',captions:'none'};
 export const DELIVERY_PRESETS:Record<string,Partial<DeliverySettings>>={archive:{format:'wav',layout:'stereo',bitDepth:24},landscape:{format:'mp4',width:1920,height:1080,frameRate:25,quality:'highest',layout:'stereo'},portrait:{format:'mp4',width:1080,height:1920,frameRate:25,quality:'highest',layout:'stereo'},review:{format:'mp4',width:1280,height:720,frameRate:25,quality:'highest',layout:'stereo'}};
 export interface DeliveryPlan {name:string;project:TimelineProject;sources:Map<string,AudioSource>;settings:DeliverySettings;range:{start:number;end:number};sidecar?:{extension:string;text:string};}
 export function planDelivery(project:TimelineProject,sources:Map<string,AudioSource>,settings:DeliverySettings,ids:string[]=[],stems:string[]=[]):DeliveryPlan[]{
@@ -21,6 +24,7 @@ export function planDelivery(project:TimelineProject,sources:Map<string,AudioSou
  if(s.metadata&&Object.values(s.metadata).some(v=>typeof v!=='string'||v.length>1000))throw new Error('delivery.invalid');
  if(s.nameTemplate&&(!s.nameTemplate.trim()||s.nameTemplate.length>120))throw new Error('delivery.invalid');
  if(s.stemMode&&!['solo','summing'].includes(s.stemMode))throw new Error('delivery.invalid');
+ if(s.dither!==undefined&&typeof s.dither!=='boolean')throw new Error('delivery.invalid');
  if(s.scope==='regions'){const regions=project.sections??[];if(!regions.length)throw new Error('delivery.regionsMissing');return regions.flatMap((r,index)=>{const plans=planDelivery({...project,name:r.name,editRange:{start:r.start,end:r.end}},sources,{...s,scope:'range'},ids);return plans.map(p=>({...p,name:deliveryName(s.nameTemplate??'{project} - {region}',{project:project.name,region:r.name,track:'',index:index+1}),settings:s}));});}
  const snapshot=structuredClone(project);let start=0,end=Math.max(project.duration,timelineDuration(project));
  if(s.scope==='range'){if(!project.editRange)throw new Error('delivery.rangeMissing');({start,end}=project.editRange);}

@@ -1,3 +1,4 @@
+import { TpdfDither, ditherApplies, quantize8, quantize16 } from '../dsp/dither';
 // ---------------------------------------------------------------------------
 // CrispAudio — audioBufferUtils
 // Buffer-level utilities: wrapping samples in AudioBuffer, WAV encoding,
@@ -128,8 +129,11 @@ export function encodeAudioBufferToWav(
   buffer: AudioBuffer,
   bitDepth: BitDepth = 16,
   float32 = false,
+  dither = false,
 ): ArrayBuffer {
   if(float32&&bitDepth!==32)throw new Error('IEEE float requires 32 bits');
+  // One sequence per file, in interleaved order (see dsp/dither.ts).
+  const noise = dither && !float32 && ditherApplies(bitDepth) ? new TpdfDither() : undefined;
   const numChannels = buffer.numberOfChannels;
   const numFrames = buffer.length;
   const sampleRate = buffer.sampleRate;
@@ -171,11 +175,11 @@ export function encodeAudioBufferToWav(
       const s = Math.max(-1, Math.min(1, channels[c][i]));
       switch (bitDepth) {
         case 8:
-          view.setUint8(offset, Math.round((s + 1) * 127.5));
+          view.setUint8(offset, quantize8(s, noise));
           offset += 1;
           break;
         case 16:
-          view.setInt16(offset, Math.round(s * 32767), true);
+          view.setInt16(offset, quantize16(s, noise), true);
           offset += 2;
           break;
         case 24: {

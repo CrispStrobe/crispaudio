@@ -96,18 +96,19 @@ export async function downloadWavFile(blob: Blob, filename: string): Promise<boo
   return true;
 }
 
-async function encodeWavWorker(channels: Float32Array[], sampleRate: number, bitDepth: number, mode: 'mono-float' | 'multichannel-pcm' | 'ieee-float', signal?: AbortSignal): Promise<Blob> {
+async function encodeWavWorker(channels: Float32Array[], sampleRate: number, bitDepth: number, mode: 'mono-float' | 'multichannel-pcm' | 'ieee-float', signal?: AbortSignal, dither = false): Promise<Blob> {
   signal?.throwIfAborted();
   const channelData = channels.map(channel => new Float32Array(channel).buffer);
-  const result = await runCodec({ type: 'wav', channelData, sampleRate, bitDepth, mode }, channelData, signal);
+  const result = await runCodec({ type: 'wav', channelData, sampleRate, bitDepth, mode, ...(dither ? { dither } : {}) }, channelData, signal);
   if (result.type !== 'encoded') throw new Error('Unexpected WAV response');
   return new Blob([result.bytes], { type: 'audio/wav' });
 }
 
-export async function encodeAudioBufferWav(buffer: AudioBuffer, bitDepth: number, signal?: AbortSignal): Promise<Blob> {
+/** Integer delivery PCM. `dither` applies TPDF at 8/16 bits only, matching native render_pcm. */
+export async function encodeAudioBufferWav(buffer: AudioBuffer, bitDepth: number, signal?: AbortSignal, dither = false): Promise<Blob> {
   signal?.throwIfAborted();
   const channels = Array.from({ length: buffer.numberOfChannels }, (_, c) => buffer.getChannelData(c));
-  return encodeWavWorker(channels, buffer.sampleRate, bitDepth, 'multichannel-pcm', signal);
+  return encodeWavWorker(channels, buffer.sampleRate, bitDepth, 'multichannel-pcm', signal, dither);
 }
 
 /** Immutable source storage preserves float headroom; delivery PCM keeps its chosen depth. */

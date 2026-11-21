@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+- Dither 8- and 16-bit WAV exports with TPDF noise (Settings → Export, on by default; per-job in Delivery). The GUI worker, the native Mac renderer and the CLI (`render-project --wav-bit-depth 16 --dither`) use one seeded sequence and produce sample-identical files; golden values are pinned in both test suites. 24/32-bit output is unchanged.
+- Loudness finishing: Podcast −16, Streaming −14 and Broadcast −23 LUFS presets, and an optional "reach target with output limiter" mode. It raises gain to the target and lowers the master output limiter until the re-rendered 4x-oversampled true peak meets the ceiling; gain-only mode still stops at the ceiling. Reported gain and limiter values always describe the candidate that was actually measured.
+- Warn when an open session's decoded audio exceeds a provisional memory budget (1 GB on iPhone/iPad/Android, 4 GB on desktop). Budgets are not device-measured yet; the warning is advisory and dismissible.
+
 ## 0.13.41 — 2026-10-18 (local preview)
 
 - Let an explicit native Record action obtain first-use microphone permission. Release the temporary browser permission stream before native input opens; Stop or project changes suppress late capture. Inventory stays read-only; denied/restricted access keeps the system-settings guidance.

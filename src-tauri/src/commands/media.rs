@@ -264,6 +264,7 @@ pub async fn export_linked_project_wav(
     document: serde_json::Value,
     output: String,
     bit_depth: u16,
+    dither: Option<bool>,
     job_id: Option<String>,
 ) -> Result<(), String> {
     if !cfg!(target_os = "macos")
@@ -275,7 +276,12 @@ pub async fn export_linked_project_wav(
     }
     tauri::async_runtime::spawn_blocking(move || {
         media::jobs::run(job_id, || {
-            media::audio_mix::render_pcm(&document, &output, bit_depth)
+            media::audio_mix::render_pcm_dithered(
+                &document,
+                &output,
+                bit_depth,
+                dither.unwrap_or(false),
+            )
         })
     })
     .await

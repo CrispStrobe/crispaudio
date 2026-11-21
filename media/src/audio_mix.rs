@@ -859,11 +859,16 @@ struct Track {
 }
 /// Streams blocks to an owned staging file, with atomic no-overwrite publication.
 pub fn render(doc: &Value, output: &str) -> Result<()> {
-    render_wav(doc, output, None)
+    render_wav(doc, output, None, None)
 }
 /// Integer PCM export matching Timeline's worker quantisation. Float CLI/video
 /// intermediates keep the existing render() endpoint and preserve headroom.
 pub fn render_pcm(doc: &Value, output: &str, bit_depth: u16) -> Result<()> {
+    render_pcm_dithered(doc, output, bit_depth, false)
+}
+/// As render_pcm; `dither` adds TPDF noise at 8/16 bits, sample-identical to
+/// the GUI worker (src/audio/dsp/dither.ts). 24/32-bit output is unchanged.
+pub fn render_pcm_dithered(doc: &Value, output: &str, bit_depth: u16, dither: bool) -> Result<()> {
     if ![8, 16, 24, 32].contains(&bit_depth) {
         return Err("WAV PCM bit depth must be 8, 16, 24 or 32".into());
     }
@@ -873,14 +878,39 @@ pub fn render_pcm(doc: &Value, output: &str, bit_depth: u16) -> Result<()> {
     {
         return Err("PCM audio export requires a .wav filename".into());
     }
-    render_wav(doc, output, Some(bit_depth))
+    let dither = (dither && (bit_depth == 8 || bit_depth == 16)).then(Dither::new);
+    render_wav(doc, output, Some(bit_depth), dither)
 }
-fn pcm_sample(value: f32, bit_depth: u16) -> i32 {
+/// xorshift32 TPDF sequence shared with src/audio/dsp/dither.ts: two uniform
+/// draws per written sample, interleaved frame order, f64 arithmetic.
+pub(crate) struct Dither(u32);
+impl Dither {
+    pub(crate) const SEED: u32 = 0x2545_f491;
+    pub(crate) fn new() -> Self {
+        Self(Self::SEED)
+    }
+    fn uniform(&mut self) -> f64 {
+        let mut x = self.0;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        self.0 = x;
+        x as f64 / 4_294_967_296.0
+    }
+    pub(crate) fn next(&mut self) -> f64 {
+        let a = self.uniform();
+        a - self.uniform()
+    }
+}
+fn pcm_sample(value: f32, bit_depth: u16, dither: Option<&mut Dither>) -> i32 {
     let value = value.clamp(-1.0, 1.0) as f64;
+    let noise = dither.map_or(0.0, Dither::next);
     if bit_depth == 8 {
-        ((value + 1.0) * 127.5 + 0.5).floor() as i32 - 128
+        let v = ((value + 1.0) * 127.5 + noise + 0.5).floor();
+        v.clamp(0.0, 255.0) as i32 - 128
     } else {
-        (value * ((1u64 << (bit_depth - 1)) - 1) as f64 + 0.5).floor() as i32
+        let full = ((1u64 << (bit_depth - 1)) - 1) as f64;
+        (value * full + noise + 0.5).floor().clamp(-full - 1.0, full) as i32
     }
 }
 /// Native plug-ins require the coordinated GUI renderer; never omit active inserts.
@@ -909,7 +939,12 @@ pub fn reject_native_effects(doc: &Value) -> Result<()> {
     }
     Ok(())
 }
-fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
+fn render_wav(
+    doc: &Value,
+    output: &str,
+    pcm_depth: Option<u16>,
+    mut dither: Option<Dither>,
+) -> Result<()> {
     reject_native_effects(doc)?;
     if Path::new(output).exists() {
         return Err("Output already exists".into());
@@ -1250,7 +1285,7 @@ fn render_wav(doc: &Value, output: &str, pcm_depth: Option<u16>) -> Result<()> {
                 }
                 if let Some(depth) = pcm_depth {
                     writer
-                        .write_sample(pcm_sample(value, depth))
+                        .write_sample(pcm_sample(value, depth, dither.as_mut()))
                         .map_err(|e| e.to_string())?;
                 } else {
                     writer.write_sample(value).map_err(|e| e.to_string())?;
@@ -1862,6 +1897,67 @@ mod tests {
         let bad = folder.path().join("invalid.wav");
         assert!(render_pcm(&project(&input), bad.to_str().unwrap(), 12).is_err());
         assert!(!bad.exists());
+    }
+    #[test]
+    fn dither_sequence_matches_gui_golden_values() {
+        // Same constants as tests/unit/audio/dither.test.ts.
+        let mut d = Dither::new();
+        let noise: Vec<f64> = (0..4).map(|_| d.next()).collect();
+        assert_eq!(
+            noise,
+            [
+                0.33414087048731744,
+                0.39371380349621177,
+                -0.0475095184519887,
+                0.4692262208554894
+            ]
+        );
+    }
+    #[test]
+    fn dithered_pcm_matches_gui_worker_and_leaves_24_bit_untouched() {
+        let folder = tempfile::tempdir().unwrap();
+        let input = source(
+            folder.path(),
+            2,
+            &[0.0, 0.0, -0.5, -0.5, 0.5, 0.5, -2.0, -2.0, 2.0, 2.0],
+        );
+        let expected: [(u16, [i32; 10]); 3] = [
+            (8, [0, 0, -64, -64, 64, 63, -128, -128, 127, 126]),
+            (
+                16,
+                [0, 0, -16384, -16383, 16384, 16383, -32767, -32768, 32767, 32766],
+            ),
+            (
+                24,
+                [
+                    0, 0, -4194303, -4194303, 4194304, 4194304, -8388607, -8388607, 8388607,
+                    8388607,
+                ],
+            ),
+        ];
+        for (depth, values) in expected {
+            let target = folder.path().join(format!("dither-{depth}.wav"));
+            render_pcm_dithered(&project(&input), target.to_str().unwrap(), depth, true).unwrap();
+            let samples: Vec<i32> = WavReader::open(&target)
+                .unwrap()
+                .samples::<i32>()
+                .map(|v| v.unwrap())
+                .collect();
+            assert_eq!(&samples[..10], &values);
+            assert_eq!(samples.len(), 7680);
+        }
+        // TPDF stays within one LSB of zero on digital silence.
+        let silent = tempfile::tempdir().unwrap();
+        let input = source(silent.path(), 2, &[0.0, 0.0]);
+        let target = silent.path().join("silence.wav");
+        render_pcm_dithered(&project(&input), target.to_str().unwrap(), 16, true).unwrap();
+        let samples: Vec<i32> = WavReader::open(&target)
+            .unwrap()
+            .samples::<i32>()
+            .map(|v| v.unwrap())
+            .collect();
+        assert!(samples.iter().all(|v| v.abs() <= 1));
+        assert!(samples.iter().any(|v| *v != 0));
     }
     fn impulse(folder: &Path) -> PathBuf {
         let path = source(folder, 2, &[0.0, 0.0]);

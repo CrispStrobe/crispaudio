@@ -118,7 +118,7 @@ describe.each(panels)('$name export', ({ Panel, button, encode, name }) => {
     const { unmount } = render(<Panel />);
     if (name === 'Timeline') { fireEvent.click(screen.getByRole('button', {name: 'nativeMenu.File',exact:true})); fireEvent.click(screen.getByRole('menuitem',{name:button})); } else fireEvent.click(screen.getByRole('button', { name: button }));
     await waitFor(() => expect(encode).toHaveBeenCalledTimes(1));
-    const signal = encode.mock.calls[0].at(-1) as AbortSignal;
+    const signal = encode.mock.calls[0].find(arg => arg instanceof AbortSignal) as AbortSignal;
     unmount();
     expect(signal.aborted).toBe(true);
     await act(async () => { pending.resolve(new Blob()); });
@@ -132,7 +132,7 @@ describe.each(panels)('$name export', ({ Panel, button, encode, name }) => {
     if (name === 'Timeline') { fireEvent.click(screen.getByRole('button', {name: 'nativeMenu.File',exact:true})); fireEvent.click(screen.getByRole('menuitem',{name:button})); } else fireEvent.click(screen.getByRole('button', { name: button }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('audioExport.encoding'));
     expect(encode).toHaveBeenCalledTimes(1);
-    const signal = encode.mock.calls[0].at(-1) as AbortSignal;
+    const signal = encode.mock.calls[0].find(arg => arg instanceof AbortSignal) as AbortSignal;
     fireEvent.click(screen.getByRole('button', { name: 'audioExport.cancel' }));
     expect(signal.aborted).toBe(true);
     if (name === 'Timeline') { fireEvent.click(screen.getByRole('button', {name: 'nativeMenu.File',exact:true})); fireEvent.click(screen.getByRole('menuitem',{name:button})); } else fireEvent.click(screen.getByRole('button', { name: button }));

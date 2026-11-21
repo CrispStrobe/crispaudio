@@ -45,6 +45,9 @@ interface SettingsState {
   theme: Theme;
   defaultSampleRate: SampleRate;
   defaultBitDepth: BitDepth;
+  /** TPDF dither for 8/16-bit WAV exports (GUI and native Mac renderers). */
+  ditherExports: boolean;
+  setDitherExports: (enabled: boolean) => void;
   defaultExportFormat: ExportFormat;
   defaultBitrateKbps: number;
 
@@ -92,6 +95,8 @@ export const useSettingsStore = create<SettingsState>()(
       setTimelineRibbon:(timelineRibbon)=>set({timelineRibbon}),
       defaultSampleRate: 44100,
       defaultBitDepth: 16,
+      ditherExports: true,
+      setDitherExports: (ditherExports) => set({ ditherExports }),
       defaultExportFormat: 'wav' as ExportFormat,
       defaultBitrateKbps: 192,
 

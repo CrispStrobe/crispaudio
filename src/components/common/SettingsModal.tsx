@@ -1,3 +1,4 @@
+import { InfoButton } from './InfoButton';
 // ---------------------------------------------------------------------------
 // CrispAudio — SettingsModal
 // Application preferences: language and default export format.
@@ -53,6 +54,8 @@ export function SettingsModal() {
     setTheme,
     setDefaultSampleRate,
     setDefaultBitDepth,
+    ditherExports,
+    setDitherExports,
     setDefaultExportFormat,
     setDefaultBitrateKbps,
   } = useSettingsStore();
@@ -186,6 +189,13 @@ export function SettingsModal() {
                 ))}
               </select>
             </div>
+          </div>
+          <div className="flex gap-2 items-center mt-3">
+            <label className="flex gap-2 items-center min-h-11 text-sm">
+              <input type="checkbox" checked={ditherExports} onChange={(e) => setDitherExports(e.target.checked)} />
+              {t('settings.dither')}
+            </label>
+            <InfoButton label={t('settings.dither')}>{t('settings.ditherHelp')}</InfoButton>
           </div>
         </div>
 

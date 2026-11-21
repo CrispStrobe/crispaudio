@@ -14,7 +14,7 @@ for(const format of ['wav','flac','aac']as const)it(`queues ${format} from the w
  const wet={sampleRate:48000},renderMixRange=vi.fn(async()=>wet),job:DeliveryJob={id:'job',output:`/mix.${format}`,plan,status:'running',phase:'rendering'},signal=new AbortController().signal;
  await runDelivery(job,{renderMixRange}as unknown as TimelineEngine,signal,()=>{});
  expect(renderMixRange).toHaveBeenCalledWith(plan.project,0,2,signal,plan.sources);
- if(format==='wav')expect(wav).toHaveBeenCalledWith(wet,24,signal);else expect(encode).toHaveBeenCalledWith(wet,format,192,signal);
+ if(format==='wav')expect(wav).toHaveBeenCalledWith(wet,24,signal,false);else expect(encode).toHaveBeenCalledWith(wet,format,192,signal);
  expect(invoke).toHaveBeenCalledWith('publish_delivery_stage',expect.objectContaining({output:job.output}));expect(invoke).toHaveBeenCalledWith('publish_delivery_stage',expect.objectContaining({output:`${job.output}.delivery.json`}));
 });
 it('does not publish media or a manifest when codec completion races cancellation',async()=>{
