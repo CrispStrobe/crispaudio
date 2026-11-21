@@ -28,6 +28,9 @@ jobs:
     # Xcode 26.x, so the store build runs on GitHub's xcode-27 image (arm64)
     # and fails before signing if the SDK is older.
     runs-on: xcode-27
+    # A signing step that waits on a hidden keychain prompt otherwise hangs
+    # until the 6-hour default.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - name: Select the newest Xcode 27 and require the macOS 27 SDK
@@ -72,6 +75,9 @@ jobs:
           # The keychain lives in RUNNER_TEMP on a single-use VM.
           KP=""
           security create-keychain -p "$KP" "$KC"
+          # New keychains auto-lock after 300 s; the .app build takes longer,
+          # and codesign then blocks on an invisible unlock prompt.
+          security set-keychain-settings "$KC"
           security default-keychain -s "$KC"
           security unlock-keychain -p "$KP" "$KC"
           echo "$MAC_CERT_P12_BASE64" | base64 -d > "$RUNNER_TEMP/dist.p12"
@@ -110,6 +116,7 @@ jobs:
       - name: Sign and package .pkg
         run: |
           set -euo pipefail
+          security unlock-keychain -p "" "$KC"
           # Select identities by SHA-1 from the build keychain. Matching the
           # display name fails on xcode-27: the "ö" in the certificate name and
           # in this file use different Unicode normalizations ("no identity found").
