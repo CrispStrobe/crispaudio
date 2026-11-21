@@ -37,7 +37,11 @@ jobs:
     # Xcode 26.x, so the store build runs on GitHub's xcode-27 image (arm64)
     # and fails before signing if the SDK is older.
     runs-on: xcode-27
-    timeout-minutes: 90
+    # Includes up to 60 minutes waiting for the iOS 27 launch test (see below).
+    timeout-minutes: 150
+    permissions:
+      contents: read
+      actions: read
     env:
       TEAM_ID: N9XSJ4M3GT
       BUNDLE_ID: com.crispstrobe.crispaudio
@@ -218,6 +222,33 @@ jobs:
           xcrun altool --validate-app -f "${{ steps.ipa.outputs.path }}" --type ios \
             --apple-id "$ASC_APP_ID" \
             --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+
+      # Never upload a build whose commit has not launched on iOS 27: build
+      # 0.13.68 (115.1) passed every other check and crashed at launch on iOS 27
+      # (UIScene adoption). ios-ci.yml runs that launch test for main pushes.
+      - name: Require a passing iOS 27 launch test for this commit
+        if: ${{ github.event_name == 'push' || github.event.inputs.dry_run == 'false' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ios-ci.yml/runs?head_sha=$GITHUB_SHA&per_page=20" \
+              -q '[.workflow_runs[] | {status, conclusion}]')
+            if echo "$runs" | jq -e 'any(.conclusion == "success")' >/dev/null; then
+              echo "iOS CI launch test passed for $GITHUB_SHA"; exit 0
+            fi
+            if echo "$runs" | jq -e 'any(.status != "completed")' >/dev/null; then
+              echo "iOS CI still running for $GITHUB_SHA (check $attempt/60)"; sleep 60; continue
+            fi
+            if [ "$(echo "$runs" | jq length)" -eq 0 ]; then
+              echo "::error::No iOS CI run exists for $GITHUB_SHA. Run 'iOS CI' on this commit first (it runs automatically on main)."
+            else
+              echo "::error::iOS CI failed for $GITHUB_SHA; the app may not launch on iOS 27. Not uploading."
+            fi
+            exit 1
+          done
+          echo "::error::Timed out waiting for iOS CI on $GITHUB_SHA"; exit 1
 
       - name: Upload to App Store Connect
         if: ${{ github.event_name == 'push' || github.event.inputs.dry_run == 'false' }}

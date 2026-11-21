@@ -113,6 +113,42 @@ jobs:
           APP=$(find src-tauri/target -path "*aarch64-apple-darwin/release/bundle/macos/*.app" -type d 2>/dev/null | head -1 || true)
           [ -n "$APP" ] || { echo "::error::no .app produced"; exit 1; }
           echo "APP=$APP" >> "$GITHUB_ENV"
+      # An Apple Distribution-signed app cannot run outside the store, so launch
+      # an ad-hoc signed copy with the same sandbox entitlements and helpers.
+      # This catches launch crashes, missing bundled libraries and sandbox
+      # denials at startup before anything is signed for Apple.
+      - name: Launch smoke test (sandboxed ad-hoc copy)
+        run: |
+          set -euo pipefail
+          S="$RUNNER_TEMP/smoke/$(basename "$APP")"
+          rm -rf "$RUNNER_TEMP/smoke"; mkdir -p "$RUNNER_TEMP/smoke"; ditto "$APP" "$S"
+          find "$S/Contents" -type f \( -name '*.dylib' -o -name '*.so' \) -exec codesign --force --sign - {} \;
+          for helper in crispaudio-apple-media crispaudio-vst3-host; do
+            codesign --force --sign - --entitlements src-tauri/helper-entitlements.plist "$S/Contents/MacOS/$helper"
+          done
+          codesign --force --sign - --entitlements src-tauri/entitlements.plist "$S"
+          EXE=$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$S/Contents/Info.plist")
+          touch "$RUNNER_TEMP/smoke-start"
+          open -n -g "$S"
+          sleep 20
+          mkdir -p "$RUNNER_TEMP/smoke-diagnostics"
+          find "$HOME/Library/Logs/DiagnosticReports" -newer "$RUNNER_TEMP/smoke-start" -iname "*${EXE}*" \
+            -exec cp {} "$RUNNER_TEMP/smoke-diagnostics/" \; 2>/dev/null || true
+          ALIVE=$(pgrep -f "$S/Contents/MacOS/$EXE" || true)
+          [ -n "$ALIVE" ] && kill $ALIVE || true
+          if ls "$RUNNER_TEMP"/smoke-diagnostics/* >/dev/null 2>&1; then
+            grep -h -m3 -E '"exception"|termination|Termination Reason' "$RUNNER_TEMP"/smoke-diagnostics/* || true
+            echo "::error::CrispAudio crashed during the launch smoke test"; exit 1
+          fi
+          [ -n "$ALIVE" ] || { echo "::error::CrispAudio was not running 20 s after launch"; exit 1; }
+          echo "Sandboxed app launched and stayed up for 20 s"
+      - name: Keep launch smoke diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-launch-smoke
+          path: ${{ runner.temp }}/smoke-diagnostics
+          if-no-files-found: ignore
       - name: Sign and package .pkg
         run: |
           set -euo pipefail
