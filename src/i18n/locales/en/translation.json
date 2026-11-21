@@ -639,6 +639,8 @@
     "exportDefaults": "Default Export Format",
     "sampleRate": "Sample Rate",
     "bitDepth": "Bit Depth",
+    "dither": "Dither 16-bit WAV exports",
+    "ditherHelp": "Adds very low-level triangular (TPDF) noise before reducing to 16 or 8 bits, so quiet passages and fades do not turn into gritty distortion. 24- and 32-bit exports are never dithered.",
     "format": "Format",
     "bitrate": "Bitrate",
     "timelineView": "Timeline view",
@@ -1447,7 +1449,14 @@
     "invalid": "Invalid loudness target or peak ceiling.",
     "changed": "The project changed. Measure the mix again.",
     "peakFailed": "Could not verify the requested true-peak ceiling.",
-    "liveEstimate": "Live estimate"
+    "liveEstimate": "Live estimate",
+    "preset_podcast": "Podcast −16",
+    "preset_streaming": "Streaming −14",
+    "preset_broadcast": "Broadcast −23",
+    "useLimiter": "Reach target with output limiter",
+    "limiterUsed": "Output limiter enabled at {{ceiling}} dBFS",
+    "applyLimiter": "Apply gain and limiter",
+    "limiterHelp": "Without the limiter only the master gain changes, so a loud target may stop short at the peak ceiling. With it, CrispAudio raises the gain to the target and lowers the master output limiter until the measured true peak meets the ceiling. Heavy limiting can audibly squash dynamics; listen before delivering."
   },
   "picture": {
     "tracks": "Picture tracks and output",
@@ -1782,6 +1791,7 @@
     "stereo": "Stereo",
     "mono": "Mono (WAV)",
     "bitDepth": "WAV bits",
+    "dither": "Dither (TPDF)",
     "bitrate": "AAC kbps",
     "width": "Width",
     "height": "Height",
@@ -2604,5 +2614,11 @@
       "tempoOnly": "{{tempo}} BPM, {{beats}} beats. Downbeats are unclear: only the tempo can be applied (bar 1 starts at the first beat, the meter is unchanged)."
     },
     "helpLabel": "{{tool}} help"
+  },
+  "sessionMemory": {
+    "title": "Session memory",
+    "warning": "This session holds about {{gb}} GB of decoded audio (≈{{minutes}} min of stereo) in memory. The app may slow down or close on this device.",
+    "help": "CrispAudio currently keeps all decoded audio of a session in memory as 32-bit float, about 23 MB per stereo minute at 48 kHz, plus undo copies. Above roughly {{budget}} GB this device may run short. Split very long recordings into parts, freeze finished tracks, or edit on a Mac. Your original files are not affected.",
+    "dismiss": "Dismiss"
   }
 }

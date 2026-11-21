@@ -2,7 +2,7 @@
 export type CompressedFormat = 'mp3' | 'aac' | 'opus' | 'flac';
 
 export type CodecJob =
-  | { type: 'wav'; channelData: ArrayBuffer[]; sampleRate: number; bitDepth: number; mode: 'mono-float' | 'multichannel-pcm' | 'ieee-float' }
+  | { type: 'wav'; channelData: ArrayBuffer[]; sampleRate: number; bitDepth: number; mode: 'mono-float' | 'multichannel-pcm' | 'ieee-float'; dither?: boolean }
   | { type: 'encode'; pcm: ArrayBuffer; channels: number; sampleRate: number; format: CompressedFormat; bitrateKbps: number }
   | { type: 'decode'; bytes: ArrayBuffer };
 export type CodecRequest = CodecJob & { id: number };

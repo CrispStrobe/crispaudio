@@ -12,7 +12,7 @@ beforeEach(() => { vi.resetAllMocks(); });
 it('passes explicit transient bounds without changing the saved project',async()=>{
  vi.mocked(save).mockResolvedValue('/range.wav');
  await exportLinkedAudio(document,'range.wav','wav',24,new AbortController().signal,vi.fn(),192,{start:.2,end:.6});
- expect(invoke).toHaveBeenCalledWith('export_linked_project_wav',{document:{...document,renderRange:{start:.2,end:.6}},output:'/range.wav',bitDepth:24,jobId:expect.any(String)});
+ expect(invoke).toHaveBeenCalledWith('export_linked_project_wav',{document:{...document,renderRange:{start:.2,end:.6}},output:'/range.wav',bitDepth:24,dither:false,jobId:expect.any(String)});
  expect(document).not.toHaveProperty('renderRange');
 });
 it('saves directly with the chosen bit depth after selecting the destination', async () => {
@@ -20,7 +20,13 @@ it('saves directly with the chosen bit depth after selecting the destination', a
   await expect(exportLinkedAudio(document, 'mix.wav', 'wav', 24, new AbortController().signal, stage)).resolves.toBe(true);
   expect(stage).toHaveBeenCalledExactlyOnceWith('rendering');
   expect(invoke).toHaveBeenCalledExactlyOnceWith('export_linked_project_wav',
-    { document, output: '/mix.wav', bitDepth: 24, jobId: expect.any(String) });
+    { document, output: '/mix.wav', bitDepth: 24, dither: false, jobId: expect.any(String) });
+});
+it('forwards the dither choice to the native PCM renderer', async () => {
+  vi.mocked(save).mockResolvedValue('/mix16.wav');
+  await exportLinkedAudio(document, 'mix16.wav', 'wav', 16, new AbortController().signal, vi.fn(), 192, undefined, true);
+  expect(invoke).toHaveBeenCalledExactlyOnceWith('export_linked_project_wav',
+    { document, output: '/mix16.wav', bitDepth: 16, dither: true, jobId: expect.any(String) });
 });
 it('cancelling the save dialog starts no rendering or media job', async () => {
   vi.mocked(save).mockResolvedValue(null); const stage = vi.fn();

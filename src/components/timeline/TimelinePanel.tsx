@@ -41,6 +41,7 @@ import {CommandSearch} from './CommandSearch';
 import {adjacentEdit} from '../../lib/trimEdits';
 import { deleteSelection } from '../../lib/timelineEditing';
 import { projectClips, projectSelection, splitClips } from '../../lib/projectEdits';
+import { SessionMemoryNotice } from './SessionMemoryNotice';
 import { prepareAudioImport, type AudioImportInput, type ImportPhase } from '../../lib/audioImport';
 import { TimelineHelp } from './TimelineHelp';
 import { TimelineWorkspace, type WorkspaceTab } from './TimelineWorkspace';
@@ -543,7 +544,7 @@ export const TimelinePanel: React.FC = () => {
   const handleExportMix = useCallback(async (selectedRange=false) => {
     const engine = engineRef.current;
     if (!engine || store.project.duration <= 0) return;
-    const { defaultExportFormat: fmt, defaultBitrateKbps: kbps } = useSettingsStore.getState();
+    const { defaultExportFormat: fmt, defaultBitrateKbps: kbps, ditherExports: dither } = useSettingsStore.getState();
     const range=selectedRange?store.project.editRange:undefined;
     if(selectedRange&&!range)return;
     const name = (store.project.name || 'crispaudio_mix')+(range?`_${range.start.toFixed(3)}-${range.end.toFixed(3)}`:'');
@@ -552,17 +553,17 @@ export const TimelinePanel: React.FC = () => {
       && navigator.userAgent.includes('Mac') ? linkedRenderDocument(store.project, store.sources) : null;
     if (document && nativeFormat) {
       await startExport({ stage: null, run: (signal, setStage) =>
-        exportLinkedAudio(document, `${name}.${nativeFormat}`, nativeFormat, defaultBitDepth, signal, setStage, kbps, range) });
+        exportLinkedAudio(document, `${name}.${nativeFormat}`, nativeFormat, defaultBitDepth, signal, setStage, kbps, range, dither) });
       return;
     }
     await startExport({
-      key: [store.project, store.sources, defaultBitDepth, fmt, kbps, range],
+      key: [store.project, store.sources, defaultBitDepth, fmt, kbps, range, dither],
       stage: 'rendering',
       produce: async (signal, setStage) => {
         const rendered = range?await engine.renderMixRange(store.project,range.start,range.end,signal):await engine.renderToBuffer(store.project, 0, undefined, signal);
         signal.throwIfAborted();
         setStage('encoding');
-        if (fmt === 'wav') return encodeAudioBufferWav(rendered, defaultBitDepth, signal);
+        if (fmt === 'wav') return encodeAudioBufferWav(rendered, defaultBitDepth, signal, dither);
         const { encodeAudioBuffer } = await import('../../lib/codecs');
         signal.throwIfAborted();
         return encodeAudioBuffer(rendered, fmt, kbps, signal);
@@ -630,6 +631,7 @@ export const TimelinePanel: React.FC = () => {
     <TimelineEngineContext.Provider value={engineRef}><div className="timeline-editor flex flex-col h-full bg-gray-950 overflow-hidden panel-enter">
 
       {projectError && <p role="alert" className="text-xs text-red-300 px-3 py-2">{projectError}</p>}
+      <SessionMemoryNotice/>
 
       <div className="timeline-main-tools flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900 shrink-0">
         <input ref={fileInputRef} type="file" accept="audio/*" multiple className="hidden"

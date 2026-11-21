@@ -652,6 +652,8 @@
     "exportDefaults": "Standard-Exportformat",
     "sampleRate": "Abtastrate",
     "bitDepth": "Bittiefe",
+    "dither": "16-Bit-WAV-Exporte dithern",
+    "ditherHelp": "Fügt vor der Reduktion auf 16 oder 8 Bit sehr leises dreieckförmiges (TPDF-)Rauschen hinzu, damit leise Passagen und Ausblendungen nicht körnig verzerrt klingen. 24- und 32-Bit-Exporte werden nie gedithert.",
     "format": "Format",
     "bitrate": "Bitrate",
     "timelineView": "Zeitleistenansicht",
@@ -1460,7 +1462,14 @@
     "invalid": "Ungültiges Lautheitsziel oder ungültige Peak-Grenze.",
     "changed": "Das Projekt wurde geändert. Mix erneut messen.",
     "peakFailed": "Die gewünschte True-Peak-Grenze konnte nicht bestätigt werden.",
-    "liveEstimate": "Live-Schätzung"
+    "liveEstimate": "Live-Schätzung",
+    "preset_podcast": "Podcast −16",
+    "preset_streaming": "Streaming −14",
+    "preset_broadcast": "Rundfunk −23",
+    "useLimiter": "Ziel mit Ausgangslimiter erreichen",
+    "limiterUsed": "Ausgangslimiter aktiv bei {{ceiling}} dBFS",
+    "applyLimiter": "Pegel und Limiter übernehmen",
+    "limiterHelp": "Ohne Limiter wird nur der Master-Pegel geändert; ein lautes Ziel kann daher an der Spitzenpegelgrenze scheitern. Mit Limiter hebt CrispAudio den Pegel auf das Ziel und senkt den Master-Ausgangslimiter, bis der gemessene True Peak die Grenze einhält. Starkes Limiting kann die Dynamik hörbar quetschen; vor der Auslieferung anhören."
   },
   "picture": {
     "tracks": "Bildspuren und Ausgabe",
@@ -1795,6 +1804,7 @@
     "stereo": "Stereo",
     "mono": "Mono (WAV)",
     "bitDepth": "WAV-Bittiefe",
+    "dither": "Dither (TPDF)",
     "bitrate": "AAC kbps",
     "width": "Breite",
     "height": "Höhe",
@@ -2617,5 +2627,11 @@
       "tempoOnly": "{{tempo}} BPM, {{beats}} Beats. Taktanfänge sind unklar: nur das Tempo kann übernommen werden (Takt 1 beginnt beim ersten Beat, die Taktart bleibt)."
     },
     "helpLabel": "Hilfe: {{tool}}"
+  },
+  "sessionMemory": {
+    "title": "Sitzungsspeicher",
+    "warning": "Diese Sitzung hält etwa {{gb}} GB dekodiertes Audio (≈{{minutes}} Min. Stereo) im Speicher. Die App kann auf diesem Gerät langsam werden oder beendet werden.",
+    "help": "CrispAudio hält derzeit das gesamte dekodierte Audio einer Sitzung als 32-Bit-Float im Speicher, etwa 23 MB pro Stereominute bei 48 kHz, zuzüglich Kopien für Rückgängig. Ab etwa {{budget}} GB kann der Speicher auf diesem Gerät knapp werden. Teilen Sie sehr lange Aufnahmen auf, frieren Sie fertige Spuren ein oder bearbeiten Sie auf einem Mac. Ihre Originaldateien sind nicht betroffen.",
+    "dismiss": "Ausblenden"
   }
 }
