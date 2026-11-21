@@ -86,7 +86,7 @@ jobs:
       - name: Boot simulator, install, launch, screenshot
         run: |
           set -euxo pipefail
-          RUNTIME=$(xcrun simctl list runtimes available | grep -oE 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]+' | sort -V | tail -1)
+          RUNTIME=$(xcrun simctl list runtimes available | grep -oE 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9]+(-[0-9]+)*' | sort -V | tail -1)
           case "$RUNTIME" in *iOS-2[7-9]*|*iOS-[3-9][0-9]*) ;; *) echo "::error::need an iOS 27+ simulator runtime, found $RUNTIME"; exit 1;; esac
           DEVTYPE=$(xcrun simctl list devicetypes | grep -oE 'com\.apple\.CoreSimulator\.SimDeviceType\.iPhone-[0-9]+([-A-Za-z]*)?' | sort -V | tail -1)
           echo "Using device=$DEVTYPE runtime=$RUNTIME"
