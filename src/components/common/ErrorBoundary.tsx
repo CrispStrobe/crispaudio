@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import React from 'react';
+import { diagnosticsReport } from '../../lib/diagnostics';
 
 interface Props {
   children: React.ReactNode;
@@ -68,6 +69,12 @@ export class ErrorBoundary extends React.Component<Props, State> {
           >
             {this.state.error?.message}
           </pre>
+          <button
+            onClick={() => void navigator.clipboard?.writeText(diagnosticsReport()).catch(() => {})}
+            style={{ marginBottom: 12, background: 'none', border: 'none', color: '#60a5fa', fontSize: 13, cursor: 'pointer', textDecoration: 'underline', minHeight: 44 }}
+          >
+            Copy diagnostics for a bug report
+          </button>
           <button
             onClick={() => window.location.reload()}
             style={{

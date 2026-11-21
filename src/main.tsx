@@ -5,6 +5,9 @@ import i18n, { i18nReady } from './i18n';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/common/ErrorBoundary.tsx';
 import { useSettingsStore } from './stores/settingsStore';
+import { installDiagnostics } from './lib/diagnostics';
+
+installDiagnostics();
 
 // Store hydration can override browser detection while initial resources load.
 // Wait for that final language too, before mounting any translated UI.
