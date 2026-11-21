@@ -55,6 +55,14 @@ targets:
         CFBundleVersion: "14"
         NSMicrophoneUsageDescription: "CrispAudio uses the microphone so you can record audio to process with voice effects. Recording only happens when you tap Record."
         ITSAppUsesNonExemptEncryption: false
+        # iOS 27 terminates 27-SDK apps that do not adopt the UIScene lifecycle
+        # at launch. tao 0.37+ (Tauri 2.12) provides TaoSceneDelegate.
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: Default Configuration
+                UISceneDelegateClassName: TaoSceneDelegate
         # Required because CFBundleDocumentTypes declares the .crispaudio type.
         LSSupportsOpeningDocumentsInPlace: false
         # Without this, App Store Connect doesn't recognise the asset-catalog
