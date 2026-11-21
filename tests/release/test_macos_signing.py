@@ -125,6 +125,23 @@ class SignatureGate(unittest.TestCase):
                     APP.check(app, TEAM)
 
 
+    def test_server_entitlement_is_rejected_before_upload(self):
+        # App Review rejected 0.13.68: the app never listens for connections.
+        with tempfile.TemporaryDirectory() as folder:
+            app = pathlib.Path(folder) / 'Probe.app'
+            (app / 'Contents').mkdir(parents=True)
+            (app / 'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier': BUNDLE, 'CFBundleExecutable': 'probe'}))
+            rights = {'com.apple.security.app-sandbox': True, 'com.apple.security.device.audio-input': True,
+                      'com.apple.security.network.server': True}
+            with patch.object(APP, 'run'), patch.object(APP, 'entitlements', return_value=rights):
+                with self.assertRaisesRegex(ValueError, 'network.server'):
+                    APP.check(app, TEAM)
+
+    def test_shipped_entitlements_template_has_no_server_right(self):
+        template = plistlib.loads((pathlib.Path(__file__).parents[2] / 'src-tauri/entitlements.plist').read_bytes())
+        self.assertNotIn('com.apple.security.network.server', template)
+        self.assertTrue(template['com.apple.security.app-sandbox'])
+
     def test_store_gate_requires_a_privacy_manifest(self):
         with tempfile.TemporaryDirectory() as folder:
             app = pathlib.Path(folder) / 'Probe.app'

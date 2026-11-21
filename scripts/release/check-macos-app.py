@@ -70,6 +70,9 @@ def check(app, expected_team, allow_ad_hoc=False, expected_bundle=None):
         raise ValueError('Main app must carry sandbox and microphone entitlements.')
     if rights.get('com.apple.security.inherit') or rights.get('get-task-allow') or rights.get('com.apple.security.get-task-allow'):
         raise ValueError('Main app must not inherit a sandbox or permit debugging.')
+    if rights.get('com.apple.security.network.server'):
+        # App Review rejects it: the shipped app never listens for connections.
+        raise ValueError('Main app must not carry the network.server entitlement.')
     if not allow_ad_hoc and not (contents / 'embedded.provisionprofile').is_file():
         raise ValueError('Store bundle requires its matching provisioning profile.')
     main_team = signing(app)
