@@ -1,3 +1,5 @@
+import { APP_VERSION } from '../../lib/diagnostics';
+import { FeedbackActions } from './FeedbackActions';
 // ---------------------------------------------------------------------------
 // CrispAudio — AboutModal
 // App info, provider details, contact, disclaimer, and open source licenses.
@@ -27,7 +29,7 @@ import wrapperNotice from '../../lib/flac/LICENSE.wrapper?raw';
 const REPO_URL = 'https://github.com/CrispStrobe/crispaudio';
 const WEB_URL = 'https://crispaudio-psi.vercel.app';
 const RELEASES_API = 'https://api.github.com/repos/CrispStrobe/crispaudio/releases/latest';
-const CURRENT_VERSION = '0.13.67';
+const CURRENT_VERSION = APP_VERSION;
 
 interface LicenseEntry {
   name: string;
@@ -160,6 +162,7 @@ export function AboutModal() {
               {updateStatus === 'checking' ? 'Checking…' : 'Check for Updates'}
             </button>
           </div>
+          <FeedbackActions />
           {updateStatus === 'available' && (
             <div className="mt-2 p-2 rounded text-xs" style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
               <span style={{ color: '#22c55e' }}>v{latestVersion} available!</span>{' '}

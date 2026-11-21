@@ -2620,5 +2620,13 @@
     "warning": "This session holds about {{gb}} GB of decoded audio (≈{{minutes}} min of stereo) in memory. The app may slow down or close on this device.",
     "help": "CrispAudio currently keeps all decoded audio of a session in memory as 32-bit float, about 23 MB per stereo minute at 48 kHz, plus undo copies. Above roughly {{budget}} GB this device may run short. Split very long recordings into parts, freeze finished tracks, or edit on a Mac. Your original files are not affected.",
     "dismiss": "Dismiss"
+  },
+  "feedback": {
+    "send": "Send feedback",
+    "copy": "Copy diagnostics",
+    "save": "Save diagnostics…",
+    "copied": "Diagnostics copied to the clipboard.",
+    "copyFailed": "Could not copy. Use Save diagnostics instead.",
+    "help": "Send feedback opens a new GitHub issue with a short diagnostics report: app version, device, session size and recent error messages. Folder and file names are removed. Nothing is sent automatically, and you can edit everything before submitting. No GitHub account? Save or copy the diagnostics and attach them to an email."
   }
 }

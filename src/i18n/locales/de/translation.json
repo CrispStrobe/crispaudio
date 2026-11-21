@@ -2633,5 +2633,13 @@
     "warning": "Diese Sitzung hält etwa {{gb}} GB dekodiertes Audio (≈{{minutes}} Min. Stereo) im Speicher. Die App kann auf diesem Gerät langsam werden oder beendet werden.",
     "help": "CrispAudio hält derzeit das gesamte dekodierte Audio einer Sitzung als 32-Bit-Float im Speicher, etwa 23 MB pro Stereominute bei 48 kHz, zuzüglich Kopien für Rückgängig. Ab etwa {{budget}} GB kann der Speicher auf diesem Gerät knapp werden. Teilen Sie sehr lange Aufnahmen auf, frieren Sie fertige Spuren ein oder bearbeiten Sie auf einem Mac. Ihre Originaldateien sind nicht betroffen.",
     "dismiss": "Ausblenden"
+  },
+  "feedback": {
+    "send": "Feedback senden",
+    "copy": "Diagnose kopieren",
+    "save": "Diagnose sichern…",
+    "copied": "Diagnose in die Zwischenablage kopiert.",
+    "copyFailed": "Kopieren nicht möglich. Bitte „Diagnose sichern“ verwenden.",
+    "help": "„Feedback senden“ öffnet ein neues GitHub-Issue mit einem kurzen Diagnosebericht: App-Version, Gerät, Sitzungsgröße und letzte Fehlermeldungen. Ordner- und Dateinamen werden entfernt. Nichts wird automatisch gesendet, und Sie können vor dem Absenden alles bearbeiten. Kein GitHub-Konto? Diagnose sichern oder kopieren und an eine E-Mail anhängen."
   }
 }
