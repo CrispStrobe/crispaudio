@@ -15,14 +15,14 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 crispaudio-native-helper-build = { path = "../scripts/native-helper-build" }
-tauri-build = { version = "2.6.2", features = [] }
+tauri-build = { version = "2.7.6", features = [] }
 
 [dependencies]
 crispaudio-media = { path = "../media" }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.11.2", features = ["protocol-asset"] }
+tauri = { version = "2.12.7", features = ["protocol-asset"] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
@@ -40,7 +40,7 @@ midir = "0.11"
 libc = "=0.2.189"
 
 [dev-dependencies]
-tauri = { version = "2.11.2", features = ["test"] }
+tauri = { version = "2.12.7", features = ["test"] }
 tokio = { version = "1", features = ["rt"] }
 
 [profile.dev.package.crispaudio-media]

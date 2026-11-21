@@ -6,7 +6,7 @@ name: iOS CI
 
 on:
   push:
-    branches: [main, touch-responsive-ux, ios-native-features]
+    branches: [main, touch-responsive-ux, ios-native-features, 'fix/ios27-*']
   workflow_dispatch:
 
 concurrency:
@@ -16,10 +16,33 @@ concurrency:
 jobs:
   ios-simulator:
     name: iOS simulator build + smoke test
-    runs-on: macos-15
-    timeout-minutes: 60
+    # Store builds use the iOS 27 SDK (ITMS-90725), and iOS 27 terminates
+    # 27-SDK apps that have not adopted the UIScene lifecycle at launch. Smoke
+    # test the same SDK on an iOS 27 simulator so that cannot slip through.
+    runs-on: xcode-27
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select the newest Xcode 27
+        run: |
+          set -euo pipefail
+          XC=$(ls -d /Applications/Xcode_27*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
+          xcrun --sdk iphonesimulator --show-sdk-version
+
+      - name: Pin swift-rs to SwiftPM's native build system (Xcode 27)
+        run: |
+          set -euo pipefail
+          V=$(awk '/^name = "swift-rs"$/{getline; gsub(/"/,"",$3); print $3}' src-tauri/Cargo.lock)
+          [ -n "$V" ] || { echo "::error::swift-rs not in Cargo.lock"; exit 1; }
+          curl -sSfL "https://static.crates.io/crates/swift-rs/swift-rs-$V.crate" | tar xz -C "$RUNNER_TEMP"
+          D="$RUNNER_TEMP/swift-rs-$V"
+          perl -0pi -e 's/\.arg\("build"\)/.arg("build").args(["--build-system", "native"])/' "$D/src-rs/build.rs"
+          grep -q -- '"--build-system", "native"' "$D/src-rs/build.rs"
+          mkdir -p "$HOME/.cargo"
+          printf '\n[patch.crates-io]\nswift-rs = { path = "%s" }\n' "$D" >> "$HOME/.cargo/config.toml"
 
       - uses: actions/setup-node@v4
         with:
@@ -35,8 +58,8 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             src-tauri/target
-          key: ios-sim-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
-          restore-keys: ios-sim-cargo-
+          key: ios27-sim-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: ios27-sim-cargo-
 
       - name: Install frontend dependencies
         run: npm ci
@@ -61,27 +84,42 @@ jobs:
           echo "Built: $APP"
 
       - name: Boot simulator, install, launch, screenshot
-        continue-on-error: true
         run: |
-          set -x
-          RUNTIME=$(xcrun simctl list runtimes available | grep -oE 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]+' | tail -1)
-          DEVTYPE=$(xcrun simctl list devicetypes | grep -oE 'com\.apple\.CoreSimulator\.SimDeviceType\.iPhone-1[5-9]([-A-Za-z]*)?' | tail -1)
+          set -euxo pipefail
+          RT=$(xcrun simctl list runtimes available -j | jq -r '[.runtimes[] | select(.platform == "iOS" and (.identifier | test("SimRuntime\\.iOS-[0-9]+(-[0-9]+)*$")))] | sort_by(.version | split(".") | map(tonumber)) | last | "\(.identifier) \(.version)"')
+          RUNTIME=${RT%% *}; VERSION=${RT##* }
+          [ "${VERSION%%.*}" -ge 27 ] 2>/dev/null || { echo "::error::need an iOS 27+ simulator runtime, found '$RT'"; exit 1; }
+          DEVTYPE=$(xcrun simctl list devicetypes | grep -oE 'com\.apple\.CoreSimulator\.SimDeviceType\.iPhone-[0-9]+([-A-Za-z]*)?' | sort -V | tail -1)
           echo "Using device=$DEVTYPE runtime=$RUNTIME"
           DEV=$(xcrun simctl create "CI-iPhone" "$DEVTYPE" "$RUNTIME")
           xcrun simctl boot "$DEV"
           xcrun simctl bootstatus "$DEV" -b
           xcrun simctl install "$DEV" "${{ steps.app.outputs.path }}"
+          touch "$RUNNER_TEMP/launch-start"
           xcrun simctl launch "$DEV" com.crispstrobe.crispaudio
-          sleep 10
-          xcrun simctl io "$DEV" screenshot ios-launch.png
-          ls -la ios-launch.png
+          sleep 20
+          xcrun simctl io "$DEV" screenshot ios-launch.png || true
+          # The app must still be running, and must not have left a crash report.
+          mkdir -p ios-diagnostics
+          find "$HOME/Library/Logs/DiagnosticReports" -newer "$RUNNER_TEMP/launch-start" -iname '*crispaudio*' -exec cp {} ios-diagnostics/ \; 2>/dev/null || true
+          xcrun simctl spawn "$DEV" log show --last 2m --style compact --predicate 'process == "crispaudio" OR eventMessage CONTAINS "crispaudio"' > ios-diagnostics/simulator.log 2>&1 || true
+          if ls ios-diagnostics/*.ips >/dev/null 2>&1; then
+            grep -h -m3 -E 'exception|SceneLifecycle|termination' ios-diagnostics/*.ips || true
+            echo "::error::CrispAudio crashed on launch (crash report saved)"; exit 1
+          fi
+          if ! xcrun simctl spawn "$DEV" launchctl list | grep -q 'UIKitApplication:com.crispstrobe.crispaudio'; then
+            echo "::error::CrispAudio is not running 20 s after launch"; exit 1
+          fi
+          echo "CrispAudio is running on $RUNTIME"
 
       - name: Upload launch screenshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios-launch-screenshot
-          path: ios-launch.png
+          path: |
+            ios-launch.png
+            ios-diagnostics/
           if-no-files-found: warn
 
       - name: Upload unsigned .app (for local Simulator use)
