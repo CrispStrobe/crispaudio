@@ -1,3 +1,4 @@
+import {editedSpeechRegions,sourceSpeechRegions,audioReceipt,markSpeechBlob} from '../../lib/aiSpeechProvenance';
 import {invoke} from '@tauri-apps/api/core';
 import {encodeSourceBufferWav} from '../../lib/wavExport';
 import {computeWaveformPeaks} from '../utils/audioBufferUtils';
@@ -26,15 +27,16 @@ export async function commitSourceEdit(input:Input,current:()=>State,publish:(ne
    for(const sample of pcm[ch])if(!Number.isFinite(sample))throw new Error('sourceEditor.invalidPcm');
    buffer.copyToChannel(pcm[ch] as Float32Array<ArrayBuffer>,ch);
   }
+  const aiSpeech=editedSpeechRegions({...source,aiSpeech:sourceSpeechRegions(clip,snapshot.sources)},clip.sourceOffset,frames/source.sampleRate,operation);
   let filePath:string|undefined;
   if('__TAURI_INTERNALS__' in window){
-   const wav=await encodeSourceBufferWav(buffer,signal);check();
+   const wav=await markSpeechBlob(await encodeSourceBufferWav(buffer,signal),audioReceipt(aiSpeech));check();
    token=crypto.randomUUID();await invoke('recording_conversion_begin',{token});check();
    const bytes=new Uint8Array(await wav.arrayBuffer());check();
    filePath=await invoke<string>('recording_conversion_write',bytes,{headers:{'x-conversion-token':token}});check();
    if(typeof filePath!=='string'||!filePath)throw new Error('sourceEditor.invalidPcm');
   }
-  const id=crypto.randomUUID(),derived:AudioSource={id,name,buffer,filePath,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200))),duration:buffer.duration,sampleRate:source.sampleRate,channels:buffer.numberOfChannels,provenance:source.filePath?{path:source.filePath,offset:clip.sourceOffset,rate:1}:source.provenance};
+  const id=crypto.randomUUID(),derived:AudioSource={id,name,buffer,aiSpeech:aiSpeech.length?aiSpeech:undefined,filePath,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200))),duration:buffer.duration,sampleRate:source.sampleRate,channels:buffer.numberOfChannels,provenance:source.filePath?{path:source.filePath,offset:clip.sourceOffset,rate:1}:source.provenance};
   const sources=new Map(snapshot.sources);sources.set(id,derived);
   const project={...snapshot.project,tracks:snapshot.project.tracks.map(t=>({...t,segments:t.segments.map(c=>c.id===clipId?{...c,sourceId:id,sourceOffset:0,retime:undefined,sourceEdit}:c)}))};
   if(token){check();await invoke('recording_conversion_protect',{token});}

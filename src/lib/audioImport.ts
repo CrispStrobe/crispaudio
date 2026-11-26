@@ -1,9 +1,11 @@
 import type { AudioSource } from '../types/audio';
+import {importedSpeechWavRegions,scaledSpeechRegions} from './aiSpeechProvenance';
 export interface AudioImportInput { name:string; filePath?:string; read:()=>Promise<ArrayBuffer> }
 export type ImportPhase='reading'|'decoding'|'waveform';
 /** Decode once without retaining a second full encoded-file copy. */
 export async function prepareAudioImport(ctx:BaseAudioContext,input:AudioImportInput,signal:AbortSignal,progress:(phase:ImportPhase)=>void):Promise<AudioSource>{
   progress('reading');let bytes=await input.read();signal.throwIfAborted();
+  const declaredSpeech=importedSpeechWavRegions(new Uint8Array(bytes));
   progress('decoding');let buffer:AudioBuffer;
   try{buffer=await ctx.decodeAudioData(bytes);}catch{
     signal.throwIfAborted();bytes=await input.read();
@@ -18,5 +20,6 @@ export async function prepareAudioImport(ctx:BaseAudioContext,input:AudioImportI
     min[bin]=lo===Infinity?0:lo;max[bin]=hi===-Infinity?0:hi;
     if(performance.now()-last>8){await new Promise(resolve=>setTimeout(resolve,0));signal.throwIfAborted();last=performance.now();}
   }
-  return {id:crypto.randomUUID(),name:input.name,filePath:input.filePath,buffer,peaks:{min,max},duration:buffer.duration,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels};
+  const aiSpeech=scaledSpeechRegions(declaredSpeech,buffer.duration,buffer.duration);
+  return {id:crypto.randomUUID(),name:input.name,filePath:input.filePath,buffer,aiSpeech:aiSpeech.length?aiSpeech:undefined,peaks:{min,max},duration:buffer.duration,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels};
 }

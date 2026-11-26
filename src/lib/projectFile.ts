@@ -1,3 +1,4 @@
+import {speechRegions,sourceSpeechRegions} from './aiSpeechProvenance';
 import {validProjectSourceJournals,validateSourceJournalAudio} from './sourceEditJournal';
 import {validProjectSourceChains} from './sourceChainRecipe';
 import {validTrackFreezes,retainedFreezeProject} from './trackFreeze';
@@ -45,6 +46,7 @@ interface SerializedSource {
   wav?: string; // portable project: base64-encoded 32-bit PCM WAV
   path?: string; // linked desktop project: unchanged aligned audio on disk
   provenance?: AudioSource['provenance'];
+  aiSpeech?: AudioSource['aiSpeech'];
 }
 
 interface SerializedProject {
@@ -93,6 +95,7 @@ export function serializeProject(
       ? { path: src.filePath }
       : { wav: arrayBufferToBase64(encodeAudioBufferToWav(src.buffer, 32,true)) }),
     provenance: src.provenance,
+    ...(speechRegions(src.aiSpeech).length?{aiSpeech:speechRegions(src.aiSpeech)}:{}),
   }));
 
   const doc: SerializedProject = {
@@ -111,13 +114,15 @@ export function serializeProject(
 export function linkedRenderDocument(project: TimelineProject, sources: Map<string, AudioSource>): SerializedProject | null {
   if(!validProjectSourceChains(project))throw new Error('Invalid source effect chain');
   if (hasNativeEffects(project)||project.tracks.some(t=>t.freeze)||project.sampleRate !== 48000) return null;
-  const ids = new Set(audibleTracks(project.tracks).flatMap(track => track.segments.map(clip => clip.sourceId)));
+  const clips = audibleTracks(project.tracks).flatMap(track => track.segments);
+  const ids = new Set(clips.map(clip => clip.sourceId));
   const linked: SerializedSource[] = [];
   for (const id of ids) {
     const source = sources.get(id);
     if (!source?.filePath || source.channels < 1 || source.channels > 2) return null;
+    const aiSpeech = sourceSpeechRegions(clips.find(c => c.sourceId === id)!, sources);
     linked.push({ id, name: source.name, path: source.filePath, duration: source.duration,
-      channels: source.channels, sampleRate: source.sampleRate, provenance: source.provenance });
+      channels: source.channels, sampleRate: source.sampleRate, provenance: source.provenance, ...(aiSpeech.length?{aiSpeech}:{}) });
   }
   return { format: FORMAT, version: hasStoredNativeEffects(project)?VERSION:3,
     project: { ...project, duration: Math.max(project.duration, timelineDuration(project)) }, sources: linked };
@@ -224,6 +229,7 @@ export async function deserializeProject(
         sampleRate: buffer.sampleRate,
         channels: buffer.numberOfChannels,
         provenance: s.provenance,
+        ...(speechRegions(s.aiSpeech).length?{aiSpeech:speechRegions(s.aiSpeech)}:{}),
         filePath: s.path,
       });
     } catch (err) {

@@ -1,3 +1,4 @@
+import {markSpeechBlob,receiptText,type AiAudioReceipt} from './aiSpeechProvenance';
 // ---------------------------------------------------------------------------
 // CrispAudio — WAV export utility
 // Uses the Rust `export_wav_binary` Tauri command when available, falls back to a
@@ -60,11 +61,13 @@ export async function exportWav(
  *
  * Returns false if the user cancels the dialog.
  */
-export async function downloadWavFile(blob: Blob, filename: string): Promise<boolean> {
+export async function downloadWavFile(blob: Blob, filename: string, receipt?: AiAudioReceipt): Promise<boolean> {
   const ext = filename.split('.').pop()?.toLowerCase() || 'wav';
+  if (receipt && ext === 'wav') blob = await markSpeechBlob(blob, receipt);
+  const sidecar = receipt && ext !== 'wav' ? new Blob([receiptText(receipt)], {type:'application/json'}) : undefined;
   if (isIOSApp()) {
     try {
-      return await shareFile(blob, filename);
+      return await shareFile(blob, filename, sidecar ? [{blob:sidecar, filename:`${filename}.provenance.json`}] : []);
     } catch (err) {
       console.error('Share sheet failed, falling back to save dialog:', err);
     }
@@ -79,9 +82,11 @@ export async function downloadWavFile(blob: Blob, filename: string): Promise<boo
       });
       if (!path) return false;
       await writeFile(path, new Uint8Array(await blob.arrayBuffer()));
+      if (sidecar) await writeFile(`${path}.provenance.json`, new Uint8Array(await sidecar.arrayBuffer()), {createNew:true});
       return true;
     } catch (err) {
       console.error('Failed to save WAV:', err);
+      if (receipt) throw err;
       return false;
     }
   }
@@ -93,6 +98,10 @@ export async function downloadWavFile(blob: Blob, filename: string): Promise<boo
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+  if (sidecar) {
+    const related = URL.createObjectURL(sidecar), link = document.createElement('a');
+    link.href = related; link.download = `${filename}.provenance.json`; link.click(); URL.revokeObjectURL(related);
+  }
   return true;
 }
 

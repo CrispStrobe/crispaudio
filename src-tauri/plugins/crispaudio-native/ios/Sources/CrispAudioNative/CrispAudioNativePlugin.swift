@@ -10,6 +10,7 @@ import WebKit
 
 class ShareFileArgs: Decodable {
     let path: String
+    let relatedPaths: [String]?
 }
 
 class HapticArgs: Decodable {
@@ -29,8 +30,10 @@ class CrispAudioNativePlugin: Plugin {
 
     @objc public func shareFile(_ invoke: Invoke) throws {
         let args = try invoke.parseArgs(ShareFileArgs.self)
-        let url = URL(fileURLWithPath: args.path)
-        guard FileManager.default.fileExists(atPath: url.path) else {
+        let related = args.relatedPaths ?? []
+        guard related.count <= 4 else { invoke.reject("Too many related files"); return }
+        let urls = ([args.path] + related).map { URL(fileURLWithPath: $0) }
+        guard urls.allSatisfy({ FileManager.default.fileExists(atPath: $0.path) }) else {
             invoke.reject("File to share does not exist")
             return
         }
@@ -43,9 +46,9 @@ class CrispAudioNativePlugin: Plugin {
             var presenter: UIViewController = root
             while let presented = presenter.presentedViewController { presenter = presented }
 
-            let sheet = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+            let sheet = UIActivityViewController(activityItems: urls, applicationActivities: nil)
             sheet.completionWithItemsHandler = { activity, completed, _, error in
-                try? FileManager.default.removeItem(at: url)
+                for url in urls { try? FileManager.default.removeItem(at: url) }
                 if let error = error {
                     invoke.reject(error.localizedDescription)
                 } else {

@@ -1,3 +1,4 @@
+import {projectAudioReceipt} from '../../lib/aiSpeechProvenance';
 import {rememberResources,usesMacResourceAccess} from '../../lib/resourceAccess';
 import {videoClips} from '../../lib/videoEditing';
 import {selectTimelineTrack,selectPictureTimelineTrack,selectionTrackIds} from '../../lib/trackSelection';
@@ -568,7 +569,7 @@ export const TimelinePanel: React.FC = () => {
         signal.throwIfAborted();
         return encodeAudioBuffer(rendered, fmt, kbps, signal);
       },
-      save: blob => downloadWavFile(blob, `${name}.${fmt}`),
+      save: blob => downloadWavFile(blob, `${name}.${fmt}`, projectAudioReceipt(store.project,store.sources,range)),
     });
   }, [store.project, store.sources, defaultBitDepth, startExport]);
 

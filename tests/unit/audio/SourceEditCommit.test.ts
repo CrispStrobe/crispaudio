@@ -2,6 +2,8 @@ import {beforeEach,afterEach,expect,it,vi} from 'vitest';
 import {commitSourceEdit} from '../../../src/audio/plugins/SourceEditCommit';
 import {recallFixture,RecallBuffer} from '../../fixtures/sourcePluginRecall';
 import {useProjectStore} from '../../../src/stores/projectStore';
+import {speechGeneration,projectAudioReceipt} from '../../../src/lib/aiSpeechProvenance';
+import {encodeWavJS} from '../../../src/lib/wavRuntime';
 const mocks=vi.hoisted(()=>({invoke:vi.fn(),encode:vi.fn()}));
 vi.mock('@tauri-apps/api/core',()=>({invoke:mocks.invoke}));
 vi.mock('../../../src/lib/wavExport',()=>({encodeSourceBufferWav:mocks.encode}));
@@ -52,4 +54,27 @@ it.each(['nan','shape','locked'])('rejects %s before storing files',async kind=>
 });
 it('publishes in browser without native storage',async()=>{
  const i=input();delete (window as unknown as Record<string,unknown>).__TAURI_INTERNALS__;await commitSourceEdit(i,current,publish,new AbortController().signal);expect(events).toEqual(['publish']);expect(mocks.encode).not.toHaveBeenCalled();
+});
+it('stores known speech-generation provenance in the derived source and WAV, with Undo',async()=>{
+ const i=input(48000,1),g=speechGeneration('/private/person/sidon.gguf',new Date('2026-11-26'));
+ const operation={...i.operation,type:'speech',aiSpeech:g,ranges:[{start:100,end:500}]};
+ mocks.encode.mockResolvedValue(await encodeWavJS(i.pcm[0],48000,32));
+ await commitSourceEdit({...i,operation},current,publish,new AbortController().signal);
+ const clip=current().project.tracks[0].segments[0],derived=current().sources.get(clip.sourceId)!;
+ expect(derived.aiSpeech).toEqual([{...g,start:100/48000,end:500/48000}]);
+ expect(current().sources.get('edited')!.aiSpeech).toBeUndefined();
+ const bytes=mocks.invoke.mock.calls.find(([command])=>command==='recording_conversion_write')![1] as Uint8Array;
+ expect(new TextDecoder().decode(bytes)).toContain('urn:crispaudio:ai-audio-provenance:1');
+ expect(new TextDecoder().decode(bytes)).not.toContain('/private/person');
+ expect(projectAudioReceipt(current().project,current().sources)).toBeDefined();
+ useProjectStore.temporal.getState().undo();expect(projectAudioReceipt(current().project,current().sources)).toBeUndefined();
+});
+it('retains reversed speech ancestry when an ordinary source edit clears the retime recipe',async()=>{
+ const i=input(48000,1),g=speechGeneration('sidon-v0.1-q8_0.gguf'),clip=i.snapshot.project.tracks[0].segments[0];
+ Reflect.deleteProperty(window,'__TAURI_INTERNALS__');
+ i.snapshot.sources.get('original')!.aiSpeech=[{...g,start:.05,end:.1}];
+ clip.retime={rate:2,reverse:true,semitones:0,preservePitch:true,renderDuration:.1,original:{sourceId:'original',offset:0,duration:.2}};
+ await commitSourceEdit(i,current,publish,new AbortController().signal);
+ const changed=current().project.tracks[0].segments[0],marks=current().sources.get(changed.sourceId)!.aiSpeech!;
+ expect(changed.retime).toBeUndefined();expect(marks).toHaveLength(1);expect(marks[0].start).toBeCloseTo(.025);expect(marks[0].end).toBeCloseTo(.05);
 });

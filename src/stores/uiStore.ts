@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { create } from 'zustand';
+import {editedSpeechRegions,sourceSpeechRegions} from '../lib/aiSpeechProvenance';
 import { useVoiceStore } from './voiceStore';
 import { useProjectStore } from './projectStore';
 import type { OpenedFile } from '../lib/native';
@@ -76,7 +77,8 @@ export const useUIStore = create<UIState>()((set, get) => ({
       buffer.copyToChannel(source.buffer.getChannelData(channel).subarray(start, start + buffer.length), channel);
     }
     project.setIsPlaying(false);
-    useVoiceStore.getState().setSourceBuffer(buffer);
+    const aiSpeech=editedSpeechRegions({...source,aiSpeech:sourceSpeechRegions(segment,project.sources)},segment.sourceOffset,buffer.duration);
+    useVoiceStore.getState().setSourceBuffer(buffer,aiSpeech);
     useVoiceStore.getState().setProcessedBuffer(null);
     set({ activePanel: 'voice', activeModal: null, voiceEffectsTargetSegmentId: segmentId });
   },

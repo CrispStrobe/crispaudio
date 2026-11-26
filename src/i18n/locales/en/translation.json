@@ -2570,6 +2570,8 @@
     "speechHelp": "Resynthesises the selected speech with a local restoration model such as Sidon. The result is generated audio, not a repair of the original samples, and is mono.",
     "limits": "Runs in-process on this computer; nothing is uploaded. Long audio is processed in chunks and Cancel takes effect between chunks. Limit: 20 minutes per run.",
     "generative": "Generated voice: listen carefully before applying.",
+    "regeneratedSource": "Edited audio includes regions derived from AI-regenerated speech.",
+    "declaredSource": "Imported unsigned metadata declares regions derived from AI-regenerated speech.",
     "processing": "Processing with CrispASR… Cancel takes effect between chunks.",
     "analyzing": "Analysing with CrispASR…",
     "tracksAdded": "Added {{count}} stem tracks; the original track stays audible because it contains other clips.",

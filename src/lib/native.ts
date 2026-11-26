@@ -28,13 +28,17 @@ async function invokeNative<T>(command: string, args?: Record<string, unknown>):
  * Hand a file to the iOS share sheet (Save to Files, AirDrop, Messages, …).
  * Resolves true when the user completed an action, false when dismissed.
  */
-export async function shareFile(blob: Blob, filename: string): Promise<boolean> {
+export async function shareFile(blob: Blob, filename: string, related: {blob:Blob;filename:string}[] = []): Promise<boolean> {
   const { invoke } = await import('@tauri-apps/api/core');
   const safeName = filename.replace(/[^A-Za-z0-9._ -]/g, '_');
   const path = await invoke<string>('stage_share_file', new Uint8Array(await blob.arrayBuffer()), {
     headers: { 'x-file-name': safeName },
   });
-  const { completed } = await invokeNative<{ completed: boolean }>('shareFile', { path });
+  const relatedPaths:string[] = [];
+  for (const file of related) relatedPaths.push(await invoke<string>('stage_share_file', new Uint8Array(await file.blob.arrayBuffer()), {
+    headers: {'x-file-name': file.filename.replace(/[^A-Za-z0-9._ -]/g, '_')},
+  }));
+  const { completed } = await invokeNative<{ completed: boolean }>('shareFile', { path, ...(relatedPaths.length ? {relatedPaths} : {}) });
   return completed;
 }
 

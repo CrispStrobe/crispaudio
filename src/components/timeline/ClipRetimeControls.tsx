@@ -12,6 +12,7 @@ import {planRetime,applyRetime,type RetimeOptions} from '../../lib/clipRetime';
 import {mediaJob} from '../../lib/mediaJob';
 import {encodeAudioBufferWav} from '../../lib/wavExport';
 import {computeWaveformPeaks} from '../../audio/utils/audioBufferUtils';
+import {retimedSpeechRegions,speechRegions,audioReceipt} from '../../lib/aiSpeechProvenance';
 import type {TimelineProject,AudioSource} from '../../types/audio';
 const defaults:RetimeOptions={rate:1,reverse:false,preservePitch:true,semitones:0};
 export function ClipRetimeControls({launcher=true}:{launcher?:boolean}={}){
@@ -29,7 +30,10 @@ export function ClipRetimeControls({launcher=true}:{launcher?:boolean}={}){
     if(!path)throw new Error('retime.bounds');
     const output=await mediaJob<string>('retime_media_asset',{path,settings:{...plan.settings,offset:plan.original.offset,duration:plan.original.duration,video,frameRate:snapshot.frameRate??25}},abort.signal),id=crypto.randomUUID();
     if(video){derived.set(plan.clip.id,{id,path:output,duration:plan.duration});}
-    else{const bytes=await readFile(output),buffer=await decodeDerivedAudio(bytes,snapshot.sampleRate,abort.signal);abort.signal.throwIfAborted();sources.set(id,{id,name:'name' in plan.clip?plan.clip.name:t('retime.derived'),filePath:output,buffer,duration:buffer.duration,channels:buffer.numberOfChannels,sampleRate:buffer.sampleRate,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))});derived.set(plan.clip.id,{id,path:output,duration:buffer.duration});}
+    else{const bytes=await readFile(output),buffer=await decodeDerivedAudio(bytes,snapshot.sampleRate,abort.signal);abort.signal.throwIfAborted();
+     const aiSpeech=retimedSpeechRegions(speechRegions(sources.get(plan.original.sourceId!)?.aiSpeech),{...plan.settings,original:plan.original,renderDuration:Math.min(plan.duration,buffer.duration)}),receipt=audioReceipt(aiSpeech);
+     if(receipt){await invoke('annotate_delivery_wav',{staged:output,metadata:{aiProvenance:receipt}});abort.signal.throwIfAborted();}
+     sources.set(id,{id,name:'name' in plan.clip?plan.clip.name:t('retime.derived'),filePath:output,buffer,aiSpeech:aiSpeech.length?aiSpeech:undefined,duration:buffer.duration,channels:buffer.numberOfChannels,sampleRate:buffer.sampleRate,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))});derived.set(plan.clip.id,{id,path:output,duration:buffer.duration});}
    }
    abort.signal.throwIfAborted();const project=applyRetime(snapshot,plans,derived,restore);if(useProjectStore.getState().project!==snapshot)throw new Error('retime.stale');setReview({snapshot,project,sources,count:plans.length});
   }catch(e){if(!abort.signal.aborted)setError(t(e instanceof Error?e.message:String(e)));}finally{if(controller.current===abort){controller.current=null;setBusy(false);}}
