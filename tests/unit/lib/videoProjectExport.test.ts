@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AudioSource, TimelineProject } from '../../../src/types/audio';
 import type { TimelineEngine } from '../../../src/audio/engine/TimelineEngine';
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
-vi.mock('@tauri-apps/plugin-fs', () => ({ remove: vi.fn() }));
+vi.mock('@tauri-apps/plugin-fs', () => ({ remove: vi.fn(), writeFile: vi.fn() }));
 vi.mock('../../../src/lib/wavExport', () => ({ encodeAudioBufferWav: vi.fn() }));
 import { invoke } from '@tauri-apps/api/core';
-import { remove } from '@tauri-apps/plugin-fs';
+import { remove, writeFile } from '@tauri-apps/plugin-fs';
+import {speechGeneration} from '../../../src/lib/aiSpeechProvenance';
 import { encodeAudioBufferWav } from '../../../src/lib/wavExport';
 import { linkedRenderDocument } from '../../../src/lib/projectFile';
 import { exportVideoProject } from '../../../src/lib/videoProjectExport';
@@ -29,6 +30,18 @@ beforeEach(() => {
   vi.mocked(remove).mockResolvedValue(undefined);
 });
 describe('linked desktop video export', () => {
+  it.each([true,false])('preserves speech-region provenance beside video (native=%s)',async(nativeMac)=>{
+    const {options,source,renderMixRange}=fixture();options.nativeMac=nativeMac;
+    Object.assign(options.project.tracks[0].segments[0],{sourceOffset:0,gain:1});
+    source.aiSpeech=[{...speechGeneration('/private/person/sidon.gguf'),start:1.5,end:2}];
+    renderMixRange.mockResolvedValue({});vi.mocked(encodeAudioBufferWav).mockResolvedValue({arrayBuffer:async()=>new ArrayBuffer(8)} as Blob);
+    vi.mocked(invoke).mockImplementation(async command=>command==='stage_share_file'?'/temp/mix.wav':undefined);
+    await exportVideoProject(options,new AbortController().signal);
+    const [path,bytes,writeOptions]=vi.mocked(writeFile).mock.calls[0];
+    expect(path).toBe('/export.mp4.provenance.json');expect(writeOptions).toEqual({createNew:true});
+    const text=new TextDecoder().decode(bytes as Uint8Array);expect(text).not.toContain('/private/');expect(text).not.toContain('/mic.wav');
+    expect(JSON.parse(text).regions).toMatchObject([{start:.5,end:1}]);
+  });
   it('sends only paths and the complete clock to the native mixer, retaining the selected section', async () => {
     const { options, renderMixRange } = fixture();
     await exportVideoProject(options, new AbortController().signal);

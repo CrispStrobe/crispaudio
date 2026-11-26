@@ -94,7 +94,7 @@ export interface PluginRecipe {id:string;name:string;parameters:Record<string,nu
 /** Uniform decoded-PCM coordinates; not a claim about a plug-in's historic DSP rate. */
 export interface SourceEditJournal {version:1;sampleRate:number;channels:number}
 export interface SourceEditWindow {start:number;frames:number}
-export interface SourceEditOperation {type:string;channel:number;ranges:{start:number;end:number}[];targetDb:number;parameters?:Record<string,number>;chain?:import('../lib/sourceChainRecipe').SourceChainRecipe;plugin?:PluginRecipe;window?:SourceEditWindow}
+export interface SourceEditOperation {aiSpeech?:import('../lib/aiSpeechProvenance').SpeechGeneration;type:string;channel:number;ranges:{start:number;end:number}[];targetDb:number;parameters?:Record<string,number>;chain?:import('../lib/sourceChainRecipe').SourceChainRecipe;plugin?:PluginRecipe;window?:SourceEditWindow}
 export interface SourceEdit {sourceId:string;offset:number;retime?:Retime;journal?:SourceEditJournal;operations:SourceEditOperation[]}
 
 export interface AudioSegment {
@@ -145,6 +145,7 @@ export type EffectType =
   | 'compressor';
 
 export interface AudioSource {
+  aiSpeech?: import('../lib/aiSpeechProvenance').AiSpeechRegion[];
   id: string;
   name: string;
   buffer: AudioBuffer;

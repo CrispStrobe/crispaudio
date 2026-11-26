@@ -308,7 +308,8 @@ fn execute(cli: Cli) -> media::Result<()> {
                 std::path::Path::new(&model),
                 &audio,
             )?;
-            media::crispasr::write_audio(std::path::Path::new(&output), &speech)?;
+            let receipt = media::audio_provenance::speech_receipt(std::path::Path::new(&model), speech.frames() as f64 / speech.rate as f64)?;
+            media::crispasr::write_audio_with_receipt(std::path::Path::new(&output), &speech, Some(&receipt))?;
             println!("{}", serde_json::json!({"output":output,"generative":true}));
         }
         Commands::SpeechRegions {

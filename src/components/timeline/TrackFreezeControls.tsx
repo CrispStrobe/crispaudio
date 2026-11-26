@@ -11,6 +11,7 @@ import {encodeSourceBufferWav} from '../../lib/wavExport';
 import {Modal} from '../common/Modal';
 import {InfoButton} from '../common/InfoButton';
 import {NumberField} from './NumberField';
+import {projectAudioReceipt,markSpeechBlob} from '../../lib/aiSpeechProvenance';
 export function TrackFreezeControls(){
  const {t}=useTranslation(),engine=useContext(TimelineEngineContext),project=useProjectStore(s=>s.project),recording=useUIStore(s=>s.timelineRecording),[trackId,setTrackId]=useState<string>(),[tail,setTail]=useState(2),[busy,setBusy]=useState(false),[error,setError]=useState(''),job=useRef<AbortController|null>(null),alive=useRef(true);
  const close=()=>{job.current?.abort();setTrackId(undefined);};
@@ -29,10 +30,11 @@ export function TrackFreezeControls(){
    if(Math.abs(buffer.length-plan.frames)>1||buffer.sampleRate!==snapshot.sampleRate||buffer.numberOfChannels!==2)throw new Error('freeze.failed');
    // Reject invalid render output before it can be persisted or published.
    for(let ch=0;ch<2;ch++){const pcm=buffer.getChannelData(ch);for(let i=0;i<buffer.length;i++){if(!Number.isFinite(pcm[i]))throw new Error('freeze.failed');if(i%65536===65535){await new Promise<void>(resolve=>setTimeout(resolve,0));signal.throwIfAborted();}}}
+   const receipt=projectAudioReceipt(plan.renderProject,sources);
    let filePath:string|undefined;
-   if('__TAURI_INTERNALS__' in window){const wav=await encodeSourceBufferWav(buffer);signal.throwIfAborted();filePath=await invoke<string>('persist_recording',new Uint8Array(await wav.arrayBuffer()));}
+   if('__TAURI_INTERNALS__' in window){const wav=await markSpeechBlob(await encodeSourceBufferWav(buffer),receipt);signal.throwIfAborted();filePath=await invoke<string>('persist_recording',new Uint8Array(await wav.arrayBuffer()));}
    signal.throwIfAborted();const current=useProjectStore.getState();if(!alive.current||current.project!==snapshot||current.sources!==sources||current.isPlaying||useUIStore.getState().timelineRecording)throw new Error('freeze.changed');
-   const id=crypto.randomUUID(),source={id,name:`${track.name} · ${t('freeze.frozen')}`,buffer,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200))),duration:buffer.duration,sampleRate:buffer.sampleRate,channels:2,filePath};
+   const id=crypto.randomUUID(),source={id,name:`${track.name} · ${t('freeze.frozen')}`,buffer,aiSpeech:receipt?.regions,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200))),duration:buffer.duration,sampleRate:buffer.sampleRate,channels:2,filePath};
    const candidate=freezeTrack(snapshot,track.id,source,tail),nextSources=new Map([...sources,[id,source]]);validateFrozenProjectAudio(candidate,nextSources);
    useProjectStore.setState({project:candidate,sources:nextSources,selection:null,isPlaying:false});setTrackId(undefined);
   }catch(e){if(alive.current&&!signal.aborted)setError(t(e instanceof Error?e.message:String(e)));}

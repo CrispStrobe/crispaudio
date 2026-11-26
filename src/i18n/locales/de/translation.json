@@ -2583,6 +2583,8 @@
     "speechHelp": "Erzeugt die ausgewählte Sprache mit einem lokalen Restaurierungsmodell wie Sidon neu. Das Ergebnis ist generiertes Audio, keine Reparatur der Originalsamples, und ist mono.",
     "limits": "Läuft lokal auf diesem Computer; nichts wird hochgeladen. Lange Aufnahmen werden in Abschnitten verarbeitet, Abbrechen greift zwischen Abschnitten. Grenze: 20 Minuten pro Durchgang.",
     "generative": "Generierte Stimme: vor dem Übernehmen sorgfältig anhören.",
+    "regeneratedSource": "Bearbeitetes Audio enthält Bereiche, die von KI-regenerierter Sprache abgeleitet sind.",
+    "declaredSource": "Importierte unsignierte Metadaten weisen auf Bereiche aus KI-regenerierter Sprache hin.",
     "processing": "CrispASR verarbeitet… Abbrechen greift zwischen Abschnitten.",
     "analyzing": "CrispASR analysiert…",
     "tracksAdded": "{{count}} Stem-Spuren hinzugefügt; die Originalspur bleibt hörbar, weil sie weitere Clips enthält.",

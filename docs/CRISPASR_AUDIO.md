@@ -96,6 +96,62 @@ third-party notices are shown in About.
 - Sections load the library only when expanded. Browser/iOS builds show a
   desktop-only notice.
 
+## Speech-generation provenance
+
+A successful **Regenerate speech** operation records the affected source
+regions, the local CrispASR engine, the operation time, and a public catalog
+model name when known. Other configured models use a generic identifier:
+arbitrary local filenames can themselves contain private information. The
+portable receipt contains no source paths, transcript, API key, account or
+speaker identity. A failed or discarded preview creates no applied record.
+
+The source editor shows when edited regions derive from AI-regenerated speech.
+The recording before regeneration keeps its original status. Undo, portable or
+linked project saves, recovery, trimming, retiming, freezing, stem extraction
+and Voice effects retain the known source ancestry. Voice time changes map the
+regions into the new duration; a new recording or unmarked input clears prior
+Voice provenance. Ordinary denoising, separation, analysis, oscillator synthesis
+and voice effects do not create a speech-generation event by themselves.
+
+WAV exports, including CLI speech-regeneration output, carry a readable RIFF `LIST/INFO` description
+and a `capr` JSON receipt with schema
+`urn:crispaudio:ai-audio-provenance:1`. FLAC, AAC and video exports carry an
+adjacent `<audio-or-video-filename>.provenance.json`; keep that file alongside
+the media. Browser exports initiate both downloads; allow both files to download.
+The iOS share sheet includes
+both audio and its companion receipt for compressed formats. Delivery manifests
+also contain the applicable receipt. Native WAV delivery adds the receipt to an
+unpublished stage before making the finished file available.
+
+These are **unsigned, removable application declarations**. They are neither
+C2PA signatures nor a detector. The receipt's `contributing-source-lineage`
+scope describes ancestry in source regions that participate in the chosen
+export range, with mute, solo, gain and routing taken into account. It does not
+assert that an entire composition is synthetic or that generated speech is
+audible at every listed instant: separation, effects, mixing and resampling can
+change or remove that signal. Region times are lineage coordinates, not a
+sample-by-sample audibility measurement. The receipt makes no assertion about
+the original recording's origin and no claim of legal compliance.
+
+Ordinary timeline WAV imports (browser, native picker, dropped files and
+Open-in) and the Voice file picker read valid `capr` receipts before decoding.
+They retain them as `imported-unsigned-declaration`, distinct from an
+`observed-operation` performed in the app; the UI identifies the imported
+unsigned declaration. Malformed or unrelated metadata is ignored. This is
+limited to CrispAudio's own WAV carrier: the app does not authenticate imported
+claims, automatically discover compressed/video sidecars, or infer provenance
+for older unmarked files. The WAV writer refuses to alter an existing `c2pa`
+carrier, preserving the input bytes instead of treating a custom receipt as a
+signature.
+
+The [pinned CrispASR speech-to-speech entry point](https://github.com/CrispStrobe/CrispASR/blob/d94264379dada437aa4ea9163eb34ffe4554422a/src/crispasr_c_api.cpp#L11399-L11409)
+already embeds its native PCM watermark. CrispAudio keeps that generation path
+and does not implement a second audio watermark. A user-selected library may
+behave differently. Neither the app nor these receipts verify watermark
+survival after blending, cropping, retiming, resampling, mixing or encoding.
+This audio mechanism is separate from a text provider's statistical text
+watermark.
+
 ## CLI
 
 ```sh
@@ -121,6 +177,14 @@ the results with the same semantics as the GUI:
 ```
 
 ## Validation
+
+- Model-free provenance tests cover marked WAV PCM preservation (including
+  odd-frame mono 8/24-bit data), native C2PA refusal, own-WAV reimport, privacy,
+  source edits/Undo, source and Voice duration mapping, project/recovery
+  persistence, routing/range scope, export receipts, and iOS share arguments.
+  They do not establish native watermark detection, Rust/platform compilation,
+  installed-app playback or iOS share-sheet behavior on a device; those require
+  the corresponding native build and device validation.
 
 - `cargo test --lib crispasr` covers the resampler, chunk assembly, region/pause
   planning and loader errors; `project_edit` tests cover both recipes. With

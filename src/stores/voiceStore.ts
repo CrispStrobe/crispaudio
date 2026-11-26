@@ -3,6 +3,7 @@ import { temporal } from 'zundo';
 import { createHistoryGesture } from './historyGesture';
 import type { VoiceSettings, VoicePresetName } from '../types/voicelab';
 import { getPreset } from '../audio/presets/voicePresets';
+import {speechRegions,type AiSpeechRegion} from '../lib/aiSpeechProvenance';
 
 // ── State shape ──────────────────────────────────────────────────────────────
 
@@ -13,6 +14,8 @@ interface VoiceState {
   morphAmount: number;            // 0–1; 0 = pure active slot, 1 = pure other slot
   sourceBuffer: AudioBuffer | null;
   processedBuffer: AudioBuffer | null;
+  sourceAiSpeech: AiSpeechRegion[];
+  processedAiSpeech: AiSpeechRegion[];
   isProcessing: boolean;
   selectedPreset: VoicePresetName;
 
@@ -25,10 +28,10 @@ interface VoiceState {
   loadPreset: (name: VoicePresetName) => void;
 
   /** Store the source (unprocessed) AudioBuffer. */
-  setSourceBuffer: (buffer: AudioBuffer) => void;
+  setSourceBuffer: (buffer: AudioBuffer, aiSpeech?: AiSpeechRegion[]) => void;
 
   /** Store the result of the latest processing run (or null to clear). */
-  setProcessedBuffer: (buffer: AudioBuffer | null) => void;
+  setProcessedBuffer: (buffer: AudioBuffer | null, aiSpeech?: AiSpeechRegion[]) => void;
 
   /** Switch which slot (A or B) is the 'active' slot. */
   setActiveSlot: (slot: 'A' | 'B') => void;
@@ -63,6 +66,8 @@ export const useVoiceStore = create<VoiceState>()(
   morphAmount: 0,
   sourceBuffer: null,
   processedBuffer: null,
+  sourceAiSpeech: [],
+  processedAiSpeech: [],
   isProcessing: false,
   selectedPreset: 'original',
 
@@ -89,9 +94,9 @@ export const useVoiceStore = create<VoiceState>()(
     });
   },
 
-  setSourceBuffer: (buffer) => set({ sourceBuffer: buffer }),
+  setSourceBuffer: (buffer, aiSpeech = []) => set({ sourceBuffer: buffer, sourceAiSpeech: speechRegions(aiSpeech), processedBuffer: null, processedAiSpeech: [] }),
 
-  setProcessedBuffer: (buffer) => set({ processedBuffer: buffer }),
+  setProcessedBuffer: (buffer, aiSpeech = []) => set({ processedBuffer: buffer, processedAiSpeech: buffer ? speechRegions(aiSpeech) : [] }),
 
   setActiveSlot: (slot) => set({ activeSlot: slot }),
 

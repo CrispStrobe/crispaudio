@@ -4,6 +4,7 @@ pub mod asr;
 pub mod audio_encode;
 pub mod audio_mix;
 pub mod crispasr;
+pub mod audio_provenance;
 mod compressor;
 mod distortion;
 mod ducking;

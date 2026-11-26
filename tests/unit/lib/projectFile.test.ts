@@ -13,8 +13,9 @@ vi.mock('../../../src/audio/utils/audioBufferUtils', () => ({
   })),
 }));
 
-import { serializeProject, deserializeProject } from '../../../src/lib/projectFile';
+import { serializeProject, deserializeProject,linkedRenderDocument } from '../../../src/lib/projectFile';
 import type { TimelineProject, AudioSource } from '../../../src/types/audio';
+import {speechGeneration} from '../../../src/lib/aiSpeechProvenance';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -78,6 +79,24 @@ function makeSource(id: string, name: string): AudioSource {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+});
+it('known speech-region provenance survives project save and reopen; legacy sources stay unknown',async()=>{
+ const source=makeSource('s','Original'),g=speechGeneration('/private/person/model.gguf');
+ source.aiSpeech=[{...g,start:0,end:source.duration}];
+ const saved=serializeProject(makeProject(),new Map([['s',source]]));
+ const restored=await deserializeProject(saved,makeMockAudioContext());
+ expect(restored.sources.get('s')!.aiSpeech).toEqual(source.aiSpeech);
+ const plain=serializeProject(makeProject(),new Map([['old',makeSource('old','Old')]]));
+ expect(JSON.parse(plain).sources[0]).not.toHaveProperty('aiSpeech');
+});
+it('resolves retained retime attribution before reducing the linked renderer source list',()=>{
+ const original={...makeSource('original','Original'),aiSpeech:[{...speechGeneration('sidon-v0.1-q8_0.gguf'),start:.05,end:.1}]};
+ const derived={...makeSource('derived','Retimed'),filePath:'/private/retimed.wav'};
+ const clip={sourceId:'derived',sourceOffset:0,duration:.1,startTime:0,gain:1,retime:{rate:2,reverse:true,semitones:0,preservePitch:true,renderDuration:.1,original:{sourceId:'original',offset:0,duration:.2}}};
+ const project=makeProject({sampleRate:48000,tracks:[{id:'t',name:'Track',segments:[clip],muted:false,solo:false,volume:1,pan:0}] as TimelineProject['tracks']});
+ const doc=linkedRenderDocument(project,new Map([['original',original],['derived',derived]]))!;
+ expect(doc.sources).toHaveLength(1);expect(doc.sources[0].id).toBe('derived');expect(doc.sources[0].aiSpeech).toHaveLength(1);
+ expect(doc.sources[0].aiSpeech![0].start).toBeCloseTo(.05);expect(doc.sources[0].aiSpeech![0].end).toBeCloseTo(.075);
 });
 
 // ---------------------------------------------------------------------------

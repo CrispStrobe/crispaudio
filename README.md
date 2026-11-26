@@ -117,6 +117,11 @@ Select a clip and open **Source Editor** for detailed work on its source window.
 - Under **CrispASR audio tools** (desktop), separate dialogue from music or keep
   any stem of the selection, split a whole clip into stem tracks, or resynthesise
   damaged speech with a generative model. Models are local files you choose.
+  Applied regeneration keeps a source-region record through project saves,
+  edits and exports. WAV carries readable metadata and an unsigned provenance
+  receipt; compressed audio/video exports have a companion `.provenance.json`.
+  These record generation ancestry, without asserting the original recording
+  or an entire mix is synthetic. See [provenance and limits](docs/CRISPASR_AUDIO.md#speech-generation-provenance).
 - Inspect peak, RMS, DC offset, clipping, loudness and true-peak readings. Open a
   spectrum or spectrogram and adjust its analysis settings.
 - Save selections as named regions for later delivery. On macOS, apply supported

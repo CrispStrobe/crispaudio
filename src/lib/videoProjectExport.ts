@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { remove } from '@tauri-apps/plugin-fs';
+import { remove, writeFile } from '@tauri-apps/plugin-fs';
+import {projectAudioReceipt,receiptText} from './aiSpeechProvenance';
 import type { AudioSource, TimelineProject } from '../types/audio';
 import type { TimelineEngine } from '../audio/engine/TimelineEngine';
 import { linkedRenderDocument } from './projectFile';
@@ -29,10 +30,13 @@ export async function exportVideoProject(options: ExportOptions, signal: AbortSi
   const edit = { graphics:project.video.graphics,captions:project.video.captions,tracks:project.video.tracks,width:project.video.width,height:project.video.height,path: project.video.path, sources: project.video.sources,
     exportPreset:options.quality, frameRate: project.frameRate, duration: Math.max(project.duration, timelineDuration(project)),
     clips: videoClips(project.video), backend, outputFormat: format };
+  const receipt=projectAudioReceipt(project,sources,{start,end});
+  const saveProvenance=async()=>{if(receipt)await writeFile(`${output}.provenance.json`,new TextEncoder().encode(receiptText(receipt)),{createNew:true});};
   const document = options.nativeMac ? linkedRenderDocument(project, sources) : null;
   if (document) {
     // Strict native audio: failures remain visible; never silently switch mixers.
     await mediaJob('export_linked_project_video', { document, edit, output, start, end }, signal);
+    await saveProvenance();
     return;
   }
   if (!engine) throw new Error('Audio engine is unavailable');
@@ -45,5 +49,6 @@ export async function exportVideoProject(options: ExportOptions, signal: AbortSi
   try {
     signal.throwIfAborted();
     await mediaJob('export_video_edit', { edit, output, mix, start, end }, signal);
+    await saveProvenance();
   } finally { await remove(mix).catch(() => {}); }
 }

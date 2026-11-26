@@ -2,6 +2,7 @@ import {beforeEach,afterEach,expect,it,vi} from 'vitest';
 import {commitStemTracks} from '../../../src/audio/plugins/StemTracksCommit';
 import {recallFixture,RecallBuffer} from '../../fixtures/sourcePluginRecall';
 import {useProjectStore} from '../../../src/stores/projectStore';
+import {speechGeneration} from '../../../src/lib/aiSpeechProvenance';
 const mocks=vi.hoisted(()=>({invoke:vi.fn(),encode:vi.fn()}));
 vi.mock('@tauri-apps/api/core',()=>({invoke:mocks.invoke}));
 vi.mock('../../../src/lib/wavExport',()=>({encodeSourceBufferWav:mocks.encode}));
@@ -54,4 +55,15 @@ it.each(['length','nan','locked','count'])('rejects %s before storing files',asy
  if(kind==='locked')i.snapshot.project.tracks[0].locked=true;
  if(kind==='count')i.stems=Array.from({length:9},()=>i.stems[0]);
  await expect(commitStemTracks(i,current,publish,new AbortController().signal)).rejects.toThrow();expect(mocks.invoke).not.toHaveBeenCalled();
+});
+it('preserves retimed generation ancestry in stem sources without claiming a new synthesis event',async()=>{
+ const i=input(true),g=speechGeneration('sidon-v0.1-q8_0.gguf'),clip=i.snapshot.project.tracks[0].segments[0];
+ Reflect.deleteProperty(window,'__TAURI_INTERNALS__');
+ i.snapshot.sources.get('original')!.aiSpeech=[{...g,start:.05,end:.1}];
+ clip.retime={rate:2,reverse:true,semitones:0,preservePitch:true,renderDuration:.1,original:{sourceId:'original',offset:0,duration:.2}};
+ await commitStemTracks(i,current,publish,new AbortController().signal);
+ for(const track of current().project.tracks.slice(1)){
+  const marks=current().sources.get(track.segments[0].sourceId)!.aiSpeech!;
+  expect(marks).toHaveLength(1);expect(marks[0].generatedAtUnixMs).toBe(g.generatedAtUnixMs);expect(marks[0].start).toBeCloseTo(.025);expect(marks[0].end).toBeCloseTo(.05);
+ }
 });

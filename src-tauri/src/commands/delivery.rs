@@ -255,6 +255,9 @@ pub fn publish_delivery_stage(staged: String, output: String) -> Result<(), Stri
 /// Add RIFF INFO to an unpublished WAV stage without buffering the audio data.
 #[tauri::command]
 pub fn annotate_delivery_wav(staged: String, metadata: Value) -> Result<(), String> {
+    if let Some(receipt) = metadata.get("aiProvenance") {
+        crispaudio_media::audio_provenance::append_receipt(Path::new(&staged), receipt)?;
+    }
     let mut info = b"INFO".to_vec();
     for (key, tag) in [
         ("title", b"INAM"),

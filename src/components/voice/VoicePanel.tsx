@@ -40,6 +40,7 @@ import { VoiceEngine } from '../../audio/engine/VoiceEngine';
 import type { VoicePresetName } from '../../types/voicelab';
 import { VoiceWaveform, VoiceLevels } from './VoiceVisualizations';
 import { haptic } from '../../lib/native';
+import {audioReceipt,importedSpeechWavRegions,scaledSpeechRegions,type AiSpeechRegion} from '../../lib/aiSpeechProvenance';
 
 const voiceEngine = new VoiceEngine();
 
@@ -66,7 +67,7 @@ const PRESET_SHORTCUTS: Record<VoicePresetName, string> = {
 // File drop zone (larger, more inviting)
 // ---------------------------------------------------------------------------
 
-function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
+function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer, aiSpeech: AiSpeechRegion[]) => void }) {
   const { t } = useTranslation();
   const [dragging, setDragging] = useState(false);
   const [filename, setFilename] = useState<string | null>(null);
@@ -77,6 +78,7 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
     setError(null);
     try {
       const arrayBuf = await file.arrayBuffer();
+      const declaredSpeech=importedSpeechWavRegions(new Uint8Array(arrayBuf));
       const ctx = new AudioContext();
       let decoded: AudioBuffer;
       try {
@@ -89,7 +91,7 @@ function FileDropZone({ onFile }: { onFile: (buf: AudioBuffer) => void }) {
         const { decodeCompressedToBuffer } = await import('../../lib/codecs');
         decoded = await decodeCompressedToBuffer(ctx, new Uint8Array(arrayBuf));
       }
-      onFile(decoded);
+      onFile(decoded,scaledSpeechRegions(declaredSpeech,decoded.duration,decoded.duration));
       setFilename(file.name);
       await ctx.close();
     } catch {
@@ -164,11 +166,13 @@ export function VoicePanel() {
   const { t } = useTranslation();
   const timelineTarget = useUIStore(s => s.voiceEffectsTargetSegmentId);
   const settings = useVoiceStore((s) => s.activeSlot === 'A' ? s.settingsA : s.settingsB);
-  const { activeSlot, morphAmount, sourceBuffer, processedBuffer, isProcessing, selectedPreset, setSourceBuffer, loadPreset, setIsProcessing, setProcessedBuffer, setActiveSlot, setMorphAmount, swapSlots, getEffectiveSettings } = useVoiceStore(useShallow((s) => ({
+  const { activeSlot, morphAmount, sourceBuffer, processedBuffer, sourceAiSpeech, processedAiSpeech, isProcessing, selectedPreset, setSourceBuffer, loadPreset, setIsProcessing, setProcessedBuffer, setActiveSlot, setMorphAmount, swapSlots, getEffectiveSettings } = useVoiceStore(useShallow((s) => ({
     activeSlot: s.activeSlot,
     morphAmount: s.morphAmount,
     sourceBuffer: s.sourceBuffer,
     processedBuffer: s.processedBuffer,
+    sourceAiSpeech: s.sourceAiSpeech,
+    processedAiSpeech: s.processedAiSpeech,
     isProcessing: s.isProcessing,
     selectedPreset: s.selectedPreset,
     setSourceBuffer: s.setSourceBuffer,
@@ -209,18 +213,22 @@ export function VoicePanel() {
 
   const handleProcess = useCallback(async () => {
     if (!sourceBuffer) return;
+    const input=useVoiceStore.getState();
+    if(input.sourceBuffer!==sourceBuffer)return;
+    const inputMarks=input.sourceAiSpeech;
     const gen = ++processGenRef.current;
+    const current=()=>gen===processGenRef.current&&useVoiceStore.getState().sourceBuffer===sourceBuffer&&useVoiceStore.getState().sourceAiSpeech===inputMarks;
     setIsProcessing(true);
     try {
       const effectiveSettings = getEffectiveSettings();
       const out = await voiceEngine.processAudio(sourceBuffer, effectiveSettings);
       // Discard result if a newer process call was started
-      if (gen !== processGenRef.current) return;
-      setProcessedBuffer(out);
+      if (!current()) return;
+      setProcessedBuffer(out,effectiveSettings.masterGain<=0?[]:scaledSpeechRegions(inputMarks,sourceBuffer.duration,out.duration));
     } catch (err) {
-      if (gen !== processGenRef.current) return;
+      if (!current()) return;
       console.error('Voice processing failed:', err);
-      setProcessedBuffer(sourceBuffer);
+      setProcessedBuffer(sourceBuffer,inputMarks);
     } finally {
       if (gen === processGenRef.current) {
         setIsProcessing(false);
@@ -265,7 +273,7 @@ export function VoicePanel() {
         signal.throwIfAborted();
         return encodeMono(data, processedBuffer.sampleRate, fmt, kbps, signal);
       },
-      save: blob => downloadWavFile(blob, `crispaudio_voice_${Date.now()}.${fmt}`),
+      save: blob => downloadWavFile(blob, `crispaudio_voice_${Date.now()}.${fmt}`,audioReceipt(processedAiSpeech)),
     });
   }
 
@@ -281,6 +289,7 @@ export function VoicePanel() {
       duration: processedBuffer.duration,
       sampleRate: processedBuffer.sampleRate,
       channels: processedBuffer.numberOfChannels,
+      aiSpeech: processedAiSpeech.length?processedAiSpeech:undefined,
     };
     const target = useUIStore.getState().voiceEffectsTargetSegmentId;
     const project = useProjectStore.getState();
@@ -288,7 +297,7 @@ export function VoicePanel() {
       project.replaceSegmentSource(target, source);
     } else project.importAudioSource(source);
     useUIStore.setState({ voiceEffectsTargetSegmentId: null, activePanel: 'timeline' });
-  }, [processedBuffer]);
+  }, [processedBuffer,processedAiSpeech]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -348,7 +357,9 @@ export function VoicePanel() {
         {/* ── File Drop Zone + Record ─────────────────────────────── */}
         <div className="card mb-4">
           {timelineTarget && <p className="text-sm text-violet-300 mb-3">{t('editing.voiceTarget')}</p>}
-          <FileDropZone onFile={buffer => { setSourceBuffer(buffer); setProcessedBuffer(null); useUIStore.setState({voiceEffectsTargetSegmentId:null}); }} />
+          <FileDropZone onFile={(buffer,aiSpeech) => { setSourceBuffer(buffer,aiSpeech); setProcessedBuffer(null); useUIStore.setState({voiceEffectsTargetSegmentId:null}); }} />
+          {sourceAiSpeech.some(r=>r.basis==='observed-operation')&&<p className="text-xs text-amber-300 mt-2">{t('crisp.regeneratedSource')}</p>}
+          {sourceAiSpeech.some(r=>r.basis==='imported-unsigned-declaration')&&<p className="text-xs text-amber-300 mt-2">{t('crisp.declaredSource')}</p>}
           <div className="flex items-center gap-3 mt-2">
             <button
               onClick={handleRecordToggle}

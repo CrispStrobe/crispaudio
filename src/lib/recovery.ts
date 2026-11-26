@@ -4,7 +4,8 @@ import {projectSourceIds,validateFrozenProjectAudio} from './projectFile';
 import type { AudioSource, TimelineProject } from '../types/audio';
 import { encodeSourceBufferWav } from './wavExport';
 import { computeWaveformPeaks } from '../audio/utils/audioBufferUtils';
-interface RecoverySource {id:string;name:string;path?:string;sampleRate:number;channels:number;provenance?:AudioSource['provenance']}
+import {speechRegions} from './aiSpeechProvenance';
+interface RecoverySource {id:string;name:string;path?:string;sampleRate:number;channels:number;provenance?:AudioSource['provenance'];aiSpeech?:AudioSource['aiSpeech']}
 interface Snapshot {project:TimelineProject;sources:RecoverySource[];savedAt:string}
 // Version 3 preserves stores and prevents older apps treating frozen snapshots as editable tracks.
 function database():Promise<IDBDatabase>{return new Promise((resolve,reject)=>{const request=indexedDB.open('crispaudio-recovery',3);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('audio'))request.result.createObjectStore('audio');if(!request.result.objectStoreNames.contains('snapshot'))request.result.createObjectStore('snapshot');};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
@@ -18,7 +19,7 @@ export async function cacheRecovery(project:TimelineProject,sources:Map<string,A
     for(const id of used){
       const source=sources.get(id);if(!source)throw new Error('Recovery: missing audio source');
       const path='__TAURI_INTERNALS__' in window?source.filePath:undefined;
-      metadata.push({id,name:source.name,path,sampleRate:source.sampleRate,channels:source.channels,provenance:source.provenance});
+      metadata.push({id,name:source.name,path,sampleRate:source.sampleRate,channels:source.channels,provenance:source.provenance,...(speechRegions(source.aiSpeech).length?{aiSpeech:speechRegions(source.aiSpeech)}:{})});
       if(path)continue;
       const cached=await request<Blob|undefined>(db.transaction('audio').objectStore('audio'),id);
       if(cached)continue;
@@ -46,7 +47,7 @@ export async function loadRecovery(ctx:BaseAudioContext):Promise<{project:Timeli
       else{const blob=await request<Blob|undefined>(db.transaction('audio').objectStore('audio'),source.id);if(!blob)throw new Error('Recovery media is missing');bytes=await blob.arrayBuffer();}
       const decoder=ctx.sampleRate!==source.sampleRate?new OfflineAudioContext(source.channels,1,source.sampleRate):ctx;
       const buffer=await decoder.decodeAudioData(bytes);
-      sources.set(source.id,{...source,buffer,filePath:source.path,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels,duration:buffer.duration,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))});
+      sources.set(source.id,{...source,aiSpeech:speechRegions(source.aiSpeech).length?speechRegions(source.aiSpeech):undefined,buffer,filePath:source.path,sampleRate:buffer.sampleRate,channels:buffer.numberOfChannels,duration:buffer.duration,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200)))});
     }
     validateFrozenProjectAudio(snapshot.project,sources);
     return {project:snapshot.project,sources};

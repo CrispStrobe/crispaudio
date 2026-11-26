@@ -891,6 +891,10 @@ pub fn read_audio(path: &str) -> Result<Audio> {
 
 /// Float WAV via owned staging, published with a no-overwrite hard link.
 pub fn write_audio(path: &Path, audio: &Audio) -> Result<()> {
+    write_audio_with_receipt(path, audio, None)
+}
+
+pub fn write_audio_with_receipt(path: &Path, audio: &Audio, receipt: Option<&serde_json::Value>) -> Result<()> {
     if path.exists() {
         return Err(format!("Output already exists: {}", path.display()));
     }
@@ -922,6 +926,7 @@ pub fn write_audio(path: &Path, audio: &Audio) -> Result<()> {
         }
         writer.finalize().map_err(|e| e.to_string())?;
     }
+    if let Some(receipt) = receipt { crate::audio_provenance::append_receipt(staging.path(), receipt)?; }
     staging.as_file().sync_all().map_err(|e| e.to_string())?;
     std::fs::hard_link(staging.path(), path).map_err(|e| e.to_string())?;
     Ok(())

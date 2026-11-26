@@ -1,3 +1,4 @@
+import {speechGeneration,type SpeechGeneration} from '../../lib/aiSpeechProvenance';
 import {useContext,useEffect,useRef,useState} from 'react';
 import {FolderOpen,X,Wand2,Layers,AudioWaveform,Scissors,Play} from 'lucide-react';
 import {useTranslation} from 'react-i18next';
@@ -32,15 +33,15 @@ export function CrispFiles({kinds}:{kinds:(keyof CrispasrPaths)[]}){
 type SourceTool='separate'|'speech';
 /** Source-editor preview: the result becomes the editor's ordinary draft, so
  * A/B audition, Apply ownership, retained originals and Undo stay unchanged. */
-export function SourceCrispTools({clipId,channels,ranges,rate,channel,disabled,onPrepare,onPreview}:{clipId:string;channels:Float32Array[];ranges:SampleRange[];rate:number;channel:number;disabled:boolean;onPrepare:()=>()=>boolean;onPreview:(pcm:Float32Array[],kind:SourceTool,params:Record<string,number>)=>void}){
+export function SourceCrispTools({clipId,channels,ranges,rate,channel,disabled,onPrepare,onPreview}:{clipId:string;channels:Float32Array[];ranges:SampleRange[];rate:number;channel:number;disabled:boolean;onPrepare:()=>()=>boolean;onPreview:(pcm:Float32Array[],kind:SourceTool,params:Record<string,number>,aiSpeech?:SpeechGeneration)=>void}){
  const {t}=useTranslation(),paths=useSettingsStore(s=>s.crispasr),[tool,setTool]=useState<SourceTool>('separate'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[status,setStatus]=useState(''),[open,setOpen]=useState(false);
- const [stored,setResult]=useState<{stems:CrispStem[];offset:number;tool:SourceTool;inputs:unknown[]}|null>(null),[stem,setStem]=useState(0),job=useRef<AbortController|null>(null),alive=useRef(true);
+ const [stored,setResult]=useState<{stems:CrispStem[];offset:number;tool:SourceTool;inputs:unknown[];aiSpeech?:SpeechGeneration}|null>(null),[stem,setStem]=useState(0),job=useRef<AbortController|null>(null),alive=useRef(true);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;job.current?.abort();};},[]);
  useEffect(()=>{job.current?.abort();},[channels,ranges,rate,channel,disabled]);
  // A result belongs to the exact inputs it was prepared from.
  const inputs=[channels,ranges,rate,channel],result=stored&&!disabled&&stored.inputs.every((v,i)=>v===inputs[i])?stored:null;
  const fade=Math.max(1,Math.round(rate*.005)),context=Math.round(rate*2);
- const preview=(next:{stems:CrispStem[];offset:number;tool:SourceTool;inputs:unknown[]},index:number)=>{try{onPreview(blendSelection(channels,next.stems[index].channels,next.offset,ranges,channel,fade),next.tool,{stem:index,contextSeconds:2,fadeMs:5});setError('');}catch(e){setError(message(t,e));}};
+ const preview=(next:{stems:CrispStem[];offset:number;tool:SourceTool;inputs:unknown[];aiSpeech?:SpeechGeneration},index:number)=>{try{onPreview(blendSelection(channels,next.stems[index].channels,next.offset,ranges,channel,fade),next.tool,{stem:index,contextSeconds:2,fadeMs:5},next.aiSpeech);setError('');}catch(e){setError(message(t,e));}};
  const run=async(whole:boolean)=>{
   job.current?.abort();const controller=new AbortController();job.current=controller;
   if(disabled||useUIStore.getState().timelineRecording)return null;
@@ -52,7 +53,7 @@ export function SourceCrispTools({clipId,channels,ranges,rate,channel,disabled,o
    const kind=whole?'separate':tool;
    const stems=await crispProcess(kind,paths.library,kind==='separate'?paths.separation:paths.speech,channels.map(c=>c.slice(window.start,window.end)),rate,controller.signal);
    if(!alive.current||!valid()||controller.signal.aborted||useProjectStore.getState().project!==snapshot)return null;
-   return {stems,offset:window.start,tool:kind,inputs};
+   return {stems,offset:window.start,tool:kind,inputs,aiSpeech:kind==='speech'?speechGeneration(paths.speech):undefined};
   }catch(e){if(alive.current&&!controller.signal.aborted&&!aborted(e))setError(message(t,e));return null;}
   finally{unsubscribe();if(alive.current&&job.current===controller)setBusy(false);}
  };

@@ -674,7 +674,7 @@ export const useProjectStore = create<ProjectState>()(
             ...track,
             segments: track.segments.map((seg) =>
               seg.id === segmentId
-                ? { ...seg, sourceId: newSource.id, duration: newSource.duration, sourceOffset: 0 }
+                ? { ...seg, sourceId: newSource.id, duration: newSource.duration, sourceOffset: 0, retime: undefined, sourceEdit: undefined }
                 : seg,
             ),
           }));

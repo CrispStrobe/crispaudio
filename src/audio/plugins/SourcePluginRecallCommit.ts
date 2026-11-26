@@ -3,6 +3,7 @@ import {encodeSourceBufferWav} from '../../lib/wavExport';
 import {computeWaveformPeaks} from '../utils/audioBufferUtils';
 import {assertSourcePluginRecallCurrent,sourcePluginRecallCommit,type SourcePluginRecallPlan,type PreparedSourcePluginRecall,type RecallState} from '../../lib/sourcePluginRecall';
 import type {AudioSource} from '../../types/audio';
+import {speechRegions,audioReceipt,markSpeechBlob} from '../../lib/aiSpeechProvenance';
 
 /** Own derived storage through the single synchronous editor publication. A
  * subscriber may throw after publication; retain conservatively in that case. */
@@ -11,15 +12,18 @@ export async function commitSourcePluginRecall(plan:SourcePluginRecallPlan,prepa
  let token:string|undefined,publicationStarted=false;
  try{
   check();const buffer=new AudioBuffer({numberOfChannels:prepared.pcm.length,length:plan.outputFrames,sampleRate:plan.rate});prepared.pcm.forEach((c,ch)=>buffer.copyToChannel(c as Float32Array<ArrayBuffer>,ch));
+  // Recall changes a plugin pass, not the speech-generation history. Its
+  // admitted replay has the same final crop and silence operations.
+  const aiSpeech=speechRegions(plan.source.aiSpeech);
   let filePath:string|undefined;
   if('__TAURI_INTERNALS__' in window){
-   const wav=await encodeSourceBufferWav(buffer,signal);check();
+   const wav=await markSpeechBlob(await encodeSourceBufferWav(buffer,signal),audioReceipt(aiSpeech));check();
    token=crypto.randomUUID();await invoke('recording_conversion_begin',{token});check();
    const bytes=new Uint8Array(await wav.arrayBuffer());check();
    filePath=await invoke<string>('recording_conversion_write',bytes,{headers:{'x-conversion-token':token}});check();
    if(typeof filePath!=='string'||!filePath)throw new Error('sourceRecall.format');
   }
-  const source:AudioSource={id:crypto.randomUUID(),name:`${plan.original.name} · ${prepared.recipe.name}`,buffer,filePath,sampleRate:plan.rate,channels:buffer.numberOfChannels,duration:buffer.duration,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200))),provenance:plan.original.filePath?{path:plan.original.filePath,offset:plan.clip.sourceEdit!.offset,rate:1}:undefined};
+  const source:AudioSource={id:crypto.randomUUID(),name:`${plan.original.name} · ${prepared.recipe.name}`,buffer,aiSpeech:aiSpeech.length?aiSpeech:undefined,filePath,sampleRate:plan.rate,channels:buffer.numberOfChannels,duration:buffer.duration,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200))),provenance:plan.original.filePath?{path:plan.original.filePath,offset:plan.clip.sourceEdit!.offset,rate:1}:undefined};
   if(token){check();await invoke('recording_conversion_protect',{token});}
   const next=sourcePluginRecallCommit(plan,prepared,source,check());
   publicationStarted=true;publish(next);

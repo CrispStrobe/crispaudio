@@ -1,3 +1,4 @@
+import {editedSpeechRegions,sourceSpeechRegions,audioReceipt,markSpeechBlob} from '../../lib/aiSpeechProvenance';
 import {invoke} from '@tauri-apps/api/core';
 import {encodeSourceBufferWav} from '../../lib/wavExport';
 import {computeWaveformPeaks} from '../utils/audioBufferUtils';
@@ -25,18 +26,19 @@ export async function commitStemTracks(input:Input,current:()=>State,publish:(ne
  let token:string|undefined,publicationStarted=false;
  try{
   check();
+  const aiSpeech=editedSpeechRegions({...source,aiSpeech:sourceSpeechRegions(clip,snapshot.sources)},clip.sourceOffset,frames/source.sampleRate);
   const created:{stem:string;source:AudioSource}[]=[];
   for(const stem of stems){
    const buffer=new AudioBuffer({length:frames,numberOfChannels:stem.channels.length,sampleRate:source.sampleRate});
    stem.channels.forEach((pcm,ch)=>buffer.copyToChannel(pcm as Float32Array<ArrayBuffer>,ch));
    let filePath:string|undefined;
    if('__TAURI_INTERNALS__' in window){
-    const wav=await encodeSourceBufferWav(buffer,signal);check();
+    const wav=await markSpeechBlob(await encodeSourceBufferWav(buffer,signal),audioReceipt(aiSpeech));check();
     if(!token){token=crypto.randomUUID();await invoke('recording_conversion_begin',{token});check();}
     filePath=await invoke<string>('recording_conversion_write',new Uint8Array(await wav.arrayBuffer()),{headers:{'x-conversion-token':token}});check();
     if(typeof filePath!=='string'||!filePath)throw new Error('sourceEditor.invalidPcm');
    }
-   created.push({stem:stem.name,source:{id:crypto.randomUUID(),name:input.sourceName(stem.name),buffer,filePath,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200))),duration:buffer.duration,sampleRate:source.sampleRate,channels:buffer.numberOfChannels,provenance:source.filePath?{path:source.filePath,offset:clip.sourceOffset,rate:1}:source.provenance}});
+   created.push({stem:stem.name,source:{id:crypto.randomUUID(),aiSpeech:aiSpeech.length?aiSpeech:undefined,name:input.sourceName(stem.name),buffer,filePath,peaks:computeWaveformPeaks(buffer.getChannelData(0),Math.min(8000,Math.ceil(buffer.duration*200))),duration:buffer.duration,sampleRate:source.sampleRate,channels:buffer.numberOfChannels,provenance:source.filePath?{path:source.filePath,offset:clip.sourceOffset,rate:1}:source.provenance}});
   }
   const group=clip.editGroup??{id:crypto.randomUUID(),name:clip.name};
   const mutedOriginal=track.segments.length===1;
